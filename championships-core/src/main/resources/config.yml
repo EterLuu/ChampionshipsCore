@@ -1,43 +1,44 @@
 dont-edit-this:
   version: 25
 mode: "CHAMPIONSHIP"
-# Registration names used by formal event schedules. These are map identities, not physical world names.
+# Registration names used by formal event schedules; [] selects registered maps.
+# These are map identities, not physical world names.
 # Keep this section synchronized through /cc map rename; do not add map IDs in ScheduleManager code.
 formal-events:
   FrostbiteFrenzy:
-    maps: [area]
+    maps: []
   LaserBox:
-    maps: [area]
+    maps: []
   Bingo:
-    maps: [bingo]
+    maps: []
   ParkourTag:
-    maps: [towny]
+    maps: []
   BattleBox:
-    maps: [area]
+    maps: []
   TNTRun:
-    maps: [astra]
+    maps: []
   SnowballShowdown:
-    maps: [area1]
+    maps: []
   SkyWars:
-    maps: [area2]
+    maps: []
   TGTTOS:
-    maps: [cod]
+    maps: []
   DragonEggCarnival:
-    maps: [area1]
+    maps: []
   ParkourWarrior:
-    maps: [TRI]
+    maps: []
   HotyCodyDusky:
-    maps: [area]
+    maps: []
   BuildMart:
-    maps: [area]
+    maps: []
   Dodgebolt:
-    maps: [dodgebolt]
+    maps: []
   SulfurSoccer:
-    maps: [area]
+    maps: []
   AceRace:
-    maps: [clouds2]
+    maps: []
   RiptideRush:
-    maps: [default]
+    maps: []
 # DAILY opens the self-service game menu and queues. It does not disable /cc event or /cc game start.
 daily:
   enabled-games:
@@ -156,7 +157,6 @@ team:
   max-members: 4
 lobby:
   location:
-    ==: org.bukkit.Location
     world: world
     x: 0.0
     y: 60.0

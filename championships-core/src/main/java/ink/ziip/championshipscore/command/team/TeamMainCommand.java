@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.command.team;
 import ink.ziip.championshipscore.api.team.gui.TeamManagementMenu;
 import ink.ziip.championshipscore.command.BaseMainCommand;
 import ink.ziip.championshipscore.command.member.MemberMainCommand;
+
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -23,8 +24,11 @@ public class TeamMainCommand extends BaseMainCommand {
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
-                             @NotNull String label, @NotNull String[] args) {
+    public boolean onCommand(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args) {
         if (args.length == 0) {
             if (sender instanceof Player player) {
                 menu.openOverview(player, 0);

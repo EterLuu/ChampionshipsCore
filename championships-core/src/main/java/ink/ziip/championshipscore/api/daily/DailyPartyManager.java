@@ -10,7 +10,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/** Owns volatile parties and invitations. Queue mutation is delegated back to {@link DailyManager}. */
+/**
+ * Owns volatile parties and invitations. Queue mutation is delegated back to {@link DailyManager}.
+ */
 public final class DailyPartyManager {
     private static final long INVITE_SECONDS = 60L;
     private final DailyManager daily;
@@ -44,8 +46,10 @@ public final class DailyPartyManager {
     }
 
     public synchronized boolean invite(@NotNull UUID sender, @NotNull UUID target) {
-        if (!daily.isDailyLobby() || !daily.canJoinParty(sender)
-                || !daily.canJoinParty(target) || partyByPlayer.containsKey(target)
+        if (!daily.isDailyLobby()
+                || !daily.canJoinParty(sender)
+                || !daily.canJoinParty(target)
+                || partyByPlayer.containsKey(target)
                 || sender.equals(target)) return false;
         DailyParty party = getOrCreate(sender);
         if (!party.isLeader(sender)) return false;
@@ -55,8 +59,10 @@ public final class DailyPartyManager {
 
     public synchronized @Nullable DailyParty accept(@NotNull UUID target) {
         Invite invite = inviteByTarget.remove(target);
-        if (invite == null || invite.expires().isBefore(Instant.now())
-                || partyByPlayer.containsKey(target) || !daily.canJoinParty(target)) return null;
+        if (invite == null
+                || invite.expires().isBefore(Instant.now())
+                || partyByPlayer.containsKey(target)
+                || !daily.canJoinParty(target)) return null;
         DailyParty party = invite.party();
         if (daily.isPartyInSession(party)) return null;
         daily.pauseParty(party, "小队成员发生变化");
@@ -89,7 +95,11 @@ public final class DailyPartyManager {
         if (party == null) return;
         daily.pauseParty(party, "有成员下线，排队已暂停");
         Set<UUID> members = party.members();
-        UUID nextOnline = members.stream().filter(uuid -> Bukkit.getPlayer(uuid) != null).findFirst().orElse(null);
+        UUID nextOnline =
+                members.stream()
+                        .filter(uuid -> Bukkit.getPlayer(uuid) != null)
+                        .findFirst()
+                        .orElse(null);
         if (nextOnline == null) {
             removeParty(party);
         } else if (party.isLeader(player)) {

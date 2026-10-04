@@ -1,8 +1,8 @@
 package ink.ziip.championshipscore.bingo.engine;
 
-import ink.ziip.championshipscore.protocol.BingoScoringRules;
 import ink.ziip.championshipscore.protocol.BingoMode;
 import ink.ziip.championshipscore.protocol.BingoRemix;
+import ink.ziip.championshipscore.protocol.BingoScoringRules;
 import ink.ziip.championshipscore.protocol.CompletionObservation;
 import ink.ziip.championshipscore.protocol.MatchManifest;
 import ink.ziip.championshipscore.protocol.ParticipantRole;
@@ -27,9 +27,9 @@ import java.util.UUID;
 /**
  * Pure, deterministic Bingo scoring state machine shared by the worker and SCC replay path.
  *
- * <p>The owner must submit accepted observations in worker sequence order. The class synchronizes its
- * public state transitions as a defensive boundary, but callers should still give one match a single
- * lightweight coordinator instead of performing Bukkit work while holding this monitor.</p>
+ * <p>The owner must submit accepted observations in worker sequence order. The class synchronizes
+ * its public state transitions as a defensive boundary, but callers should still give one match a
+ * single lightweight coordinator instead of performing Bukkit work while holding this monitor.
  */
 public final class BingoScoringEngine {
     private final MatchManifest manifest;
@@ -70,13 +70,17 @@ public final class BingoScoringEngine {
         if (observation.seq() <= lastSeq) {
             CompletionObservation previous = observations.get(observation.seq());
             if (!observation.equals(previous)) {
-                throw new IllegalStateException("Sequence " + observation.seq() + " was replayed with different data");
+                throw new IllegalStateException(
+                        "Sequence " + observation.seq() + " was replayed with different data");
             }
             return decisions.get(observation.seq());
         }
         if (observation.seq() != lastSeq + 1) {
             throw new IllegalStateException(
-                    "Completion sequence gap: expected " + (lastSeq + 1) + " but received " + observation.seq());
+                    "Completion sequence gap: expected "
+                            + (lastSeq + 1)
+                            + " but received "
+                            + observation.seq());
         }
 
         ScoringDecision decision = decide(observation);
@@ -89,10 +93,12 @@ public final class BingoScoringEngine {
     private ScoringDecision decide(CompletionObservation observation) {
         TeamSnapshot team = teams.get(observation.teamId());
         if (team == null) return rejected(observation, "unknown-team");
-        if (observation.cellIndex() >= taskClaims.size()) return rejected(observation, "unknown-cell");
+        if (observation.cellIndex() >= taskClaims.size())
+            return rejected(observation, "unknown-cell");
 
         PlayerSnapshot player = players.get(observation.playerId());
-        if (player == null || player.role() != ParticipantRole.PLAYER
+        if (player == null
+                || player.role() != ParticipantRole.PLAYER
                 || !Integer.valueOf(team.id()).equals(player.teamId())) {
             return rejected(observation, "player-not-in-team");
         }
@@ -107,7 +113,8 @@ public final class BingoScoringEngine {
             return rejected(observation, "cell-locked-by-other-team");
         }
         if (rules.variant().remix() == ink.ziip.championshipscore.protocol.BingoRemix.CHAIN
-                && !completed.isEmpty() && !adjacentToCompleted(completed, observation.cellIndex())) {
+                && !completed.isEmpty()
+                && !adjacentToCompleted(completed, observation.cellIndex())) {
             return rejected(observation, "chain-cell-not-reachable");
         }
         int claimRank = claims.size();
@@ -122,8 +129,8 @@ public final class BingoScoringEngine {
             }
         }
 
-        boolean pointsMode = rules.variant().mode().usesPoints()
-                && rules.variant().remix() != BingoRemix.COOP;
+        boolean pointsMode =
+                rules.variant().mode().usesPoints() && rules.variant().remix() != BingoRemix.COOP;
         // Non-points modes still emit one bookkeeping point per completed cell so Core's existing
         // DAILY result pipeline can rank transient teams without a second scoring transport.
         int cellPoints = pointsMode ? rules.pointsForClaimRank(claimRank) : 1;
@@ -132,8 +139,10 @@ public final class BingoScoringEngine {
         int linePoints = 0;
         if (pointsMode) {
             for (int lineIndex = previousLines; lineIndex < completedLines; lineIndex++) {
-                linePoints += lineIndex < rules.lineBonusMajorCount()
-                        ? rules.lineBonus() : rules.lineBonusMinor();
+                linePoints +=
+                        lineIndex < rules.lineBonusMajorCount()
+                                ? rules.lineBonus()
+                                : rules.lineBonusMinor();
             }
         }
         awardedLines.put(team.id(), completedLines);
@@ -142,12 +151,19 @@ public final class BingoScoringEngine {
         if (cellPoints > 0) {
             if (rules.variant().remix() == BingoRemix.COOP) {
                 for (TeamSnapshot collaborator : teams.values()) {
-                    if (!collaborator.members().isEmpty()) awards.add(new PlayerAward(
-                            collaborator.members().getFirst(), 1, "coop-cell:" + observation.cellIndex()));
+                    if (!collaborator.members().isEmpty())
+                        awards.add(
+                                new PlayerAward(
+                                        collaborator.members().getFirst(),
+                                        1,
+                                        "coop-cell:" + observation.cellIndex()));
                 }
             } else {
-                awards.add(new PlayerAward(observation.playerId(), cellPoints,
-                        "cell:" + observation.cellIndex()));
+                awards.add(
+                        new PlayerAward(
+                                observation.playerId(),
+                                cellPoints,
+                                "cell:" + observation.cellIndex()));
             }
         }
         if (linePoints > 0) {
@@ -164,8 +180,16 @@ public final class BingoScoringEngine {
             teamScores.put(team.id(), teamScore);
         }
         lastCompletionTicks.put(team.id(), observation.observedGameTick());
-        return new ScoringDecision(observation, true, "", claimRank, cellPoints, linePoints,
-                completedLines, teamScore, awards);
+        return new ScoringDecision(
+                observation,
+                true,
+                "",
+                claimRank,
+                cellPoints,
+                linePoints,
+                completedLines,
+                teamScore,
+                awards);
     }
 
     private boolean adjacentToCompleted(BitSet completed, int cellIndex) {
@@ -190,14 +214,24 @@ public final class BingoScoringEngine {
 
     private ScoringDecision rejected(CompletionObservation observation, String reason) {
         int teamId = observation.teamId();
-        return new ScoringDecision(observation, false, reason, -1, 0, 0,
-                awardedLines.getOrDefault(teamId, 0), teamScores.getOrDefault(teamId, 0), List.of());
+        return new ScoringDecision(
+                observation,
+                false,
+                reason,
+                -1,
+                0,
+                0,
+                awardedLines.getOrDefault(teamId, 0),
+                teamScores.getOrDefault(teamId, 0),
+                List.of());
     }
 
     private void validateIdentity(CompletionObservation observation) {
         java.util.Objects.requireNonNull(observation, "observation");
-        if (!manifest.matchId().equals(observation.matchId()) || manifest.epoch() != observation.epoch()) {
-            throw new IllegalArgumentException("Observation belongs to a different match or fencing epoch");
+        if (!manifest.matchId().equals(observation.matchId())
+                || manifest.epoch() != observation.epoch()) {
+            throw new IllegalArgumentException(
+                    "Observation belongs to a different match or fencing epoch");
         }
     }
 
@@ -231,17 +265,40 @@ public final class BingoScoringEngine {
         Map<Integer, Integer> orderedScores = new TreeMap<>(teamScores);
         Map<Integer, Long> orderedTimes = new TreeMap<>(lastCompletionTicks);
         boolean fullyClaimed = taskClaims.stream().allMatch(claims -> !claims.isEmpty());
-        return new BingoResult(lastSeq, fullyClaimed, orderedScores, completedCells, orderedTimes,
+        return new BingoResult(
+                lastSeq,
+                fullyClaimed,
+                orderedScores,
+                completedCells,
+                orderedTimes,
                 hashResult(lastSeq, fullyClaimed, orderedScores, completedCells, orderedTimes));
     }
 
-    private String hashResult(long seq, boolean fullyClaimed, Map<Integer, Integer> scores,
-                              Map<Integer, Integer> completedCells, Map<Integer, Long> completionTicks) {
-        String canonical = manifest.matchId() + "\n" + manifest.epoch() + "\n" + seq + "\n"
-                + fullyClaimed + "\n" + scores + "\n" + completedCells + "\n" + completionTicks;
+    private String hashResult(
+            long seq,
+            boolean fullyClaimed,
+            Map<Integer, Integer> scores,
+            Map<Integer, Integer> completedCells,
+            Map<Integer, Long> completionTicks) {
+        String canonical =
+                manifest.matchId()
+                        + "\n"
+                        + manifest.epoch()
+                        + "\n"
+                        + seq
+                        + "\n"
+                        + fullyClaimed
+                        + "\n"
+                        + scores
+                        + "\n"
+                        + completedCells
+                        + "\n"
+                        + completionTicks;
         try {
-            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
-                    .digest(canonical.getBytes(StandardCharsets.UTF_8)));
+            return HexFormat.of()
+                    .formatHex(
+                            MessageDigest.getInstance("SHA-256")
+                                    .digest(canonical.getBytes(StandardCharsets.UTF_8)));
         } catch (NoSuchAlgorithmException impossible) {
             throw new IllegalStateException("SHA-256 is required by the Java runtime", impossible);
         }

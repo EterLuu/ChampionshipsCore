@@ -1007,9 +1007,6 @@ map-editor-bingo-teleport:
   sent-to: 已传送到
 map-editor-spectator:
   unavailable: 该场地已结束或当前不可观战。
-  visibility-all: 已显示场内全部玩家。
-  visibility-player: 现在仅显示玩家%player%。
-  visibility-team: 现在仅显示队伍%team%。
   left: 已退出观战。
   night-vision-enabled: 夜视已开启。
   night-vision-disabled: 夜视已关闭。

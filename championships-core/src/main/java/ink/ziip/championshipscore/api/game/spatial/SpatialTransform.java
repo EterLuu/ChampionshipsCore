@@ -7,8 +7,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Immutable translation applied to map-local geometry. Keeping the transform separate from game state
- * lets setup code and runtime config resolution use the exact same placement calculation.
+ * Immutable translation applied to map-local geometry. Keeping the transform separate from game
+ * state lets setup code and runtime config resolution use the exact same placement calculation.
  */
 public record SpatialTransform(double x, double y, double z) {
     public static final SpatialTransform IDENTITY = new SpatialTransform(0, 0, 0);

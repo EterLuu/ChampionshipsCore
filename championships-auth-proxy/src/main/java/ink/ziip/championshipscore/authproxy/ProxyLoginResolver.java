@@ -16,9 +16,14 @@ final class ProxyLoginResolver {
     private final AtomicLong lastFallbackLogAt = new AtomicLong();
     private final AtomicLong lastWriteFailureLogAt = new AtomicLong();
 
-    ProxyLoginResolver(ProxyIdentityClient client, ProxyAccessState state, boolean cacheEnabled,
-                       Duration maxStale, Logger logger) {
-        if (maxStale.isNegative()) throw new IllegalArgumentException("Offline cache maximum age must not be negative");
+    ProxyLoginResolver(
+            ProxyIdentityClient client,
+            ProxyAccessState state,
+            boolean cacheEnabled,
+            Duration maxStale,
+            Logger logger) {
+        if (maxStale.isNegative())
+            throw new IllegalArgumentException("Offline cache maximum age must not be negative");
         this.client = client;
         this.state = state;
         this.cacheEnabled = cacheEnabled;
@@ -33,7 +38,8 @@ final class ProxyLoginResolver {
             return live;
         } catch (Exception failure) {
             if (!cacheEnabled || !ProxyIdentityClient.isServiceUnavailable(failure)) throw failure;
-            ProxyIdentityClient.LoginProfile cached = state.cachedProfile(username, maxStale, Instant.now());
+            ProxyIdentityClient.LoginProfile cached =
+                    state.cachedProfile(username, maxStale, Instant.now());
             if (cached == null) throw failure;
             logFallback();
             return cached;

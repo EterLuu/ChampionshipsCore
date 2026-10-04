@@ -2,10 +2,12 @@ package ink.ziip.championshipscore.command.game.stop;
 
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.manager.GameManager;
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.logging.LogText;
+import ink.ziip.championshipscore.presentation.text.CoreMessages;
+
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -16,16 +18,20 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-/** Ends exactly one active runtime instance without stopping its game schedule or sibling copies. */
+/**
+ * Ends exactly one active runtime instance without stopping its game schedule or sibling copies.
+ */
 public final class GameStopSubCommand extends BaseSubCommand {
     public GameStopSubCommand() {
-        super("stop", "精确结束一个场地实例（已开赛则正常结算）",
-                "/cc game stop <游戏> <场地> <实例> --confirm");
+        super("stop", "精确结束一个场地实例（已开赛则正常结算）", "/cc game stop <游戏> <场地> <实例> --confirm");
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
-                             @NotNull String label, @NotNull String[] args) {
+    public boolean onCommand(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args) {
         if (args.length != 4 || !args[3].equalsIgnoreCase("--confirm")) {
             sendUsage(sender);
             return true;
@@ -33,27 +39,38 @@ public final class GameStopSubCommand extends BaseSubCommand {
 
         GameTypeEnum game = GameTypeEnum.fromCommand(args[0]);
         if (game == null) {
-            Utils.sendAdminError(sender, MessageConfig.GAME_STOP_UNKNOWN_GAME
-                    .replace("%game%", args[0]));
+            CoreMessages.sendAdminError(
+                    sender, MessageConfig.GAME_STOP_UNKNOWN_GAME.replace("%game%", args[0]));
             return true;
         }
 
-        List<BaseGameInstance> mapInstances = plugin.getGameManager().getStoppableMapInstances(game, args[1]);
-        List<BaseGameInstance> tokenMatches = mapInstances.stream()
-                .filter(instance -> plugin.getGameManager().getSpectatorInstanceToken(instance)
-                        .equalsIgnoreCase(args[2]))
-                .toList();
+        List<BaseGameInstance> mapInstances =
+                plugin.getGameManager().getStoppableMapInstances(game, args[1]);
+        List<BaseGameInstance> tokenMatches =
+                mapInstances.stream()
+                        .filter(
+                                instance ->
+                                        plugin.getGameManager()
+                                                .getSpectatorInstanceToken(instance)
+                                                .equalsIgnoreCase(args[2]))
+                        .toList();
         if (tokenMatches.isEmpty()) {
-            String available = mapInstances.stream()
-                    .map(plugin.getGameManager()::getSpectatorInstanceToken)
-                    .distinct().sorted().reduce((left, right) -> left + ", " + right).orElse("无");
-            Utils.sendAdminError(sender, MessageConfig.GAME_STOP_INSTANCE_MISSING
-                    .replace("%token%", args[2])
-                    .replace("%available%", available));
+            String available =
+                    mapInstances.stream()
+                            .map(plugin.getGameManager()::getSpectatorInstanceToken)
+                            .distinct()
+                            .sorted()
+                            .reduce((left, right) -> left + ", " + right)
+                            .orElse("无");
+            CoreMessages.sendAdminError(
+                    sender,
+                    MessageConfig.GAME_STOP_INSTANCE_MISSING
+                            .replace("%token%", args[2])
+                            .replace("%available%", available));
             return true;
         }
         if (tokenMatches.size() > 1) {
-            Utils.sendAdminError(sender, MessageConfig.GAME_STOP_INSTANCE_AMBIGUOUS);
+            CoreMessages.sendAdminError(sender, MessageConfig.GAME_STOP_INSTANCE_AMBIGUOUS);
             return true;
         }
         BaseGameInstance target = tokenMatches.getFirst();
@@ -61,61 +78,112 @@ public final class GameStopSubCommand extends BaseSubCommand {
         String area = canonicalArea(target);
         String token = plugin.getGameManager().getSpectatorInstanceToken(target);
         String auditReason = "admin-game-stop:" + sender.getName();
-        plugin.getLogger().info(Utils.formatGameLog(game, area, target.getGameStageEnum().name(),
-                "管理员停止", "操作人=" + sender.getName() + " 实例=" + token));
-        plugin.getGameManager().stopGameInstance(target, auditReason).whenComplete((result, failure) ->
-                respondOnMain(sender, game, area, token, result, failure));
+        plugin.getLogger()
+                .info(
+                        LogText.formatGameLog(
+                                game,
+                                area,
+                                target.getGameStageEnum().name(),
+                                "管理员停止",
+                                "操作人=" + sender.getName() + " 实例=" + token));
+        plugin.getGameManager()
+                .stopGameInstance(target, auditReason)
+                .whenComplete(
+                        (result, failure) ->
+                                respondOnMain(sender, game, area, token, result, failure));
         return true;
     }
 
-    private void respondOnMain(@NotNull CommandSender sender, @NotNull GameTypeEnum game,
-                               @NotNull String area, @NotNull String token,
-                               @Nullable GameManager.GameStopResult result, @Nullable Throwable failure) {
-        Runnable response = () -> {
-            String target = MessageConfig.GAME_STOP_INSTANCE
-                    .replace("%game%", game.commandName())
-                    .replace("%area%", area)
-                    .replace("%token%", token);
-            if (failure != null || result == null) {
-                Utils.sendAdminError(sender, MessageConfig.GAME_STOP_EXCEPTION.replace("%instance%", target));
-                if (failure != null) plugin.getLogger().warning("game stop failed | " + failure.getMessage());
-                return;
-            }
-            switch (result) {
-                case SETTLEMENT_STARTED -> Utils.sendAdminSuccess(sender, MessageConfig.GAME_STOP_SETTLED.replace("%instance%", target));
-                case PRE_START_ABORTED -> Utils.sendAdminSuccess(sender,
-                        MessageConfig.GAME_STOP_ABORTED.replace("%instance%", target));
-                case NOT_ACTIVE -> Utils.sendAdminInfo(sender, MessageConfig.GAME_STOP_NOT_ACTIVE.replace("%instance%", target));
-                case NOT_REGISTERED -> Utils.sendAdminError(sender, MessageConfig.GAME_STOP_REPLACED.replace("%instance%", target));
-                case FAILED -> Utils.sendAdminError(sender, MessageConfig.GAME_STOP_FAILED.replace("%instance%", target));
-            }
-        };
+    private void respondOnMain(
+            @NotNull CommandSender sender,
+            @NotNull GameTypeEnum game,
+            @NotNull String area,
+            @NotNull String token,
+            @Nullable GameManager.GameStopResult result,
+            @Nullable Throwable failure) {
+        Runnable response =
+                () -> {
+                    String target =
+                            MessageConfig.GAME_STOP_INSTANCE
+                                    .replace("%game%", game.commandName())
+                                    .replace("%area%", area)
+                                    .replace("%token%", token);
+                    if (failure != null || result == null) {
+                        CoreMessages.sendAdminError(
+                                sender,
+                                MessageConfig.GAME_STOP_EXCEPTION.replace("%instance%", target));
+                        if (failure != null)
+                            plugin.getLogger()
+                                    .warning("game stop failed | " + failure.getMessage());
+                        return;
+                    }
+                    switch (result) {
+                        case SETTLEMENT_STARTED ->
+                                CoreMessages.sendAdminSuccess(
+                                        sender,
+                                        MessageConfig.GAME_STOP_SETTLED.replace(
+                                                "%instance%", target));
+                        case PRE_START_ABORTED ->
+                                CoreMessages.sendAdminSuccess(
+                                        sender,
+                                        MessageConfig.GAME_STOP_ABORTED.replace(
+                                                "%instance%", target));
+                        case NOT_ACTIVE ->
+                                CoreMessages.sendAdminInfo(
+                                        sender,
+                                        MessageConfig.GAME_STOP_NOT_ACTIVE.replace(
+                                                "%instance%", target));
+                        case NOT_REGISTERED ->
+                                CoreMessages.sendAdminError(
+                                        sender,
+                                        MessageConfig.GAME_STOP_REPLACED.replace(
+                                                "%instance%", target));
+                        case FAILED ->
+                                CoreMessages.sendAdminError(
+                                        sender,
+                                        MessageConfig.GAME_STOP_FAILED.replace(
+                                                "%instance%", target));
+                    }
+                };
         if (Bukkit.isPrimaryThread()) response.run();
         else plugin.getServer().getScheduler().runTask(plugin, response);
     }
 
     @Override
-    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
-                                                 @NotNull String label, @NotNull String[] args) {
+    public @Nullable List<String> onTabComplete(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args) {
         if (args.length == 1) {
-            List<String> games = plugin.getGameManager().getStoppableInstances().stream()
-                    .map(BaseGameInstance::getGameTypeEnum)
-                    .filter(plugin.getGameManager()::isGameEnabled).distinct()
-                    .map(GameTypeEnum::commandName).toList();
+            List<String> games =
+                    plugin.getGameManager().getStoppableInstances().stream()
+                            .map(BaseGameInstance::getGameTypeEnum)
+                            .filter(plugin.getGameManager()::isGameEnabled)
+                            .distinct()
+                            .map(GameTypeEnum::commandName)
+                            .toList();
             return complete(games, args[0]);
         }
         GameTypeEnum game = GameTypeEnum.fromCommand(args[0]);
-        if (game == null || !plugin.getGameManager().isGameEnabled(game)) return Collections.emptyList();
+        if (game == null || !plugin.getGameManager().isGameEnabled(game))
+            return Collections.emptyList();
         if (args.length == 2) {
-            List<String> areas = plugin.getGameManager().getStoppableInstances().stream()
-                    .filter(instance -> instance.getGameTypeEnum() == game)
-                    .map(GameStopSubCommand::canonicalArea)
-                    .filter(Objects::nonNull).distinct().toList();
+            List<String> areas =
+                    plugin.getGameManager().getStoppableInstances().stream()
+                            .filter(instance -> instance.getGameTypeEnum() == game)
+                            .map(GameStopSubCommand::canonicalArea)
+                            .filter(Objects::nonNull)
+                            .distinct()
+                            .toList();
             return complete(areas, args[1]);
         }
         if (args.length == 3) {
-            List<String> instances = plugin.getGameManager().getStoppableMapInstances(game, args[1]).stream()
-                    .map(plugin.getGameManager()::getSpectatorInstanceToken).distinct().toList();
+            List<String> instances =
+                    plugin.getGameManager().getStoppableMapInstances(game, args[1]).stream()
+                            .map(plugin.getGameManager()::getSpectatorInstanceToken)
+                            .distinct()
+                            .toList();
             return complete(instances, args[2]);
         }
         if (args.length == 4) return complete(List.of("--confirm"), args[3]);

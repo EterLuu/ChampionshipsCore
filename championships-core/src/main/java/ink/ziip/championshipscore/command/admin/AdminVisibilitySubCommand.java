@@ -2,7 +2,8 @@ package ink.ziip.championshipscore.command.admin;
 
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.presentation.text.CoreMessages;
+
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -20,8 +21,11 @@ public final class AdminVisibilitySubCommand extends BaseSubCommand {
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
-                             @NotNull String label, @NotNull String[] args) {
+    public boolean onCommand(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args) {
         if (args.length > 1) {
             sendUsage(sender);
             return true;
@@ -30,7 +34,8 @@ public final class AdminVisibilitySubCommand extends BaseSubCommand {
         if (args.length == 1) {
             target = Bukkit.getPlayerExact(args[0]);
             if (target == null) {
-                Utils.sendAdminError(sender, MessageConfig.ADMIN_PLAYER_OFFLINE.replace("%player%", args[0]));
+                CoreMessages.sendAdminError(
+                        sender, MessageConfig.ADMIN_PLAYER_OFFLINE.replace("%player%", args[0]));
                 return true;
             }
         } else if (sender instanceof Player player) {
@@ -40,19 +45,25 @@ public final class AdminVisibilitySubCommand extends BaseSubCommand {
             return true;
         }
 
-        sender.sendMessage(MessageConfig.ADMIN_VISIBILITY_HEADER
-                .replace("%player%", target.getName())
-                .replace("%uuid%", String.valueOf(target.getUniqueId())));
+        sender.sendMessage(
+                MessageConfig.ADMIN_VISIBILITY_HEADER
+                        .replace("%player%", target.getName())
+                        .replace("%uuid%", String.valueOf(target.getUniqueId())));
         for (String line : plugin.getVisibilityManager().describe(target.getUniqueId()))
             sender.sendMessage(MessageConfig.ADMIN_VISIBILITY_LINE.replace("%line%", line));
         return true;
     }
 
     @Override
-    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
-                                                 @NotNull String label, @NotNull String[] args) {
+    public @Nullable List<String> onTabComplete(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args) {
         if (args.length == 1)
-            return complete(Bukkit.getOnlinePlayers().stream().map(Player::getName).sorted().toList(), args[0]);
+            return complete(
+                    Bukkit.getOnlinePlayers().stream().map(Player::getName).sorted().toList(),
+                    args[0]);
         return Collections.emptyList();
     }
 }

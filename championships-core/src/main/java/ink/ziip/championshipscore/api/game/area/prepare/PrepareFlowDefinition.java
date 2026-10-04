@@ -1,20 +1,21 @@
 package ink.ziip.championshipscore.api.game.area.prepare;
 
+import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 
-import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Per-game definition of the prepare flow: which world the player must be in, where "copy 0" is (the
- * teleport target and the spot template points are configured for), and the ordered list of
- * {@link PrepareStep}s for a map setup target. It deliberately has no dependency on a running instance.
+ * Per-game definition of the prepare flow: which world the player must be in, where "copy 0" is
+ * (the teleport target and the spot template points are configured for), and the ordered list of
+ * {@link PrepareStep}s for a map setup target. It deliberately has no dependency on a running
+ * instance.
  */
 public abstract class PrepareFlowDefinition {
 
@@ -36,10 +37,11 @@ public abstract class PrepareFlowDefinition {
     public abstract @NotNull List<PrepareStep> buildSteps(@NotNull SetupTarget target);
 
     /** Called when a prepare session ends so a flow can release session-only world visuals. */
-    public void onSessionExit(@NotNull PrepareSession session) {
-    }
+    public void onSessionExit(@NotNull PrepareSession session) {}
 
-    /** Periodic UI status. Flows with expensive validation must override this with bounded checks. */
+    /**
+     * Periodic UI status. Flows with expensive validation must override this with bounded checks.
+     */
     public @NotNull List<String> validateForDisplay(@NotNull PrepareSession session) {
         return validate(session);
     }
@@ -48,11 +50,15 @@ public abstract class PrepareFlowDefinition {
     public @NotNull List<String> validate(@NotNull PrepareSession session) {
         List<String> errors = new ArrayList<>();
         if (session.getTarget().config().isWorldBindingPending() || !session.isWorldConfirmed())
-            errors.add(GuiConfig.text("map-editor.menus.step-list.items.confirm-world.states.rebind.title"));
+            errors.add(
+                    GuiConfig.text(
+                            "map-editor.menus.step-list.items.confirm-world.states.rebind.title"));
         for (PrepareStep step : session.getSteps()) {
             if (step.captureType() != StepCaptureType.CONFIRM_WORLD && !step.isSet(session))
-                errors.add(net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
-                        .plainText().serialize(step.displayName()));
+                errors.add(
+                        net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
+                                .plainText()
+                                .serialize(step.displayName()));
         }
         return errors;
     }
@@ -69,8 +75,8 @@ public abstract class PrepareFlowDefinition {
     }
 
     /**
-     * Persists the physical map without asserting that every gameplay point is configured yet.
-     * A draft remains dirty and therefore cannot be selected for a game until a later publish.
+     * Persists the physical map without asserting that every gameplay point is configured yet. A
+     * draft remains dirty and therefore cannot be selected for a game until a later publish.
      */
     public @NotNull CompletableFuture<Boolean> saveDraft(@NotNull PrepareSession session) {
         return publish(session);

@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.listener;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
+
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Enderman;
@@ -22,14 +23,12 @@ public class ProtectionListener extends BaseListener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onEntityChangeBlock(EntityChangeBlockEvent event) {
-        if (event.getEntity() instanceof Enderman)
-            event.setCancelled(true);
+        if (event.getEntity() instanceof Enderman) event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onEntityBreakFarmLand(EntityInteractEvent event) {
-        if ((event.getEntity() instanceof Player))
-            return;
+        if ((event.getEntity() instanceof Player)) return;
 
         Block block = event.getBlock();
         if (block.getType() == Material.FARMLAND) {
@@ -41,8 +40,7 @@ public class ProtectionListener extends BaseListener {
     public void onPlayerInteractWithFarm(PlayerInteractEvent event) {
         if (event.getAction() == Action.PHYSICAL) {
             Block block = event.getClickedBlock();
-            if (block == null)
-                return;
+            if (block == null) return;
             if (block.getType() == Material.FARMLAND) {
                 event.setCancelled(true);
             }

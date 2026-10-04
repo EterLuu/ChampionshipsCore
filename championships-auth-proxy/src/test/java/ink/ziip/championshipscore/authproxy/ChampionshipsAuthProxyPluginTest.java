@@ -1,18 +1,17 @@
 package ink.ziip.championshipscore.authproxy;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 class ChampionshipsAuthProxyPluginTest {
-    @TempDir
-    Path tempDirectory;
+    @TempDir Path tempDirectory;
 
     @Test
     void migratesLegacyStateFileWithoutLosingContent() throws Exception {
@@ -41,7 +40,9 @@ class ChampionshipsAuthProxyPluginTest {
 
     @Test
     void rejectionLogContainsPlayerStatusAndReason() {
-        String log = ChampionshipsAuthProxyPlugin.rejectionLog("BlockedPlayer", "BANNED", "Repeated cheating");
+        String log =
+                ChampionshipsAuthProxyPlugin.rejectionLog(
+                        "BlockedPlayer", "BANNED", "Repeated cheating");
 
         assertTrue(log.contains("player=BlockedPlayer"));
         assertTrue(log.contains("status=BANNED"));
@@ -50,14 +51,18 @@ class ChampionshipsAuthProxyPluginTest {
 
     @Test
     void rejectionLogUsesFallbacksForMissingValues() {
-        assertEquals("Rejected login: player=unknown, status=UNKNOWN, reason=not provided",
+        assertEquals(
+                "Rejected login: player=unknown, status=UNKNOWN, reason=not provided",
                 ChampionshipsAuthProxyPlugin.rejectionLog(null, " ", ""));
     }
 
     @Test
     void rejectionLogPreventsMultilineLogInjection() {
-        String log = ChampionshipsAuthProxyPlugin.rejectionLog(
-                "Player\nForgedEntry", "UNBOUND\r\nWARNING", "line one\tline two\u0000tail");
+        String log =
+                ChampionshipsAuthProxyPlugin.rejectionLog(
+                        "Player\nForgedEntry",
+                        "UNBOUND\r\nWARNING",
+                        "line one\tline two\u0000tail");
 
         assertFalse(log.contains("\n"));
         assertFalse(log.contains("\r"));

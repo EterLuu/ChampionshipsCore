@@ -1,7 +1,8 @@
 package ink.ziip.championshipscore.api.daily;
 
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -11,8 +12,8 @@ import java.util.Map;
 
 /**
  * Metric registry shared by the DAILY stats and leaderboard menus, so both always list the same
- * per-game statistics. Values live either in the per-map stat table (count/damage/rate metrics)
- * or in the per-map time records (AceRace timing metrics).
+ * per-game statistics. Values live either in the per-map stat table (count/damage/rate metrics) or
+ * in the per-map time records (AceRace timing metrics).
  */
 public enum DailyMetric {
     BINGO_MAX_TASKS(GameTypeEnum.Bingo, Format.COUNT, 1),
@@ -27,10 +28,17 @@ public enum DailyMetric {
     PKW_STARS_TIME(GameTypeEnum.ParkourWarrior, Format.COMPOSITE, 1),
     PKW_POINTS_TIME(GameTypeEnum.ParkourWarrior, Format.COMPOSITE, 1);
 
-    public enum Format { COUNT, TIME, DAMAGE, PERCENT, COMPOSITE }
+    public enum Format {
+        COUNT,
+        TIME,
+        DAMAGE,
+        PERCENT,
+        COMPOSITE
+    }
 
     private final GameTypeEnum game;
     private final Format format;
+
     /** Minimum per-map games played before a player may appear on this metric's leaderboard. */
     private final int leaderboardMinGames;
 
@@ -72,7 +80,8 @@ public enum DailyMetric {
     }
 
     public @NotNull String labelKey() {
-        return "daily.menus.statistics-screen.items.metric.states." + name().toLowerCase(Locale.ROOT).replace('_', '-');
+        return "daily.menus.statistics-screen.items.metric.states."
+                + name().toLowerCase(Locale.ROOT).replace('_', '-');
     }
 
     /** Stable leaderboard id: per map when a map is given, otherwise the cross-map aggregate. */
@@ -98,7 +107,8 @@ public enum DailyMetric {
     }
 
     /** Formats a Parkour Warrior result using the primary value and its same-run duration. */
-    public static @NotNull String format(@NotNull DailyMetric metric, double value, long durationMs) {
+    public static @NotNull String format(
+            @NotNull DailyMetric metric, double value, long durationMs) {
         if (!metric.isComposite() || durationMs < 0L) return format(metric, value);
         long totalSeconds = durationMs / 1_000L;
         long hours = totalSeconds / 3_600L;
@@ -106,10 +116,24 @@ public enum DailyMetric {
         long seconds = totalSeconds % 60L;
         String duration = "%02d:%02d:%02d".formatted(hours, minutes, seconds);
         return switch (metric) {
-            case PKW_STARS_TIME -> GuiConfig.line(valueKey(metric), 0, Map.of(
-                    "stars", Long.toString(Math.round(value)), "duration", duration));
-            case PKW_POINTS_TIME -> GuiConfig.line(valueKey(metric), 0, Map.of(
-                    "points", Long.toString(Math.round(value)), "duration", duration));
+            case PKW_STARS_TIME ->
+                    GuiConfig.line(
+                            valueKey(metric),
+                            0,
+                            Map.of(
+                                    "stars",
+                                    Long.toString(Math.round(value)),
+                                    "duration",
+                                    duration));
+            case PKW_POINTS_TIME ->
+                    GuiConfig.line(
+                            valueKey(metric),
+                            0,
+                            Map.of(
+                                    "points",
+                                    Long.toString(Math.round(value)),
+                                    "duration",
+                                    duration));
             default -> format(metric, value);
         };
     }

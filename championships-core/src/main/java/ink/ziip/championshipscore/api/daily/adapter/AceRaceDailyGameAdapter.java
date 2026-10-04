@@ -3,14 +3,14 @@ package ink.ziip.championshipscore.api.daily.adapter;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.daily.DailyGameAdapter;
 import ink.ziip.championshipscore.api.daily.DailyRules;
-import ink.ziip.championshipscore.api.game.acerace.AceRaceArea;
-import ink.ziip.championshipscore.api.object.game.GameRunMode;
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
-import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
+import ink.ziip.championshipscore.api.game.acerace.runtime.AceRaceArea;
+import ink.ziip.championshipscore.api.game.model.GameRunMode;
+import ink.ziip.championshipscore.api.game.model.GameStageEnum;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Comparator;
 import java.util.List;
@@ -21,14 +21,22 @@ import java.util.concurrent.CompletionStage;
 public final class AceRaceDailyGameAdapter implements DailyGameAdapter {
     private final ChampionshipsCore plugin;
 
-    public AceRaceDailyGameAdapter(ChampionshipsCore plugin) { this.plugin = plugin; }
+    public AceRaceDailyGameAdapter(ChampionshipsCore plugin) {
+        this.plugin = plugin;
+    }
 
-    @Override public @NotNull GameTypeEnum game() { return GameTypeEnum.AceRace; }
+    @Override
+    public @NotNull GameTypeEnum game() {
+        return GameTypeEnum.AceRace;
+    }
 
     @Override
     public @NotNull DailyRules rules() {
-        return new DailyRules(CCConfig.DAILY_ACERACE_MIN_PLAYERS, CCConfig.DAILY_ACERACE_MAX_PLAYERS,
-                CCConfig.DAILY_ACERACE_TEAM_SIZE, CCConfig.DAILY_ACERACE_TEAMS,
+        return new DailyRules(
+                CCConfig.DAILY_ACERACE_MIN_PLAYERS,
+                CCConfig.DAILY_ACERACE_MAX_PLAYERS,
+                CCConfig.DAILY_ACERACE_TEAM_SIZE,
+                CCConfig.DAILY_ACERACE_TEAMS,
                 CCConfig.DAILY_ACERACE_COUNTDOWN_SECONDS);
     }
 
@@ -40,9 +48,11 @@ public final class AceRaceDailyGameAdapter implements DailyGameAdapter {
     @Override
     public @NotNull CompletionStage<StartResult> start(@NotNull List<ChampionshipTeam> teams) {
         for (AceRaceArea area : candidates()) {
-            if (plugin.getGameManager().joinMultiTeamInstanceForTeams(GameTypeEnum.AceRace, area,
-                    false, GameRunMode.DAILY, teams)) {
-                return CompletableFuture.completedFuture(new StartResult(area.getGameConfig().getConfigName(), area));
+            if (plugin.getGameManager()
+                    .joinMultiTeamInstanceForTeams(
+                            GameTypeEnum.AceRace, area, false, GameRunMode.DAILY, teams)) {
+                return CompletableFuture.completedFuture(
+                        new StartResult(area.getGameConfig().getConfigName(), area));
             }
         }
         return CompletableFuture.completedFuture(null);
@@ -50,14 +60,26 @@ public final class AceRaceDailyGameAdapter implements DailyGameAdapter {
 
     private @NotNull List<AceRaceArea> candidates() {
         return plugin.getGameManager().getAceRaceManager().getAreaNameList().stream()
-                .flatMap(map -> plugin.getGameManager().getAceRaceManager().getMapInstances(map).stream())
+                .flatMap(
+                        map ->
+                                plugin
+                                        .getGameManager()
+                                        .getAceRaceManager()
+                                        .getMapInstances(map)
+                                        .stream())
                 .filter(area -> area.getGameStageEnum() == GameStageEnum.WAITING)
                 .filter(area -> plugin.getDailyManager().session(area) == null)
-                .filter(area -> plugin.getPrepareSessionManager().canStart(GameTypeEnum.AceRace,
-                        area.getGameConfig().getConfigName()))
-                .sorted(Comparator.comparing((AceRaceArea area) -> area.getGameConfig().getConfigName(),
-                                String.CASE_INSENSITIVE_ORDER)
-                        .thenComparingInt(AceRaceArea::getCopyIndex))
+                .filter(
+                        area ->
+                                plugin.getPrepareSessionManager()
+                                        .canStart(
+                                                GameTypeEnum.AceRace,
+                                                area.getGameConfig().getConfigName()))
+                .sorted(
+                        Comparator.comparing(
+                                        (AceRaceArea area) -> area.getGameConfig().getConfigName(),
+                                        String.CASE_INSENSITIVE_ORDER)
+                                .thenComparingInt(AceRaceArea::getCopyIndex))
                 .toList();
     }
 }

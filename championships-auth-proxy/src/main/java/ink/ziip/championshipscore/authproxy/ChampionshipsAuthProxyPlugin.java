@@ -1,16 +1,16 @@
 package ink.ziip.championshipscore.authproxy;
 
-import net.md_5.bungee.api.event.PreLoginEvent;
-import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.connection.ProxiedPlayer;
+import net.md_5.bungee.api.event.PreLoginEvent;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.api.plugin.Plugin;
 import net.md_5.bungee.api.scheduler.ScheduledTask;
-import net.md_5.bungee.event.EventHandler;
-import net.md_5.bungee.event.EventPriority;
 import net.md_5.bungee.config.Configuration;
 import net.md_5.bungee.config.ConfigurationProvider;
 import net.md_5.bungee.config.YamlConfiguration;
+import net.md_5.bungee.event.EventHandler;
+import net.md_5.bungee.event.EventPriority;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,8 +26,8 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Makes Bungee's offline login path publish the cc-web identity UUID before IP forwarding.
- * AuthMe remains responsible for password verification once the player reaches a backend.
+ * Makes Bungee's offline login path publish the cc-web identity UUID before IP forwarding. AuthMe
+ * remains responsible for password verification once the player reaches a backend.
  */
 public final class ChampionshipsAuthProxyPlugin extends Plugin implements Listener {
     private static final String STATE_FILE_NAME = "state.properties";
@@ -47,47 +47,61 @@ public final class ChampionshipsAuthProxyPlugin extends Plugin implements Listen
     public void onEnable() {
         try {
             Configuration config = loadConfiguration();
-            identities = new ProxyIdentityClient(
-                    config.getString("api.base-url"),
-                    config.getString("api.key-id"),
-                    config.getString("api.hmac-secret"),
-                    config.getBoolean("api.allow-insecure-private-http"),
-                    Duration.ofSeconds(config.getLong("api.connect-timeout-seconds", 3)),
-                    Duration.ofSeconds(config.getLong("api.request-timeout-seconds", 5))
-            );
+            identities =
+                    new ProxyIdentityClient(
+                            config.getString("api.base-url"),
+                            config.getString("api.key-id"),
+                            config.getString("api.hmac-secret"),
+                            config.getBoolean("api.allow-insecure-private-http"),
+                            Duration.ofSeconds(config.getLong("api.connect-timeout-seconds", 3)),
+                            Duration.ofSeconds(config.getLong("api.request-timeout-seconds", 5)));
             notBoundMessage = config.getString("messages.not-bound");
             bannedMessage = config.getString("messages.banned");
             revokedMessage = config.getString("messages.revoked");
             unavailableMessage = config.getString("messages.unavailable");
             maintenanceMessage = config.getString("messages.maintenance");
             if (migrateLegacyStateFile(getDataFolder())) {
-                getLogger().info("Migrated auth proxy state from " + LEGACY_STATE_FILE_NAME
-                        + " to " + STATE_FILE_NAME + ".");
+                getLogger()
+                        .info(
+                                "Migrated auth proxy state from "
+                                        + LEGACY_STATE_FILE_NAME
+                                        + " to "
+                                        + STATE_FILE_NAME
+                                        + ".");
             }
             var accessState = new ProxyAccessState(new File(getDataFolder(), STATE_FILE_NAME));
             long maxStaleHours = config.getLong("offline-cache.max-stale-hours", 0);
-            if (maxStaleHours < 0) throw new IllegalArgumentException("offline-cache.max-stale-hours must not be negative");
-            loginResolver = new ProxyLoginResolver(
-                    identities,
-                    accessState,
-                    config.getBoolean("offline-cache.enabled", true),
-                    maxStaleHours == 0 ? Duration.ZERO : Duration.ofHours(maxStaleHours),
-                    getLogger()
-            );
-            banSynchronizer = new ProxyBanSynchronizer(
-                    identities,
-                    accessState,
-                    this::disconnectBannedPlayer,
-                    getLogger()
-            );
+            if (maxStaleHours < 0)
+                throw new IllegalArgumentException(
+                        "offline-cache.max-stale-hours must not be negative");
+            loginResolver =
+                    new ProxyLoginResolver(
+                            identities,
+                            accessState,
+                            config.getBoolean("offline-cache.enabled", true),
+                            maxStaleHours == 0 ? Duration.ZERO : Duration.ofHours(maxStaleHours),
+                            getLogger());
+            banSynchronizer =
+                    new ProxyBanSynchronizer(
+                            identities, accessState, this::disconnectBannedPlayer, getLogger());
             getProxy().getPluginManager().registerListener(this, this);
             long pollSeconds = Math.max(5L, config.getLong("api.poll-seconds", 10));
             getProxy().getScheduler().runAsync(this, banSynchronizer);
-            banSynchronizerTask = getProxy().getScheduler().schedule(
-                    this, banSynchronizer, pollSeconds, pollSeconds, TimeUnit.SECONDS);
+            banSynchronizerTask =
+                    getProxy()
+                            .getScheduler()
+                            .schedule(
+                                    this,
+                                    banSynchronizer,
+                                    pollSeconds,
+                                    pollSeconds,
+                                    TimeUnit.SECONDS);
             getLogger().info("Enabled cc-web identity UUID forwarding for offline-mode logins.");
         } catch (Exception exception) {
-            getLogger().severe("Could not initialize ChampionshipsAuthProxy: " + exception.getMessage());
+            getLogger()
+                    .severe(
+                            "Could not initialize ChampionshipsAuthProxy: "
+                                    + exception.getMessage());
             getProxy().stop();
         }
     }
@@ -105,23 +119,41 @@ public final class ChampionshipsAuthProxyPlugin extends Plugin implements Listen
 
     private void resolveLoginProfile(PreLoginEvent event) {
         try {
-            ProxyIdentityClient.LoginProfile profile = loginResolver.lookup(event.getConnection().getName());
+            ProxyIdentityClient.LoginProfile profile =
+                    loginResolver.lookup(event.getConnection().getName());
             switch (profile.status) {
                 case "ALLOWED" -> {
                     event.getConnection().setOnlineMode(false);
                     event.getConnection().setUniqueId(UUID.fromString(profile.uuid));
                 }
-                case "UNBOUND" -> reject(event, "UNBOUND", "Minecraft account is not bound", notBoundMessage);
-                case "BANNED" -> reject(event, "BANNED", banLogReason(profile.reason, profile.expiresAt),
-                        bannedMessage(profile.reason, profile.expiresAt));
-                case "REVOKED" -> reject(event, "REVOKED", "Server access has been revoked", revokedMessage);
-                case "MAINTENANCE" -> reject(event, "MAINTENANCE", "Identity service is in maintenance mode",
-                        maintenanceMessage);
-                default -> reject(event, "UNAVAILABLE", "Unsupported profile status: " + profile.status,
-                        unavailableMessage);
+                case "UNBOUND" ->
+                        reject(event, "UNBOUND", "Minecraft account is not bound", notBoundMessage);
+                case "BANNED" ->
+                        reject(
+                                event,
+                                "BANNED",
+                                banLogReason(profile.reason, profile.expiresAt),
+                                bannedMessage(profile.reason, profile.expiresAt));
+                case "REVOKED" ->
+                        reject(event, "REVOKED", "Server access has been revoked", revokedMessage);
+                case "MAINTENANCE" ->
+                        reject(
+                                event,
+                                "MAINTENANCE",
+                                "Identity service is in maintenance mode",
+                                maintenanceMessage);
+                default ->
+                        reject(
+                                event,
+                                "UNAVAILABLE",
+                                "Unsupported profile status: " + profile.status,
+                                unavailableMessage);
             }
         } catch (Exception exception) {
-            String reason = exception.getMessage() == null ? exception.getClass().getSimpleName() : exception.getMessage();
+            String reason =
+                    exception.getMessage() == null
+                            ? exception.getClass().getSimpleName()
+                            : exception.getMessage();
             reject(event, "UNAVAILABLE", reason, unavailableMessage);
         } finally {
             event.completeIntent(this);
@@ -130,7 +162,8 @@ public final class ChampionshipsAuthProxyPlugin extends Plugin implements Listen
 
     private Configuration loadConfiguration() throws Exception {
         File directory = getDataFolder();
-        if (!directory.exists() && !directory.mkdirs()) throw new IllegalStateException("Could not create plugin data directory");
+        if (!directory.exists() && !directory.mkdirs())
+            throw new IllegalStateException("Could not create plugin data directory");
         File file = new File(directory, "config.yml");
         if (!file.exists()) {
             try (InputStream input = getResourceAsStream("config.yml")) {
@@ -161,14 +194,19 @@ public final class ChampionshipsAuthProxyPlugin extends Plugin implements Listen
     }
 
     static String rejectionLog(String username, String status, String reason) {
-        return "Rejected login: player=" + sanitizeLogValue(username, "unknown")
-                + ", status=" + sanitizeLogValue(status, "UNKNOWN")
-                + ", reason=" + sanitizeLogValue(reason, "not provided");
+        return "Rejected login: player="
+                + sanitizeLogValue(username, "unknown")
+                + ", status="
+                + sanitizeLogValue(status, "UNKNOWN")
+                + ", reason="
+                + sanitizeLogValue(reason, "not provided");
     }
 
     private static String banLogReason(String reason, String expiresAt) {
-        return "banReason=" + sanitizeLogValue(reason, "not provided")
-                + ", expiresAt=" + sanitizeLogValue(expiresAt, "not provided");
+        return "banReason="
+                + sanitizeLogValue(reason, "not provided")
+                + ", expiresAt="
+                + sanitizeLogValue(expiresAt, "not provided");
     }
 
     private static String sanitizeLogValue(String value, String fallback) {
@@ -177,7 +215,8 @@ public final class ChampionshipsAuthProxyPlugin extends Plugin implements Listen
         boolean previousWhitespace = false;
         for (int index = 0; index < value.length() && sanitized.length() < 500; index++) {
             char character = value.charAt(index);
-            boolean whitespace = Character.isWhitespace(character) || Character.isISOControl(character);
+            boolean whitespace =
+                    Character.isWhitespace(character) || Character.isISOControl(character);
             if (whitespace) {
                 if (!previousWhitespace && sanitized.length() > 0) sanitized.append(' ');
             } else {
@@ -193,21 +232,32 @@ public final class ChampionshipsAuthProxyPlugin extends Plugin implements Listen
         String message = bannedMessage(reason, expiresAt);
         for (ProxiedPlayer player : getProxy().getPlayers()) {
             if (player.isConnected() && player.getName().equalsIgnoreCase(username)) {
-                getLogger().warning("Disconnected banned player: player="
-                        + sanitizeLogValue(player.getName(), "unknown") + ", reason="
-                        + banLogReason(reason, expiresAt));
+                getLogger()
+                        .warning(
+                                "Disconnected banned player: player="
+                                        + sanitizeLogValue(player.getName(), "unknown")
+                                        + ", reason="
+                                        + banLogReason(reason, expiresAt));
                 player.disconnect(TextComponent.fromLegacyText(ProxyText.format(message)));
             }
         }
     }
 
     private String bannedMessage(String reason, String expiresAt) {
-        return applyPlaceholders(bannedMessage, "reason", reason == null || reason.isBlank() ? "违反服务器规则" : reason,
-                "expires", formatExpiry(expiresAt));
+        return applyPlaceholders(
+                bannedMessage,
+                "reason",
+                reason == null || reason.isBlank() ? "违反服务器规则" : reason,
+                "expires",
+                formatExpiry(expiresAt));
     }
 
-    private static String applyPlaceholders(String template, String firstKey, String firstValue,
-                                            String secondKey, String secondValue) {
+    private static String applyPlaceholders(
+            String template,
+            String firstKey,
+            String firstValue,
+            String secondKey,
+            String secondValue) {
         return (template == null ? "" : template)
                 .replace("%" + firstKey + "%", firstValue == null ? "" : firstValue)
                 .replace("%" + secondKey + "%", secondValue == null ? "" : secondValue);

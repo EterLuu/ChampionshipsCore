@@ -4,7 +4,8 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.api.team.TeamManager;
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.presentation.text.CoreMessages;
+
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -20,7 +21,11 @@ public class MemberAddSubCommand extends BaseSubCommand {
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+    public boolean onCommand(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args) {
         if (args.length != 2) {
             sendUsage(sender);
             return true;
@@ -28,24 +33,37 @@ public class MemberAddSubCommand extends BaseSubCommand {
         if (args.length == 2) {
             ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeam(args[0]);
             if (championshipTeam == null) {
-                String message = MessageConfig.MEMBER_ADDED_FAILED
-                        .replace("%team%", args[0])
-                        .replace("%player%", Utils.formatPlayerName(args[1]))
-                        .replace("%reason%", MessageConfig.REASON_TEAM_DOES_NOT_EXIST);
+                String message =
+                        MessageConfig.MEMBER_ADDED_FAILED
+                                .replace("%team%", args[0])
+                                .replace("%player%", CoreMessages.formatPlayerName(args[1]))
+                                .replace("%reason%", MessageConfig.REASON_TEAM_DOES_NOT_EXIST);
                 sender.sendMessage(message);
                 return true;
             }
-            plugin.getTeamManager().addTeamMember(args[1], championshipTeam).thenAccept(result -> {
-                String message = result == TeamManager.MemberAddResult.ADDED
-                        ? MessageConfig.MEMBER_SUCCESSFULLY_ADDED
-                        .replace("%team%", championshipTeam.getColoredName())
-                        .replace("%player%", Utils.formatPlayerNameOnly(args[1]))
-                        : MessageConfig.MEMBER_ADDED_FAILED
-                        .replace("%team%", args[0])
-                        .replace("%player%", Utils.formatPlayerName(args[1]))
-                        .replace("%reason%", reason(result));
-                sender.sendMessage(message);
-            });
+            plugin.getTeamManager()
+                    .addTeamMember(args[1], championshipTeam)
+                    .thenAccept(
+                            result -> {
+                                String message =
+                                        result == TeamManager.MemberAddResult.ADDED
+                                                ? MessageConfig.MEMBER_SUCCESSFULLY_ADDED
+                                                        .replace(
+                                                                "%team%",
+                                                                championshipTeam.getColoredName())
+                                                        .replace(
+                                                                "%player%",
+                                                                CoreMessages.formatPlayerNameOnly(
+                                                                        args[1]))
+                                                : MessageConfig.MEMBER_ADDED_FAILED
+                                                        .replace("%team%", args[0])
+                                                        .replace(
+                                                                "%player%",
+                                                                CoreMessages.formatPlayerName(
+                                                                        args[1]))
+                                                        .replace("%reason%", reason(result));
+                                sender.sendMessage(message);
+                            });
         }
         return true;
     }
@@ -66,18 +84,25 @@ public class MemberAddSubCommand extends BaseSubCommand {
     }
 
     @Override
-    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+    public @Nullable List<String> onTabComplete(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args) {
         if (args.length == 1) {
             List<String> returnList = plugin.getTeamManager().getTeamNameList();
             return filterStartsWith(returnList, args[0]);
         }
 
         if (args.length == 2) {
-            List<String> returnList = plugin.getServer().getOnlinePlayers().stream()
-                    .filter(player -> plugin.getTeamManager().getTeamByPlayer(player) == null)
-                    .map(Player::getName)
-                    .sorted(String.CASE_INSENSITIVE_ORDER)
-                    .toList();
+            List<String> returnList =
+                    plugin.getServer().getOnlinePlayers().stream()
+                            .filter(
+                                    player ->
+                                            plugin.getTeamManager().getTeamByPlayer(player) == null)
+                            .map(Player::getName)
+                            .sorted(String.CASE_INSENSITIVE_ORDER)
+                            .toList();
             return filterStartsWith(returnList, args[1]);
         }
         return Collections.emptyList();

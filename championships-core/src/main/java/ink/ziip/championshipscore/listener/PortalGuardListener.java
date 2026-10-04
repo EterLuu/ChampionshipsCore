@@ -1,8 +1,9 @@
 package ink.ziip.championshipscore.listener;
 
-import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.util.world.WorldManager;
+
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityPortalEvent;

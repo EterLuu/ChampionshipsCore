@@ -2,20 +2,22 @@ package ink.ziip.championshipscore.api.game.area.prepare;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
-import ink.ziip.championshipscore.api.gui.MenuInventory;
-import ink.ziip.championshipscore.api.game.area.prepare.gui.AnvilInputGui;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.AceRaceEquipmentGui;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.AceRaceRespawnPointBindingGui;
+import ink.ziip.championshipscore.api.game.area.prepare.gui.AnvilInputGui;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.AreaListGui;
+import ink.ziip.championshipscore.api.game.area.prepare.gui.BuildMartMaterialZoneGui;
+import ink.ziip.championshipscore.api.game.area.prepare.gui.CountdownBlockDisappearanceGui;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.ListStepGui;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.RiptideCourseEditorGui;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.StepMenuGui;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.TGTTOSAreaTypeGui;
-import ink.ziip.championshipscore.api.game.area.prepare.gui.CountdownBlockDisappearanceGui;
-import ink.ziip.championshipscore.api.game.area.prepare.gui.BuildMartMaterialZoneGui;
+import ink.ziip.championshipscore.api.gui.MenuInventory;
+
 import io.papermc.paper.event.player.PlayerPickItemEvent;
-import org.bukkit.entity.Player;
+
 import org.bukkit.GameMode;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityPickupItemEvent;
@@ -28,17 +30,18 @@ import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.view.AnvilView;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Single listener that routes every interaction in the prepare subsystem: sub-GUI clicks (area list /
- * anvil / list-step), prepare-mode inventory clicks and right-click-in-hand use, and the safety events
- * (drop/pickup/quit/join/death) that keep the saved inventory safe and the prepare inventory clean.
+ * Single listener that routes every interaction in the prepare subsystem: sub-GUI clicks (area list
+ * / anvil / list-step), prepare-mode inventory clicks and right-click-in-hand use, and the safety
+ * events (drop/pickup/quit/join/death) that keep the saved inventory safe and the prepare inventory
+ * clean.
  */
 public class PrepareListener extends BaseListener {
     private final PrepareSessionManager manager;
@@ -55,8 +58,12 @@ public class PrepareListener extends BaseListener {
         InventoryHolder holder = top.getHolder();
         if (holder instanceof MenuInventory && MenuInventory.clickedPlayer(event) == null) return;
 
-        if (holder instanceof ink.ziip.championshipscore.api.game.area.prepare.gui.BuildMartBlueprintGui.Holder h) {
-            ink.ziip.championshipscore.api.game.area.prepare.gui.BuildMartBlueprintGui.handleClick(manager, event, player, h);
+        if (holder
+                instanceof
+                ink.ziip.championshipscore.api.game.area.prepare.gui.BuildMartBlueprintGui.Holder
+                        h) {
+            ink.ziip.championshipscore.api.game.area.prepare.gui.BuildMartBlueprintGui.handleClick(
+                    manager, event, player, h);
             return;
         }
 
@@ -125,8 +132,10 @@ public class PrepareListener extends BaseListener {
             return;
         }
 
-        // In non-creative prepare mode, lock the inventory. Only clicks in the player's own hotbar are
-        // routed to the control handlers; everything else is cancelled so prepare items cannot be moved out.
+        // In non-creative prepare mode, lock the inventory. Only clicks in the player's own hotbar
+        // are
+        // routed to the control handlers; everything else is cancelled so prepare items cannot be
+        // moved out.
         if (clicked == event.getView().getBottomInventory()) {
             event.setCancelled(true);
             routeControlClick(player, session, event.getCurrentItem());
@@ -135,8 +144,10 @@ public class PrepareListener extends BaseListener {
         event.setCancelled(true);
     }
 
-    private void routeControlClick(@NotNull Player player, @NotNull PrepareSession session,
-                                   @org.jetbrains.annotations.Nullable ItemStack item) {
+    private void routeControlClick(
+            @NotNull Player player,
+            @NotNull PrepareSession session,
+            @org.jetbrains.annotations.Nullable ItemStack item) {
         String stepKey = PrepareKeys.stepKeyOf(item);
         if (stepKey != null) {
             manager.handleStepClick(player, session, stepKey);
@@ -163,7 +174,9 @@ public class PrepareListener extends BaseListener {
             if (session == null) return;
             if (player.getGameMode() == GameMode.CREATIVE) {
                 for (int raw : event.getRawSlots()) {
-                    if (raw >= 36 && raw < 45 && PrepareModeInventory.isControlSlot(session, raw - 36)) {
+                    if (raw >= 36
+                            && raw < 45
+                            && PrepareModeInventory.isControlSlot(session, raw - 36)) {
                         event.setCancelled(true);
                         return;
                     }
@@ -180,8 +193,10 @@ public class PrepareListener extends BaseListener {
         PrepareSession session = manager.getSession(player);
         if (session == null) return;
         var workshop = session.getBlueprintWorkshop();
-        if (workshop != null && event.getAction() == Action.RIGHT_CLICK_BLOCK
-                && event.getClickedBlock() != null && workshop.isButton(event.getClickedBlock().getLocation())) {
+        if (workshop != null
+                && event.getAction() == Action.RIGHT_CLICK_BLOCK
+                && event.getClickedBlock() != null
+                && workshop.isButton(event.getClickedBlock().getLocation())) {
             event.setCancelled(true);
             event.setUseItemInHand(org.bukkit.event.Event.Result.DENY);
             event.setUseInteractedBlock(org.bukkit.event.Event.Result.DENY);
@@ -190,14 +205,17 @@ public class PrepareListener extends BaseListener {
         }
         ItemStack item = event.getItem();
         if (item == null || !PrepareKeys.isPrepareItem(item)) {
-            if (workshop != null && event.getClickedBlock() != null
-                    && (workshop.isBusy() || !workshop.contains(event.getClickedBlock().getLocation()))) {
+            if (workshop != null
+                    && event.getClickedBlock() != null
+                    && (workshop.isBusy()
+                            || !workshop.contains(event.getClickedBlock().getLocation()))) {
                 event.setUseInteractedBlock(org.bukkit.event.Event.Result.DENY);
                 if (workshop.isBusy()) event.setUseItemInHand(org.bukkit.event.Event.Result.DENY);
             }
             return;
         }
-        // Block vanilla use (throw / place / etc.) of prepare items; right-click also triggers the step.
+        // Block vanilla use (throw / place / etc.) of prepare items; right-click also triggers the
+        // step.
         event.setCancelled(true);
         event.setUseItemInHand(org.bukkit.event.Event.Result.DENY);
         event.setUseInteractedBlock(org.bukkit.event.Event.Result.DENY);
@@ -226,9 +244,11 @@ public class PrepareListener extends BaseListener {
         PrepareSession session = manager.getSession(event.getPlayer());
         if (session == null || session.getBlueprintWorkshop() == null) return;
         var workshop = session.getBlueprintWorkshop();
-        if (workshop.isBusy() || !workshop.contains(event.getBlock().getLocation())) event.setCancelled(true);
+        if (workshop.isBusy() || !workshop.contains(event.getBlock().getLocation()))
+            event.setCancelled(true);
         if (event instanceof org.bukkit.event.block.BlockMultiPlaceEvent multi
-                && multi.getReplacedBlockStates().stream().anyMatch(state -> !workshop.contains(state.getLocation()))) {
+                && multi.getReplacedBlockStates().stream()
+                        .anyMatch(state -> !workshop.contains(state.getLocation()))) {
             event.setCancelled(true);
         }
     }
@@ -238,7 +258,8 @@ public class PrepareListener extends BaseListener {
         PrepareSession session = manager.getSession(event.getPlayer());
         if (session == null || session.getBlueprintWorkshop() == null) return;
         var workshop = session.getBlueprintWorkshop();
-        if (workshop.isBusy() || !workshop.contains(event.getBlock().getLocation())) event.setCancelled(true);
+        if (workshop.isBusy() || !workshop.contains(event.getBlock().getLocation()))
+            event.setCancelled(true);
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -255,7 +276,8 @@ public class PrepareListener extends BaseListener {
         PrepareSession session = manager.getSession(event.getPlayer());
         if (session == null || session.getBlueprintWorkshop() == null) return;
         var workshop = session.getBlueprintWorkshop();
-        if (workshop.isBusy() || !workshop.contains(event.getBlock().getLocation())) event.setCancelled(true);
+        if (workshop.isBusy() || !workshop.contains(event.getBlock().getLocation()))
+            event.setCancelled(true);
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -263,7 +285,10 @@ public class PrepareListener extends BaseListener {
         for (var workshop : manager.blueprintWorkshops()) {
             boolean from = workshop.contains(event.getBlock().getLocation());
             boolean to = workshop.contains(event.getToBlock().getLocation());
-            if (from != to || (from && workshop.isBusy())) { event.setCancelled(true); return; }
+            if (from != to || (from && workshop.isBusy())) {
+                event.setCancelled(true);
+                return;
+            }
         }
     }
 
@@ -276,13 +301,15 @@ public class PrepareListener extends BaseListener {
 
     /**
      * Creative pick-block normally writes to the selected hotbar slot. Redirect it away from the
-     * fixed prepare controls while leaving the editor able to obtain building materials by middle-click.
+     * fixed prepare controls while leaving the editor able to obtain building materials by
+     * middle-click.
      */
     @EventHandler
     public void onCreativePickItem(@NotNull PlayerPickItemEvent event) {
         Player player = event.getPlayer();
         PrepareSession session = manager.getSession(player);
-        if (session == null || !PrepareModeInventory.isControlSlot(session, event.getTargetSlot())) return;
+        if (session == null || !PrepareModeInventory.isControlSlot(session, event.getTargetSlot()))
+            return;
 
         int targetSlot = PrepareModeInventory.creativePickTarget(player, session);
         if (targetSlot < 0) {

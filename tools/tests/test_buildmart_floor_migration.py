@@ -3,7 +3,9 @@ from pathlib import Path
 import tempfile
 import unittest
 
-SPEC = importlib.util.spec_from_file_location("floor_migration", Path(__file__).parents[1] / "buildmart_floor_migration.py")
+SPEC = importlib.util.spec_from_file_location(
+    "floor_migration", Path(__file__).parents[1] / "buildmart_floor_migration.py"
+)
 migration = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(migration)
 
@@ -27,8 +29,10 @@ class FloorMigrationTest(unittest.TestCase):
             root = Path(name)
             (root / "one.yml").write_text("before")
             (root / "two.yml").write_text("user edited")
-            entries = [{"file": file, "before": "before", "after": "after"}
-                       for file in ("one.yml", "two.yml")]
+            entries = [
+                {"file": file, "before": "before", "after": "after"}
+                for file in ("one.yml", "two.yml")
+            ]
             with self.assertRaisesRegex(ValueError, "no files written"):
                 migration.migrate(root, entries, True)
             self.assertEqual("before", (root / "one.yml").read_text())

@@ -1,15 +1,16 @@
 package ink.ziip.championshipscore.configuration.config;
 
-import com.google.common.io.ByteStreams;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.configuration.ConfigOption;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.configuration.location.ConfiguredLocation;
+import ink.ziip.championshipscore.configuration.location.LocationConfig;
+import ink.ziip.championshipscore.logging.LogText;
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+
 import org.bukkit.Location;
-import org.bukkit.NamespacedKey;
-import org.bukkit.World;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.jetbrains.annotations.NotNull;
@@ -17,27 +18,49 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
-import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 public abstract class BaseConfigurationFile {
-    @NotNull
-    protected final ChampionshipsCore plugin;
-    @Getter
-    protected YamlConfiguration configuration;
+    @NotNull protected final ChampionshipsCore plugin;
+    @Getter protected YamlConfiguration configuration;
     protected Path configurationPath;
-    // True while loading the bundled resource template (see loadDefaultOptions); null placeholders in
-    // the template are expected, so "missing field" warnings are suppressed until the real file loads.
+    // True while loading the bundled resource template (see loadDefaultOptions); null placeholders
+    // in
+    // the template are expected, so "missing field" warnings are suppressed until the real file
+    // loads.
     protected boolean loadingDefaults = false;
+
+    private YamlConfiguration bundledDefaults;
+    private final Map<Field, Object> initialFieldValues = new LinkedHashMap<>();
+
+    /** Annotated fields of this configuration, including inherited map options. */
+    protected final List<Field> getConfigFields() {
+        List<Field> fields = new ArrayList<>();
+        for (Class<?> type = getClass();
+                type != BaseConfigurationFile.class;
+                type = type.getSuperclass()) {
+            for (Field field : type.getDeclaredFields()) {
+                if (field.getAnnotation(ConfigOption.class) == null) continue;
+                field.setAccessible(true);
+                fields.add(field);
+            }
+        }
+        return fields;
+    }
 
     /** Loads the bundled template and the configuration stored below the plugin folder. */
     public void initializeConfiguration(Path pluginFolder) {
         if (!initializeConfigurationChecked(pluginFolder))
-            throw new IllegalStateException("Configuration initialization failed: " + getFileName());
+            throw new IllegalStateException(
+                    "Configuration initialization failed: " + getFileName());
     }
 
     /** Same initialization contract with an explicit success result for atomic runtime reloads. */
@@ -48,12 +71,19 @@ public abstract class BaseConfigurationFile {
             configuration = new YamlConfiguration();
             configuration.options().indent(2);
             configuration.load(configurationPath.toFile());
-            validateVersion(configuration.getInt("dont-edit-this.version", -1), getLatestVersion(), getFileName());
+            validateVersion(
+                    configuration.getInt("dont-edit-this.version", -1),
+                    getLatestVersion(),
+                    getFileName());
             loadFileOptions();
             return true;
         } catch (Exception exception) {
-            plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("Config", "加载",
-                    "配置文件=" + getFileName() + " 加载失败"), exception);
+            plugin.getLogger()
+                    .log(
+                            Level.SEVERE,
+                            LogText.formatModuleLog(
+                                    "Config", "加载", "配置文件=" + getFileName() + " 加载失败"),
+                            exception);
             return false;
         }
     }
@@ -81,7 +111,8 @@ public abstract class BaseConfigurationFile {
             configuration = restored;
             loadFileOptions();
         } catch (InvalidConfigurationException exception) {
-            throw new IllegalStateException("Unable to restore runtime configuration " + getFileName(), exception);
+            throw new IllegalStateException(
+                    "Unable to restore runtime configuration " + getFileName(), exception);
         }
     }
 
@@ -101,186 +132,195 @@ public abstract class BaseConfigurationFile {
      * @return the path of the current configuration file
      */
     public Path saveDefaultConfigurationFile(@NotNull Path path) {
-        Path ret = path.resolve(getFileName());
+        Path target = path.resolve(getFileName());
         try {
-            if (!Files.exists(path)) {
-                Files.createDirectories(path);
-            }
-            if (!Files.exists(ret)) {
-                InputStream inputStream = plugin.getResource(getResourceName());
-                if (inputStream != null) {
-                    byte[] data = ByteStreams.toByteArray(inputStream);
-
-                    Files.write(ret, data);
-                } else {
-                    plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("Config", "写出",
-                            "缺少内置资源=" + getResourceName()));
+            Files.createDirectories(target.getParent());
+            if (!Files.exists(target)) {
+                try (InputStream stream = plugin.getResource(getResourceName())) {
+                    if (stream == null)
+                        throw new IOException("Missing bundled resource: " + getResourceName());
+                    Files.copy(stream, target);
                 }
             }
-        } catch (Exception exception) {
-            plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("Config", "写出",
-                    "配置文件=" + getFileName() + " 写出失败"), exception);
+        } catch (IOException exception) {
+            throw new IllegalStateException(
+                    "Cannot create configuration: " + getFileName(), exception);
         }
-        return ret;
+        return target;
     }
 
-    /**
-     * Save options
-     */
+    /** Save options */
     public void saveOptions() {
         try {
             saveCustomOptions();
 
-            Field[] fields = getClass().getFields();
-            for (Field field : fields) {
-                ConfigOption co = field.getAnnotation(ConfigOption.class);
-                if (co != null) {
-                    configuration.set(co.path(), field.get(null));
+            for (Field field : getConfigFields()) {
+                ConfigOption option = field.getAnnotation(ConfigOption.class);
+                if (field.getType() == Location.class) {
+                    LocationConfig.write(configuration, option.path(), (Location) field.get(this));
+                } else {
+                    configuration.set(option.path(), field.get(this));
                 }
             }
 
             configuration.save(configurationPath.toFile());
         } catch (Exception exception) {
-            plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("Config", "保存",
-                    "配置文件=" + getFileName() + " 保存选项失败"), exception);
+            plugin.getLogger()
+                    .log(
+                            Level.SEVERE,
+                            LogText.formatModuleLog(
+                                    "Config", "保存", "配置文件=" + getFileName() + " 保存选项失败"),
+                            exception);
         }
     }
 
-    /**
-     * Save custom options for sub classes
-     */
-    protected void saveCustomOptions() {
-    }
+    /** Save custom options for sub classes */
+    protected void saveCustomOptions() {}
 
-    /**
-     * Load default config options from the resource folder
-     */
+    /** Load default config options from the resource folder */
     public void loadDefaultOptions() {
-        try {
-            YamlConfiguration yamlConfiguration = new YamlConfiguration();
-            InputStream inputStream = plugin.getResource(getResourceName());
-            if (inputStream != null) {
-                yamlConfiguration.loadFromString(new String(inputStream.readAllBytes()));
-                // The bundled resource is a template whose placeholders (e.g. area spawn points) are
-                // intentionally empty; don't warn about them - real values come from the on-disk file.
-                loadingDefaults = true;
-                try {
-                    loadFromConfiguration(yamlConfiguration);
-
-                    loadCustomDefaultOptions();
-                } finally {
-                    loadingDefaults = false;
-                }
+        try (InputStream stream = plugin.getResource(getResourceName())) {
+            if (stream == null)
+                throw new IOException("Missing bundled resource: " + getResourceName());
+            var defaults = new YamlConfiguration();
+            defaults.loadFromString(new String(stream.readAllBytes(), StandardCharsets.UTF_8));
+            bundledDefaults = defaults;
+            loadingDefaults = true;
+            try {
+                loadFromConfiguration(defaults);
+                loadCustomDefaultOptions();
+            } finally {
+                loadingDefaults = false;
             }
-        } catch (InvalidConfigurationException | IOException e) {
-            throw new RuntimeException(e);
+        } catch (InvalidConfigurationException | IOException exception) {
+            throw new IllegalStateException(
+                    "Cannot load bundled configuration: " + getResourceName(), exception);
         }
     }
 
-    /**
-     * Load custom default options
-     */
-    protected void loadCustomDefaultOptions() {
-    }
+    /** Load custom default options */
+    protected void loadCustomDefaultOptions() {}
 
-    /**
-     * Load config options from the already initialized configuration file
-     */
+    /** Load config options from the already initialized configuration file */
     public void loadFileOptions() {
         loadFromConfiguration(configuration);
 
         loadCustomFileOptions();
     }
 
-    /**
-     * Load custom config options
-     */
-    protected void loadCustomFileOptions() {
-    }
+    /** Load custom config options */
+    protected void loadCustomFileOptions() {}
 
-    public void loadFromConfiguration(@NotNull YamlConfiguration yamlConfiguration) {
-        Field[] fields = getClass().getFields();
-        for (Field field : fields) {
-            ConfigOption configOption = field.getAnnotation(ConfigOption.class);
-            if (configOption != null) {
-                try {
-                    Object value = ConfigurationValueReader.read(yamlConfiguration, configOption.path(), field);
-
-                    // Locations may be stored as a raw section (world/world_key + x/y/z/yaw/pitch,
-                    // without the '==' marker); rebuild them so field.set doesn't throw.
-                    value = coerceLocationSection(value, field);
-
-                    if (value == null && !loadingDefaults && !configOption.nullable())
-                        plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("Config", "校验",
-                                "配置文件=" + getFileName() + " 路径=" + configOption.path() + " 值为空"));
-
-                    if (value != null) {
-                        if (value instanceof String)
-                            value = Utils.translateColorCodes((String) value);
-                        field.set(null, value);
-                    } else if (!configOption.nullable() && !loadingDefaults) {
-                        plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("Config", "加载",
-                                "配置文件=" + getFileName() + " 缺少路径=" + configOption.path()));
-                    }
-                } catch (Exception exception) {
-                    plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("Config", "加载",
-                            "配置文件=" + getFileName() + " 路径=" + configOption.path() + " 加载失败"), exception);
+    public void loadFromConfiguration(@NotNull YamlConfiguration document) {
+        var values = new LinkedHashMap<Field, Object>();
+        for (Field field : getConfigFields()) {
+            ConfigOption option = field.getAnnotation(ConfigOption.class);
+            try {
+                if (!initialFieldValues.containsKey(field))
+                    initialFieldValues.put(field, field.get(this));
+                YamlConfiguration source = document;
+                if (!document.isSet(option.path()) && !loadingDefaults && bundledDefaults != null) {
+                    source = bundledDefaults;
                 }
+                boolean persisted = source.isSet(option.path());
+                Object value =
+                        persisted
+                                ? ConfigurationValueReader.read(source, option.path(), field)
+                                : initialFieldValues.get(field);
+                if (persisted) value = coerceLocationSection(value, field);
+                if (value instanceof String text) value = LegacyText.translateColorCodes(text);
+                if (value != null && !ConfigurationValueReader.accepts(field.getType(), value)) {
+                    throw new IllegalArgumentException(
+                            "Expected " + field.getType().getSimpleName());
+                }
+                if (value == null && field.getType().isPrimitive()) {
+                    throw new IllegalArgumentException(
+                            "Primitive configuration value cannot be null");
+                }
+                if (value == null && !loadingDefaults && !option.nullable()) {
+                    plugin.getLogger()
+                            .log(
+                                    Level.SEVERE,
+                                    LogText.formatModuleLog(
+                                            "Config",
+                                            "加载",
+                                            "配置文件=" + getFileName() + " 缺少路径=" + option.path()));
+                }
+                values.put(field, value);
+            } catch (ReflectiveOperationException | IllegalArgumentException exception) {
+                throw new IllegalArgumentException(
+                        "Cannot load " + getFileName() + " at " + option.path(), exception);
+            }
+        }
+        // Convert and check the whole document before publishing any annotated value.
+        for (var entry : values.entrySet()) {
+            try {
+                entry.getKey().set(this, entry.getValue());
+            } catch (IllegalAccessException exception) {
+                throw new IllegalStateException(
+                        "Cannot assign configuration: " + entry.getKey().getName(), exception);
             }
         }
     }
 
     /**
-     * Locations may be stored on disk as a raw section (world/world_key + x/y/z/yaw/pitch, without the
-     * '==' marker Bukkit uses to auto-deserialize). Rebuild such a section into a Location; the world
-     * may not be loaded yet at config-load time, so it is left null rather than throwing. Shared by
-     * {@link #loadFromConfiguration} and {@link ink.ziip.championshipscore.api.game.config.BaseGameConfig#loadFromConfiguration}.
+     * Locations may be stored on disk as a raw section (world/world_key + x/y/z/yaw/pitch, without
+     * the '==' marker Bukkit uses to auto-deserialize). Rebuild such a section into a Location; the
+     * world may not be loaded yet at config-load time, so it is left null rather than throwing.
+     * Shared by {@link #loadFromConfiguration} and {@link
+     * ink.ziip.championshipscore.api.game.config.BaseGameConfig#loadFromConfiguration}.
      */
     protected Object coerceLocationSection(Object value, Field field) {
         return coerceLocationSection(value, field, true);
     }
 
     /**
-     * Converts a raw location section while allowing map configs to defer world resolution until their
-     * template world has been loaded. Global configuration still validates unresolved worlds immediately.
+     * Converts a raw location section while allowing map configs to defer world resolution until
+     * their template world has been loaded. Global configuration still validates unresolved worlds
+     * immediately.
      */
     protected Object coerceLocationSection(Object value, Field field, boolean reportMissingWorld) {
-        if (value instanceof ConfigurationSection && field.getType() == Location.class) {
-            ConfigurationSection section = (ConfigurationSection) value;
-            World world = null;
-            String worldIdentifier = null;
-            if (section.contains("world_key")) {
-                worldIdentifier = section.getString("world_key");
-                world = plugin.getServer().getWorld(NamespacedKey.fromString(worldIdentifier));
-            } else if (section.contains("world")) {
-                worldIdentifier = section.getString("world");
-                world = plugin.getServer().getWorld(worldIdentifier);
+        if (field.getType() == Location.class && value != null) {
+            ConfiguredLocation coordinates = ConfiguredLocation.read(value);
+            Location location =
+                    coordinates.resolve(
+                            identifier ->
+                                    LocationConfig.resolveWorld(plugin.getServer(), identifier));
+            if (location.getWorld() == null
+                    && coordinates.world() != null
+                    && !loadingDefaults
+                    && reportMissingWorld) {
+                ConfigOption option = field.getAnnotation(ConfigOption.class);
+                String label = option == null ? field.getName() : option.path();
+                List<String> loadedWorlds =
+                        plugin.getServer().getWorlds().stream()
+                                .map(world -> world.getKey().toString())
+                                .toList();
+                plugin.getLogger()
+                        .log(
+                                Level.SEVERE,
+                                LogText.formatModuleLog(
+                                        "Config",
+                                        "世界",
+                                        "配置文件="
+                                                + getFileName()
+                                                + " 路径="
+                                                + label
+                                                + " 世界="
+                                                + coordinates.world()
+                                                + " 不存在；已加载世界="
+                                                + loadedWorlds
+                                                + "，相关传送将失败"));
             }
-            if (world == null && worldIdentifier != null && !loadingDefaults && reportMissingWorld) {
-                // A world was configured but couldn't be resolved. Usually a stale world_key (e.g.
-                // minecraft:world after the 1.21.5+ migration to minecraft:overworld) or a typo. Warn
-                // loudly at load time instead of letting it surface later as a cryptic
-                // "Target world cannot be null" on every join/death teleport to this location.
-                String label = field.getName();
-                ConfigOption co = field.getAnnotation(ConfigOption.class);
-                if (co != null && !co.path().isEmpty()) label = co.path();
-                List<String> loadedWorlds = plugin.getServer().getWorlds().stream()
-                        .map(w -> w.getKey().toString())
-                        .collect(Collectors.toList());
-                plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("Config", "世界",
-                        "配置文件=" + getFileName() + " 路径=" + label + " 世界=" + worldIdentifier
-                                + " 不存在；已加载世界=" + loadedWorlds + "，相关传送将失败"));
-            }
-            value = new Location(world, section.getDouble("x"), section.getDouble("y"), section.getDouble("z"),
-                    (float) section.getDouble("yaw"), (float) section.getDouble("pitch"));
+            return location;
         }
         return value;
     }
 
     public static void validateVersion(int actual, int expected, String fileName) {
         if (actual != expected)
-            throw new IllegalArgumentException("配置文件 " + fileName + " 版本 " + actual
-                    + " 与当前版本 " + expected + " 不一致；请直接更新配置文件");
+            throw new IllegalArgumentException(
+                    "配置文件 " + fileName + " 版本 " + actual + " 与当前版本 " + expected + " 不一致；请直接更新配置文件");
     }
 
     /**

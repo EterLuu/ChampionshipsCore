@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.platform.bukkit.scheduler;
 
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
+
 import org.bukkit.Location;
 import org.bukkit.Server;
 import org.bukkit.entity.Entity;
@@ -13,8 +14,8 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
- * Paper/Folia scheduler facade which makes the ownership target explicit at each call site.
- * Paper exposes the same scheduler API, so consumers do not need a server-type branch.
+ * Paper/Folia scheduler facade which makes the ownership target explicit at each call site. Paper
+ * exposes the same scheduler API, so consumers do not need a server-type branch.
  */
 public final class PlatformScheduler {
     private static final long MILLIS_PER_TICK = 50L;
@@ -30,13 +31,19 @@ public final class PlatformScheduler {
     }
 
     public ScheduledTask runGlobalLater(Runnable task, long delayTicks) {
-        return plugin.getServer().getGlobalRegionScheduler()
+        return plugin.getServer()
+                .getGlobalRegionScheduler()
                 .runDelayed(plugin, ignored -> task.run(), validTicks(delayTicks));
     }
 
     public ScheduledTask runGlobalTimer(Runnable task, long delayTicks, long periodTicks) {
-        return plugin.getServer().getGlobalRegionScheduler().runAtFixedRate(
-                plugin, ignored -> task.run(), validTicks(delayTicks), validTicks(periodTicks));
+        return plugin.getServer()
+                .getGlobalRegionScheduler()
+                .runAtFixedRate(
+                        plugin,
+                        ignored -> task.run(),
+                        validTicks(delayTicks),
+                        validTicks(periodTicks));
     }
 
     public ScheduledTask runAsync(Runnable task) {
@@ -44,14 +51,24 @@ public final class PlatformScheduler {
     }
 
     public ScheduledTask runAsyncLater(Runnable task, long delayTicks) {
-        return plugin.getServer().getAsyncScheduler().runDelayed(
-                plugin, ignored -> task.run(), ticksToMillis(delayTicks), TimeUnit.MILLISECONDS);
+        return plugin.getServer()
+                .getAsyncScheduler()
+                .runDelayed(
+                        plugin,
+                        ignored -> task.run(),
+                        ticksToMillis(delayTicks),
+                        TimeUnit.MILLISECONDS);
     }
 
     public ScheduledTask runAsyncTimer(Runnable task, long delayTicks, long periodTicks) {
-        return plugin.getServer().getAsyncScheduler().runAtFixedRate(
-                plugin, ignored -> task.run(), ticksToMillis(delayTicks), ticksToMillis(periodTicks),
-                TimeUnit.MILLISECONDS);
+        return plugin.getServer()
+                .getAsyncScheduler()
+                .runAtFixedRate(
+                        plugin,
+                        ignored -> task.run(),
+                        ticksToMillis(delayTicks),
+                        ticksToMillis(periodTicks),
+                        TimeUnit.MILLISECONDS);
     }
 
     public boolean runEntity(Entity entity, Runnable task) {
@@ -59,18 +76,23 @@ public final class PlatformScheduler {
     }
 
     public boolean runEntity(Entity entity, Runnable task, Runnable retired) {
-        return Objects.requireNonNull(entity, "entity").getScheduler().execute(plugin, task, retired, 1L);
+        return Objects.requireNonNull(entity, "entity")
+                .getScheduler()
+                .execute(plugin, task, retired, 1L);
     }
 
     public void runEntityLater(Entity entity, Runnable task, long delayTicks) {
-        Objects.requireNonNull(entity, "entity").getScheduler()
+        Objects.requireNonNull(entity, "entity")
+                .getScheduler()
                 .runDelayed(plugin, ignored -> task.run(), null, validTicks(delayTicks));
     }
 
     public ScheduledTask runEntityTimer(
             Entity entity, Consumer<ScheduledTask> task, long delayTicks, long periodTicks) {
-        return Objects.requireNonNull(entity, "entity").getScheduler().runAtFixedRate(
-                plugin, task, null, validTicks(delayTicks), validTicks(periodTicks));
+        return Objects.requireNonNull(entity, "entity")
+                .getScheduler()
+                .runAtFixedRate(
+                        plugin, task, null, validTicks(delayTicks), validTicks(periodTicks));
     }
 
     public void runAt(Location location, Runnable task) {
@@ -78,8 +100,13 @@ public final class PlatformScheduler {
     }
 
     public void runAtLater(Location location, Runnable task, long delayTicks) {
-        plugin.getServer().getRegionScheduler().runDelayed(
-                plugin, requireLocation(location), ignored -> task.run(), validTicks(delayTicks));
+        plugin.getServer()
+                .getRegionScheduler()
+                .runDelayed(
+                        plugin,
+                        requireLocation(location),
+                        ignored -> task.run(),
+                        validTicks(delayTicks));
     }
 
     public CompletableFuture<Void> runGlobalFuture(Runnable task) {
@@ -96,44 +123,61 @@ public final class PlatformScheduler {
 
     public CompletableFuture<Void> runEntityFuture(Entity entity, Runnable task) {
         CompletableFuture<Void> future = new CompletableFuture<>();
-        boolean scheduled = Objects.requireNonNull(entity, "entity").getScheduler().execute(
-                plugin, () -> complete(task, future), () -> future.complete(null), 1L);
+        boolean scheduled =
+                Objects.requireNonNull(entity, "entity")
+                        .getScheduler()
+                        .execute(
+                                plugin,
+                                () -> complete(task, future),
+                                () -> future.complete(null),
+                                1L);
         if (!scheduled) future.complete(null);
         return future;
     }
 
     public <T> CompletableFuture<T> supplyEntity(Entity entity, Supplier<T> supplier) {
         CompletableFuture<T> future = new CompletableFuture<>();
-        boolean scheduled = Objects.requireNonNull(entity, "entity").getScheduler().execute(
-                plugin, () -> complete(supplier, future), () -> future.complete(null), 1L);
+        boolean scheduled =
+                Objects.requireNonNull(entity, "entity")
+                        .getScheduler()
+                        .execute(
+                                plugin,
+                                () -> complete(supplier, future),
+                                () -> future.complete(null),
+                                1L);
         if (!scheduled) future.complete(null);
         return future;
     }
 
     public CompletableFuture<Void> runAtFuture(Location location, Runnable task) {
         CompletableFuture<Void> future = new CompletableFuture<>();
-        plugin.getServer().getRegionScheduler().execute(
-                plugin, requireLocation(location), () -> complete(task, future));
+        plugin.getServer()
+                .getRegionScheduler()
+                .execute(plugin, requireLocation(location), () -> complete(task, future));
         return future;
     }
 
     public <T> CompletableFuture<T> supplyGlobal(Supplier<T> supplier) {
         CompletableFuture<T> future = new CompletableFuture<>();
-        plugin.getServer().getGlobalRegionScheduler().execute(
-                plugin, () -> complete(supplier, future));
+        plugin.getServer()
+                .getGlobalRegionScheduler()
+                .execute(plugin, () -> complete(supplier, future));
         return future;
     }
 
     public <T> CompletableFuture<T> supplyAsync(Supplier<T> supplier) {
         CompletableFuture<T> future = new CompletableFuture<>();
-        plugin.getServer().getAsyncScheduler().runNow(plugin, ignored -> complete(supplier, future));
+        plugin.getServer()
+                .getAsyncScheduler()
+                .runNow(plugin, ignored -> complete(supplier, future));
         return future;
     }
 
     public <T> CompletableFuture<T> supplyAt(Location location, Supplier<T> supplier) {
         CompletableFuture<T> future = new CompletableFuture<>();
-        plugin.getServer().getRegionScheduler().execute(
-                plugin, requireLocation(location), () -> complete(supplier, future));
+        plugin.getServer()
+                .getRegionScheduler()
+                .execute(plugin, requireLocation(location), () -> complete(supplier, future));
         return future;
     }
 
@@ -145,7 +189,8 @@ public final class PlatformScheduler {
 
     private static Location requireLocation(Location location) {
         if (location == null || location.getWorld() == null) {
-            throw new IllegalArgumentException("A region task requires a location in a loaded world");
+            throw new IllegalArgumentException(
+                    "A region task requires a location in a loaded world");
         }
         return location;
     }

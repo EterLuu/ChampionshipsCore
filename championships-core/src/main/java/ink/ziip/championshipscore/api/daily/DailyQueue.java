@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.daily;
 
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -18,15 +19,21 @@ final class DailyQueue {
     private int countdown = -1;
     private long revision;
 
-    DailyQueue(GameTypeEnum game) { this.game = game; }
-    GameTypeEnum game() { return game; }
+    DailyQueue(GameTypeEnum game) {
+        this.game = game;
+    }
+
+    GameTypeEnum game() {
+        return game;
+    }
 
     synchronized boolean canAdd(Set<UUID> players, DailyRules rules) {
         if (players.isEmpty() || players.size() > rules.teamSize()) return false;
         return players.stream().noneMatch(groupByPlayer::containsKey);
     }
 
-    synchronized boolean add(@NotNull UUID groupId, @NotNull Set<UUID> players, @NotNull DailyRules rules) {
+    synchronized boolean add(
+            @NotNull UUID groupId, @NotNull Set<UUID> players, @NotNull DailyRules rules) {
         if (!canAdd(players, rules) || groups.containsKey(groupId)) return false;
         Group group = new Group(groupId, new LinkedHashSet<>(players));
         groups.put(groupId, group);
@@ -67,15 +74,38 @@ final class DailyQueue {
         countdown = -1;
     }
 
-    synchronized int size() { return groupByPlayer.size(); }
-    synchronized int groupCount() { return groups.size(); }
-    synchronized Set<UUID> players() { return Set.copyOf(groupByPlayer.keySet()); }
-    synchronized int countdown() { return countdown; }
-    synchronized void countdown(int value) { countdown = value; }
-    synchronized long revision() { return revision; }
+    synchronized int size() {
+        return groupByPlayer.size();
+    }
+
+    synchronized int groupCount() {
+        return groups.size();
+    }
+
+    synchronized Set<UUID> players() {
+        return Set.copyOf(groupByPlayer.keySet());
+    }
+
+    synchronized int countdown() {
+        return countdown;
+    }
+
+    synchronized void countdown(int value) {
+        countdown = value;
+    }
+
+    synchronized long revision() {
+        return revision;
+    }
 
     record Group(UUID id, LinkedHashSet<UUID> players) {
-        Group { players = new LinkedHashSet<>(players); }
-        @Override public LinkedHashSet<UUID> players() { return new LinkedHashSet<>(players); }
+        Group {
+            players = new LinkedHashSet<>(players);
+        }
+
+        @Override
+        public LinkedHashSet<UUID> players() {
+            return new LinkedHashSet<>(players);
+        }
     }
 }

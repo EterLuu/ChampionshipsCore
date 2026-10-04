@@ -7,8 +7,8 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Result of reconciling the UUID received during login with the persistent identity records.
- * A null {@code resolvedTeamId} means that the player currently has no unambiguous team.
+ * Result of reconciling the UUID received during login with the persistent identity records. A null
+ * {@code resolvedTeamId} means that the player currently has no unambiguous team.
  */
 public record PlayerIdentityMigrationResult(
         @NotNull String username,
@@ -19,8 +19,7 @@ public record PlayerIdentityMigrationResult(
         int migratedPointRows,
         boolean changed,
         boolean successful,
-        @Nullable String failureReason
-) {
+        @Nullable String failureReason) {
     public PlayerIdentityMigrationResult {
         previousUuids = Set.copyOf(previousUuids);
         conflictingTeamIds = Set.copyOf(conflictingTeamIds);
@@ -30,10 +29,9 @@ public record PlayerIdentityMigrationResult(
         return !conflictingTeamIds.isEmpty();
     }
 
-    public static PlayerIdentityMigrationResult failed(@NotNull String username,
-                                                        @NotNull UUID currentUuid,
-                                                        @NotNull String reason) {
-        return new PlayerIdentityMigrationResult(username, currentUuid, Set.of(), null,
-                Set.of(), 0, false, false, reason);
+    public static PlayerIdentityMigrationResult failed(
+            @NotNull String username, @NotNull UUID currentUuid, @NotNull String reason) {
+        return new PlayerIdentityMigrationResult(
+                username, currentUuid, Set.of(), null, Set.of(), 0, false, false, reason);
     }
 }

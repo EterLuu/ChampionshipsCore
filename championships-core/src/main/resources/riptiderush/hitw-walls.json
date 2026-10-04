@@ -25,9 +25,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1RTUvDQBB9ybYppojgxT/hLxCKIAU9CAqCHkTCdDNJFjfZsBlp9Z97irse7MVLL4rFN4cZ3sw85iMHchzc6YZbEqMVZvfsB+M6AEphviShL+b4PMX0wZTS4ChFdsWmbgTTEF5zV0d2juymqgaW2D6O43vwSfQ5sgvr9POQY3ZLlkVY4bA1HWtPlZyR8Yg9ONly1rRcaNdpz8JRSOFym13ThsvCbUxp3kKgXyTU9j37YrC0epTXnhcrJ+La0zUJe+vqmstFRXbgp6CWKix3UxPXfy8VroZJvBQwiYP+IJII7DGST/tf8O/ut/cf/B18AEg7fJG6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91QwUrDQBB9m00TTBHBj/DkpeBJCIJ48CAoCHoopWyTSbKYZMPuSNtP9xSzFq0HEU8W8hhmhse8ecwkQIKjx6yiRrHOJOInsk6bFoCUmN4oVl/M6VWAybPOucJJgOiWdFkxJkN7R23p2Smi+6JwxF7e9/3bUIWvCaLr2mQvLkH8oGpiJonjRreUWVXwpdIWXoOzPefY6q6jfOk6+5rRcm1MPlcb7dLNwu+VuPg2vJtxtVrNedtRujLMpjlfKyZbm7KkPC1U7chLgz/6bBe7N8x+8WHT/WwSIkbo/ze0hP+DGBAEPmOckCGkEDIM5VgP/Ah85tFBjP3Aw+EdhrtOmtAFAAA="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_beach_d2",
@@ -51,9 +49,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9ybYppojgxZ/wC4QiSEEPgoKgB5Ew3UySxU02bEZa/XNPcdeDvXjpRbH45jDDm5nHvMmBHAd3uuGWxGiF2T37wbgOgFKYL0noizk+TzF9MKU0OEqRXbGpG8E0lNfc1ZGdI7upqoElro/j+B5yEnOO7MI6/TzkmN2SZRFWOGxNx9pTJWdkPOIOTracNS0X2nXas3AUUrjcdte04bJwG1Oat1DoFwmzfc++GCytHuW158XKibj2dE3C3rq65nJRkR34KailCsvd1MT130uFr2ESPwVM4qE/hyQCe4zkM/4N/nGDe+3wd/AB/BWWdroFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91SPUvEQBB92c0lmEMEf4SVjWAlBEEsLAQFQYvjOPaSSbKYZJfdkbv76VYxy+FHIWKlkFfMDI9585hhMiDDwUPRUKdYFxLpIzmvTQ9ASsyvFasP5vhSYPakS25wJJDckK4bxmwsb6mvAztHcldVnjjIh2F4HXMUcobkqjXFs8+Q3quWmEnisNM9FU5VfKG0Q9Dg5JPz7LS1VK68dS8FrTbGlAu11T7fLsNcifMvzfse36r1gneW8rVhNt3pRjG51tQ1lXmlWk9BKn7ps1vuz3D2gw8b+71JjBRxuN9YEv4M0QghQsQ0IeNYRpGMx2eZ6ILvcfoLTvVH/w1v//67gtAFAAA="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_beach_d3",
@@ -77,9 +73,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.5,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9ybYpTRHBiz/hFwhFKAU9CAqCHkTCdDNJFjfZsBlp9c89xd2LvXjxUrD4LjO8mXkz83Igx/xBN9ySGK0we2Q/GNcBUAqLNQl9M2dXKaZPppQGpymyGzZ1I5iG9Ja7OrILZHdVNbDE8XEcP0NMYsyRrazTr0OO2T1ZFmGFk9Z0rD1VcknGI87gfM9Z03KhXac9C0chhet9dUs7Lgu3M6X5CIl+k9Db9+yLwdLmWd57Xm6ciGsvtiTsratrLpcV2YFfglqqsP6dmrj+Z6ngGibRKWASDz0wEvzjLyM59u+SgKP/8dA7vwDtjcHqugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TwUrDQBB92U0TTBHBj/DkpdCTEATx4EFQEPRQStkmk2QxyYbdkbaf7ilmKWpBEU89ZFh2HsN7A29mNwESnDxlFTWKdSYRP5N12rQApMT0VrH6qpxfC0xedM4VzgSiO9JlxZgM8J7a0leniB6KwhF7ed/370MOfE4Q3dQme3UJ4kdVEzNJnDa6pcyqgq+UtvAaXHzXHFvddZSvXGffMlptjMkXaqtdulv6vv8kbz1ZSMwPyHuOq9V6wbuO0rVhNs3lRjHZ2pQl5WmhakfL/Rhmf0jZdL/rQsQI/fwGSDhaBD/AyCIQQkAO11gNeo9hOGJ3w/4C/z6F3+Qo1/d5jv4LPwArZ9KM0AUAAA=="
+      "passable-area": 2.5
     },
     {
       "id": "hitw_beach_d4",
@@ -108,9 +102,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 4.0,
-      "previous-schematic": "H4sIAAAAAAACA+1TwUrDQBB9m21TmiKCF3/CLxBKQQp6EBQEPYiE7WaSLG6yYTPS6p97irtV7MWLl4LFGYYZ3s485g1sBmSY3umaGsVGS0zuyffGtQCkxGypWH0jJ4sE4wdTcI3jBOkVmapmjEN5TW0V0RnSm7LsieP4MAzvIYuYM6QX1unnPsPkVlliJomjxrSkvSr5XBmPOIPTHWZNQ7l2rfbEFIkkLneva7WhIncbU5i3UOgXDr1dRz7vrVo98mtH85Vjds3ZWjF566qKinmpbE9PgS2RWP6OjV33M1W4GkbxUsAoLro/E0Js42BNfPm/wD8rMBHbOFh9nz9w7wI/AMWfyRq6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TwUrEMBB9SXa32EUEP8KTR09CEcSDB0FB0MOyLNl22gbbpiQju/vpnmrSBfXoaQ+dMJnh8Sbk5ZEUSHH2mtfUaja5QvJGzhvbAVAKywfN+ge5vJOYv5uCa1xILB7JVDVjHton6qqILrF4LktPHMeHYfgKVcSaYnHf2PzDp0hedEPMpHDemo5yp0u+1cYhzuDqF/PsTN9TsfG9+8xps7O2WOm98dl+Hc/9J/kQyVLh5g/5yPGN3q740FO2tcy2vd5pJtfYqqIiK3XjaT3eKcEsvgMwI5wshIgpYgpMMqRSMmwydJPUJ0ZlcU1UoBxNlEcjJykw/L0gT5zewW9Oh6nUmAUAAA=="
+      "passable-area": 4.0
     },
     {
       "id": "hitw_beach_d5",
@@ -134,9 +126,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 3.0,
-      "previous-schematic": "H4sIAAAAAAACA+1RwUrDQBB9ybYpTRHBiz/hFwhFKAU9CAqCHkTCdDNJFjfZsBlp9c89xd2LvXjxUrD4LjO8mXnMzMuBHPMH3XBLYrTC7JH9YFwHQCks1iT0zZxdpZg+mVIanKbIbtjUjWAa0lvu6sgukN1V1cASx8dx/AwxiTFHtrJOvw45ZvdkWYQVTlrTsfZUySUZjziD8z1nTcuFdp32LByFFK731S3tuCzczpTmIyT6TUJv37MvBkubZ3nveblxIq692JKwt66uuVxWZAd+CWqpwvp3auL6n6XC1zCJnwImcdGDIsE//jyO2cQkTQKO3b6DH/gFNJJrMroFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91RwUrDQBB9m20TmiKCH+HJoychFMSDB0FB0EMpZbuZJItJNuyOtP10TzFboXrowVMPeQy84fFm2ZmXAilmr7qiRrHREskbOW9sC0BKzB8Uq6NytYgwfTc5V7iMED+SKSvGdGifqC2DOkf8XBSeOIz3ff81sAicIr6vrf7wKZIXVRMzSVw0piXtVMF3yjiEGVz/ap6d6TrK175zn5rWW2vzpdoZn+1X4d1/mnfBHEnc/jH/eHytNkved5RtLLNtbraKydW2LCnPClV7Wh3+lGAS7gBMCGeFONRIEQ0QkCLwKBcUJ9tRLThEJ2XIT4w2QXGkc+IbKeO6NJgFAAA="
+      "passable-area": 3.0
     },
     {
       "id": "hitw_beach_d6",
@@ -160,9 +150,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9ybYppojgxZ/wC4QiSEEPgoKgB5Ew3UySxU02bEZa/XNPcRfBXrwUxEP1zWGGNzOPeZMDOQ7udMMtidEKs3v2g3EdAKUwX5LQF3N8nmL6YEppcJQiu2JTN4JpKK+5qyM7R3ZTVQNLXB/H8T3kJOYc2YV1+nnIMbslyyKscNiajrWnSs7IeMQdnGw5a1outOu0Z+EopHC57a5pw2XhNqY0b6HQLxJm+559MVhaPcprz4uVE3Ht6ZqEvXV1zeWiIjvwU1BLFZa7qYnrv5cKX8MkfgqYxEN/D0kMlWBvscfW/ozBz/g3+LP4AJ5wuFG6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA92QTUvEQAyG33a6LXYRwR/hyYuwp4UiiAcPgoKgh2VZZtu0HWw7ZSayuz/dU52h+HEQ8aTQkCEh5E3mSQqkOHrIa2olq1wgeSRjle4ACIH5tWT5UTm9DDF7UgXXOAkR35CqasbMpbfUVb46R3xXlpbYy4dheHUx8DFFfNXo/NmmSO5lQ8wkcNyqjnIjS15KZeA1OPusWTaq76nY2N685LTZaV2s5F7Z7LD2cwUuvjSPPbaR2xUfespY9+c7yWQaXVVUZKVsLHld+Msl+/V4g8UPS7aaWbff74mQIPL3cynhzywYXxCG7u9TNEcWRJFDFAGmCejJRp8q4LuLiQKK/yJ8A1xLCjnQBQAA"
+      "passable-area": 2.0
     },
     {
       "id": "hitw_beach_d7",
@@ -191,9 +179,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 4.0,
-      "previous-schematic": "H4sIAAAAAAACA+1SwUrEMBB9aXa72EUEL/6EXyAsgizoQVAQ9CBSsum0DaZNSUZ29c891UTEvXjxorj4hjDDy8xjZpgCKLB3o1vqFBstMbslH4zrAUiJ+VKx+mQOTzNM70zFLQ4y5BdkmpYxjeEl9U1i58iv6joQp/JxHF+jF8kXyM+s04+hwOxaWWImif3O9KS9qvlEGY9Ug6MtZ01HpXa99sSUhCTOt79rtaGqdBtTmZcY6CeOucNAvgxWre75eaDFyjG77nitmLx1TUPVolY20ENUyySW31NjN3wtFbeGSdoUMEmN/hiEkOL9YVchPux/wD87YLxOscMX+lt4AzP9xm66BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91UTUvEMBCdNu0Wu4jgj/DUi1ehCOLBg6Ag6KEuy2w7bYNtE5JZuvvTPdWG4gfoYUFQ6ITkhcdMXl4CEwPEcPSQ19Qiy1xA9EjGStUBgBCwvEbGD+b00ofwSRZcw4kPixuSVc0Qjttb6irHLmFxV5aW2JUPw/A6oucwhsVVo/IXG0N0jw0xk4DjVnaUGyz5AqUBVwNnn5xlI7WmYm212ea07pUqMtxJm+5W7lwB51+Spxzb4CbjvaaUlU56ZDKNqioq0hIbS67OP1Bkv5re4PmbCBvUhVImKzGXXZUSWk5qbMp0o5hVmyhNXcpmS4lWPZl39Z/vExwi0dNvJEKIIHBfOaoR/Fl4nue76RaYY4hp+L6DWRoMnL3RmwjnaXB0NvYR4Xlztfd/8QYGqa11WwYAAA=="
+      "passable-area": 4.0
     },
     {
       "id": "hitw_beach_x1",
@@ -227,9 +213,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 4.0,
-      "previous-schematic": "H4sIAAAAAAACA+2QwUoDMRCG/920W9wighdfwicolIIU9CAoCHoQWdLs7G4wu1mSkVbf3NOaqLQXL16KSL8hzPBn5ieZHMhxdKcaaiVrJTC5J+e17QAIgelSstwqp4sU4wddcoOTFNkV6bphjEN5TV0d1Smym6ryxHF8GIb3kJOYc2QXxqpnn2NyKw0xk8BxqztSTlY8k9ohzuBspxndUqFspxwxRSOBy93tWm6oLOxGl/otFOqFQ2/fkyu8katHfu1pvrLMtj1fSyZnbF1TOa+k8fQU3FKB5e/c2PY/W4WtYRQ3BYziQ/dHIj4DBw78UZL06/zfD37HnvkApbCO27oFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91STUvDQBB9yaYNpojgj/DkRfAkBEE8eBAUBD2UUrbJJFlMsmF3pO1P9xR3E/w4iHjqIcPOB4+ZHWbeJECCo6esokayygTiZzJW6RaAEFjcSpZfyOl1iNmLyrnCSYj5HamyYsxceE9t6dEF5g9FYYl9ed/3784H3ieY39Q6e7UJ4kdZEzMJHDeqpczIgq+kMvA1OPvGLBvVdZSvbWfeMlpvtc6Xcqdsulv5fwUufiSPObaWmyXvO0pZd+dbyWRqXZaUp4WsLfm68J9N9qtxB5d/NNloZt383idCjMjvz4WEg0kQhONziimKGFR8hhMcMHC3HTrrT3yaE0YDiVE00fkcbwOJA5cHlQ+JCXrF0AUAAA=="
+      "passable-area": 4.0
     },
     {
       "id": "hitw_beach_x2",
@@ -253,9 +237,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.25,
-      "previous-schematic": "H4sIAAAAAAACA+2QwUoDMRCG/920W9wighdfwicolIIU9CAoCHoQWdLs7G4wu1mSkVbf3NOaqLQXL16KSL8wzPBn5ieZHMhxdKcaaiVrJTC5J+e17QAIgelSstwqp4sU4wddcoOTFNkV6bphjEN5TV0d1Smym6ryxHF8GIb3kJOYc2QXxqpnn2NyKw0xk8BxqztSTlY8k9ohzuBspxndUqFspxwxRSOBy93tWm6oLOxGl/otFOqFQ2/fkyu8katHfu1pvrLMtj1fSyZnbF1TOa+k8fQU3FKB5e/c2PY/W4WtYRQ3BYziQ/dHIpLPOHDgj5J8xz/+4NfZMx83ZqcaugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91RTUvDQBCdZPOBKSL4Izzl4lUIgnjwICgI9RBKWTeTZDHNht0JaX+6p5g1JS30oF56yIPwHsPMm528CCCCizdR4oaTFAzCJWojVQ0AjMHikROfKtf3LvjvMqMSrlwInlAWJYE/yGesC1tdQPCS5wbJjvd9/zWwYzmC4KFS4tNEEL7yComQweVG1ig0z+mOSw12Bm4ONUNaNg1ma9PoVuC6UypL+VaaZLuyvgxuj5rHHlPxj5R2DSakmrjjhLpSRYFZkvPKoJ1z/7hktxr/wfJkSY61wBS5odE1rpWmcq+Naid9sj/ucBgi3f68xPvF3Pb913s604cQPBvfsAfhbHAc13EmmiGY/Tyf7eUMDxyiswdagplGyI5ofhhyY85E58Q3V7Y3SU8GAAA="
+      "passable-area": 2.25
     },
     {
       "id": "hitw_beach_x3",
@@ -279,9 +261,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 3.0,
-      "previous-schematic": "H4sIAAAAAAACA91TwUrDQBB9m21TTBHBiz/hFwhFKAU9CAqCHkTCdjNJlm6yYXek1T/3FHcv9uLFi0LmMsObmce8gVcABU4edUudYqMlFk/kg3E9ACmx3ChW38j5dYb5s6m4xVmG/JZM0zLmsbyjvknoEvl9XQfitD6O42fMIuUC+do6vQsFFg/KEjNJnHamJ+1VzVfKeKQdXBwxazoqteu1J6ZEJHFz7O7VgarSHUxlPmKh3zjODgP5Mli1feH3gVZbx+y6y71i8tY1DVWrWtlAr5Etk9j8jo3d8DNV/Bpm6VPALB36dyEghMDkQ05doJi6uAkLTA78Bxd+AXGQ2NG6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TTUvEMBScJN0Wu4jgj/DkRfAkFEE8eBAUBD0sy5JtX9tg25Tmye7+dE+12eLHQcTTHvogmccw82BeSAzEOHpKS6o1m1QheqbOGdsAUArzW836izm9lpi9mIxLnEiEd2SKkjEb2ntqCs/OET7kuSP29r7v3wcUHmOEN5VNX12M6FFXxEwKx7VpKO10zlfadPAenH1zjjvTtpStXNu9pbTaWJst9Na4ZLv0c/8p3nmxVLj8IR41rtLrBe9aStaW2dbnG83UVbYoKEtyXTlajmu4+MPKtv3dFyBC4Pc3tISDlRD+CA8TLamU9ICJZhQyCKQIhMQ+5wQfcLzkZzu9gP7/yT0cOOAHTFJ8JNAFAAA="
+      "passable-area": 3.0
     },
     {
       "id": "hitw_beach_x4",
@@ -305,9 +285,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1RwUrEMBB9aXa72EUEL/6EXyAsgizoQVAQ9CBSsum0DaZNSUZ29c891QTFvXgRRFD2BfKGl5nHzKQACuzd6JY6xUZLzG7JB+N6AFJivlSsPpXD0wzTO1Nxi4MM+QWZpmVMY3hJfZPUOfKrug7EqXwcx9fIInGB/Mw6/RgKzK6VJWaS2O9MT9qrmk+U8Ug1ONpq1nRUatdrT0zJSOJ8+7pWG6pKtzGVeYmBfuKYOwzky2DV6p6fB1qsHLPrjteKyVvXNFQtamUDPUS3TGL5PTd2w9dWcWuYpE0Bk9Tor0FEvF//FeLj7Ab8swMKke1+8OfxBtNcq0S6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TwUrEMBB9SXdb7CKCH+HJoyehCOLBg6Ag6GFZlmw6bYNtU5KR3f10TzXZBfXoaQ99h5nweBPyMjM5kOPsVTfUKTY6QfZGzhvbA0gSLB4Uqx/m8k5i/m5KbnAhkT6SqRvGPByfqK8ju0D6XFWeOJaP4/gVsog5R3rfWv3hc2QvqiVmSnDemZ60UxXfKuMQa3D1y3l2ZhioXPvBfWpab60tl2pnfLFbxXv/Kd5HsUxw80d81PhWbZa8H6jYWGbbXW8Vk2ttXVNZVKr1tDq8KcMs/gMwI5wOIuAYJKYJCSmCt0OYIISIziTEhPsXFkuGARWYskWcfgO/AfyxGEWYBQAA"
+      "passable-area": 2.0
     },
     {
       "id": "hitw_beach_x5",
@@ -361,9 +339,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 10.0,
-      "previous-schematic": "H4sIAAAAAAACA+2QQUvDQBCFX7JtiikiePFP+AuEIkhBD4KCoAeRMN1MksVNNmxGWv3nnuJuD/bixUsR6fcOM7zdeexODuQ4etANtyRGK8we2Q/GdQCUwnxJQt/O6WWK6ZMppcFJiuyGTd0IpqG95a6O7hzZXVUNLHF8HMfPUJNYc2RX1unXIcfsniyLsMJxazrWniq5IOMRZ3C286xpudCu056FY5DC9e50TRsuC7cxpfkIjX6TcLfv2ReDpdWzvPe8WDkR156vSdhbV9dcLiqyA7+EtFRh+bs0cf3PUWFrmMRNAZP40P2RqK1w4MAfJU2i/vMPk632zRcrSmMnugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91SwUrDQBB92U0TTBHBj/DkRfAkBEE8eBAUBD2UUrbJJFlMsmF3pO2ne4pZItVDEU895PFgHsO82dlhEiDByUtWUaNYZxLxK1mnTQtASszvFat95vxWYPamc65wJhA9kC4rxmyQj9SWPjtH9FQUjtjb+77/HGLgY4LorjbZu0sQP6uamEnitNEtZVYVfKO0hffg6ifnOvuR0crVar3gXUcpm+5yo5hsbcqS8rRQtaOlf0Li4pePre46ylffDTbG5Au11S7d+mLxz+LdctzB9R8TrQ2zaQ4PFSJG6Pc3SMLREAgRBHIkJgl5QE0Jw4FipJjmB2UYCjlyshe653HxBeSoIl/QBQAA"
+      "passable-area": 10.0
     },
     {
       "id": "hitw_beach_x6",
@@ -392,9 +368,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 4.0,
-      "previous-schematic": "H4sIAAAAAAACA+1TwUoDMRB92bRb3CKCF3/CLxCKIAU9CAqCHkSWNDu7G8xulmSk1T/3tCYe7MVLLwWLQ8IMLzOPvBmmAAocPeiWOsVGS8weyQfjegBSYr5UrH6Q08sM0ydTcYuTDPkNmaZlTGN4S32T0Dnyu7oOxKl8HMfP6EXyBfIr6/RrKDC7V5aYSeK4Mz1pr2q+UMYj1eBsi1nTUaldrz0xJSKJ6+3rWm2oKt3GVOYjBvqNY+4wkC+DVatnfh9osXLMrjtfKyZvXdNQtaiVDfQS2TKJ5W5s7IbfqWLXMEmdAibpo/szIdIVOFwT3+df4N/VlwRmBy0wbeDeZ/gFckQmuroFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91RwUrDQBB93U0TTBHBj/DkRfAkBEE8eBAUBD2UUrbJJFlMsmF3pO2ne4pZG1oPIp56yDvMPIb3dpl5MRDj5CUtqVasU4nolazTpgEgJWb3itV+cn4rMH3TGZc4EwgfSBclY9rTR2oKP50hfMpzR+ztXdd99n3ie4zwrjLpu4sRPauKmEnitNYNpVblfKO0hffg4jBzbHXbUrZ0rf1Iabk2JpurjXbJZuHf/ad468VC4vqHeKdxlVrNedtSsjLMpr5cKyZbmaKgLMlV5WixO8PVH1Y27e++ABECf7+eEo6Gice+jRDiO04pBjrCBfvgRBCIPsNxLujzE0MZJXxwYijH/fkLOaTYrtAFAAA="
+      "passable-area": 4.0
     },
     {
       "id": "hitw_beach_x7",
@@ -418,9 +392,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA+1TwUoDMRB92bRb3CKCF3/CLyiUghT0ICgIehBZ0uzsbjC7WbIjrf65pzWRYi+9eCkinRBmeJl5mTcwGZDh5EHX1Cg2WmLySL43rgUgJaZLxeoHOV8kGD+ZgmucJUhvyFQ1YxzCW2qriE6R3pVlTxzLh2H4DF5EnyG9sk6/9hkm98oSM0mcNqYl7VXJM2U8Yg0udpg1DeXatdoTUySSuN69rtWGitxtTGE+QqDfOOR2Hfm8t2r1zO8dzVeO2TWXa8XkrasqKualsj29BLZEYvk7NnbdfqowNYzipIBRbPRwJoT4vv/WxPYcBR4F/lF9YruFB/73C1Nkfv26BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91US0vDQBCeZPPAFBH8EZ56ETwJQRAPHgQFoR5CKdtkkiwm2bA7oe1P9xR3TVuFio9LD5nDzDDMNzPfzLIRQAQnz2mJNSeRMghnqLSQDQAwBpM7TnwfOb9xwX8RGZVw5kJwj6IoCXzjPmBT2OgEgsc810gW3vf9m7GOtREEt5VMX3UE4ROvkAgZnNaiwVTxnK65UGAxcPEZ06RE22K20K3qUlyspMwSvhY6Xs9tXQazL8lDTo5NiglyTTGpDqeNVFTGOa80TrXs9v6KE6pKFgVmuwgazIdri7t/nGQzHxZ1eTCJrvgyoU2LMcn2sJ/FeQyufsAtJZGsv4f6v5AfOP2Tvd2YLR5ACJ69vBkR4YjiOM5WjVPMq2KeOR0LRkvQZ55nVDDiC9pvaqwEHfOrsq06bud3Ldy7H4oGAAA="
+      "passable-area": 1.5
     },
     {
       "id": "hitw_classic_d1",
@@ -474,9 +446,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 10.0,
-      "previous-schematic": "H4sIAAAAAAACA+1SwUrDQBB9ybYppojgxZ/wC4QiSEEPgoKgB5Ew3UySxU02bEZa/XNPcRfFXrx4USy+Oczwducxb5gcyLF3oxtuSYxWmN2yH4zrACiF+ZKEPpnD0xTTO1NKg4MU2QWbuhFMQ3nJXR3ZObKrqhpYYvs4jq8hJzHnyM6s049Djtk1WRZhhf3WdKw9VXJCxiP24GjLWdNyoV2nPQtHIYXz7euaNlwWbmNK8xIK/SThb9+zLwZLq3t57nmxciKuPV6TsLeurrlcVGQHfghqqcLye2ri+q+lwtYwiZsCJnHQn0PyDuwsko/4N/hnDe78iQZzv2DwDX73mXO6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA+1SQYrCQBAsJ5pgRIR9xD5CEEE8eBBcEPQgiwyTjhnUJMy06D7dU0yjqMc9CStbUFRTdDcU3TEQoz03Ge01WxMgWpDztsgBBAE6Y8367nwMFVpLm3CGnkI4IbvJGK26nFK+EbeDcJamnljGq6o619oQjRGOdoXZ+hjRl94RMwXo7m1OxumU+9o6yAw+H55nZ8uSkrUv3cHQ+lgUyUqfrB+cvmXvL5t/pFkhQlPCAE3Cy9B4At4R6sqb/Af8gwHrz6ypIHzLgEpdLyjFS3EBXV9ej10FAAA="
+      "passable-area": 10.0
     },
     {
       "id": "hitw_classic_d2",
@@ -500,9 +470,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+2QwUrDQBCG/2TblKaI4MWX8AmEUpCCHgQFQQ8iYbuZJIubbNgdafXNPcVdKNZDL148SL49zPDPzM/O5ECO+YNqqJWslcDskZzXtgMgBBZryfJbOVulmD7pkhucpshuSNcNYxrSW+rqqC6Q3VWVJ47jwzB8hpjEmCO7Mla9+hyze2mImQROWt2RcrLiS6kd4gzOD5rRLRXKdsoRUzQSuD5Ut3JHZWF3utQfIVFvHHr7nlzhjdw883tPy41ltu3FVjI5Y+uaymUljaeX4JYKrH/nxrY/bhWuhkm8FDCJH/0zkj34tyT7Ny44Ljjyky+htb8eugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA+2PwYrCQAyGf6faYmURfAgfYmERxIMHQWHBPSwiwzS1g9qWmYj66J66xgX16EE8FD8CCT9J4IuBGO1vk9FWszUBojk5b4scQBCgM9Ksr0lvoND6sQln6CqEY7KrjNE6jxPKV5J2EE7T1BPLeVVVp3NvSI8RDjeFWfsY0UxviJkCfGxtTsbplD+1dZAb9G+ZZ2fLkpKlL93O0HJfFMmvPlj/dVjI3weXj7KsEKEpMkCT8DIad6COKCgBUnUVBOosiIvXvybePJM/VjEacl0FAAA="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_classic_d3",
@@ -526,9 +494,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1RwUrDQBB9ybYppojgxZ/wC4QiSEEPgoKgB5Ew3UySxU02bEZa/XNPcdeDvXgpiKD0wTDD253HvJkcyHFwpxtuSYxWmN2zH4zrACiF+ZKEvpjj8xTTB1NKg6MU2RWbuhFMQ3nNXR3ZObKbqhpYYvs4ju8hJzHnyC6s089DjtktWRZhhcPWdKw9VXJGxiP24GTLWdNyoV2nPQtHIYXL7euaNlwWbmNK8xYK/SLhb9+zLwZLq0d57XmxciKuPV2TsLeurrlcVGQHfgpqqcJyNzVx/fdSYWuYxE0Bkzjo7yFJQuA/Y2/wr/v7NJjsL/jD+ACLlAvfugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TwUrEMBCdJt0Wu4jgR3jqFwhFEA8eBBVBD8uyjOmkDbZNaUa6frqnmuyCelvxsIdOBmYY3rzwZpIMIIOTJ1VTi2yUhPSZBmdsBwBSwvIGGb8r51cCFi+m5BrOBCS3ZKqaYeHTO+qqUF1Ccq+1Iw7t0zR9+hiFmEFy3Vj15jJIH7AhZpJw2pqO1ICaL9EMEHrg4qfmeDB9T+XG9cO7os1obbnCrXHFxzrw/hG8DWAh4fEXeI9x7K91K43KdFVB6DivsdHFq2W2be5q7KnwxBh05iMyDY2tKioLjY2j9X5Gh3hH+gdvDCnEYfg+JTiiRbsTfJYmhJcnIhF8phKjINHbnDe4e6Iz3aCXJr3AGI7+C78AhX8Klg0GAAA="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_classic_d4",
@@ -572,9 +538,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 8.0,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9ybYppojgxZ/wCwqlIAU9CAqCHkTCdjNJFjfZsDvS6p97irsotgcvXjxI3hxmeDPzmDc5kOPoTjXUStZKYHZPzmvbARAC87Vk+c2crlJMH3TJDU5SZFek64YxDeU1dXVk58huqsoTx/VhGN5DTmLOkV0Yq559jtmtNMRMAset7kg5WfFCaoe4g7M9Z3RLhbKdcsQUhQQu992t3FFZ2J0u9Vso1AuH2b4nV3gjN4/82tNyY5lte76VTM7YuqZyWUnj6SmopQLr36mx7X+WCl/DJH4KmMRD/w7JJ/BvkXzFaHA0OBo8xAeTKuLnugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA+1Ry4rCQBCsTDTByCL4EX6EIIJ48CAoLKyHRWSYdMxgXsy06H76nrKZVdSjXjyIBU01RXVDUREQofOpUsola+Uj/CJjdVkA8H10p5LlRemPBdorHXOKnkAwI71NGe1mnVOxdWoXwSJJLLE7r+v6t2HPcYRgkpVqZyOES5kRM/n4yHVBysiEh1IbuBsMrpplo6uK4o2tzF7R5lCW8bc8ajs6rt3fO80/ziwQouXCAC3C0+DdAK8IcZozvWLAprj/gJ4n3g2+Az6CP2M0cMhdBQAA"
+      "passable-area": 8.0
     },
     {
       "id": "hitw_classic_d5",
@@ -598,9 +562,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1RwUoDMRB9u2m3uEUEL/6EX1AoBSnoQVAQ9CCypNnZ3WB2syQjrf65pzWpYC+9CCIofUyY4SXzyJvJgRxHd6qhVrJWApN7cl7bDoAQmC4lyy/mdJFi/KBLbnCSIrsiXTeMcSivqasjO0V2U1WeOLYPw/AechJzjuzCWPXsc0xupSFmEjhudUfKyYpnUjvEHpztOKNbKpTtlCOmKCRwubtdyw2Vhd3oUr+FQr1weNv35Apv5OqRX3uaryyzbc/XkskZW9dUzitpPD0FtVRg+T01tv1+qTA1jOKkgFH86O8hST7P/0WyjYPBv+tvazA5bPCH8QEXTgHXugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91RwUrEMBCdJt0tdhHBj/DULxCKIB48CCqCHpZlGdNJG2ybkox0/XRPNXFBvSke9tCXwwzDmxfevBwgh6MH1VCHbJSE7JGcN7YHAClhdYWMX5PTCwGLJ1NxAycCltdk6oZhEdob6us4XcHyVmtPHNenaXoPNYk1h+Vla9WLzyG7w5aYScJxZ3pSDjWfo3EQd+Dse+bZmWGgausH96poO1pbrXFnfPm2ibp/JO8iWUi4/0HeczyHb/1aozJ9XRJ6LhpsdflsmW1X+AYHKoMwRp/FiEyutXVNVamx9bTZ3+g33ZH+oZtCBmk8fmgJDogkPBEA84QQwaBIAmZr8dNeDHLGCUZ3c00wWJPBYAoHz/AD5xDu+Q0GAAA="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_classic_d6",
@@ -624,9 +586,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9ybYppojgxZ/wCwqlIAU9CAqCHkTCdjNJFjfZsDvS6p97irsotgcvXjxI3hxmeDPzmDc5kOPoTjXUStZKYHZPzmvbARAC87Vk+c2crlJMH3TJDU5SZFek64YxDeU1dXVk58huqsoTx/VhGN5DTmLOkV0Yq559jtmtNMRMAset7kg5WfFCaoe4g7M9Z3RLhbKdcsQUhQQu992t3FFZ2J0u9Vso1AuH2b4nV3gjN4/82tNyY5lte76VTM7YuqZyWUnj6SmopQLr36mx7X+WCl/DJH4KmMRD/w7JJ/BvkXzFaHA0OBo8xAeTKuLnugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA+1RTUvDQBB92U1TTBHBH+HJXyAUQTx4EBSEeiilLJtJsphmw+6E1p/uKWb7padiLx5K37LM4/HmwcykQIqLN13SQrHREsMJOW9sDUBKjB4Vq71yfS8weDcZl7gSSJ7IFCVj0NNnqougjpC85LknDu1d1331NQo1RfJQWf3hUwxfVUXMJHG5MDVpp3K+U8Yh9ODmR/PsTNNQNveNazXNl9ZmU7Uyfryahdw/mj+DWUhMfpk3npxqTVNSnse5qjzd1tZxueXetnu+VEyuskVB2U6hvoldS7PNog6GB9+x2WsawmMMEYcz9JTwb4i2CASnCLH+YkdPcEAZR6J/kYzF+YLnAY/BN5J0kWsXBgAA"
+      "passable-area": 2.0
     },
     {
       "id": "hitw_classic_d7",
@@ -650,9 +610,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 5.0,
-      "previous-schematic": "H4sIAAAAAAACA+2QwUrDQBCG/2TblKaI4MWX8AmEIpSCHgQFQQ8iYbuZJIubbNgdafXNPcVdCPbixUsR6cxhhn93fuabHMgxf1ANtZK1Epg9kvPadgCEwGItWX4rZ1cppk+65AanKbIb0nXDmIb2lro6qgtkd1XlieP4MAyfoSax5shWxqpXn2N2Lw0xk8BJqztSTlZ8KbVDnMH5XjO6pULZTjliikYC1/vXrdxRWdidLvVHaNQbh799T67wRm6e+b2n5cYy2/ZiK5mcsXVN5bKSxtNLcEsF1r9zY9v/bBWuhkm8FDCJix4s0mRM/NdIxjwCHgH/KN8IeGjCLzoXwSm6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91RTUvEMBCdNt0Wu4jgj/DUXyAEQTx4EFQEPSyyjOmkDbZNSUa6/nRPtZHF3duKhz10GJjhZT7ey+QAOZw8qZpaZKMEZM/kvLEdAAgByxtk/EXOr2JYvJiSaziLIb0lU9UMiym9o64K6BLSe609cWgfx/FrilGIOaTXjVXvPofsARtiJgGnrelIOdR8icZB6IHHHeZ796Fo7Xl69CuNynSVJPRc1Nho+WaZbVv4GnuSnh0GNsWATK6xVUWl1Nh4eg0UBFzszWVn+p7K9XbBYG25wo3x8jMUx4dJDPQPEuKPJDahOIEMkvD5U0pwNIsm8bGIfhxmafGez1Pg9nzRbAXO/ILJTmBy3M3f6N5iVg0GAAA="
+      "passable-area": 5.0
     },
     {
       "id": "hitw_classic_x1",
@@ -696,9 +654,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 8.0,
-      "previous-schematic": "H4sIAAAAAAACA+1SwUrEQAx97ex2sYsIXvwJv0BYBFnQg6Ag6EGkZKdpOzjtlGlkV//cU51BcS9ePCgo+3JIeEkeSUgO5Ni70Q23JEYrzG7ZD8Z1AJTCfElCn8zhaYrpnSmlwUGK7IJN3QimIbzkro7sHNlVVQ0ssX0cx9fgk+hzZGfW6cchx+yaLIuwwn5rOtaeKjkh4xF7cLTlrGm50K7TnoWjkML5NrumDZeF25jSvIRAP0mo7Xv2xWBpdS/PPS9WTsS1x2sS9tbVNZeLiuzAD0EtVVh+T01c/7VUuBom8VLAJA76e0jegX+L5MN2C/7ZBXcv+iN4Awdg6D+6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA+1RwUrDQBB92W0TTBHBj/DkxasQBPHgQVAQ9FBKWTeTZDHNLrsjbT/dU8xaaXv0VLD4BmaGx5tl30wO5Dh51g0tFBstkb2QD8Z2AKTE5E6x2jLnNwLjV1NygzOB9J5M3TDGQ/tAXR3ZCdLHqgrEcbzv+8+hJrHmSG9bq99DjuxJtcRMEqcL05H2quJrZTziDC52XGBvnKNyHpz/0DRfWltO1cqEYjWL7/5SvI5iIXG1J95oQqveprx2VLB1l0vF5Ftb11QWlWoDzb4/lGEUlwCMCAdDsgccI8RPbNK/wT9oUIokRjI0R3rB7fEObPALwMNXWpUFAAA="
+      "passable-area": 8.0
     },
     {
       "id": "hitw_classic_x2",
@@ -722,9 +678,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+2QQUvEMBCFX5vdLttFBC/+CX+BsAjLgh4EBUEPIiWbTttg2pRkZFf/uaeaQHEvXrwsIvtymOEl88g3OZBj/qAaaiVrJTB7JOe17QAIgcVasvx2zq5STJ90yQ1OU2Q3pOuGMQ3tLXV1dBfI7qrKE8fxYRg+Q01izZGtjFWvPsfsXhpiJoGTVneknKz4UmqHOIPzvWd0S4WynXLEFIMErve3W7mjsrA7XeqP0Kg3Dm/7nlzhjdw883tPy41ltu3FVjI5Y+uaymUljaeXkJYKrH+Xxrb/OSpsDZO4KWASP3owJaPwb5WM5wh4BPyjfCPgoQm/AHH0W4+6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TwUrDQBB9yaYJpojgR3jqFwhBEA8eBAWhHkopSzJJFtNs2J3Q+ume4q7R6qnopYfMHObxmJl9s8OkQIqz57ymrWSVCyRLMlbpFoAQmN9Jlgfm8ibE7EUVXOMiRHxPqqoZMwcfqK08O0f8WJaW2JcPw/DuYuBjivi20fmrTZE8yYaYSeB8q1rKjSz5WioDX4OrH86yUV1HxcZ2ps9ps9O6WMm9stl+7fsKLH8ljzkltTmtSFrO2PS0aLXhOitlY2lhdX/AO8lkGl1VVHwz5Go+oW8e/lHJ23r8qKNKxgf+KcXL980jJIj8GhwknM6C0VzENM2t2DtENNEBIQLv7k4mO+DXBic6nl/dOOCpj/ADy1AyOBcGAAA="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_classic_x3",
@@ -748,9 +702,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9m21TTBHBiz/hFwhFkIIeBAVBDyJhu5kki5ts2B1p9c89xV0P9tJLLx5KHwwzvJl5zJsCKHDypFvqFBstMXsmH4zrAUiJ+VKx+mPOrzNMX0zFLc4y5HdkmpYxjeU99U1i58gf6joQp/VxHL9jFikXyG+s0++hwOxRWWImidPO9KS9qvlKGY+0g4stZ01HpXa99sSUhCRut9212lBVuo2pzFcs9AfH2WEgXwarVq/8OdBi5Zhdd7lWTN66pqFqUSsb6C2qZRLL/dTYDbul4tcwSZ8CJunQ/4MQ4jcOFtGejHHQBsXR4NHg3vgB43PNe7oFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA+1RTUvDQBR82c0Hpojgj/DkxasQBPHgQVAQ6iGUsm5eksU0G3ZfaPvTPcVdW2uhIAriITiXeQwzA7ObAqRw9ChrXAhSkkMyRWOVbgGAc5jcCBI75fSKQfSkCqrhhEF8i6qqCSJ33mFbeXUC8X1ZWiQfH4bh1XHgOYX4utHyxaaQPIgGiZDD8UK1KI0o6VIoAz4DZ5+aJaO6Dou57Uwvcb7UusjFStlsNfO93zSvvZlxmO6ZN54SW4k5CktZKRqL5602VG9vq/vdvRSEptFVhcWHgi5EpsfZ5qG+LPe+n3a/n7485HBxUG4b8ZzTusOMdHdY4XMRJBD673MVCH+GwGGfRwfGQxa5cZ5HOzBgDmMeCGzL/wN/E2+MB+jlTwYAAA=="
+      "passable-area": 1.5
     },
     {
       "id": "hitw_classic_x4",
@@ -789,9 +741,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 6.75,
-      "previous-schematic": "H4sIAAAAAAACA+1SwUrDQBB9ybYppojgxZ/wCwqlIAU9CAqCHkTCdjNJFjfZsDvS6p97irsV7KUXQQSlj4EZ3sw8ZobJgRxHd6qhVrJWApN7cl7bDoAQmC4lyy/mdJFi/KBLbnCSIrsiXTeMcQivqasjO0V2U1WeOLYPw/AefBJ9juzCWPXsc0xupSFmEjhudUfKyYpnUjvEHpztOKNbKpTtlCOmKCRwucuu5YbKwm50qd9CoF441PY9ucIbuXrk157mK8ts2/O1ZHLG1jWV80oaT09BLRVYfk+Nbb9fKlwNo3gpYBQH/T0kn8D/RbK1w4J/d7/tgx5e9KfxAY9UZne6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91UwUrDQBB9SZoWU0TwIzx59CQUQTx4EBSEegilbJNJsphmw+6Utp/uqe60WgsF0UsPGZadx/DmwdvZ3QRIcPaaVTRXrLMIgzFZp00DIIowfFCs9pXLuxDxm865wkWI/iPpsmLEHj5RU0p1iP5zUThiad9sNh8+B5IT9O9rk727BIMXVRMzRTif64Yyqwq+VdpCenD1U3NsddtSPnWtXWQ0XRqTp2ql3Wg1Ed0/ktdCDiOMD8g7TkFNRikpx6NC1Y6uG2O5+sLOLPZ4qZhsbcqS8u8K+Sa2C5rsDupXceH9V3sLRbwX4eZI3NVqlvK6pdHMMJv5sYq0xhigJxP0KoSTRXAQ6GSEsrZbR8M/FzHY66rBQAwGYrCjV9QPzv/LYYyTX9JPQFsuT1IGAAA="
+      "passable-area": 6.75
     },
     {
       "id": "hitw_classic_x5",
@@ -815,9 +765,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1SwUoDMRB92bRb3CKCF3/CLxCKIAU9CAqCHkSWNDu7G8xulmSk1T/3tCaX9uLFQwWlL5A3vMw8ZoYUQIGjB91Sp9hoidkj+WBcD0BKzJeK1VY5vcwwfTIVtzjJkN+QaVrGNIa31DdJnSO/q+tAnMrHcfyMLBIXyK+s06+hwOxeWWImiePO9KS9qvlCGY9Ug7OdZk1HpXa99sSUjCSud69rtaGqdBtTmY8Y6DeOucNAvgxWrZ75faDFyjG77nytmLx1TUPVolY20Et0yySWP3NjN3xvFbeGSdoUMEmN/hYEhBDpxj+F2J7DgH92wMMX3Qu+AG2L1eW6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA92SQWsCMRCFX7K6S1ek4I/wRwilUHrooVBBaA9FJGRnd0N1d0mmqD/d0zbTg149KewjzBceMwmPJAdyPKxsTTvDzibIPskH1zYAkgSTV8Pm7MyeNcZfruAajxrpG7mqZozj9p2aStwJ0o+yDMQy3vf9KVIJc6Qv29b+hBzZ0myJmRJMd64h603JC+M8ZAbzixfYu66jYhM6/2tps2/b4tscXHg6ruXcK5sP0qyRYSRhgBHhZlLxZq0FCoOU0lrFItDDDBj1X4SDDCiPqIb8RWXdJeAf6JIhY10FAAA="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_classic_x6",
@@ -841,9 +789,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA+1SwUrEQAx97ex2sYsIXvwJv0BYBFnQg6Ag6EGkZKdpOzjtlGlkV//cU5056Hrw4kVxMYckvCSPvJAcyLF3oxtuSYxWmN2yH4zrACiF+ZKEPpDD0xTTO1NKg4MU2QWbuhFMQ3rJXR3RObKrqhpY4vg4jq8hJjHmyM6s049Djtk1WRZhhf3WdKw9VXJCxiPO4GiLWdNyoV2nPQtHIoXzbXVNGy4LtzGleQmJfpLQ2/fsi8HS6l6ee16snIhrj9ck7K2ray4XFdmBHwJbqrD8Hpu4/muqcDVM4qWASVz05yxJ3t2OWvLJ/wv8kwJ3/kV/R+Abu0zSaroFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TwUrDQBCd3SQtpojgR3jKxasQBPHgQVAQ9FBLmSaTZDHNLrtT0n66p5i1tBX0UBB6yFuYGYY383i7bAwQw9lLVtESWWUBjF/JOqUbAAgCmNwj475zeSshelM5V3AhYfRAqqwYor58pKb03QmMnorCEfvxrus++yx8jmF0V+vsw8UwfsaamCmA86VqKLNY8A0qC34Grg49x1YZQ/ncGbvKaN5qnU9xrVy6nvm9R5I3niwDuP5B3nJcjYspbwylrE3SIpOtdVlSnhZYO5pt7+D91xxbNLnWdlpgppoyJXScVFgX6UIz62WiDTUp2xUlRrdkdwv/lgiPkWjpPxIRjCH0T9mrEZwMQuwLAUOElOIbgZRymAbD/nvLPvpfPkyDsncmQyGGanB3fDgpvgCpKmaVWwYAAA=="
+      "passable-area": 1.5
     },
     {
       "id": "hitw_classic_x7",
@@ -867,9 +813,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.4375,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9ybYppojgxZ/wC4QiSEEPgoKgB5Ew3UySxU02bEZa/XNPcRfEXnrpxUPpm8MMb2Ye8yYHcpw86YZbEqMVZs/sB+M6AEphviShP+b8OsX0xZTS4CxFdsembgTTUN5zV0d2juyhqgaWuD6O43fIScw5shvr9PuQY/ZIlkVY4bQ1HWtPlVyR8Yg7uNhy1rRcaNdpz8JRSOF2213ThsvCbUxpvkKhPyTM9j37YrC0epXPnhcrJ+LayzUJe+vqmstFRXbgt6CWKiz3UxPX75YKX8MkfgqYxEP/D8lvHCyCOXXoBpOjwaPBvfEDPSd78LoFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91STUvEMBCdJrtb7CKCP8JTf4FQBPHgQVAQ9LAuy5hO2mDbhGSWrj/dU93Uj/XoSaGPYV54vBnyQjKADI7uVU0tslES0gfywdgOAKSE5RUyfiunFwLmj6bkGk4ELK7JVDXDfH+8oa6K6hIWt1oH4jg+DMPbnpPIGSwuG6teQgbpHTbETBKOW9OR8qj5HI2HOANnBy2wN85RuQnObxVtemvLFe5MKF7Xce8vzbtoFhKefpg/POzRldb6lUZluqroKXBeY6OLZ8ts29w66gr2W8qd7clTWWhsAuU9MvnGVtWXsh7vnsIsvhfAjODPkIx14MkhESIRMjYx0YARcuwTDfhZ0/2i/xbwHdXw6kXABQAA"
+      "passable-area": 2.4375
     },
     {
       "id": "hitw_highrise_d1",
@@ -893,9 +837,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrEMBB9TXa72EUEL/6EXyAsgizoQVAQ9CBSsum0DaZNSUZ29c891UTEvXjxsuDiG4YZ3mQeeVMABQ7udEudYqMlZvfkg3E9ACkxXypW38zxucD0wVTc4kggvyLTtIxpbK+pbxI7R35T14E4rY/j+B5rlmqB/MI6/RwKzG6VJWaSOOxMT9qrms+U8Ug7ONly1nRUatdrT0xJSOJyO12rDVWl25jKvMVGv3B8Owzky2DV6pFfB1qsHLPrTteKyVvXNFQtamUDPUU1IbH8nRq74WepeDVM0qWASfro7pDJTMTE3iL7in+Df9ig3G+DIvvMHeMDB8LFR7oFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91STUvDQBCdzSYbTBHBH+GpF8GTEATx4EFQEfRQpEyTSbKYZEN2pO1P91R3bf0Ai4qHHjIMM8Mw7/FmZxOABPbusooaZJ1JiO+pt9q0ACAljC6Q8aNzeBZA9KBzruAgAHVJuqwYIldeUVv67gjUdVFYYg9frVYvLgufE1DntcmebALxDdbETBL2G91S1mPBp6h78Bg4+uxZ7nXXUT61Xf+c0XRuTD7Bhbbp8tHzSjj+MryesTXOJrzsKGXTjefI1NemLClPC6wteVwg4fY7jp0COykw022ZzsnyuMK6SGeG2TRjW6GjdILQr7ydV/5R/MIPh7+LIPyHiEjCyQ+PsmHaClUQQ+jv7dQR7M5EEAgpfYRBWihkJED5GA5yQeEOt/GBnlCsf+lbMcwFlRLvcaf2CrIJZZOABgAA"
+      "passable-area": 2.0
     },
     {
       "id": "hitw_highrise_d2",
@@ -919,9 +861,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrEMBB9aXa72EUEL/6EXyAsgizoQVAQ9CBSsum0DaZNSUZ29c891eSy68GLFw/SN4cZ3sx7zEwBFDh60C11io2WWDySD8b1AKTEcq1Y7ZnTywzzJ1Nxi5MM+Q2ZpmXMY3lLfZPYJfK7ug7EST6O42fMIuUC+ZV1+jUUWNwrS8wkcdyZnrRXNV8o45E0ODtw1nRUatdrT0zJSOL60N2qHVWl25nKfMRCv3GcHQbyZbBq88zvA602jtl151vF5K1rGqpWtbKBXqJbJrH+nRu74Wer+DXM0qeAWVr0zyCEyGIIgX8KsY/pwOnACd/wBQzwje26BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA+1UwUoDMRCdbrpb3CKCH+Fpv0BYBPHgQVAR6qGUMmYnu8HtZkmmtH66p5q0ZSv0UAviofgIvGGYeXkzhKQAKZy9yIpmyFoKGIzIOm0aABAChnfI2GUubyKIX3XBFVxEkNyTLiuG2IcP1JQhO4TkUSlHHNpXq9Wn517gFJLb2sh3l8LgCWtiJgHnM92QtKj4GrWF0ANXu5xjq9uWiqlr7VzSdGFMMcaldvlyEnQFPH8r3tQ49kpurFDqpswJHWcV1ip/M8xmlrkKW8q9MAbr2QKZbG3KkopcYe0o6EY/NPEx2exotGdCUSNpHC7fqGaNsVxtY2fmXbx3f7Yg38R2vnbSPyAe6o7V7saMD68vNBy9vgQG0A/Pxvsn+DP0PCIRRYHhFCH6sUhEb80nO6D/AE54wHDElv/xm/gCyOoJfMcGAAA="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_highrise_d3",
@@ -945,9 +885,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1SwUrDQBB9ybYppojgxZ/wCwqlIAU9CAqCHkTCdjNJFjfZsDvS6p97irui7cWLl4LF9w4zvN15zAyTAzmO7lRDrWStBCb35Ly2HQAhMF1KllvldJFi/KBLbnCSIrsiXTeMcUivqaujOkV2U1WeOJYPw/AeYhJjjuzCWPXsc0xupSFmEjhudUfKyYpnUjvEGpztNKNbKpTtlCOmaCRwuXtdyw2Vhd3oUr+FRL1w+Nv35Apv5OqRX3uaryyzbc/XkskZW9dUzitpPD0Ft1Rg+Ts3tv3PVmFrGMVNAaPY6L4gkm/iQJFs+T/gn8TncQYe9Il+DblffACGR2GHugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TwUrDQBB93U1TTBHBj/DUi1chCOLBg6Ai6KFImSaTZDHNhuxI7Kd7qrutqKAgeOghMwNvGHbezDCzCZDg4D6reEViMo3JA3fO2AaA1phektBn5PhcYfxocqlwpBBfsSkrwdi719yUITpFfFMUjiWkbzabN4+jgAnii9pmzy7B5JZqFmGNw5VpOOuokDMyHUIOTr9iru1eMl64mpZzWbecim1nPQl3tS1LztOCasdPoYTGybc86Uzbcr74IOitzef0aly6Do+Vxt3PIuI7cPOCMtOUKZOTWUV1kS6tiF3NXEW+viemMPLvTei/eXv+B2+ECaKwB+8y9iYjNfKmtoAhilYRVKQ86GEOCBVM7WCIsrtNr0M90e3qwh/c+wbfAUIpOfgYBgAA"
+      "passable-area": 2.0
     },
     {
       "id": "hitw_highrise_d4",
@@ -971,9 +909,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+2TwUoDMRCG/03aLd0ighdfwicQilAKehAUBD2ILGl2djeY3SzJSKtv7mlNLvbiRRBB6XeZ4c/MTxhmCqDA/E631Ck2WmJ2Tz4Y1wOQEou1YvWpnFwITB9MxS2OBfIrMk3LmMb0mvomqQvkN3UdiFP7OI7vMWYpFshX1unnUGB2qywxk8RRZ3rSXtV8roxH6sHpXrOmo1K7XntiSkYSl/vXrdpRVbqdqcxbTPQLx9phIF8GqzaP/DrQcuOYXXe2VUzeuqahalkrG+gpugmJ9ffc2A1fW8WpYZImBUzSR38RkQmRZTjwZ5Hpzv41cT0PK/rjfABfGzkVugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA+VRwUrDQBB9ybYppojgR3jKFwhBEA8eBBVBD6WUcTNJFpNs2B1p/XRPMWtBPfakEN8cZnjMPN7bTYEURw+65pbEaIXFIztvbAdAKSyvSOiLOb2IMX8yhdQ4iZFcs6lqwXwcb7irArtEcluWniWcD8PwPvYo9BTJZWP1i0+xuKOGRVjhuDUda0elnJNxCDc4++a8ONP3XGx87141b7bWFivaGZ+/rYOuwv2P5f2Ol1HJr0rSpqtyJi9ZTU2ZP1sR22a+pp7zUZiC9WxLwq6xVcVFXlLjOejGB5rYrT8NLzALjwTMGL+GCFEcKgyYIv5DQBVKTTjg/vOmGvDv8AFnllMntQUAAA=="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_highrise_d5",
@@ -1007,9 +943,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 7.5,
-      "previous-schematic": "H4sIAAAAAAACA91TwUrDQBB9ybYpTRHBiz/hFwilIAU9CAqCHkTCdjNJFjfZsDvS6p97irug7aUXLwqZd5jh7c5j3sDkQI75g2qolayVwOyRnNe2AyAEFmvJcs+crVJMn3TJDU5TZDek64YxDeUtdXVkF8juqsoTx/ZhGD5DTmLOkV0Zq159jtm9NMRMAiet7kg5WfGl1A6xB+cHzuiWCmU75YgpCglcH163ckdlYXe61B+hUG8c/vY9ucIbuXnm956WG8ts24utZHLG1jWVy0oaTy9BLRVY/06NbX9cKmwNk7gpYBIH/atI0h9gnJHsMVaDYvwGvzFWg/91g18vSAl3ugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91STUvEQAzNdPqBXUTwR3jai+BJKIJ48CCoCHooy5Jt03aw7ZROZHd/uqc608UPcBFPe2gSyBDm5eVlJgaI4egpq6hBVpmE6Jl6o3QLAFLC7AYZvyqnVx4ELyrnCk48CG9JlRVDYI931JauOoPwvigMsYMPw/Bus3A5hvC61tmriSF6wJqYScJxo1rKeiz4ElUPDgNn3zXDveo6ypem698yWq61zlPcKJNsF66vhIsfl3d3TI2rlLcdJSvNrJv5Gpn6Wpcl5UmBtSEH9f7Js1ns1nD+Bw/rbj+JL+HxN46tUpMWmKm2TAgNzyusi89pTYW2pR0I3Wr39w0gAt+9i6UgOJgJzxOj24ApmnAh3LcSMFGBchQIkxXo+2J0G9MUGARidBuHZf4AFNRkZigGAAA="
+      "passable-area": 7.5
     },
     {
       "id": "hitw_highrise_d6",
@@ -1033,9 +967,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.5,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9u9umNEUEL/6EXyAUoRT0ICgIehAJ280kWdxkw2ak1T/3FHcv9uLFi2LxXd7jzcxjZnIgx/zONNRqtkZhdk9hsL4DoBQWa8360zm5kJg+2JIbHEtkV2TrhjGN8pq6OrkLZDdVNRCn8XEc3yOLxDmylfPmecgxu9WOmEnhqLUdmaArPtc2IM3gdO8521JhfGcCMaUghct9dat3VBZ+Z0v7FoV54djb9xSKwenNI7/2tNx4Zt+ebTVTcL6uqVxW2g30FNOkwvp7aez7r6Pi1zBJnwImadGfgxRCCol//HGIw75NHPSBv4MPupL1aLoFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA92STUvDQBCGZ7NNgiki+CM89ehJCIJ48CB+IOghSJkmk2QxzYbsSNqf7inuVmwFhQYPCpmFnWWY92WeZSKACA4e0pKWyCqVED5Sa5SuAUBKmF4i47ZyfO6B/6QyLuHIg+CKVFEy+PZ5TXXhqlMIbvPcEDt53/dvNguXIwguKp2+mAjCO6yImSQcLlVNaYs5n6FqwWngZFcz3KqmoWxumvY1pXmndZbgSpl4/ex8JZx+af7oMRUuEl43FC80s17OOmRqK10UlMU5Voac1JNw/13KdgiT5Jiquog7Mjwrsco/jUyJ1tXOhI76Z1+535fwF76Tgf+ycs2+hJvBcKybQRME+013ZENNQ3smbsMsIcGfhfCk2FwTD0YZAqSwW2ABYbyAQbgBFCMF9B2YL/yRAv5fvAPw9XUc8gYAAA=="
+      "passable-area": 2.5
     },
     {
       "id": "hitw_highrise_d7",
@@ -1059,9 +991,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9ybYppojgxZ/wCwqlIAU9CAqCHkTCdjNJFjfZsDvS6p97irsotgcvXjxI3hxmeDPzmDc5kOPoTjXUStZKYHZPzmvbARAC87Vk+c2crlJMH3TJDU5SZFek64YxDeU1dXVk58huqsoTx/VhGN5DTmLOkV0Yq559jtmtNMRMAset7kg5WfFCaoe4g7M9Z3RLhbKdcsQUhQQu992t3FFZ2J0u9Vso1AuH2b4nV3gjN4/82tNyY5lte76VTM7YuqZyWUnj6SmopQLr36mx7X+WCl/DJH4KmMRD/w7JJ/BvkXzFaHA0OBo8xAeTKuLnugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA+1SwUrEMBCdTbotdhHBj/DULxCKIB48CCqCHpZlGdNJG2ybkox0/XRPNWFh3Zsi4mHx8WCG4c0Lb0gOkMPRg2qoQzZKQvZIzhvbA4CUsLhCxt3k9ELA/MlU3MCJgPSaTN0wzEN7Q30dpwtIb7X2xHF9mqb3UGex5pBetla9+ByyO2yJmSQcd6Yn5VDzORoHcQfOPmeenRkGqtZ+cK+K1qO11RI3xpebVfT9pvgtioWE+z3xVuM5POuXGpXp65LQc9Fgq8tny2y7wjc4UBmMMeYsRmRyra1rqkqNrafV9kZf+Y70A98EMkji8UNL8IeY7QCHifATRJIIKcWhBkwCZeShBtzjf8BfxAfMN66IDQYAAA=="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_highrise_x1",
@@ -1085,9 +1015,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA+1RwUrEMBB9aXa72EUEL/6EXyAsgizoQVAQ9CBSsum0DaZNSUZ29c891cTD7sWLBwVlXyBveJl5zEwKoMDBnW6pU2y0xOyefDCuByAl5kvFaqscn2eYPpiKWxxlyK/INC1jGsNr6pukzpHf1HUgTuXjOL5HFokL5BfW6edQYHarLDGTxGFnetJe1XymjEeqwclOs6ajUrtee2JKRhKXu9e12lBVuo2pzFsM9AvH3GEgXwarVo/8OtBi5Zhdd7pWTN66pqFqUSsb6Cm6ZRLL77mxG762ilvDJG0KmKRGfw1CCojP+59CbM9+wD86YLb/wR/BB66s/Oq6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA92SwUrDQBCGZ7NNUlNE8CE85SJ4EoIgHjwIKoIeqpRtMkkW02zYnZL66J7qLm1VTNF66SFzmTDMPzPfn40AIjh4SEucCZIph/ARtZGqBgDOYXQlSHxWji888J9kRiUceRBcoyxKAt9+3mBduOoIgts8N0hOvlwu321mLkcQXFYqfTURhHeiQiLkcDiTNaZa5HQupAangZOvmiEtmwaziWn0PMVJq1Q2FgtpkrcXN5fD6bfmVY+pxHRMbw0mpJq4FYS6UkWBWZKLyqDTeRyeOzrSosmU0uNcpLIuEhSG4lJUeTJVRGoWqwbrhPQc40a1qDcDt6+wzt13TyMLaTYLWvyxwJTCXm2ZhXN1+9zBjv4sXLP/9xEdyl2OCHbxr4P3L/9CDme//Nr1yK3SIYQwcK/WuoWwt2Cex4Ctcx+D8QHzmO+zIOwvoM9s9BdwuHqiw94CwgoQ9g34ARer6LNGBwAA"
+      "passable-area": 1.5
     },
     {
       "id": "hitw_highrise_x2",
@@ -1111,9 +1039,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA+1RwUrDQBB9zbYpTRHBiz/hFwilIAU9CAqCHkTCdDNJFjfZsBlp9c89xV0P7cWLIILSN4cZ3u485s1kQIbZna65ITFaYXrPvjeuBaAU5isS2jEnywSTB1NIjeME6RWbqhZMQnnNbRXZOdKbsuxZYvswDO8hj2LOkF5Yp5/7DNNbsizCCkeNaVl7KuWcjEfswemes6bhXLtWexaOQgqX+9cNbbnI3dYU5i0U+kXC365jn/eW1o/y2vFi7URcc7YhYW9dVXGxKMn2/BTUEoXV99TEdV9Lha1hHDcFjOOgv4bRLv4pDgb/vEH1aU8dLvjD+ACZZz3DugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA92TS0vEMBDHJ00f2EUEP4SnXrwKRRAPHsQHgh6KLLPttA22TWlGdveje1oTVlxBYYsHhSYD/zDM/DKTRwwQw8FDXlOLrHIJ0SMNRukOAKSE2SUyfnqOzz0InlTBNRx5EF6RqmqGwC6vqaucdwbhbVkaYpe+2WzerAqnMYQXjc5fTAzRHTbETBIOW9VRPmDJZ6gGcDlwsvMZHlTfUzE3/fCa03ypdZHhSpl0/ey4Eu6/BG9jDFuSyUrMVVelSzKc1NiU6UIz6zYxNfaUWjC60pMlMg2Nrioq0hIbQ47r7ecS/oIrRza3csG+hNPvRTS4yHhtd2Ld/7xJIOFm9KE4ypjKw/3Q3YmMhUZ2+u552WYJ/mwIZ+JDpziEJ4UUfuB0mg1a84W1yd5gGG2fqNOp3uD//MF3Wsa8TO8GAAA="
+      "passable-area": 1.5
     },
     {
       "id": "hitw_highrise_x3",
@@ -1137,9 +1063,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+2QwUrDQBCG/2TblKaI4MWX8AmEIpSCHgQFQQ8iYbqZJIubbNiMtPrmnuLuxV689OKh9LvM8M/Mz8zkQI75k264JTFaYfbMfjCuA6AUFmsS+lUublJMX0wpDc5TZHds6kYwDek9d3VUF8geqmpgiePjOH6HmMSYI1tZp9+HHLNHsizCCmet6Vh7quSajEecweVes6blQrtOexaORgq3++qWdlwWbmdK8xUS/SGht+/ZF4Olzat89rzcOBHXXm1J2FtX11wuK7IDvwW3VGF9mJu4/m+r8DVM4qeASVz0/1BJQOHYOfoLk9OBJw7jB5GzJpG6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA+1SwUrDQBCd7GYTTBHBj/CUi1chCOLBg6Ai6KFImSaTZDHJhuxI2k/3FHehVEHB4sFD6TvMDMO8N/PYTQASOHrMa2qRdS4hfqLBatMBgJQwu0bGbef0UoB61gXXcCIguiFd1QzKlbfUVb47g+iuLC2xp0/T9O5y4HMC0VVj8lebQHyPDTGThONWd5QPWPIF6gE8B84/e7Yf3nJa2AaXc173lLHp0xGZhsZUFRVZiY2lF79CwtkXHg+676lYbARGY4o5rrTN1n5YSHj4voTdBXZeYq67KhvJclpjU2ZLw2za1Nbo9jth9JZ/PkL+rkv4B91wR3MrP6wghtA/muMR/BuCQEgRilCpIIB9hHK/XCihpFBqLw2KbdjEg8EDdsQH1QbN4EUGAAA="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_highrise_x4",
@@ -1168,9 +1092,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 3.5625,
-      "previous-schematic": "H4sIAAAAAAACA92TwUrEMBCG/ya7XewighdfwicQFkEW9CAoCHoQKdl02gbTpiQju/rmnmoi4l68eNlDJ4cZ/mR+5htIARQ4etAtdYqNllg8kg/G9QCkxHKtWP0qp5cC8ydTcYsTgfyGTNMy5rG8pb5J6hL5XV0H4tQ+juNnzFnKBfIr6/RrKLC4V5aYSeK4Mz1pr2q+UMYj9eBsr1nTUaldrz0xJSOJ6/3tVu2oKt3OVOYjFvqN49thIF8GqzbP/D7QauOYXXe+VUzeuqahalUrG+glugmJ9f/c2A1/W8WtYZY2BczSoIeL7OdMNr7x5NQBs+kCiognpg94+D/4BZvNba66BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA+2TTUvDQBCGJ9kmwRQR/BGecvQkBEE8eBBUhHqIUrbJbLKYZsPulNif7qnu0g+FVEovBYuTkF2GfZ95Z5LEADGcPOcVTjnJnEE0Qm2kagCAMRjecuKbzPm1D8GLLKiCMx/CO5RlRRDY7T02pcsOIXwQwiA5+WKx+LSr59YYwpta5e8mhuiR10iEDE6nssFcc0FXXGpwGrj4zhnSsm2xGJtWz3Icd0oVGf+QJp2/OS6Dpx+Hl2cMWZLJBM9lU6bIDSUVr0U6UURqmpiKt5haMHfWk44T6lqVJRap4LVBx/UZvPa4VtEWSulfyarFJiU9w6RVHeo1cHsJO9lRr4TAJsfMgZecRmmqVhSjZpt9j5h0aDUb+GD3XJxg77kEO0wvvezp2nXq4CGDy77pmk8ymltnK5tbfUX2Grjv1LaOcMDw3O3B0YbvsYEXeKHnH2mDwbrB4P8N/s2I3D/oHtGBC38BT+UTADgHAAA="
+      "passable-area": 3.5625
     },
     {
       "id": "hitw_highrise_x5",
@@ -1194,9 +1116,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9ybYpTRHBiz/hFwilIAU9CAqCHkTCdjNJFjfZsDvS6p97irtQrIdevHiQvDnM8GbmMW9yIMf8QTXUStZKYPZIzmvbARACi7Vk+c2crVJMn3TJDU5TZDek64YxDeUtdXVkF8juqsoTx/VhGD5DTmLOkV0Zq159jtm9NMRMAiet7kg5WfGl1A5xB+cHzuiWCmU75YgpCglcH7pbuaOysDtd6o9QqDcOs31PrvBGbp75vaflxjLb9mIrmZyxdU3lspLG00tQSwXWv1Nj2x+XCl/DJH4KmMRD/w7JHvivSPYxGhwNjgZ/4gsIqxndugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA+1STUvDQBCd7DYppojgj/CUi1chCOLBg/iBoIdQyjSZJItpNmRH0v50T3GXiC0oGEQ8FB8Duwxv3r63TAgQwsFDWtIKWaUSpo/UGqVrAJASZpfI+NE5PhfgP6mMSzgSEFyRKkoG316vqS5cdwbBbZ4bYjfe9/2rPT13hhBcVDp9NiFM77AiZpJwuFI1pS3mfIaqBTcDJ9ue4VY1DWUL07QvKS06rbME18rE67nTHUneOLKQcL9DHjiG7bMmyTFVdRETGo5KrPJ4qZn1KjIlNhRbYXQ5ow6Z2koXBWVxjpWh+fBHp591K1wmvLHDrJuv5ybf++noB358CTejczp3Y0QDmMLEbYL1TfB38DxbA2Af4Qk5Eb4vpLTruZcQvnyvYE8D7tR/wN/EG3VrFS6aBgAA"
+      "passable-area": 1.5
     },
     {
       "id": "hitw_highrise_x6",
@@ -1220,9 +1140,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA91SwUrEMBB9aXa72EUEL/6EXyAsgizoQVAQ9CBSsum0DaZNSUZ29c891eSye/HiZYW+OczwknnMG6YACpw86ZY6xUZLLJ7JB+N6AFJiuVas9sz5dYb5i6m4xVmG/I5M0zLmsbynvknsEvlDXQfi1D6O43fMIuUC+Y11+j0UWDwqS8wkcdqZnrRXNV8p45F6cHHgrOmo1K7XnpiSkMTt4XWrdlSVbmcq8xUL/cHx7zCQL4NVm1f+HGi1ccyuu9wqJm9d01C1qpUN9BbVMon139TYDb9Lxa1hljYFzNKgR4OAyGIIgYlC7GO6BuXUDaYDzSZr8L/wA7r2AYS6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA92SwUrDQBCGZ7ObBFNE8CE89eJVCIJ48CCoCPUQStkmk2QxzYbdKW0f3VPdtbYKFWovCpk97DDM/zH/7CYACZw85zXOJKmcQzxCY5VuAYBzGNxKkrvK+XUA4YsqqIazAKI7VFVNELr0HtvKVwcQPZSlRfLy9Xr95m7m7wSim0bnrzaB+FE2SIQcTmeqxdzIkq6kMuA1cPFVs2RU12ExsZ2Z5zhZaF1kcqlsuhp7LofRt+ZNT4ltjhlKS2kpG4vDVhuqP3Or57t8IQlNo6sKi20FnYjMHD08OAD3fceyP9LxZrG/srn0zYLD094kltzCbFbKXLVV6ica1rIp06km0rOhrWWHqQNL/0L783hueJjrpz6aG3G43Oc2cprRyolJdz/rYneE/27OMsKfBQs4AyFCFgkBfQxnMIydO+Y89tWgECwKGYt6a5D5/8lYT1/w/+IdPDJdvf8GAAA="
+      "passable-area": 1.5
     },
     {
       "id": "hitw_highrise_x7",
@@ -1246,9 +1164,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA+1RwUrEMBB9bXa72EUEL/6EXyAsgizoQVAQ9CBSZtNpG0ybko7s6p97qgmIe/GyIIKyL4Q3vMw8ZiY5kOPgTjfckhitMLtnPxjXAVAK8yUJfSnH5ymmD6aUBkcpsis2dSOYhvCauzqqc2Q3VTWwxPJxHN8DJ5FzZBfW6echx+yWLIuwwmFrOtaeKjkj4xFrcLLVrGm50K7TnoWjkcLl9nVNGy4LtzGleQuBfpGQ2/fsi8HS6lFee16snIhrT9ck7K2ray4XFdmBn4JbqrDczU1c/71V2BomcVPAJDb6e0g+z7/FfsA/P2CaqHD3P/jD+ACSN1biugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TwUrDQBCdzSYbTBHBj/CUi+BJCIJ48CCoCHoIpUyTSbKYZEN2pO2ne6pZKrZgUfGgkGGZWYb33uzsMBFABAcPWUUNss4khI/UW21aAJASJlfI+JE5vvAgeNI5V3DkgbomXVYMwXC9obZ02Qmo26KwxI6+Xq9fhyhcjEBd1iZ7thGEd1gTM0k4bHRLWY8Fn6PuwXHgZJuz3Ouuo3xmu/4lo9nCmDzFpbbJaup0fwheOrAn4X4HvMFYHsratMBMt2VCaDmusC6SuWE2TWwr7CgZhNH1GS+Qqa9NWVKeFFhbmm7+6DvdBf1C15dw+lm3xnnKq4HMptvPCyScfcF7f8FeqoIQfDfvoTrB35nYOWM0T0hfBMp5b5QNCtea20dfjHSEQikRBM7DSBv8rx18A0lDBDeABgAA"
+      "passable-area": 1.5
     },
     {
       "id": "hitw_medieval_d1",
@@ -1282,9 +1198,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 4.0,
-      "previous-schematic": "H4sIAAAAAAACA91SwUrDQBB9ybYpTRHBiz/hFwilIAU9CAqCHkTCdjNJFjfZsDvS6p97irtY7KUXLwp5c5jh7c5j3jA5kGP+oBpqJWslMHsk57XtAAiBxVqy/GHOVimmT7rkBqcpshvSdcOYhvKWujqyC2R3VeWJY/swDJ8hJzHnyK6MVa8+x+xeGmImgZNWd6ScrPhSaofYg/MDZ3RLhbKdcsQUhQSuD69buaOysDtd6o9QqDcOf/ueXOGN3Dzze0/LjWW27cVWMjlj65rKZSWNp5eglgqsf6fGtj8uFbaGSdwUMImD/h2Sb2C0SPYxWn97g8l4DY7+Rv8HX1WJ6iy6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA92RzWrDMBCER5J/iEMp5CH6EIEQCDn0UEig0B5KCEJexyLxD9KGpI/ek2v54F57asHDwi7D7sLHZECG2aspqdJsjUL6Rs7bpgagFOZbzXp0FmuJ+N3mXOJRInkmeyoZcT++UH0K7hzJrig8cTjvuu6r7yL0DMnm0pizz5Du9YWYSeGhsjUZpwteausQbvD043l2tm0pP/rWXQ0db02Tf+i79av7Ifz95fJnWJZIEQUYICL8ncQoTFJCQg4FOU3CgU4MgHKigCHDPj4xUcD/0zeAwQIJXQUAAA=="
+      "passable-area": 4.0
     },
     {
       "id": "hitw_medieval_d2",
@@ -1313,9 +1227,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 3.5,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9zbYppojgxZ/wC4QilIIeBAVBDyJhupkkSzfZsBlp9c89xd1Le+nFiwfJm8MMb2Ye8yYDMpw965obEqMV5i/se+NaAEphsSahA3N5m2D2agqpcZEgvWdT1YJZKB+4rSK7QPpYlj1LXB+G4TvkScwZ0pV1ettnmD+RZRFWOG9My9pTKTdkPOIOro6cNQ3n2rXas3AUUrg7dne05yJ3e1OYr1DoDwmzXcc+7y1t3uSz4+XGibjmekfC3rqq4mJZku35PaglCuvfqYnrTkuFr2EaPwVM46F/hckh/ilGg6PB0eBp/AD+XEwxugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA+2RQUvDQBCF32aTFlNE8Ed48iJ4EoogHjwICkI9lFK2ySRZTLJhd0rtT/dUs42tQkURxENxCMzjMe+Dt4mBGAcPSUGVYp1I9EdknTY1ACkxuFasts7xZYDoUadc4ChA74Z0XjCiVt5SnXt3gN5dljliH1+tVi/tFn7H6F2VJnlyMfr3qiRmkjisdE2JVRlfKG3hMzh59xxb3TSUTl1j5wlNF8akY/Ws3XA58VyJ0Yfj7iajOqExKcfDTJWOTmtjuXjTzsy3eqGYbGnynNKNQ22I7Zw8PPgG7u9+yl7LSfewZztwV6rZmJcNDdk0uwifCyXOv8jNDLOpPo9G6CP0P7OlEP5sRCBFKKSAFAH2cXzBYL8LRm3BaN1zPwv6T3Trv+Cvziv4JClIXQYAAA=="
+      "passable-area": 3.5
     },
     {
       "id": "hitw_medieval_d3",
@@ -1339,9 +1251,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1RwUoDMRB92bRb3CKCF3/CLxCKIAU9CAqCHkSWNDu7G8xulmSk1T/3tCYHrQcvvXgofYeZ4SXzmDdTAAWOHnRLnWKjJWaP5INxPQApMV8qVj/M6WWG6ZOpuMVJhvyGTNMyprG8pb5J7Bz5XV0H4tQ+juNnzCLlAvmVdfo1FJjdK0vMJHHcmZ60VzVfKOORenC25azpqNSu156YkpDE9fZ1rTZUlW5jKvMRC/3G8e8wkC+DVatnfh9osXLMrjtfKyZvXdNQtaiVDfQS1TKJ5W5q7Ia/peLWMEmbAiZp0P+DEN9hTyF+xT01KOL9DgYPBnfEF5Tpsw66BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA+2RuwrCQBBFr4kmGBHBj/AjBBHEwkJQELQQkWUzMYuahN0R9dOtYlbxUVqIRfA0d7jMLBw2AALUZzKmvWAlXfhz0kalCQDXRWMoWDybdt9BbaFCjtFy4I1IbWJGrRjHlGxs24A3iSJDbM/zPL8UWbEZwBvsUrk1Afyp2BEzuWjuVUJSi4i7QmnYG3RenWGtsozCtcn0QdL6mKbhUpyU6Z1W9t0Pl8922YGPqpUBqoSfUSl4z9LhFFi7W5ZV8GZXWsHHL97Hv+D3uAJGKzP7XQUAAA=="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_medieval_d4",
@@ -1365,9 +1275,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.25,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrEMBB9bXa72EUEL/6EXyAsgizoQVAQ9CBSZtNpG0ybko7s6p97qgmI68GLFw/SN5AZXmYe8yYHchzc6YZbEqMVFvfsB+M6AEphuSahL+b4PMX8wZTS4ChFdsWmbgTzUF5zV0d2ieymqgaWOD6O43vIScw5sgvr9POQY3FLlkVY4bA1HWtPlZyR8YgzONlz1rRcaNdpz8JRSOFy/7ulHZeF25nSvIVCv0jo7Xv2xWBp8yivPa82TsS1p1sS9tbVNZeriuzAT0EtVVj/Tk1c/7NUuBpm8VLALC76Z0gC4oN/i+QzJoOTwcngd3wAWdxflLoFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA+1RwUrDQBB9yaYJpojgR3jqFwhBEA8eBAWhHkopSzJJFtNs2J3Q+ume4q6x1VsVxEPxLcw8Hjs7b3ZSIMXJY17TWrLKBZI5Gat0C0AITG8ky71yfhVi8qQKrnEWIr4lVdWMiaN31FZenSK+L0tL7MuHYXh1OfA5RXzd6PzZpkgeZEPMJHC6Vi3lRpZ8KZWBr8H8U7Od6XNaldTmtCBpOWPT06zVhuuslI2lmdX9nm8kk2l0VVGxU8jVvNOl9yFw8eVxNqrrqFh9dNloXSzkVtls6y+HB5yMDX5oxdtfjh/7LScv/nKEBJFfg6OEP0MQOogx4jgRRZEIXDjS8YJwN+DxbtCdMfwP+Kt4A+uc2woXBgAA"
+      "passable-area": 2.25
     },
     {
       "id": "hitw_medieval_d5",
@@ -1391,9 +1299,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9zbYppojgxZ/wCwqlIAU9CAqCHkTCdDNJFjfZsBlp9c89xV0P9uKlF8XiY2CGNzOPeZMBGY7udM0NidEK03v2vXEtAKUwW5HQF3O6TDB5MIXUOEmQXrGpasEklNfcVpGdIb0py54lrg/D8B7yKOYM6YV1+rnPML0lyyKscNyYlrWnUuZkPOIOznacNQ3n2rXas3AUUrjcdTe05SJ3W1OYt1DoFwmzXcc+7y2tH+W148XaibjmfEPC3rqq4mJRku35KaglCqv91MR130uFr2EcPwWM46E/iNFnHDAO32DAv8E/7u8XLH4AWzDcaboFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91SPavCQBCcu2jCi4jgj/BHCCI8XvEKQUHQQkSOyyY51CTcrag/3SrmLBQ7K4tMM8uwHwyzMRDjZ6lzOio2OkC0IutMWQAIAvT+FKunMpxKdNcm4RwDifCfTJYzuk05oyLzag/hPE0dsR+v6/rWsPAcI/w9lHrvYkQLdSBmCtA/moK0VSmPlbHwMxi9NMfWVBUlO1fZk6bduSyTjboYN7lu/d4Pmy++WSJCx5sBOoQvQrxRCyEkZIMWG4QUQrQ6wcafaG2C/jfFI0Epv3v5DiXA2HldBQAA"
+      "passable-area": 2.0
     },
     {
       "id": "hitw_medieval_d6",
@@ -1417,9 +1323,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.375,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9zbYppojgxZ/wC4QilIIeBAVBDyJhupkkSzfZsBlp9c89xd1Le+nFiwfJm8MMb2Ye8yYDMpw965obEqMV5i/se+NaAEphsSahA3N5m2D2agqpcZEgvWdT1YJZKB+4rSK7QPpYlj1LXB+G4TvkScwZ0pV1ettnmD+RZRFWOG9My9pTKTdkPOIOro6cNQ3n2rXas3AUUrg7dne05yJ3e1OYr1DoDwmzXcc+7y1t3uSz4+XGibjmekfC3rqq4mJZku35PaglCuvfqYnrTkuFr2EaPwVM46F/hskh/ilGg6PB0eBJ/AAZVSEJugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA+1RwUrDQBSc7DYtpojgR3jqRfAkBEE8eBAUhHoopWyTl2QxzYbdV2o/3VPNNm0VKgVBPBQfCzMM+96b2Y2ACCfPSUEzxTqR6A3JOm0qAFKif6dY7ZTzG4HwRadc4Eyge086LxhhQx+oyr3aR/cxyxyxb1+tVu8NBh4jdG9Lk7y6CL0nVRIzSZzOdEWJVRlfK23hezD81Fxt5wlNMqoSGpFyHLOd06Aylos4U6WjgTPzHV8oJluaPKd0q1DTs6Zj70Pi4stwtrquKZ1stiyMSUfqTbt46S8Lics9J65U0xEva4rZ1Pv7xu2bHUzQGvthBB/bD+9IXB0wNTXMZva9rxA9dPxnNlMIf1aBkIHoiEA0DMdYTbpNQHnEAUOxhqMMCOGPaOE/4G/WB+87+HxdBgAA"
+      "passable-area": 2.375
     },
     {
       "id": "hitw_medieval_d7",
@@ -1443,9 +1347,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+2QwUrEMBCG/zS7XewighdfwicQFkEW9CAoCHoQKdl02gbTpiQju/rmnmpy2fXgxYsH6ZfDDP/M/GSmAAocPeiWOsVGSyweyQfjegBSYrlWrPbK6WWG+ZOpuMVJhvyGTNMy5jG9pb5J6hL5XV0H4jQ+juNnjCLFAvmVdfo1FFjcK0vMJHHcmZ60VzVfKOORZnB20KzpqNSu156YkpHE9aG6VTuqSrczlfmIiX7j2DsM5Mtg1eaZ3wdabRyz6863islb1zRUrWplA71Et0xi/Ts3dsPPVvFqmKVLAbP00T9DSJGQAv8UsX/TgtOCE9/4AhRbL6m6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA+2RT0vDMBjGnyRbix0i+CE8edl1UATx4EFQEPQwxojt2zaYNSV5ZdtH91SXKrqjXjyM/Qh5wsP7vPmXARlOHouGVppNoZA+kQ/GtQCUwuRGs/52zq8kxs+m5AZnEsktmbphjHfLO2rr6E6Q3FdVII7xvu/fdyqiZkiurSteQ4b0QVtiJoXTlWmp8LrimTYeMYOLHy+wN11H5TJ0/q2g5dq5cq43JuTbReyrMN0r/qwJVr/MedtRzq67XGsmb11dU5lX2gaKOfnLTTaL4UApRvERgBHh3xBSqgFIgUNExCG+9CAvqJRQw6SOP3jkT3wAkGO9hpUFAAA="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_medieval_x1",
@@ -1479,9 +1381,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 4.0,
-      "previous-schematic": "H4sIAAAAAAACA+1SwUrEMBB9aXa72EUEL/6EXyAsgizoQVAQ9CBSsum0DaZNSUZ29c891UTEvXjxoKDsC+ENLzOPmSEFUGDvRrfUKTZaYnZLPhjXA5AS86Vi9akcnmaY3pmKWxxkyC/INC1jGsNL6pukzpFf1XUgTuXjOL5GFokL5GfW6cdQYHatLDGTxH5netJe1XyijEeqwdFWs6ajUrtee2JKRhLn29e12lBVuo2pzEsM9BPH3GEgXwarVvf8PNBi5Zhdd7xWTN66pqFqUSsb6CG6ZRLL77mxG762ilvDJG0KmKRGfw9CiPf7byE+zm7APzvg7ov+CN4AsbqP2roFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TwYrCMBB9SbXFiizsR+xHLCyCePAguCDoYVkkpFMb1LYkI7qf7qlmPOxe9+ShL+HN8JgJvBmSAzlGa1vRybCzCbIN+eCaGkCSYDw3bH6V16nGcOsKrvCikS7I7SvGMKZLqveijpGuyjIQS3vXdbcYlcQc6ezY2EPIkX2aIzFTgsnJ1WS9KfndOA/pwdufFti7tqViF1p/trS7NE3xZa4ufFy/5d1/Fv9IsUaGgZgBBoQnQkUIoZ9QSsfhRtI9tai1fpB6JP20KEvsrz35/PHKeTLuuow2h10FAAA="
+      "passable-area": 4.0
     },
     {
       "id": "hitw_medieval_x2",
@@ -1505,9 +1405,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1RwUrEMBB9aXa72EUEL/6EXyAsgizoQVAQ9CBSsum0DaZNSUZ29c891QTBvXgRxEPxXWZ4M/OYmVcABQ7udEudYqMlFvfkg3E9ACmxXCtWX8zxeYb5g6m4xVGG/IpM0zLmMb2mvknsEvlNXQfiND6O43uMIsUC+YV1+jkUWNwqS8wkcdiZnrRXNZ8p45FmcLLnrOmo1K7XnpiSkMTlvrpVO6pKtzOVeYuJfuHYOwzky2DV5pFfB1ptHLPrTreKyVvXNFStamUDPUW1TGL9MzV2w/dS8WuYpU8Bs7ToX0IIgQlDShF9l9M9MPk3aQ/FJ/4d/GV8AAEnjce6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA92RQWvCQBCF325iQhNKoT+iP0IQQXrooaBQsIdSZNlMkkVNwu6I9qf3FDMU9OrJQt5h3vCYGfiYDMjw8GFr2ht2NkK6Jh9c2wCIIuSvhs0leZ5rTD5dwTWeNJI3clXNmAztOzWVpDmSZVkGYlnv+/53cCWeIVnsWrsNGdKV2REzRXjcu4asNyVPjfOQHbxcs8DedR0Vm9D5g6XNsW2LL3NyYXb6lrs3Dv/IsEaKWGCAmHBXKaUwWg1wSkOLjZNSi/6qHi+gGjvgv3zwDPydWNddBQAA"
+      "passable-area": 2.0
     },
     {
       "id": "hitw_medieval_x3",
@@ -1546,9 +1444,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 6.0,
-      "previous-schematic": "H4sIAAAAAAACA+1SwUrEMBB9aXa72EUEL/6EXyAsgizoQVAQ9CBSsum0DaZNSUZ29c891UTEvXjxoKDsC+ENLzOPmSEFUGDvRrfUKTZaYnZLPhjXA5AS86Vi9akcnmaY3pmKWxxkyC/INC1jGsNL6pukzpFf1XUgTuXjOL5GFokL5GfW6cdQYHatLDGTxH5netJe1XyijEeqwdFWs6ajUrtee2JKRhLn29e12lBVuo2pzEsM9BPH3GEgXwarVvf8PNBi5Zhdd7xWTN66pqFqUSsb6CG6ZRLL77mxG762ilvDJG0KmKRGfw9CiPf7byE+zm7APzvg7ov+CN4AsbqP2roFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA92TwWrDMAyGfztNQlNGoQ+xhyiMQemhh8IKg/UwRjGOkpi2SbA1mj36TlnUwXrdqYfI/JL5kQQfxhmQYfpqKzobdjZC+kY+uKYGEEWYrQ2bP2fxrBHvXc4V5hrJhlxZMeLhuqW6FHeG5KUoArGM933/PVQlNUOyOjX2GDKkO3MiZorwcHY1WW8KXhrnITN4vHmBvWtbyg+h9Z+WDpemyd9N58JT9yF7/9n8Jc0aKSYCA0wIdwyllEhhnKGUhh40pHEiaq2v+k3jRLy+oRornnx+Obg74A8+9i1mXQUAAA=="
+      "passable-area": 6.0
     },
     {
       "id": "hitw_medieval_x4",
@@ -1572,9 +1468,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1RwUrEMBB9aXa72EUEL/6EXyAsgizoQVAQ9CBSsum0DaZNSUZ29c891QTBvXgRxEPxXWZ4M/OYmVcABQ7udEudYqMlFvfkg3E9ACmxXCtWX8zxeYb5g6m4xVGG/IpM0zLmMb2mvknsEvlNXQfiND6O43uMIsUC+YV1+jkUWNwqS8wkcdiZnrRXNZ8p45FmcLLnrOmo1K7XnpiSkMTlvrpVO6pKtzOVeYuJfuHYOwzky2DV5pFfB1ptHLPrTreKyVvXNFStamUDPUW1TGL9MzV2w/dS8WuYpU8Bs7ToX0IIgQlDShF9l9M9MPk3aQ/FJ/4d/GV8AAEnjce6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA92RQWvCQBCF325iQhNKoT+iP0IQQXrooaBQsIdSZNlMkkVNwu6I9qf3FDMU9OrJQt5h3vCYGfiYDMjw8GFr2ht2NkK6Jh9c2wCIIuSvhs0leZ5rTD5dwTWeNJI3clXNmAztOzWVpDmSZVkGYlnv+/53cCWeIVnsWrsNGdKV2REzRXjcu4asNyVPjfOQHbxcs8DedR0Vm9D5g6XNsW2LL3NyYXb6lrs3Dv/IsEaKWGCAmHBXKaUwWg1wSkOLjZNSi/6qHi+gGjvgv3zwDPydWNddBQAA"
+      "passable-area": 2.0
     },
     {
       "id": "hitw_medieval_x5",
@@ -1608,9 +1502,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 4.0,
-      "previous-schematic": "H4sIAAAAAAACA+1SwUrEMBB9aXa72EUEL/6EXyAsgizoQVAQ9CBSsum0DaZNSUZ29c891UTEvXjxoKDsC+ENLzOPmSEFUGDvRrfUKTZaYnZLPhjXA5AS86Vi9akcnmaY3pmKWxxkyC/INC1jGsNL6pukzpFf1XUgTuXjOL5GFokL5GfW6cdQYHatLDGTxH5netJe1XyijEeqwdFWs6ajUrtee2JKRhLn29e12lBVuo2pzEsM9BPH3GEgXwarVvf8PNBi5Zhdd7xWTN66pqFqUSsb6CG6ZRLL77mxG762ilvDJG0KmKRGfw9CiPf7byE+zm7APzvg7ov+CN4AsbqP2roFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA92Rz0rDQBDGv520CU0pgg/hQwgilB56EBQK9iBSls2kWWyTsDtifXRP6U4PevXUQ75l/vAxs/BjSqDEbOMaPlrxLkPxyiH6rgWQZZivrNhf5/aRMN36ShrcEPI1+30jmKb2idu9unPkz3UdWXR9GIafVI3WEvny0LmPWKJ4sQcW4QyLo2/ZBVvLvfUBuoO7Py9K8H3P1S724dPx7qvrqjd78vHh9K7//nP4W4cJBSYKA0wYV5QxRsNgnDKGQClSGiciUcIjujQjvaGSkR5yrKLLw9UBz4SW9H1dBQAA"
+      "passable-area": 4.0
     },
     {
       "id": "hitw_medieval_x6",
@@ -1634,9 +1526,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA+2QwUrDQBCG/2bblKaI4MWX8AmEIpSCHgQFQQ8iYbqZJIubbNiMtPrmnuLuxV568dKD5LvM8M/Mz8xkQIbFk665ITFaYf7MvjeuBaAUlhsS+lUubhLMXkwhNc4TpHdsqlowC+k9t1VUl0gfyrJniePDMHyHOIkxQ7q2Tr/3GeaPZFmEFc4a07L2VMo1GY84g8uDZk3DuXat9iwcjRRuD9Ud7bnI3d4U5isk+kNCb9exz3tL21f57Hi1dSKuudqRsLeuqrhYlWR7fgtuicLmb27iuuNW4WuYxk8B07jo6ZhE8I8ZDxwPHDnGD1OEfGW6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA92QQUvDQBCFX3bbBFNE8Ed48uJVCIJ48CAoCHoopaybSbK4zS67I21/uqfY1aI9elLId5nh8WaYNyVQ4uhRd7RSbLRE8UQhGtcDkBKzG8XqWzm9Epg+m5o7nAjkt2TajjHdtXfUt0mdIb9vmkicxodheN/VLNUS+bV1+jWWKB6UJWaSOF6ZnnRQDV8qE5BmcPajRQ7Ge6qX0Yc3Tcu1c/VcbUysNou095fmbTILiYsD85cnWvUy562nip0/XyumYF3bUl01ykZafB5UYJKeAEwIf0a2BwLjROyRYw+YjT2gGGvA/+MDz4G7PJUFAAA="
+      "passable-area": 1.5
     },
     {
       "id": "hitw_medieval_x7",
@@ -1660,9 +1550,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA+2QwUrDQBCG/2bblKaI4MWX8AmEIpSCHgQFQQ8iYbqZJIubbNiMtPrmnuLuxR700osHyXeZ4Z+Zn5nJgAyLB11zQ2K0wvyRfW9cC0ApLDck9K2cXSWYPZlCapwmSG/YVLVgFtJbbquoLpHelWXPEseHYfgMcRJjhnRtnX7tM8zvybIIK5w0pmXtqZRLMh5xBucHzZqGc+1a7Vk4GilcH6o72nORu70pzEdI9JuE3q5jn/eWts/y3vFq60Rcc7EjYW9dVXGxKsn2/BLcEoXNcW7iut+twtcwjZ8CpnHRv2QSwT9mPHA8cOQnX7msDz26BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA92QQUvDQBCFX3bbhKaI4I/w5MVrIQjiwYOgIOihlLJuJsniNht2R9r+dE8x24J67EkhHwOzPN4M+yYHcsyedUMbxUZLZC/kg3EtACkxv1OsvpWLG4Hpqym5wblAek+mbhjT4flAbR3VOdLHqgrEcbzv+8+hJ7HnSG+t0+8hR/akLDGTxNnGtKS9qnihjEecweWPFtibrqNyHTr/oWm9da5cqp0JxW4V955o3kezkLj+ZT56glVvS953VLDrrraKyVtX11QWlbKBVocPZZjEIwATwh+SJEMdwDgRQoojow2YjD2gGHfA/+IL9EGkJZUFAAA="
+      "passable-area": 1.5
     },
     {
       "id": "hitw_fishbowl_d1",
@@ -1686,9 +1574,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9m21TTBHBiz/hFwhFkIIeBAVBDyJhu5kki5ts2B1p9c89xV2E9uLFSxHpzGGGN/Me86YAChw96JY6xUZLzB7JB+N6AFJivlSstsjpZYbpk6m4xUmG/IZM0zKmsb2lvknoHPldXQfiRB/H8TNWkWqB/Mo6/RoKzO6VJWaSOO5MT9qrmi+U8UgcnO0wazoqteu1J6YkJHG9m67VhqrSbUxlPmKj3zjuDgP5Mli1eub3gRYrx+y687Vi8tY1DVWLWtlAL1Etk1j+To3d8LNU/Bom6VPAJB26txDfKQT+aYhtHgweDP5dg2L/Br8AFQrRLboFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TTUvDQBScbNIEU0TwR3jyFwhFEA8eBAWhHkopy+YlWUyzYfeF1p/uqe6mWj0VvfSQYdk3POYNzH7kQI6zF1XTWrJWMbI5WadNCyCOMb2XLA+dy1uByasuuMaFQPpAuqoZE08fqa1Cd4r0qSwdcRjf7XYfvkah5kjvGqPeXI7sWTbETDHO17olZWXJN1JbhBlc/fQcW911VKxcZ3tFq40xxUJutZu9L4PvH8XbIBYx5r/Ee01JraIFScezUjaOrltjuf7izvQHvpFMtjFVRcV3h/wQ256W+4M6ah50//UeaDBPkCEJ1+Ap4WSIwvKb8MAYEcWJDyjEUMcaUEQeYw44vNPRBhTDHxTDXzwpPgH6FE3tFwYAAA=="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_fishbowl_d2",
@@ -1717,9 +1603,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 4.25,
-      "previous-schematic": "H4sIAAAAAAACA+1TwUrDQBB9m21TTBHBiz/hFwhFkIIeBAVBDyJhu5kki5ts2B1p9c89xV2E9uLFSxHpzGGGNzOPeQNTAAWOHnRLnWKjJWaP5INxPQApMV8qVlvk9DLD9MlU3OIkQ35DpmkZ05jeUt8kdI78rq4DcRofx/EzRpFigfzKOv0aCszulSVmkjjuTE/aq5ovlPFIMzjbYdZ0VGrXa09MiUjielddqw1VpduYynzERL9x7B0G8mWwavXM7wMtVo7ZdedrxeStaxqqFrWygV4iWyax/B0bu+Fnqng1TNKlgEladG8mvl0I/FMTWz8IPAj8ywL3/oNfWTGR2LoFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91RwUrDQBB9yW4bTBHBj/DkFwhFEA8eBAWhHkopSzJJFtNs2J3Q+umeYjbR6K166SHDMvN4vHnwZmMgxtlLUtBOsU4EohVZp00FQAgs7hWrkbm8DTF71SkXuAgxfyCdF4xZBx+pyj27wPwpyxyxX2/b9qObgZ8x5nelSd5cjOhZlcRMAuc7XVFiVcY3Slv4HVz9cI6trmtKt662TULbvTHpWh20W75vvK/A6pd40GRUJbQm5XiZqdLRdWUsF1/YmWbEe8VkS5PnlH4z1C2xbcibh0fMve6/3j3cDIf9U8yDF0tEkP4bOkg4WQWhCPoupcQUqw8ofQ+CyQaUQ8zpBsSkA45PnjjgJ2k7UsIXBgAA"
+      "passable-area": 4.25
     },
     {
       "id": "hitw_fishbowl_d3",
@@ -1743,9 +1627,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrEMBScNLtd7CKCF3/CLxAWQRb0ICgIehAp2fS1DaZNSZ7s6p97qgmKe/HiZcHFyeE9JnnzMlMABQ7udEudYqMlZvfkg3E9ACkxXypW38zxeYbpg6m4xVGG/IpM0zKmsb2mvknsHPlNXQfiND6O43usItUC+YV1+jkUmN0qS8wkcdiZnrRXNZ8p45FmcLLlrOmo1K7XnpiSkMTl9natNlSVbmMq8xYb/cLx7TCQL4NVq0d+HWixcsyuO10rJm9d01C1qJUN9BTVMonl79TYDT9LxdQwSUkBk/TR3UEIEWMR2FuIr7PPBsW/wT9t8BO7XvsBHugYgboFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91SwUrDQBScbNoUU0TwIzz14lUognjwICgI9VBKWZOXZDHNht0X2n66p7qblFroQb30kLnM4zFvduftxkCMi7ekoJVklYQYzchYpSsAYYjxo2R56FzfCwzfVcoFrgSiJ1J5wRi68pmq3HfHiF6yzBL78d1u9+U48Bwjeih18mljjF5lScwU4nKlKkqMzPhOKgM/g5ufnmWj6prSpa1Nk9ByrXU6lxtlp5uF9/2jeOvFIsTtkbjT2FJ+zHlb05R1PVlLJlPqPKd0msnS0qLbwexkLqMqoTlJy51wUmnDxb62ujnUJ5aTNbkhNk1rPvjF3Ov+6324+RAjDPzzuXMIZ0PggHbhoUAfIQbuw7uQLfc1YCAc+hwQYs+9DOh+ZxvQ81nxDWKhjVhPBgAA"
+      "passable-area": 2.0
     },
     {
       "id": "hitw_fishbowl_d4",
@@ -1769,9 +1651,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9m21TTBHBiz/hFwhFkIIeBAVBDyJhu5kki5ts2B1p9c89xd1Le/HipYr0zWGGNzOPeVMABY4edEudYqMlZo/kg3E9ACkxXypWW+b0MsP0yVTc4iRDfkOmaRnTWN5S3yR2jvyurgNxWh/H8TNmkXKB/Mo6/RoKzO6VJWaSOO5MT9qrmi+U8Ug7ONtx1nRUatdrT0xJSOJ6112rDVWl25jKfMRCv3GcHQbyZbBq9czvAy1Wjtl152vF5K1rGqoWtbKBXqJaJrH8mRq74Xup+DVM0qeASTp0bxBCSJGAfwqxjYPBg8G/aVD8jsEvpHS41LoFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TwUrEMBB9bbpb7CKCH+HJi+BJKIJ48CAoCHpYliXbTttg25RkZHc/3VNNWtA9iHhS6AQyw2MmjzczSYAER09ZRY1klQnEz2Ss0i0AIbC4lSw/kdPrELMXlXOFkxDzO1JlxZi58J7a0qMLzB+KwhL78r7v350PvE8wv6l19moTxI+yJmYSOG5US5mRBV9JZeBrcPaFWTaq6yhf2868ZbTeap0v5U7ZdLfy7wpcHCSPObaWmyXvO0pZd+dbyWRqXZaUp4WsLfm68Jck+9XYg8sfSDaaWTff80SIEfn+uZDwZxZ4C4c7wBTNjcTtyXDENAX63Y5EMOicqEAxTnCqAt3X+x+BH3IvT+jQBQAA"
+      "passable-area": 2.0
     },
     {
       "id": "hitw_fishbowl_d5",
@@ -1795,9 +1675,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUoDMRB92bRb3CKCF3/CLxCKIAU9CAqCHkSWNDu7G8xulmSk1T/3tCYi9uKlFw+lbwgzvMw85k0BFDh60C11io2WmD2SD8b1AKTEfKlY/TKnlxmmT6biFicZ8hsyTcuYxvKW+iaxc+R3dR2I0/g4jp8xi5QL5FfW6ddQYHavLDGTxHFnetJe1XyhjEeawdmWs6ajUrtee2JKQhLX29+12lBVuo2pzEcs9BvH3mEgXwarVs/8PtBi5Zhdd75WTN66pqFqUSsb6CWqZRLL3dTYDX9Lxathki4FTNKi/wchxPfbW4if2GeD4mDwYHBnfAFfynzdugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA+1RwUrDQBSc7KYJpojgR3jyC4QiiAcPgoJQD6WUZfOSLKbZsPtC66d7itm21p5EQTwU5zLDMG9gdjMgw8mTrmip2GiJdErOG9sAkBLjW8Vq75xfC4yeTc4VzgSSOzJlxRgN8p6aMrhjJA9F4YnDed/3bwNHgTMkN7XVLz5D+qhqYiaJ06VpSDtV8JUyDuEGF5+eZ2falvKFb12nabGyNp+ptfGT9Tz0fjP8GsJCYnoQ3mYKajTNSHmeFKr2dNlYx9VOe9vt9UoxudqWJeUfDg1H7Dqabx/qy/KQ+2n3RobyGCni8A2DJPwZogGHfHQQMhZh3YaPdWAkBhzzQIgd/w/8TbwDaKFKPRcGAAA="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_fishbowl_d6",
@@ -1821,9 +1699,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA91RwUrEMBB9aXa72EUEL/6EXyAsgizoQVAQ9CBSsum0DaZNSUZ29c891cSDe/GyF4U+BmZ4yTzmzRRAgaMH3VKn2GiJxSP5YFwPQEos14rVD3N6mWH+ZCpucZIhvyHTtIx5LG+pbxK7RH5X14E4tY/j+BmzSLlAfmWdfg0FFvfKEjNJHHemJ+1VzRfKeKQenO05azoqteu1J6YkJHG9f92qHVWl25nKfMRCv3H8Owzky2DV5pnfB1ptHLPrzreKyVvXNFStamUDvUS1TGJ9mBq74XepuDXM0qaAWRr07yBiRGDKEN8xXXti2gbF1A3+0wW/AKPBRwm6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA92RQWvCQBCF325MQiOl0B/hjxBEkB56KFgQ2oOILJtJsqhJ2B1p/Ok9pbsq7bUnhbzDzPCY2eXjZUCGh5Wu6KDY6AjpB1lnmhpAFGH8olj9Os9zifjT5FzhSSJ5JVNWjNiPb1SXwR0jWRaFIw7nfd9/+y5Cz5As9o3euQzpu9oTM0V4PJiatFUFT5WxCDeY/HmOrWlbyreutUdN26+mydeqM27WbcK7/1w+hWWJFKMAA4wIN5MQ579FEAYp6cmkgJQec5iAFzYf4jABxTm5axlmgPcC/AH8tEE8XQUAAA=="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_fishbowl_d7",
@@ -1852,9 +1728,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 6.0,
-      "previous-schematic": "H4sIAAAAAAACA91TTUvDQBB9m21TmiKCF/+Ev0AoQinoQVAQ9CAStptJsrjJhs1Iq//cU9ztwXroxUsPmcPM8HbmMR87GZBh/qRrahQbLTF7Jt8b1wKQEou1YvWLXNwkmL6YgmucJ0jvyFQ1Yxrce2qriC6QPpRlTxzTh2H4DlZEmyFdWaff+wyzR2WJmSTOGtOS9qrka2U8Yg4uD5g1DeXatdoTUySSuD28btWOitztTGG+gqM/OMR2Hfm8t2rzyp8dLTeO2TVXW8XkrasqKpalsj29BbZEYv0/NnbdcaowNUzipIBJLPR0IvZKYLQi/uhxNrjf3sgbFBj5FxWnv8Efko35cLoFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA92SQWvCQBCF325MQiOl0B/RHyGUgvTQQ0FBsAcpYdlMksWYhN0R9af3FHcV7KGXnjzkDcw8HjMLH2wGZHhY6Zp2io2OkK7JOtO1AKII03fF6pY8v0nEX6bgGk8SyQeZqmbE3n5SW4V0imRRlo44nA/D8OOnCDNDMm86vXUZ0qVqiJkiPO5MS9qqkmfKWIQbvPxmjq3peypy19u9pvzQdcVGHY17PX6Hd/+5fArLEikmAQaYEO4mIf66UUn6El4XM1ZA6TVmQOHJQhspoLiC+Y96Z8AzfS+Tzl0FAAA="
+      "passable-area": 6.0
     },
     {
       "id": "hitw_fishbowl_x1",
@@ -1883,9 +1757,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 3.0,
-      "previous-schematic": "H4sIAAAAAAACA+1SwUrEQAx97ex2sYsIXvwJv0BYBFnQg6Ag6EGkZKdpOzjtlGlkV//cU51BcS9ePCgo+3JIeEkeSUgO5Ni70Q23JEYrzG7ZD8Z1AJTCfElCn8zhaYrpnSmlwUGK7IJN3QimIbzkro7sHNlVVQ0ssX0cx9fgk+hzZGfW6cchx+yaLIuwwn5rOtaeKjkh4xF7cLTlrGm50K7TnoWjkML5NrumDZeF25jSvIRAP0mo7Xv2xWBpdS/PPS9WTsS1x2sS9tbVNZeLiuzAD0EtVVh+T01c/7VUuBom8VLAJA76e0jegX+L5MN2C/7ZBXcv+iN4Awdg6D+6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91RwUrDQBB92U0bTBHBj/DkFwhFEA8eBAWhHkopSzJJFtNs2J3Q+umeYtbE2JPopYc8ZpnH482D2YmBGGcvSUE7xTqRiFZknTYVACmxuFesRuXyVmD2qlMucCEwfyCdF4xZRx+pyr26wPwpyxyxH2/b9qPrge8x5nelSd5cjOhZlcRMEuc7XVFiVcY3Slv4GVz9aI6trmtKt662TULbvTHpWh20Wx42PveP5ndvFhKrI3PvyahKaE3K8TJTpaPrylguBu5MM/K9YrKlyXNKvxXqhtg2tOk/6tdw7/tv9hf14SEihP4MHSWcDsEITBKBkOFQ09xQiO71JaZ5QhEEQ2GiCx7VSfEJEHFt0BcGAAA="
+      "passable-area": 3.0
     },
     {
       "id": "hitw_fishbowl_x2",
@@ -1909,9 +1781,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+2SwUrEQAyG/3Z2u9hFBC++hE8gLIIs6EFQEPQgUrLTtB2cdso0sqtv7qnOILgXL4KIh36XhD/JTwjJgRwHd7rhlsRohcU9+8G4DoBSWK5J6Es5Pk8xfzClNDhKkV2xqRvBPKTX3NVRXSK7qaqBJY6P4/geYhJjjuzCOv085FjckmURVjhsTcfaUyVnZDziDE72mjUtF9p12rNwNFK43Fe3tOOycDtTmreQ6BcJvX3PvhgsbR7ltefVxom49nRLwt66uuZyVZEd+Cm4pQrrn7mJ67+3ClfDLF4KmMVF/47kE0xM/FMSFR5UTS/623wA3wGrHroFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA+2QQUvDQBCFX3fTBFNE8Ed48lLwJARBPHgQFAQ9lFK2ySRZTLJhd6TtT/cUsy3YHkQ8iIfQD5Y3DO8tvImBGCfPaUm1Yp1KRC9knTYNACkxuVOsvjbnNwLjV51xiTOB8J50UTLG/fhATeG3E4SPee6Ifbzruo9eR15jhLeVSd9cjOhJVcRMEqe1bii1KudrpS18Bhf7nWOr25ayhWvte0qLlTHZTK21S9Zz/+8vzRtvFhJXB+adx1VqOeNNS8nSMJv6cqWYbGWKgrIkV5Wj+e4M0x+ibNrvcwEiBP5+/Uj4N0YHYIgIIaXwQIqBFvRPbGWgBYNgW7AXHPlLPgGxeUNm0AUAAA=="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_fishbowl_x3",
@@ -1945,9 +1815,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 4.75,
-      "previous-schematic": "H4sIAAAAAAACA+1RwUrDQBB9ybYpTRHBiz/hFwilIAU9CAqCHkTCdjNJFjfZsDvS6p97irs52IsXQQSlj4EZ3u485s3kQI75nWqolayVwOyenNe2AyAEFmvJ8pM5WaWYPuiSGxynyK5I1w1jGspr6urILpDdVJUnju3DMLyHnMScI7swVj37HLNbaYiZBI5a3ZFysuJzqR1iD073nNEtFcp2yhFTFBK43L9u5Y7Kwu50qd9CoV44/O17coU3cvPIrz0tN5bZtmdbyeSMrWsql5U0np6CWiqw/p4a2/5rqbA1TOKmgEkc9PeQjMA/RjLGweDf9TcaTA4X/GF8ANY9+AO6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91UwUoDMRScJrstbhHBj/Dk0ZNQBPHgQVAQ6qGUku6+3Q1uN0vySttP91STrq1CQfTSw75DMgzzBl4mSQIkOHtNS1oo1qnEYEzWaVMDkBLDB8XqwFzeCcRvOuMSFwL9R9JFyYg9fKK6COwQ/ec8d8Shfbvdfvi9F/YE/fvKpO8uweBFVcRMEucLXVNqVc63SluEHlx9c46tbhrKZq6xy5RmK2OyiVprN1pPg+8fxZsgFhLjH+JWk1Od0oSU41GuKkfXtbFcfmFnlge8Uky2MkVB2Z4h38R2SdP2oH41D7r/eu9gMI8kbo7MXaXmE940NJobZrM4dgmtMQaIQoLehXC66u0L3aye8BcKYenqiP65CD9lJDqboNwlGHU1QR+c/5dF3MJT1ie1Ae/8UgYAAA=="
+      "passable-area": 4.75
     },
     {
       "id": "hitw_fishbowl_x4",
@@ -1971,9 +1839,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA+2QwUrDQBCG/2bblKaI4MWX8AmEIpSCHgQFQQ8iYbqZJIubbNiMtPrmnuLuxR700osHyXeZ4Z+Zn5nJgAyLB11zQ2K0wvyRfW9cC0ApLDck9K2cXSWYPZlCapwmSG/YVLVgFtJbbquoLpHelWXPEseHYfgMcRJjhnRtnX7tM8zvybIIK5w0pmXtqZRLMh5xBucHzZqGc+1a7Vk4GilcH6o72nORu70pzEdI9JuE3q5jn/eWts/y3vFq60Rcc7EjYW9dVXGxKsn2/BLcEoXNcW7iut+twtcwjZ8CpnHRv2QSwT9mPHA8cOQnX7msDz26BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA92QQUvEMBSEp81uy3YRwR/hyYtXoSyIBw+CgqCHZVli+toGs01InuzuT/dUmwrq0ZNCPwgThnmPTAqgwOJRtbSTrJVA/kQ+aNsBEALLG8nyyzlbpZg/64pbnKbIbkk3LWM+XO+oa6K7RHZf14E4jvd9/z5oErVAdm2seg0F8gdpiJkETna6I+VlzVdSe8QZnH97gb12jqptcP5N0XZvbbWWBx3Kwybu/WX4GMOpwOWP8GcmGPmy5qOjkq272Esmb2zTUFXW0gTajA/KMYufAMwIf0gyEgXTJB0Rw5l0wWTqBdPpFvwvPgAemahulQUAAA=="
+      "passable-area": 1.5
     },
     {
       "id": "hitw_fishbowl_x5",
@@ -1997,9 +1863,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA+2QwUrDQBCG/2bblKaI4MWX8AmEIpSCHgQFQQ8iYbqZJIubbNiMtPrmnuLuxV568dKD5LvM8M/Mz8xkQIbFk665ITFaYf7MvjeuBaAUlhsS+lUubhLMXkwhNc4TpHdsqlowC+k9t1VUl0gfyrJniePDMHyHOIkxQ7q2Tr/3GeaPZFmEFc4a07L2VMo1GY84g8uDZk3DuXat9iwcjRRuD9Ud7bnI3d4U5isk+kNCb9exz3tL21f57Hi1dSKuudqRsLeuqrhYlWR7fgtuicLmb27iuuNW4WuYxk8B07jo6ZhE8I8ZDxwPHDnGD1OEfGW6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA92QQUvEMBCFX5PdFruI4I/w5MWrUATx4EFQEPSwLEtMp20w24RkZHd/uqfarKAePSn0O8wMjzchb0qgxNGj7mij2GiJ4olCNK4HICUWN4rVl3J6JTB/NjV3OBHIb8m0HWM+jnfUt0ldIL9vmkic1odheB97lnqJ/No6/RpLFA/KEjNJHG9MTzqohi+VCUg7OPvWIgfjPdXr6MObpvXWuXqpdiZWu1V695fmfTILiYsf5k9PtOplyXtPFTt/vlVMwbq2pbpqlI20OnyowCwdAZgR/oxs5FAyTBMxIlMREw6YTT2gmHLA/+MD8oqf35UFAAA="
+      "passable-area": 1.5
     },
     {
       "id": "hitw_fishbowl_x6",
@@ -2023,9 +1887,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1SwUrDQBB9ybYppojgxZ/wCwpFkIIeBAVBDyJhu5kki5ts2B1p9c89xV3R9uJFEMHSN4cZ3s48ZmYnB3Ic3KqGWslaCUzuyHltOwBCYLqQLDfM8VmK8b0uucFRiuySdN0wxiG8oq6O7BTZdVV54lg+DMNb8En0ObJzY9WTzzG5kYaYSeCw1R0pJyueSe0Qa3Cy5YxuqVC2U46YopDAxfZ1JddUFnatS/0aAvXMIbfvyRXeyOUDv/Q0X1pm256uJJMztq6pnFfSeHoMaqnA4mdqbPvvpcLWMIqbAkax0T9D8gXsKpJP2w/4bwf8uM/9D/423gGl3uYcugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA92RwYrCQAyG/0m1xcoi+BD7EIII4sHDwi4srAcRGaapHdS2zER0H31PteNBPe7JQ38SEn6SwEdSIMXg2xR81GJNhOSHnbdVCSCKMFxo0XdnPCP0VzaTAiNCvGS7KwT9tv3gchfcIeLPPPcsYb1pmr+2qlBTxPNDZfY+RfKlDyzCEd6OtmTjdC4TbR3CDt4fnhdn65qzra/dyfD2XFXZWl+sn1424e4/h3/DMCFBL8AAPcbLpJ6ETopAhJDUTT5FqkVTdGs6+sEWjW6YXQV8xEt1BXHmwY5dBQAA"
+      "passable-area": 2.0
     },
     {
       "id": "hitw_fishbowl_x7",
@@ -2049,9 +1911,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9ybYppojgxZ/wCwqlIAU9CAqCHkTCdjNJFjfZsDvS6p97irsotgcvXjxI3hxmeDPzmDc5kOPoTjXUStZKYHZPzmvbARAC87Vk+c2crlJMH3TJDU5SZFek64YxDeU1dXVk58huqsoTx/VhGN5DTmLOkV0Yq559jtmtNMRMAset7kg5WfFCaoe4g7M9Z3RLhbKdcsQUhQQu992t3FFZ2J0u9Vso1AuH2b4nV3gjN4/82tNyY5lte76VTM7YuqZyWUnj6SmopQLr36mx7X+WCl/DJH4KmMRD/w7JJ/BvkXzFaHA0OBo8xAeTKuLnugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA+1RwUrDQBSc3U1TTBHBj/DkFwhFEA8eBAWhHkopS/KSLKbZsPtC66d7itnW1p6KvXgoHVjeMMwMvH0JkODiLS1podmkCsMJOW9sDUApjB41651yfS8xeDcZl7iSiJ/IFCVj0NNnqougjhC/5LknDvGu6776KcJMED9UNv3wCYavuiJmUrhcmJpSp3O+08YhZHDzq3l2pmkom/vGtSnNl9ZmU70yfryahd4/mj+DWSpM9swbT051SlPSnse5rjzd1tZx+cO9bXd8qZlcZYuCsq1CfYhdS7PNRx0sD75ju9c0lEcYIgpn6Cnh3yD2gFOEXD+5pSe4oFCRFFJFQsjzBc8LHoNvkCc9DhcGAAA="
+      "passable-area": 1.5
     },
     {
       "id": "hitw_ice_palace_d1",
@@ -2075,9 +1935,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9ybYpTRHBiz/hFwilIAU9CAqCHkTCdjNJFjfZsDvS6p97irsgrYdevHiQvDnM8GbmMW9yIMf8QTXUStZKYPZIzmvbARACi7VkuWfOVimmT7rkBqcpshvSdcOYhvKWujqyC2R3VeWJ4/owDJ8hJzHnyK6MVa8+x+xeGmImgZNWd6ScrPhSaoe4g/MDZ3RLhbKdcsQUhQSuD92t3FFZ2J0u9Uco1BuH2b4nV3gjN8/83tNyY5lte7GVTM7YuqZyWUnj6SWopQLr36mx7Y9Lha9hEj8FTOKhf4UEyTfwP5HsYzQ4GhwN/sQXbX/zO7oFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA+2QwQrCQAxEp1ttsSKCH+FHCCKIBw+CgqAHEVm2qV3UtuxG1E/3VLsoetWLB/ERmDAkgUkERGjMVUoHyVr5CBdkrM4zAL6P5kiyfDqdgUB9qWNO0RYIxqS3KaNetRPKts5tIpgmiSV262VZXiv1nEYIhvtc7WyEcCb3xEw+WgedkTIy4Z7UBm4H3Zdn2eiioHhjC3NUtDnlebySZ23757W7++bwxQ0LhKi5MECN8DU8r6oH+EWEqF4r7vxmQFfiLv+A/4CfcAM/zLIZXQUAAA=="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_ice_palace_d2",
@@ -2101,9 +1959,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9ybYppojgxZ/wCwqlIAU9CAqCHkTCdjNJFjfZsDvS6p97irsotgcvXjxI3hxmeDPzmDc5kOPoTjXUStZKYHZPzmvbARAC87Vk+c2crlJMH3TJDU5SZFek64YxDeU1dXVk58huqsoTx/VhGN5DTmLOkV0Yq559jtmtNMRMAset7kg5WfFCaoe4g7M9Z3RLhbKdcsQUhQQu992t3FFZ2J0u9Vso1AuH2b4nV3gjN4/82tNyY5lte76VTM7YuqZyWUnj6SmopQLr36mx7X+WCl/DJH4KmMRD/w7JJ/BvkXzFaHA0OBo8xAeTKuLnugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91RQYrCQBCsmWiCERF8hI8QZEH2sIeFFQQ9iMgw6ZhhNQkzvaw+3VPMqKhHTzmk6Kaaoquh6BiI0VvojA6KjQ4QLck6U+QAggD9T8XqoYw+JLork3CGoUT4RWaXMbr1+E35zqt9hD9p6oi9vaqqc83Cc4xwti/0r4sRzdWemCnA4GBy0lalPFHGwnswfmqOrSlLSrautH+atv9FkazV0bjpcePvvrl88ssSETo+DNAhNAbxArQRsi6P29jGgOIeUAjZ3g+izR+8tkTzAS+61c28XQUAAA=="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_ice_palace_d3",
@@ -2132,9 +1988,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 4.0,
-      "previous-schematic": "H4sIAAAAAAACA91QwUrEMBB9bXa72EUEL/6EXyAsgizoQVAQ9CBSsum0DaZNSUZ29c891QSLe9mLlz30zWGGl8ybeZMDOU6eVEOtZK0EFs/kvLYdACGwXEuWf8z5dYr5iy65wVmK7I503TDmobynro7sEtlDVXni2D4Mw3fIScw5shtj1bvPsXiUhphJ4LTVHSknK76S2iH24GLPGd1SoWynHDFFIYHb/etW7qgs7E6X+isU6oPD374nV3gjN6/82dNqY5lte7mVTM7YuqZyVUnj6S2opQLr/6mx7Q9LhathFi8FzOKix0PyC0wWyRiT9TcaTKZsMJmyQYwGjz32B2cW/5q6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA92TTWvCQBCG32xiQhOK0B/RHyGIID30ULBQqAcRWTYTs2g+2B1p+tN7SjOi9tqTh7wwH7zMLDwLkwIpHj5MSZVma0Ikn+S8bWoAYYjsRbO+OU8Lhcna5lxiqhC/kt2XjMnQvlG9FzdDvCoKTyzrfd//DDWQmiJeHhtz8CmSd30kZgrxWNmajNMFz7R1kB08/3menW1byne+dSdDu6+myTe6s37ebeXdfw5/y7BCgkhggIhwPwU3YZQKlBr+VpIaJ6EStjPlEOMEPJ+HunRjJLzme/P9AtwvH7ZdBQAA"
+      "passable-area": 4.0
     },
     {
       "id": "hitw_ice_palace_d4",
@@ -2158,9 +2012,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1SwUrEMBB9bXa72EUEL/6EXyAsgizoQVAQ9CBSZtNpG0ybko7s6p97qgmKe/HiRXHx5TDDm7xHZiY5kGPvRjfckhitMLtlPxjXAVAK8yUJfTKHpymmd6aUBgcpsgs2dSOYhvSSuzqyc2RXVTWwRPk4jq8hJjHmyM6s049Djtk1WRZhhf3WdKw9VXJCxiNqcLTlrGm50K7TnoWjkcL5trqmDZeF25jSvIREP0m42/fsi8HS6l6ee16snIhrj9ck7K2ray4XFdmBH4JbqrD8npu4/murMDVM4qSASXzozyF5B3YWycf5b/Cv9pdgx//oL23wDbzR/GG6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91Sy2rDQAwcrx2b2JRCP6IfEQiBkEMPhQQK7aGUsKxle4lf7Cok/fSeXMuH9NpTDh4kzTJIgkGbAimWb6aiRrM1IZJ3ct52LYAwRLbTrG/K00Zh8WFzrvCoEL+QLSvGYny+UluKmiHeF4UnlvFhGH5GDoRTxNu6MyefIjnompgpxENjWzJOF7zS1kFm8PyneXa27yk/+t6dDR0vXZd/6qv16+uX7P1n87c0KySIxAwQEe6HYMJImCmUGkNyvgYDNeVM/QW3C871kyqJqdwZvxDiNGpdBQAA"
+      "passable-area": 2.0
     },
     {
       "id": "hitw_ice_palace_d5",
@@ -2184,9 +2036,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9ybYppojgxZ/wCwqlIAU9CAqCHkTCdjNJFjfZsDvS6p97irsotgcvXjxI3hxmeDPzmDc5kOPoTjXUStZKYHZPzmvbARAC87Vk+c2crlJMH3TJDU5SZFek64YxDeU1dXVk58huqsoTx/VhGN5DTmLOkV0Yq559jtmtNMRMAset7kg5WfFCaoe4g7M9Z3RLhbKdcsQUhQQu992t3FFZ2J0u9Vso1AuH2b4nV3gjN4/82tNyY5lte76VTM7YuqZyWUnj6SmopQLr36mx7X+WCl/DJH4KmMRD/w7JJ/BvkXzFaHA0OBo8xAeTKuLnugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA+2PywrCMBBFb1ttsSKCH+FHCCKICxeCgqALEQnp1Aa1LcmI+umuaiI+tq5ciAfCXC4zgRMDMRpzmdFBsJIBogVpo4ocQBCgORIsXk1n4KO+VAlnaPsIx6S2GaNu44TyrWubCKdpaojdeVVVVzs9N2OEw30hdyZGNBN7YqYArYPKSWqRck8oDXeD7rszrFVZUrIxpT5K2pyKIlmJszL9y9r9++Hy2S37iFBzMkCN8DU8+A9s/EWslXcHvyton/eMf8G/4MfcAGFv8wJdBQAA"
+      "passable-area": 2.0
     },
     {
       "id": "hitw_ice_palace_d6",
@@ -2210,9 +2060,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.25,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9m21TTBHBiz/hFxRKQQp6EBQEPYiE7WaSLG6yYTPS6p97irsitgcvXjxI3rDM8HbmMW8yIMPRna6pUWy0xOyefG9cC0BKzNeK1TdzukowfTAF1zhJkF6RqWrGNJTX1FaRnSO9KcueOI4Pw/Aesog5Q3phnX7uM8xulSVmkjhuTEvaq5IXynjEGZztOWsayrVrtSemKCRxuf/dqh0VuduZwryFQr9w6O068nlv1eaRXztabhyza863islbV1VULEtle3oKaonE+ndq7LqfpcLVMImXAiZx0b+DEOLz/VuIrxgNjgZHg4f4AEXcEFy6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA+1RwUrDQBB9yW4TTBHBj/DkFwhFEA8eBAWhHkopSzJJFtNs2J3Q+ume4q7R6k178VA6CzOPx5sHbzYDMpw85TWtFetcIJ2Tddq0AITA9Fax2jHn1zEmz7rgGmcxkjvSVc2YeHhPbRXYKZKHsnTEYX0Yhjc/ozAzJDeNyV9chvRRNcRMAqdr3VJuVclXSluEHVx8c46t7joqVq6zfU6rjTHFQm21m22XwVdg/kM8akpqc1qQcjwrVePosjWW60/sTL/DG8VkG1NVVHwx5JfY9hTM41/Mg25f7w+4HA/7p5ivQSyRQoZv8JDwjxVFUSx8w2FWFEkpY+HbwUaU/o3tGPAYcJ96B1GCVesXBgAA"
+      "passable-area": 2.25
     },
     {
       "id": "hitw_ice_palace_d7",
@@ -2236,9 +2084,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 3.0,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9ybYppojgxZ/wC4QiSEEPgoKghyJhu5kki5ts2B1p9c89xd1L2oMXLx4kbw4zvJl5zJscyHHypBpqJWslsHgm57XtAAiB5VqyHJnz6xTzF11yg7MU2R3pumHMQ3lPXR3ZJbKHqvLEcX0Yhq+Qk5hzZDfGqjefY/EoDTGTwGmrO1JOVnwltUPcwcWBM7qlQtlOOWKKQgK3h+5O7qks7F6X+jMU6p3DbN+TK7yR2w1/9LTaWmbbXu4kkzO2rqlcVdJ4eg1qqcD6d2ps+5+lwtcwi58CZvHQv0IyAv8UyRiTwcngZPAI34s75HS6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA+2PsQrCQBBEx4smGBHBj/AjBBHEwkJQELQQkeOyMYeahLsV9dOtYg5RW20sJI+FGYbdhQmBEM2FSugoWSsPwZKM1VkKwPPQGkuWr6Q7FGisdMQJOgL+hPQuYTRKO6V059IW/FkcW2J3XhTFrdSa0xD+6JCpvQ0RzOWBmMlD+6hTUkbG3JfawN2g984sG53nFG1tbk6Ktucsi9byou3gsnF/P1y+umWBAHVXBqgTfkbtSenwj4gnpcN/NnQjHlIVrAp+wR1NNSC6XQUAAA=="
+      "passable-area": 3.0
     },
     {
       "id": "hitw_ice_palace_x1",
@@ -2272,9 +2118,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 4.0,
-      "previous-schematic": "H4sIAAAAAAACA+1STUvDQBB9ybYppojgxT/hLxCKIAU9CAqCHkTCdDNJFjfZsBlp9Z97irug9uLFi2LxzWGGtzuP+cqBHHs3uuGWxGiF2S37wbgOgFKYL0nokzk8TTG9M6U0OEiRXbCpG8E0hJfc1ZGdI7uqqoElpo/j+Bp8En2O7Mw6/TjkmF2TZRFW2G9Nx9pTJSdkPGIOjracNS0X2nXas3AUUjjfvq5pw2XhNqY0LyHQTxL+9j37YrC0upfnnhcrJ+La4zUJe+vqmstFRXbgh6CWKiy/pyau/1oqTA2TOClgEgv9MSQfwK4iebf/Bv9sg+E6d/lCf2uDb+DNyZO6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91RwWrCQBB9u9EEI6XQj/AjhFIQDx4EhYI9FJFlMzGLmoTdEe2n9xQzHmqPnhTyZpgZHm8GHpMCKQaftqCDYWcjJCvywVUlgCjCcGrY/DFvHxr9L5dxgVeNeEZuWzD67TincivsEPEizwOxrDdN89t2JT1FPNlXdhdSJEuzJ2aK8HJwJVlvch4b5yE7GN24wN7VNWWbUPujpc2pqrJvc3bh/byWu3eKf0SskaAnZoAe4WFQ/4AuQmt9Lfo6dNOipERXoZVq7akOG3zSBy+Dr0xTXQUAAA=="
+      "passable-area": 4.0
     },
     {
       "id": "hitw_ice_palace_x2",
@@ -2303,9 +2147,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 4.0,
-      "previous-schematic": "H4sIAAAAAAACA+1SwUrDQBB9ybYpTRHBiz/hFwilIAU9CAqCHkTCdjNJFjfZsDvS6p97iruX9OJFKILSN4cZ3sw8ZobJgRzzB9VQK1krgdkjOa9tB0AILNaS5cicrVJMn3TJDU5TZDek64YxDeEtdXVkF8juqsoTx/ZhGD6DT6LPkV0Zq159jtm9NMRMAiet7kg5WfGl1A6xB+d7zuiWCmU75YgpCglc77NbuaOysDtd6o8QqDcOtX1PrvBGbp75vaflxjLb9mIrmZyxdU3lspLG00tQSwXWP1Nj238vFa6GSbwUMImD/haSEfinSEY7LviHFzy+6OHxBVeBaT66BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA+2Qy4oCMRBFbz/sxhYZ8CP8CEEEceFiYATBWQwiIV1tB+0HSYn66a56khlRl64ExZOQCpeqwEkCJGjPZU6FYCUDxAvSRlUlgCBAZyJYXJLeyEfrW6Wc48NHNCW1zhkte/2kcu3SDqKvLDPEbrxpmpOtnqsJovG2khuTIJ6JLTFTgG6hSpJaZDwQSsPNoH/NDGtV15SuTK13klb7qkp/xEGZ4WHp3r2z+eiafcQInQwQEh6GdwNeEf8f+7/2eAs+peGfm2fXKwvivB/JL/i6I1FdBQAA"
+      "passable-area": 4.0
     },
     {
       "id": "hitw_ice_palace_x3",
@@ -2339,9 +2181,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 4.0,
-      "previous-schematic": "H4sIAAAAAAACA+1STUvDQBB9ybYppojgxT/hLxCKIAU9CAqCHkTCdDNJFjfZsBlp9Z97irug9uLFi2LxzWGGtzuP+cqBHHs3uuGWxGiF2S37wbgOgFKYL0nokzk8TTG9M6U0OEiRXbCpG8E0hJfc1ZGdI7uqqoElpo/j+Bp8En2O7Mw6/TjkmF2TZRFW2G9Nx9pTJSdkPGIOjracNS0X2nXas3AUUjjfvq5pw2XhNqY0LyHQTxL+9j37YrC0upfnnhcrJ+La4zUJe+vqmstFRXbgh6CWKiy/pyau/1oqTA2TOClgEgv9MSQfwK4iebf/Bv9sg+E6d/lCf2uDb+DNyZO6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA92RwWrCQBCG/92YBCNF8CF8iEIpiAcPQoVCPRQJy2ZiFjUJu1NMH72nNJuCevRkId8eZviZGfjYBEgwftcFnRQbHSD+IOtMVQIIAkyWitUlmb1KhFuTcYGpRLQisy8YYdeuqdz7dILoLc8dsV9v2/anq8LXBNHiWOmDSxBv1JGYKcDTyZSkrcr5WRkLv4P5NXNsTV1TlrrafmlKz1WVfarGuJdm5+/eOfzthyVijLwMMCI8DHEDhoj8o28wTGT/MFS9zkx0gkIMWPCffvAXDkHV110FAAA="
+      "passable-area": 4.0
     },
     {
       "id": "hitw_ice_palace_x4",
@@ -2370,9 +2210,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 4.0,
-      "previous-schematic": "H4sIAAAAAAACA+1SwUrEQAx97ex2sYsIXvwJv0BYBFnQg6Ag6EGkZKdpOzjtlGlkV//cU52Bxb148aCg7Msh4SV5JCE5kOPgTjfckhitMLtnPxjXAVAK8yUJfTLH5ymmD6aUBkcpsis2dSOYhvCauzqyc2Q3VTWwxPZxHN+DT6LPkV1Yp5+HHLNbsizCCoet6Vh7quSMjEfswcmOs6blQrtOexaOQgqXu+yaNlwWbmNK8xYC/SKhtu/ZF4Ol1aO89rxYORHXnq5J2FtX11wuKrIDPwW1VGH5PTVx/ddS4WqYxEsBkzjoryHZAv8Wydb2C/7hBfcv+gP4AMo5gqC6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA92PsQrCQBBEJxdNMCKCH+FHCCKIhYWgIGghIsdlkxxqEu5W1E+3ijkLtbSyyGwxw7C78CIgQmetMjpL1spHuCFjdZED8H10Z5LluxlMBNpbHXOGvkAwJ51mjHYdF5Snru0iWCaJJXbnVVU9avecRwimp0IdbYRwJU/ETD56Z52TMjLhkdQG7gbDT2fZ6LKk+GBLc1F0uBZFvJM3bce3vfv74/LdLQuEaDkYoEX4m7wvoYkSQuA1LjQU0Gs0YM2GGtFrNuDH/qgnsaz1cV0FAAA="
+      "passable-area": 4.0
     },
     {
       "id": "hitw_ice_palace_x5",
@@ -2396,9 +2234,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9ybYpTRHBiz/hFwilIAU9CAqCHkTCdjNJFjfZsDvS6p97irsgrYdevHiQvDnM8GbmMW9yIMf8QTXUStZKYPZIzmvbARACi7VkuWfOVimmT7rkBqcpshvSdcOYhvKWujqyC2R3VeWJ4/owDJ8hJzHnyK6MVa8+x+xeGmImgZNWd6ScrPhSaoe4g/MDZ3RLhbKdcsQUhQSuD92t3FFZ2J0u9Uco1BuH2b4nV3gjN8/83tNyY5lte7GVTM7YuqZyWUnj6SWopQLr36mx7Y9Lha9hEj8FTOKhf4XkG0jwT5HsYzQ4GhwN/sAXxooDE7oFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA+2QQUvEMBCFX5PdFruI4I/w5MWrUATx4EFQEPSwLEtMp22w24RkZHd/uqfaVFCPexAPxS8wEx5vhrzkQI6jR93QRrHREtkT+WBsB0BKLG4Uqy/l9Epg/mxKbnAikN6SqRvGfLjeUVdHdYH0vqoCcRzv+/596EnsOdLr1urXkCN7UC0xk8TxxnSkvar4UhmPOIOzby2wN85RuQ7Ov2lab60tl2pnQrFbxb0HmvfRLCQufpg/PaFVL0veOyrYuvOtYvKtrWsqi0q1gVbjgzLM4icAM8KfkQyMJYHAFBEDMhYx4YDJlAPGWGI8/wF/mQ/WVS5zlQUAAA=="
+      "passable-area": 1.5
     },
     {
       "id": "hitw_ice_palace_x6",
@@ -2422,9 +2258,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9ybYppojgxZ/wC4QiSEEPgoKghyJhu5kki5ts2B1p9c89xd1L2oMXLx4kbw4zvJl5zJscyHHypBpqJWslsHgm57XtAAiB5VqyHJnz6xTzF11yg7MU2R3pumHMQ3lPXR3ZJbKHqvLEcX0Yhq+Qk5hzZDfGqjefY/EoDTGTwGmrO1JOVnwltUPcwcWBM7qlQtlOOWKKQgK3h+5O7qks7F6X+jMU6p3DbN+TK7yR2w1/9LTaWmbbXu4kkzO2rqlcVdJ4eg1qqcD6d2ps+5+lwtcwi58CZvHQv0IyAv8TyRiTwcngZPAY33F/vPO6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA+2QQUvEMBSEp8lui11E8Ed48uJVKIJ48CAoCHpYliWmr22w24Tkye7+dE+16YJ69CAeih+ECcO8RyY5kOPoUTe0UWy0RPZEPhjbAZASixvF6tM5vRKYP5uSG5wIpLdk6oYxH6531NXRXSC9r6pAHMf7vn8fNImaI71urX4NObIH1RIzSRxvTEfaq4ovlfGIMzj78gJ74xyV6+D8m6b11tpyqXYmFPtV3PvD8C6GhcTFt/AhE1r1suS9o4KtO98qJt/auqayqFQbaDU+KMMsfgIwI/wZCcRIFEyRBMmIHM6kC4rpFowdD/Jf8Ff5AGIEjFeVBQAA"
+      "passable-area": 1.5
     },
     {
       "id": "hitw_ice_palace_x7",
@@ -2448,9 +2282,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1SwUrDQBB9ybYpTRHBiz/hFwilIAU9CAqCHkTCdjNJFjfZsDvS6p97irse0osXQQSlbw4zvJ15zMxODuSY36mGWslaCczuyXltOwBCYLGWLEfmZJVi+qBLbnCcIrsiXTeMaQivqasju0B2U1WeOJYPw/AefBJ9juzCWPXsc8xupSFmEjhqdUfKyYrPpXaINTjdc0a3VCjbKUdMUUjgcv+6lTsqC7vTpX4LgXrhkNv35Apv5OaRX3tabiyzbc+2kskZW9dULitpPD0FtVRg/T01tv3XUmFrmMRNAZPY6G8hGYH/iWS0w4B/dMDP6zz84M/jA4tsDS66BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA+2QwWrCQBCG/2xMghER+hB9CEEE8eBBsCDUgxRZNpNkMSZhd0T76D3FrJbqsadApf8MzPAzM/BNDMTor1VOB8la+YjeyVhdlQB8H4O5ZPnjvEwFgo1OOMdIIFyQznJG0LZLKjPnDhCu0tQSu/Wmab7a6rkaI5wVldrbGNGbLIiZfAwPuiRlZMpjqQ3cDl7vnmWj65qSna3NUdHuVFXJVp61nZw/3N1fDn+6YYEIPQcD9AidyXsQnlFCtK8VN/0D/k1Ar40rJZ4T8Du7B7wA2eBWZl0FAAA="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_labwallatory_d1",
@@ -2474,9 +2306,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9ybYpTRHBiz/hFwilIAU9CAqCHkTCdjNJFjfZsDvS6p97irtQrIdevHiQvDnM8GbmMW9yIMf8QTXUStZKYPZIzmvbARACi7Vk+c2crVJMn3TJDU5TZDek64YxDeUtdXVkF8juqsoTx/VhGD5DTmLOkV0Zq159jtm9NMRMAiet7kg5WfGl1A5xB+cHzuiWCmU75YgpCglcH7pbuaOysDtd6o9QqDcOs31PrvBGbp75vaflxjLb9mIrmZyxdU3lspLG00tQSwXWv1Nj2x+XCl/DJH4KmMRD/w7JHvivSPYxGhwNjgZ/4gsIqxndugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA92PsQrCQBBEJxdNMCKCH+FHCCKIhYWgIGghIsdlkxxqEu5W1E+3ip6CtlYKmS12GWYWXgREaC1VRkfJWvkIV2SsLnIAvo/2RLJ8O72RQHOtY87QFQimpNOM0XycM8pT57YRzJPEErt6VVW3x/bcjhCMD4Xa2wjhQh6ImXx0jjonZWTCA6kNXAf9j2fZ6LKkeGdLc1K0OxdFvJEXbYfXrfv7ZfjiwgIhGg4GaBB+KQ/iJdRUHryXagso6g74HNSW71+AdzAe5UldBQAA"
+      "passable-area": 2.0
     },
     {
       "id": "hitw_labwallatory_d2",
@@ -2500,9 +2330,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrEMBB9TXa72EUEL/6EXyAsgizoQVAQ9CBSsum0DaZNSUZ29c891eSy68GLFw/SN4cZ3sx7zEwBFDh60C11io2WWDySD8b1AKTEcq1Y7ZnTS4H5k6m4xYlAfkOmaRnzWN5S3yR2ifyurgNxko/j+BlzlnKB/Mo6/RoKLO6VJWaSOO5MT9qrmi+U8UganB04azoqteu1J6ZkJHF96G7VjqrS7UxlPmKh3zjODgP5Mli1eeb3gVYbx+y6861i8tY1DVWrWtlAL9FNSKx/58Zu+Nkqfg2z9Clglhb9M2QikzFEhn+KbB/TgdOBE77hC27RnKC6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91RsUrEQBB9m73LYQ4R/AgrG8FKCIJYWAgKghbHcewlk2Rxk112R877dKuYJaIWYqmQV8wbHvMG3kwGZDh4KBpqFetCYvFIPmjbAZASy2vF6lM5vkwwf9IlNzhKkN6QrhvGfGhvqaujukR6V1WBONr7vn8bWETOkF4ZWzyHDIt7ZYiZJA5b3VHhVcUXSntED06+tMBeO0flJjj/UtBmZ225Uq865Pt13Ctx/m14nAlGbVe8d5RvLbNtT3eKyRtb11TmlTKBojWROPvFytb97BvOg1k8CTAj/BlEkgg5xI2MKUJIKSA+eJIB4xPH90034FgmGvD/8A57NS9uowUAAA=="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_labwallatory_d3",
@@ -2571,9 +2399,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 18.0,
-      "previous-schematic": "H4sIAAAAAAACA+2QwUrEQAyG/3Z2u9hFBC++hE8gLIIs6EFQEPQgUrLTtB2cdso0sqtv7qnOXNyLF2ERD/0uCX+SnyQ5kOPoQTfckhitsHhkPxjXAVAKyzUJfSunlynmT6aUBicpshs2dSOYh/SWuzqqS2R3VTWwxPFxHD9DTGLMkV1Zp1+HHIt7sizCCset6Vh7quSCjEecwdles6blQrtOexaORgrX++qWdlwWbmdK8xES/Saht+/ZF4OlzbO897zaOBHXnm9J2FtX11yuKrIDvwS3VGH9Ozdx/c9W4WuYxU8Bs7jon5JgYuJfk0wHHp4v2mq7W7oFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA+2PvQrCQBCEJ15+MEEEH8KHEEQQCwtBQdBCRI7LxhyaH+5W1Ee3il6jtY0g5GtmGZhhJwZidNcqp0KyVgLRhozVVQlACCQzyfLtDCYdBFudco5+B+Gc9DFnBK9zQeXRuQnCZZZZYhdvmubxUs9pjHB6rtTJxohW8kzMJNArdEnKyIxHUhu4DIYfz7LRdU3pwdbmouhwrap0J2/aju9714sIvvsP8Am/xUPLf+O1A9uB3/MEg0Rp6DAFAAA="
+      "passable-area": 18.0
     },
     {
       "id": "hitw_labwallatory_d4",
@@ -2597,9 +2423,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9ybYpTRHBiz/hFwhFKAU9CAqCHkTCdjNJFjfZsDvS6p97irsI6cWLl4LFNywzvJ15zJscyDF/UA21krUSmD2S89p2AITAYi1ZjszZVYrpky65wWmK7IZ03TCmobylro7sAtldVXniOD4Mw2fIScw5spWx6tXnmN1LQ8wkcNLqjpSTFV9K7RBncL7njG6pULZTjpiikMD1/ncrd1QWdqdL/REK9caht+/JFd7IzTO/97TcWGbbXmwlkzO2rqlcVtJ4eglqqcD6d2ps+5+lwtUwiZcCJnHRQyEZgeNEMsa/wT9sMInvWA0m3/YObvAL17gLwroFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA92TwWrDMAyGfztNwlJGoQ/RhyiUwdhhh8EKg+1QSjCOkpi1SbA1lj76TlnclPbaUw4RQhI/kuBDKAESPHzoko6KjQ4Qf5J1pq4ABAHmL4rVVVk+SYRfJuMSC4nolUxRMsK+fKOq8Ooc0XueO2I/3nXdX5+Fzwmi50Otv12CeKsOxEwBHo+mIm1VzmtlLPwMVjfNsTVNQ1nqGvujKf2t62ynWuM2p73fe2dz65slYsw8DDAjjGYCUg6h9ymakGcfwiQBIYVHExPlu1ywp5z0BYc3HBnwHyn/CkJdBQAA"
+      "passable-area": 2.0
     },
     {
       "id": "hitw_labwallatory_d5",
@@ -2638,9 +2462,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 11.0,
-      "previous-schematic": "H4sIAAAAAAACA+VTwUrDQBB9m21TTBHBiz/hFxRKQQp6EBQEPYiE7WaSLG6yYTPS6p97irsI1kMvXhTiDOwMb2ce8wYmAzIc3emaGsVGS8zuyffGtQCkxHytWH0hp6sE0wdTcI2TBOkVmapmTEN6TW0V0TnSm7LsiWP7MAzvIYoYM6QX1unnPsPsVlliJonjxrSkvSp5oYxH7MHZHrOmoVy7VntiikQSl/vfrdpRkbudKcxbSPQLh9quI5/3Vm0e+bWj5cYxu+Z8q5i8dVVFxbJUtqenwJZIrH/Gxq47TBW2hkncFDCJg/6Sieji88UYTXzzcQoUYxeI/yDwT27wAwJVGVG6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA+VTwYrCQAx9ndoWKyL4EX7EggjiwYPggqAHERmmqR3UtsxEtn66p9pxYfXoyUM3gbzwyAs8QmIgRnelMjpL1spHtCZjdZED8H30ZpLlHzOcCAQbnXCGgUA4J33IGEHTLig/OLaHcJmmltjJ67q+Neg5jBFOT4U62hjRtzwRM/non3VOysiUv6Q2cBqMnpxlo8uSkr0tzUXR/qcokq2stB1fd27vm8OVGxaI0HFmgA7hY+E1KYR4VLQxvJdsp0HRdoP4DwZ/r/jhH7wDpaDOHV0FAAA="
+      "passable-area": 11.0
     },
     {
       "id": "hitw_labwallatory_d6",
@@ -2684,9 +2506,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 10.0,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrEMBB9aXa72EUEL/6EXyAsgizoQVAQ9CBSsum0DaZNSUZ29c891QTEvXgRxEPxzWGGNzOPeVMABQ7udEudYqMlFvfkg3E9ACmxXCtWX8zxeYb5g6m4xVGG/IpM0zLmsbymvknsEvlNXQfitD6O43vMIuUC+YV1+jkUWNwqS8wkcdiZnrRXNZ8p45F2cLLnrOmo1K7XnpiSkMTlvrtVO6pKtzOVeYuFfuE4Owzky2DV5pFfB1ptHLPrTreKyVvXNFStamUDPUW1TGL9MzV2w/dS8WuYpU8Bs3To30EIgRgCU4X4jGkbFFM3iH+Dv40PKboOzLoFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91RTWvCQBB9uzEJjRTBH+GPEESQHnooKBT0ICLLZpIs5ovdEdOf3lPMgrTXnirkzWGGx3w9XgIkePnUBVWKjQ4Q78k609QAggDTN8Xqh5mvJcKDSbnATCJ6J5MXjHAoP6jOPTtFtM0yR+zH+77/HrLwOUG0KRt9cQninSqJmQK8VqYmbVXGS2Us/AwWv5xja9qW0rNr7VXT+dY06VF1xq26k9/7x+Yv3ywRY+LFABPC/0EIMdyW/oFxQj5i3AKFhJBi3A7KsVr4NIF3NwPasV0FAAA="
+      "passable-area": 10.0
     },
     {
       "id": "hitw_labwallatory_d7",
@@ -2710,9 +2530,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9ybYppojgxZ/wC4QiSEEPgoKgB5Ew3UySxU02bEZa/XNPcdeDvXgpiKD0HWaGNzOPmZcDOQ7udMMtidEKs3v2g3EdAKUwX5LQF3N8nmL6YEppcJQiu2JTN4JpKK+5qyM7R3ZTVQNLXB/H8T3kJOYc2YV1+nnIMbslyyKscNiajrWnSs7IeMQdnGw5a1outOu0Z+EopHC57a5pw2XhNqY0b6HQLxJm+559MVhaPcprz4uVE3Ht6ZqEvXV1zeWiIjvwU1BLFZa7qYnrv5cKrmESnQIm8dBfRKKCK3v8XSSfIfnvP+4f/Gl8AAgZOPe6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91RwUrEMBB9Sbpb7CKCH+HJi+BJKIJ48CAoCHpYliXbTttg25RkZHc/3VNtXHQ9iHhS6JBkhse8vLxJAiQ4eMgqajSbTCF+JOeNbQEohdm1Zv2JHF9KTJ5MzhWOJKY3ZMqKMRnKW2rLgM4wvSsKTxzofd+/DlmEnGB6Vdvs2SeI73VNzKRw2JiWMqcLvtDGIXBwssc8O9N1lC99514yWq6tzed6Y3y6XYR7Fc6+NO96fK1Xc952lLLtTteaydW2LClPC117Cjz5S5HNYjeD8x9EVpbZNt/rRIgRhfkNJeEPQ8jh2VIKjDXE+8JYDSolokiosNVY/+/jFOM1qP7D4BuXYKde0AUAAA=="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_labwallatory_d8",
@@ -2736,9 +2554,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 3.0,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9ybYppojgxZ/wCwqlIAU9CAqCHkTCdjNJFjfZsDvS6p97irsotgcvXjxI3hxmeDPzmDc5kOPoTjXUStZKYHZPzmvbARAC87Vk+c2crlJMH3TJDU5SZFek64YxDeU1dXVk58huqsoTx/VhGN5DTmLOkV0Yq559jtmtNMRMAset7kg5WfFCaoe4g7M9Z3RLhbKdcsQUhQQu992t3FFZ2J0u9Vso1AuH2b4nV3gjN4/82tNyY5lte76VTM7YuqZyWUnj6SmopQLr36mx7X+WCl/DJH4KmMRD/w7JJ/BvkXzFaHA0OBo8xAeTKuLnugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA+2PsQrCQBBEJ4kmGBHBj/AjBBHEwkJQELQQkeOySQ41CXcrxk+3ip6IthZiEXxb7DLMLEwIhGgtZUpHwUp6CFakjcozAJ6H9kSweCm9kYvmWkWcouvCn5JKUkbzfs4oS6zahj+PY0Ns41VVXe/bsTuEPz7kcm9CBAtxIGby0DmqjKQWMQ+E0rAZ9N+aYa2KgqKdKfRJ0u6c59FGlMoMy639+6H5Ys0uAjRsGaBB+CnOE9QR28t9grpS/4KPwb/gd7kBzYmo810FAAA="
+      "passable-area": 3.0
     },
     {
       "id": "hitw_labwallatory_d9",
@@ -2777,9 +2593,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 10.0,
-      "previous-schematic": "H4sIAAAAAAACA+1TwUrEMBB9bXa7bBcRvPgTfoGwLMiCHgQFQQ8iJZtO22DalGRkV//cU00QrAcvXhaRfSHM8DLzkjeQHMgxv1MNtZK1Epjdk/PadgCEwGItWX4xJ6sU0wddcoPjFNkV6bphTEN6TV0d2QWym6ryxLF9GIb3EJMYc2QXxqpnn2N2Kw0xk8BRqztSTlZ8LrVD7MHpyBndUqFspxwxRSGBy/F0K3dUFnanS/0WEvXCobbvyRXeyM0jv/a03Fhm255tJZMztq6pXFbSeHoKaqnA+ndqbPufpcLUMImTAibxoXtCEoHPjf+I5Ns6GDwY/IsGxz+455s/AHRhgcq6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA+1PQQrCQAycbrXFigg+wkcIIogHD4KCoAcRWbZpu6ht2Y2oT/dUXRD16ElETBgShpmEiYAIjbnKaC9ZKx/hgozVRQ7A99EcSZYPpjMQqC91zBnaAsGYdJox6rd1Qnnq2CaCaZJYYmevqupym56bEYLhrlBbGyGcyR0xk4/WXuekjEy4J7WB86D75CwbXZYUb2xpDoo2x6KIV/Kkbf+8dnffFJ+cWCBEzYUBaoSPlQchxB34xfJe+h/wH/A7A4o7Pvz5CoZ+NkFdBQAA"
+      "passable-area": 10.0
     },
     {
       "id": "hitw_labwallatory_d10",
@@ -2803,9 +2617,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9ybYppojgxZ/wCwqlIAU9CAqCHkTCdjNJFjfZsDvS6p97irsotgcvXjxI3hxmeDPzmDc5kOPoTjXUStZKYHZPzmvbARAC87Vk+c2crlJMH3TJDU5SZFek64YxDeU1dXVk58huqsoTx/VhGN5DTmLOkV0Yq559jtmtNMRMAset7kg5WfFCaoe4g7M9Z3RLhbKdcsQUhQQu992t3FFZ2J0u9Vso1AuH2b4nV3gjN4/82tNyY5lte76VTM7YuqZyWUnj6SmopQLr36mx7X+WCl/DJH4KmMRD/w7JJ/BvkXzFaHA0OBo8xAeTKuLnugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA+1RwUrDQBB9zaYJTRHBj/DkFwilIB48CApCPZRSls0kWUyzYXdC66d7itm2xp5EQTwEH7PM4/HmwewkQILJkypoI1krgXhB1mlTARAC01vJslcu5gHGzzrlAucBojvSecEYd/SeqtyrU0QPWeaI/Xjbtm9dH/meILopjXpxCeJHWRIzCZxtdEXKyoyvpbbwM7j81BxbXdeUrl1tG0XrrTHpUu60m+1WPveb5ldvDgQWJ+aDJ6NK0ZKk41kmS0dXlbFcHLkzTc+3ksmWJs8p/VCoG2Lb0OrwUV+Ge99Ps/fUh4eIEfozdJTwZxidAENEcIQnw1xwX/0b4ILCV9gtF/5f8HfxDkjNd70XBgAA"
+      "passable-area": 2.0
     },
     {
       "id": "hitw_labwallatory_d11",
@@ -2849,9 +2661,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 11.0,
-      "previous-schematic": "H4sIAAAAAAACA+1TwUrEMBB9bXa72EUEL/6EXyAsgizoQVAQ9CBSZtNpG0ybko7s6p97qgmIe/HiRaH45jDDS+Yxb2ByIMfBnW64JTFaYXHPfjCuA6AUlmsS+mKOz1PMH0wpDY5SZFds6kYwD+U1d3Vkl8huqmpgie3jOL6HnMScI7uwTj8PORa3ZFmEFQ5b07H2VMkZGY/Yg5M9Z03LhXad9iwchRQu969b2nFZuJ0pzVso9IuEv33PvhgsbR7ltefVxom49nRLwt66uuZyVZEd+CmopQrrn6mJ67+XClvDLG4KmMVBfw1JjABMFclnTNdg8m9wAgb/4AY/ABjYHxC6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA+2PwYrCQAyG/061xcoi+BA+xMKyIHvYg6CwoAcRGaapHVbbMhNRH91TbRT06klQ/JNJwk8y8CVAgs6fyWmj2ZoQ8ZSct2UBIAzR/dGsr07/W6E9synn6ClEv2RXOaPdjCMqVuJ2EY2zzBPLeV3Xx6YH0hNEw3Vp/n2CeKLXxEwhPja2ION0xp/aOsgNBjfPs7NVRenSV25raLkry3Su99Z/HRby753Le1lWiNESGKBFeJiC81NK8iV1AQwuw2sCBm/A5wZUTTRV8rE6AW86FMRdBQAA"
+      "passable-area": 11.0
     },
     {
       "id": "hitw_labwallatory_d12",
@@ -2875,9 +2685,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrEMBB9aXa72EUEL/6EXyAsgizoQVAQ9CBSsum0DaZNSUZ29c891eSy68GLFw/SN4cZ3sx7zEwBFDh60C11io2WWDySD8b1AKTEcq1Y7ZnTywzzJ1Nxi5MM+Q2ZpmXMY3lLfZPYJfK7ug7EST6O42fMIuUC+ZV1+jUUWNwrS8wkcdyZnrRXNV8o45E0ODtw1nRUatdrT0zJSOL60N2qHVWl25nKfMRCv3GcHQbyZbBq88zvA602jtl151vF5K1rGqpWtbKBXqJbJrH+nRu74Wer+DXM0qeAWVr0zyCkyGJIgX8KsY/pwOnACd/wBbOskMm6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91RwUrDQBSc3W1TTBHBj/DkReipEATx4EFQEPRQpGw3L8likg27T2o/3VPMWlEP4lEhc9h5DG8W5k0KpDi4MxU1mq1RmN2TD9a1AJTC/FKz/lSOzyWmDzbnCkcSyRXZsmJMh/Ga2jKqcyQ3RRGIo73v+9eBReQUyUXtzFNIMbvVNTGTwmFjWzJeF7zU1iN6cPKlBfa26yhfh84/G1pvnctX+sWGbPcY/1U4+7a83wm13qx411HGrjvdaiZfu7KkPCt0HSj6pMLiF9/GMbvmZ+twHkziSYAJ4c8gpBRKKCUgBcYIETPGlO/jGAPG8sQHj7XB/TPSBv8Pb1AD6b2jBQAA"
+      "passable-area": 2.0
     },
     {
       "id": "hitw_labwallatory_d13",
@@ -2916,9 +2724,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 6.25,
-      "previous-schematic": "H4sIAAAAAAACA+2QwUrDQBCG/2TbFFNE8OJL+ASFUpCCHgQFQQ8iYbuZJIubbNgdafXNPcVdFNuDFy8eJN8eZvhn5mdnciDH0Z1qqJWslcDsnpzXtgMgBOZryfJbOV2lmD7okhucpMiuSNcNYxrSa+rqqM6R3VSVJ47jwzC8h5jEmCO7MFY9+xyzW2mImQSOW92RcrLihdQOcQZne83olgplO+WIKRoJXO6rW7mjsrA7Xeq3kKgXDr19T67wRm4e+bWn5cYy2/Z8K5mcsXVN5bKSxtNTcEsF1r9zY9v/bBWuhkm8FDCJH/07kk/wb0m+3rjguODIIR+9tfDWugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA+1S0UrDMBQ9S9sVO0TwI3zyC4QhiA8+CArC9jDGCOltG+yaktyy+ek+1cZtdW+KDB+KB8I9HM49yU2SAAnOXlRBa8laBYhnZJ02FYAgwOResuyVy1uBaK5TLnAhMH4gnReMqKOPVOVenWD8lGWO2Le3bfve1ZGvCcZ3pVGvLkH8LEtipgDna12RsjLjG6ktfA+uvjTHVtc1pStX20bRamNMupBb7abbpc/9ofnNm0WA+ZF558moUrQg6XiaydLRdWUsF3vuTNPzjWSypclzSg8KHZqWu5uanTydbfMZHn4T7n2/PnmEGKF/5G4fwp9hdAQMEaL7yqIvgxywW2Ek9nSgA/blHyfEBx6LZdR1BgAA"
+      "passable-area": 6.25
     },
     {
       "id": "hitw_labwallatory_d14",
@@ -2942,9 +2748,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1SwUrDQBB9ybYppojgxZ/wCwqlIAU9CAqCHkTCdjNJFjfZsDvS6p97irtQ7aUXQQSlbw4zvN15zBsmB3Ic3amGWslaCUzuyXltOwBCYLqULL+Y00WK8YMuucFJiuyKdN0wxqG8pq6O7BTZTVV54tg+DMN7yEnMObILY9WzzzG5lYaYSeC41R0pJyueSe0Qe3C244xuqVC2U46YopDA5e51LTdUFnajS/0WCvXC4W/fkyu8katHfu1pvrLMtj1fSyZnbF1TOa+k8fQU1FKB5ffU2Pb7pcLWMIqbAkZx0F9D8gn8VyTbOBj8q/62Bg8n+sP4AH5DZxy6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA92Sz2rCQBDGv91oQiNS6EP4EIII0kMPBQuCPYjIspmYRU3C7kj10T3FjIi9evKQ7zLDx/zhtzspkOJtYQs6GHY2QrIkH1xVAogiDD4Nm4fzMdXo/7qMC7xrxF/ktgWj36bfVG7FHSCe53kglvamaS5tVBJTxLN9ZXchRfJj9sRMEYYHV5L1JuexcR7Sg9G/F9i7uqZsE2p/tLT5q6psZU4uTE5rmftk8VmKNRL0BAboEV4mdZck6Kb0Te0Do9OAqquASsnntXS6uyd6B3z13iuEqG2eXQUAAA=="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_labwallatory_x1",
@@ -2968,9 +2772,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 5.4375,
-      "previous-schematic": "H4sIAAAAAAACA+1SwUoDMRB9u2m3uEUEL/6EX1AoBSnoQVAQ9CCypNnZ3WB2syQjrf65pzVRaC+9CCIofe8ww0vmMZlMDuQ4ulMNtZK1Epjck/PadgCEwHQpWW6V00WK8YMuucFJiuyKdN0wxiG9pq6O6hTZTVV54lg+DMN7iEmMObILY9WzzzG5lYaYSeC41R0pJyueSe0Qa3C204xuqVC2U46YopHA5e50LTdUFnajS/0WEvXC4W7fkyu8katHfu1pvrLMtj1fSyZnbF1TOa+k8fQU3FKB5ffc2Pb7rcLUMIqTAkax0V9DEpkG4p8i2fLwwD+Jz+X8WtPDD/4oPgCkwti5ugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA+1RTUvDQBB9zfYDU0TwR3jq0ZMQBPHgQVAQ9BClTJNJsphml90psT/dU92lVAU9Fyw+ZplhmPeWN5MCKY4eioaXJLpQmDyy89p0AJTC9JqEPjunlwlGT7qUBicJxjes60YwCuUtd3XsTjG+qyrPEumbzeY95EHMKcZXrSlefYrJPbUswgrHS91x4aiSC9IOkYOzr54Xp63lcu6tWxU8740pc3rTPlu/RF2F82/D2xnf0iKXteVsYUTMctaTsGtNXXOZVdR6jtRE4fkHVRzZ0hiXV1Tors569jJrqK12UsZyl4lb8cyant1O8PcvwiYxjNsDhoz9YZAMVHgIcZAIvoLBYDPGQeL/gn/+gluDsdgvPgAyHZMozgUAAA=="
+      "passable-area": 5.4375
     },
     {
       "id": "hitw_labwallatory_x2",
@@ -2994,9 +2796,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9ybYppojgxZ/wC4QiSEEPgoKghyJhu5kki5ts2B1p9c89xd1L2oMXLx4kbw4zvJl5zJscyHHypBpqJWslsHgm57XtAAiB5VqyHJnz6xTzF11yg7MU2R3pumHMQ3lPXR3ZJbKHqvLEcX0Yhq+Qk5hzZDfGqjefY/EoDTGTwGmrO1JOVnwltUPcwcWBM7qlQtlOOWKKQgK3h+5O7qks7F6X+jMU6p3DbN+TK7yR2w1/9LTaWmbbXu4kkzO2rqlcVdJ4eg1qqcD6d2ps+5+lwtcwi58CZvHQv0IyAv8TyRiTwcngZPAY33F/vPO6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA+2QwUvDMBjF35qtxQ4R/CM8efQkFEE8eBAUBD2MMb6lX9tg25Tkk21/uqe6bOh29CAeij9CXni8L+QlBVKcPOuKGxKjFZIXdt7YFoBSmN6R0LdzfhNh8mpyqXAWIb5nU1aCyfb4wG0Z3Cnix6LwLGG87/uPrY6Cpohva6vffIrkiWoWYYXTxrSsHRVyTcYhzODi4Hlxpus4X/jOvWterKzNZ7Q2PlvPw70/DG9COFK4OgrvM76m5Uw2HWdLK2KbyxUJu9qWJedZQbXn+e5NCcbhH4Ax488YHYEhEu3Z6YALqgEXDOtr+y/4m3wCHYtQ65gFAAA="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_labwallatory_x3",
@@ -3020,9 +2820,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9ybYpTRHBiz/hFwilIAU9CAqCHkTCdjNJFjfZsDvS6p97irsIrYdevHiQvDnM8GbmMW9yIMf8QTXUStZKYPZIzmvbARACi7VkuWfOVimmT7rkBqcpshvSdcOYhvKWujqyC2R3VeWJ4/owDJ8hJzHnyK6MVa8+x+xeGmImgZNWd6ScrPhSaoe4g/MDZ3RLhbKdcsQUhQSuD92t3FFZ2J0u9Uco1BuH2b4nV3gjN8/83tNyY5lte7GVTM7YuqZyWUnj6SWopQLr36mx7Y9Lha9hEj8FTOKhf4UEyTfwT5HsYzQ4GhwN/sQX9v4IAboFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA92SwUvDMBTGvyRbyzpE8I/w5MXroAjiwYOgIOhhjBHb1zaYNSV5su1P91SbDdTjTgr9JfDCx/ce+UIyIMPsuWhoo9kUCukL+WBcC0ApzO8062/l4kZi+mpKbnAukdyTqRvGdDg+UFtHdY7ksaoCcWzv+/5zqCLWDMmtdcV7yJA+aUvMpHC2MS0VXle80MYj9uDyRwvsTddRuQ6d/yhovXWuXOqdCfl+FeeeaN5Fs1S4/mU+eoLVb0ved5Sz6662mslbV9dU5pW2gVaHC6WYxEcAJoQ/Q0DKYQ9gnAgIoURkpBFjQCmOjDXgYUGM94v+U8AvGON/AZUFAAA="
+      "passable-area": 1.5
     },
     {
       "id": "hitw_labwallatory_x4",
@@ -3051,9 +2849,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 4.0,
-      "previous-schematic": "H4sIAAAAAAACA+1RwUrDQBB9m21TmiKCF3/CLxCKUAp6EBQEPYiE7WaSLG6yYTPS6p97irsU2ksvvXgofcMww9uZx8xsBmSYvuiaGsVGS0xeyffGtQCkxGypWO2Yq7sE4zdTcI3LBOkDmapmjEP6SG0V2RnSp7LsiWP7MAy/IYoYM6QL6/Rnn2HyrCwxk8RFY1rSXpV8q4xH7MH1nrOmoVy7VntiikIS9/vXtdpQkbuNKcxPSPQXh9quI5/3Vq3e+buj+coxu+ZmrZi8dVVFxbxUtqePoJZILI9TY9cdlgpXwyheChjFQf8LQohk6zhNiJ2d7oJy6+cfPC94FP4AxLip6roFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91RTUvEMBB9bbotdhHBH+HJi+BJKIJ48CAoCHpYliXbTttg2pRkZHd/uqeasPhxEPGk0CGZeQzz8niTHMhx8FC21ElWpUD2SNYp0wMQAvNryfKjc3wZY/akKm5xFCO9IdW0jJmHt9Q3oTtHelfXjjjQx3F89TUKNUd6pU357HJk91ITMwkcdqqn0sqaL6SyCBycfPYcWzUMVK3cYF9KWm2MqRZyq1yxXYZ3Bc6/DO9nnJbrBe8GKtaG2XSnG8lktWkaqopaakeBGv9SZ7fcr+HsBx02w/ciCTIkYX8eEv4sohCxvx5hiuH/Q4jEp4CmaTARIvIpmqrB94Np+vtHg28EvKZ20AUAAA=="
+      "passable-area": 4.0
     },
     {
       "id": "hitw_labwallatory_x5",
@@ -3077,9 +2873,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 1.125,
-      "previous-schematic": "H4sIAAAAAAACA+1RTUvDQBB9ybYppojgxT/hLxCKIAU9CAqCHkTCdDNJFjfZsBlp9Z97irse7MVLQTxUHwMzvJl5zEcO5Di40w23JEYrzO7ZD8Z1AJTCfElCX8zxeYrpgymlwVGK7IpN3QimIbzmro7sHNlNVQ0ssX0cx/fgk+hzZBfW6echx+yWLIuwwmFrOtaeKjkj4xF7cLLlrGm50K7TnoWjkMLlNrumDZeF25jSvIVAv0io7Xv2xWBp9SivPS9WTsS1p2sS9tbVNZeLiuzAT0EtVVjupiau/14qXA2TeClgEgf9RSSftr9Q+75g8jcWTP4/+MP4ABjg0bq6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91RwUrDQBCdTXYTTBHBj/DkxasQBPHgQVAQ6iGUsm4myWKaDbtT2n66p7hrbRV6UC89ZA4zj8e8t7zZDCCDk2fV4EKSVjGkU7ROmw4A4hgmd5Lknjm/iUC86JIaOIsguUddNwTCwwfs6sBOIHmsKocU5MMwvPvJwswguW2NenMZpE+yRSKM4XShO1RWVnQttYWggYtvzpHVfY/l3PV2qXC+MqYs5Fq7fDMLvjFMfyxvdyrsFBYoHeWVbB1edsZS84WdWe7xShLa1tQ1ljsGvYjsEoN59It52Puv9yecbQ97dWDuWvla0KbHnEx/aBF0/I/nWYdlASnw8H1eh3DUYlHMYKzFhRCMc+YHH2lEFtL5NtYvFAx8Nt/EWBPuAh773Q8g8F6yTwYAAA=="
+      "passable-area": 1.125
     },
     {
       "id": "hitw_labwallatory_x6",
@@ -3103,9 +2897,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9zbYppojgxZ/wC4QilIIeBAVBDyJhupkkSzfZsBlp9c89xV0Qe+nFiwfJm8MMb2Ye8yYDMpw86pobEqMV5k/se+NaAEphsSahH+b8OsHs2RRS4yxBesumqgWzUN5xW0V2gfS+LHuWuD4Mw2fIk5gzpCvr9LbPMH8gyyKscNqYlrWnUq7IeMQdXBw4axrOtWu1Z+EopHBz6O5oz0Xu9qYwH6HQbxJmu4593lvavMh7x8uNE3HN5Y6EvXVVxcWyJNvza1BLFNa/UxPXHZcKX8M0fgqYxkP/DpPv+LcYDY4GR4PH8AWbiKbXugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91SwUrEMBCdJt0Wu4jgR3jai1ehCOLBg6AgrIeyLDGdtsFuU5Ipu/vpntbMqquwF08KnUmYx2NeMjNJBpDByZNucKXIaAnpHJ03tgMAKWF6q0gdmPNrAZNnU1IDZwKSOzR1QzAJ8B67mtkpJA9V5ZFYvtvt3kKMOGaQ3LRWv/oM0kfVIhFKOF2ZDrVTFV0p44A1MP/mfO8GjcsKO40FKk85uQFnnXXU5JVqPc68HQ54rQhda+sayy8Gg2YPF1yHhIsfh5MzfY/l8vOWtbVloTbG51tOFr9M3iw+BnV5VLZv1UtB2x5zsv1xcayLIYWYJxwgwt9ZJICd1zgtEpI9FuFlRtrg3mTYY21w9F/0nxp8Bx05/znyBQAA"
+      "passable-area": 1.5
     },
     {
       "id": "hitw_labwallatory_x7",
@@ -3129,9 +2921,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1RwUrDQBB9ybYppojgxZ/wC4QiSEEPgoKgB5Ew3UySxU02bEZa/XNPcfdiL16E4iH4LjO8mXnMm8mBHEcPuuGWxGiFxSP7wbgOgFJYrknomzm9TDF/MqU0OEmR3bCpG8E8pLfc1ZFdIrurqoEljo/j+BliEmOO7Mo6/TrkWNyTZRFWOG5Nx9pTJRdkPOIMzvacNS0X2nXas3AUUrjeV7e047JwO1Oaj5DoNwm9fc++GCxtnuW959XGibj2fEvC3rq65nJVkR34JailCuvfqYnrf5YKV8MsXgqYxUX/FEmCCUMFg1P2F91N32Dy/8GD4wurytlZugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91SwWrCQBB9u9GERqTQj/AjBBGkhx4KFgR7EJFlMzGLmoTdkeqne4oZD9qjJw95DO8Nj5mBB5MCKd4WtqCDYWcjJEvywVUlgCjC4NOwuTsfU43+r8u4wLtG/EVuWzD6bftN5VbcAeJ5ngdiWW+a5tKqEk0Rz/aV3YUUyY/ZEzNFGB5cSdabnMfGecgORg8vsHd1Tdkm1P5oafNXVdnKnFyYnNZy98nhswxrJOhJGKBHeCWUQoehlNJCgk4G1C1uJNrJgG2pG3f0RfW/ei2u/zHTC10FAAA="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_labwallatory_x8",
@@ -3155,9 +2945,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA91RwUrEQAx909ntYhcRvPgTfoGwCLKgB0FB0INImZ2m7eC0U2Yiu/rnnuqMiHvx4kWhySHhJXnkJQVQ4OBOt9QpNlpicU8+GNcDkBLLtWL1jRyfZ5g/mIpbHGXIr8g0LWMe02vqm4Qukd/UdSBO4+M4vscoUiyQX1inn0OBxa2yxEwSh53pSXtV85kyHmkGJ3vMmo5K7XrtiSkRSVzuq1u1o6p0O1OZt5joF469w0C+DFZtHvl1oNXGMbvudKuYvHVNQ9WqVjbQU2TLJNa/Y2M3/EwVr4ZZuhQwS4v+mQmBTxeYqn0JxHQFph+KKQuc/Af/R+AHUR9XproFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA+1RQUvDMBh9aboWO0TwR3jyFwhDEA8eBAVhHsYYof3aBrumJN/Y/OmearLp3G0K4qH4CMnj8b4XXpIBGU6e8pqWinUukU7JOm1aAFJifKtY7ZXz6wijZ11wjbMIyR3pqmaMPL2ntgrqGMlDWTriMN73/Zs/RTgzJDeNyV9chvRRNcRMEqdL3VJuVclXSluEGVx8aY6t7joqFq6zq5wWa2OKmdpoN9nMQ67E9MC885TU5jQj5XhSqsbRZWss1x/cmdWerxWTbUxVUfGpkB9iu6IQHh0JD76fZm/pfPew36r5GswxUsThGzwl/BmEiGTsr4ykEBgkfLVYiHhbc5gFfTsPvw+14MH6L/ibeAeUwgF2FwYAAA=="
+      "passable-area": 1.5
     },
     {
       "id": "hitw_labwallatory_x9",
@@ -3181,9 +2969,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 3.5,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9ybYpTRHBiz/hFwilIAU9CAqCHkTCdjNJFjfZsDvS6p97irsg7cVLD3oIvjnM8GbmMW9yIMf8QTXUStZKYPZIzmvbARACi7VkuWfOVimmT7rkBqcpshvSdcOYhvKWujqyC2R3VeWJ4/owDJ8hJzHnyK6MVa8+x+xeGmImgZNWd6ScrPhSaoe4g/MDZ3RLhbKdcsQUhQSuD92t3FFZ2J0u9Uco1BuH2b4nV3gjN8/83tNyY5lte7GVTM7YuqZyWUnj6SWopQLr49TY9j9Lha9hEj8FTOKhf4UkTb6BcSLZx1gNirEbxL/B38EXRpW6wboFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA+1SwUrDQBB9m00bTBHBj/DkRfAkBEE8eBAUBD2UUrbJJFlMsiE70vbTPcXdRqwHEQ/iITjMMI9hZh5vmBiIcfCQllQr1qlE9Eid1aYBICVm14rVR+X4MsDkSWdc4ijA9IZ0UTImDt5SU/jqDNO7PLfEfrzv+1eXhc8xpleVSZ9tjOheVcRMEoe1bijtVM4XSnfwMzjZ1yx3um0pW9q2e0lpuTYmm6uNtslm4fdKnH9qHnpspVZz3raUrAyzqU/XiqmrTFFQluSqsuRHgx/ybBfDGc6+4WHTfk0SIkLo7+cg4c9MiEAMIQTGaFKG0j2K3Pk4BbrXduF0jlTgzt/Rv8DftDfqqyhk0AUAAA=="
+      "passable-area": 3.5
     },
     {
       "id": "hitw_labwallatory_x10",
@@ -3207,9 +2993,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.25,
-      "previous-schematic": "H4sIAAAAAAACA+1SwUrDQBB9ybYppojgxZ/wC4QiSEEPgoKgB5Ew3UySxU02bEZa/XNPcVfEXrx4UFD65jDD253HvGFyIMfejW64JTFaYXbLfjCuA6AU5ksS+mQOT1NM70wpDQ5SZBds6kYwDeUld3Vk58iuqmpgie3jOL6GnMScIzuzTj8OOWbXZFmEFfZb07H2VMkJGY/Yg6MtZ03LhXad9iwchRTOt69r2nBZuI0pzUso9JOEv33Pvhgsre7luefFyom49nhNwt66uuZyUZEd+CGopQrL76mJ67+WClvDJG4KmMRBfw1JgvdI8F/xYRA7g3/V3+5EfwZvduEjLLoFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91RwUrDQBScbNIGU0TwIzz5BUIRxIMHQUGoh1LKsnlJFtNs2H2h9dM9xV2jtaeilx4yvN03POYNzG4GZDh7URVtJGsVI12Qddo0AOIYs3vJcj+5vBWYvOqcK1wITB9IlxVj4ukjNWWYzjB9KgpHHNb7vv/wPQo9w/SuNurNZUifZU3MFON8oxtSVhZ8I7VF2MHV78yx1W1L+dq1tlO03hqTL+VOu/luFXz/KH4PYhFjcSAeNAU1ipYkHc8LWTu6bozl6ps70+35VjLZ2pQl5T8T8ktsO1oND3XUPOj+6/1Fg3mCFEn4Bk8JJ0MUhUdLxMBGCCGiKAT0txhpQA8fMGCkAf0ZapwBIQ7qpPgEqREeZRcGAAA="
+      "passable-area": 2.25
     },
     {
       "id": "hitw_labwallatory_x11",
@@ -3233,9 +3017,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA91QwUrEMBB9aXa72EUEL/6EXyAsgizoQVAQ9CBSsum0DaZNSUZ29c891cSDe/GyF4U+GGZ4M/OYNwVQ4OhBt9QpNlpi8Ug+GNcDkBLLtWL1w5xeZpg/mYpbnGTIb8g0LWMey1vqm8Qukd/VdSBO6+M4fsYsUi6QX1mnX0OBxb2yxEwSx53pSXtV84UyHmkHZ3vOmo5K7XrtiSkJSVzvu1u1o6p0O1OZj1joN46zw0C+DFZtnvl9oNXGMbvufKuYvHVNQ9WqVjbQS1TLJNaHqbEbfpeKX8MsfQqYpUP/DkKI75gsoj0ZY9IGxdQNYtIG/wlfRabSFboFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA+1RwUrDQBB9yaYJpojgR3jyC4QiiAcPgoJQD6WUZTNJFtNs2J3S+ume4q61taeiIB6Cj2Xm8XjzYGZzIMfJk6ppKVkrgWxK1mnTAhAC41vJcq+cX8cYPeuCa5zFSO9IVzVj5Ok9tVVQx0gfytIRh/G+7998j0LPkd40Rr24HNmjbIiZBE6XuiVlZclXUluEGVx8aY6t7joqFq6zK0WLtTHFTG60m2zmIfeb5tdgjgWmB+atp6RW0Yyk40kpG0eXrbFcf3JnVnu+lky2MVVFxU4hP8R2RfPtoY6GB99Psz9oCE+QIQnf4Cnh7xB57OogEYskjqJQB7ygx4AXPHj/+E28A5B5Gd0XBgAA"
+      "passable-area": 1.5
     },
     {
       "id": "hitw_labwallatory_x12",
@@ -3259,9 +3041,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9ybYppojgxZ/wC4QiSEEPgoKghyJhu5kki5ts2B1p9c89xd1L2oMXLx4kbw4zvJl5zJscyHHypBpqJWslsHgm57XtAAiB5VqyHJnz6xTzF11yg7MU2R3pumHMQ3lPXR3ZJbKHqvLEcX0Yhq+Qk5hzZDfGqjefY/EoDTGTwGmrO1JOVnwltUPcwcWBM7qlQtlOOWKKQgK3h+5O7qks7F6X+jMU6p3DbN+TK7yR2w1/9LTaWmbbXu4kkzO2rqlcVdJ4eg1qqcD6d2ps+5+lwtcwi58CZvHQv0IyAv8UyRiTwcngZPAI34s75HS6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA+2QQUvEMBSEZ9vdFruI4I/w1F8gFEE8eBAUBD2syxLT1zbYNiF5S9ef7qk2W3T36EE8FD8CE4Z5j0wSIMHJo6yoEaxkiPiJrFO6BRCGWN4IFt/O+VWAxbPKucJZgOiWVFkxFsP1jtrSu0tE90XhiP143/cfg868Joiuay3fXIL4QdTETCFOG9WStKLgS6Es/AwuDp5jq4yhfOOM3UradFrnK7FTLtut/d4fht99OAjxchQeM2yFybW2q0JI1ZZZR47TStRF9qqZdZNqQ23Gdkup0R1ZyrNC1I7STjDZWpfll7Pevz3G3P8XMCf8GbMjMEWCkb1Ot2A44YIYumE8/wV/l0+oQjLdwAUAAA=="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_dojo_d1",
@@ -3285,9 +3065,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+2RwUrDQBCG/2TblKaI4MWX8AmEIpSCHgQFQQ8iYbqZJIubbNiMtPrmnuLuxV68CCKI/S4z/DPzM8zkQI75nW64JTFaYXbPfjCuA6AUFmsS+lROLlJMH0wpDY5TZFds6kYwDek1d3VUF8huqmpgiePjOL6HmMSYI1tZp5+HHLNbsizCCket6Vh7quScjEecweles6blQrtOexaORgqX++qWdlwWbmdK8xYS/SKht+/ZF4OlzaO89rzcOBHXnm1J2FtX11wuK7IDPwW3VGH9PTdx/ddW4WqYxEsBk7joL5IEcODv8g++lyTp4Y0/zgfo/kg5ugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91STUvDQBCd7OYDU0TwR3jqRfAkBEE8eBAUhPZQStkmk2QxzYbdCW1/uqe4a20rVIqC9JDZwwzDvLfzZiYGiOHsNS1xIUimHKIRaiNVDQCcw+BBkNhlLu8YBGOZUQkXDMJHlEVJENjwCevCZQcQPue5QXLwruverfecjyG8r1T6ZmKIXkSFRMjhfCFrTLXI6VZIDQ4Do33ONLpNcZZjneIEhaGEdIvDWmkqk1xUBodGtbt4KQh1pYoCs20GLeYznLo+OFx9Iyctmwaz2dcvS6WyiVhJk6xdMftl8Wq6GdTRtjfd/LFvp9WR+xzG/06+G0rA4fqA3VRiPqF1gwmp5pDC4UION0dwc0WkFj9DI/t8d1dWG8IJzWN2U5z70FMLrMCQAfODngq02jhn3Lq+rtDzI8Yir7cnut3cyRf4AYzDUxroBgAA"
+      "passable-area": 2.0
     },
     {
       "id": "hitw_dojo_d2",
@@ -3311,9 +3089,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA91SwUrDQBB9ybYpTRHBiz/hFwhFKAU9CAqCHkTCdjNJFjfZsDvS6p97irsU2ouXXhTyhmGGtzOPmWFzIMf8STXUStZKYPZMzmvbARACi7VkeWAublJMX3TJDc5TZHek64YxDek9dXVkF8geqsoTx/ZhGL5DTGLMka2MVe8+x+xRGmImgbNWd6ScrPhaaofYg8sjZ3RLhbKdcsQUhQRuj69buaOysDtd6q+QqA8OtX1PrvBGbl75s6flxjLb9mormZyxdU3lspLG01tQSwXWp6mx7X+XClfDJF4KmMRB/wqJSNK9Y5xIDjbeBcXex7rg2L/ov+EHN7Jni7oFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA92SzUrEQAzH/9Nut9hFBB/C0z6BUATx4EH8QNDDIktsM+1gt1M6kdVH91RnFFxvu3tRaCAkhOSXZDIZkOHgvqh5RWKKGOkD987YFkAcY3ZBQj+R47MIyaMppcZRhOklm6oWJN694rYK0RmmN1o7llA+DMOHtyrYDNPzxhYvLkN6Sw2LcIzDlWm56EnLKZkeoQYnm5iT3nQdl0vX9a8FL9fWlgt6My5/fwrcGNe/kr9znHiSW2gqTFvla3Yyr6nRudhu7mrqOPdUCnPP1yTcN7aquMw1NY4DNNoOZdoX6h/ybudJn62IXe3EnWznbobdg5sgxSRc3rdg/JmoKFYT5TVREcYoYTMor94b54LhiOrrkBjngmP/ov8nn7C5vumKBgAA"
+      "passable-area": 2.0
     },
     {
       "id": "hitw_dojo_d3",
@@ -3337,9 +3113,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1TwUrEMBB9aXa72EUEL/6EXyAsgizoQVAQ9CBSsum0DaZNSUZ29c891UTEvXjxorg4YXjDm8wjbyAFUGDvRrfUKTZaYnZLPhjXA5AS86Vi9ckcnmaY3pmKWxxkyC/INC1jGstL6pvEzpFf1XUgTuPjOL5GFAkL5GfW6cdQYHatLDGTxH5netJe1XyijEeawdGWs6ajUrtee2JKQhLn2+5abagq3cZU5iUW+onj3WEgXwarVvf8PNBi5Zhdd7xWTN66pqFqUSsb6CGqZRLL76mxG76WilvDJG0KmKSH/lwIId5zZ0N8nH+Df9ig2G2Dv/MH3wBcZ/ROugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA92Tz2rCQBDGv51ogpEi9CH6EIVSkB56ECwU9CBFls0kWapJ2B3RPrqnuKvQXnvykI+dP3zMLPxgNwdyTD5NzXst1iTIVuy8bRsASYLpmxb96zy+EsZrW0iNGSF9Z1vVgnFoF9xU0Z0iXZalZ4nrfd+fQ1Wx5kjnu9Z8+xzZh96xCCd42NuGjdOlPGvrEHfw9Od5cbbruNj6zh0Mb49tW2z0yfqX01e895/DP3GYkGEUYYAR435SQdekMExROIro2gwUkG5psIDhaSq6xTABKfy+EHRvwAtSTBbaXQUAAA=="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_dojo_d4",
@@ -3363,9 +3137,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA91SwUrEMBB9aXa72EUEL/6EXyAsgizoQVAQ9CBSsum0DaZNSUZ29c891QQW9+LFi0JnCDO8zDzmDVMABY4edEudYqMlFo/kg3E9ACmxXCtW38jpZYb5k6m4xUmG/IZM0zLmMb2lvknoEvldXQfi1D6O42eMIsUC+ZV1+jUUWNwrS8wkcdyZnrRXNV8o45F6cHbArOmo1K7XnpgSkcT14XerdlSVbmcq8xET/caxdhjIl8GqzTO/D7TaOGbXnW8Vk7euaaha1coGeolsmcT6d2zshp+p4tYwS5sCZmnQvzMhhIwPkzWx98nq2wsU0xWYJE75Rv/pRL8A9tH577oFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91SwUrDQBB93U0TTBHBj/DkRfAkBEE8eBAUBD2UUrbJJFncZMPuSNtP9xSz2KoHEU89ZB7MDMO82XnDpkCKo6e8pkaxziWSZ3Je2xaAlJjdKlZfldNrgemLLrjGiUB8R7qqGdMhvae2CtUZ4oey9MSB3vf9+xAnIaaIb4zNX32K5FEZYiaJ40a3lDtV8pXSDoGDi++a79xbTktv1GrO244ytt35WjE5Y6uKiqxUxtMiPCFx9oPHTncdFcvdgLW1xVxttM+2oVn8s3mz+LzB5R8brSyzbX5fKkKCKNxvSAmHs4nYA6M0KUUAgh+lwEFaNCB4MVaBe4z0j+5EAofW9wERtfU+0AUAAA=="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_dojo_d5",
@@ -3389,9 +3161,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA+1SwUoDMRScJO0Wt4jgxZ/wC4QiSEEPgoKgB5Elzb7dDWY3S/ZJq3/uaU082IuXXgoW5zKPSd68lyE5kOPowTTUarZGYfZIYbC+A6AU5kvN+kc5vZSYPtmSG5xIZDdk64YxjeUtdXVS58juqmogTu3jOH5GFolzZFfOm9chx+xeO2ImhePWdmSCrvhC24DUg7Ot5mxLhfGdCcSUjBSut6drvaGy8Btb2o9YmDeOd/ueQjE4vXrm954WK8/s2/O1ZgrO1zWVi0q7gV6im1RY7ubGvv/dKqaGSUoKmKRF9wfxHZrAP/4shDj094nD/qJSCCXk3sd+AXEkJtC6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TwUrEMBCdZLItdhHBj/DkRfAkFEE8eBAUBD0sy5Jtp22wbUoysruf7qkmLqgHEU976MvhDY+ZPN6QZAAZHD0VDXWaTYGQPpPzxvYAgAjzW836Szm9ljB7MSU3cCIhuSNTNwyzUN5TX0d1DslDVXniOD6O43tgETmD5Ka1xavPIH3ULTETwnFneiqcrvhKGwdxBs6+Nc/ODAOVKz+4t4JWG2vLhd4an2+X8V6Eix/N+x7f6vWCdwPlbIfzjWZyra1rKvNKt57inPynyW6538HlHyZry2y7330UpKDi/kJJcDAIIWVkKYWASQJVyCiEUAgTDRiOwk+aJASGPxjjSZzoE1UKRQiHSh3Y+AME7kDF0AUAAA=="
+      "passable-area": 1.5
     },
     {
       "id": "hitw_dojo_d6",
@@ -3425,9 +3195,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 4.0,
-      "previous-schematic": "H4sIAAAAAAACA+1RTUvEMBB9aXa72EUEL/4Jf4GwCLKgB0FB0INIyabTNpg2JRnZ1X/uqSYg7sXLggjKviHM8DLzmI8CKHBwp1vqFBstMbsnH4zrAUiJ+VKx+mKOzzNMH0zFLY4y5FdkmpYxjeE19U1i58hv6joQp/JxHN+jF8kXyC+s08+hwOxWWWImicPO9KS9qvlMGY9Ug5MtZ01HpXa99sSUhCQut79rtaGqdBtTmbcY6BeOucNAvgxWrR75daDFyjG77nStmLx1TUPVolY20FNUyySWu6mxG76XilvDJG0KmKRGfw1CiPQE/ivEp+0H/MMDymj7C/40PgDxb2k+ugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91RwUrDQBB92U0TTBHBj/DkRfAkBEE8eBAUBD2UUrbJJFlMsiE70vbTPcXdFLQHEU8KeQw7j2HeDm8mARIcPWUVNYp1JhE/U2+1aQFIifmtYvVZOb0WmL3onCucCER3pMuKMXP0ntrSV+eIHorCEnv5MAzvLgc+J4huapO92gTxo6qJmSSOG91S1quCr5Tu4TU4+6pZ7nXXUb6yXf+W0WpjTL5QW23T7dL/K3Fx0LzvsbVaL3jXUcqmO98opr42ZUl5WqjakteJXw7ZLfc7uPxhyNowm+b7OSFihH5/jhL+DIGDGN8gwBThTiJFKEcyTYMY3fmQEzXoQkgRTNlg+C8X/AAaGrtY0AUAAA=="
+      "passable-area": 4.0
     },
     {
       "id": "hitw_dojo_d7",
@@ -3461,9 +3229,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 4.375,
-      "previous-schematic": "H4sIAAAAAAACA+1TwUrDQBB9ybYpTRHBiz/hFwhFKAU9CAqCHkTCdDNJFjfZsBlp9c89xd2LvXjxolh8lxnezDxmhpkcyDG/0w23JEYrzO7ZD8Z1AJTCYk1Cn8zJRYrpgymlwXGK7IpN3Qimwb3mro7sAtlNVQ0ssXwcx/dgk2hzZCvr9POQY3ZLlkVY4ag1HWtPlZyT8Yg1ON1z1rRcaNdpz8JRSOFyH93SjsvC7Uxp3oKjXyTk9j37YrC0eZTXnpcbJ+Lasy0Je+vqmstlRXbgp6CWKqy/pyau/1oqbA2TuClgEhv9USQB+MefRbjqAx8wwUGf6C894AeLVmLmugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA92SwUrDQBCGp7tJiiki+BCe8gRCEMSDB1FBqIdayppMksU0G3antD66p7pjbCtWUC89ZPYww7Az8/2zGwPEcPSQVThXpDMJwzFap00DAFLC6EqR2mZOLwSEjzqnCk4ERNeoy4og9OENNiVnRxDdFYVD4vL1ev3m/YB9DNFlbbIXF8PwXtVIhBKO57rBzKqCzpW2wDUw3uVcaxcZzgpsMpygcpSSXWDSGEtVWqjaYeLMYhsvFaGtTVlivsmgr/kIp8wh4exLc7K6bTGffU5ZGpNP1Eq7dMWXhYSnPRKyqs2NsZNCZbopU2ZKKlUX6bMhMvPEtNh0kK1Zot2BfEebduv9E88rXw4k3O7xOPJrcxsaVtvRkGkTV6kWU99V8SP9TBD+su4O/p/7ZvncPIIhBPx9PDzCQW0gOoM+mtcl/UoD4NNH87pE6J3osUDgzxmwxF4KFP4EIjr85HdLiwQSzwYAAA=="
+      "passable-area": 4.375
     },
     {
       "id": "hitw_dojo_d8",
@@ -3492,9 +3258,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 3.0,
-      "previous-schematic": "H4sIAAAAAAACA+1RwUrDQBB9ybYppojgxZ/wC4QiSEEPgoKgB5Ew3UySxU02bEZa/XNPcRfEXrwUxEP1zWGGtzuPeTM5kOPgTjfckhitMLtnPxjXAVAK8yUJfTHH5ymmD6aUBkcpsis2dSOYhvKauzqyc2Q3VTWwxPZxHN9DTmLOkV1Yp5+HHLNbsizCCoet6Vh7quSMjEfswcmWs6blQrtOexaOQgqX29c1bbgs3MaU5i0U+kXC375nXwyWVo/y2vNi5URce7omYW9dXXO5qMgO/BTUUoXlbmri+u+lwtYwiZsCJnHQX0PyGXuLv2Aw2W+DKhhU/xf8cXwAp1FN2roFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TwUrDQBB9m01STBHBj/DkRfAkFEE8eBAUhHoopWyTSbKYZsPulNpP91Szra1CRUGkh+wsvGGY9+DNziZAgqOntKSZYp1K9IZknTY1ACnRv1WsdpXT6wDRs864xEmA+I50UTKiNr2nuvDVPuKHPHfEnr5ard5aFB4TxDeVSV9cgt6jqoiZJI5nuqbUqpyvlLbwHJx91hxb3TSUTVxj5ylNFsZkI/Wq3WA59roSz1+aNz051SmNSDke5KpydF4by+VH7sx8ly8Uk61MUVC2rdCW5NUDics9dVep6YiXDQ2mhtnM9lXGm7ld/EBl03zPCyWG/26I7XwtHv0i7vv+PKwYPYR+VVoThIMd4W+wgU4eIaUI2/DQTYMRRCwigbirLxiGot3ONXTToN/SNg7/B98BPw9/m7sGAAA="
+      "passable-area": 3.0
     },
     {
       "id": "hitw_dojo_d9",
@@ -3523,9 +3287,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 4.5,
-      "previous-schematic": "H4sIAAAAAAACA+2QwUrDQBCG/2TbFFNE8OJL+ARCEaSgB0FB0INImG4myeImGzYjrb65p7jrwV689FIo9NuBGf6d+dmdHMhx8qQbbkmMVpg9sx+M6wAohfmShP6U8+sU0xdTSoOzFNkdm7oRTEN5z10d1Tmyh6oaWOL4OI7fIScx58hurNPvQ47ZI1kWYYXT1nSsPVVyRcYjzuBiq1nTcqFdpz0LRyOF2+3tmjZcFm5jSvMVCv0hobfv2ReDpdWrfPa8WDkR116uSdhbV9dcLiqyA78Ft1RhuZubuP5/q7A1TOKmgEl86B5JkhhHDpbkN44fPGxUOHvmB1IBosW6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA92Uz0vDMBTHX5u1nR0i+Ed46kXwJBRBPHgQFYR5KGO8ta9tsGtK8sa2P93TTBhMYcPpZYemNAmP9/28HwmJAWI4e8trmiPLXEA0Jm2kagFACBg9IOPOcnnnQ/AuC67hwofwkWRVMwR2+0Rt5awjCF/K0hA7+Waz+bSr59YYwvtG5R8mhugVG2ImAedz2VKuseRblBqcBq6+bYa17DoqpqbTi5ymS6WKDFfSpOuJ4wq4+eG89TENzjJed5TOFLOaJ0tk0o2qKirSEhtDTur/Mc5qsm3D834cthmbrMRctlVKaDipsSlTVl1iarTxLRVdfw5nMBAw3oOW1OaUOVjKekFJqzTXW01i1GK33yMmS7KaHTw4At9q/kl3GTl4eLwdzv9/7YgEXP9ylg5zUDeECAbujtqOEpxseL5nf7AT9HPYyoQHAwi8sKcFRq40D4R9RXp7hLa6ft9R+w3tNDxt4C+tjo7yNAcAAA=="
+      "passable-area": 4.5
     },
     {
       "id": "hitw_dojo_x1",
@@ -3549,9 +3311,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 1.125,
-      "previous-schematic": "H4sIAAAAAAACA+2TQUvDQBCFX7JtiikiePFP+AuEIkhBD4KCoAeRMN1MksVNNmxGWv3nnuLupb148VKK9LvM8HbnsTxmcyDHyZNuuCUxWmH2zH4wrgOgFOZLEtoq59cppi+mlAZnKbI7NnUjmIb2nrs6qnNkD1U1sMTxcRy/Q01izZHdWKffhxyzR7IswgqnrelYe6rkioxHnMHFTrOm5UK7TnsWjkYKt7vTNW24LNzGlOYrNPpDwt2+Z18Mllav8tnzYuVEXHu5JmFvXV1zuajIDvwW3FKF5d/cxPW/W4XUMIlJAZP40D2SJDGWI0cOlbCgiUr/846q+Av3zg86gyDjugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91SwUrDQBCdZJtNTRHBj/CUi+BJCIJ48CAqCPUQpGyTSbKYZsPulLaf7qnutqUKLdZeesiy7A7DzHsz8yYCiODsLatwIkhmDMIhaiNVAwCMweBBkNh6Lu98CN5lThVc+MAfUZYVQWDNJ2xK5x0AfykKg+TSl8vll/0990fA72uVfZoIwldRIxEyOJ/IBjMtCroVUoPLgesfn2n1NMORqcU4pUWLCak2nglCXauyxDwpRG3ww1EwuPqVR1q2LeajDcBMqTwVc2mSuQv2GQx3SApsMkxRGFqjxo3SVG1so6Zbe4c/nqFNIj1dVcIOgLu4Y7G3bfYY3PwxnrEiUpP9Ewr+OaGFC+YMnnd5yGpk0kJksikTV1hcibpYiWIqYfktqnAbsb+C8DCom9BxoH0Ioed21A4H4XTH832f9ezjQSePF4DHwz73IOhqhzzwAnt5hxX0VwvaVQWthMDtPXl7357wxTY0BwAA"
+      "passable-area": 1.125
     },
     {
       "id": "hitw_dojo_x2",
@@ -3575,9 +3335,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+2SwUrDQBCG/2bblKaI4MWX8AmEUpCCHgQFQQ8iYbqZJIubbNiMtPrmnuKuB3vx0ksR6XeZ4Z+df3eGzYAMswddc0NitML0kX1vXAtAKcxXJPSjnC0TTJ5MITVOE6Q3bKpaMAnpLbdVVOdI78qyZ4ntwzB8hjiKMUN6ZZ1+7TNM78myCCucNKZl7amUSzIesQfnO82ahnPtWu1ZOBopXO+qG9pykbutKcxHSPSbhLNdxz7vLa2f5b3jxdqJuOZiQ8LeuqriYlGS7fkluCUKq/3cxHW/W4WtYRw3BYzjQw+HGkVw5Mif5b9/0e/ZkoNf+wU/VoYiugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA92TzWrDMAzHVatJupQx2EPslCcYhMHYYYexDwbdoZTiJUpilsbBVmn36Dt18VLaQQ9tLj1EGCRk6+e/hB0ChHDxnhS0kKwShGBCxipdAQAijB8ky13m+k6A96FSLuBKgP9IKi8YvCZ8oip32TH4L1lmiV35ZrP5afzA+RD8+1InXzaE4FWWxEwIlwtVUWJkxrdSGXA18LzP2dosE5pbbjbtNJOJqvKYpOWokGUWs64jW8iaYstGOinRSjKZUuc5pXEmS0szdz/CzT8oG1XXlM639JXW6VSulY3X7rA48fD3rB3QMbkr6ip3iDA5gGZUJTR1vcdslhRV2nDR1kRWL3fxATFyAvZw7wi8relId4oc3Ed4O3kcn5pZL06aSHCcu38VHbgjCGDoHngzdILz2UD8GeAQ+mnNJ0L3l1H0tEEPBYpmod/bBrfW1wYxaP0Iz3zxL8BzubVxBwAA"
+      "passable-area": 2.0
     },
     {
       "id": "hitw_dojo_x3",
@@ -3626,9 +3384,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 8.0,
-      "previous-schematic": "H4sIAAAAAAACA91SwUrEQAx9M7PbxS4iePEn/AJhEWRBD4KCoAeRMjtN28Fpp0wju/rnnuqMB9eDFy8KfYckvCSPJCQHchzcmYZazdYoLO4pDNZ3AJTCcq1ZfzHH5xLzB1tygyOJ7Ips3TDmMbymrk7sEtlNVQ3EqX0cx/foRfI5sgvnzfOQY3GrHTGTwmFrOzJBV3ymbUDqwcmec7alwvjOBGJKQgqX++xW76gs/M6W9i0G5oVjbd9TKAanN4/82tNq45l9e7rVTMH5uqZyVWk30FNUkwrr36mx73+WilfDLF0KmKVB/xBCSiEwXahvdpIQn9vJ6S4ohVKTftF/wgfjelr4ugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA+1TTUvDQBCd7CbZmiKCP8JTL4InIQjiwYP4gaCHImWaTJLFNBuyI60/3VPdhWIFiw0iHorvMssw8+bN290EIIG9+6yiGbLOJKgH6qw2DQBICcMLZPzIHJ4JiB51zhUcCIgvSZcVQ+SOV9SUPjuE+KYoLLFvXy6Xby4GPiYQn9cme7YJqFusiZkk7M90Q1mHBZ+i7sD3wPE6Z9vuJaOJrXE65teWUjbtaI5MXW3KkvK0wNrSkx8h4ehTH3e6bSmfrAjmxuRjXGibLnyxkHD3dQg7BXZcYKabMp2T5VGFdZFODbOZjWyFbr4jRr/yZhHOrpNvxK+YNraG2yUR/kBSJOG6N693tw9p3NPsV1+stitYm91XwQAUhP5lOucI/g6BEDIMIyEC2EnEKnTfQzhX1WAnF4yUuzml3E26d7mTCIUYBEEsRAj/+FW8A5rFir4qBwAA"
+      "passable-area": 8.0
     },
     {
       "id": "hitw_dojo_x4",
@@ -3662,9 +3418,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 6.0,
-      "previous-schematic": "H4sIAAAAAAACA+2SwUrDQBCG/2TbFFNE8OJL+ARCEaSgB0FB0INImG4myeImGzYjrb65p7irYC9evBSRfgzM8O/OzzBMDuQ4uNMNtyRGK8zu2Q/GdQCUwnxJQt/K8XmK6YMppcFRiuyKTd0IpqG85q6O6hzZTVUNLLF9HMf3kJOYc2QX1unnIcfsliyLsMJhazrWnio5I+MRe3Cy1axpudCu056Fo5HC5fZ1TRsuC7cxpXkLhX6R8Lfv2ReDpdWjvPa8WDkR156uSdhbV9dcLiqyAz8Ft1Rh+Ts3cf3PVmFrmMRNAZM46O5IvsCePX+Uf3+iyWfsnA/Q+v6jugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91UwUrDQBB9zSYtpojgR3jq0ZMQBPHgQVAR9FBKmSaTZDHNhuxI20/3VHdbrQUFxUMPGRhmGea9fbM7uzEQ4+gxLXlOolOFwRO3VpsagFIYXpPQLnN6GSB61pmUOAnQv2FdlILILW+5Lnx2iP5dnlsWD1+v128u9nyM0b+qTPpiYwzuqWIRVjie65rTlnK5IN3CY3D2lbPS6qbhbGqb9jXl6cKYbExLbZPlxPMqPOwVb2usOCY7zinVdZEs2MqopCpPZkbEzEe2pIYTR0xe+mhBwm1lioKzJKfKsucN/ihiNdme0W8imP4hIlQ4/85b0WwsKwf+YPoRGmGA0N+bY2EczHp7hk5a4OczdB50sz9EoXvMkRugsJv9bUbz0ztp7jvaONSBN34HcssCkUgGAAA="
+      "passable-area": 6.0
     },
     {
       "id": "hitw_dojo_x5",
@@ -3688,9 +3442,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1STUvDQBB9ybYppojgxT/hLxCKIAU9CAqCHkTCdDNJFjfZsBlp9Z97irsK9uLFi2LxMTDD253HfOVAjr0b3XBLYrTC7Jb9YFwHQCnMlyT0yRyeppjemVIaHKTILtjUjWAawkvu6sjOkV1V1cAS08dxfA0+iT5HdmadfhxyzK7Jsggr7LemY+2pkhMyHjEHR1vOmpYL7TrtWTgKKZxvX9e04bJwG1OalxDoJwl/+559MVha3ctzz4uVE3Ht8ZqEvXV1zeWiIjvwQ1BLFZbfUxPXfy0VpoZJnBQwiYX+HJIPYHeRvNt/g3+3v3CeO32iye9s8A2EEcuSugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91Sy4rCQBCsmcQEI7LgR/gRggiLBw+CguAelkWGSccMax7MtKif7ilm2EU9evKQoqluiq6Ggk6ABP2NzqlQbHSAeEvWmaoEEAQYzBWruzKaSfS+TMo5PiSiBZl9zui145LKvVcHiFZZ5oi9vWmaa9uF7wmiz0Olf12CeK0OxEwBhoUpSVuV8UQZC+/B+KE5tqauKd252h417U5VlX6rs3HT84+/++LyxS9LxAh9GCAkvA3iCegiJOS9uhlQtLnkH6ObCaUQ8p87+qMPfitulyyvIV0FAAA="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_dojo_x6",
@@ -3714,9 +3466,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1RwUrEMBScNLtd7CKCF3/CLxAWQRb0ICgIehAp2fS1DaZNSZ7s6p97qsnFvXgRFg/FIfAek7zhzaQAChw96JY6xUZLLB7JB+N6AFJiuVasvpnTywzzJ1Nxi5MM+Q2ZpmXMY3tLfZPYJfK7ug7EaXwcx89YRaoF8ivr9GsosLhXlphJ4rgzPWmvar5QxiPN4GzPWdNRqV2vPTElIYnr/e1W7agq3c5U5iM2+o3j22EgXwarNs/8PtBq45hdd75VTN66pqFqVSsb6CWqZRLr36mxG36WiqlhlpICZmnRv4OIR2DCSAZjvhM3KCZuUIj/Hzw0vgAk+H2AugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA92PQYvCQAyFX6fashUR9kf4IwQRlj3sQXBB0IMsMkxTO6htmYno/nRPdYKgV08e+gJ54ZEEvgzI8LE0JR01WxMjXZHztq4AxDEG35r1I/mcKfTXNucSI4Xkh+yuZPTDOKdqJ+kAyaIoPLGct217DR6JZ0i+DrXZ+wzprz4QM8UYHm1FxumCJ9o6yA3Gz8yzs01D+dY37mRoe67rfKMv1k///+Tvi8sXWVZI0RMYoEd4m6JQSqG7ilSogCjqJqDo3qNuAgqcEkZ0FvBueDfgDf5ZhzRdBQAA"
+      "passable-area": 2.0
     },
     {
       "id": "hitw_dojo_x7",
@@ -3750,9 +3500,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 4.0,
-      "previous-schematic": "H4sIAAAAAAACA91RTUvEMBB9SXa72EUEL/4Jf4GwCLKgB0FB0INIyabTNpg2JR3Z1X/uqSYIrgcvXvbQN5AZXjIv85EDOY4eTEOtZmsUFo8UBus7AEphudasf5jTS4n5ky25wYlEdkO2bhjzGN5SVyd2ieyuqgbilD6O42f0Ivkc2ZXz5nXIsbjXjphJ4bi1HZmgK77QNiDl4GzPOdtSYXxnAjElIYXr/e1W76gs/M6W9iMG5o3j276nUAxOb575vafVxjP79nyrmYLzdU3lqtJuoJeoJhXW/1Nj3/8tFaeGWZoUMEuFHhAiQmG6mHJv3wv8dU6zQaGiTXiDUggp5MG//QKhgqLAugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91SwUrEMBB9TbJd7CKCH+HJi+BJKIJ48CAoCHpYZMm20zbYNiUZ2d1P91QTEfUg4mkPncsMj3l5TN7LgAwHD0VDnWZTSMwfyXljewBSYnGtWX8hx5cCsydTcoMjgfSGTN0wZmG8pb6O6ALpXVV54kgfx/Et9CT2DOlVa4sXn2F+r1tiJonDzvRUOF3xhTYOkYOzb8wP7rWglW/1esm7gXK2w+lGM7nW1jWVeaVbT89RQuLkB4+dGQYqV58PbKwtl3prfL6Ny0Li/A+RtWW23e868p86u7isMIeK/xdGwh4rER+VYKIlgoNQUgox0ftUuC+6J9VEL1QhnSoJOVUTjagM1oV8hpDuWfgd57vhItAFAAA="
+      "passable-area": 4.0
     },
     {
       "id": "hitw_dojo_x8",
@@ -3786,9 +3534,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 6.0,
-      "previous-schematic": "H4sIAAAAAAACA+1SwUrEMBB9bXa72EUEL/6EXyAsgizoQVAQ9CBSZtNpG0ybko7s6p97qgmIe/GyF8XFB2GGN3mPzExyIMfBnW64JTFaYXbPfjCuA6AU5ksS+mKOz1NMH0wpDY5SZFds6kYwDek1d3Vk58huqmpgifJxHN9DTGLMkV1Yp5+HHLNbsizCCoet6Vh7quSMjEfU4GTLWdNyoV2nPQtHI4XLbXVNGy4LtzGleQuJfpFwt+/ZF4Ol1aO89rxYORHXnq5J2FtX11wuKrIDPwW3VGG5m5u4/nurMDVM4qSASXzoDyKJwB4j+Tz/Df7ZBvf/iya/sMEPyKMhl7oFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TTUvDQBB97aZJTRHBH+GpF8GTEATx4EH8QNBDKWWbTJLFNBuyI21/uqe6S2srWGzw4CEDyy7DvLfvDTMhEOLoOc5pJlnFAsEL1UbpEoAQGNxIltvM6VUXvVeVcI6TLvxbUlnO6NnnHZWZyw7gP6SpIXbw1Wr1Ye+Ou0P414WO30yI4FEWxEwCxzNVUlzLlC+lquEwONvlDNeqqiiZmKp+j2ky1zoZyYUy0WLseBsWL11xV+DpW/G6xrD91oxSGasyi+ZkeJjLIo2mmlnPhiaXFUWWWDqfw7lkqgudZZREqSwMjdc9uvjJW8jpiJcWvGHaC/UOSyL5B0k9gfvGVllXjUh9gfNffDqavbjgsJidyaZi+gjgucm0TST8X3S2gXaG3RLPg+dWuqUGfQSBnZ5+aw1+TWhrDW4O/tvgJ7OTOH0qBwAA"
+      "passable-area": 6.0
     },
     {
       "id": "hitw_dojo_x9",
@@ -3812,9 +3558,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.25,
-      "previous-schematic": "H4sIAAAAAAACA+1SwUoDMRB92bRb3CKCF3/CLygUQQp6EBQEPYgsaXZ2N5jdLNmRVv/c05oo2B68eFEsnSG84WXmkZlJBmQ4uNU1NYqNlpjcke+NawFIielCsfpijs8SjO9NwTWOEqSXZKqaMQ7hFbVVZKdIr8uyJ47lwzC8BRQRM6Tn1umnPsPkRlliJonDxrSkvSp5poxHrMHJhrOmoVy7VntiikISF5vblVpTkbu1KcxrCPQzh9yuI5/3Vi0f+KWj+dIxu+Z0pZi8dVVFxbxUtqfHoJZILH6mxq77XipMDaM4KWAUH/pbJoTAhwfcSRNbvm/wXzaYhM/5eXZ4g8kfbPAdaQBSgroFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91RwUrDQBB92SQtpojgR3jy6EkognjwICgI9VBK2SaTZDHNht0JbT/dU91NaxUKopceMoeZx/Deg5mXAAnOXtOSlpJVGmI4IWOVrgGEIUYPkuVhc3knEL+pjEtcCAweSRUlI3bwierCb0cYPOe5Jfby7Xb74WbgZ4LBfaXTd5tg+CIrYqYQ50tVU2pkzrdSGXgNrr53lo1qGsrmtjFtSvOV1tlUrpUdr2fe94/kjSeLEJMf5B0npzqlKUnL41xWlq5rbbjcY6vbA15JJlPpoqDsa0NOxKal2e5Rv5p73n+9O+jNoxA3R+a2kospbxoaLzSzXh67eGmMISKfoHMhnKyCIHD/jkQH+lgCIhDomujrgf6y/ejjgbELL+5ajxN0B54+wU9PstulUgYAAA=="
+      "passable-area": 2.25
     },
     {
       "id": "hitw_rink_d1",
@@ -3838,9 +3582,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 1.875,
-      "previous-schematic": "H4sIAAAAAAACA+1RwUrDQBB9ybYppojgxZ/wC4QiSEEPgoKgB5Ew3UySxU02bEZa/XNPcVfBXrz04qH0zWGGtzuPeTM5kOPoQTfckhitMHtkPxjXAVAK8yUJ/TKnlymmT6aUBicpshs2dSOYhvKWuzqyc2R3VTWwxPZxHD9DTmLOkV1Zp1+HHLN7sizCCset6Vh7quSCjEfswdmWs6blQrtOexaOQgrX29c1bbgs3MaU5iMU+k3C375nXwyWVs/y3vNi5URce74mYW9dXXO5qMgO/BLUUoXlbmri+r+lwtYwiZsCJnHQf0OS4Cf2FvtvUH0bTA4XPBjcCV81MFQ5ugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91SwUoDMRCdnXRT3CKCH+HJi+BJWATx4EFQEOqhlJLuzu4Gt5slmdL20z3VxNoqVIpeFDZzmMfjvRcmkwQggaOnrKKZYp0J6A/JOm0aABACBreK1Y45vUaIn3XOFZwgyDvSZcUQe3hPTRnYAciHonDEwb5er199j0JPQN7UJntxCfQfVU3MJOB4phvKrCr4SmkLwQNnn5xjq9uW8olr7TyjycKYfKSW2qXLccj9oXgVxChg+EW80RTUZDQi5TgtVO3ovDGWqw/szHyHF4rJ1qYsKd8y5E1s5zTePNTB8KD7bfY7DOE9AZd74a5W0xGvWkqnhtnM9lOCNRZwccDKpv3eJ6EPvbB5fzvB350o8ovyFXonD6LoYewLuzlfhCglRigRO7vCzRft6AL/ccA3wjyhw4oGAAA="
+      "passable-area": 1.875
     },
     {
       "id": "hitw_rink_d2",
@@ -3864,9 +3606,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 3.0,
-      "previous-schematic": "H4sIAAAAAAACA+1RwUrDQBB9ybYppojgxZ/wC4QiSEEPgoKgB5Ew3UySxU02bEZa/XNPcddDe/HipWBx5jDDm5nHvJkcyHH0oBtuSYxWmD2yH4zrACiF+ZKEtsjpZYrpkymlwUmK7IZN3QimIb3lro7oHNldVQ0scXwcx88QkxhzZFfW6dchx+yeLIuwwnFrOtaeKrkg4xFncLbDrGm50K7TnoUjkcL1rrqmDZeF25jSfIREv0no7Xv2xWBp9SzvPS9WTsS152sS9tbVNZeLiuzAL4EtVVj+jk1c/zNVuBom8VLAJC66N0u2fqD2L/DPC0y//eA/mOxb4Bd7PHOLugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TwUrEMBB9TXZb7CKCH+HJoyehCOLBg6Ag6GFZlmw7bYNpU5KR3f10TzVxRT162kNnBl54vEkymUwO5Dh5LlvqFOtSInsh57XtAUiJxZ1i9cOc3wjMX3XFLc4E0nvSTcuYh+UD9U1kF0gf69oTx/RxHD8CJhFzpLfGlm8+R/akDDGTxGmneyqdqvlaaYeYg4tfzrPTw0DV2g/uvaT11tpqqXbaF/tV3Pef4l0UC4mrP+KDxhu1WfJ+oGJjmW13uVVMztimoaqolfG0+rpThll8B2BGOJ4lMZIDTNFEIkIEh5xmgZPvYBhBmUSfboHfHQw/9bgHfwIRH50GmAUAAA=="
+      "passable-area": 3.0
     },
     {
       "id": "hitw_rink_d3",
@@ -3890,9 +3630,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1RTUvDQBB9ybYppojgxT/hLxCKIAU9CAqCHkTCdDNJFjfZsBlp9Z97iruC9uJFEEHpm8MMb2Ye85EDOfZudMMtidEKs1v2g3EdAKUwX5LQJ3N4mmJ6Z0ppcJAiu2BTN4JpCC+5qyM7R3ZVVQNLbB/H8TX4JPoc2Zl1+nHIMbsmyyKssN+ajrWnSk7IeMQeHG05a1outOu0Z+EopHC+za5pw2XhNqY0LyHQTxJq+559MVha3ctzz4uVE3Ht8ZqEvXV1zeWiIjvwQ1BLFZbfUxPXfy0VroZJvBQwiYP+FpIEH/ZPsVvwzy+Yvluy++AP4w2dLrUougUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA+1RTUvDQBB9u9smNEUEf4Qnj54KQRAPHgQFQQ+llG0ySRaTbNgdafvTPcVsC+qxB/EQfG9glsebZT4SIMHsOauo0WwyhfiFnDe2BaAU5nea9ZdycSMxfTU5VziXiO7JlBVjOjwfqC2DOkf0WBSeOJT3ff8xZBFygui2ttmbTxA/6ZqYSeGsMS1lThe80MYh1ODyW/PsTNdRvvade89ovbU2X+qd8eluFf490bwPZqlw/cN89Phab5a87yjdWGbbXG01k6ttWVKeFrr2tDr0FGMS9gBMCH8GIYauDwwxQkgphAyEGOeAx9MNFBjrgErJwP8L/jY+ARe+rVaYBQAA"
+      "passable-area": 2.0
     },
     {
       "id": "hitw_rink_d4",
@@ -3916,9 +3654,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA+1RTUvDQBB9ybYppojgxT/hLxCKIAU9CAqCHkTCdDNJFjfZsBlp9Z97irsI9tJLLx60bw4zvJl5zEcO5Dh60A23JEYrzB7ZD8Z1AJTCfElCP8zpZYrpkymlwUmK7IZN3QimIbzlro7sHNldVQ0ssX0cx8/gk+hzZFfW6dchx+yeLIuwwnFrOtaeKrkg4xF7cLblrGm50K7TnoWjkML1NrumDZeF25jSfIRAv0mo7Xv2xWBp9SzvPS9WTsS152sS9tbVNZeLiuzAL0EtVVjupyau3y0VroZJvBQwiYP+GpIE3/Zn8R8WjF9MDh88LLgXvgDNEcuFugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91STUvDQBCd7OYDU0TwR3jKRfAkBEE8eBAUhHoopWyTSbKYZMPuhLY/3VPdNdIKFT8uCpnDzDC8eczbtzFADEePWYWNIJlxiKaojVQtAHAOkxtBYjc5vWIQPMmcKjhhEN6iLCuCwLZ32JZuOoHwvigMklvfbrcvtnquxhBe1yp7NjFED6JGIuRw3MgWMy0KuhRSg9uBs/3MkJZdh/nCdLrPcLFSKp+JtTTpeu54fwjeODDjcPEBPGBMLZYz2nSYLhWRapKVINS1KkvM00LUBufDM0wPVgtsM5yhMDQAk1Zpqt57o/pdf0CZrNAuke7fyP1vyB3ut9y7ywMO51+IJtV9rjiECHznvL0P4e/C84BZq1wdZzDGmR/YxMapz2MsZJ5nExuthcMXHamB/yjwFdlLUfSKBgAA"
+      "passable-area": 1.5
     },
     {
       "id": "hitw_rink_d5",
@@ -3942,9 +3678,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.25,
-      "previous-schematic": "H4sIAAAAAAACA+1RTUvDQBB9zbYpTRHBi3/CXyCUghT0ICgIehAJ080kWdxkw2ak1X/uKe6i2IsXQQSlbw4zvJl5zEcGZJjd6JobEqMVprfse+NaAEphviKhT+ZomWByZwqpcZggvWBT1YJJCC+5rSI7R3pVlj1LbB+G4TX4UfQZ0jPr9GOfYXpNlkVY4aAxLWtPpZyS8Yg9ON5x1jSca9dqz8JRSOF8l93QlovcbU1hXkKgnyTUdh37vLe0vpfnjhdrJ+Kakw0Je+uqiotFSbbnh6CWKKy+pyau+1oqXA3jeClgHAf9PYw+7N9iv+CfX/Ad+w/+MN4AD8KsD7oFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TwUrEMBScJt0Wu4jgR3jyC4RFEA8eBAVhPSzLEtrXNthtSvLKrp/uqSZWV0+iF4Um8N4wzHswGZIBGY4e8pq2inUukS7JOm1aAFJifq1YHZjTS4HZoy64xolAckO6qhkzD2+prQI7R3JXlo44jA/D8OJ7FHqG5Kox+ZPLkN6rhphJ4nirW8qtKvlCaYswg7NPzrHVXUfFxnW2z2mzM6ZYqb12i+d12PtD8T6IhcTyi3jUlNTmtCLleFGqxtF5ayzX79iZ/oB3isk2pqqo+GDID7HtaT0+1LfLg+63u99gWB4jRRxi8JDwhyfydyyTPEJEIpKxL0JM1KIPzxucbILeYAjPl+ka/Kc/+ApIubXHFwYAAA=="
+      "passable-area": 2.25
     },
     {
       "id": "hitw_rink_d6",
@@ -3983,9 +3717,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 7.0,
-      "previous-schematic": "H4sIAAAAAAACA+VQwUrDQBB9m21TmiKCF3/CLxBKQQp6EBQEPYiE7WaSLG6yYTPS6p97irsK9tKLlx7iY5YZ3s485k0GZJg/6JoaxUZLzB7J98a1AKTEYq1Y/TJnqwTTJ1NwjdME6Q2ZqmZMQ3lLbRXZBdK7suyJ4/gwDJ8hi5gzpFfW6dc+w+xeWWImiZPGtKS9KvlSGY84g/M9Z01DuXat9sQUhSSu979btaMidztTmI9Q6DcOvV1HPu+t2jzze0fLjWN2zcVWMXnrqoqKZalsTy9BLZFY/02NXXdYKlwNk3gpYBIXPR6E+HnjhfiOMRsUEKO2+D8MHh1fQwUtU7oFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA92S0WrCMBSG/6TasooIe4g9hCDC2IUXgoPBvBhDQnrahtW2JEfmHt2rLnHQ3nrloH8uvvBzTuCDpECKhzdd0lGx0RGSd7LONDWAKMLsRbHqm8e1xHRvMi6xkIg3ZIqSMfXXLdVFaGeId3nuiMN613UXTxGYIn6uGv3lUiSvqiJmijA/mpq0VTkvlbEIO3gaOsfWtC1lB9fak6bDd9NkH+ps3OrnM7x74/A5DEskmAQZYEK4X4Q/A8YX6c1kjxFGeDMh5RXjFLz+TvHHkeaf7H4BZYgjRF0FAAA="
+      "passable-area": 7.0
     },
     {
       "id": "hitw_rink_d7",
@@ -4009,9 +3741,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 3.0,
-      "previous-schematic": "H4sIAAAAAAACA+1RwUrEMBB9bXa72EUEL/6EXyAsgizoQVAQ9CBSZtNpG0ybko7s6p97qomIe/EiiKDsC+ENLzOPmUkO5Ni70Q23JEYrzG7ZD8Z1AJTCfElCn8rhaYrpnSmlwUGK7IJN3QimIbzkro7qHNlVVQ0ssXwcx9fASeQc2Zl1+nHIMbsmyyKssN+ajrWnSk7IeMQaHG01a1outOu0Z+FopHC+fV3ThsvCbUxpXkKgnyTk9j37YrC0upfnnhcrJ+La4zUJe+vqmstFRXbgh+CWKiy/5yau/9oqbA2TuClgEhv9PSQf599iN+CfHzBJ3u/uB38Wb2/uOVG6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TwUrEMBCdpt0Wu4jgR3jyC4RFEA8eBAVhPSzLEtJJG+w2JZmy66d7qhm7Vk+LXhQ6SXiP4c2D5JEcIIeTJ1XhVpJRMWRLdN7YBgDiGOa3kuTYOb8WMHs2BVVwJiC9Q1NWBLNA77EpuTuH9EFrj8Tjfd+/BYwYc0hvaqtefA7Zo6yRCGM43ZoGlZOarqRxwDNw8dXz5EzbYrHxresUbnbWFiu5N37xumbfH4r3LBYxLL+JB43GRuEKpaeFlrXHy8Y6qg7c227kO0noaluWWHx2MAyR63A9PNRRc9b91vuDsnkCGSQcQ6AIf1bRcA4wwYp4CRH2ZC/IfySZcIIixDfCVBP8lz/4Dowvdq4XBgAA"
+      "passable-area": 3.0
     },
     {
       "id": "hitw_rink_x1",
@@ -4035,9 +3765,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA91TwUrEMBB9bXa7bBcRvPgTfoGwCMuCHgQFQQ8iJZtO22DalGRkV//cU01c2L148aLQF4YZXmYeeQPJgRzzB9VQK1krgdkjOa9tB0AILNaS5YE5u0oxfdIlNzhNkd2QrhvGNJS31NWRXSC7qypPHMeHYfgMOYk5R7YyVr36HLN7aYiZBE5a3ZFysuJLqR3iDM6PnNEtFcp2yhFTFBK4Pt5u5Y7Kwu50qT9Cod449PY9ucIbuXnm956WG8ts24utZHLG1jWVy0oaTy9BLRVY/06Nbf+zVNgaJnFTwCQ+9M+QHM5IEayJfYzXYLKPkfr7hhivwX/7g19O5KPyugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TTUvEMBB9abpb7CKCP8KTF8GTUATx4EFQEPSwLEu2nbbBtinJyO7+dE81saAeRDwpdPLxhsd7gZkhKZDi4CGvqVWsc4nkkazTpgMgJRbXitUHc3wZYfakC65xFGF+Q7qqGTOf3lJXBXaB+V1ZOuJgH4bh1aMImGJ+1Zj82aVI7lVDzCRx2OqOcqtKvlDaInhw8sk5trrvqVi73r7ktN4aUyzVTrtsvwrv/lK8C+JI4uyLeNS4Rm2WvO8pY9OfbhWTbUxVUZGVqnG0Gntw/oNvY5hN+701RoI49M+nhL8L4de4BaYYkYiE9FfscZIFvk9OiPFMdoK+ODnVAv/vD74BfREwm9AFAAA="
+      "passable-area": 1.5
     },
     {
       "id": "hitw_rink_x2",
@@ -4061,9 +3789,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA+1RwUrDQBB9zbYppojgxZ/wC4QiSEEPgoKgB5Ew3UySxU02bEZa/XNPcRekvXjpRSH45jDD253HvJkMyHD0oGtuSIxWmD+y741rASiFxYqEdszpZYLZkymkxkmC9IZNVQtmobzltorsAuldWfYssX0Yhs+QJzFnSK+s0699hvk9WRZhhePGtKw9lXJBxiP24GzPWdNwrl2rPQtHIYXr/euGtlzkbmsK8xEK/Sbhb9exz3tL62d573i5diKuOd+QsLeuqrhYlmR7fglqicLqMDVx3c9SYWuYxk0B0zjob2Gyi5Hi3+AIDH5jrAaTP7rgF+hvj5O6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91RwUrDQBB92U0TTBHBj/DkpdCTEATx4EFQEPRQStkmk2QxyYbdkbaf7ilmW9AeRDwpZGbYGR7vLcy8BEhw8pRV1CjWmUT8TNZp0wKQEtNbxeoTOb8WmLzonCucCUR3pMuKMRnGe2pLj04RPRSFI/byvu/fhx74niC6qU326hLEj6omZpI4bXRLmVUFXylt4TW4+MIcW911lK9cZ98yWm2MyRdqq126Xfp/f0neebKQmB+RDxxXq/WCdx2la8NsmsuNYrK1KUvK00LVjpaHM8x+kLLpvteFiBH6+w0j4c8iCCD26WuMIYQUwZDh8Ix0wdE7iL2DwWgdlPKfHPwAWtIlQ9AFAAA="
+      "passable-area": 1.5
     },
     {
       "id": "hitw_rink_x3",
@@ -4087,9 +3813,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA+1RTUvDQBB9zbYpTRHBi3/CXyCUghT0ICgIehAJ080kWdxkw2ak1X/uKe6CtBcvgghK3xxmeDPzmI8MyDC70zU3JEYrTO/Z98a1AJTCfEVCO+ZkmWDyYAqpcZwgvWJT1YJJCK+5rSI7R3pTlj1LbB+G4T34UfQZ0gvr9HOfYXpLlkVY4agxLWtPpZyT8Yg9ON1z1jSca9dqz8JRSOFyn93QlovcbU1h3kKgXyTUdh37vLe0fpTXjhdrJ+Kasw0Je+uqiotFSbbnp6CWKKy+pyau+1oqXA3jeClgHAf9LYx29k9xWPDPL6g+7fDBH8YHP13uxroFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TwUrEMBB9abotdhHBj/DkRfAkFEE8eBAUBD0sy5Jtp22wbUoysruf7qk2Ftw9iHhS6EzgDY/3BjKTJECCo6esokaxziTiZ7JOmxaAlJjfKlZfzOl1gNmLzrnCSYDojnRZMWZDeU9t6dk5ooeicMTe3vf9+4DCY4LopjbZq0sQP6qamEniuNEtZVYVfKW0hffgbM85trrrKF+5zr5ltNoYky/UVrt0t/R9fyneenEgcXEgHjWuVusF7zpK2XTnG8Vka1OWlKeFqh0txxlc/uBbG2bTfG8NESP08xtKwp+F8EeMMMkQQSB8ylAE07zgfoPTXKGQUnymnOoT/bc/+AGZmRH40AUAAA=="
+      "passable-area": 1.5
     },
     {
       "id": "hitw_rink_x4",
@@ -4113,9 +3837,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9zbYppojgxZ/wC4QilIIeBAVBDyJhupkkSzfZsBlp9c89xd1Le+nFiwfJm8MMb2Ye8yYDMpw965obEqMV5i/se+NaAEphsSahA3N5m2D2agqpcZEgvWdT1YJZKB+4rSK7QPpYlj1LXB+G4TvkScwZ0pV1ettnmD+RZRFWOG9My9pTKTdkPOIOro6cNQ3n2rXas3AUUrg7dne05yJ3e1OYr1DoDwmzXcc+7y1t3uSz4+XGibjmekfC3rqq4mJZku35PaglCuvfqYnrTkuFr2EaPwVM46F/hckh/ilGg6PB0eBp/AD+XEwxugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TTUvEMBCdNG0Xu4jgj/DUi+BJKIJ48CAoCOthWZZsO22DbVOSWbr70z3Vxu5WYcWPyx46CcwwvPfIyyQBQAAnz3GOpSAZc5jMUBupKgDgHKZ3gsTQOb9xwHuRCeVw5oB/jzLLCbyufMAqs90p+I9papAsvW3bty4zmwPwbwsVv5oAJk+iQCLkcFrKCmMtUroWUoPlwMVnz5CWdY3J0tR6HeOyUSqZi4000XZhdf8I3liww+HyC7jHmEKs5rStMSJVh40g1IXKMkyiVBQGF/0dXP3AWykiVX5PdTnMDqgpVjHOURjqgWGlNOW72qj1UB9Ihg12JNLrD3HvF3GL+6/2cHIfJuDayXcmEI4WzG7Wp1EGcxxmF3eZM06Du/B8Ns4R7p9oZxBGbfD4f/AdAnYKIIoGAAA="
+      "passable-area": 1.5
     },
     {
       "id": "hitw_rink_x5",
@@ -4139,9 +3861,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA+1RTUvEQAx909ntYhcRvPgn/AXCIsiCHgQFQQ8iZXaatoPTTpmJ7Oo/91RnENyLl70ofiSHhJfkkZcUQIG9G91Sp9hoidkt+WBcD0BKzJeK1QdyeJphemcqbnGQIb8g07SMaUwvqW8SOkd+VdeBOI2P4/gao0ixQH5mnX4MBWbXyhIzSex3piftVc0nynikGRxtMWs6KrXrtSemRCRxvq2u1Yaq0m1MZV5iop849g4D+TJYtbrn54EWK8fsuuO1YvLWNQ1Vi1rZQA+RLZNY7sbGbvicKl4Nk3QpYJIW/TITAu/+a+2vCBT/H/zBAsU3CHwDtysyWroFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91STUvDQBScbJoUU0TwR3jqRfAkFEE8eBAUhHoopWyTl2QxzYbdV9r+dE9110grVPy49JB32Pd4zAw7O5sACU6e05IWklUaoj8mY5WuAYQhBneS5W5zfiMQvaiMS5wJxPekipIRufGB6sJvB4gf89wSe/p2u31zPfA9QXxb6fTVJug/yYqYKcTpQtWUGpnztVQGnoOL/c6yUU1D2cw2ZpnSbKV1NpFrZUfrqdf9I3jjwSLE5Rdwi7GVnE9409CIdTNcSSZT6aKgbJTLytK0fYOrH3hzzawX31N7IcYH1JzqlCYkLbfAYa0Nl5+z1cvdfCA5XJEjsVl+iEe/iHvcf7V3N4/RR88n70wQjldBAOGi8r2bJUQogkD0hOimv8AbjGJ3iM5GCG8QHQ2wNei+6PENvgMc5OLrigYAAA=="
+      "passable-area": 1.5
     },
     {
       "id": "hitw_rink_x6",
@@ -4165,9 +3885,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.25,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9zbYppojgxZ/wC4QilIIeBAVBDyJhupkkSzfZsBlp9c89xV0Qe+nFiwfJm8MMb2Ye8yYDMpw86pobEqMV5k/se+NaAEphsSahH+b8OsHs2RRS4yxBesumqgWzUN5xW0V2gfS+LHuWuD4Mw2fIk5gzpCvr9LbPMH8gyyKscNqYlrWnUq7IeMQdXBw4axrOtWu1Z+EopHBz6O5oz0Xu9qYwH6HQbxJmu4593lvavMh7x8uNE3HN5Y6EvXVVxcWyJNvza1BLFNa/UxPXHZcKX8M0fgqYxkP/DpPv+LcYDY4GR4PH8AWbiKbXugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91SwUrDQBB9yaYJpojgR3jyC4QiiAcPgoJQD6WUZTNJFtNs2J3Q+ume6m6qrSfRi0JmDu/xePNgdjYHcpw8qZrWkrUSyOZknTYtACEwvZUsD8r5dYzJsy64xlmM9I50VTMmnt5TWwV1ivShLB1xGN/tdm8eo4A50pvGqBeXI3uUDTGTwOlat6SsLPlKaoswg4uj5tjqrqNi5TrbK1ptjCkWcqvd7HUZcn9o3gZzLDD/Yt57SmoVLUg6npWycXTZGsv1B3emP/CNZLKNqSoqPhXyQ2x7Wu4f6tvw4Ptt9kBDeIIMSTiDp4S/q8j3EcZXceRbJAOMcsEolEgGGOcJx/5F/2/Bd0Gz9i0XBgAA"
+      "passable-area": 2.25
     },
     {
       "id": "hitw_rink_x7",
@@ -4191,9 +3909,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 1.6875,
-      "previous-schematic": "H4sIAAAAAAACA+VRwUrEQAx97ex2sYsIXvwJv0BYBFnQg6Ag6EGkZKdpOzjtlGlkV//cU525uBcvXlaoySHhJXnkJTmQ4+hBN9ySGK2weGQ/GNcBUArLNQl9I6eXKeZPppQGJymyGzZ1I5iH9Ja7OqJLZHdVNbDE8XEcP0NMYsyRXVmnX4cci3uyLMIKx63pWHuq5IKMR5zB2R6zpuVCu057Fo5ECtf76pZ2XBZuZ0rzERL9JqG379kXg6XNs7z3vNo4Edeeb0nYW1fXXK4qsgO/BLZUYf07NnH9z1ThapjFSwGzuOjhLEkQfcL2PwROWWGSTl3gn3zwCzAxZ4e6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TTUvDQBCd3W1STBHBH+GpF8GTUATx4EFQEOqhlLJNJslimg27E9L+dE9xN5EqVPy4KGSHZYbhvcfMzmwEEMHRY5zjRpKKBYznaKzSJQAIAZMbSXKfOb3iEDyphHI44RDeospygsCFd1hmPjuB8D5NLZKnt2374jzzPoLwutDxs41g/CALJEIBxxtVYmxkSpdSGfAcOHvPWTKqqjBZ2crUMa4arZOF3Co72y697g/BOw/mAi4+gHuMLeR6QbsKZ2tNpDfTRhKaQmcZJrNUFhaX/TPMD6gpljEuUFrqgdNSG8rfYqvrfXwgOW3QkcjUnfjoG3GP+632vvJAwPkXTZOuPu84hDGM/ORdfQh/dxgD7gy6O8TDuXDGRsFAG2TczY/xMGScDXWEolvRoW4odD/wPxp8BZMR+o6KBgAA"
+      "passable-area": 1.6875
     },
     {
       "id": "hitw_beach_halloween_d1",
@@ -4217,9 +3933,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1RTUvDQBB9ybYppojgxT/hLxCKIAU9CAqCHkTCdDNJFjfZsBlp9Z97irse7MVLL4rFN4cZ3sw85iMHchzc6YZbEqMVZvfsB+M6AEphviShL+b4PMX0wZTS4ChFdsWmbgTTEF5zV0d2juymqgaW2D6O43vwSfQ5sgvr9POQY3ZLlkVY4bA1HWtPlZyR8Yg9ONly1rRcaNdpz8JRSOFym13ThsvCbUxp3kKgXyTU9j37YrC0epTXnhcrJ+La0zUJe+vqmstFRXbgp6CWKix3UxPXfy8VroZJvBQwiYP+IJII7DGST/tf8O/ut/cf/B18AEg7fJG6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91QwUrDQBB9m00TTBHBj/DkpeBJCIJ48CAoCHoopWyTSbKYZMPuSNtP9xSzFq0HEU8W8hhmhse8ecwkQIKjx6yiRrHOJOInsk6bFoCUmN4oVl/M6VWAybPOucJJgOiWdFkxJkN7R23p2Smi+6JwxF7e9/3bUIWvCaLr2mQvLkH8oGpiJonjRreUWVXwpdIWXoOzPefY6q6jfOk6+5rRcm1MPlcb7dLNwu+VuPg2vJtxtVrNedtRujLMpjlfKyZbm7KkPC1U7chLgz/6bBe7N8x+8WHT/WwSIkbo/ze0hP+DGBAEPmOckCGkEDIM5VgP/Ah85tFBjP3Aw+EdhrtOmtAFAAA="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_beach_halloween_d2",
@@ -4243,9 +3957,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9ybYppojgxZ/wC4QiSEEPgoKgB5Ew3UySxU02bEZa/XNPcdeDvXjpRbH45jDDm5nHvMmBHAd3uuGWxGiF2T37wbgOgFKYL0noizk+TzF9MKU0OEqRXbGpG8E0lNfc1ZGdI7upqoElro/j+B5yEnOO7MI6/TzkmN2SZRFWOGxNx9pTJWdkPOIOTracNS0X2nXas3AUUrjcdte04bJwG1Oat1DoFwmzfc++GCytHuW158XKibj2dE3C3rq65nJRkR34KailCsvd1MT130uFr2ESPwVM4qE/hyQCe4zkM/4N/nGDe+3wd/AB/BWWdroFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91SPUvEQBB92c0lmEMEf4SVjWAlBEEsLAQFQYvjOPaSSbKYZJfdkbv76VYxy+FHIWKlkFfMDI9585hhMiDDwUPRUKdYFxLpIzmvTQ9ASsyvFasP5vhSYPakS25wJJDckK4bxmwsb6mvAztHcldVnjjIh2F4HXMUcobkqjXFs8+Q3quWmEnisNM9FU5VfKG0Q9Dg5JPz7LS1VK68dS8FrTbGlAu11T7fLsNcifMvzfse36r1gneW8rVhNt3pRjG51tQ1lXmlWk9BKn7ps1vuz3D2gw8b+71JjBRxuN9YEv4M0QghQsQ0IeNYRpGMx2eZ6ILvcfoLTvVH/w1v//67gtAFAAA="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_beach_halloween_d3",
@@ -4269,9 +3981,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.5,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9ybYpTRHBiz/hFwhFKAU9CAqCHkTCdDNJFjfZsBlp9c89xd2LvXjxUrD4LjO8mXkz83Igx/xBN9ySGK0we2Q/GNcBUAqLNQl9M2dXKaZPppQGpymyGzZ1I5iG9Ja7OrILZHdVNbDE8XEcP0NMYsyRrazTr0OO2T1ZFmGFk9Z0rD1VcknGI87gfM9Z03KhXac9C0chhet9dUs7Lgu3M6X5CIl+k9Db9+yLwdLmWd57Xm6ciGsvtiTsratrLpcV2YFfglqqsP6dmrj+Z6ngGibRKWASDz0wEvzjLyM59u+SgKP/8dA7vwDtjcHqugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TwUrDQBB92U0TTBHBj/DkpdCTEATx4EFQEPRQStkmk2QxyYbdkbaf7ilmKWpBEU89ZFh2HsN7A29mNwESnDxlFTWKdSYRP5N12rQApMT0VrH6qpxfC0xedM4VzgSiO9JlxZgM8J7a0leniB6KwhF7ed/370MOfE4Q3dQme3UJ4kdVEzNJnDa6pcyqgq+UtvAaXHzXHFvddZSvXGffMlptjMkXaqtdulv6vv8kbz1ZSMwPyHuOq9V6wbuO0rVhNs3lRjHZ2pQl5WmhakfL/Rhmf0jZdL/rQsQI/fwGSDhaBD/AyCIQQkAO11gNeo9hOGJ3w/4C/z6F3+Qo1/d5jv4LPwArZ9KM0AUAAA=="
+      "passable-area": 2.5
     },
     {
       "id": "hitw_beach_halloween_d4",
@@ -4300,9 +4010,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 4.0,
-      "previous-schematic": "H4sIAAAAAAACA+1TwUrDQBB9m21TmiKCF3/CLxBKQQp6EBQEPYiE7WaSLG6yYTPS6p97irtV7MWLl4LFGYYZ3s485g1sBmSY3umaGsVGS0zuyffGtQCkxGypWH0jJ4sE4wdTcI3jBOkVmapmjEN5TW0V0RnSm7LsieP4MAzvIYuYM6QX1unnPsPkVlliJomjxrSkvSr5XBmPOIPTHWZNQ7l2rfbEFIkkLneva7WhIncbU5i3UOgXDr1dRz7vrVo98mtH85Vjds3ZWjF566qKinmpbE9PgS2RWP6OjV33M1W4GkbxUsAoLro/E0Js42BNfPm/wD8rMBHbOFh9nz9w7wI/AMWfyRq6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TwUrEMBB9SXa32EUEP8KTR09CEcSDB0FB0MOyLNl22gbbpiQju/vpnmrSBfXoaQ+dMJnh8Sbk5ZEUSHH2mtfUaja5QvJGzhvbAVAKywfN+ge5vJOYv5uCa1xILB7JVDVjHton6qqILrF4LktPHMeHYfgKVcSaYnHf2PzDp0hedEPMpHDemo5yp0u+1cYhzuDqF/PsTN9TsfG9+8xps7O2WOm98dl+Hc/9J/kQyVLh5g/5yPGN3q740FO2tcy2vd5pJtfYqqIiK3XjaT3eKcEsvgMwI5wshIgpYgpMMqRSMmwydJPUJ0ZlcU1UoBxNlEcjJykw/L0gT5zewW9Oh6nUmAUAAA=="
+      "passable-area": 4.0
     },
     {
       "id": "hitw_beach_halloween_d5",
@@ -4326,9 +4034,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 3.0,
-      "previous-schematic": "H4sIAAAAAAACA+1RwUrDQBB9ybYpTRHBiz/hFwhFKAU9CAqCHkTCdDNJFjfZsBlp9c89xd2LvXjxUrD4LjO8mXnMzMuBHPMH3XBLYrTC7JH9YFwHQCks1iT0zZxdpZg+mVIanKbIbtjUjWAa0lvu6sgukN1V1cASx8dx/AwxiTFHtrJOvw45ZvdkWYQVTlrTsfZUySUZjziD8z1nTcuFdp32LByFFK731S3tuCzczpTmIyT6TUJv37MvBkubZ3nveblxIq692JKwt66uuVxWZAd+CWqpwvp3auL6n6XC1zCJnwImcdGDIsE//jyO2cQkTQKO3b6DH/gFNJJrMroFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91RwUrDQBB9m20TmiKCH+HJoychFMSDB0FB0EMpZbuZJItJNuyOtP10TzFboXrowVMPeQy84fFm2ZmXAilmr7qiRrHREskbOW9sC0BKzB8Uq6NytYgwfTc5V7iMED+SKSvGdGifqC2DOkf8XBSeOIz3ff81sAicIr6vrf7wKZIXVRMzSVw0piXtVMF3yjiEGVz/ap6d6TrK175zn5rWW2vzpdoZn+1X4d1/mnfBHEnc/jH/eHytNkved5RtLLNtbraKydW2LCnPClV7Wh3+lGAS7gBMCGeFONRIEQ0QkCLwKBcUJ9tRLThEJ2XIT4w2QXGkc+IbKeO6NJgFAAA="
+      "passable-area": 3.0
     },
     {
       "id": "hitw_beach_halloween_d6",
@@ -4352,9 +4058,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9ybYppojgxZ/wC4QiSEEPgoKgB5Ew3UySxU02bEZa/XNPcRfBXrwUxEP1zWGGNzOPeZMDOQ7udMMtidEKs3v2g3EdAKUwX5LQF3N8nmL6YEppcJQiu2JTN4JpKK+5qyM7R3ZTVQNLXB/H8T3kJOYc2YV1+nnIMbslyyKscNiajrWnSs7IeMQdnGw5a1outOu0Z+EopHC57a5pw2XhNqY0b6HQLxJm+559MVhaPcprz4uVE3Ht6ZqEvXV1zeWiIjvwU1BLFZa7qYnrv5cKX8MkfgqYxEN/D0kMlWBvscfW/ozBz/g3+LP4AJ5wuFG6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA92QTUvEQAyG33a6LXYRwR/hyYuwp4UiiAcPgoKgh2VZZtu0HWw7ZSayuz/dU52h+HEQ8aTQkCEh5E3mSQqkOHrIa2olq1wgeSRjle4ACIH5tWT5UTm9DDF7UgXXOAkR35CqasbMpbfUVb46R3xXlpbYy4dheHUx8DFFfNXo/NmmSO5lQ8wkcNyqjnIjS15KZeA1OPusWTaq76nY2N685LTZaV2s5F7Z7LD2cwUuvjSPPbaR2xUfespY9+c7yWQaXVVUZKVsLHld+Msl+/V4g8UPS7aaWbff74mQIPL3cynhzywYXxCG7u9TNEcWRJFDFAGmCejJRp8q4LuLiQKK/yJ8A1xLCjnQBQAA"
+      "passable-area": 2.0
     },
     {
       "id": "hitw_beach_halloween_d7",
@@ -4383,9 +4087,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 4.0,
-      "previous-schematic": "H4sIAAAAAAACA+1SwUrEMBB9aXa72EUEL/6EXyAsgizoQVAQ9CBSsum0DaZNSUZ29c891UTEvXjxorj4hjDDy8xjZpgCKLB3o1vqFBstMbslH4zrAUiJ+VKx+mQOTzNM70zFLQ4y5BdkmpYxjeEl9U1i58iv6joQp/JxHF+jF8kXyM+s04+hwOxaWWImif3O9KS9qvlEGY9Ug6MtZ01HpXa99sSUhCTOt79rtaGqdBtTmZcY6CeOucNAvgxWre75eaDFyjG77nitmLx1TUPVolY20ENUyySW31NjN3wtFbeGSdoUMEmN/hiEkOL9YVchPux/wD87YLxOscMX+lt4AzP9xm66BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91UTUvEMBCdNu0Wu4jgj/DUi1ehCOLBg6Ag6KEuy2w7bYNtE5JZuvvTPdWG4gfoYUFQ6ITkhcdMXl4CEwPEcPSQ19Qiy1xA9EjGStUBgBCwvEbGD+b00ofwSRZcw4kPixuSVc0Qjttb6irHLmFxV5aW2JUPw/A6oucwhsVVo/IXG0N0jw0xk4DjVnaUGyz5AqUBVwNnn5xlI7WmYm212ea07pUqMtxJm+5W7lwB51+Spxzb4CbjvaaUlU56ZDKNqioq0hIbS67OP1Bkv5re4PmbCBvUhVImKzGXXZUSWk5qbMp0o5hVmyhNXcpmS4lWPZl39Z/vExwi0dNvJEKIIHBfOaoR/Fl4nue76RaYY4hp+L6DWRoMnL3RmwjnaXB0NvYR4Xlztfd/8QYGqa11WwYAAA=="
+      "passable-area": 4.0
     },
     {
       "id": "hitw_beach_halloween_x1",
@@ -4419,9 +4121,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 4.0,
-      "previous-schematic": "H4sIAAAAAAACA+2QwUoDMRCG/920W9wighdfwicolIIU9CAoCHoQWdLs7G4wu1mSkVbf3NOaqLQXL16KSL8hzPBn5ieZHMhxdKcaaiVrJTC5J+e17QAIgelSstwqp4sU4wddcoOTFNkV6bphjEN5TV0d1Smym6ryxHF8GIb3kJOYc2QXxqpnn2NyKw0xk8BxqztSTlY8k9ohzuBspxndUqFspxwxRSOBy93tWm6oLOxGl/otFOqFQ2/fkyu8katHfu1pvrLMtj1fSyZnbF1TOa+k8fQU3FKB5e/c2PY/W4WtYRQ3BYziQ/dHIj4DBw78UZL06/zfD37HnvkApbCO27oFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91STUvDQBB9yaYNpojgj/DkRfAkBEE8eBAUBD2UUrbJJFlMsmF3pO1P9xR3E/w4iHjqIcPOB4+ZHWbeJECCo6esokayygTiZzJW6RaAEFjcSpZfyOl1iNmLyrnCSYj5HamyYsxceE9t6dEF5g9FYYl9ed/3784H3ieY39Q6e7UJ4kdZEzMJHDeqpczIgq+kMvA1OPvGLBvVdZSvbWfeMlpvtc6Xcqdsulv5fwUufiSPObaWmyXvO0pZd+dbyWRqXZaUp4WsLfm68J9N9qtxB5d/NNloZt383idCjMjvz4WEg0kQhONziimKGFR8hhMcMHC3HTrrT3yaE0YDiVE00fkcbwOJA5cHlQ+JCXrF0AUAAA=="
+      "passable-area": 4.0
     },
     {
       "id": "hitw_beach_halloween_x2",
@@ -4445,9 +4145,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.25,
-      "previous-schematic": "H4sIAAAAAAACA+2QwUoDMRCG/920W9wighdfwicolIIU9CAoCHoQWdLs7G4wu1mSkVbf3NOaqLQXL16KSL8wzPBn5ieZHMhxdKcaaiVrJTC5J+e17QAIgelSstwqp4sU4wddcoOTFNkV6bphjEN5TV0d1Smym6ryxHF8GIb3kJOYc2QXxqpnn2NyKw0xk8BxqztSTlY8k9ohzuBspxndUqFspxwxRSOBy93tWm6oLOxGl/otFOqFQ2/fkyu8katHfu1pvrLMtj1fSyZnbF1TOa+k8fQU3FKB5e/c2PY/W4WtYRQ3BYziQ/dHIpLPOHDgj5J8xz/+4NfZMx83ZqcaugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91RTUvDQBCdZPOBKSL4Izzl4lUIgnjwICgI9RBKWTeTZDHNht0JaX+6p5g1JS30oF56yIPwHsPMm528CCCCizdR4oaTFAzCJWojVQ0AjMHikROfKtf3LvjvMqMSrlwInlAWJYE/yGesC1tdQPCS5wbJjvd9/zWwYzmC4KFS4tNEEL7yComQweVG1ig0z+mOSw12Bm4ONUNaNg1ma9PoVuC6UypL+VaaZLuyvgxuj5rHHlPxj5R2DSakmrjjhLpSRYFZkvPKoJ1z/7hktxr/wfJkSY61wBS5odE1rpWmcq+Naid9sj/ucBgi3f68xPvF3Pb913s604cQPBvfsAfhbHAc13EmmiGY/Tyf7eUMDxyiswdagplGyI5ofhhyY85E58Q3V7Y3SU8GAAA="
+      "passable-area": 2.25
     },
     {
       "id": "hitw_beach_halloween_x3",
@@ -4471,9 +4169,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 3.0,
-      "previous-schematic": "H4sIAAAAAAACA91TwUrDQBB9m21TTBHBiz/hFwhFKAU9CAqCHkTCdjNJlm6yYXek1T/3FHcv9uLFi0LmMsObmce8gVcABU4edUudYqMlFk/kg3E9ACmx3ChW38j5dYb5s6m4xVmG/JZM0zLmsbyjvknoEvl9XQfitD6O42fMIuUC+do6vQsFFg/KEjNJnHamJ+1VzVfKeKQdXBwxazoqteu1J6ZEJHFz7O7VgarSHUxlPmKh3zjODgP5Mli1feH3gVZbx+y6y71i8tY1DVWrWtlAr5Etk9j8jo3d8DNV/Bpm6VPALB36dyEghMDkQ05doJi6uAkLTA78Bxd+AXGQ2NG6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TTUvEMBScJN0Wu4jgj/DkRfAkFEE8eBAUBD0sy5JtX9tg25Tmye7+dE+12eLHQcTTHvogmccw82BeSAzEOHpKS6o1m1QheqbOGdsAUArzW836izm9lpi9mIxLnEiEd2SKkjEb2ntqCs/OET7kuSP29r7v3wcUHmOEN5VNX12M6FFXxEwKx7VpKO10zlfadPAenH1zjjvTtpStXNu9pbTaWJst9Na4ZLv0c/8p3nmxVLj8IR41rtLrBe9aStaW2dbnG83UVbYoKEtyXTlajmu4+MPKtv3dFyBC4Pc3tISDlRD+CA8TLamU9ICJZhQyCKQIhMQ+5wQfcLzkZzu9gP7/yT0cOOAHTFJ8JNAFAAA="
+      "passable-area": 3.0
     },
     {
       "id": "hitw_beach_halloween_x4",
@@ -4497,9 +4193,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1RwUrEMBB9aXa72EUEL/6EXyAsgizoQVAQ9CBSsum0DaZNSUZ29c891QTFvXgRRFD2BfKGl5nHzKQACuzd6JY6xUZLzG7JB+N6AFJivlSsPpXD0wzTO1Nxi4MM+QWZpmVMY3hJfZPUOfKrug7EqXwcx9fIInGB/Mw6/RgKzK6VJWaS2O9MT9qrmk+U8Ug1ONpq1nRUatdrT0zJSOJ8+7pWG6pKtzGVeYmBfuKYOwzky2DV6p6fB1qsHLPrjteKyVvXNFQtamUDPUS3TGL5PTd2w9dWcWuYpE0Bk9Tor0FEvF//FeLj7Ab8swMKke1+8OfxBtNcq0S6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TwUrEMBB9SXdb7CKCH+HJoyehCOLBg6Ag6GFZlmw6bYNtU5KR3f10TzXZBfXoaQ99h5nweBPyMjM5kOPsVTfUKTY6QfZGzhvbA0gSLB4Uqx/m8k5i/m5KbnAhkT6SqRvGPByfqK8ju0D6XFWeOJaP4/gVsog5R3rfWv3hc2QvqiVmSnDemZ60UxXfKuMQa3D1y3l2ZhioXPvBfWpab60tl2pnfLFbxXv/Kd5HsUxw80d81PhWbZa8H6jYWGbbXW8Vk2ttXVNZVKr1tDq8KcMs/gMwI5wOIuAYJKYJCSmCt0OYIISIziTEhPsXFkuGARWYskWcfgO/AfyxGEWYBQAA"
+      "passable-area": 2.0
     },
     {
       "id": "hitw_beach_halloween_x5",
@@ -4553,9 +4247,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 10.0,
-      "previous-schematic": "H4sIAAAAAAACA+2QQUvDQBCFX7JtiikiePFP+AuEIkhBD4KCoAeRMN1MksVNNmxGWv3nnuJuD/bixUsR6fcOM7zdeexODuQ4etANtyRGK8we2Q/GdQCUwnxJQt/O6WWK6ZMppcFJiuyGTd0IpqG95a6O7hzZXVUNLHF8HMfPUJNYc2RX1unXIcfsniyLsMJxazrWniq5IOMRZ3C286xpudCu056FY5DC9e50TRsuC7cxpfkIjX6TcLfv2ReDpdWzvPe8WDkR156vSdhbV9dcLiqyA7+EtFRh+bs0cf3PUWFrmMRNAZP40P2RqK1w4MAfJU2i/vMPk632zRcrSmMnugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91SwUrDQBB92U0TTBHBj/DkRfAkBEE8eBAUBD2UUrbJJFlMsmF3pO2ne4pZItVDEU895PFgHsO82dlhEiDByUtWUaNYZxLxK1mnTQtASszvFat95vxWYPamc65wJhA9kC4rxmyQj9SWPjtH9FQUjtjb+77/HGLgY4LorjbZu0sQP6uamEnitNEtZVYVfKO0hffg6ifnOvuR0crVar3gXUcpm+5yo5hsbcqS8rRQtaOlf0Li4pePre46ylffDTbG5Au11S7d+mLxz+LdctzB9R8TrQ2zaQ4PFSJG6Pc3SMLREAgRBHIkJgl5QE0Jw4FipJjmB2UYCjlyshe653HxBeSoIl/QBQAA"
+      "passable-area": 10.0
     },
     {
       "id": "hitw_beach_halloween_x6",
@@ -4584,9 +4276,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 4.0,
-      "previous-schematic": "H4sIAAAAAAACA+1TwUoDMRB92bRb3CKCF3/CLxCKIAU9CAqCHkSWNDu7G8xulmSk1T/3tCYe7MVLLwWLQ8IMLzOPvBmmAAocPeiWOsVGS8weyQfjegBSYr5UrH6Q08sM0ydTcYuTDPkNmaZlTGN4S32T0Dnyu7oOxKl8HMfP6EXyBfIr6/RrKDC7V5aYSeK4Mz1pr2q+UMYj1eBsi1nTUaldrz0xJSKJ6+3rWm2oKt3GVOYjBvqNY+4wkC+DVatnfh9osXLMrjtfKyZvXdNQtaiVDfQS2TKJ5W5s7IbfqWLXMEmdAibpo/szIdIVOFwT3+df4N/VlwRmBy0wbeDeZ/gFckQmuroFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91RwUrDQBB93U0TTBHBj/DkRfAkBEE8eBAUBD2UUrbJJFlMsmF3pO2ne4pZG1oPIp56yDvMPIb3dpl5MRDj5CUtqVasU4nolazTpgEgJWb3itV+cn4rMH3TGZc4EwgfSBclY9rTR2oKP50hfMpzR+ztXdd99n3ie4zwrjLpu4sRPauKmEnitNYNpVblfKO0hffg4jBzbHXbUrZ0rf1Iabk2JpurjXbJZuHf/ad468VC4vqHeKdxlVrNedtSsjLMpr5cKyZbmaKgLMlV5WixO8PVH1Y27e++ABECf7+eEo6Gice+jRDiO04pBjrCBfvgRBCIPsNxLujzE0MZJXxwYijH/fkLOaTYrtAFAAA="
+      "passable-area": 4.0
     },
     {
       "id": "hitw_beach_halloween_x7",
@@ -4610,9 +4300,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA+1TwUoDMRB92bRb3CKCF3/CLyiUghT0ICgIehBZ0uzsbjC7WbIjrf65pzWRYi+9eCkinRBmeJl5mTcwGZDh5EHX1Cg2WmLySL43rgUgJaZLxeoHOV8kGD+ZgmucJUhvyFQ1YxzCW2qriE6R3pVlTxzLh2H4DF5EnyG9sk6/9hkm98oSM0mcNqYl7VXJM2U8Yg0udpg1DeXatdoTUySSuN69rtWGitxtTGE+QqDfOOR2Hfm8t2r1zO8dzVeO2TWXa8XkrasqKualsj29BLZEYvk7NnbdfqowNYzipIBRbPRwJoT4vv/WxPYcBR4F/lF9YruFB/73C1Nkfv26BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91US0vDQBCeZPPAFBH8EZ56ETwJQRAPHgQFoR5CKdtkkiwm2bA7oe1P9xR3TVuFio9LD5nDzDDMNzPfzLIRQAQnz2mJNSeRMghnqLSQDQAwBpM7TnwfOb9xwX8RGZVw5kJwj6IoCXzjPmBT2OgEgsc810gW3vf9m7GOtREEt5VMX3UE4ROvkAgZnNaiwVTxnK65UGAxcPEZ06RE22K20K3qUlyspMwSvhY6Xs9tXQazL8lDTo5NiglyTTGpDqeNVFTGOa80TrXs9v6KE6pKFgVmuwgazIdri7t/nGQzHxZ1eTCJrvgyoU2LMcn2sJ/FeQyufsAtJZGsv4f6v5AfOP2Tvd2YLR5ACJ69vBkR4YjiOM5WjVPMq2KeOR0LRkvQZ55nVDDiC9pvaqwEHfOrsq06bud3Ldy7H4oGAAA="
+      "passable-area": 1.5
     },
     {
       "id": "hitw_medieval_halloween_d1",
@@ -4646,9 +4334,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 4.0,
-      "previous-schematic": "H4sIAAAAAAACA91SwUrDQBB9ybYpTRHBiz/hFwilIAU9CAqCHkTCdjNJFjfZsDvS6p97irtY7KUXLwp5c5jh7c5j3jA5kGP+oBpqJWslMHsk57XtAAiBxVqy/GHOVimmT7rkBqcpshvSdcOYhvKWujqyC2R3VeWJY/swDJ8hJzHnyK6MVa8+x+xeGmImgZNWd6ScrPhSaofYg/MDZ3RLhbKdcsQUhQSuD69buaOysDtd6o9QqDcOf/ueXOGN3Dzze0/LjWW27cVWMjlj65rKZSWNp5eglgqsf6fGtj8uFbaGSdwUMImD/h2Sb2C0SPYxWn97g8l4DY7+Rv8HX1WJ6iy6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA92RzWrDMBCER5J/iEMp5CH6EIEQCDn0UEig0B5KCEJexyLxD9KGpI/ek2v54F57asHDwi7D7sLHZECG2aspqdJsjUL6Rs7bpgagFOZbzXp0FmuJ+N3mXOJRInkmeyoZcT++UH0K7hzJrig8cTjvuu6r7yL0DMnm0pizz5Du9YWYSeGhsjUZpwteausQbvD043l2tm0pP/rWXQ0db02Tf+i79av7Ifz95fJnWJZIEQUYICL8ncQoTFJCQg4FOU3CgU4MgHKigCHDPj4xUcD/0zeAwQIJXQUAAA=="
+      "passable-area": 4.0
     },
     {
       "id": "hitw_medieval_halloween_d2",
@@ -4677,9 +4363,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 3.5,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9zbYppojgxZ/wC4QilIIeBAVBDyJhupkkSzfZsBlp9c89xd1Le+nFiwfJm8MMb2Ye8yYDMpw965obEqMV5i/se+NaAEphsSahA3N5m2D2agqpcZEgvWdT1YJZKB+4rSK7QPpYlj1LXB+G4TvkScwZ0pV1ettnmD+RZRFWOG9My9pTKTdkPOIOro6cNQ3n2rXas3AUUrg7dne05yJ3e1OYr1DoDwmzXcc+7y1t3uSz4+XGibjmekfC3rqq4mJZku35PaglCuvfqYnrTkuFr2EaPwVM46F/hckh/ilGg6PB0eBp/AD+XEwxugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA+2RQUvDQBCF32aTFlNE8Ed48iJ4EoogHjwICkI9lFK2ySRZTLJhd0rtT/dUs42tQkURxENxCMzjMe+Dt4mBGAcPSUGVYp1I9EdknTY1ACkxuFasts7xZYDoUadc4ChA74Z0XjCiVt5SnXt3gN5dljliH1+tVi/tFn7H6F2VJnlyMfr3qiRmkjisdE2JVRlfKG3hMzh59xxb3TSUTl1j5wlNF8akY/Ws3XA58VyJ0Yfj7iajOqExKcfDTJWOTmtjuXjTzsy3eqGYbGnynNKNQ22I7Zw8PPgG7u9+yl7LSfewZztwV6rZmJcNDdk0uwifCyXOv8jNDLOpPo9G6CP0P7OlEP5sRCBFKKSAFAH2cXzBYL8LRm3BaN1zPwv6T3Trv+Cvziv4JClIXQYAAA=="
+      "passable-area": 3.5
     },
     {
       "id": "hitw_medieval_halloween_d3",
@@ -4703,9 +4387,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1RwUoDMRB92bRb3CKCF3/CLxCKIAU9CAqCHkSWNDu7G8xulmSk1T/3tCYHrQcvvXgofYeZ4SXzmDdTAAWOHnRLnWKjJWaP5INxPQApMV8qVj/M6WWG6ZOpuMVJhvyGTNMyprG8pb5J7Bz5XV0H4tQ+juNnzCLlAvmVdfo1FJjdK0vMJHHcmZ60VzVfKOORenC25azpqNSu156YkpDE9fZ1rTZUlW5jKvMRC/3G8e8wkC+DVatnfh9osXLMrjtfKyZvXdNQtaiVDfQS1TKJ5W5q7Ia/peLWMEmbAiZp0P+DEN9hTyF+xT01KOL9DgYPBnfEF5Tpsw66BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA+2RuwrCQBBFr4kmGBHBj/AjBBHEwkJQELQQkWUzMYuahN0R9dOtYlbxUVqIRfA0d7jMLBw2AALUZzKmvWAlXfhz0kalCQDXRWMoWDybdt9BbaFCjtFy4I1IbWJGrRjHlGxs24A3iSJDbM/zPL8UWbEZwBvsUrk1Afyp2BEzuWjuVUJSi4i7QmnYG3RenWGtsozCtcn0QdL6mKbhUpyU6Z1W9t0Pl8922YGPqpUBqoSfUSl4z9LhFFi7W5ZV8GZXWsHHL97Hv+D3uAJGKzP7XQUAAA=="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_medieval_halloween_d4",
@@ -4729,9 +4411,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.25,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrEMBB9bXa72EUEL/6EXyAsgizoQVAQ9CBSZtNpG0ybko7s6p97qgmI68GLFw/SN5AZXmYe8yYHchzc6YZbEqMVFvfsB+M6AEphuSahL+b4PMX8wZTS4ChFdsWmbgTzUF5zV0d2ieymqgaWOD6O43vIScw5sgvr9POQY3FLlkVY4bA1HWtPlZyR8YgzONlz1rRcaNdpz8JRSOFy/7ulHZeF25nSvIVCv0jo7Xv2xWBp8yivPa82TsS1p1sS9tbVNZeriuzAT0EtVVj/Tk1c/7NUuBpm8VLALC76Z0gC4oN/i+QzJoOTwcngd3wAWdxflLoFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA+1RwUrDQBB9yaYJpojgR3jqFwhBEA8eBAWhHkopSzJJFtNs2J3Q+ume4q6x1VsVxEPxLcw8Hjs7b3ZSIMXJY17TWrLKBZI5Gat0C0AITG8ky71yfhVi8qQKrnEWIr4lVdWMiaN31FZenSK+L0tL7MuHYXh1OfA5RXzd6PzZpkgeZEPMJHC6Vi3lRpZ8KZWBr8H8U7Od6XNaldTmtCBpOWPT06zVhuuslI2lmdX9nm8kk2l0VVGxU8jVvNOl9yFw8eVxNqrrqFh9dNloXSzkVtls6y+HB5yMDX5oxdtfjh/7LScv/nKEBJFfg6OEP0MQOogx4jgRRZEIXDjS8YJwN+DxbtCdMfwP+Kt4A+uc2woXBgAA"
+      "passable-area": 2.25
     },
     {
       "id": "hitw_medieval_halloween_d5",
@@ -4755,9 +4435,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9zbYppojgxZ/wCwqlIAU9CAqCHkTCdDNJFjfZsBlp9c89xV0P9uKlF8XiY2CGNzOPeZMBGY7udM0NidEK03v2vXEtAKUwW5HQF3O6TDB5MIXUOEmQXrGpasEklNfcVpGdIb0py54lrg/D8B7yKOYM6YV1+rnPML0lyyKscNyYlrWnUuZkPOIOznacNQ3n2rXas3AUUrjcdTe05SJ3W1OYt1DoFwmzXcc+7y2tH+W148XaibjmfEPC3rqq4mJRku35KaglCqv91MR130uFr2EcPwWM46E/iNFnHDAO32DAv8E/7u8XLH4AWzDcaboFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91SPavCQBCcu2jCi4jgj/BHCCI8XvEKQUHQQkSOyyY51CTcrag/3SrmLBQ7K4tMM8uwHwyzMRDjZ6lzOio2OkC0IutMWQAIAvT+FKunMpxKdNcm4RwDifCfTJYzuk05oyLzag/hPE0dsR+v6/rWsPAcI/w9lHrvYkQLdSBmCtA/moK0VSmPlbHwMxi9NMfWVBUlO1fZk6bduSyTjboYN7lu/d4Pmy++WSJCx5sBOoQvQrxRCyEkZIMWG4QUQrQ6wcafaG2C/jfFI0Epv3v5DiXA2HldBQAA"
+      "passable-area": 2.0
     },
     {
       "id": "hitw_medieval_halloween_d6",
@@ -4781,9 +4459,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.375,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9zbYppojgxZ/wC4QilIIeBAVBDyJhupkkSzfZsBlp9c89xd1Le+nFiwfJm8MMb2Ye8yYDMpw965obEqMV5i/se+NaAEphsSahA3N5m2D2agqpcZEgvWdT1YJZKB+4rSK7QPpYlj1LXB+G4TvkScwZ0pV1ettnmD+RZRFWOG9My9pTKTdkPOIOro6cNQ3n2rXas3AUUrg7dne05yJ3e1OYr1DoDwmzXcc+7y1t3uSz4+XGibjmekfC3rqq4mJZku35PaglCuvfqYnrTkuFr2EaPwVM46F/hskh/ilGg6PB0eBJ/AAZVSEJugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA+1RwUrDQBSc7DYtpojgR3jqRfAkBEE8eBAUhHoopWyTl2QxzYbdV2o/3VPNNm0VKgVBPBQfCzMM+96b2Y2ACCfPSUEzxTqR6A3JOm0qAFKif6dY7ZTzG4HwRadc4Eyge086LxhhQx+oyr3aR/cxyxyxb1+tVu8NBh4jdG9Lk7y6CL0nVRIzSZzOdEWJVRlfK23hezD81Fxt5wlNMqoSGpFyHLOd06Aylos4U6WjgTPzHV8oJluaPKd0q1DTs6Zj70Pi4stwtrquKZ1stiyMSUfqTbt46S8Lics9J65U0xEva4rZ1Pv7xu2bHUzQGvthBB/bD+9IXB0wNTXMZva9rxA9dPxnNlMIf1aBkIHoiEA0DMdYTbpNQHnEAUOxhqMMCOGPaOE/4G/WB+87+HxdBgAA"
+      "passable-area": 2.375
     },
     {
       "id": "hitw_medieval_halloween_d7",
@@ -4807,9 +4483,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+2QwUrEMBCG/zS7XewighdfwicQFkEW9CAoCHoQKdl02gbTpiQju/rmnmpy2fXgxYsH6ZfDDP/M/GSmAAocPeiWOsVGSyweyQfjegBSYrlWrPbK6WWG+ZOpuMVJhvyGTNMy5jG9pb5J6hL5XV0H4jQ+juNnjCLFAvmVdfo1FFjcK0vMJHHcmZ60VzVfKOORZnB20KzpqNSu156YkpHE9aG6VTuqSrczlfmIiX7j2DsM5Mtg1eaZ3wdabRyz6863islb1zRUrWplA71Et0xi/Ts3dsPPVvFqmKVLAbP00T9DSJGQAv8UsX/TgtOCE9/4AhRbL6m6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA+2RT0vDMBjGnyRbix0i+CE8edl1UATx4EFQEPQwxojt2zaYNSV5ZdtH91SXKrqjXjyM/Qh5wsP7vPmXARlOHouGVppNoZA+kQ/GtQCUwuRGs/52zq8kxs+m5AZnEsktmbphjHfLO2rr6E6Q3FdVII7xvu/fdyqiZkiurSteQ4b0QVtiJoXTlWmp8LrimTYeMYOLHy+wN11H5TJ0/q2g5dq5cq43JuTbReyrMN0r/qwJVr/MedtRzq67XGsmb11dU5lX2gaKOfnLTTaL4UApRvERgBHh3xBSqgFIgUNExCG+9CAvqJRQw6SOP3jkT3wAkGO9hpUFAAA="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_medieval_halloween_x1",
@@ -4843,9 +4517,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 4.0,
-      "previous-schematic": "H4sIAAAAAAACA+1SwUrEMBB9aXa72EUEL/6EXyAsgizoQVAQ9CBSsum0DaZNSUZ29c891UTEvXjxoKDsC+ENLzOPmSEFUGDvRrfUKTZaYnZLPhjXA5AS86Vi9akcnmaY3pmKWxxkyC/INC1jGsNL6pukzpFf1XUgTuXjOL5GFokL5GfW6cdQYHatLDGTxH5netJe1XyijEeqwdFWs6ajUrtee2JKRhLn29e12lBVuo2pzEsM9BPH3GEgXwarVvf8PNBi5Zhdd7xWTN66pqFqUSsb6CG6ZRLL77mxG762ilvDJG0KmKRGfw9CiPf7byE+zm7APzvg7ov+CN4AsbqP2roFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TwYrCMBB9SbXFiizsR+xHLCyCePAguCDoYVkkpFMb1LYkI7qf7qlmPOxe9+ShL+HN8JgJvBmSAzlGa1vRybCzCbIN+eCaGkCSYDw3bH6V16nGcOsKrvCikS7I7SvGMKZLqveijpGuyjIQS3vXdbcYlcQc6ezY2EPIkX2aIzFTgsnJ1WS9KfndOA/pwdufFti7tqViF1p/trS7NE3xZa4ufFy/5d1/Fv9IsUaGgZgBBoQnQkUIoZ9QSsfhRtI9tai1fpB6JP20KEvsrz35/PHKeTLuuow2h10FAAA="
+      "passable-area": 4.0
     },
     {
       "id": "hitw_medieval_halloween_x2",
@@ -4869,9 +4541,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1RwUrEMBB9aXa72EUEL/6EXyAsgizoQVAQ9CBSsum0DaZNSUZ29c891QTBvXgRxEPxXWZ4M/OYmVcABQ7udEudYqMlFvfkg3E9ACmxXCtWX8zxeYb5g6m4xVGG/IpM0zLmMb2mvknsEvlNXQfiND6O43uMIsUC+YV1+jkUWNwqS8wkcdiZnrRXNZ8p45FmcLLnrOmo1K7XnpiSkMTlvrpVO6pKtzOVeYuJfuHYOwzky2DV5pFfB1ptHLPrTreKyVvXNFStamUDPUW1TGL9MzV2w/dS8WuYpU8Bs7ToX0IIgQlDShF9l9M9MPk3aQ/FJ/4d/GV8AAEnjce6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA92RQWvCQBCF325iQhNKoT+iP0IQQXrooaBQsIdSZNlMkkVNwu6I9qf3FDMU9OrJQt5h3vCYGfiYDMjw8GFr2ht2NkK6Jh9c2wCIIuSvhs0leZ5rTD5dwTWeNJI3clXNmAztOzWVpDmSZVkGYlnv+/53cCWeIVnsWrsNGdKV2REzRXjcu4asNyVPjfOQHbxcs8DedR0Vm9D5g6XNsW2LL3NyYXb6lrs3Dv/IsEaKWGCAmHBXKaUwWg1wSkOLjZNSi/6qHi+gGjvgv3zwDPydWNddBQAA"
+      "passable-area": 2.0
     },
     {
       "id": "hitw_medieval_halloween_x3",
@@ -4910,9 +4580,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 6.0,
-      "previous-schematic": "H4sIAAAAAAACA+1SwUrEMBB9aXa72EUEL/6EXyAsgizoQVAQ9CBSsum0DaZNSUZ29c891UTEvXjxoKDsC+ENLzOPmSEFUGDvRrfUKTZaYnZLPhjXA5AS86Vi9akcnmaY3pmKWxxkyC/INC1jGsNL6pukzpFf1XUgTuXjOL5GFokL5GfW6cdQYHatLDGTxH5netJe1XyijEeqwdFWs6ajUrtee2JKRhLn29e12lBVuo2pzEsM9BPH3GEgXwarVvf8PNBi5Zhdd7xWTN66pqFqUSsb6CG6ZRLL77mxG762ilvDJG0KmKRGfw9CiPf7byE+zm7APzvg7ov+CN4AsbqP2roFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA92TwWrDMAyGfztNQlNGoQ+xhyiMQemhh8IKg/UwRjGOkpi2SbA1mj36TlnUwXrdqYfI/JL5kQQfxhmQYfpqKzobdjZC+kY+uKYGEEWYrQ2bP2fxrBHvXc4V5hrJhlxZMeLhuqW6FHeG5KUoArGM933/PVQlNUOyOjX2GDKkO3MiZorwcHY1WW8KXhrnITN4vHmBvWtbyg+h9Z+WDpemyd9N58JT9yF7/9n8Jc0aKSYCA0wIdwyllEhhnKGUhh40pHEiaq2v+k3jRLy+oRornnx+Obg74A8+9i1mXQUAAA=="
+      "passable-area": 6.0
     },
     {
       "id": "hitw_medieval_halloween_x4",
@@ -4936,9 +4604,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1RwUrEMBB9aXa72EUEL/6EXyAsgizoQVAQ9CBSsum0DaZNSUZ29c891QTBvXgRxEPxXWZ4M/OYmVcABQ7udEudYqMlFvfkg3E9ACmxXCtWX8zxeYb5g6m4xVGG/IpM0zLmMb2mvknsEvlNXQfiND6O43uMIsUC+YV1+jkUWNwqS8wkcdiZnrRXNZ8p45FmcLLnrOmo1K7XnpiSkMTlvrpVO6pKtzOVeYuJfuHYOwzky2DV5pFfB1ptHLPrTreKyVvXNFStamUDPUW1TGL9MzV2w/dS8WuYpU8Bs7ToX0IIgQlDShF9l9M9MPk3aQ/FJ/4d/GV8AAEnjce6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA92RQWvCQBCF325iQhNKoT+iP0IQQXrooaBQsIdSZNlMkkVNwu6I9qf3FDMU9OrJQt5h3vCYGfiYDMjw8GFr2ht2NkK6Jh9c2wCIIuSvhs0leZ5rTD5dwTWeNJI3clXNmAztOzWVpDmSZVkGYlnv+/53cCWeIVnsWrsNGdKV2REzRXjcu4asNyVPjfOQHbxcs8DedR0Vm9D5g6XNsW2LL3NyYXb6lrs3Dv/IsEaKWGCAmHBXKaUwWg1wSkOLjZNSi/6qHi+gGjvgv3zwDPydWNddBQAA"
+      "passable-area": 2.0
     },
     {
       "id": "hitw_medieval_halloween_x5",
@@ -4972,9 +4638,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 4.0,
-      "previous-schematic": "H4sIAAAAAAACA+1SwUrEMBB9aXa72EUEL/6EXyAsgizoQVAQ9CBSsum0DaZNSUZ29c891UTEvXjxoKDsC+ENLzOPmSEFUGDvRrfUKTZaYnZLPhjXA5AS86Vi9akcnmaY3pmKWxxkyC/INC1jGsNL6pukzpFf1XUgTuXjOL5GFokL5GfW6cdQYHatLDGTxH5netJe1XyijEeqwdFWs6ajUrtee2JKRhLn29e12lBVuo2pzEsM9BPH3GEgXwarVvf8PNBi5Zhdd7xWTN66pqFqUSsb6CG6ZRLL77mxG762ilvDJG0KmKRGfw9CiPf7byE+zm7APzvg7ov+CN4AsbqP2roFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA92Rz0rDQBDGv520CU0pgg/hQwgilB56EBQK9iBSls2kWWyTsDtifXRP6U4PevXUQ75l/vAxs/BjSqDEbOMaPlrxLkPxyiH6rgWQZZivrNhf5/aRMN36ShrcEPI1+30jmKb2idu9unPkz3UdWXR9GIafVI3WEvny0LmPWKJ4sQcW4QyLo2/ZBVvLvfUBuoO7Py9K8H3P1S724dPx7qvrqjd78vHh9K7//nP4W4cJBSYKA0wYV5QxRsNgnDKGQClSGiciUcIjujQjvaGSkR5yrKLLw9UBz4SW9H1dBQAA"
+      "passable-area": 4.0
     },
     {
       "id": "hitw_medieval_halloween_x6",
@@ -4998,9 +4662,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA+2QwUrDQBCG/2bblKaI4MWX8AmEIpSCHgQFQQ8iYbqZJIubbNiMtPrmnuLuxV568dKD5LvM8M/Mz8xkQIbFk665ITFaYf7MvjeuBaAUlhsS+lUubhLMXkwhNc4TpHdsqlowC+k9t1VUl0gfyrJniePDMHyHOIkxQ7q2Tr/3GeaPZFmEFc4a07L2VMo1GY84g8uDZk3DuXat9iwcjRRuD9Ud7bnI3d4U5isk+kNCb9exz3tL21f57Hi1dSKuudqRsLeuqrhYlWR7fgtuicLmb27iuuNW4WuYxk8B07jo6ZhE8I8ZDxwPHDnGD1OEfGW6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA92QQUvDQBCFX3bbBFNE8Ed48uJVCIJ48CAoCHoopaybSbK4zS67I21/uqfY1aI9elLId5nh8WaYNyVQ4uhRd7RSbLRE8UQhGtcDkBKzG8XqWzm9Epg+m5o7nAjkt2TajjHdtXfUt0mdIb9vmkicxodheN/VLNUS+bV1+jWWKB6UJWaSOF6ZnnRQDV8qE5BmcPajRQ7Ge6qX0Yc3Tcu1c/VcbUysNou095fmbTILiYsD85cnWvUy562nip0/XyumYF3bUl01ykZafB5UYJKeAEwIf0a2BwLjROyRYw+YjT2gGGvA/+MDz4G7PJUFAAA="
+      "passable-area": 1.5
     },
     {
       "id": "hitw_medieval_halloween_x7",
@@ -5024,9 +4686,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA+2QwUrDQBCG/2bblKaI4MWX8AmEIpSCHgQFQQ8iYbqZJIubbNiMtPrmnuLuxR700osHyXeZ4Z+Zn5nJgAyLB11zQ2K0wvyRfW9cC0ApLDck9K2cXSWYPZlCapwmSG/YVLVgFtJbbquoLpHelWXPEseHYfgMcRJjhnRtnX7tM8zvybIIK5w0pmXtqZRLMh5xBucHzZqGc+1a7Vk4GilcH6o72nORu70pzEdI9JuE3q5jn/eWts/y3vFq60Rcc7EjYW9dVXGxKsn2/BLcEoXNcW7iut+twtcwjZ8CpnHRv2QSwT9mPHA8cOQnX7msDz26BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA92QQUvDQBCFX3bbhKaI4I/w5MVrIQjiwYOgIOihlLJuJsniNht2R9r+dE8x24J67EkhHwOzPN4M+yYHcsyedUMbxUZLZC/kg3EtACkxv1OsvpWLG4Hpqym5wblAek+mbhjT4flAbR3VOdLHqgrEcbzv+8+hJ7HnSG+t0+8hR/akLDGTxNnGtKS9qnihjEecweWPFtibrqNyHTr/oWm9da5cqp0JxW4V955o3kezkLj+ZT56glVvS953VLDrrraKyVtX11QWlbKBVocPZZjEIwATwh+SJEMdwDgRQoojow2YjD2gGHfA/+IL9EGkJZUFAAA="
+      "passable-area": 1.5
     },
     {
       "id": "hitw_beach_winter_d1",
@@ -5050,9 +4710,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1RTUvDQBB9ybYppojgxT/hLxCKIAU9CAqCHkTCdDNJFjfZsBlp9Z97irse7MVLL4rFN4cZ3sw85iMHchzc6YZbEqMVZvfsB+M6AEphviShL+b4PMX0wZTS4ChFdsWmbgTTEF5zV0d2juymqgaW2D6O43vwSfQ5sgvr9POQY3ZLlkVY4bA1HWtPlZyR8Yg9ONly1rRcaNdpz8JRSOFym13ThsvCbUxp3kKgXyTU9j37YrC0epTXnhcrJ+La0zUJe+vqmstFRXbgp6CWKix3UxPXfy8VroZJvBQwiYP+IJII7DGST/tf8O/ut/cf/B18AEg7fJG6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91QwUrDQBB9m00TTBHBj/DkpeBJCIJ48CAoCHoopWyTSbKYZMPuSNtP9xSzFq0HEU8W8hhmhse8ecwkQIKjx6yiRrHOJOInsk6bFoCUmN4oVl/M6VWAybPOucJJgOiWdFkxJkN7R23p2Smi+6JwxF7e9/3bUIWvCaLr2mQvLkH8oGpiJonjRreUWVXwpdIWXoOzPefY6q6jfOk6+5rRcm1MPlcb7dLNwu+VuPg2vJtxtVrNedtRujLMpjlfKyZbm7KkPC1U7chLgz/6bBe7N8x+8WHT/WwSIkbo/ze0hP+DGBAEPmOckCGkEDIM5VgP/Ah85tFBjP3Aw+EdhrtOmtAFAAA="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_beach_winter_d2",
@@ -5076,9 +4734,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9ybYppojgxZ/wC4QiSEEPgoKgB5Ew3UySxU02bEZa/XNPcdeDvXjpRbH45jDDm5nHvMmBHAd3uuGWxGiF2T37wbgOgFKYL0noizk+TzF9MKU0OEqRXbGpG8E0lNfc1ZGdI7upqoElro/j+B5yEnOO7MI6/TzkmN2SZRFWOGxNx9pTJWdkPOIOTracNS0X2nXas3AUUrjcdte04bJwG1Oat1DoFwmzfc++GCytHuW158XKibj2dE3C3rq65nJRkR34KailCsvd1MT130uFr2ESPwVM4qE/hyQCe4zkM/4N/nGDe+3wd/AB/BWWdroFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91SPUvEQBB92c0lmEMEf4SVjWAlBEEsLAQFQYvjOPaSSbKYZJfdkbv76VYxy+FHIWKlkFfMDI9585hhMiDDwUPRUKdYFxLpIzmvTQ9ASsyvFasP5vhSYPakS25wJJDckK4bxmwsb6mvAztHcldVnjjIh2F4HXMUcobkqjXFs8+Q3quWmEnisNM9FU5VfKG0Q9Dg5JPz7LS1VK68dS8FrTbGlAu11T7fLsNcifMvzfse36r1gneW8rVhNt3pRjG51tQ1lXmlWk9BKn7ps1vuz3D2gw8b+71JjBRxuN9YEv4M0QghQsQ0IeNYRpGMx2eZ6ILvcfoLTvVH/w1v//67gtAFAAA="
+      "passable-area": 2.0
     },
     {
       "id": "hitw_beach_winter_d3",
@@ -5102,9 +4758,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.5,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9ybYpTRHBiz/hFwhFKAU9CAqCHkTCdDNJFjfZsBlp9c89xd2LvXjxUrD4LjO8mXkz83Igx/xBN9ySGK0we2Q/GNcBUAqLNQl9M2dXKaZPppQGpymyGzZ1I5iG9Ja7OrILZHdVNbDE8XEcP0NMYsyRrazTr0OO2T1ZFmGFk9Z0rD1VcknGI87gfM9Z03KhXac9C0chhet9dUs7Lgu3M6X5CIl+k9Db9+yLwdLmWd57Xm6ciGsvtiTsratrLpcV2YFfglqqsP6dmrj+Z6ngGibRKWASDz0wEvzjLyM59u+SgKP/8dA7vwDtjcHqugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TwUrDQBB92U0TTBHBj/DkpdCTEATx4EFQEPRQStkmk2QxyYbdkbaf7ilmKWpBEU89ZFh2HsN7A29mNwESnDxlFTWKdSYRP5N12rQApMT0VrH6qpxfC0xedM4VzgSiO9JlxZgM8J7a0leniB6KwhF7ed/370MOfE4Q3dQme3UJ4kdVEzNJnDa6pcyqgq+UtvAaXHzXHFvddZSvXGffMlptjMkXaqtdulv6vv8kbz1ZSMwPyHuOq9V6wbuO0rVhNs3lRjHZ2pQl5WmhakfL/Rhmf0jZdL/rQsQI/fwGSDhaBD/AyCIQQkAO11gNeo9hOGJ3w/4C/z6F3+Qo1/d5jv4LPwArZ9KM0AUAAA=="
+      "passable-area": 2.5
     },
     {
       "id": "hitw_beach_winter_d4",
@@ -5133,9 +4787,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 4.0,
-      "previous-schematic": "H4sIAAAAAAACA+1TwUrDQBB9m21TmiKCF3/CLxBKQQp6EBQEPYiE7WaSLG6yYTPS6p97irtV7MWLl4LFGYYZ3s485g1sBmSY3umaGsVGS0zuyffGtQCkxGypWH0jJ4sE4wdTcI3jBOkVmapmjEN5TW0V0RnSm7LsieP4MAzvIYuYM6QX1unnPsPkVlliJomjxrSkvSr5XBmPOIPTHWZNQ7l2rfbEFIkkLneva7WhIncbU5i3UOgXDr1dRz7vrVo98mtH85Vjds3ZWjF566qKinmpbE9PgS2RWP6OjV33M1W4GkbxUsAoLro/E0Js42BNfPm/wD8rMBHbOFh9nz9w7wI/AMWfyRq6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TwUrEMBB9SXa32EUEP8KTR09CEcSDB0FB0MOyLNl22gbbpiQju/vpnmrSBfXoaQ+dMJnh8Sbk5ZEUSHH2mtfUaja5QvJGzhvbAVAKywfN+ge5vJOYv5uCa1xILB7JVDVjHton6qqILrF4LktPHMeHYfgKVcSaYnHf2PzDp0hedEPMpHDemo5yp0u+1cYhzuDqF/PsTN9TsfG9+8xps7O2WOm98dl+Hc/9J/kQyVLh5g/5yPGN3q740FO2tcy2vd5pJtfYqqIiK3XjaT3eKcEsvgMwI5wshIgpYgpMMqRSMmwydJPUJ0ZlcU1UoBxNlEcjJykw/L0gT5zewW9Oh6nUmAUAAA=="
+      "passable-area": 4.0
     },
     {
       "id": "hitw_beach_winter_d5",
@@ -5159,9 +4811,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 3.0,
-      "previous-schematic": "H4sIAAAAAAACA+1RwUrDQBB9ybYpTRHBiz/hFwhFKAU9CAqCHkTCdDNJFjfZsBlp9c89xd2LvXjxUrD4LjO8mXnMzMuBHPMH3XBLYrTC7JH9YFwHQCks1iT0zZxdpZg+mVIanKbIbtjUjWAa0lvu6sgukN1V1cASx8dx/AwxiTFHtrJOvw45ZvdkWYQVTlrTsfZUySUZjziD8z1nTcuFdp32LByFFK731S3tuCzczpTmIyT6TUJv37MvBkubZ3nveblxIq692JKwt66uuVxWZAd+CWqpwvp3auL6n6XC1zCJnwImcdGDIsE//jyO2cQkTQKO3b6DH/gFNJJrMroFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91RwUrDQBB9m20TmiKCH+HJoychFMSDB0FB0EMpZbuZJItJNuyOtP10TzFboXrowVMPeQy84fFm2ZmXAilmr7qiRrHREskbOW9sC0BKzB8Uq6NytYgwfTc5V7iMED+SKSvGdGifqC2DOkf8XBSeOIz3ff81sAicIr6vrf7wKZIXVRMzSVw0piXtVMF3yjiEGVz/ap6d6TrK175zn5rWW2vzpdoZn+1X4d1/mnfBHEnc/jH/eHytNkved5RtLLNtbraKydW2LCnPClV7Wh3+lGAS7gBMCGeFONRIEQ0QkCLwKBcUJ9tRLThEJ2XIT4w2QXGkc+IbKeO6NJgFAAA="
+      "passable-area": 3.0
     },
     {
       "id": "hitw_beach_winter_d6",
@@ -5185,9 +4835,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9ybYppojgxZ/wC4QiSEEPgoKgB5Ew3UySxU02bEZa/XNPcRfBXrwUxEP1zWGGNzOPeZMDOQ7udMMtidEKs3v2g3EdAKUwX5LQF3N8nmL6YEppcJQiu2JTN4JpKK+5qyM7R3ZTVQNLXB/H8T3kJOYc2YV1+nnIMbslyyKscNiajrWnSs7IeMQdnGw5a1outOu0Z+EopHC57a5pw2XhNqY0b6HQLxJm+559MVhaPcprz4uVE3Ht6ZqEvXV1zeWiIjvwU1BLFZa7qYnrv5cKX8MkfgqYxEN/D0kMlWBvscfW/ozBz/g3+LP4AJ5wuFG6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA92QTUvEQAyG33a6LXYRwR/hyYuwp4UiiAcPgoKgh2VZZtu0HWw7ZSayuz/dU52h+HEQ8aTQkCEh5E3mSQqkOHrIa2olq1wgeSRjle4ACIH5tWT5UTm9DDF7UgXXOAkR35CqasbMpbfUVb46R3xXlpbYy4dheHUx8DFFfNXo/NmmSO5lQ8wkcNyqjnIjS15KZeA1OPusWTaq76nY2N685LTZaV2s5F7Z7LD2cwUuvjSPPbaR2xUfespY9+c7yWQaXVVUZKVsLHld+Msl+/V4g8UPS7aaWbff74mQIPL3cynhzywYXxCG7u9TNEcWRJFDFAGmCejJRp8q4LuLiQKK/yJ8A1xLCjnQBQAA"
+      "passable-area": 2.0
     },
     {
       "id": "hitw_beach_winter_d7",
@@ -5216,9 +4864,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 4.0,
-      "previous-schematic": "H4sIAAAAAAACA+1SwUrEMBB9aXa72EUEL/6EXyAsgizoQVAQ9CBSsum0DaZNSUZ29c891UTEvXjxorj4hjDDy8xjZpgCKLB3o1vqFBstMbslH4zrAUiJ+VKx+mQOTzNM70zFLQ4y5BdkmpYxjeEl9U1i58iv6joQp/JxHF+jF8kXyM+s04+hwOxaWWImif3O9KS9qvlEGY9Ug6MtZ01HpXa99sSUhCTOt79rtaGqdBtTmZcY6CeOucNAvgxWre75eaDFyjG77nitmLx1TUPVolY20ENUyySW31NjN3wtFbeGSdoUMEmN/hiEkOL9YVchPux/wD87YLxOscMX+lt4AzP9xm66BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91UTUvEMBCdNu0Wu4jgj/DUi1ehCOLBg6Ag6KEuy2w7bYNtE5JZuvvTPdWG4gfoYUFQ6ITkhcdMXl4CEwPEcPSQ19Qiy1xA9EjGStUBgBCwvEbGD+b00ofwSRZcw4kPixuSVc0Qjttb6irHLmFxV5aW2JUPw/A6oucwhsVVo/IXG0N0jw0xk4DjVnaUGyz5AqUBVwNnn5xlI7WmYm212ea07pUqMtxJm+5W7lwB51+Spxzb4CbjvaaUlU56ZDKNqioq0hIbS67OP1Bkv5re4PmbCBvUhVImKzGXXZUSWk5qbMp0o5hVmyhNXcpmS4lWPZl39Z/vExwi0dNvJEKIIHBfOaoR/Fl4nue76RaYY4hp+L6DWRoMnL3RmwjnaXB0NvYR4Xlztfd/8QYGqa11WwYAAA=="
+      "passable-area": 4.0
     },
     {
       "id": "hitw_beach_winter_x1",
@@ -5252,9 +4898,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 4.0,
-      "previous-schematic": "H4sIAAAAAAACA+2QwUoDMRCG/920W9wighdfwicolIIU9CAoCHoQWdLs7G4wu1mSkVbf3NOaqLQXL16KSL8hzPBn5ieZHMhxdKcaaiVrJTC5J+e17QAIgelSstwqp4sU4wddcoOTFNkV6bphjEN5TV0d1Smym6ryxHF8GIb3kJOYc2QXxqpnn2NyKw0xk8BxqztSTlY8k9ohzuBspxndUqFspxwxRSOBy93tWm6oLOxGl/otFOqFQ2/fkyu8katHfu1pvrLMtj1fSyZnbF1TOa+k8fQU3FKB5e/c2PY/W4WtYRQ3BYziQ/dHIj4DBw78UZL06/zfD37HnvkApbCO27oFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91STUvDQBB9yaYNpojgj/DkRfAkBEE8eBAUBD2UUrbJJFlMsmF3pO1P9xR3E/w4iHjqIcPOB4+ZHWbeJECCo6esokayygTiZzJW6RaAEFjcSpZfyOl1iNmLyrnCSYj5HamyYsxceE9t6dEF5g9FYYl9ed/3784H3ieY39Q6e7UJ4kdZEzMJHDeqpczIgq+kMvA1OPvGLBvVdZSvbWfeMlpvtc6Xcqdsulv5fwUufiSPObaWmyXvO0pZd+dbyWRqXZaUp4WsLfm68J9N9qtxB5d/NNloZt383idCjMjvz4WEg0kQhONziimKGFR8hhMcMHC3HTrrT3yaE0YDiVE00fkcbwOJA5cHlQ+JCXrF0AUAAA=="
+      "passable-area": 4.0
     },
     {
       "id": "hitw_beach_winter_x2",
@@ -5278,9 +4922,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.25,
-      "previous-schematic": "H4sIAAAAAAACA+2QwUoDMRCG/920W9wighdfwicolIIU9CAoCHoQWdLs7G4wu1mSkVbf3NOaqLQXL16KSL8wzPBn5ieZHMhxdKcaaiVrJTC5J+e17QAIgelSstwqp4sU4wddcoOTFNkV6bphjEN5TV0d1Smym6ryxHF8GIb3kJOYc2QXxqpnn2NyKw0xk8BxqztSTlY8k9ohzuBspxndUqFspxwxRSOBy93tWm6oLOxGl/otFOqFQ2/fkyu8katHfu1pvrLMtj1fSyZnbF1TOa+k8fQU3FKB5e/c2PY/W4WtYRQ3BYziQ/dHIpLPOHDgj5J8xz/+4NfZMx83ZqcaugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91RTUvDQBCdZPOBKSL4Izzl4lUIgnjwICgI9RBKWTeTZDHNht0JaX+6p5g1JS30oF56yIPwHsPMm528CCCCizdR4oaTFAzCJWojVQ0AjMHikROfKtf3LvjvMqMSrlwInlAWJYE/yGesC1tdQPCS5wbJjvd9/zWwYzmC4KFS4tNEEL7yComQweVG1ig0z+mOSw12Bm4ONUNaNg1ma9PoVuC6UypL+VaaZLuyvgxuj5rHHlPxj5R2DSakmrjjhLpSRYFZkvPKoJ1z/7hktxr/wfJkSY61wBS5odE1rpWmcq+Naid9sj/ucBgi3f68xPvF3Pb913s604cQPBvfsAfhbHAc13EmmiGY/Tyf7eUMDxyiswdagplGyI5ofhhyY85E58Q3V7Y3SU8GAAA="
+      "passable-area": 2.25
     },
     {
       "id": "hitw_beach_winter_x3",
@@ -5304,9 +4946,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 3.0,
-      "previous-schematic": "H4sIAAAAAAACA91TwUrDQBB9m21TTBHBiz/hFwhFKAU9CAqCHkTCdjNJlm6yYXek1T/3FHcv9uLFi0LmMsObmce8gVcABU4edUudYqMlFk/kg3E9ACmx3ChW38j5dYb5s6m4xVmG/JZM0zLmsbyjvknoEvl9XQfitD6O42fMIuUC+do6vQsFFg/KEjNJnHamJ+1VzVfKeKQdXBwxazoqteu1J6ZEJHFz7O7VgarSHUxlPmKh3zjODgP5Mli1feH3gVZbx+y6y71i8tY1DVWrWtlAr5Etk9j8jo3d8DNV/Bpm6VPALB36dyEghMDkQ05doJi6uAkLTA78Bxd+AXGQ2NG6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TTUvEMBScJN0Wu4jgj/DkRfAkFEE8eBAUBD0sy5JtX9tg25Tmye7+dE+12eLHQcTTHvogmccw82BeSAzEOHpKS6o1m1QheqbOGdsAUArzW836izm9lpi9mIxLnEiEd2SKkjEb2ntqCs/OET7kuSP29r7v3wcUHmOEN5VNX12M6FFXxEwKx7VpKO10zlfadPAenH1zjjvTtpStXNu9pbTaWJst9Na4ZLv0c/8p3nmxVLj8IR41rtLrBe9aStaW2dbnG83UVbYoKEtyXTlajmu4+MPKtv3dFyBC4Pc3tISDlRD+CA8TLamU9ICJZhQyCKQIhMQ+5wQfcLzkZzu9gP7/yT0cOOAHTFJ8JNAFAAA="
+      "passable-area": 3.0
     },
     {
       "id": "hitw_beach_winter_x4",
@@ -5330,9 +4970,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1RwUrEMBB9aXa72EUEL/6EXyAsgizoQVAQ9CBSsum0DaZNSUZ29c891QTFvXgRRFD2BfKGl5nHzKQACuzd6JY6xUZLzG7JB+N6AFJivlSsPpXD0wzTO1Nxi4MM+QWZpmVMY3hJfZPUOfKrug7EqXwcx9fIInGB/Mw6/RgKzK6VJWaS2O9MT9qrmk+U8Ug1ONpq1nRUatdrT0zJSOJ8+7pWG6pKtzGVeYmBfuKYOwzky2DV6p6fB1qsHLPrjteKyVvXNFQtamUDPUS3TGL5PTd2w9dWcWuYpE0Bk9Tor0FEvF//FeLj7Ab8swMKke1+8OfxBtNcq0S6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TwUrEMBB9SXdb7CKCH+HJoyehCOLBg6Ag6GFZlmw6bYNtU5KR3f10TzXZBfXoaQ99h5nweBPyMjM5kOPsVTfUKTY6QfZGzhvbA0gSLB4Uqx/m8k5i/m5KbnAhkT6SqRvGPByfqK8ju0D6XFWeOJaP4/gVsog5R3rfWv3hc2QvqiVmSnDemZ60UxXfKuMQa3D1y3l2ZhioXPvBfWpab60tl2pnfLFbxXv/Kd5HsUxw80d81PhWbZa8H6jYWGbbXW8Vk2ttXVNZVKr1tDq8KcMs/gMwI5wOIuAYJKYJCSmCt0OYIISIziTEhPsXFkuGARWYskWcfgO/AfyxGEWYBQAA"
+      "passable-area": 2.0
     },
     {
       "id": "hitw_beach_winter_x5",
@@ -5386,9 +5024,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 10.0,
-      "previous-schematic": "H4sIAAAAAAACA+2QQUvDQBCFX7JtiikiePFP+AuEIkhBD4KCoAeRMN1MksVNNmxGWv3nnuJuD/bixUsR6fcOM7zdeexODuQ4etANtyRGK8we2Q/GdQCUwnxJQt/O6WWK6ZMppcFJiuyGTd0IpqG95a6O7hzZXVUNLHF8HMfPUJNYc2RX1unXIcfsniyLsMJxazrWniq5IOMRZ3C286xpudCu056FY5DC9e50TRsuC7cxpfkIjX6TcLfv2ReDpdWzvPe8WDkR156vSdhbV9dcLiqyA7+EtFRh+bs0cf3PUWFrmMRNAZP40P2RqK1w4MAfJU2i/vMPk632zRcrSmMnugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91SwUrDQBB92U0TTBHBj/DkRfAkBEE8eBAUBD2UUrbJJFlMsmF3pO2ne4pZItVDEU895PFgHsO82dlhEiDByUtWUaNYZxLxK1mnTQtASszvFat95vxWYPamc65wJhA9kC4rxmyQj9SWPjtH9FQUjtjb+77/HGLgY4LorjbZu0sQP6uamEnitNEtZVYVfKO0hffg6ifnOvuR0crVar3gXUcpm+5yo5hsbcqS8rRQtaOlf0Li4pePre46ylffDTbG5Au11S7d+mLxz+LdctzB9R8TrQ2zaQ4PFSJG6Pc3SMLREAgRBHIkJgl5QE0Jw4FipJjmB2UYCjlyshe653HxBeSoIl/QBQAA"
+      "passable-area": 10.0
     },
     {
       "id": "hitw_beach_winter_x6",
@@ -5417,9 +5053,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 4.0,
-      "previous-schematic": "H4sIAAAAAAACA+1TwUoDMRB92bRb3CKCF3/CLxCKIAU9CAqCHkSWNDu7G8xulmSk1T/3tCYe7MVLLwWLQ8IMLzOPvBmmAAocPeiWOsVGS8weyQfjegBSYr5UrH6Q08sM0ydTcYuTDPkNmaZlTGN4S32T0Dnyu7oOxKl8HMfP6EXyBfIr6/RrKDC7V5aYSeK4Mz1pr2q+UMYj1eBsi1nTUaldrz0xJSKJ6+3rWm2oKt3GVOYjBvqNY+4wkC+DVatnfh9osXLMrjtfKyZvXdNQtaiVDfQS2TKJ5W5s7IbfqWLXMEmdAibpo/szIdIVOFwT3+df4N/VlwRmBy0wbeDeZ/gFckQmuroFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91RwUrDQBB93U0TTBHBj/DkRfAkBEE8eBAUBD2UUrbJJFlMsmF3pO2ne4pZG1oPIp56yDvMPIb3dpl5MRDj5CUtqVasU4nolazTpgEgJWb3itV+cn4rMH3TGZc4EwgfSBclY9rTR2oKP50hfMpzR+ztXdd99n3ie4zwrjLpu4sRPauKmEnitNYNpVblfKO0hffg4jBzbHXbUrZ0rf1Iabk2JpurjXbJZuHf/ad468VC4vqHeKdxlVrNedtSsjLMpr5cKyZbmaKgLMlV5WixO8PVH1Y27e++ABECf7+eEo6Gice+jRDiO04pBjrCBfvgRBCIPsNxLujzE0MZJXxwYijH/fkLOaTYrtAFAAA="
+      "passable-area": 4.0
     },
     {
       "id": "hitw_beach_winter_x7",
@@ -5443,9 +5077,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA+1TwUoDMRB92bRb3CKCF3/CLyiUghT0ICgIehBZ0uzsbjC7WbIjrf65pzWRYi+9eCkinRBmeJl5mTcwGZDh5EHX1Cg2WmLySL43rgUgJaZLxeoHOV8kGD+ZgmucJUhvyFQ1YxzCW2qriE6R3pVlTxzLh2H4DF5EnyG9sk6/9hkm98oSM0mcNqYl7VXJM2U8Yg0udpg1DeXatdoTUySSuN69rtWGitxtTGE+QqDfOOR2Hfm8t2r1zO8dzVeO2TWXa8XkrasqKualsj29BLZEYvk7NnbdfqowNYzipIBRbPRwJoT4vv/WxPYcBR4F/lF9YruFB/73C1Nkfv26BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91US0vDQBCeZPPAFBH8EZ56ETwJQRAPHgQFoR5CKdtkkiwm2bA7oe1P9xR3TVuFio9LD5nDzDDMNzPfzLIRQAQnz2mJNSeRMghnqLSQDQAwBpM7TnwfOb9xwX8RGZVw5kJwj6IoCXzjPmBT2OgEgsc810gW3vf9m7GOtREEt5VMX3UE4ROvkAgZnNaiwVTxnK65UGAxcPEZ06RE22K20K3qUlyspMwSvhY6Xs9tXQazL8lDTo5NiglyTTGpDqeNVFTGOa80TrXs9v6KE6pKFgVmuwgazIdri7t/nGQzHxZ1eTCJrvgyoU2LMcn2sJ/FeQyufsAtJZGsv4f6v5AfOP2Tvd2YLR5ACJ69vBkR4YjiOM5WjVPMq2KeOR0LRkvQZ55nVDDiC9pvaqwEHfOrsq06bud3Ldy7H4oGAAA="
+      "passable-area": 1.5
     },
     {
       "id": "hitw_iced_palace_d1",
@@ -5469,9 +5101,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 1.875,
-      "previous-schematic": "H4sIAAAAAAACA+1RwUrDQBB9ybYppojgxZ/wC4QiSEEPgoKgB5Ew3UySxU02bEZa/XNPcVfBXrz04qH0zWGGtzuPeTM5kOPoQTfckhitMHtkPxjXAVAK8yUJ/TKnlymmT6aUBicpshs2dSOYhvKWuzqyc2R3VTWwxPZxHD9DTmLOkV1Zp1+HHLN7sizCCset6Vh7quSCjEfswdmWs6blQrtOexaOQgrX29c1bbgs3MaU5iMU+k3C375nXwyWVs/y3vNi5URce74mYW9dXXO5qMgO/BLUUoXlbmri+r+lwtYwiZsCJnHQf0OS4Cf2FvtvUH0bTA4XPBjcCV81MFQ5ugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91SwUoDMRCdnXRT3CKCH+HJi+BJWATx4EFQEOqhlJLuzu4Gt5slmdL20z3VxNoqVIpeFDZzmMfjvRcmkwQggaOnrKKZYp0J6A/JOm0aABACBreK1Y45vUaIn3XOFZwgyDvSZcUQe3hPTRnYAciHonDEwb5er199j0JPQN7UJntxCfQfVU3MJOB4phvKrCr4SmkLwQNnn5xjq9uW8olr7TyjycKYfKSW2qXLccj9oXgVxChg+EW80RTUZDQi5TgtVO3ovDGWqw/szHyHF4rJ1qYsKd8y5E1s5zTePNTB8KD7bfY7DOE9AZd74a5W0xGvWkqnhtnM9lOCNRZwccDKpv3eJ6EPvbB5fzvB350o8ovyFXonD6LoYewLuzlfhCglRigRO7vCzRft6AL/ccA3wjyhw4oGAAA="
+      "passable-area": 1.875
     },
     {
       "id": "hitw_iced_palace_d2",
@@ -5495,9 +5125,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 3.0,
-      "previous-schematic": "H4sIAAAAAAACA+1RwUrDQBB9ybYppojgxZ/wC4QiSEEPgoKgB5Ew3UySxU02bEZa/XNPcddDe/HipWBx5jDDm5nHvJkcyHH0oBtuSYxWmD2yH4zrACiF+ZKEtsjpZYrpkymlwUmK7IZN3QimIb3lro7oHNldVQ0scXwcx88QkxhzZFfW6dchx+yeLIuwwnFrOtaeKrkg4xFncLbDrGm50K7TnoUjkcL1rrqmDZeF25jSfIREv0no7Xv2xWBp9SzvPS9WTsS152sS9tbVNZeLiuzAL4EtVVj+jk1c/zNVuBom8VLAJC66N0u2fqD2L/DPC0y//eA/mOxb4Bd7PHOLugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TwUrEMBB9TXZb7CKCH+HJoyehCOLBg6Ag6GFZlmw7bYNpU5KR3f10TzVxRT162kNnBl54vEkymUwO5Dh5LlvqFOtSInsh57XtAUiJxZ1i9cOc3wjMX3XFLc4E0nvSTcuYh+UD9U1kF0gf69oTx/RxHD8CJhFzpLfGlm8+R/akDDGTxGmneyqdqvlaaYeYg4tfzrPTw0DV2g/uvaT11tpqqXbaF/tV3Pef4l0UC4mrP+KDxhu1WfJ+oGJjmW13uVVMztimoaqolfG0+rpThll8B2BGOJ4lMZIDTNFEIkIEh5xmgZPvYBhBmUSfboHfHQw/9bgHfwIRH50GmAUAAA=="
+      "passable-area": 3.0
     },
     {
       "id": "hitw_iced_palace_d3",
@@ -5521,9 +5149,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.0,
-      "previous-schematic": "H4sIAAAAAAACA+1RTUvDQBB9ybYppojgxT/hLxCKIAU9CAqCHkTCdDNJFjfZsBlp9Z97iruC9uJFEEHpm8MMb2Ye85EDOfZudMMtidEKs1v2g3EdAKUwX5LQJ3N4mmJ6Z0ppcJAiu2BTN4JpCC+5qyM7R3ZVVQNLbB/H8TX4JPoc2Zl1+nHIMbsmyyKssN+ajrWnSk7IeMQeHG05a1outOu0Z+EopHC+za5pw2XhNqY0LyHQTxJq+559MVha3ctzz4uVE3Ht8ZqEvXV1zeWiIjvwQ1BLFZbfUxPXfy0VroZJvBQwiYP+FpIEH/ZPsVvwzy+Yvluy++AP4w2dLrUougUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA+1RTUvDQBB9u9smNEUEf4Qnj54KQRAPHgQFQQ+llG0ySRaTbNgdafvTPcVsC+qxB/EQfG9glsebZT4SIMHsOauo0WwyhfiFnDe2BaAU5nea9ZdycSMxfTU5VziXiO7JlBVjOjwfqC2DOkf0WBSeOJT3ff8xZBFygui2ttmbTxA/6ZqYSeGsMS1lThe80MYh1ODyW/PsTNdRvvade89ovbU2X+qd8eluFf490bwPZqlw/cN89Phab5a87yjdWGbbXG01k6ttWVKeFrr2tDr0FGMS9gBMCH8GIYauDwwxQkgphAyEGOeAx9MNFBjrgErJwP8L/jY+ARe+rVaYBQAA"
+      "passable-area": 2.0
     },
     {
       "id": "hitw_iced_palace_d4",
@@ -5547,9 +5173,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA+1RTUvDQBB9ybYppojgxT/hLxCKIAU9CAqCHkTCdDNJFjfZsBlp9Z97irsI9tJLLx60bw4zvJl5zEcO5Dh60A23JEYrzB7ZD8Z1AJTCfElCP8zpZYrpkymlwUmK7IZN3QimIbzlro7sHNldVQ0ssX0cx8/gk+hzZFfW6dchx+yeLIuwwnFrOtaeKrkg4xF7cLblrGm50K7TnoWjkML1NrumDZeF25jSfIRAv0mo7Xv2xWBp9SzvPS9WTsS152sS9tbVNZeLiuzAL0EtVVjupyau3y0VroZJvBQwiYP+GpIE3/Zn8R8WjF9MDh88LLgXvgDNEcuFugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91STUvDQBCd7OYDU0TwR3jKRfAkBEE8eBAUhHoopWyTSbKYZMPuhLY/3VPdNdIKFT8uCpnDzDC8eczbtzFADEePWYWNIJlxiKaojVQtAHAOkxtBYjc5vWIQPMmcKjhhEN6iLCuCwLZ32JZuOoHwvigMklvfbrcvtnquxhBe1yp7NjFED6JGIuRw3MgWMy0KuhRSg9uBs/3MkJZdh/nCdLrPcLFSKp+JtTTpeu54fwjeODDjcPEBPGBMLZYz2nSYLhWRapKVINS1KkvM00LUBufDM0wPVgtsM5yhMDQAk1Zpqt57o/pdf0CZrNAuke7fyP1vyB3ut9y7ywMO51+IJtV9rjiECHznvL0P4e/C84BZq1wdZzDGmR/YxMapz2MsZJ5nExuthcMXHamB/yjwFdlLUfSKBgAA"
+      "passable-area": 1.5
     },
     {
       "id": "hitw_iced_palace_d5",
@@ -5573,9 +5197,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.25,
-      "previous-schematic": "H4sIAAAAAAACA+1RTUvDQBB9zbYpTRHBi3/CXyCUghT0ICgIehAJ080kWdxkw2ak1X/uKe6i2IsXQQSlbw4zvJl5zEcGZJjd6JobEqMVprfse+NaAEphviKhT+ZomWByZwqpcZggvWBT1YJJCC+5rSI7R3pVlj1LbB+G4TX4UfQZ0jPr9GOfYXpNlkVY4aAxLWtPpZyS8Yg9ON5x1jSca9dqz8JRSOF8l93QlovcbU1hXkKgnyTUdh37vLe0vpfnjhdrJ+Kakw0Je+uqiotFSbbnh6CWKKy+pyau+1oqXA3jeClgHAf9PYw+7N9iv+CfX/Ad+w/+MN4AD8KsD7oFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TwUrEMBScJt0Wu4jgR3jyC4RFEA8eBAVhPSzLEtrXNthtSvLKrp/uqSZWV0+iF4Um8N4wzHswGZIBGY4e8pq2inUukS7JOm1aAFJifq1YHZjTS4HZoy64xolAckO6qhkzD2+prQI7R3JXlo44jA/D8OJ7FHqG5Kox+ZPLkN6rhphJ4nirW8qtKvlCaYswg7NPzrHVXUfFxnW2z2mzM6ZYqb12i+d12PtD8T6IhcTyi3jUlNTmtCLleFGqxtF5ayzX79iZ/oB3isk2pqqo+GDID7HtaT0+1LfLg+63u99gWB4jRRxi8JDwhyfydyyTPEJEIpKxL0JM1KIPzxucbILeYAjPl+ka/Kc/+ApIubXHFwYAAA=="
+      "passable-area": 2.25
     },
     {
       "id": "hitw_iced_palace_d6",
@@ -5614,9 +5236,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 7.0,
-      "previous-schematic": "H4sIAAAAAAACA+VQwUrDQBB9m21TmiKCF3/CLxBKQQp6EBQEPYiE7WaSLG6yYTPS6p97irsK9tKLlx7iY5YZ3s485k0GZJg/6JoaxUZLzB7J98a1AKTEYq1Y/TJnqwTTJ1NwjdME6Q2ZqmZMQ3lLbRXZBdK7suyJ4/gwDJ8hi5gzpFfW6dc+w+xeWWImiZPGtKS9KvlSGY84g/M9Z01DuXat9sQUhSSu979btaMidztTmI9Q6DcOvV1HPu+t2jzze0fLjWN2zcVWMXnrqoqKZalsTy9BLZFY/02NXXdYKlwNk3gpYBIXPR6E+HnjhfiOMRsUEKO2+D8MHh1fQwUtU7oFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA92S0WrCMBSG/6TasooIe4g9hCDC2IUXgoPBvBhDQnrahtW2JEfmHt2rLnHQ3nrloH8uvvBzTuCDpECKhzdd0lGx0RGSd7LONDWAKMLsRbHqm8e1xHRvMi6xkIg3ZIqSMfXXLdVFaGeId3nuiMN613UXTxGYIn6uGv3lUiSvqiJmijA/mpq0VTkvlbEIO3gaOsfWtC1lB9fak6bDd9NkH+ps3OrnM7x74/A5DEskmAQZYEK4X4Q/A8YX6c1kjxFGeDMh5RXjFLz+TvHHkeaf7H4BZYgjRF0FAAA="
+      "passable-area": 7.0
     },
     {
       "id": "hitw_iced_palace_d7",
@@ -5640,9 +5260,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 3.0,
-      "previous-schematic": "H4sIAAAAAAACA+1RwUrEMBB9bXa72EUEL/6EXyAsgizoQVAQ9CBSZtNpG0ybko7s6p97qomIe/EiiKDsC+ENLzOPmUkO5Ni70Q23JEYrzG7ZD8Z1AJTCfElCn8rhaYrpnSmlwUGK7IJN3QimIbzkro7qHNlVVQ0ssXwcx9fASeQc2Zl1+nHIMbsmyyKssN+ajrWnSk7IeMQaHG01a1outOu0Z+FopHC+fV3ThsvCbUxpXkKgnyTk9j37YrC0upfnnhcrJ+La4zUJe+vqmstFRXbgh+CWKiy/5yau/9oqbA2TuClgEhv9PSQf599iN+CfHzBJ3u/uB38Wb2/uOVG6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TwUrEMBCdpt0Wu4jgR3jyC4RFEA8eBAVhPSzLEtJJG+w2JZmy66d7qhm7Vk+LXhQ6SXiP4c2D5JEcIIeTJ1XhVpJRMWRLdN7YBgDiGOa3kuTYOb8WMHs2BVVwJiC9Q1NWBLNA77EpuTuH9EFrj8Tjfd+/BYwYc0hvaqtefA7Zo6yRCGM43ZoGlZOarqRxwDNw8dXz5EzbYrHxresUbnbWFiu5N37xumbfH4r3LBYxLL+JB43GRuEKpaeFlrXHy8Y6qg7c227kO0noaluWWHx2MAyR63A9PNRRc9b91vuDsnkCGSQcQ6AIf1bRcA4wwYp4CRH2ZC/IfySZcIIixDfCVBP8lz/4Dowvdq4XBgAA"
+      "passable-area": 3.0
     },
     {
       "id": "hitw_iced_palace_x1",
@@ -5666,9 +5284,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA91TwUrEMBB9bXa7bBcRvPgTfoGwCMuCHgQFQQ8iJZtO22DalGRkV//cU01c2L148aLQF4YZXmYeeQPJgRzzB9VQK1krgdkjOa9tB0AILNaS5YE5u0oxfdIlNzhNkd2QrhvGNJS31NWRXSC7qypPHMeHYfgMOYk5R7YyVr36HLN7aYiZBE5a3ZFysuJLqR3iDM6PnNEtFcp2yhFTFBK4Pt5u5Y7Kwu50qT9Cod449PY9ucIbuXnm956WG8ts24utZHLG1jWVy0oaTy9BLRVY/06Nbf+zVNgaJnFTwCQ+9M+QHM5IEayJfYzXYLKPkfr7hhivwX/7g19O5KPyugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TTUvEMBB9abpb7CKCP8KTF8GTUATx4EFQEPSwLEu2nbbBtinJyO7+dE81saAeRDwpdPLxhsd7gZkhKZDi4CGvqVWsc4nkkazTpgMgJRbXitUHc3wZYfakC65xFGF+Q7qqGTOf3lJXBXaB+V1ZOuJgH4bh1aMImGJ+1Zj82aVI7lVDzCRx2OqOcqtKvlDaInhw8sk5trrvqVi73r7ktN4aUyzVTrtsvwrv/lK8C+JI4uyLeNS4Rm2WvO8pY9OfbhWTbUxVUZGVqnG0Gntw/oNvY5hN+701RoI49M+nhL8L4de4BaYYkYiE9FfscZIFvk9OiPFMdoK+ODnVAv/vD74BfREwm9AFAAA="
+      "passable-area": 1.5
     },
     {
       "id": "hitw_iced_palace_x2",
@@ -5692,9 +5308,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA+1RwUrDQBB9zbYppojgxZ/wC4QiSEEPgoKgB5Ew3UySxU02bEZa/XNPcRekvXjpRSH45jDD253HvJkMyHD0oGtuSIxWmD+y741rASiFxYqEdszpZYLZkymkxkmC9IZNVQtmobzltorsAuldWfYssX0Yhs+QJzFnSK+s0699hvk9WRZhhePGtKw9lXJBxiP24GzPWdNwrl2rPQtHIYXr/euGtlzkbmsK8xEK/Sbhb9exz3tL62d573i5diKuOd+QsLeuqrhYlmR7fglqicLqMDVx3c9SYWuYxk0B0zjob2Gyi5Hi3+AIDH5jrAaTP7rgF+hvj5O6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91RwUrDQBB92U0TTBHBj/DkpdCTEATx4EFQEPRQStkmk2QxyYbdkbaf7ilmW9AeRDwpZGbYGR7vLcy8BEhw8pRV1CjWmUT8TNZp0wKQEtNbxeoTOb8WmLzonCucCUR3pMuKMRnGe2pLj04RPRSFI/byvu/fhx74niC6qU326hLEj6omZpI4bXRLmVUFXylt4TW4+MIcW911lK9cZ98yWm2MyRdqq126Xfp/f0neebKQmB+RDxxXq/WCdx2la8NsmsuNYrK1KUvK00LVjpaHM8x+kLLpvteFiBH6+w0j4c8iCCD26WuMIYQUwZDh8Ix0wdE7iL2DwWgdlPKfHPwAWtIlQ9AFAAA="
+      "passable-area": 1.5
     },
     {
       "id": "hitw_iced_palace_x3",
@@ -5718,9 +5332,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA+1RTUvDQBB9zbYpTRHBi3/CXyCUghT0ICgIehAJ080kWdxkw2ak1X/uKe6CtBcvgghK3xxmeDPzmI8MyDC70zU3JEYrTO/Z98a1AJTCfEVCO+ZkmWDyYAqpcZwgvWJT1YJJCK+5rSI7R3pTlj1LbB+G4T34UfQZ0gvr9HOfYXpLlkVY4agxLWtPpZyT8Yg9ON1z1jSca9dqz8JRSOFyn93QlovcbU1h3kKgXyTUdh37vLe0fpTXjhdrJ+Kasw0Je+uqiotFSbbnp6CWKKy+pyau+1oqXA3jeClgHAf9LYx29k9xWPDPL6g+7fDBH8YHP13uxroFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TwUrEMBB9abotdhHBj/DkRfAkFEE8eBAUBD0sy5Jtp22wbUoysruf7qk2Ftw9iHhS6EzgDY/3BjKTJECCo6esokaxziTiZ7JOmxaAlJjfKlZfzOl1gNmLzrnCSYDojnRZMWZDeU9t6dk5ooeicMTe3vf9+4DCY4LopjbZq0sQP6qamEniuNEtZVYVfKW0hffgbM85trrrKF+5zr5ltNoYky/UVrt0t/R9fyneenEgcXEgHjWuVusF7zpK2XTnG8Vka1OWlKeFqh0txxlc/uBbG2bTfG8NESP08xtKwp+F8EeMMMkQQSB8ylAE07zgfoPTXKGQUnymnOoT/bc/+AGZmRH40AUAAA=="
+      "passable-area": 1.5
     },
     {
       "id": "hitw_iced_palace_x4",
@@ -5744,9 +5356,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9zbYppojgxZ/wC4QilIIeBAVBDyJhupkkSzfZsBlp9c89xd1Le+nFiwfJm8MMb2Ye8yYDMpw965obEqMV5i/se+NaAEphsSahA3N5m2D2agqpcZEgvWdT1YJZKB+4rSK7QPpYlj1LXB+G4TvkScwZ0pV1ettnmD+RZRFWOG9My9pTKTdkPOIOro6cNQ3n2rXas3AUUrg7dne05yJ3e1OYr1DoDwmzXcc+7y1t3uSz4+XGibjmekfC3rqq4mJZku35PaglCuvfqYnrTkuFr2EaPwVM46F/hckh/ilGg6PB0eBp/AD+XEwxugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TTUvEMBCdNG0Xu4jgj/DUi+BJKIJ48CAoCOthWZZsO22DbVOSWbr70z3Vxu5WYcWPyx46CcwwvPfIyyQBQAAnz3GOpSAZc5jMUBupKgDgHKZ3gsTQOb9xwHuRCeVw5oB/jzLLCbyufMAqs90p+I9papAsvW3bty4zmwPwbwsVv5oAJk+iQCLkcFrKCmMtUroWUoPlwMVnz5CWdY3J0tR6HeOyUSqZi4000XZhdf8I3liww+HyC7jHmEKs5rStMSJVh40g1IXKMkyiVBQGF/0dXP3AWykiVX5PdTnMDqgpVjHOURjqgWGlNOW72qj1UB9Ihg12JNLrD3HvF3GL+6/2cHIfJuDayXcmEI4WzG7Wp1EGcxxmF3eZM06Du/B8Ns4R7p9oZxBGbfD4f/AdAnYKIIoGAAA="
+      "passable-area": 1.5
     },
     {
       "id": "hitw_iced_palace_x5",
@@ -5770,9 +5380,7 @@
           "crouch": true
         }
       ],
-      "passable-area": 1.5,
-      "previous-schematic": "H4sIAAAAAAACA+1RTUvEQAx909ntYhcRvPgn/AXCIsiCHgQFQQ8iZXaatoPTTpmJ7Oo/91RnENyLl70ofiSHhJfkkZcUQIG9G91Sp9hoidkt+WBcD0BKzJeK1QdyeJphemcqbnGQIb8g07SMaUwvqW8SOkd+VdeBOI2P4/gao0ixQH5mnX4MBWbXyhIzSex3piftVc0nynikGRxtMWs6KrXrtSemRCRxvq2u1Yaq0m1MZV5iop849g4D+TJYtbrn54EWK8fsuuO1YvLWNQ1Vi1rZQA+RLZNY7sbGbvicKl4Nk3QpYJIW/TITAu/+a+2vCBT/H/zBAsU3CHwDtysyWroFAAA=",
-      "previous-v2-schematic": "H4sIAAAAAAACA91STUvDQBScbJoUU0TwR3jqRfAkFEE8eBAUhHoopWyTl2QxzYbdV9r+dE9110grVPy49JB32Pd4zAw7O5sACU6e05IWklUaoj8mY5WuAYQhBneS5W5zfiMQvaiMS5wJxPekipIRufGB6sJvB4gf89wSe/p2u31zPfA9QXxb6fTVJug/yYqYKcTpQtWUGpnztVQGnoOL/c6yUU1D2cw2ZpnSbKV1NpFrZUfrqdf9I3jjwSLE5Rdwi7GVnE9409CIdTNcSSZT6aKgbJTLytK0fYOrH3hzzawX31N7IcYH1JzqlCYkLbfAYa0Nl5+z1cvdfCA5XJEjsVl+iEe/iHvcf7V3N4/RR88n70wQjldBAOGi8r2bJUQogkD0hOimv8AbjGJ3iM5GCG8QHQ2wNei+6PENvgMc5OLrigYAAA=="
+      "passable-area": 1.5
     },
     {
       "id": "hitw_iced_palace_x6",
@@ -5796,9 +5404,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 2.25,
-      "previous-schematic": "H4sIAAAAAAACA+1QwUrDQBB9zbYppojgxZ/wC4QilIIeBAVBDyJhupkkSzfZsBlp9c89xV0Qe+nFiwfJm8MMb2Ye8yYDMpw86pobEqMV5k/se+NaAEphsSahH+b8OsHs2RRS4yxBesumqgWzUN5xW0V2gfS+LHuWuD4Mw2fIk5gzpCvr9LbPMH8gyyKscNqYlrWnUq7IeMQdXBw4axrOtWu1Z+EopHBz6O5oz0Xu9qYwH6HQbxJmu4593lvavMh7x8uNE3HN5Y6EvXVVxcWyJNvza1BLFNa/UxPXHZcKX8M0fgqYxkP/DpPv+LcYDY4GR4PH8AWbiKbXugUAAA==",
-      "previous-v2-schematic": "H4sIAAAAAAACA91SwUrDQBB9yaYJpojgR3jyC4QiiAcPgoJQD6WUZTNJFtNs2J3Q+ume6m6qrSfRi0JmDu/xePNgdjYHcpw8qZrWkrUSyOZknTYtACEwvZUsD8r5dYzJsy64xlmM9I50VTMmnt5TWwV1ivShLB1xGN/tdm8eo4A50pvGqBeXI3uUDTGTwOlat6SsLPlKaoswg4uj5tjqrqNi5TrbK1ptjCkWcqvd7HUZcn9o3gZzLDD/Yt57SmoVLUg6npWycXTZGsv1B3emP/CNZLKNqSoqPhXyQ2x7Wu4f6tvw4Ptt9kBDeIIMSTiDp4S/q8j3EcZXceRbJAOMcsEolEgGGOcJx/5F/2/Bd0Gz9i0XBgAA"
+      "passable-area": 2.25
     },
     {
       "id": "hitw_iced_palace_x7",
@@ -5822,9 +5428,7 @@
           "crouch": false
         }
       ],
-      "passable-area": 1.6875,
-      "previous-schematic": "H4sIAAAAAAACA+VRwUrEQAx97ex2sYsIXvwJv0BYBFnQg6Ag6EGkZKdpOzjtlGlkV//cU525uBcvXlaoySHhJXnkJTmQ4+hBN9ySGK2weGQ/GNcBUArLNQl9I6eXKeZPppQGJymyGzZ1I5iH9Ja7OqJLZHdVNbDE8XEcP0NMYsyRXVmnX4cci3uyLMIKx63pWHuq5IKMR5zB2R6zpuVCu057Fo5ECtf76pZ2XBZuZ0rzERL9JqG379kXg6XNs7z3vNo4Edeeb0nYW1fXXK4qsgO/BLZUYf07NnH9z1ThapjFSwGzuOjhLEkQfcL2PwROWWGSTl3gn3zwCzAxZ4e6BQAA",
-      "previous-v2-schematic": "H4sIAAAAAAACA91TTUvDQBCd3W1STBHBH+GpF8GTUATx4EFQEOqhlLJNJslimg27E9L+dE9xN5EqVPy4KGSHZYbhvcfMzmwEEMHRY5zjRpKKBYznaKzSJQAIAZMbSXKfOb3iEDyphHI44RDeospygsCFd1hmPjuB8D5NLZKnt2374jzzPoLwutDxs41g/CALJEIBxxtVYmxkSpdSGfAcOHvPWTKqqjBZ2crUMa4arZOF3Co72y697g/BOw/mAi4+gHuMLeR6QbsKZ2tNpDfTRhKaQmcZJrNUFhaX/TPMD6gpljEuUFrqgdNSG8rfYqvrfXwgOW3QkcjUnfjoG3GP+632vvJAwPkXTZOuPu84hDGM/ORdfQh/dxgD7gy6O8TDuXDGRsFAG2TczY/xMGScDXWEolvRoW4odD/wPxp8BZMR+o6KBgAA"
+      "passable-area": 1.6875
     },
     {
       "id": "hitw_beach_e1",

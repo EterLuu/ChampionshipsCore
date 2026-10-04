@@ -1,24 +1,23 @@
 package ink.ziip.championshipscore.api.game.area.prepare.gui;
 
-import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
-import ink.ziip.championshipscore.api.gui.MenuInventory;
-import ink.ziip.championshipscore.api.gui.MenuId;
-import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
-import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-
-import ink.ziip.championshipscore.api.game.acerace.AceRaceArea;
+import ink.ziip.championshipscore.api.game.acerace.runtime.AceRaceArea;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
 import ink.ziip.championshipscore.api.game.area.prepare.step.AceRaceRespawnPointListStep;
+import ink.ziip.championshipscore.api.gui.MenuId;
+import ink.ziip.championshipscore.api.gui.MenuInventory;
+import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
@@ -34,8 +33,7 @@ public final class AceRaceRespawnPointBindingGui {
     private static final int START_SLOT = 49;
     private static final int NEXT_SLOT = 53;
 
-    private AceRaceRespawnPointBindingGui() {
-    }
+    private AceRaceRespawnPointBindingGui() {}
 
     public static final class Holder implements MenuInventory {
         final PrepareSession session;
@@ -54,18 +52,24 @@ public final class AceRaceRespawnPointBindingGui {
         }
     }
 
-    public static void open(@NotNull PrepareSessionManager manager, @NotNull Player player,
-                            @NotNull PrepareSession session, int respawnIndex) {
+    public static void open(
+            @NotNull PrepareSessionManager manager,
+            @NotNull Player player,
+            @NotNull PrepareSession session,
+            int respawnIndex) {
         Holder holder = new Holder(session, respawnIndex);
-        GuiConfig.MenuSpec menu = GuiConfig.menu(MENU_PATH, 54, GuiConfig.component(MENU_PATH), List.of());
+        GuiConfig.MenuSpec menu =
+                GuiConfig.menu(MENU_PATH, 54, GuiConfig.component(MENU_PATH), List.of());
         holder.inventory = Bukkit.createInventory(holder, menu.size(), menu.title());
         refresh(holder);
         player.openInventory(holder.inventory);
     }
 
-    public static void handleClick(@NotNull PrepareSessionManager manager,
-                                   @NotNull InventoryClickEvent event, @NotNull Player player,
-                                   @NotNull Holder holder) {
+    public static void handleClick(
+            @NotNull PrepareSessionManager manager,
+            @NotNull InventoryClickEvent event,
+            @NotNull Player player,
+            @NotNull Holder holder) {
         event.setCancelled(true);
         if (event.getClickedInventory() != event.getView().getTopInventory()) return;
         PrepareSession session = manager.getSession(player);
@@ -108,9 +112,13 @@ public final class AceRaceRespawnPointBindingGui {
             choose(manager, player, session, step, holder.respawnIndex, progressIndex);
     }
 
-    private static void choose(@NotNull PrepareSessionManager manager, @NotNull Player player,
-                               @NotNull PrepareSession session, @NotNull AceRaceRespawnPointListStep step,
-                               int respawnIndex, int binding) {
+    private static void choose(
+            @NotNull PrepareSessionManager manager,
+            @NotNull Player player,
+            @NotNull PrepareSession session,
+            @NotNull AceRaceRespawnPointListStep step,
+            int respawnIndex,
+            int binding) {
         String message = step.setBinding(session, respawnIndex, binding);
         if (message != null) player.sendMessage(message);
         ListStepGui.openEdit(player, session, step, respawnIndex);
@@ -133,36 +141,70 @@ public final class AceRaceRespawnPointBindingGui {
                 continue;
             }
             boolean selected = progressIndex == current;
-            inventory.setItem(slot, configured("option", selected ? "selected" : null,
-                    Map.of("order", progressIndex + 1)));
+            inventory.setItem(
+                    slot,
+                    configured(
+                            "option",
+                            selected ? "selected" : null,
+                            Map.of("order", progressIndex + 1)));
         }
-        inventory.setItem(PREVIOUS_SLOT, holder.page > 0
-                ? configured("previous", null, Map.of("page", holder.page, "pages", pageCount))
-                : filler());
+        inventory.setItem(
+                PREVIOUS_SLOT,
+                holder.page > 0
+                        ? configured(
+                                "previous", null, Map.of("page", holder.page, "pages", pageCount))
+                        : filler());
         inventory.setItem(BACK_SLOT, configured("back", null, Map.of()));
-        inventory.setItem(START_SLOT, configured("start", current < 0 ? "selected" : null, Map.of()));
-        inventory.setItem(NEXT_SLOT, holder.page + 1 < pageCount
-                ? configured("next", null, Map.of("page", holder.page + 2, "pages", pageCount))
-                : filler());
+        inventory.setItem(
+                START_SLOT, configured("start", current < 0 ? "selected" : null, Map.of()));
+        inventory.setItem(
+                NEXT_SLOT,
+                holder.page + 1 < pageCount
+                        ? configured(
+                                "next", null, Map.of("page", holder.page + 2, "pages", pageCount))
+                        : filler());
     }
 
-    private static ItemStack configured(@NotNull String item, String state, @NotNull Map<String, ?> placeholders) {
-        return ConfiguredGui.item(MENU_PATH + ".items." + item, state, placeholders,
-                Material.BARRIER, LegacyText.component(item), List.of(), false);
+    private static ItemStack configured(
+            @NotNull String item, String state, @NotNull Map<String, ?> placeholders) {
+        return ConfiguredGui.item(
+                MENU_PATH + ".items." + item,
+                state,
+                placeholders,
+                Material.BARRIER,
+                LegacyText.component(item),
+                List.of(),
+                false);
     }
 
     private static int pageCount(int size) {
         return Math.max(1, (size + PAGE_SIZE - 1) / PAGE_SIZE);
     }
 
-    private static ItemStack item(@NotNull Material material, @NotNull String name,
-                                  @NotNull NamedTextColor color, String... lore) {
+    private static ItemStack item(
+            @NotNull Material material,
+            @NotNull String name,
+            @NotNull NamedTextColor color,
+            String... lore) {
         ItemStack item = new ItemStack(material);
-        item.editMeta(meta -> {
-            meta.displayName(LegacyText.component(name).colorIfAbsent(color).decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
-            meta.lore(java.util.Arrays.stream(lore).map(line -> LegacyText.component(line)
-                    .colorIfAbsent(NamedTextColor.GRAY).decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE)).toList());
-        });
+        item.editMeta(
+                meta -> {
+                    meta.displayName(
+                            LegacyText.component(name)
+                                    .colorIfAbsent(color)
+                                    .decorationIfAbsent(
+                                            TextDecoration.ITALIC, TextDecoration.State.FALSE));
+                    meta.lore(
+                            java.util.Arrays.stream(lore)
+                                    .map(
+                                            line ->
+                                                    LegacyText.component(line)
+                                                            .colorIfAbsent(NamedTextColor.GRAY)
+                                                            .decorationIfAbsent(
+                                                                    TextDecoration.ITALIC,
+                                                                    TextDecoration.State.FALSE))
+                                    .toList());
+                });
         return item;
     }
 

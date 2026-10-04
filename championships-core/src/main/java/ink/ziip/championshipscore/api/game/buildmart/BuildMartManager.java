@@ -2,17 +2,20 @@ package ink.ziip.championshipscore.api.game.buildmart;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.buildmart.blueprint.BuildMartOrderPool;
+import ink.ziip.championshipscore.api.game.buildmart.config.BuildMartConfig;
+import ink.ziip.championshipscore.api.game.buildmart.runtime.BuildMartArea;
+import ink.ziip.championshipscore.api.game.buildmart.runtime.BuildMartMaterialManifest;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
-import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.logging.LogText;
+
 import lombok.Getter;
-import ink.ziip.championshipscore.util.Utils;
+
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -22,8 +25,7 @@ import java.util.Set;
  */
 public class BuildMartManager extends BaseGameInstanceManager<BuildMartArea> {
     /** Shared blueprint pool (normal + golden), loaded once and read by every area's library. */
-    @Getter
-    private BuildMartOrderPool orderPool = new BuildMartOrderPool();
+    @Getter private BuildMartOrderPool orderPool = new BuildMartOrderPool();
 
     public BuildMartManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -36,70 +38,54 @@ public class BuildMartManager extends BaseGameInstanceManager<BuildMartArea> {
 
     @Override
     public void load() {
-        File buildMartDir = new File(plugin.getDataFolder(), "buildmart");
-        buildMartDir.mkdirs();
+        deferMapLoad(
+                () -> {
+                    File blueprintsFolder =
+                            new File(plugin.getDataFolder(), "buildmart/blueprints");
+                    blueprintsFolder.mkdirs();
+                    copyExampleBlueprints(blueprintsFolder);
+                    orderPool = BuildMartOrderPool.load(plugin, blueprintsFolder);
+                    Set<String> loadedWorlds = new HashSet<>();
+                    loadMapDefinitions(
+                            new File(plugin.getDataFolder(), "buildmart/areas"),
+                            (name, file) -> {
+                                YamlConfiguration raw = YamlConfiguration.loadConfiguration(file);
+                                String worldName = raw.getString("world-name", "");
+                                if (worldName == null || worldName.isBlank()) {
+                                    BuildMartConfig config = new BuildMartConfig(plugin, name);
+                                    config.initializeConfiguration(plugin.getFolder());
+                                    config.bindConfiguredWorld("");
+                                    config.saveOptions();
+                                    BuildMartMaterialManifest.write(plugin, config);
+                                    BuildMartArea area = new BuildMartArea(plugin, config);
+                                    areas.put(name, area);
+                                    area.initializeForSetup();
+                                    return;
+                                }
+                                if (loadedWorlds.add(worldName) && !loadArenaWorld(worldName)) {
+                                    loadedWorlds.remove(worldName);
+                                    return;
+                                }
 
-        // Defer the area scan to the first tick so all referenced worlds and shared data are ready.
-        plugin.getServer().getScheduler().runTask(plugin, task -> {
-            File blueprintsFolder = new File(buildMartDir, "blueprints");
-            blueprintsFolder.mkdirs();
-            copyExampleBlueprints(blueprintsFolder);
-            orderPool = BuildMartOrderPool.load(plugin, blueprintsFolder);
-
-            File areasFolder = new File(buildMartDir, "areas");
-            areasFolder.mkdirs();
-            String[] areaList = areasFolder.list((d, n) -> n.toLowerCase().endsWith(".yml"));
-            if (areaList != null) {
-                Arrays.sort(areaList);
-                Set<String> loadedWorlds = new HashSet<>();
-                for (String file : areaList) {
-                    String name = file.substring(0, file.length() - 4);
-                    File configFile = new File(areasFolder, file);
-                    YamlConfiguration raw = YamlConfiguration.loadConfiguration(configFile);
-                    String worldName = raw.getString("world-name", "");
-                    if (worldName == null || worldName.isBlank()) {
-                        BuildMartConfig config = new BuildMartConfig(plugin, name);
-                        config.initializeConfiguration(plugin.getFolder());
-                        config.bindConfiguredWorld("");
-                        config.saveOptions();
-                        BuildMartMaterialManifest.write(plugin, config);
-                        BuildMartArea area = new BuildMartArea(plugin, config);
-                        areas.put(name, area);
-                        area.initializeForSetup();
-                        continue;
-                    }
-                    if (loadedWorlds.add(worldName) && !loadArenaWorld(worldName)) {
-                        loadedWorlds.remove(worldName);
-                        continue;
-                    }
-
-                    BuildMartConfig config = new BuildMartConfig(plugin, name);
-                    config.initializeConfiguration(plugin.getFolder());
-                    BuildMartMaterialManifest.write(plugin, config);
-                    BuildMartArea area = new BuildMartArea(plugin, config);
-                    areas.put(name, area);
-                    area.initializeForSetup();
-                }
-            }
-        });
-    }
-
-    @Override
-    public void unload() {
-        for (BuildMartArea area : areas.values()) {
-            if (area.getGameStageEnum() != GameStageEnum.WAITING) {
-                area.abortAndReset();
-            }
-        }
-        clearAreas();
+                                BuildMartConfig config = new BuildMartConfig(plugin, name);
+                                config.initializeConfiguration(plugin.getFolder());
+                                BuildMartMaterialManifest.write(plugin, config);
+                                BuildMartArea area = new BuildMartArea(plugin, config);
+                                areas.put(name, area);
+                                area.initializeForSetup();
+                            });
+                });
     }
 
     /** Names of the bundled starter blueprints written out when the blueprints folder is empty. */
     private static final String[] EXAMPLE_BLUEPRINTS = {
-            "example_cross.yml", "example_hut.yml", "example_golden_tower.yml"
+        "example_cross.yml", "example_hut.yml", "example_golden_tower.yml"
     };
 
-    /** Seeds {@code blueprintsFolder} with the bundled example blueprints, but only when it is empty. */
+    /**
+     * Seeds {@code blueprintsFolder} with the bundled example blueprints, but only when it is
+     * empty.
+     */
     private void copyExampleBlueprints(File blueprintsFolder) {
         String[] existing = blueprintsFolder.list((d, n) -> n.toLowerCase().endsWith(".yml"));
         if (existing != null && existing.length > 0) return;
@@ -109,20 +95,30 @@ public class BuildMartManager extends BaseGameInstanceManager<BuildMartArea> {
             try (InputStream in = plugin.getResource("buildmart/blueprints/" + name)) {
                 if (in != null) Files.copy(in, target.toPath());
             } catch (Exception e) {
-                plugin.getLogger().warning(Utils.formatGameLog(GameTypeEnum.BuildMart, "-", "加载", "蓝图",
-                        "无法写出示例蓝图=" + name + " | " + e.getMessage()));
+                plugin.getLogger()
+                        .warning(
+                                LogText.formatGameLog(
+                                        GameTypeEnum.BuildMart,
+                                        "-",
+                                        "加载",
+                                        "蓝图",
+                                        "无法写出示例蓝图=" + name + " | " + e.getMessage()));
             }
         }
     }
 
-    /** Re-scans {@code buildmart/blueprints} into the shared pool (after a blueprint is exported). */
+    /**
+     * Re-scans {@code buildmart/blueprints} into the shared pool (after a blueprint is exported).
+     */
     public void reloadOrderPool() {
-        File blueprintsFolder = new File(new File(plugin.getDataFolder(), "buildmart"), "blueprints");
+        File blueprintsFolder =
+                new File(new File(plugin.getDataFolder(), "buildmart"), "blueprints");
         blueprintsFolder.mkdirs();
         orderPool = BuildMartOrderPool.load(plugin, blueprintsFolder);
     }
 
-    public void updateBlueprint(ink.ziip.championshipscore.api.game.buildmart.blueprint.BuildMartBlueprint blueprint) {
+    public void updateBlueprint(
+            ink.ziip.championshipscore.api.game.buildmart.blueprint.BuildMartBlueprint blueprint) {
         orderPool = orderPool.withBlueprint(blueprint);
     }
 

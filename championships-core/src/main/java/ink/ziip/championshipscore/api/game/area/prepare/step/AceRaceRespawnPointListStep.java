@@ -1,14 +1,15 @@
 package ink.ziip.championshipscore.api.game.area.prepare.step;
 
-import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
-import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-
-import ink.ziip.championshipscore.api.game.acerace.AceRaceArea;
-import ink.ziip.championshipscore.api.game.acerace.AceRaceConfig;
+import ink.ziip.championshipscore.api.game.acerace.config.AceRaceConfig;
+import ink.ziip.championshipscore.api.game.acerace.runtime.AceRaceArea;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+
 import net.kyori.adventure.text.Component;
+
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -19,8 +20,15 @@ import java.util.List;
 /** Edits course-ordered markers which are bound to Ace Race progress segments at load time. */
 public final class AceRaceRespawnPointListStep extends ListStep {
     public AceRaceRespawnPointListStep() {
-        super("respawn_points", LegacyText.component(GuiConfig.text("map-editor.menus.step-list.games.ace-race.items.respawn-points.title")),
-                LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.ace-race.items.respawn-points.lore", 0)),
+        super(
+                "respawn_points",
+                LegacyText.component(
+                        GuiConfig.text(
+                                "map-editor.menus.step-list.games.ace-race.items.respawn-points.title")),
+                LegacyText.component(
+                        GuiConfig.line(
+                                "map-editor.menus.step-list.games.ace-race.items.respawn-points.lore",
+                                0)),
                 Material.RECOVERY_COMPASS,
                 target -> cfg(target).ensureRespawnPoints(),
                 (target, values) -> cfg(target).setRespawnPoints(values),
@@ -35,7 +43,11 @@ public final class AceRaceRespawnPointListStep extends ListStep {
     }
 
     private static void reload(PrepareSession session) {
-        AceRaceArea area = session.getPlugin().getGameManager().getAceRaceManager().getArea(session.getAreaName());
+        AceRaceArea area =
+                session.getPlugin()
+                        .getGameManager()
+                        .getAceRaceManager()
+                        .getArea(session.getAreaName());
         if (area != null) area.loadCoursePoints();
     }
 
@@ -73,16 +85,20 @@ public final class AceRaceRespawnPointListStep extends ListStep {
     }
 
     @Override
-    public String listSetOrder(@NotNull PrepareSession session, @NotNull Player player,
-                               int index, int newOrder) {
+    public String listSetOrder(
+            @NotNull PrepareSession session, @NotNull Player player, int index, int newOrder) {
         AceRaceConfig config = cfg(session.getTarget());
         int count = config.ensureRespawnPoints().size();
         if (index < 0 || index >= count || newOrder < 1 || newOrder > count)
-            return ink.ziip.championshipscore.util.Utils.formatAdminError(MessageConfig.MAP_EDITOR_STEP_SERIAL_NUMBER_BETWEEN.replace("%max%", String.valueOf(count)));
+            return ink.ziip.championshipscore.presentation.text.CoreMessages.formatAdminError(
+                    MessageConfig.MAP_EDITOR_STEP_SERIAL_NUMBER_BETWEEN.replace(
+                            "%max%", String.valueOf(count)));
         config.moveRespawnPoint(index, newOrder);
         session.markDirty();
-        String result = ink.ziip.championshipscore.util.Utils.formatAdminSuccess(
-                MessageConfig.MAP_EDITOR_STEP_POINT_ADJUSTED_TO.replace("%order%", String.valueOf(newOrder)));
+        String result =
+                ink.ziip.championshipscore.presentation.text.CoreMessages.formatAdminSuccess(
+                        MessageConfig.MAP_EDITOR_STEP_POINT_ADJUSTED_TO.replace(
+                                "%order%", String.valueOf(newOrder)));
         reload(session);
         return result;
     }
@@ -93,27 +109,41 @@ public final class AceRaceRespawnPointListStep extends ListStep {
         if (index < 0 || index >= config.ensureRespawnPoints().size()) return null;
         config.removeRespawnPoint(index);
         session.markDirty();
-        String result = ink.ziip.championshipscore.util.Utils.formatAdminSuccess(
-                MessageConfig.MAP_EDITOR_STEP_DELETED.replace("%order%", String.valueOf(index + 1)));
+        String result =
+                ink.ziip.championshipscore.presentation.text.CoreMessages.formatAdminSuccess(
+                        MessageConfig.MAP_EDITOR_STEP_DELETED.replace(
+                                "%order%", String.valueOf(index + 1)));
         reload(session);
         return result;
     }
 
     public String bindingText(@NotNull PrepareSession session, int index) {
         AceRaceArea area = area(session);
-        if (area == null || area.getRespawnPointIndexForConfig(index) < 0) return GuiConfig.text("map-editor.menus.step-list.games.ace-race.items.respawn-binding.states.not-loaded.title");
+        if (area == null || area.getRespawnPointIndexForConfig(index) < 0)
+            return GuiConfig.text(
+                    "map-editor.menus.step-list.games.ace-race.items.respawn-binding.states.not-loaded.title");
         int binding = area.getRespawnPointBinding(index);
-        return binding < 0 ? GuiConfig.text("map-editor.menus.step-list.games.ace-race.items.respawn-binding.states.after-start.title") : GuiConfig.text("map-editor.menus.step-list.games.ace-race.items.respawn-binding.states.bound.title").replace("%line%", String.valueOf(binding + 1));
+        return binding < 0
+                ? GuiConfig.text(
+                        "map-editor.menus.step-list.games.ace-race.items.respawn-binding.states.after-start.title")
+                : GuiConfig.text(
+                                "map-editor.menus.step-list.games.ace-race.items.respawn-binding.states.bound.title")
+                        .replace("%line%", String.valueOf(binding + 1));
     }
 
     public String setBinding(@NotNull PrepareSession session, int index, int binding) {
         AceRaceArea area = area(session);
         if (area == null || !area.setRespawnPointBinding(index, binding)) return null;
         session.markDirty();
-        return ink.ziip.championshipscore.util.Utils.formatAdminSuccess(
-                MessageConfig.MAP_EDITOR_ACE_RESPAWN_BOUND.replace("%binding%",
-                binding < 0 ? GuiConfig.text("map-editor.menus.step-list.games.ace-race.items.respawn-binding.states.after-start.title")
-                        : GuiConfig.text("map-editor.menus.step-list.games.ace-race.items.respawn-binding.states.bound.title").replace("%line%", String.valueOf(binding + 1))));
+        return ink.ziip.championshipscore.presentation.text.CoreMessages.formatAdminSuccess(
+                MessageConfig.MAP_EDITOR_ACE_RESPAWN_BOUND.replace(
+                        "%binding%",
+                        binding < 0
+                                ? GuiConfig.text(
+                                        "map-editor.menus.step-list.games.ace-race.items.respawn-binding.states.after-start.title")
+                                : GuiConfig.text(
+                                                "map-editor.menus.step-list.games.ace-race.items.respawn-binding.states.bound.title")
+                                        .replace("%line%", String.valueOf(binding + 1))));
     }
 
     public int currentBinding(@NotNull PrepareSession session, int index) {
@@ -122,16 +152,23 @@ public final class AceRaceRespawnPointListStep extends ListStep {
     }
 
     public AceRaceArea area(@NotNull PrepareSession session) {
-        return session.getPlugin().getGameManager().getAceRaceManager().getArea(session.getAreaName());
+        return session.getPlugin()
+                .getGameManager()
+                .getAceRaceManager()
+                .getArea(session.getAreaName());
     }
 
     @Override
     public @NotNull Component listAddLabel() {
-        return LegacyText.component(GuiConfig.text("map-editor.menus.step-list.games.ace-race.items.respawn-add.title"));
+        return LegacyText.component(
+                GuiConfig.text(
+                        "map-editor.menus.step-list.games.ace-race.items.respawn-add.title"));
     }
 
     @Override
     public @NotNull Component listAddHint() {
-        return LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.ace-race.items.respawn-add.lore", 0));
+        return LegacyText.component(
+                GuiConfig.line(
+                        "map-editor.menus.step-list.games.ace-race.items.respawn-add.lore", 0));
     }
 }

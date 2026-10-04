@@ -1950,6 +1950,11 @@ map-editor:
         dragon-egg-carnival: {}
         hoty-cody-dusky:
           items:
+            save-template:
+              material: STRUCTURE_BLOCK
+              title: "&#55ffff保存主场地模板"
+              lore:
+                - "&#a0a0a0用WorldEdit框选主场地，保存后生成其余副本"
             player-spawn:
               material: PLAYER_HEAD
               title: "&#55ffff玩家出生点"
@@ -2570,63 +2575,6 @@ spectator:
           material: BARRIER
           title: "&#ff5555关闭"
           lore: []
-    visibility:
-      title: "&#55ffff&l玩家显示设置"
-      size: 9
-      layout:
-        content:
-          - 2
-          - 4
-          - 6
-          - 8
-      items:
-        show-all:
-          slot: 2
-          material: LIME_DYE
-          title: "&#55ff55&l显示全部玩家"
-          lore:
-            - "&#a0a0a0清除筛选并显示场内所有玩家"
-        show-player:
-          slot: 4
-          material: PLAYER_HEAD
-          title: "&#ff55ff&l仅显示所选玩家"
-          lore:
-            - "&#a0a0a0选择一名玩家，隐藏其他玩家"
-        show-team:
-          slot: 6
-          material: WHITE_WOOL
-          title: "&#ffaa00&l仅显示所选队伍"
-          lore:
-            - "&#a0a0a0选择一支队伍，隐藏其他玩家"
-        close:
-          slot: 8
-          material: BARRIER
-          title: "&#ff5555关闭"
-          lore: []
-    player-visibility-selector:
-      title: "&#ff55ff&l选择要显示的玩家"
-      size: 9
-      layout:
-        content:
-          - 0
-          - 1
-          - 2
-          - 3
-          - 4
-          - 5
-          - 6
-          - 7
-      items:
-        player:
-          material: PLAYER_HEAD
-          title: "&#ededed%player%"
-          lore:
-            - "&#a0a0a0点击后仅显示该玩家"
-        close:
-          slot: 8
-          material: BARRIER
-          title: "&#ff5555关闭"
-          lore: []
     player-teleport-selector:
       title: "&#55ff55&l选择要前往的玩家"
       size: 54
@@ -2703,30 +2651,6 @@ spectator:
           material: ARROW
           title: "&#ededed下一页"
           lore: []
-    team-visibility-selector:
-      title: "&#ffaa00&l选择要显示的队伍"
-      size: 9
-      layout:
-        content:
-          - 0
-          - 1
-          - 2
-          - 3
-          - 4
-          - 5
-          - 6
-          - 7
-      items:
-        team:
-          material: WHITE_WOOL
-          title: "%team_color%&l%team%"
-          lore:
-            - "&#a0a0a0点击后仅显示该队伍成员"
-        close:
-          slot: 8
-          material: BARRIER
-          title: "&#ff5555关闭"
-          lore: []
   hotbar:
     participant-controls:
       slot: 8
@@ -2734,7 +2658,7 @@ spectator:
       title: "&#55ff55&l选择玩家"
       lore:
         - "&#a0a0a0右键：选择一名玩家并前往"
-        - "&#a0a0a0左键：玩家显示设置"
+        - "&#a0a0a0左键：选择一名玩家并前往"
       glint: true
     night-vision:
       slot: 0
@@ -2754,13 +2678,7 @@ spectator:
       material: COMPASS
       title: "&#55ff55&l选择玩家"
       lore:
-        - "&#a0a0a0右键选择一名参赛者并前往"
-    player-visibility:
-      slot: 4
-      material: GLASS
-      title: "&#ededed&l玩家显示设置"
-      lore:
-        - "&#a0a0a0点击选择全部、单名玩家或单支队伍"
+        - "&#a0a0a0右键选择一名玩家并前往"
     leave:
       slot: 5
       material: RED_DYE

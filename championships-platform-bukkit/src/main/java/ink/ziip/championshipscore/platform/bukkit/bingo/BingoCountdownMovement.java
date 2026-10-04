@@ -4,9 +4,11 @@ import org.bukkit.Location;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 
-/** Holds the starting column while allowing gravity to settle a scattered player onto the ground. */
+/**
+ * Holds the starting column while allowing gravity to settle a scattered player onto the ground.
+ */
 public final class BingoCountdownMovement {
-    private BingoCountdownMovement() { }
+    private BingoCountdownMovement() {}
 
     public static void constrain(PlayerMoveEvent event) {
         if (event instanceof PlayerTeleportEvent || event.getTo() == null) return;

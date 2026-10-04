@@ -1,11 +1,14 @@
 package ink.ziip.championshipscore.api.team;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.platform.bukkit.player.PlayerStateService;
 import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
 import ink.ziip.championshipscore.api.team.entry.TeamMemberEntry;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.platform.bukkit.player.PlayerStateService;
+import ink.ziip.championshipscore.platform.bukkit.scoreboard.TeamColors;
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+
 import lombok.Getter;
+
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -20,21 +23,20 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ChampionshipTeam {
     private final Set<UUID> members = ConcurrentHashMap.newKeySet();
     private final Map<UUID, String> memberNames = new ConcurrentHashMap<>();
-    @Getter
-    private int id;
-    @Getter
-    private String name;
-    @Getter
-    private String colorName;
-    @Getter
-    private String colorCode;
-    @Getter
-    private Team team;
+    @Getter private int id;
+    @Getter private String name;
+    @Getter private String colorName;
+    @Getter private String colorCode;
+    @Getter private Team team;
 
-    private ChampionshipTeam() {
-    }
+    private ChampionshipTeam() {}
 
-    protected ChampionshipTeam(int id, @NotNull String name, @NotNull String colorName, @NotNull String colorCode, Team team) {
+    protected ChampionshipTeam(
+            int id,
+            @NotNull String name,
+            @NotNull String colorName,
+            @NotNull String colorCode,
+            Team team) {
         this.id = id;
         this.name = name;
         this.colorName = colorName;
@@ -42,7 +44,13 @@ public class ChampionshipTeam {
         this.team = team;
     }
 
-    protected ChampionshipTeam(int id, @NotNull String name, @NotNull String colorName, @NotNull String colorCode, @NotNull Set<UUID> members, Team team) {
+    protected ChampionshipTeam(
+            int id,
+            @NotNull String name,
+            @NotNull String colorName,
+            @NotNull String colorCode,
+            @NotNull Set<UUID> members,
+            Team team) {
         this.id = id;
         this.name = name;
         this.colorName = colorName;
@@ -51,8 +59,13 @@ public class ChampionshipTeam {
         this.team = team;
     }
 
-    protected ChampionshipTeam(int id, @NotNull String name, @NotNull String colorName,
-                               @NotNull String colorCode, @NotNull Map<UUID, String> members, Team team) {
+    protected ChampionshipTeam(
+            int id,
+            @NotNull String name,
+            @NotNull String colorName,
+            @NotNull String colorCode,
+            @NotNull Map<UUID, String> members,
+            Team team) {
         this(id, name, colorName, colorCode, team);
         members.forEach(this::addMember);
     }
@@ -87,16 +100,19 @@ public class ChampionshipTeam {
     }
 
     public List<String> getTeamMemberNameList() {
-        return getTeamMemberEntries().stream()
-                .map(TeamMemberEntry::getUsername)
-                .toList();
+        return getTeamMemberEntries().stream().map(TeamMemberEntry::getUsername).toList();
     }
 
     /** Returns the authoritative persisted identity for every member, including offline players. */
     public List<TeamMemberEntry> getTeamMemberEntries() {
         return members.stream()
-                .map(uuid -> new TeamMemberEntry(0, uuid, memberNames.getOrDefault(uuid, "unknown"), id))
-                .sorted(Comparator.comparing(TeamMemberEntry::getUsername, String.CASE_INSENSITIVE_ORDER))
+                .map(
+                        uuid ->
+                                new TeamMemberEntry(
+                                        0, uuid, memberNames.getOrDefault(uuid, "unknown"), id))
+                .sorted(
+                        Comparator.comparing(
+                                TeamMemberEntry::getUsername, String.CASE_INSENSITIVE_ORDER))
                 .toList();
     }
 
@@ -138,7 +154,8 @@ public class ChampionshipTeam {
     public List<ChampionshipPlayer> getOnlineCCPlayers() {
         List<ChampionshipPlayer> list = new ArrayList<>();
         for (UUID uuid : members) {
-            ChampionshipPlayer championshipPlayer = ChampionshipsCore.getInstance().getPlayerManager().getPlayer(uuid);
+            ChampionshipPlayer championshipPlayer =
+                    ChampionshipsCore.getInstance().getPlayerManager().getPlayer(uuid);
             list.add(championshipPlayer);
         }
         return list;
@@ -177,14 +194,20 @@ public class ChampionshipTeam {
     public void setGameModeForAllPlayers(GameMode gameMode) {
         for (Player player : getOnlinePlayers()) {
             // Lifecycle transitions are already driven from the server thread. Applying the mode
-            // synchronously keeps it ordered with the inventory clear and teleport in the same phase.
+            // synchronously keeps it ordered with the inventory clear and teleport in the same
+            // phase.
             if (Bukkit.isPrimaryThread()) {
                 player.setGameMode(gameMode);
             } else {
                 ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-                championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
-                    if (player.isOnline()) player.setGameMode(gameMode);
-                });
+                championshipsCore
+                        .getServer()
+                        .getScheduler()
+                        .runTask(
+                                championshipsCore,
+                                () -> {
+                                    if (player.isOnline()) player.setGameMode(gameMode);
+                                });
             }
         }
     }
@@ -221,8 +244,7 @@ public class ChampionshipTeam {
 
     public ItemStack getWool() {
         Material woolMaterial = Material.getMaterial(colorName + "_WOOL");
-        if (woolMaterial == null)
-            return null;
+        if (woolMaterial == null) return null;
         ItemStack wool = new ItemStack(woolMaterial);
         wool.setAmount(64);
         return wool;
@@ -230,8 +252,7 @@ public class ChampionshipTeam {
 
     public ItemStack getConcrete() {
         Material concreteMaterial = Material.getMaterial(colorName + "_CONCRETE");
-        if (concreteMaterial == null)
-            return null;
+        if (concreteMaterial == null) return null;
         ItemStack concrete = new ItemStack(concreteMaterial);
         concrete.setAmount(64);
         return concrete;
@@ -244,10 +265,13 @@ public class ChampionshipTeam {
 
     @NotNull
     private ItemStack getItemStack(ItemStack item) {
-        ItemMeta itemMeta = item.hasItemMeta() ? item.getItemMeta() : Bukkit.getItemFactory().getItemMeta(item.getType());
+        ItemMeta itemMeta =
+                item.hasItemMeta()
+                        ? item.getItemMeta()
+                        : Bukkit.getItemFactory().getItemMeta(item.getType());
         LeatherArmorMeta leatherArmorMeta = (LeatherArmorMeta) itemMeta;
         if (leatherArmorMeta != null) {
-            leatherArmorMeta.setColor(Utils.hex2rgb(colorCode));
+            leatherArmorMeta.setColor(TeamColors.fromHex(colorCode));
             item.setItemMeta(leatherArmorMeta);
         }
         return item;
@@ -269,22 +293,19 @@ public class ChampionshipTeam {
     }
 
     public String getColoredName() {
-        return Utils.translateColorCodes(colorCode + name);
+        return LegacyText.translateColorCodes(colorCode + name);
     }
 
     @Override
     public boolean equals(Object o) {
-        if (o == this)
-            return true;
-        if (!(o instanceof ChampionshipTeam))
-            return false;
+        if (o == this) return true;
+        if (!(o instanceof ChampionshipTeam)) return false;
         ChampionshipTeam other = (ChampionshipTeam) o;
         // DAILY creates one transient team per match and intentionally reuses the visible colour
         // names (红队/绿队/...). Those runtime teams must not collide in GameManager's ownership
         // maps merely because they render with the same name. Persisted/formal teams retain the
         // historical name-based identity semantics.
-        if (this.id < 0 || other.id < 0)
-            return false;
+        if (this.id < 0 || other.id < 0) return false;
         return this.name.equals(other.name);
     }
 

@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.platform.bukkit.bingo;
 
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+
 import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
 import org.bukkit.inventory.ItemStack;
@@ -10,10 +11,10 @@ import java.util.Locale;
 
 /** Maps special name-tag interactions to their Bingo objective parameter. */
 public final class BingoNameTagObjective {
-    private static final PlainTextComponentSerializer PLAIN_TEXT = PlainTextComponentSerializer.plainText();
+    private static final PlainTextComponentSerializer PLAIN_TEXT =
+            PlainTextComponentSerializer.plainText();
 
-    private BingoNameTagObjective() {
-    }
+    private BingoNameTagObjective() {}
 
     public static String match(ItemStack item, EntityType target) {
         if (item == null || item.getType() != Material.NAME_TAG || !item.hasItemMeta()) return null;

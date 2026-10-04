@@ -8,8 +8,10 @@ public class TeamGameEndEvent extends ChampionshipsCoreEvent {
     private final ChampionshipTeam leftChampionshipTeam;
     private final BasePairedGameInstance gameInstance;
 
-    public TeamGameEndEvent(ChampionshipTeam rightChampionshipTeam, ChampionshipTeam leftChampionshipTeam,
-                            BasePairedGameInstance gameInstance) {
+    public TeamGameEndEvent(
+            ChampionshipTeam rightChampionshipTeam,
+            ChampionshipTeam leftChampionshipTeam,
+            BasePairedGameInstance gameInstance) {
         this.rightChampionshipTeam = rightChampionshipTeam;
         this.leftChampionshipTeam = leftChampionshipTeam;
         this.gameInstance = gameInstance;

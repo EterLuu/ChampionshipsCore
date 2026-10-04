@@ -1,7 +1,8 @@
 package ink.ziip.championshipscore.api.daily;
 
 /** Immutable queue and team-shaping rules for one daily-play adapter. */
-public record DailyRules(int minPlayers, int maxPlayers, int teamSize, int teams, int countdownSeconds) {
+public record DailyRules(
+        int minPlayers, int maxPlayers, int teamSize, int teams, int countdownSeconds) {
     public DailyRules {
         teamSize = Math.max(1, teamSize);
         teams = Math.max(1, teams);

@@ -22,22 +22,32 @@ public final class RedisChatTransport implements AutoCloseable {
     private final RedisStreamConsumer consumer;
     private final Consumer<CrossServerChatMessage> handler;
     private final Consumer<Throwable> errorHandler;
-    private final Map<UUID, Boolean> processed = java.util.Collections.synchronizedMap(
-            new LinkedHashMap<>(DEDUPLICATION_LIMIT, .75F, true) {
-                @Override protected boolean removeEldestEntry(Map.Entry<UUID, Boolean> eldest) {
-                    return size() > DEDUPLICATION_LIMIT;
-                }
-            });
+    private final Map<UUID, Boolean> processed =
+            java.util.Collections.synchronizedMap(
+                    new LinkedHashMap<>(DEDUPLICATION_LIMIT, .75F, true) {
+                        @Override
+                        protected boolean removeEldestEntry(Map.Entry<UUID, Boolean> eldest) {
+                            return size() > DEDUPLICATION_LIMIT;
+                        }
+                    });
 
-    public RedisChatTransport(RedisConnectionConfig config, RedisConsumerConfig consumerConfig,
-                              Consumer<CrossServerChatMessage> handler,
-                              Consumer<Throwable> errorHandler) {
+    public RedisChatTransport(
+            RedisConnectionConfig config,
+            RedisConsumerConfig consumerConfig,
+            Consumer<CrossServerChatMessage> handler,
+            Consumer<Throwable> errorHandler) {
         this.config = Objects.requireNonNull(config, "config");
         this.handler = Objects.requireNonNull(handler, "handler");
         this.errorHandler = Objects.requireNonNull(errorHandler, "errorHandler");
         this.publisher = new RedisStreamPublisher(config);
-        this.consumer = new RedisStreamConsumer(config, Objects.requireNonNull(consumerConfig, "consumerConfig"),
-                stream(config), "$", this::consume, this.errorHandler);
+        this.consumer =
+                new RedisStreamConsumer(
+                        config,
+                        Objects.requireNonNull(consumerConfig, "consumerConfig"),
+                        stream(config),
+                        "$",
+                        this::consume,
+                        this.errorHandler);
     }
 
     public CompletionStage<Void> start() {
@@ -54,7 +64,8 @@ public final class RedisChatTransport implements AutoCloseable {
     }
 
     private CompletionStage<DeliveryDisposition> consume(
-            ink.ziip.championshipscore.protocol.transport.InboundDelivery<Map<String, String>> delivery) {
+            ink.ziip.championshipscore.protocol.transport.InboundDelivery<Map<String, String>>
+                    delivery) {
         CrossServerChatMessage message;
         try {
             message = CrossServerChatMessage.parse(delivery.payload());
@@ -62,8 +73,10 @@ public final class RedisChatTransport implements AutoCloseable {
             return CompletableFuture.completedFuture(DeliveryDisposition.DEAD_LETTER);
         }
         long age = System.currentTimeMillis() - message.createdAt();
-        if (config.instanceId().equals(message.sourceInstance()) || age > MAX_MESSAGE_AGE_MILLIS
-                || age < -MAX_MESSAGE_AGE_MILLIS || processed.containsKey(message.messageId())) {
+        if (config.instanceId().equals(message.sourceInstance())
+                || age > MAX_MESSAGE_AGE_MILLIS
+                || age < -MAX_MESSAGE_AGE_MILLIS
+                || processed.containsKey(message.messageId())) {
             return CompletableFuture.completedFuture(DeliveryDisposition.ACK);
         }
         try {

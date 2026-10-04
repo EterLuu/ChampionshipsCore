@@ -1,8 +1,9 @@
 package ink.ziip.championshipscore.api.event;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.finale.FinaleGameRegistry;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -16,18 +17,20 @@ import java.util.Map;
 import java.util.logging.Level;
 
 public final class EventStateStore {
-    public record ActiveEvent(@NotNull String id, @NotNull String slug,
-                              @NotNull String title, boolean archived,
-                              @NotNull List<EventGame> games,
-                              @NotNull List<Double> roundMultipliers) {
+    public record ActiveEvent(
+            @NotNull String id,
+            @NotNull String slug,
+            @NotNull String title,
+            boolean archived,
+            @NotNull List<EventGame> games,
+            @NotNull List<Double> roundMultipliers) {
         public boolean allows(@NotNull GameTypeEnum game) {
             return games.stream().anyMatch(configured -> configured.type() == game);
         }
-
     }
 
-    public record EventGame(@NotNull GameTypeEnum type, @NotNull String variantKey, @NotNull String label) {
-    }
+    public record EventGame(
+            @NotNull GameTypeEnum type, @NotNull String variantKey, @NotNull String label) {}
 
     private final ChampionshipsCore plugin;
     private final File file;
@@ -68,18 +71,29 @@ public final class EventStateStore {
             Object rawKey = stored.get("key");
             Object rawLabel = stored.get("label");
             Object rawVariant = stored.get("variant-key");
-            if (!(rawKey instanceof String key) || !(rawLabel instanceof String label)
+            if (!(rawKey instanceof String key)
+                    || !(rawLabel instanceof String label)
                     || !(rawVariant instanceof String variantKey)) return null;
             GameTypeEnum type = GameTypeEnum.fromCommand(key);
             if (type == null || variantKey.isBlank()) return null;
             games.add(new EventGame(type, variantKey, label));
         }
         List<Double> roundMultipliers = yaml.getDoubleList("event.round-multipliers");
-        if (games.isEmpty() || roundMultipliers.size() != games.stream().filter(game -> !FinaleGameRegistry.isRegistered(game.type())).count()
-                || roundMultipliers.stream().anyMatch(value -> !Double.isFinite(value) || value < 0D || value > 100D))
+        if (games.isEmpty()
+                || roundMultipliers.size()
+                        != games.stream()
+                                .filter(game -> !FinaleGameRegistry.isRegistered(game.type()))
+                                .count()
+                || roundMultipliers.stream()
+                        .anyMatch(value -> !Double.isFinite(value) || value < 0D || value > 100D))
             return null;
-        return new ActiveEvent(id, slug, title, yaml.getBoolean("event.archived", false),
-                List.copyOf(games), List.copyOf(roundMultipliers));
+        return new ActiveEvent(
+                id,
+                slug,
+                title,
+                yaml.getBoolean("event.archived", false),
+                List.copyOf(games),
+                List.copyOf(roundMultipliers));
     }
 
     public synchronized boolean markArchived() {
@@ -91,7 +105,8 @@ public final class EventStateStore {
             yaml.save(file);
             return true;
         } catch (IOException failure) {
-            plugin.getLogger().log(Level.WARNING, "Unable to persist archived event state", failure);
+            plugin.getLogger()
+                    .log(Level.WARNING, "Unable to persist archived event state", failure);
             return false;
         }
     }

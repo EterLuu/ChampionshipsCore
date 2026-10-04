@@ -1,7 +1,7 @@
 package ink.ziip.championshipscore.api.schedule.bingo;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.schedule.BaseSingleGameSchedule;
 import ink.ziip.championshipscore.api.schedule.FormalEventMapResolver;
 
@@ -20,5 +20,4 @@ public class BingoScheduleManager extends BaseSingleGameSchedule {
     public int getTotalRounds() {
         return FormalEventMapResolver.maps(plugin, gameTypeEnum).size();
     }
-
 }

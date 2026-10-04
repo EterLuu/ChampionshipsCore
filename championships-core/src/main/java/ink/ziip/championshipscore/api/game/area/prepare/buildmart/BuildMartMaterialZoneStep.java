@@ -1,27 +1,37 @@
 package ink.ziip.championshipscore.api.game.area.prepare.buildmart;
 
-import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
-import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.BuildMartMaterialZoneGui;
-import ink.ziip.championshipscore.api.game.buildmart.BuildMartConfig;
+import ink.ziip.championshipscore.api.game.buildmart.config.BuildMartConfig;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 
-/** Repeated Build Mart resource-area editor: each WorldEdit cuboid retains its original block snapshot. */
+/**
+ * Repeated Build Mart resource-area editor: each WorldEdit cuboid retains its original block
+ * snapshot.
+ */
 public final class BuildMartMaterialZoneStep extends PrepareStep {
     public BuildMartMaterialZoneStep() {
-        super("material_zones", LegacyText.component(GuiConfig.text("map-editor.menus.step-list.items.material-zone.title")),
-                LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.build-mart.items.material-zone-step.lore", 0)), Material.CHEST, StepCaptureType.SELECT);
+        super(
+                "material_zones",
+                LegacyText.component(
+                        GuiConfig.text("map-editor.menus.step-list.items.material-zone.title")),
+                LegacyText.component(
+                        GuiConfig.line(
+                                "map-editor.menus.step-list.games.build-mart.items.material-zone-step.lore",
+                                0)),
+                Material.CHEST,
+                StepCaptureType.SELECT);
     }
 
     @Override
@@ -36,13 +46,16 @@ public final class BuildMartMaterialZoneStep extends PrepareStep {
         int count = config(session.getTarget()).getMaterialZones().size();
         return count == 0
                 ? GuiConfig.text("map-editor.menus.step-list.items.status.states.unset.title")
-                : GuiConfig.text("map-editor.menus.step-list.games.build-mart.items.material-zone-step.states.set.title",
+                : GuiConfig.text(
+                        "map-editor.menus.step-list.games.build-mart.items.material-zone-step.states.set.title",
                         Map.of("count", count));
     }
 
     @Override
-    public void openSelection(@NotNull PrepareSessionManager manager, @NotNull Player player,
-                              @NotNull PrepareSession session) {
+    public void openSelection(
+            @NotNull PrepareSessionManager manager,
+            @NotNull Player player,
+            @NotNull PrepareSession session) {
         BuildMartMaterialZoneGui.open(manager, player, session, this);
     }
 

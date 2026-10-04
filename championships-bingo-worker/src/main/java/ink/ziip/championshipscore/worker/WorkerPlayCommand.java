@@ -15,9 +15,14 @@ final class WorkerPlayCommand implements CommandExecutor {
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
-                             @NotNull String label, @NotNull String[] args) {
-        if (args.length >= 2 && args[0].equalsIgnoreCase("game") && args[1].equalsIgnoreCase("stop")) {
+    public boolean onCommand(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args) {
+        if (args.length >= 2
+                && args[0].equalsIgnoreCase("game")
+                && args[1].equalsIgnoreCase("stop")) {
             if (!sender.hasPermission("cc.admin")) {
                 registry.sendConfiguredMessage(sender, "worker.command.no-permission");
                 return true;
@@ -30,7 +35,9 @@ final class WorkerPlayCommand implements CommandExecutor {
             return true;
         }
         if (sender instanceof Player player
-                && args.length == 2 && args[0].equalsIgnoreCase("play") && args[1].equalsIgnoreCase("leave")) {
+                && args.length == 2
+                && args[0].equalsIgnoreCase("play")
+                && args[1].equalsIgnoreCase("leave")) {
             registry.requestVoluntaryLeave(player);
             return true;
         }

@@ -1,14 +1,14 @@
 package ink.ziip.championshipscore.api.game.area.prepare.step;
 
-import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.presentation.text.CoreMessages;
+
 import net.kyori.adventure.text.Component;
+
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
@@ -19,7 +19,8 @@ import java.util.function.Predicate;
 
 /**
  * Captures the player's current WorldEdit selection (pos1/pos2) into a pair of config fields, e.g.
- * {@code area-pos1}/{@code area-pos2}. Requires a selection; if none is made, returns a prompt to make one.
+ * {@code area-pos1}/{@code area-pos2}. Requires a selection; if none is made, returns a prompt to
+ * make one.
  */
 public class WeSelectionStep extends PrepareStep {
 
@@ -27,11 +28,14 @@ public class WeSelectionStep extends PrepareStep {
     private final BiConsumer<SetupTarget, Vector[]> setter; // [pos1, pos2]
     private final String doneMessage;
 
-    public WeSelectionStep(@NotNull String key, @NotNull Component name, @NotNull Component description,
-                           @NotNull Material icon,
-                           @NotNull Predicate<SetupTarget> setPredicate,
-                           @NotNull BiConsumer<SetupTarget, Vector[]> setter,
-                           @NotNull String doneMessage) {
+    public WeSelectionStep(
+            @NotNull String key,
+            @NotNull Component name,
+            @NotNull Component description,
+            @NotNull Material icon,
+            @NotNull Predicate<SetupTarget> setPredicate,
+            @NotNull BiConsumer<SetupTarget, Vector[]> setter,
+            @NotNull String doneMessage) {
         super(key, name, description, icon, StepCaptureType.WE_SELECTION);
         this.setPredicate = setPredicate;
         this.setter = setter;
@@ -49,7 +53,8 @@ public class WeSelectionStep extends PrepareStep {
         try {
             selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, true);
         } catch (Exception e) {
-            return Utils.formatAdminError(MessageConfig.MAP_EDITOR_STEP_SELECT_TWO_WORLDEDIT_ENDPOINTS);
+            return CoreMessages.formatAdminError(
+                    MessageConfig.MAP_EDITOR_STEP_SELECT_TWO_WORLDEDIT_ENDPOINTS);
         }
         setter.accept(session.getTarget(), selection);
         session.markDirty();

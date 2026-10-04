@@ -16,7 +16,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/** Chat reads an immutable snapshot; mutations become visible only after an atomic durable write. */
+/**
+ * Chat reads an immutable snapshot; mutations become visible only after an atomic durable write.
+ */
 public final class PublicChatMuteStore {
     private final Path file;
     private final Clock clock;
@@ -28,25 +30,37 @@ public final class PublicChatMuteStore {
     }
 
     public synchronized void load() throws IOException {
-        if (!Files.exists(file)) { entries = Map.of(); return; }
+        if (!Files.exists(file)) {
+            entries = Map.of();
+            return;
+        }
         var yaml = new YamlConfiguration();
-        try { yaml.load(file.toFile()); }
-        catch (InvalidConfigurationException error) { throw new IOException("Invalid mute file", error); }
+        try {
+            yaml.load(file.toFile());
+        } catch (InvalidConfigurationException error) {
+            throw new IOException("Invalid mute file", error);
+        }
         var loaded = new LinkedHashMap<UUID, PublicChatMute>();
         ConfigurationSection root = yaml.getConfigurationSection("mutes");
         if (yaml.contains("mutes") && root == null) throw new IOException("Invalid mutes section");
-        if (root != null) for (String key : root.getKeys(false)) {
-            try {
-                ConfigurationSection row = root.getConfigurationSection(key);
-                if (row == null) throw new IllegalArgumentException("invalid mute entry");
-                var mute = new PublicChatMute(UUID.fromString(key), row.getString("name"),
-                        row.getString("reason"), row.getString("actor"),
-                        number(row, "created-at"), number(row, "expires-at"));
-                if (mute.activeAt(clock.millis())) loaded.put(mute.playerId(), mute);
-            } catch (RuntimeException error) {
-                throw new IOException("Invalid mute entry: " + key, error);
+        if (root != null)
+            for (String key : root.getKeys(false)) {
+                try {
+                    ConfigurationSection row = root.getConfigurationSection(key);
+                    if (row == null) throw new IllegalArgumentException("invalid mute entry");
+                    var mute =
+                            new PublicChatMute(
+                                    UUID.fromString(key),
+                                    row.getString("name"),
+                                    row.getString("reason"),
+                                    row.getString("actor"),
+                                    number(row, "created-at"),
+                                    number(row, "expires-at"));
+                    if (mute.activeAt(clock.millis())) loaded.put(mute.playerId(), mute);
+                } catch (RuntimeException error) {
+                    throw new IOException("Invalid mute entry: " + key, error);
+                }
             }
-        }
         entries = Map.copyOf(loaded);
     }
 
@@ -60,8 +74,9 @@ public final class PublicChatMuteStore {
         return entries.values().stream().filter(mute -> mute.activeAt(now)).toList();
     }
 
-    public synchronized PublicChatMute mute(UUID playerId, String playerName, long durationMillis,
-                                            String reason, String actor) throws IOException {
+    public synchronized PublicChatMute mute(
+            UUID playerId, String playerName, long durationMillis, String reason, String actor)
+            throws IOException {
         if (durationMillis < 0) throw new IllegalArgumentException("negative duration");
         long now = clock.millis();
         long expiry = durationMillis == 0 ? 0 : Math.addExact(now, durationMillis);
@@ -89,27 +104,36 @@ public final class PublicChatMuteStore {
     private void persist(Map<UUID, PublicChatMute> changed) throws IOException {
         var yaml = new YamlConfiguration();
         yaml.createSection("mutes");
-        changed.forEach((id, mute) -> {
-            String path = "mutes." + id + ".";
-            yaml.set(path + "name", mute.playerName());
-            yaml.set(path + "reason", mute.reason());
-            yaml.set(path + "actor", mute.actor());
-            yaml.set(path + "created-at", mute.createdAt());
-            yaml.set(path + "expires-at", mute.expiresAt());
-        });
+        changed.forEach(
+                (id, mute) -> {
+                    String path = "mutes." + id + ".";
+                    yaml.set(path + "name", mute.playerName());
+                    yaml.set(path + "reason", mute.reason());
+                    yaml.set(path + "actor", mute.actor());
+                    yaml.set(path + "created-at", mute.createdAt());
+                    yaml.set(path + "expires-at", mute.expiresAt());
+                });
         Path parent = file.getParent();
         if (parent != null) Files.createDirectories(parent);
-        Path temporary = parent == null
-                ? Files.createTempFile(".mutes-", ".yml")
-                : Files.createTempFile(parent, ".mutes-", ".yml");
+        Path temporary =
+                parent == null
+                        ? Files.createTempFile(".mutes-", ".yml")
+                        : Files.createTempFile(parent, ".mutes-", ".yml");
         try {
             Files.writeString(temporary, yaml.saveToString(), StandardCharsets.UTF_8);
-            try { Files.move(temporary, file, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING); }
-            catch (AtomicMoveNotSupportedException ignored) {
+            try {
+                Files.move(
+                        temporary,
+                        file,
+                        StandardCopyOption.ATOMIC_MOVE,
+                        StandardCopyOption.REPLACE_EXISTING);
+            } catch (AtomicMoveNotSupportedException ignored) {
                 Files.move(temporary, file, StandardCopyOption.REPLACE_EXISTING);
             }
             entries = Map.copyOf(changed);
-        } finally { Files.deleteIfExists(temporary); }
+        } finally {
+            Files.deleteIfExists(temporary);
+        }
     }
 
     private static long number(ConfigurationSection row, String key) {

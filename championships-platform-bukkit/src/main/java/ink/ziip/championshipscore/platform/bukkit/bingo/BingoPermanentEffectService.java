@@ -13,12 +13,11 @@ import java.util.function.Consumer;
 
 /** Parser and self-healing applicator shared by local Core and Folia worker Bingo runtimes. */
 public final class BingoPermanentEffectService {
-    private BingoPermanentEffectService() {
-    }
+    private BingoPermanentEffectService() {}
 
     public static List<PotionEffect> parse(List<String> entries, Consumer<String> warning) {
         if (entries == null || entries.isEmpty()) return List.of();
-        Consumer<String> warnings = warning == null ? ignored -> { } : warning;
+        Consumer<String> warnings = warning == null ? ignored -> {} : warning;
         List<PotionEffect> result = new ArrayList<>();
         for (String raw : entries) {
             if (raw == null || raw.isBlank()) continue;
@@ -37,7 +36,9 @@ public final class BingoPermanentEffectService {
                 warnings.accept("Unknown permanent effect: " + raw);
                 continue;
             }
-            result.add(new PotionEffect(type, PotionEffect.INFINITE_DURATION, amplifier, false, true, true));
+            result.add(
+                    new PotionEffect(
+                            type, PotionEffect.INFINITE_DURATION, amplifier, false, true, true));
         }
         return List.copyOf(result);
     }

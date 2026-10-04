@@ -3,12 +3,13 @@ package ink.ziip.championshipscore.command.admin.world;
 import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
-import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
+import ink.ziip.championshipscore.api.game.model.GameStageEnum;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.presentation.text.CoreMessages;
 import ink.ziip.championshipscore.util.world.WorldManager;
+
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.command.Command;
@@ -29,12 +30,18 @@ public class WorldRenameSubCommand extends BaseSubCommand {
     private static final List<String> ENVIRONMENTS = List.of("normal", "nether", "the_end");
 
     public WorldRenameSubCommand() {
-        super("rename", "重命名世界并迁移关联地图配置", "/cc admin world rename <旧世界> <新世界> [normal|nether|the_end]");
+        super(
+                "rename",
+                "重命名世界并迁移关联地图配置",
+                "/cc admin world rename <旧世界> <新世界> [normal|nether|the_end]");
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
-                             @NotNull String label, @NotNull String[] args) {
+    public boolean onCommand(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args) {
         if (args.length < 2 || args.length > 3) {
             sendUsage(sender);
             return true;
@@ -43,61 +50,78 @@ public class WorldRenameSubCommand extends BaseSubCommand {
         String oldWorldName = args[0];
         String newWorldName = args[1];
         WorldManager worldManager = plugin.getWorldManager();
-        if (!WorldManager.isValidWorldName(oldWorldName) || !WorldManager.isValidWorldName(newWorldName)) {
-            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_INVALID_NAME);
+        if (!WorldManager.isValidWorldName(oldWorldName)
+                || !WorldManager.isValidWorldName(newWorldName)) {
+            CoreMessages.sendAdminError(sender, MessageConfig.ADMIN_WORLD_INVALID_NAME);
             return true;
         }
         if (oldWorldName.equalsIgnoreCase(newWorldName)) {
-            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_SAME_NAME);
+            CoreMessages.sendAdminError(sender, MessageConfig.ADMIN_WORLD_SAME_NAME);
             return true;
         }
-        if (Bukkit.getWorld(newWorldName) != null || worldManager.getWorldFolder(newWorldName).exists()) {
-            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_TARGET_EXISTS.replace("%world%", newWorldName));
+        if (Bukkit.getWorld(newWorldName) != null
+                || worldManager.getWorldFolder(newWorldName).exists()) {
+            CoreMessages.sendAdminError(
+                    sender,
+                    MessageConfig.ADMIN_WORLD_TARGET_EXISTS.replace("%world%", newWorldName));
             return true;
         }
 
         World oldWorld = Bukkit.getWorld(oldWorldName);
         File oldFolder = worldManager.getWorldFolder(oldWorldName);
         if (oldWorld == null && !oldFolder.isDirectory()) {
-            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_MISSING.replace("%world%", oldWorldName));
+            CoreMessages.sendAdminError(
+                    sender, MessageConfig.ADMIN_WORLD_MISSING.replace("%world%", oldWorldName));
             return true;
         }
         if ((oldWorld != null && worldManager.isMainWorld(oldWorld))
-                || oldWorldName.equals(worldManager.getMainWorld() == null ? "" : worldManager.getMainWorld().getName())) {
-            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_MAIN_PROTECTED_RENAME);
+                || oldWorldName.equals(
+                        worldManager.getMainWorld() == null
+                                ? ""
+                                : worldManager.getMainWorld().getName())) {
+            CoreMessages.sendAdminError(sender, MessageConfig.ADMIN_WORLD_MAIN_PROTECTED_RENAME);
             return true;
         }
         if (WorldManager.isBingoWorldName(oldWorldName)) {
-            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_BINGO_PROTECTED_RENAME);
+            CoreMessages.sendAdminError(sender, MessageConfig.ADMIN_WORLD_BINGO_PROTECTED_RENAME);
             return true;
         }
         if (plugin.getPrepareSessionManager().hasActiveSessions()) {
-            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_PREPARE_ACTIVE_RENAME);
+            CoreMessages.sendAdminError(sender, MessageConfig.ADMIN_WORLD_PREPARE_ACTIVE_RENAME);
             return true;
         }
 
-        World.Environment requestedEnvironment = args.length == 3 ? parseEnvironment(args[2]) : null;
+        World.Environment requestedEnvironment =
+                args.length == 3 ? parseEnvironment(args[2]) : null;
         if (args.length == 3 && requestedEnvironment == null) {
             sendUsage(sender);
             return true;
         }
         if (oldWorld == null) {
             if (requestedEnvironment == null) {
-                Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_ENVIRONMENT_REQUIRED);
+                CoreMessages.sendAdminError(sender, MessageConfig.ADMIN_WORLD_ENVIRONMENT_REQUIRED);
                 return true;
             }
             if (!worldManager.loadWorld(oldWorldName, requestedEnvironment, false)) {
-                Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_LOAD_FAILED.replace("%world%", oldWorldName));
+                CoreMessages.sendAdminError(
+                        sender,
+                        MessageConfig.ADMIN_WORLD_LOAD_FAILED.replace("%world%", oldWorldName));
                 return true;
             }
             oldWorld = Bukkit.getWorld(oldWorldName);
             if (oldWorld == null) {
-                Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_LOAD_FAILED_SIMPLE.replace("%world%", oldWorldName));
+                CoreMessages.sendAdminError(
+                        sender,
+                        MessageConfig.ADMIN_WORLD_LOAD_FAILED_SIMPLE.replace(
+                                "%world%", oldWorldName));
                 return true;
             }
-        } else if (requestedEnvironment != null && requestedEnvironment != oldWorld.getEnvironment()) {
-            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_ENVIRONMENT_MISMATCH
-                    .replace("%environment%", oldWorld.getEnvironment().name().toLowerCase()));
+        } else if (requestedEnvironment != null
+                && requestedEnvironment != oldWorld.getEnvironment()) {
+            CoreMessages.sendAdminError(
+                    sender,
+                    MessageConfig.ADMIN_WORLD_ENVIRONMENT_MISMATCH.replace(
+                            "%environment%", oldWorld.getEnvironment().name().toLowerCase()));
             return true;
         }
 
@@ -105,7 +129,7 @@ public class WorldRenameSubCommand extends BaseSubCommand {
         Set<BaseGameInstanceManager<?>> owners = new LinkedHashSet<>();
         String blockedBy = collectMapOwners(oldWorldName, mapConfigs, owners);
         if (blockedBy != null) {
-            Utils.sendAdminError(sender, blockedBy);
+            CoreMessages.sendAdminError(sender, blockedBy);
             return true;
         }
 
@@ -114,47 +138,78 @@ public class WorldRenameSubCommand extends BaseSubCommand {
         File oldTemplate = new File(new File(plugin.getDataFolder(), "maps"), oldWorldName);
         File newTemplate = new File(new File(plugin.getDataFolder(), "maps"), newWorldName);
         if (newTemplate.exists()) {
-            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_TEMPLATE_EXISTS.replace("%world%", newWorldName));
+            CoreMessages.sendAdminError(
+                    sender,
+                    MessageConfig.ADMIN_WORLD_TEMPLATE_EXISTS.replace("%world%", newWorldName));
             return true;
         }
         if (!worldManager.unloadWorld(oldWorldName, true)) {
-            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_UNLOAD_FAILED.replace("%world%", oldWorldName));
+            CoreMessages.sendAdminError(
+                    sender,
+                    MessageConfig.ADMIN_WORLD_UNLOAD_FAILED.replace("%world%", oldWorldName));
             return true;
         }
         if (!worldManager.renameWorldFiles(oldWorldName, newWorldName)) {
             worldManager.loadWorld(oldWorldName, environment, false);
-            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_DIRECTORY_RENAME_FAILED);
+            CoreMessages.sendAdminError(sender, MessageConfig.ADMIN_WORLD_DIRECTORY_RENAME_FAILED);
             return true;
         }
 
-        boolean templateMoved = !oldTemplate.isDirectory() || worldManager.moveDirectory(oldTemplate, newTemplate);
+        boolean templateMoved =
+                !oldTemplate.isDirectory() || worldManager.moveDirectory(oldTemplate, newTemplate);
         if (!templateMoved || !worldManager.loadWorld(newWorldName, environment, false)) {
-            rollbackFiles(worldManager, oldWorldName, newWorldName, environment, oldTemplate, newTemplate, templateMoved);
-            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_RENAME_FAILED);
+            rollbackFiles(
+                    worldManager,
+                    oldWorldName,
+                    newWorldName,
+                    environment,
+                    oldTemplate,
+                    newTemplate,
+                    templateMoved);
+            CoreMessages.sendAdminError(sender, MessageConfig.ADMIN_WORLD_RENAME_FAILED);
             return true;
         }
 
         World newWorld = Bukkit.getWorld(newWorldName);
-        List<BaseGameConfig> migratedConfigs = newWorld == null ? null
-                : updateMapConfigs(mapConfigs.keySet(), oldWorldName, oldWorld, newWorld);
+        List<BaseGameConfig> migratedConfigs =
+                newWorld == null
+                        ? null
+                        : updateMapConfigs(mapConfigs.keySet(), oldWorldName, oldWorld, newWorld);
         if (migratedConfigs == null) {
-            rollbackFiles(worldManager, oldWorldName, newWorldName, environment, oldTemplate, newTemplate, templateMoved);
+            rollbackFiles(
+                    worldManager,
+                    oldWorldName,
+                    newWorldName,
+                    environment,
+                    oldTemplate,
+                    newTemplate,
+                    templateMoved);
             rollbackMapConfigs(mapConfigs.keySet(), newWorldName, newWorld, oldWorldName);
-            Utils.sendAdminError(sender, MessageConfig.ADMIN_WORLD_CONFIG_MIGRATION_FAILED);
+            CoreMessages.sendAdminError(sender, MessageConfig.ADMIN_WORLD_CONFIG_MIGRATION_FAILED);
             return true;
         }
         owners.forEach(manager -> manager.renameManagedWorld(oldWorldName, newWorldName));
 
-        Utils.sendAdminSuccess(sender, MessageConfig.ADMIN_WORLD_RENAMED
-                .replace("%old%", oldWorldName)
-                .replace("%new%", newWorldName)
-                .replace("%moved%", movedPlayers == 0 ? "" : MessageConfig.ADMIN_WORLD_MOVED_PLAYERS.replace("%count%", String.valueOf(movedPlayers))));
+        CoreMessages.sendAdminSuccess(
+                sender,
+                MessageConfig.ADMIN_WORLD_RENAMED
+                        .replace("%old%", oldWorldName)
+                        .replace("%new%", newWorldName)
+                        .replace(
+                                "%moved%",
+                                movedPlayers == 0
+                                        ? ""
+                                        : MessageConfig.ADMIN_WORLD_MOVED_PLAYERS.replace(
+                                                "%count%", String.valueOf(movedPlayers))));
         return true;
     }
 
     @Override
-    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
-                                                @NotNull String label, @NotNull String[] args) {
+    public @Nullable List<String> onTabComplete(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args) {
         if (args.length == 1) {
             List<String> worlds = new ArrayList<>(plugin.getWorldManager().getStoredWorldNames());
             worlds.removeIf(this::isProtectedWorld);
@@ -164,10 +219,13 @@ public class WorldRenameSubCommand extends BaseSubCommand {
         return Collections.emptyList();
     }
 
-    private @Nullable String collectMapOwners(String worldName, Map<BaseGameConfig, Boolean> configs,
-                                              Set<BaseGameInstanceManager<?>> owners) {
+    private @Nullable String collectMapOwners(
+            String worldName,
+            Map<BaseGameConfig, Boolean> configs,
+            Set<BaseGameInstanceManager<?>> owners) {
         for (GameTypeEnum gameType : GameTypeEnum.values()) {
-            BaseGameInstanceManager<? extends BaseGameInstance> manager = plugin.getGameManager().getAreaManager(gameType);
+            BaseGameInstanceManager<? extends BaseGameInstance> manager =
+                    plugin.getGameManager().getAreaManager(gameType);
             if (manager == null) continue;
             for (BaseGameInstance instance : manager.getRuntimeInstances()) {
                 if (!worldName.equals(instance.getWorldName())) continue;
@@ -183,19 +241,18 @@ public class WorldRenameSubCommand extends BaseSubCommand {
         return null;
     }
 
-    private @Nullable List<BaseGameConfig> updateMapConfigs(Set<BaseGameConfig> configs, String oldWorldName,
-                                                            World oldWorld, World newWorld) {
+    private @Nullable List<BaseGameConfig> updateMapConfigs(
+            Set<BaseGameConfig> configs, String oldWorldName, World oldWorld, World newWorld) {
         List<BaseGameConfig> migrated = new ArrayList<>();
         for (BaseGameConfig config : configs) {
-            if (!config.renameWorldReferences(oldWorldName, oldWorld, newWorld))
-                return null;
+            if (!config.renameWorldReferences(oldWorldName, oldWorld, newWorld)) return null;
             migrated.add(config);
         }
         return migrated;
     }
 
-    private void rollbackMapConfigs(Set<BaseGameConfig> configs, String newWorldName,
-                                    World newWorld, String oldWorldName) {
+    private void rollbackMapConfigs(
+            Set<BaseGameConfig> configs, String newWorldName, World newWorld, String oldWorldName) {
         World restoredWorld = Bukkit.getWorld(oldWorldName);
         if (newWorld == null || restoredWorld == null) return;
         for (BaseGameConfig config : configs) {
@@ -204,11 +261,17 @@ public class WorldRenameSubCommand extends BaseSubCommand {
         }
     }
 
-    private void rollbackFiles(WorldManager worldManager, String oldWorldName, String newWorldName,
-                               World.Environment environment, File oldTemplate, File newTemplate,
-                               boolean templateMoved) {
+    private void rollbackFiles(
+            WorldManager worldManager,
+            String oldWorldName,
+            String newWorldName,
+            World.Environment environment,
+            File oldTemplate,
+            File newTemplate,
+            boolean templateMoved) {
         worldManager.unloadWorld(newWorldName, false);
-        if (templateMoved && newTemplate.isDirectory()) worldManager.moveDirectory(newTemplate, oldTemplate);
+        if (templateMoved && newTemplate.isDirectory())
+            worldManager.moveDirectory(newTemplate, oldTemplate);
         if (worldManager.getWorldFolder(newWorldName).isDirectory())
             worldManager.renameWorldFiles(newWorldName, oldWorldName);
         worldManager.loadWorld(oldWorldName, environment, false);

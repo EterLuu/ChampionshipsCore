@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.command.rank;
 
 import ink.ziip.championshipscore.command.BaseSubCommand;
+
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -16,22 +17,27 @@ public class RankRecapSubCommand extends BaseSubCommand {
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
-                             @NotNull String label, @NotNull String[] args) {
+    public boolean onCommand(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args) {
         if (args.length != 0) {
             sendUsage(sender);
             return true;
         }
         if (sender instanceof Player player)
             plugin.getRankManager().sendLatestRankingSummary(player);
-        else
-            sender.sendMessage(plugin.getRankManager().getTeamRankString());
+        else sender.sendMessage(plugin.getRankManager().getTeamRankString());
         return true;
     }
 
     @Override
-    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
-                                                 @NotNull String label, @NotNull String[] args) {
+    public @Nullable List<String> onTabComplete(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args) {
         return Collections.emptyList();
     }
 }

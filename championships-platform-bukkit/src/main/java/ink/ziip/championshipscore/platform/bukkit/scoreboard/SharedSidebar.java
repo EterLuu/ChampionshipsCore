@@ -1,7 +1,9 @@
 package ink.ziip.championshipscore.platform.bukkit.scoreboard;
 
 import fr.mrmicky.fastboard.adventure.FastBoard;
+
 import net.kyori.adventure.text.Component;
+
 import org.bukkit.entity.Player;
 
 import java.util.List;
@@ -14,9 +16,9 @@ import java.util.function.Consumer;
 /**
  * Component-native, packet-backed sidebar that never touches Bukkit's scoreboard API.
  *
- * <p>Folia deliberately disables that global API. Call {@link #show(Player)},
- * {@link #refresh(Player)} and {@link #hide(Player)} from the player's entity scheduler. Rendering
- * only replaces an immutable snapshot and is safe from a global coordinator thread.</p>
+ * <p>Folia deliberately disables that global API. Call {@link #show(Player)}, {@link
+ * #refresh(Player)} and {@link #hide(Player)} from the player's entity scheduler. Rendering only
+ * replaces an immutable snapshot and is safe from a global coordinator thread.
  */
 public final class SharedSidebar {
     private static final int MAX_LINES = 15;
@@ -28,7 +30,7 @@ public final class SharedSidebar {
     private volatile boolean disabled;
 
     public SharedSidebar(String objectiveName, Component title) {
-        this(objectiveName, title, ignored -> { });
+        this(objectiveName, title, ignored -> {});
     }
 
     public SharedSidebar(String objectiveName, Component title, Consumer<String> warning) {
@@ -55,7 +57,10 @@ public final class SharedSidebar {
         Viewer viewer = viewers.get(player.getUniqueId());
         if (viewer == null || viewer.player() != player) return;
         try {
-            update(viewer.board(), java.util.Objects.requireNonNull(title, "title"), normalize(requestedLines));
+            update(
+                    viewer.board(),
+                    java.util.Objects.requireNonNull(title, "title"),
+                    normalize(requestedLines));
         } catch (RuntimeException | LinkageError failure) {
             viewers.remove(player.getUniqueId(), viewer);
             disable(failure);
@@ -97,7 +102,10 @@ public final class SharedSidebar {
         if (viewer != null) delete(viewer.board());
     }
 
-    /** Deletes every client-side objective owned by this sidebar. Safe to call during plugin shutdown. */
+    /**
+     * Deletes every client-side objective owned by this sidebar. Safe to call during plugin
+     * shutdown.
+     */
     public void hideAll() {
         List<Viewer> snapshot = List.copyOf(viewers.values());
         viewers.clear();
@@ -120,7 +128,9 @@ public final class SharedSidebar {
 
     private static List<Component> normalize(List<Component> requestedLines) {
         List<Component> snapshot = List.copyOf(requestedLines);
-        return snapshot.size() <= MAX_LINES ? snapshot : List.copyOf(snapshot.subList(0, MAX_LINES));
+        return snapshot.size() <= MAX_LINES
+                ? snapshot
+                : List.copyOf(snapshot.subList(0, MAX_LINES));
     }
 
     private void delete(FastBoard board) {
@@ -139,11 +149,13 @@ public final class SharedSidebar {
 
     private void warn(Throwable failure) {
         if (warned.compareAndSet(false, true)) {
-            warning.accept("Packet sidebar disabled without affecting the match: "
-                    + failure.getClass().getSimpleName() + ": " + failure.getMessage());
+            warning.accept(
+                    "Packet sidebar disabled without affecting the match: "
+                            + failure.getClass().getSimpleName()
+                            + ": "
+                            + failure.getMessage());
         }
     }
 
-    private record Viewer(Player player, FastBoard board) {
-    }
+    private record Viewer(Player player, FastBoard board) {}
 }

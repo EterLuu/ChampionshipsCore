@@ -1,8 +1,9 @@
 package ink.ziip.championshipscore.api.game.buildmart.blueprint;
 
-import ink.ziip.championshipscore.api.game.buildmart.BuildMartMaterialIsland;
-import ink.ziip.championshipscore.api.game.buildmart.BuildMartMaterialManifest;
-import ink.ziip.championshipscore.api.game.buildmart.BuildMartCopperPolicy;
+import ink.ziip.championshipscore.api.game.buildmart.mechanics.BuildMartCopperPolicy;
+import ink.ziip.championshipscore.api.game.buildmart.runtime.BuildMartMaterialIsland;
+import ink.ziip.championshipscore.api.game.buildmart.runtime.BuildMartMaterialManifest;
+
 import org.bukkit.Material;
 import org.bukkit.block.data.BlockData;
 import org.jetbrains.annotations.NotNull;
@@ -20,29 +21,109 @@ import java.util.Set;
 
 /** Pure, reusable structural/difficulty/resource audit for one Build Mart blueprint. */
 public final class BuildMartBlueprintAuditor {
-    private static final Set<String> DIRECTION_KEYS = Set.of(
-            "axis", "face", "facing", "half", "hinge", "orientation", "rotation", "shape", "type");
-    private static final Set<String> COMPLEX_KEYS = Set.of(
-            "axis", "face", "facing", "half", "hinge", "orientation", "rotation", "shape", "type",
-            "attached", "hanging", "in_wall", "open", "part", "side_chain", "signal_fire", "waterlogged");
-    private static final List<String> WOODS = List.of("pale_oak", "dark_oak", "mangrove", "cherry",
-            "spruce", "birch", "jungle", "acacia", "oak", "bamboo", "crimson", "warped");
-    private static final List<String> STONE_BASES = List.of("polished_blackstone_bricks", "mossy_stone_bricks",
-            "mossy_cobblestone", "deepslate_bricks", "deepslate_tiles", "polished_deepslate",
-            "end_stone_bricks", "prismarine_bricks", "dark_prismarine", "smooth_red_sandstone",
-            "red_sandstone", "smooth_sandstone", "sandstone", "smooth_quartz", "quartz_block",
-            "polished_andesite", "polished_diorite", "polished_granite", "polished_tuff", "mud_bricks",
-            "nether_bricks", "stone_bricks", "blackstone", "cobblestone", "prismarine", "andesite",
-            "diorite", "granite", "deepslate", "tuff", "bricks", "stone", "purpur_block");
-    private static final List<String> COLORS = List.of("light_blue", "light_gray", "white", "orange",
-            "magenta", "yellow", "lime", "pink", "gray", "cyan", "purple", "blue", "brown",
-            "green", "red", "black");
+    private static final Set<String> DIRECTION_KEYS =
+            Set.of(
+                    "axis",
+                    "face",
+                    "facing",
+                    "half",
+                    "hinge",
+                    "orientation",
+                    "rotation",
+                    "shape",
+                    "type");
+    private static final Set<String> COMPLEX_KEYS =
+            Set.of(
+                    "axis",
+                    "face",
+                    "facing",
+                    "half",
+                    "hinge",
+                    "orientation",
+                    "rotation",
+                    "shape",
+                    "type",
+                    "attached",
+                    "hanging",
+                    "in_wall",
+                    "open",
+                    "part",
+                    "side_chain",
+                    "signal_fire",
+                    "waterlogged");
+    private static final List<String> WOODS =
+            List.of(
+                    "pale_oak",
+                    "dark_oak",
+                    "mangrove",
+                    "cherry",
+                    "spruce",
+                    "birch",
+                    "jungle",
+                    "acacia",
+                    "oak",
+                    "bamboo",
+                    "crimson",
+                    "warped");
+    private static final List<String> STONE_BASES =
+            List.of(
+                    "polished_blackstone_bricks",
+                    "mossy_stone_bricks",
+                    "mossy_cobblestone",
+                    "deepslate_bricks",
+                    "deepslate_tiles",
+                    "polished_deepslate",
+                    "end_stone_bricks",
+                    "prismarine_bricks",
+                    "dark_prismarine",
+                    "smooth_red_sandstone",
+                    "red_sandstone",
+                    "smooth_sandstone",
+                    "sandstone",
+                    "smooth_quartz",
+                    "quartz_block",
+                    "polished_andesite",
+                    "polished_diorite",
+                    "polished_granite",
+                    "polished_tuff",
+                    "mud_bricks",
+                    "nether_bricks",
+                    "stone_bricks",
+                    "blackstone",
+                    "cobblestone",
+                    "prismarine",
+                    "andesite",
+                    "diorite",
+                    "granite",
+                    "deepslate",
+                    "tuff",
+                    "bricks",
+                    "stone",
+                    "purpur_block");
+    private static final List<String> COLORS =
+            List.of(
+                    "light_blue",
+                    "light_gray",
+                    "white",
+                    "orange",
+                    "magenta",
+                    "yellow",
+                    "lime",
+                    "pink",
+                    "gray",
+                    "cyan",
+                    "purple",
+                    "blue",
+                    "brown",
+                    "green",
+                    "red",
+                    "black");
 
-    private BuildMartBlueprintAuditor() {
-    }
+    private BuildMartBlueprintAuditor() {}
 
-    public static @NotNull Audit audit(@NotNull BuildMartBlueprint blueprint,
-                                       @NotNull BuildMartMaterialManifest.AuditInventory inventory) {
+    public static @NotNull Audit audit(
+            @NotNull BuildMartBlueprint blueprint,
+            @NotNull BuildMartMaterialManifest.AuditInventory inventory) {
         List<BlueprintBlock> blocks = blueprint.getBlocks();
         Set<Position> positions = new HashSet<>();
         Set<Material> materials = new LinkedHashSet<>();
@@ -62,14 +143,23 @@ public final class BuildMartBlueprintAuditor {
             if (!disjoint(keys, DIRECTION_KEYS)) directional++;
             if (!disjoint(keys, COMPLEX_KEYS)) complex++;
             String material = key(block.getBlockData().getMaterial());
-            if (material.endsWith("_pane") || material.endsWith("_bars") || material.endsWith("_wall")) {
+            if (material.endsWith("_pane")
+                    || material.endsWith("_bars")
+                    || material.endsWith("_wall")) {
                 strictConnectable++;
             }
-            minX = Math.min(minX, block.getX()); maxX = Math.max(maxX, block.getX());
-            minY = Math.min(minY, block.getY()); maxY = Math.max(maxY, block.getY());
-            minZ = Math.min(minZ, block.getZ()); maxZ = Math.max(maxZ, block.getZ());
-            if (block.getX() < 0 || block.getX() > 6 || block.getY() < 0 || block.getY() > 6
-                    || block.getZ() < 0 || block.getZ() > 6) outOfBounds++;
+            minX = Math.min(minX, block.getX());
+            maxX = Math.max(maxX, block.getX());
+            minY = Math.min(minY, block.getY());
+            maxY = Math.max(maxY, block.getY());
+            minZ = Math.min(minZ, block.getZ());
+            maxZ = Math.max(maxZ, block.getZ());
+            if (block.getX() < 0
+                    || block.getX() > 6
+                    || block.getY() < 0
+                    || block.getY() > 6
+                    || block.getZ() < 0
+                    || block.getZ() > 6) outOfBounds++;
         }
 
         int sizeX = blocks.isEmpty() ? 0 : maxX - minX + 1;
@@ -102,11 +192,16 @@ public final class BuildMartBlueprintAuditor {
             }
         }
 
-        double raw = blocks.size() * 0.55
-                + Math.max(0, materials.size() - 1) * 2.0
-                + stateful * 0.12 + directional * 0.30 + complex * 0.18 + strictConnectable * 0.18
-                + Math.max(0, sizeY - 1) * 2.5 + Math.max(0, components - 1) * 1.5
-                + Math.max(0, islands.size() - 1) * 2.8;
+        double raw =
+                blocks.size() * 0.55
+                        + Math.max(0, materials.size() - 1) * 2.0
+                        + stateful * 0.12
+                        + directional * 0.30
+                        + complex * 0.18
+                        + strictConnectable * 0.18
+                        + Math.max(0, sizeY - 1) * 2.5
+                        + Math.max(0, components - 1) * 1.5
+                        + Math.max(0, islands.size() - 1) * 2.8;
         double score = Math.round(Math.min(100.0, raw * 100.0 / 115.0) * 10.0) / 10.0;
         int suggested = suggestedStars(score);
 
@@ -119,9 +214,28 @@ public final class BuildMartBlueprintAuditor {
         else if (!uncovered.isEmpty()) warnings.add("材料区不能完整覆盖");
         if (blueprint.getStars() != suggested) warnings.add("当前星级与建议星级不一致");
 
-        return new Audit(blueprint.getId(), blueprint.getDisplayName(), blueprint.getStars(), suggested, score,
-                blocks.size(), materials.size(), sizeX, sizeY, sizeZ, components, stateful, directional, complex,
-                strictConnectable, islands, direct, craftable, uncovered, inventory.available(), warnings);
+        return new Audit(
+                blueprint.getId(),
+                blueprint.getDisplayName(),
+                blueprint.getStars(),
+                suggested,
+                score,
+                blocks.size(),
+                materials.size(),
+                sizeX,
+                sizeY,
+                sizeZ,
+                components,
+                stateful,
+                directional,
+                complex,
+                strictConnectable,
+                islands,
+                direct,
+                craftable,
+                uncovered,
+                inventory.available(),
+                warnings);
     }
 
     public static int suggestedStars(double score) {
@@ -178,19 +292,24 @@ public final class BuildMartBlueprintAuditor {
         Set<Material> stone = stoneSources(name, available);
         if (stone != null) return stone;
 
-        if (name.endsWith("_stained_glass_pane")) return required(available, name.substring(0, name.length() - 5));
+        if (name.endsWith("_stained_glass_pane"))
+            return required(available, name.substring(0, name.length() - 5));
         if (name.equals("glass_pane")) return required(available, "glass");
-        if (name.endsWith("_carpet")) return required(available,
-                name.substring(0, name.length() - "_carpet".length()) + "_wool");
+        if (name.endsWith("_carpet"))
+            return required(
+                    available, name.substring(0, name.length() - "_carpet".length()) + "_wool");
         if (name.endsWith("_banner") || name.endsWith("_wall_banner") || name.endsWith("_bed")) {
-            for (String color : COLORS) if (name.startsWith(color + "_")) {
-                return required(available, color + "_wool", "oak_log");
-            }
+            for (String color : COLORS)
+                if (name.startsWith(color + "_")) {
+                    return required(available, color + "_wool", "oak_log");
+                }
         }
         Map<String, List<String>> fixed = fixedConversions();
-        if (fixed.containsKey(name)) return required(available, fixed.get(name).toArray(String[]::new));
+        if (fixed.containsKey(name))
+            return required(available, fixed.get(name).toArray(String[]::new));
         if (name.startsWith("potted_")) return required(available, "clay", name.substring(7));
-        if (name.contains("copper") || name.endsWith("lightning_rod")) return copperSources(name, available);
+        if (name.contains("copper") || name.endsWith("lightning_rod"))
+            return copperSources(name, available);
         if (name.equals("dirt_path")) return firstAvailable(available, "dirt", "grass_block");
         if (name.equals("carved_pumpkin")) return required(available, "pumpkin");
         if (name.equals("moss_carpet")) return required(available, "moss_block");
@@ -200,7 +319,10 @@ public final class BuildMartBlueprintAuditor {
         return null;
     }
 
-    /** Exact match-time copper conversions; oxidation over time is deliberately not considered obtainable. */
+    /**
+     * Exact match-time copper conversions; oxidation over time is deliberately not considered
+     * obtainable.
+     */
     static Set<Material> copperSources(String material, Set<Material> available) {
         Material exact = Material.matchMaterial(material);
         if (exact != null && available.contains(exact)) return Set.of(exact);
@@ -208,7 +330,8 @@ public final class BuildMartBlueprintAuditor {
             String unwaxed = material.substring("waxed_".length());
             String stage = copperStage(unwaxed);
             if (stage != null && isStonecutCopper(unwaxed, stage)) {
-                String waxedBase = stage.isEmpty() ? "waxed_copper_block" : "waxed_" + stage + "copper";
+                String waxedBase =
+                        stage.isEmpty() ? "waxed_copper_block" : "waxed_" + stage + "copper";
                 Set<Material> source = required(available, waxedBase);
                 if (source != null) return source;
             }
@@ -227,10 +350,14 @@ public final class BuildMartBlueprintAuditor {
             if (source != null) return source;
         }
 
-        // Only pristine forms have immediate crafting recipes from copper ingots. Exposed/weathered/
-        // oxidized special parts require real-time oxidation and are therefore not match-time conversions.
-        if (material.equals("copper_bars") || material.equals("copper_chain")
-                || material.equals("copper_trapdoor") || material.equals("copper_door")
+        // Only pristine forms have immediate crafting recipes from copper ingots.
+        // Exposed/weathered/
+        // oxidized special parts require real-time oxidation and are therefore not match-time
+        // conversions.
+        if (material.equals("copper_bars")
+                || material.equals("copper_chain")
+                || material.equals("copper_trapdoor")
+                || material.equals("copper_door")
                 || material.equals("lightning_rod")) {
             return required(available, "copper_block");
         }
@@ -243,57 +370,85 @@ public final class BuildMartBlueprintAuditor {
 
     /** "", "exposed_", "weathered_", "oxidized_", or null when this is not a copper family name. */
     private static String copperStage(String material) {
-        if (material.equals("copper_block") || material.startsWith("copper_")
-                || material.startsWith("cut_copper") || material.startsWith("chiseled_copper")) return "";
+        if (material.equals("copper_block")
+                || material.startsWith("copper_")
+                || material.startsWith("cut_copper")
+                || material.startsWith("chiseled_copper")) return "";
         for (String stage : List.of("exposed_", "weathered_", "oxidized_")) {
-            if (material.startsWith(stage + "copper") || material.startsWith(stage + "cut_copper")
+            if (material.startsWith(stage + "copper")
+                    || material.startsWith(stage + "cut_copper")
                     || material.startsWith(stage + "chiseled_copper")) return stage;
         }
         return null;
     }
 
-    /** Parts exposed by vanilla stonecutting from the same oxidation/wax stage's full copper block. */
+    /**
+     * Parts exposed by vanilla stonecutting from the same oxidation/wax stage's full copper block.
+     */
     private static boolean isStonecutCopper(String material, String stage) {
         String prefix = stage;
-        return material.equals(prefix + "cut_copper") || material.equals(prefix + "cut_copper_slab")
+        return material.equals(prefix + "cut_copper")
+                || material.equals(prefix + "cut_copper_slab")
                 || material.equals(prefix + "cut_copper_stairs")
-                || material.equals(prefix + "chiseled_copper") || material.equals(prefix + "copper_grate");
+                || material.equals(prefix + "chiseled_copper")
+                || material.equals(prefix + "copper_grate");
     }
 
     private static Set<Material> woodSources(String material, Set<Material> available) {
         for (String wood : WOODS) {
-            if (!material.startsWith(wood + "_") && !material.startsWith("stripped_" + wood + "_")) continue;
-            return wood.equals("bamboo") ? firstAvailable(available, "bamboo_block", "bamboo")
-                    : required(available, wood + (wood.equals("crimson") || wood.equals("warped") ? "_stem" : "_log"));
+            if (!material.startsWith(wood + "_") && !material.startsWith("stripped_" + wood + "_"))
+                continue;
+            return wood.equals("bamboo")
+                    ? firstAvailable(available, "bamboo_block", "bamboo")
+                    : required(
+                            available,
+                            wood
+                                    + (wood.equals("crimson") || wood.equals("warped")
+                                            ? "_stem"
+                                            : "_log"));
         }
         return null;
     }
 
     private static Set<Material> stoneSources(String material, Set<Material> available) {
-        Map<String, String> aliases = Map.ofEntries(
-                Map.entry("polished_blackstone", "blackstone"),
-                Map.entry("mossy_stone_brick", "stone_bricks"),
-                Map.entry("deepslate_brick", "deepslate"), Map.entry("deepslate_tile", "deepslate"),
-                Map.entry("end_stone_brick", "end_stone"), Map.entry("quartz", "quartz_block"),
-                Map.entry("purpur", "purpur_block"), Map.entry("mud_brick", "mud_bricks"),
-                Map.entry("nether_brick", "nether_bricks"), Map.entry("brick", "bricks"),
-                Map.entry("smooth_stone", "stone"));
+        Map<String, String> aliases =
+                Map.ofEntries(
+                        Map.entry("polished_blackstone", "blackstone"),
+                        Map.entry("mossy_stone_brick", "stone_bricks"),
+                        Map.entry("deepslate_brick", "deepslate"),
+                        Map.entry("deepslate_tile", "deepslate"),
+                        Map.entry("end_stone_brick", "end_stone"),
+                        Map.entry("quartz", "quartz_block"),
+                        Map.entry("purpur", "purpur_block"),
+                        Map.entry("mud_brick", "mud_bricks"),
+                        Map.entry("nether_brick", "nether_bricks"),
+                        Map.entry("brick", "bricks"),
+                        Map.entry("smooth_stone", "stone"));
         for (Map.Entry<String, String> alias : aliases.entrySet()) {
             if (material.equals(alias.getKey()) || material.startsWith(alias.getKey() + "_")) {
                 Set<Material> source = required(available, alias.getValue());
                 if (source != null) return source;
             }
         }
-        Map<String, String> fallback = Map.ofEntries(
-                Map.entry("stone", "cobblestone"),
-                Map.entry("smooth_quartz", "quartz_block"), Map.entry("smooth_red_sandstone", "red_sand"),
-                Map.entry("red_sandstone", "red_sand"), Map.entry("smooth_sandstone", "sand"),
-                Map.entry("sandstone", "sand"), Map.entry("polished_blackstone_bricks", "blackstone"),
-                Map.entry("mossy_cobblestone", "cobblestone"), Map.entry("mossy_stone_bricks", "stone_bricks"),
-                Map.entry("deepslate_bricks", "deepslate"), Map.entry("deepslate_tiles", "deepslate"),
-                Map.entry("polished_deepslate", "deepslate"), Map.entry("end_stone_bricks", "end_stone"),
-                Map.entry("polished_andesite", "andesite"), Map.entry("polished_diorite", "diorite"),
-                Map.entry("polished_granite", "granite"), Map.entry("polished_tuff", "tuff"));
+        Map<String, String> fallback =
+                Map.ofEntries(
+                        Map.entry("stone", "cobblestone"),
+                        Map.entry("smooth_quartz", "quartz_block"),
+                        Map.entry("smooth_red_sandstone", "red_sand"),
+                        Map.entry("red_sandstone", "red_sand"),
+                        Map.entry("smooth_sandstone", "sand"),
+                        Map.entry("sandstone", "sand"),
+                        Map.entry("polished_blackstone_bricks", "blackstone"),
+                        Map.entry("mossy_cobblestone", "cobblestone"),
+                        Map.entry("mossy_stone_bricks", "stone_bricks"),
+                        Map.entry("deepslate_bricks", "deepslate"),
+                        Map.entry("deepslate_tiles", "deepslate"),
+                        Map.entry("polished_deepslate", "deepslate"),
+                        Map.entry("end_stone_bricks", "end_stone"),
+                        Map.entry("polished_andesite", "andesite"),
+                        Map.entry("polished_diorite", "diorite"),
+                        Map.entry("polished_granite", "granite"),
+                        Map.entry("polished_tuff", "tuff"));
         for (String base : STONE_BASES) {
             if (!material.equals(base) && !material.startsWith(base + "_")) continue;
             Set<Material> direct = required(available, base);
@@ -306,9 +461,12 @@ public final class BuildMartBlueprintAuditor {
 
     private static Map<String, List<String>> fixedConversions() {
         Map<String, List<String>> values = new HashMap<>();
-        values.put("anvil", List.of("iron_block")); values.put("cauldron", List.of("iron_block"));
-        values.put("hopper", List.of("iron_block", "oak_log")); values.put("iron_bars", List.of("iron_block"));
-        values.put("iron_chain", List.of("iron_block")); values.put("iron_trapdoor", List.of("iron_block"));
+        values.put("anvil", List.of("iron_block"));
+        values.put("cauldron", List.of("iron_block"));
+        values.put("hopper", List.of("iron_block", "oak_log"));
+        values.put("iron_bars", List.of("iron_block"));
+        values.put("iron_chain", List.of("iron_block"));
+        values.put("iron_trapdoor", List.of("iron_block"));
         values.put("heavy_weighted_pressure_plate", List.of("iron_block"));
         values.put("light_weighted_pressure_plate", List.of("gold_block"));
         values.put("lantern", List.of("iron_block", "coal_block", "oak_log"));
@@ -322,15 +480,23 @@ public final class BuildMartBlueprintAuditor {
         values.put("jukebox", List.of("diamond_block", "oak_log"));
         values.put("target", List.of("redstone_block", "hay_block"));
         values.put("crafter", List.of("redstone_block", "iron_block", "stone", "oak_log"));
-        values.put("furnace", List.of("stone")); values.put("blast_furnace", List.of("stone", "iron_block"));
-        values.put("smoker", List.of("stone", "oak_log")); values.put("grindstone", List.of("stone", "oak_log"));
-        values.put("stonecutter", List.of("stone", "iron_block")); values.put("campfire", List.of("coal_block", "oak_log"));
-        values.put("barrel", List.of("oak_log")); values.put("chest", List.of("oak_log"));
-        values.put("crafting_table", List.of("oak_log")); values.put("composter", List.of("oak_log"));
-        values.put("ladder", List.of("oak_log")); values.put("flower_pot", List.of("clay"));
+        values.put("furnace", List.of("stone"));
+        values.put("blast_furnace", List.of("stone", "iron_block"));
+        values.put("smoker", List.of("stone", "oak_log"));
+        values.put("grindstone", List.of("stone", "oak_log"));
+        values.put("stonecutter", List.of("stone", "iron_block"));
+        values.put("campfire", List.of("coal_block", "oak_log"));
+        values.put("barrel", List.of("oak_log"));
+        values.put("chest", List.of("oak_log"));
+        values.put("crafting_table", List.of("oak_log"));
+        values.put("composter", List.of("oak_log"));
+        values.put("ladder", List.of("oak_log"));
+        values.put("flower_pot", List.of("clay"));
         values.put("decorated_pot", List.of("clay"));
         values.put("piston_head", List.of("stone", "oak_log", "iron_block", "redstone_block"));
-        values.put("sticky_piston", List.of("stone", "oak_log", "iron_block", "redstone_block", "slime_block"));
+        values.put(
+                "sticky_piston",
+                List.of("stone", "oak_log", "iron_block", "redstone_block", "slime_block"));
         return values;
     }
 
@@ -358,23 +524,47 @@ public final class BuildMartBlueprintAuditor {
 
     private record Position(int x, int y, int z) {
         List<Position> neighbours() {
-            return List.of(new Position(x + 1, y, z), new Position(x - 1, y, z),
-                    new Position(x, y + 1, z), new Position(x, y - 1, z),
-                    new Position(x, y, z + 1), new Position(x, y, z - 1));
+            return List.of(
+                    new Position(x + 1, y, z),
+                    new Position(x - 1, y, z),
+                    new Position(x, y + 1, z),
+                    new Position(x, y - 1, z),
+                    new Position(x, y, z + 1),
+                    new Position(x, y, z - 1));
         }
     }
 
-    public record Audit(@NotNull String id, @NotNull String name, int configuredStars, int suggestedStars,
-                        double score, int blocks, int uniqueMaterials, int sizeX, int sizeY, int sizeZ,
-                        int components, int statefulBlocks, int directionalBlocks, int complexStateBlocks,
-                        int strictConnectableBlocks, @NotNull Set<BuildMartMaterialIsland> materialIslands,
-                        int directMaterials, int craftableMaterials, @NotNull Set<Material> uncoveredMaterials,
-                        boolean coverageChecked, @NotNull List<String> warnings) {
+    public record Audit(
+            @NotNull String id,
+            @NotNull String name,
+            int configuredStars,
+            int suggestedStars,
+            double score,
+            int blocks,
+            int uniqueMaterials,
+            int sizeX,
+            int sizeY,
+            int sizeZ,
+            int components,
+            int statefulBlocks,
+            int directionalBlocks,
+            int complexStateBlocks,
+            int strictConnectableBlocks,
+            @NotNull Set<BuildMartMaterialIsland> materialIslands,
+            int directMaterials,
+            int craftableMaterials,
+            @NotNull Set<Material> uncoveredMaterials,
+            boolean coverageChecked,
+            @NotNull List<String> warnings) {
         public Audit {
-            materialIslands = materialIslands.stream().sorted(Comparator.comparing(Enum::ordinal))
-                    .collect(java.util.stream.Collectors.toUnmodifiableSet());
-            uncoveredMaterials = uncoveredMaterials.stream().sorted(Comparator.comparing(BuildMartBlueprintAuditor::key))
-                    .collect(java.util.stream.Collectors.toUnmodifiableSet());
+            materialIslands =
+                    materialIslands.stream()
+                            .sorted(Comparator.comparing(Enum::ordinal))
+                            .collect(java.util.stream.Collectors.toUnmodifiableSet());
+            uncoveredMaterials =
+                    uncoveredMaterials.stream()
+                            .sorted(Comparator.comparing(BuildMartBlueprintAuditor::key))
+                            .collect(java.util.stream.Collectors.toUnmodifiableSet());
             warnings = List.copyOf(warnings);
         }
 

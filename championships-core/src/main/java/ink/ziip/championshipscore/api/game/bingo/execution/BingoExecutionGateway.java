@@ -3,7 +3,7 @@ package ink.ziip.championshipscore.api.game.bingo.execution;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Pluggable Bingo execution boundary.  Commands and formal schedules use this same surface so the
+ * Pluggable Bingo execution boundary. Commands and formal schedules use this same surface so the
  * execution location does not leak into their lifecycle code.
  */
 public interface BingoExecutionGateway {

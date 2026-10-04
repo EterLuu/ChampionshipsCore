@@ -1,28 +1,28 @@
 package ink.ziip.championshipscore.api.game.area.prepare.gui;
 
-import ink.ziip.championshipscore.api.gui.MenuInventory;
-import ink.ziip.championshipscore.api.gui.MenuId;
-import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
-import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
-
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareModeInventory;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.AceRaceProgressPointListStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.AceRaceRespawnPointListStep;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.api.gui.MenuId;
+import ink.ziip.championshipscore.api.gui.MenuInventory;
+import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+import ink.ziip.championshipscore.presentation.text.CoreMessages;
+
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
@@ -44,8 +44,7 @@ public final class ListStepGui {
     private static final int ENTRY_BACK_SLOT = 49;
     private static final int NEXT_SLOT = 53;
 
-    private ListStepGui() {
-    }
+    private ListStepGui() {}
 
     public static final class Holder implements MenuInventory {
         final String stepKey;
@@ -96,31 +95,48 @@ public final class ListStepGui {
         }
     }
 
-    public static void open(@NotNull PrepareSessionManager manager, @NotNull Player player,
-                            @NotNull PrepareSession session, @NotNull PrepareStep step) {
+    public static void open(
+            @NotNull PrepareSessionManager manager,
+            @NotNull Player player,
+            @NotNull PrepareSession session,
+            @NotNull PrepareStep step) {
         Holder holder = new Holder(step.key());
-        Inventory inv = Bukkit.createInventory(holder, 9, GuiConfig.component(MENU_PATH + ".title",
-                java.util.Map.of("step", step.displayName())));
+        Inventory inv =
+                Bukkit.createInventory(
+                        holder,
+                        9,
+                        GuiConfig.component(
+                                MENU_PATH + ".title",
+                                java.util.Map.of("step", step.displayName())));
         holder.inventory = inv;
         refresh(inv, session, step);
         player.openInventory(inv);
     }
 
-    private static void refresh(@NotNull Inventory inv, @NotNull PrepareSession session, @NotNull PrepareStep step) {
+    private static void refresh(
+            @NotNull Inventory inv, @NotNull PrepareSession session, @NotNull PrepareStep step) {
         inv.setItem(ADD_SLOT, configured("add", null, java.util.Map.of()));
         inv.setItem(VIEW_SLOT, configured("view", null, java.util.Map.of()));
-        inv.setItem(INFO_SLOT, configured("info", step.isSet(session) ? "set" : "unset",
-                java.util.Map.of("count", step.listCount(session))));
+        inv.setItem(
+                INFO_SLOT,
+                configured(
+                        "info",
+                        step.isSet(session) ? "set" : "unset",
+                        java.util.Map.of("count", step.listCount(session))));
         inv.setItem(BACK_SLOT, configured("back", null, java.util.Map.of()));
     }
 
-    private static ItemStack configured(@NotNull String item, String state, @NotNull java.util.Map<String, ?> placeholders) {
-        return ConfiguredGui.item(MENU_PATH + ".items." + item, state, placeholders,
-                new ItemStack(Material.BARRIER));
+    private static ItemStack configured(
+            @NotNull String item, String state, @NotNull java.util.Map<String, ?> placeholders) {
+        return ConfiguredGui.item(
+                MENU_PATH + ".items." + item, state, placeholders, new ItemStack(Material.BARRIER));
     }
 
-    public static void handleClick(@NotNull PrepareSessionManager manager, @NotNull InventoryClickEvent event,
-                                   @NotNull Player player, @NotNull Holder holder) {
+    public static void handleClick(
+            @NotNull PrepareSessionManager manager,
+            @NotNull InventoryClickEvent event,
+            @NotNull Player player,
+            @NotNull Holder holder) {
         event.setCancelled(true);
         Inventory top = event.getView().getTopInventory();
         if (event.getClickedInventory() != top) return;
@@ -137,7 +153,10 @@ public final class ListStepGui {
         switch (event.getRawSlot()) {
             case ADD_SLOT -> {
                 if (!session.getFlow().isInCorrectWorld(player, session.getTarget())) {
-                    Utils.sendAdminError(player, MessageConfig.MAP_EDITOR_STEP_GO_TO_MAP_WORLD_FIRST.replace("%world%", session.getTarget().worldName()));
+                    CoreMessages.sendAdminError(
+                            player,
+                            MessageConfig.MAP_EDITOR_STEP_GO_TO_MAP_WORLD_FIRST.replace(
+                                    "%world%", session.getTarget().worldName()));
                     return;
                 }
                 String message = step.listAdd(session, player);
@@ -150,16 +169,20 @@ public final class ListStepGui {
                 player.closeInventory();
                 PrepareModeInventory.refresh(player, session);
             }
-            default -> {
-            }
+            default -> {}
         }
     }
 
-    private static void openEntries(@NotNull Player player, @NotNull PrepareSession session,
-                                    @NotNull PrepareStep step) {
+    private static void openEntries(
+            @NotNull Player player, @NotNull PrepareSession session, @NotNull PrepareStep step) {
         EntryHolder holder = new EntryHolder(session, step.key());
-        holder.inventory = Bukkit.createInventory(holder, 54, GuiConfig.component(MENU_PATH + ".title",
-                java.util.Map.of("step", step.displayName())));
+        holder.inventory =
+                Bukkit.createInventory(
+                        holder,
+                        54,
+                        GuiConfig.component(
+                                MENU_PATH + ".title",
+                                java.util.Map.of("step", step.displayName())));
         refreshEntries(holder, step);
         player.openInventory(holder.inventory);
     }
@@ -176,26 +199,45 @@ public final class ListStepGui {
             if (index < entries.size()) {
                 PrepareStep.ListEntry entry = entries.get(index);
                 List<Component> lore = new ArrayList<>();
-                for (String detail : entry.details()) lore.add(LegacyText.component(detail).colorIfAbsent(NamedTextColor.GRAY));
+                for (String detail : entry.details())
+                    lore.add(LegacyText.component(detail).colorIfAbsent(NamedTextColor.GRAY));
                 for (String line : GuiConfig.lines(MENU_PATH + ".items.entry.lore"))
                     lore.add(LegacyText.component(line));
-                inv.setItem(slot, item(Material.PAPER, LegacyText.component(entry.title()), NamedTextColor.WHITE, lore));
+                inv.setItem(
+                        slot,
+                        item(
+                                Material.PAPER,
+                                LegacyText.component(entry.title()),
+                                NamedTextColor.WHITE,
+                                lore));
             } else {
                 inv.setItem(slot, filler());
             }
         }
-        inv.setItem(PREVIOUS_SLOT, holder.page > 0
-                ? configured("previous", null, java.util.Map.of("page", holder.page, "pages", pageCount))
-                : filler());
+        inv.setItem(
+                PREVIOUS_SLOT,
+                holder.page > 0
+                        ? configured(
+                                "previous",
+                                null,
+                                java.util.Map.of("page", holder.page, "pages", pageCount))
+                        : filler());
         inv.setItem(ENTRY_BACK_SLOT, configured("entry-back", null, java.util.Map.of()));
-        inv.setItem(NEXT_SLOT, holder.page + 1 < pageCount
-                ? configured("next", null, java.util.Map.of("page", holder.page + 2, "pages", pageCount))
-                : filler());
+        inv.setItem(
+                NEXT_SLOT,
+                holder.page + 1 < pageCount
+                        ? configured(
+                                "next",
+                                null,
+                                java.util.Map.of("page", holder.page + 2, "pages", pageCount))
+                        : filler());
     }
 
-    public static void handleEntryClick(@NotNull PrepareSessionManager manager,
-                                        @NotNull InventoryClickEvent event, @NotNull Player player,
-                                        @NotNull EntryHolder holder) {
+    public static void handleEntryClick(
+            @NotNull PrepareSessionManager manager,
+            @NotNull InventoryClickEvent event,
+            @NotNull Player player,
+            @NotNull EntryHolder holder) {
         event.setCancelled(true);
         if (event.getClickedInventory() != event.getView().getTopInventory()) return;
         PrepareSession session = manager.getSession(player);
@@ -217,7 +259,11 @@ public final class ListStepGui {
             return;
         }
         if (slot == NEXT_SLOT) {
-            int pageCount = Math.max(1, (step.listEntries(session).size() + ENTRY_PAGE_SIZE - 1) / ENTRY_PAGE_SIZE);
+            int pageCount =
+                    Math.max(
+                            1,
+                            (step.listEntries(session).size() + ENTRY_PAGE_SIZE - 1)
+                                    / ENTRY_PAGE_SIZE);
             if (holder.page + 1 < pageCount) {
                 holder.page++;
                 refreshEntries(holder, step);
@@ -233,18 +279,35 @@ public final class ListStepGui {
         if (index < step.listEntries(session).size()) openEdit(player, session, step, index);
     }
 
-    public static void openEdit(@NotNull Player player, @NotNull PrepareSession session,
-                                @NotNull PrepareStep step, int index) {
+    public static void openEdit(
+            @NotNull Player player,
+            @NotNull PrepareSession session,
+            @NotNull PrepareStep step,
+            int index) {
         EditHolder holder = new EditHolder(session, step.key(), index);
-        holder.inventory = Bukkit.createInventory(holder, 9, GuiConfig.component(MENU_PATH + ".items.editor.title",
-                java.util.Map.of("number", index + 1)));
+        holder.inventory =
+                Bukkit.createInventory(
+                        holder,
+                        9,
+                        GuiConfig.component(
+                                MENU_PATH + ".items.editor.title",
+                                java.util.Map.of("number", index + 1)));
         holder.inventory.setItem(0, configured("order", null, java.util.Map.of()));
         if (step instanceof AceRaceRespawnPointListStep respawnStep) {
-            holder.inventory.setItem(2, configured("binding", "progress-line", java.util.Map.of(
-                    "binding", respawnStep.bindingText(session, index))));
+            holder.inventory.setItem(
+                    2,
+                    configured(
+                            "binding",
+                            "progress-line",
+                            java.util.Map.of("binding", respawnStep.bindingText(session, index))));
         } else if (step instanceof AceRaceProgressPointListStep progressPointStep) {
-            holder.inventory.setItem(2, configured("binding", "equipment", java.util.Map.of(
-                    "equipment", progressPointStep.equipmentText(session, index))));
+            holder.inventory.setItem(
+                    2,
+                    configured(
+                            "binding",
+                            "equipment",
+                            java.util.Map.of(
+                                    "equipment", progressPointStep.equipmentText(session, index))));
         }
         holder.inventory.setItem(4, configured("actual", null, java.util.Map.of()));
         holder.inventory.setItem(6, configured("delete", null, java.util.Map.of()));
@@ -252,9 +315,11 @@ public final class ListStepGui {
         player.openInventory(holder.inventory);
     }
 
-    public static void handleEditClick(@NotNull PrepareSessionManager manager,
-                                       @NotNull InventoryClickEvent event, @NotNull Player player,
-                                       @NotNull EditHolder holder) {
+    public static void handleEditClick(
+            @NotNull PrepareSessionManager manager,
+            @NotNull InventoryClickEvent event,
+            @NotNull Player player,
+            @NotNull EditHolder holder) {
         event.setCancelled(true);
         if (event.getClickedInventory() != event.getView().getTopInventory()) return;
         PrepareSession session = manager.getSession(player);
@@ -268,11 +333,17 @@ public final class ListStepGui {
             return;
         }
         switch (event.getRawSlot()) {
-            case 0 -> AnvilInputGui.openInteger(player, GuiConfig.text(MENU_PATH + ".items.order.title"), holder.index + 1, value -> {
-                String message = step.listSetOrder(session, player, holder.index, value);
-                if (message != null) player.sendMessage(message);
-                openEntries(player, session, step);
-            });
+            case 0 ->
+                    AnvilInputGui.openInteger(
+                            player,
+                            GuiConfig.text(MENU_PATH + ".items.order.title"),
+                            holder.index + 1,
+                            value -> {
+                                String message =
+                                        step.listSetOrder(session, player, holder.index, value);
+                                if (message != null) player.sendMessage(message);
+                                openEntries(player, session, step);
+                            });
             case 2 -> {
                 if (step instanceof AceRaceRespawnPointListStep)
                     AceRaceRespawnPointBindingGui.open(manager, player, session, holder.index);
@@ -281,12 +352,16 @@ public final class ListStepGui {
             }
             case 4 -> {
                 if (!session.getFlow().isInCorrectWorld(player, session.getTarget())) {
-                    Utils.sendAdminError(player, MessageConfig.MAP_EDITOR_STEP_GO_TO_MAP_WORLD_FIRST.replace("%world%", session.getTarget().worldName()));
+                    CoreMessages.sendAdminError(
+                            player,
+                            MessageConfig.MAP_EDITOR_STEP_GO_TO_MAP_WORLD_FIRST.replace(
+                                    "%world%", session.getTarget().worldName()));
                     return;
                 }
                 String message = step.listEdit(session, player, holder.index);
                 if (message != null) player.sendMessage(message);
-                if (!step.listEditHandlesNavigation()) openEdit(player, session, step, holder.index);
+                if (!step.listEditHandlesNavigation())
+                    openEdit(player, session, step, holder.index);
             }
             case 6 -> {
                 String message = step.listRemove(session, player, holder.index);
@@ -294,22 +369,39 @@ public final class ListStepGui {
                 openEntries(player, session, step);
             }
             case 8 -> openEntries(player, session, step);
-            default -> {
-            }
+            default -> {}
         }
     }
 
-    private static ItemStack item(@NotNull Material mat, @NotNull Component name,
-                                  @NotNull NamedTextColor color, @NotNull List<Component> lore) {
+    private static ItemStack item(
+            @NotNull Material mat,
+            @NotNull Component name,
+            @NotNull NamedTextColor color,
+            @NotNull List<Component> lore) {
         ItemStack stack = new ItemStack(mat);
-        stack.editMeta(meta -> {
-            meta.displayName(name.colorIfAbsent(color).decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
-            meta.lore(lore.stream().map(c -> c.decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE)).toList());
-        });
+        stack.editMeta(
+                meta -> {
+                    meta.displayName(
+                            name.colorIfAbsent(color)
+                                    .decorationIfAbsent(
+                                            TextDecoration.ITALIC, TextDecoration.State.FALSE));
+                    meta.lore(
+                            lore.stream()
+                                    .map(
+                                            c ->
+                                                    c.decorationIfAbsent(
+                                                            TextDecoration.ITALIC,
+                                                            TextDecoration.State.FALSE))
+                                    .toList());
+                });
         return stack;
     }
 
     private static ItemStack filler() {
-        return item(Material.GRAY_STAINED_GLASS_PANE, Component.text(" "), NamedTextColor.DARK_GRAY, List.of());
+        return item(
+                Material.GRAY_STAINED_GLASS_PANE,
+                Component.text(" "),
+                NamedTextColor.DARK_GRAY,
+                List.of());
     }
 }

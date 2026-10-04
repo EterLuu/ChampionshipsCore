@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.platform.bukkit.world;
 
 import ink.ziip.championshipscore.platform.bukkit.scheduler.PlatformScheduler;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -15,23 +16,32 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 /**
- * Finds safe scatter locations without synchronously loading chunks. Block inspection is executed by
- * the owning region and player mutations by each player's entity scheduler, on both Paper and Folia.
+ * Finds safe scatter locations without synchronously loading chunks. Block inspection is executed
+ * by the owning region and player mutations by each player's entity scheduler, on both Paper and
+ * Folia.
  */
 public final class SafeScatterService {
     private static final int MAX_CONCURRENT_SEARCHES = 4;
     private static final int MIN_RING_RADIUS = 8;
     private static final double MIN_PLAYER_DISTANCE_SQ = 24 * 24;
-    private static final Set<Biome> WATER_BIOMES = Set.of(
-            Biome.OCEAN, Biome.DEEP_OCEAN, Biome.WARM_OCEAN, Biome.LUKEWARM_OCEAN,
-            Biome.DEEP_LUKEWARM_OCEAN, Biome.COLD_OCEAN, Biome.DEEP_COLD_OCEAN,
-            Biome.FROZEN_OCEAN, Biome.DEEP_FROZEN_OCEAN, Biome.RIVER, Biome.FROZEN_RIVER
-    );
+    private static final Set<Biome> WATER_BIOMES =
+            Set.of(
+                    Biome.OCEAN,
+                    Biome.DEEP_OCEAN,
+                    Biome.WARM_OCEAN,
+                    Biome.LUKEWARM_OCEAN,
+                    Biome.DEEP_LUKEWARM_OCEAN,
+                    Biome.COLD_OCEAN,
+                    Biome.DEEP_COLD_OCEAN,
+                    Biome.FROZEN_OCEAN,
+                    Biome.DEEP_FROZEN_OCEAN,
+                    Biome.RIVER,
+                    Biome.FROZEN_RIVER);
 
     private final PlatformScheduler scheduler;
     private final java.util.logging.Logger logger;
@@ -47,29 +57,50 @@ public final class SafeScatterService {
         cancelled = true;
     }
 
-    /** Finds a safe column within inclusive bounds, without falling back to the shared world spawn. */
+    /**
+     * Finds a safe column within inclusive bounds, without falling back to the shared world spawn.
+     */
     public CompletableFuture<Location> findSafeLocationAsync(
             World world, int minX, int maxX, int minZ, int maxZ, int maxTries) {
         if (world == null || minX > maxX || minZ > maxZ) {
-            return CompletableFuture.failedFuture(new IllegalArgumentException("Invalid scatter search bounds"));
+            return CompletableFuture.failedFuture(
+                    new IllegalArgumentException("Invalid scatter search bounds"));
         }
         return findBoundedSpotAsync(world, minX, maxX, minZ, maxZ, Math.max(8, maxTries));
     }
 
     private CompletableFuture<Location> findBoundedSpotAsync(
             World world, int minX, int maxX, int minZ, int maxZ, int triesLeft) {
-        if (cancelled) return CompletableFuture.failedFuture(new java.util.concurrent.CancellationException());
-        if (triesLeft <= 0) return CompletableFuture.failedFuture(
-                new IllegalStateException("No safe Bingo location within [" + minX + "," + maxX
-                        + "] x [" + minZ + "," + maxZ + "] in " + world.getName()));
+        if (cancelled)
+            return CompletableFuture.failedFuture(new java.util.concurrent.CancellationException());
+        if (triesLeft <= 0)
+            return CompletableFuture.failedFuture(
+                    new IllegalStateException(
+                            "No safe Bingo location within ["
+                                    + minX
+                                    + ","
+                                    + maxX
+                                    + "] x ["
+                                    + minZ
+                                    + ","
+                                    + maxZ
+                                    + "] in "
+                                    + world.getName()));
         Random random = ThreadLocalRandom.current();
         int x = random.nextInt(minX, maxX + 1);
         int z = random.nextInt(minZ, maxZ + 1);
         Location region = new Location(world, x, 0, z);
         return world.getChunkAtAsync(region)
-                .thenCompose(chunk -> scheduler.supplyAt(region, () -> cancelled ? null : toTopSafe(world, x, z)))
-                .thenCompose(location -> location != null ? CompletableFuture.completedFuture(location)
-                        : findBoundedSpotAsync(world, minX, maxX, minZ, maxZ, triesLeft - 1));
+                .thenCompose(
+                        chunk ->
+                                scheduler.supplyAt(
+                                        region, () -> cancelled ? null : toTopSafe(world, x, z)))
+                .thenCompose(
+                        location ->
+                                location != null
+                                        ? CompletableFuture.completedFuture(location)
+                                        : findBoundedSpotAsync(
+                                                world, minX, maxX, minZ, maxZ, triesLeft - 1));
     }
 
     public void performScatterAsync(
@@ -78,7 +109,12 @@ public final class SafeScatterService {
     }
 
     public void performScatterAsync(
-            World world, List<Player> players, int radius, int jitter, int maxTries, Runnable onComplete) {
+            World world,
+            List<Player> players,
+            int radius,
+            int jitter,
+            int maxTries,
+            Runnable onComplete) {
         if (cancelled) return;
         if (world == null || players.isEmpty()) {
             if (onComplete != null) onComplete.run();
@@ -87,29 +123,68 @@ public final class SafeScatterService {
         int discRadius = Math.max(1, radius);
         int radialJitter = Math.max(0, jitter);
         int tries = Math.max(8, maxTries);
-        logger.info("Bingo scatter: world=" + world.getName() + ", players=" + players.size()
-                + ", radius=" + discRadius + ", jitter=" + radialJitter + ", maxTries=" + tries);
+        logger.info(
+                "Bingo scatter: world="
+                        + world.getName()
+                        + ", players="
+                        + players.size()
+                        + ", radius="
+                        + discRadius
+                        + ", jitter="
+                        + radialJitter
+                        + ", maxTries="
+                        + tries);
         List<Player> playerSnapshot = List.copyOf(players);
-        scheduler.supplyGlobal(() -> world.getSpawnLocation().clone()).thenAccept(spawn ->
-                processPlayersAsync(world, spawn, playerSnapshot.size(), discRadius, radialJitter, tries, locations -> {
-                    if (cancelled) return;
-                    List<CompletableFuture<Void>> teleports = new ArrayList<>();
-                    for (int i = 0; i < playerSnapshot.size(); i++) {
-                        Location target = i < locations.size() ? locations.get(i) : spawn;
-                        teleports.add(teleportReset(playerSnapshot.get(i), target));
-                    }
-                    CompletableFuture.allOf(teleports.toArray(CompletableFuture[]::new))
-                            .whenComplete((ignored, error) -> {
-                                if (!cancelled && onComplete != null) scheduler.runAt(spawn, () -> {
-                                    if (!cancelled) onComplete.run();
-                                });
-                            });
-                }));
+        scheduler
+                .supplyGlobal(() -> world.getSpawnLocation().clone())
+                .thenAccept(
+                        spawn ->
+                                processPlayersAsync(
+                                        world,
+                                        spawn,
+                                        playerSnapshot.size(),
+                                        discRadius,
+                                        radialJitter,
+                                        tries,
+                                        locations -> {
+                                            if (cancelled) return;
+                                            List<CompletableFuture<Void>> teleports =
+                                                    new ArrayList<>();
+                                            for (int i = 0; i < playerSnapshot.size(); i++) {
+                                                Location target =
+                                                        i < locations.size()
+                                                                ? locations.get(i)
+                                                                : spawn;
+                                                teleports.add(
+                                                        teleportReset(
+                                                                playerSnapshot.get(i), target));
+                                            }
+                                            CompletableFuture.allOf(
+                                                            teleports.toArray(
+                                                                    CompletableFuture[]::new))
+                                                    .whenComplete(
+                                                            (ignored, error) -> {
+                                                                if (!cancelled
+                                                                        && onComplete != null)
+                                                                    scheduler.runAt(
+                                                                            spawn,
+                                                                            () -> {
+                                                                                if (!cancelled)
+                                                                                    onComplete
+                                                                                            .run();
+                                                                            });
+                                                            });
+                                        }));
     }
 
-    private void processPlayersAsync(World world, Location spawn, int playerCount,
-                                     int radius, int jitter, int tries,
-                                     Consumer<List<Location>> onAllDone) {
+    private void processPlayersAsync(
+            World world,
+            Location spawn,
+            int playerCount,
+            int radius,
+            int jitter,
+            int tries,
+            Consumer<List<Location>> onAllDone) {
         if (playerCount == 0) {
             onAllDone.accept(List.of());
             return;
@@ -120,82 +195,139 @@ public final class SafeScatterService {
         List<Location> taken = Collections.synchronizedList(new ArrayList<>());
         int workers = Math.min(MAX_CONCURRENT_SEARCHES, playerCount);
         for (int worker = 0; worker < workers; worker++) {
-            findNextSpotAsync(world, spawn, locations, taken, nextIndex, remaining, radius, jitter, tries, onAllDone);
+            findNextSpotAsync(
+                    world, spawn, locations, taken, nextIndex, remaining, radius, jitter, tries,
+                    onAllDone);
         }
     }
 
-    private void findNextSpotAsync(World world, Location spawn, Location[] locations,
-                                   List<Location> taken,
-                                   AtomicInteger nextIndex, AtomicInteger remaining,
-                                   int radius, int jitter, int tries, Consumer<List<Location>> onAllDone) {
+    private void findNextSpotAsync(
+            World world,
+            Location spawn,
+            Location[] locations,
+            List<Location> taken,
+            AtomicInteger nextIndex,
+            AtomicInteger remaining,
+            int radius,
+            int jitter,
+            int tries,
+            Consumer<List<Location>> onAllDone) {
         int index = nextIndex.getAndIncrement();
         if (index >= locations.length) return;
-        Consumer<Location> onLocation = location -> {
-            locations[index] = location;
-            if (remaining.decrementAndGet() == 0) {
-                onAllDone.accept(List.of(locations));
-                return;
-            }
-            findNextSpotAsync(world, spawn, locations, taken, nextIndex, remaining, radius, jitter, tries, onAllDone);
-        };
-        if (jitter > 0) findReservedSpotAsync(world, spawn, taken, radius, jitter, tries, onLocation);
+        Consumer<Location> onLocation =
+                location -> {
+                    locations[index] = location;
+                    if (remaining.decrementAndGet() == 0) {
+                        onAllDone.accept(List.of(locations));
+                        return;
+                    }
+                    findNextSpotAsync(
+                            world, spawn, locations, taken, nextIndex, remaining, radius, jitter,
+                            tries, onAllDone);
+                };
+        if (jitter > 0)
+            findReservedSpotAsync(world, spawn, taken, radius, jitter, tries, onLocation);
         else findSingleSpotAsync(world, spawn, taken, radius, jitter, tries, onLocation);
     }
 
-    private void findSingleSpotAsync(World world, Location spawn, List<Location> taken,
-                                     int radius, int jitter, int triesLeft,
-                                     Consumer<Location> callback) {
+    private void findSingleSpotAsync(
+            World world,
+            Location spawn,
+            List<Location> taken,
+            int radius,
+            int jitter,
+            int triesLeft,
+            Consumer<Location> callback) {
         if (cancelled) return;
         if (triesLeft <= 0) {
-            logger.warning("Bingo scatter exhausted safe-location attempts; using spawn fallback in " + world.getName());
+            logger.warning(
+                    "Bingo scatter exhausted safe-location attempts; using spawn fallback in "
+                            + world.getName());
             world.getChunkAtAsync(spawn)
-                    .thenCompose(chunk -> scheduler.supplyAt(spawn, () -> fallbackWorldSpawn(world, spawn)))
-                    .whenComplete((location, error) -> {
-                        if (error == null) callback.accept(location);
-                        else callback.accept(spawn.clone().add(0.5, 1.0, 0.5));
-                    });
+                    .thenCompose(
+                            chunk ->
+                                    scheduler.supplyAt(
+                                            spawn, () -> fallbackWorldSpawn(world, spawn)))
+                    .whenComplete(
+                            (location, error) -> {
+                                if (error == null) callback.accept(location);
+                                else callback.accept(spawn.clone().add(0.5, 1.0, 0.5));
+                            });
             return;
         }
 
         Random random = ThreadLocalRandom.current();
         double angle = random.nextDouble() * Math.PI * 2.0;
-        double distance = jitter == 0
-                ? radius * Math.sqrt(random.nextDouble())
-                : Math.max(MIN_RING_RADIUS, radius + random.nextInt(-jitter, jitter + 1));
+        double distance =
+                jitter == 0
+                        ? radius * Math.sqrt(random.nextDouble())
+                        : Math.max(MIN_RING_RADIUS, radius + random.nextInt(-jitter, jitter + 1));
         int x = spawn.getBlockX() + (int) Math.round(Math.cos(angle) * distance);
         int z = spawn.getBlockZ() + (int) Math.round(Math.sin(angle) * distance);
         Location candidateRegion = new Location(world, x, 0, z);
 
         world.getChunkAtAsync(candidateRegion)
-                .thenCompose(chunk -> scheduler.supplyAt(candidateRegion, () -> toTopSafe(world, x, z)))
-                .whenComplete((candidate, error) -> {
-                    if (error != null) {
-                        callback.accept(spawn.clone().add(0.5, 1.0, 0.5));
-                    } else if (candidate != null) callback.accept(candidate);
-                    else findSingleSpotAsync(world, spawn, taken, radius, jitter, triesLeft - 1, callback);
-                });
+                .thenCompose(
+                        chunk -> scheduler.supplyAt(candidateRegion, () -> toTopSafe(world, x, z)))
+                .whenComplete(
+                        (candidate, error) -> {
+                            if (error != null) {
+                                callback.accept(spawn.clone().add(0.5, 1.0, 0.5));
+                            } else if (candidate != null) callback.accept(candidate);
+                            else
+                                findSingleSpotAsync(
+                                        world,
+                                        spawn,
+                                        taken,
+                                        radius,
+                                        jitter,
+                                        triesLeft - 1,
+                                        callback);
+                        });
     }
 
-    private void findReservedSpotAsync(World world, Location spawn, List<Location> taken,
-                                       int radius, int jitter, int tries,
-                                       Consumer<Location> callback) {
+    private void findReservedSpotAsync(
+            World world,
+            Location spawn,
+            List<Location> taken,
+            int radius,
+            int jitter,
+            int tries,
+            Consumer<Location> callback) {
         if (tries <= 0) {
-            findSingleSpotAsync(world, spawn, taken, radius, jitter, 0, candidate -> {
-                taken.add(candidate);
-                callback.accept(candidate);
-            });
+            findSingleSpotAsync(
+                    world,
+                    spawn,
+                    taken,
+                    radius,
+                    jitter,
+                    0,
+                    candidate -> {
+                        taken.add(candidate);
+                        callback.accept(candidate);
+                    });
             return;
         }
-        findSingleSpotAsync(world, spawn, taken, radius, jitter, tries, candidate -> {
-            if (reserveLocation(candidate, taken)) callback.accept(candidate);
-            else findReservedSpotAsync(world, spawn, taken, radius, jitter, tries - 1, callback);
-        });
+        findSingleSpotAsync(
+                world,
+                spawn,
+                taken,
+                radius,
+                jitter,
+                tries,
+                candidate -> {
+                    if (reserveLocation(candidate, taken)) callback.accept(candidate);
+                    else
+                        findReservedSpotAsync(
+                                world, spawn, taken, radius, jitter, tries - 1, callback);
+                });
     }
 
     private boolean sufficientlySeparated(Location candidate, List<Location> taken) {
         synchronized (taken) {
             for (Location used : taken) {
-                if (used != null && used.getWorld() == candidate.getWorld()
+                if (used != null
+                        && used.getWorld() == candidate.getWorld()
                         && used.distanceSquared(candidate) < MIN_PLAYER_DISTANCE_SQ) return false;
             }
             return true;
@@ -255,22 +387,39 @@ public final class SafeScatterService {
     private CompletableFuture<Void> teleportReset(Player player, Location location) {
         if (cancelled) return CompletableFuture.completedFuture(null);
         return player.teleportAsync(location)
-                .thenCompose(success -> scheduler.runEntityFuture(player, () -> {
-                    if (!Boolean.TRUE.equals(success)) {
-                        logger.warning("Bingo scatter teleport rejected: player=" + player.getName());
-                        return;
-                    }
-                    player.setFallDistance(0f);
-                    player.setFireTicks(0);
-                    logger.info("Bingo scatter placed: player=" + player.getName()
-                            + ", world=" + location.getWorld().getName()
-                            + ", x=" + location.getX() + ", y=" + location.getY() + ", z=" + location.getZ());
-                }))
-                .exceptionally(error -> {
-                    logger.log(java.util.logging.Level.WARNING,
-                            "Bingo scatter teleport failed: player=" + player.getUniqueId(), error);
-                    return null;
-                });
+                .thenCompose(
+                        success ->
+                                scheduler.runEntityFuture(
+                                        player,
+                                        () -> {
+                                            if (!Boolean.TRUE.equals(success)) {
+                                                logger.warning(
+                                                        "Bingo scatter teleport rejected: player="
+                                                                + player.getName());
+                                                return;
+                                            }
+                                            player.setFallDistance(0f);
+                                            player.setFireTicks(0);
+                                            logger.info(
+                                                    "Bingo scatter placed: player="
+                                                            + player.getName()
+                                                            + ", world="
+                                                            + location.getWorld().getName()
+                                                            + ", x="
+                                                            + location.getX()
+                                                            + ", y="
+                                                            + location.getY()
+                                                            + ", z="
+                                                            + location.getZ());
+                                        }))
+                .exceptionally(
+                        error -> {
+                            logger.log(
+                                    java.util.logging.Level.WARNING,
+                                    "Bingo scatter teleport failed: player=" + player.getUniqueId(),
+                                    error);
+                            return null;
+                        });
     }
 
     private boolean isClearSpace(Material material) {
@@ -289,8 +438,16 @@ public final class SafeScatterService {
 
     private boolean isHazardGround(Material material) {
         return switch (material) {
-            case SAND, RED_SAND, GRAVEL, CACTUS, CAMPFIRE, SOUL_CAMPFIRE,
-                 MAGMA_BLOCK, SWEET_BERRY_BUSH, POWDER_SNOW -> true;
+            case SAND,
+                    RED_SAND,
+                    GRAVEL,
+                    CACTUS,
+                    CAMPFIRE,
+                    SOUL_CAMPFIRE,
+                    MAGMA_BLOCK,
+                    SWEET_BERRY_BUSH,
+                    POWDER_SNOW ->
+                    true;
             default -> false;
         };
     }

@@ -4,8 +4,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 final class ChunkWindow {
-    private ChunkWindow() {
-    }
+    private ChunkWindow() {}
 
     static Set<ChunkPos> around(double blockX, double blockZ, int radius) {
         int centerX = Math.floorDiv((int) Math.floor(blockX), 16);

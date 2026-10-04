@@ -2,22 +2,23 @@ package ink.ziip.championshipscore.api.daily;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
-import ink.ziip.championshipscore.api.gui.MenuInventory;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
 import ink.ziip.championshipscore.api.event.TeamGameEndEvent;
+import ink.ziip.championshipscore.api.gui.MenuInventory;
+
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.event.block.Action;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.EquipmentSlot;
 
@@ -90,7 +91,8 @@ final class DailyListener extends BaseListener {
         if (!DailyLobbyItem.is(event.getItem())) return;
         event.setCancelled(true);
         if (event.getHand() == EquipmentSlot.HAND
-                && (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK))
+                && (event.getAction() == Action.RIGHT_CLICK_AIR
+                        || event.getAction() == Action.RIGHT_CLICK_BLOCK))
             daily.openMenu(event.getPlayer());
     }
 
@@ -101,21 +103,26 @@ final class DailyListener extends BaseListener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onLobbyItemSwap(PlayerSwapHandItemsEvent event) {
-        if (DailyLobbyItem.is(event.getMainHandItem()) || DailyLobbyItem.is(event.getOffHandItem())) event.setCancelled(true);
+        if (DailyLobbyItem.is(event.getMainHandItem()) || DailyLobbyItem.is(event.getOffHandItem()))
+            event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onLobbyItemDeath(PlayerDeathEvent event) {
         event.getDrops().removeIf(DailyLobbyItem::is);
-        Bukkit.getScheduler().runTask(plugin, () -> {
-            Player player = event.getEntity();
-            if (player.isOnline()) daily.syncLobbyItem(player);
-        });
+        Bukkit.getScheduler()
+                .runTask(
+                        plugin,
+                        () -> {
+                            Player player = event.getEntity();
+                            if (player.isOnline()) daily.syncLobbyItem(player);
+                        });
     }
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onDamage(EntityDamageEvent event) {
-        if (event.getEntity() instanceof Player player && daily.isQueued(player.getUniqueId())) event.setCancelled(true);
+        if (event.getEntity() instanceof Player player && daily.isQueued(player.getUniqueId()))
+            event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

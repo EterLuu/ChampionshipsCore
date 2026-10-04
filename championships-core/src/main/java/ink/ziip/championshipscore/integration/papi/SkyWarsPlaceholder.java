@@ -2,9 +2,10 @@ package ink.ziip.championshipscore.integration.papi;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
-import ink.ziip.championshipscore.api.game.skywars.SkyWarsTeamArea;
-import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
+import ink.ziip.championshipscore.api.game.model.GameStageEnum;
+import ink.ziip.championshipscore.api.game.skywars.runtime.SkyWarsTeamArea;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -30,14 +31,16 @@ public class SkyWarsPlaceholder extends BaseGamePlaceholder<SkyWarsTeamArea> {
         /* Non-Player required placeholders */
 
         if (params.startsWith("area_survived_players_")) {
-            SkyWarsTeamArea skyWarsTeamArea = resolveArea(params, "area_survived_players_", offlinePlayer);
+            SkyWarsTeamArea skyWarsTeamArea =
+                    resolveArea(params, "area_survived_players_", offlinePlayer);
             if (skyWarsTeamArea == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
             return String.valueOf(skyWarsTeamArea.getSurvivedPlayerNums());
         }
         if (params.startsWith("area_survived_teams_")) {
-            SkyWarsTeamArea skyWarsTeamArea = resolveArea(params, "area_survived_teams_", offlinePlayer);
+            SkyWarsTeamArea skyWarsTeamArea =
+                    resolveArea(params, "area_survived_teams_", offlinePlayer);
             if (skyWarsTeamArea == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
@@ -47,11 +50,11 @@ public class SkyWarsPlaceholder extends BaseGamePlaceholder<SkyWarsTeamArea> {
         /* Player required placeholders */
 
         Player player = offlinePlayer.getPlayer();
-        if (player == null)
-            return MessageConfig.PLACEHOLDER_NONE;
+        if (player == null) return MessageConfig.PLACEHOLDER_NONE;
 
         if (params.startsWith("player_border_distance_")) {
-            SkyWarsTeamArea skyWarsTeamArea = resolveArea(params, "player_border_distance_", offlinePlayer);
+            SkyWarsTeamArea skyWarsTeamArea =
+                    resolveArea(params, "player_border_distance_", offlinePlayer);
             if (skyWarsTeamArea == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }

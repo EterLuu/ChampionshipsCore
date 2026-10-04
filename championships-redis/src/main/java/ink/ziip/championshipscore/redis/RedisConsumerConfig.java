@@ -10,8 +10,7 @@ public record RedisConsumerConfig(
         int batchSize,
         Duration blockTimeout,
         Duration reclaimIdle,
-        int maxDeliveries
-) {
+        int maxDeliveries) {
     public RedisConsumerConfig {
         group = requireText(group, "group");
         consumer = requireText(consumer, "consumer");

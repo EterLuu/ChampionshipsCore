@@ -1,5 +1,5 @@
-import ink.ziip.championshipscore.api.game.riptiderush.RiptideDodgeSchedule;
-import ink.ziip.championshipscore.api.game.riptiderush.RiptideDodgeSchedule.*;
+import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptideDodgeSchedule;
+import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptideDodgeSchedule.*;
 
 import java.io.PrintWriter;
 import java.nio.file.Files;

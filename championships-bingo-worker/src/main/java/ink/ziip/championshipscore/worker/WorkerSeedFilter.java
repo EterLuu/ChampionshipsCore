@@ -1,7 +1,8 @@
 package ink.ziip.championshipscore.worker;
 
-import org.bukkit.plugin.Plugin;
 import ink.ziip.championshipscore.worker.seedlab.SeedLab26_2;
+
+import org.bukkit.plugin.Plugin;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -25,7 +26,8 @@ final class WorkerSeedFilter {
     WorkerSeedFilter(Plugin plugin, WorkerConfig.SeedFilterConfig config) {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
         this.config = Objects.requireNonNull(config, "config");
-        this.worldContainer = plugin.getServer().getWorldContainer().toPath().toAbsolutePath().normalize();
+        this.worldContainer =
+                plugin.getServer().getWorldContainer().toPath().toAbsolutePath().normalize();
     }
 
     OptionalLong selectSeed(boolean freshWorldRequired) {
@@ -41,8 +43,11 @@ final class WorkerSeedFilter {
                 if (config.required()) {
                     throw new IllegalStateException("Bingo biome seed filter failed", failure);
                 }
-                plugin.getLogger().log(Level.WARNING,
-                        "Bingo biome seed filter failed; falling back to a random seed", failure);
+                plugin.getLogger()
+                        .log(
+                                Level.WARNING,
+                                "Bingo biome seed filter failed; falling back to a random seed",
+                                failure);
             }
         } else {
             OptionalLong persisted = readSeed(seedFile);
@@ -66,7 +71,12 @@ final class WorkerSeedFilter {
         while (evaluated < config.candidates() && System.nanoTime() < deadline) {
             long candidate = random.nextLong();
             try {
-                int score = predictor.score(candidate, config.radiusBlocks(), config.sampleStepBlocks(), deadline);
+                int score =
+                        predictor.score(
+                                candidate,
+                                config.radiusBlocks(),
+                                config.sampleStepBlocks(),
+                                deadline);
                 evaluated++;
                 if (score > bestScore) {
                     bestScore = score;
@@ -77,11 +87,18 @@ final class WorkerSeedFilter {
             }
         }
         if (evaluated == 0) {
-            throw new IOException("embedded SeedLab timed out before completing a candidate after "
-                    + config.timeout().toMillis() + " ms");
+            throw new IOException(
+                    "embedded SeedLab timed out before completing a candidate after "
+                            + config.timeout().toMillis()
+                            + " ms");
         }
         persistSeed(seedFile, bestSeed);
-        plugin.getLogger().info("SeedLab evaluated " + evaluated + " candidate(s); best biome score=" + bestScore);
+        plugin.getLogger()
+                .info(
+                        "SeedLab evaluated "
+                                + evaluated
+                                + " candidate(s); best biome score="
+                                + bestScore);
         return bestSeed;
     }
 
@@ -92,7 +109,8 @@ final class WorkerSeedFilter {
             if (value.isEmpty()) return OptionalLong.empty();
             return OptionalLong.of(Long.parseLong(value));
         } catch (IOException | NumberFormatException invalid) {
-            plugin.getLogger().log(Level.WARNING, "Ignoring invalid Bingo seed file " + seedFile, invalid);
+            plugin.getLogger()
+                    .log(Level.WARNING, "Ignoring invalid Bingo seed file " + seedFile, invalid);
             return OptionalLong.empty();
         }
     }
@@ -101,13 +119,21 @@ final class WorkerSeedFilter {
         try {
             Path parent = seedFile.getParent();
             if (parent != null) Files.createDirectories(parent);
-            Path temporary = Files.createTempFile(parent == null ? worldContainer : parent,
-                    ".bingo-seed.", ".tmp");
+            Path temporary =
+                    Files.createTempFile(
+                            parent == null ? worldContainer : parent, ".bingo-seed.", ".tmp");
             try {
-                Files.writeString(temporary, Long.toString(seed) + "\n", StandardCharsets.UTF_8,
-                        StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
+                Files.writeString(
+                        temporary,
+                        Long.toString(seed) + "\n",
+                        StandardCharsets.UTF_8,
+                        StandardOpenOption.TRUNCATE_EXISTING,
+                        StandardOpenOption.WRITE);
                 try {
-                    Files.move(temporary, seedFile, StandardCopyOption.ATOMIC_MOVE,
+                    Files.move(
+                            temporary,
+                            seedFile,
+                            StandardCopyOption.ATOMIC_MOVE,
                             StandardCopyOption.REPLACE_EXISTING);
                 } catch (AtomicMoveNotSupportedException unsupported) {
                     Files.move(temporary, seedFile, StandardCopyOption.REPLACE_EXISTING);
@@ -123,7 +149,8 @@ final class WorkerSeedFilter {
     private Path resolveSeedFile() {
         Path path = worldContainer.resolve(config.seedFile()).normalize();
         if (!path.startsWith(worldContainer) || path.equals(worldContainer)) {
-            throw new IllegalArgumentException("worlds.seed-filter.seed-file must stay inside the world container");
+            throw new IllegalArgumentException(
+                    "worlds.seed-filter.seed-file must stay inside the world container");
         }
         return path;
     }

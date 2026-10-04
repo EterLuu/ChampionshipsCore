@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 1
+  version: 2
 name: area
 world-name: ''
 prepare:
@@ -24,6 +24,7 @@ introduction-spawn-point: null
 introduction-game-mode: SPECTATOR
 # 导入地图使用 "x y z [yaw]"；编辑器使用 "当前世界:x:y:z:yaw:pitch"。
 # 两种坐标均位于第一张地图，运行时按 copy-spacing 平移到其余三张地图。
+# 坐标列表统一使用 world:x:y:z:yaw:pitch，由地图编辑器写入。
 spawn-points: []
 item-points: []
 rules:

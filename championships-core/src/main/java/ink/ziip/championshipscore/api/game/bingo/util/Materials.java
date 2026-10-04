@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.bingo.util;
 
 import net.kyori.adventure.key.Key;
+
 import org.bukkit.Material;
 import org.bukkit.Registry;
 import org.jetbrains.annotations.NotNull;
@@ -11,12 +12,10 @@ import java.util.Set;
 
 /** Small Material lookup helpers. Paper-only; no cross-version indirection. */
 public final class Materials {
-    private static final Set<Material> INVALID_COLLECT_OBJECTIVES = EnumSet.of(
-            Material.SUSPICIOUS_SAND,
-            Material.SUSPICIOUS_GRAVEL);
+    private static final Set<Material> INVALID_COLLECT_OBJECTIVES =
+            EnumSet.of(Material.SUSPICIOUS_SAND, Material.SUSPICIOUS_GRAVEL);
 
-    private Materials() {
-    }
+    private Materials() {}
 
     public static @NotNull Material fromKey(@Nullable Key key) {
         if (key == null) return Material.AIR;

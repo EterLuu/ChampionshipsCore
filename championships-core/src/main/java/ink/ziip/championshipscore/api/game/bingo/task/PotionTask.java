@@ -2,8 +2,10 @@ package ink.ziip.championshipscore.api.game.bingo.task;
 
 import ink.ziip.championshipscore.api.game.bingo.task.pool.Dimension;
 import ink.ziip.championshipscore.api.game.bingo.util.MessageService;
+
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+
 import org.bukkit.Material;
 import org.bukkit.potion.PotionType;
 import org.jetbrains.annotations.Nullable;
@@ -18,11 +20,12 @@ import java.util.Objects;
  * {@code POTION} material (which any potion satisfies): completion requires the held potion's base
  * effect to match, regardless of its potency/duration (strong/long variants all count).
  *
- * <p>The effect is stored as its lower-case vanilla key ({@code strength}, {@code night_vision}, …) so
- * the task stays version-agnostic; it drives both the localized name (via the vanilla
- * {@code item.minecraft.*.effect.*} translation keys) and the per-effect map sprite.
+ * <p>The effect is stored as its lower-case vanilla key ({@code strength}, {@code night_vision}, …)
+ * so the task stays version-agnostic; it drives both the localized name (via the vanilla {@code
+ * item.minecraft.*.effect.*} translation keys) and the per-effect map sprite.
  */
-public record PotionTask(Form form, String effect, int count, Dimension dimension) implements TaskData {
+public record PotionTask(Form form, String effect, int count, Dimension dimension)
+        implements TaskData {
 
     /** The three potion item forms, each carrying its material and the atlas/translation infix. */
     public enum Form {
@@ -31,7 +34,10 @@ public record PotionTask(Form form, String effect, int count, Dimension dimensio
         LINGERING(Material.LINGERING_POTION, "lingering_potion");
 
         public final Material material;
-        /** Shared by the map-atlas key ({@code <infix>/<effect>}) and the vanilla translation key. */
+
+        /**
+         * Shared by the map-atlas key ({@code <infix>/<effect>}) and the vanilla translation key.
+         */
         public final String infix;
 
         Form(Material material, String infix) {
@@ -57,17 +63,35 @@ public record PotionTask(Form form, String effect, int count, Dimension dimensio
      * creative/command-only luck. Used to expand a {@code "*"} effect in the card pool.
      *
      * <p>Keys are the vanilla {@link PotionType} names lower-cased, so they round-trip through both
-     * {@link #potionType()} (completion matching) and the {@code item.minecraft.*.effect.*} translation
-     * keys (display name). {@code wind_charged}/{@code infested} are the real enum names — earlier
-     * {@code wind_charging}/{@code infestation} spellings never matched a held potion and so could not
-     * be completed.
+     * {@link #potionType()} (completion matching) and the {@code item.minecraft.*.effect.*}
+     * translation keys (display name). {@code wind_charged}/{@code infested} are the real enum
+     * names — earlier {@code wind_charging}/{@code infestation} spellings never matched a held
+     * potion and so could not be completed.
      */
-    public static final List<String> BREWABLE = List.of(
-            "night_vision", "invisibility", "leaping", "fire_resistance", "swiftness", "slowness",
-            "water_breathing", "healing", "harming", "poison", "regeneration", "strength", "weakness",
-            "turtle_master", "slow_falling",
-            "oozing", "weaving", "wind_charged", "infested",
-            "mundane", "thick", "awkward");
+    public static final List<String> BREWABLE =
+            List.of(
+                    "night_vision",
+                    "invisibility",
+                    "leaping",
+                    "fire_resistance",
+                    "swiftness",
+                    "slowness",
+                    "water_breathing",
+                    "healing",
+                    "harming",
+                    "poison",
+                    "regeneration",
+                    "strength",
+                    "weakness",
+                    "turtle_master",
+                    "slow_falling",
+                    "oozing",
+                    "weaving",
+                    "wind_charged",
+                    "infested",
+                    "mundane",
+                    "thick",
+                    "awkward");
 
     public PotionTask {
         if (form == null) form = Form.NORMAL;
@@ -76,7 +100,10 @@ public record PotionTask(Form form, String effect, int count, Dimension dimensio
         dimension = dimension == null ? Dimension.OVERWORLD : dimension;
     }
 
-    /** The base {@link PotionType} (no strong/long modifier), or {@code null} if the effect is unknown. */
+    /**
+     * The base {@link PotionType} (no strong/long modifier), or {@code null} if the effect is
+     * unknown.
+     */
     public @Nullable PotionType potionType() {
         try {
             return PotionType.valueOf(effect.toUpperCase(Locale.ROOT));
@@ -87,7 +114,8 @@ public record PotionTask(Form form, String effect, int count, Dimension dimensio
 
     @Override
     public TaskType getType() {
-        // Rides the ITEM type: filtered/enabled alongside item-collection tasks, but completed via its
+        // Rides the ITEM type: filtered/enabled alongside item-collection tasks, but completed via
+        // its
         // own potion-aware scan (see BingoArea/BingoRound), not the material-only item path.
         return TaskType.ITEM;
     }
@@ -99,15 +127,19 @@ public record PotionTask(Form form, String effect, int count, Dimension dimensio
 
     @Override
     public Component getName() {
-        // Vanilla potion display keys, e.g. item.minecraft.splash_potion.effect.strength → "投掷型力量药水".
-        return Component.text().color(NamedTextColor.YELLOW)
-                .append(Component.translatable("item.minecraft." + form.infix + ".effect." + effect))
+        // Vanilla potion display keys, e.g. item.minecraft.splash_potion.effect.strength →
+        // "投掷型力量药水".
+        return Component.text()
+                .color(NamedTextColor.YELLOW)
+                .append(
+                        Component.translatable(
+                                "item.minecraft." + form.infix + ".effect." + effect))
                 .build();
     }
 
     @Override
     public Component[] getItemDescription() {
-        return new Component[]{MessageService.global().component("task.collect_potion")};
+        return new Component[] {MessageService.global().component("task.collect_potion")};
     }
 
     @Override

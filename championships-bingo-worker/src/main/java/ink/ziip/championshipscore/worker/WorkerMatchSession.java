@@ -1,30 +1,30 @@
 package ink.ziip.championshipscore.worker;
 
-import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
-import ink.ziip.championshipscore.platform.bukkit.bingo.BingoRidingTravel;
-import ink.ziip.championshipscore.platform.bukkit.bingo.BingoFireworkSupply;
 import ink.ziip.championshipscore.bingo.engine.BingoResult;
 import ink.ziip.championshipscore.bingo.engine.BingoScoringEngine;
 import ink.ziip.championshipscore.bingo.engine.ScoringDecision;
-import ink.ziip.championshipscore.platform.bukkit.bingo.BingoStarterKitService;
+import ink.ziip.championshipscore.platform.bukkit.bingo.BingoFireworkSupply;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoPermanentEffectService;
-import ink.ziip.championshipscore.platform.bukkit.bingo.BingoSpectatorService;
+import ink.ziip.championshipscore.platform.bukkit.bingo.BingoRidingTravel;
+import ink.ziip.championshipscore.platform.bukkit.bingo.BingoStarterKitService;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoWorldRules;
 import ink.ziip.championshipscore.platform.bukkit.bingo.map.TaskImageAtlas;
 import ink.ziip.championshipscore.platform.bukkit.player.PlayerStateService;
+import ink.ziip.championshipscore.platform.bukkit.player.SpectatorStateService;
 import ink.ziip.championshipscore.platform.bukkit.scheduler.PlatformScheduler;
 import ink.ziip.championshipscore.platform.bukkit.scoreboard.NativeTeamOverlay;
 import ink.ziip.championshipscore.platform.bukkit.scoreboard.NativeTeamService;
 import ink.ziip.championshipscore.platform.bukkit.scoreboard.SharedSidebar;
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.platform.bukkit.text.PlayerPresentation;
-import ink.ziip.championshipscore.protocol.CompletionObservation;
-import ink.ziip.championshipscore.protocol.BingoManifestHasher;
 import ink.ziip.championshipscore.protocol.BingoIntroductionMode;
 import ink.ziip.championshipscore.protocol.BingoLocationSnapshot;
-import ink.ziip.championshipscore.protocol.BingoPresentation;
+import ink.ziip.championshipscore.protocol.BingoManifestHasher;
 import ink.ziip.championshipscore.protocol.BingoMode;
+import ink.ziip.championshipscore.protocol.BingoPresentation;
 import ink.ziip.championshipscore.protocol.BingoRemix;
 import ink.ziip.championshipscore.protocol.BingoTaskSpec;
+import ink.ziip.championshipscore.protocol.CompletionObservation;
 import ink.ziip.championshipscore.protocol.MatchEvent;
 import ink.ziip.championshipscore.protocol.MatchEventType;
 import ink.ziip.championshipscore.protocol.MatchManifest;
@@ -36,13 +36,16 @@ import ink.ziip.championshipscore.protocol.ParticipantRole;
 import ink.ziip.championshipscore.protocol.PlayerSnapshot;
 import ink.ziip.championshipscore.protocol.TeamSnapshot;
 import ink.ziip.championshipscore.shared.presentation.DurationText;
+
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
+
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.title.Title;
+
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Instrument;
@@ -103,15 +106,20 @@ final class WorkerMatchSession {
     private final SharedSidebar sidebar;
     private final List<PotionEffect> permanentEffects;
     private final BingoFireworkSupply fireworkSupply = new BingoFireworkSupply();
-    private final Map<UUID, PlayerSnapshot> participants = new java.util.concurrent.ConcurrentHashMap<>();
+    private final Map<UUID, PlayerSnapshot> participants =
+            new java.util.concurrent.ConcurrentHashMap<>();
     private final Map<Integer, TeamSnapshot> teams;
     private final Map<Integer, Team> nativeScoreboardTeams = new HashMap<>();
     private final NativeTeamOverlay nativeTeamOverlay;
+
     /** Native scoreboard teams are presentation-only and are unsupported by some Folia builds. */
     private boolean nativeTeamsAvailable;
+
     private final Set<UUID> arrived = new HashSet<>();
+
     /** Last live position for a participant who disconnected during the match. */
     private final Map<UUID, Location> lastQuitLocations = new HashMap<>();
+
     private final Set<UUID> preparedPlayers = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private final Set<TeamCell> completedTeamCells = ConcurrentHashMap.newKeySet();
     private final Map<Integer, List<Integer>> completionTeamsByCell = new HashMap<>();
@@ -140,10 +148,15 @@ final class WorkerMatchSession {
     private static final float MAX_SPECTATOR_SPEED = 1.0F;
     private static final int SPECTATOR_CARD_TEAM = Integer.MIN_VALUE;
 
-    WorkerMatchSession(Plugin plugin, WorkerConfig config, MatchManifest manifest,
-                       DurableEventOutbox events, WorkerReturnRouter returnRouter,
-                       WorkerWorldController worlds, NativeTeamService nativeTeams,
-                       Runnable worldReset) {
+    WorkerMatchSession(
+            Plugin plugin,
+            WorkerConfig config,
+            MatchManifest manifest,
+            DurableEventOutbox events,
+            WorkerReturnRouter returnRouter,
+            WorkerWorldController worlds,
+            NativeTeamService nativeTeams,
+            Runnable worldReset) {
         this.plugin = plugin;
         this.config = config;
         this.manifest = manifest;
@@ -163,11 +176,16 @@ final class WorkerMatchSession {
         this.activeTasks = List.copyOf(manifest.tasks());
         if (manifest.scoring().variant().remix() == BingoRemix.DIFFERENTIAL)
             initDifferentialCards();
-        this.sidebar = new SharedSidebar("cc_bingo",
-                WorkerPresentationService.component(sidebarField("sidebar.title", "board.title")),
-                warning -> plugin.getLogger().warning(warning));
-        this.permanentEffects = BingoPermanentEffectService.parse(manifest.runtimeRules().permanentEffects(),
-                warning -> plugin.getLogger().warning("Bingo manifest: " + warning));
+        this.sidebar =
+                new SharedSidebar(
+                        "cc_bingo",
+                        WorkerPresentationService.component(
+                                sidebarField("sidebar.title", "board.title")),
+                        warning -> plugin.getLogger().warning(warning));
+        this.permanentEffects =
+                BingoPermanentEffectService.parse(
+                        manifest.runtimeRules().permanentEffects(),
+                        warning -> plugin.getLogger().warning("Bingo manifest: " + warning));
         this.teams = manifest.teamsById();
         manifest.participants().forEach(player -> participants.put(player.uuid(), player));
         if (manifest.scoring().variant().remix() == BingoRemix.BLIND)
@@ -198,38 +216,57 @@ final class WorkerMatchSession {
 
     synchronized boolean isPlaying(UUID playerId) {
         PlayerSnapshot player = participants.get(playerId);
-        return player != null && player.role() == ParticipantRole.PLAYER
-                && (lifecycle.state() == MatchState.ROUTING || lifecycle.state() == MatchState.COUNTDOWN
-                || lifecycle.state() == MatchState.RUNNING);
+        return player != null
+                && player.role() == ParticipantRole.PLAYER
+                && (lifecycle.state() == MatchState.ROUTING
+                        || lifecycle.state() == MatchState.COUNTDOWN
+                        || lifecycle.state() == MatchState.RUNNING);
     }
 
     synchronized boolean isRunningPlayer(UUID playerId) {
         PlayerSnapshot player = participants.get(playerId);
-        return lifecycle.state() == MatchState.RUNNING && player != null
+        return lifecycle.state() == MatchState.RUNNING
+                && player != null
                 && player.role() == ParticipantRole.PLAYER;
     }
 
-    synchronized boolean isSpectator(UUID playerId) { return participants.get(playerId) != null && participants.get(playerId).role() == ParticipantRole.SPECTATOR && !lifecycle.state().terminal(); }
+    synchronized boolean isSpectator(UUID playerId) {
+        return participants.get(playerId) != null
+                && participants.get(playerId).role() == ParticipantRole.SPECTATOR
+                && !lifecycle.state().terminal();
+    }
 
     String resolveChampionshipPlaceholder(UUID playerId, String params) {
         PlayerSnapshot participant = participants.get(playerId);
-        TeamSnapshot team = participant == null || participant.teamId() == null
-                ? null : teams.get(participant.teamId());
-        return WorkerChampionshipPlaceholderValues.resolve(participant, team,
-                manifest.runtimeRules().presentation(), params,
+        TeamSnapshot team =
+                participant == null || participant.teamId() == null
+                        ? null
+                        : teams.get(participant.teamId());
+        return WorkerChampionshipPlaceholderValues.resolve(
+                participant,
+                team,
+                manifest.runtimeRules().presentation(),
+                params,
                 manifest.runMode() == ink.ziip.championshipscore.protocol.MatchRunMode.DAILY);
     }
 
     PlayerPresentation playerPresentation(UUID playerId) {
         PlayerSnapshot participant = participants.get(playerId);
-        TeamSnapshot team = participant == null || participant.teamId() == null
-                ? null : teams.get(participant.teamId());
+        TeamSnapshot team =
+                participant == null || participant.teamId() == null
+                        ? null
+                        : teams.get(participant.teamId());
         String spectator = manifest.runtimeRules().presentation().message("papi.spectator");
-        String label = team == null
-                ? manifest.runMode() == MatchRunMode.DAILY ? "&6" + gameName() : spectator
-                : team.colorCode() + team.name();
-        boolean activePlayer = participant != null && participant.role() == ParticipantRole.PLAYER && team != null;
-        return new PlayerPresentation(label, team == null ? null : team.colorCode(), activePlayer,
+        String label =
+                team == null
+                        ? manifest.runMode() == MatchRunMode.DAILY ? "&6" + gameName() : spectator
+                        : team.colorCode() + team.name();
+        boolean activePlayer =
+                participant != null && participant.role() == ParticipantRole.PLAYER && team != null;
+        return new PlayerPresentation(
+                label,
+                team == null ? null : team.colorCode(),
+                activePlayer,
                 manifest.runMode() == MatchRunMode.DAILY);
     }
 
@@ -239,31 +276,42 @@ final class WorkerMatchSession {
         PlayerPresentation presentation;
         synchronized (this) {
             PlayerSnapshot senderSnapshot = participants.get(sender.getUniqueId());
-            if (senderSnapshot == null || senderSnapshot.role() != ParticipantRole.PLAYER
-                    || senderSnapshot.teamId() == null || lifecycle.state().terminal()) return false;
+            if (senderSnapshot == null
+                    || senderSnapshot.role() != ParticipantRole.PLAYER
+                    || senderSnapshot.teamId() == null
+                    || lifecycle.state().terminal()) return false;
             team = teams.get(senderSnapshot.teamId());
             if (team == null) return false;
-            recipients = participants.values().stream()
-                    .filter(participant -> participant.role() == ParticipantRole.PLAYER
-                            && senderSnapshot.teamId().equals(participant.teamId()))
-                    .map(PlayerSnapshot::uuid)
-                    .toList();
+            recipients =
+                    participants.values().stream()
+                            .filter(
+                                    participant ->
+                                            participant.role() == ParticipantRole.PLAYER
+                                                    && senderSnapshot
+                                                            .teamId()
+                                                            .equals(participant.teamId()))
+                            .map(PlayerSnapshot::uuid)
+                            .toList();
             presentation = playerPresentation(sender.getUniqueId());
         }
-        Component line = message("chat.team.prefix")
-                .append(presentation.chatLine(sender.getName(), message));
-        scheduler.runGlobal(() -> {
-            for (UUID recipientId : recipients) {
-                Player recipient = plugin.getServer().getPlayer(recipientId);
-                if (recipient != null) scheduler.runEntity(recipient, () -> recipient.sendMessage(line));
-            }
-        });
+        Component line =
+                message("chat.team.prefix")
+                        .append(presentation.chatLine(sender.getName(), message));
+        scheduler.runGlobal(
+                () -> {
+                    for (UUID recipientId : recipients) {
+                        Player recipient = plugin.getServer().getPlayer(recipientId);
+                        if (recipient != null)
+                            scheduler.runEntity(recipient, () -> recipient.sendMessage(line));
+                    }
+                });
         return true;
     }
 
     synchronized boolean canPickupCard(UUID playerId, int teamId) {
         PlayerSnapshot player = participants.get(playerId);
-        return player != null && player.role() == ParticipantRole.PLAYER
+        return player != null
+                && player.role() == ParticipantRole.PLAYER
                 && Integer.valueOf(teamId).equals(player.teamId());
     }
 
@@ -279,12 +327,15 @@ final class WorkerMatchSession {
     synchronized boolean isProtectedParticipant(UUID playerId) {
         PlayerSnapshot player = participants.get(playerId);
         if (player == null || lifecycle.state().terminal()) return false;
-        return player.role() == ParticipantRole.SPECTATOR || lifecycle.state() != MatchState.RUNNING;
+        return player.role() == ParticipantRole.SPECTATOR
+                || lifecycle.state() != MatchState.RUNNING;
     }
 
     synchronized boolean isFinalCountdownPlayer(UUID playerId) {
         PlayerSnapshot player = participants.get(playerId);
-        return roundPrepared && lifecycle.state() == MatchState.COUNTDOWN && player != null
+        return roundPrepared
+                && lifecycle.state() == MatchState.COUNTDOWN
+                && player != null
                 && player.role() == ParticipantRole.PLAYER;
     }
 
@@ -296,8 +347,10 @@ final class WorkerMatchSession {
         }
         if (snapshot.role() == ParticipantRole.SPECTATOR) return spectatorLocation();
         if (!isPlaying(playerId)) return null;
-        String respawnWorld = manifest.scoring().variant().remix() == BingoRemix.NETHER
-                ? config.nether() : config.overworld();
+        String respawnWorld =
+                manifest.scoring().variant().remix() == BingoRemix.NETHER
+                        ? config.nether()
+                        : config.overworld();
         World world = plugin.getServer().getWorld(respawnWorld);
         return world == null ? null : world.getSpawnLocation();
     }
@@ -316,13 +369,17 @@ final class WorkerMatchSession {
             if (lifecycle.state() == MatchState.READY || lifecycle.state() == MatchState.ROUTING) {
                 return CompletableFuture.completedFuture(true);
             }
-            if (lifecycle.state() != MatchState.CREATED) return CompletableFuture.completedFuture(false);
+            if (lifecycle.state() != MatchState.CREATED)
+                return CompletableFuture.completedFuture(false);
             lifecycle.transitionTo(MatchState.PREPARING);
         }
-        String scatterWorld = manifest.scoring().variant().remix() == BingoRemix.NETHER
-                ? config.nether() : config.overworld();
+        String scatterWorld =
+                manifest.scoring().variant().remix() == BingoRemix.NETHER
+                        ? config.nether()
+                        : config.overworld();
         World world = plugin.getServer().getWorld(scatterWorld);
-        if (world == null || plugin.getServer().getWorld(config.nether()) == null
+        if (world == null
+                || plugin.getServer().getWorld(config.nether()) == null
                 || plugin.getServer().getWorld(config.end()) == null) {
             return failPreparation("required-world-not-loaded");
         }
@@ -342,9 +399,12 @@ final class WorkerMatchSession {
         synchronized (this) {
             lifecycle.transitionTo(MatchState.READY);
         }
-        return emit(MatchEventType.READY, Map.of(
-                "workerId", config.workerId(),
-                "configHash", manifest.configHash())).thenApply(ignored -> true);
+        return emit(
+                        MatchEventType.READY,
+                        Map.of(
+                                "workerId", config.workerId(),
+                                "configHash", manifest.configHash()))
+                .thenApply(ignored -> true);
     }
 
     CompletionStage<Boolean> playerArrived(Player player) {
@@ -357,7 +417,8 @@ final class WorkerMatchSession {
                 return CompletableFuture.completedFuture(false);
             }
             if (lifecycle.state() == MatchState.READY) lifecycle.transitionTo(MatchState.ROUTING);
-            if (lifecycle.state() != MatchState.ROUTING && lifecycle.state() != MatchState.COUNTDOWN
+            if (lifecycle.state() != MatchState.ROUTING
+                    && lifecycle.state() != MatchState.COUNTDOWN
                     && lifecycle.state() != MatchState.RUNNING) {
                 return CompletableFuture.completedFuture(false);
             }
@@ -365,9 +426,10 @@ final class WorkerMatchSession {
             // reconnecting after the round was prepared as a return even if the async arrival
             // acknowledgement raced the disconnect; otherwise they would be prepared and scattered
             // like a new participant, which resets their live position and objective baseline.
-            returning = arrived.contains(player.getUniqueId())
-                    || lastQuitLocations.containsKey(player.getUniqueId())
-                    || (roundPrepared && snapshot.role() == ParticipantRole.PLAYER);
+            returning =
+                    arrived.contains(player.getUniqueId())
+                            || lastQuitLocations.containsKey(player.getUniqueId())
+                            || (roundPrepared && snapshot.role() == ParticipantRole.PLAYER);
             currentState = lifecycle.state();
             scheduler.runGlobal(() -> syncNativePlayer(snapshot, player.getName()));
             if (returning) {
@@ -377,48 +439,64 @@ final class WorkerMatchSession {
         }
 
         CompletableFuture<Boolean> result = new CompletableFuture<>();
-        scheduler.runEntity(player, () -> {
-            PlayerStateService.resetVitals(player);
-            sidebar.show(player);
-            refreshSidebar(player, snapshot);
-            if (roundPrepared) {
-                if (snapshot.role() == ParticipantRole.SPECTATOR) {
+        scheduler.runEntity(
+                player,
+                () -> {
+                    PlayerStateService.resetVitals(player);
+                    sidebar.show(player);
+                    refreshSidebar(player, snapshot);
+                    if (roundPrepared) {
+                        if (snapshot.role() == ParticipantRole.SPECTATOR) {
+                            player.getInventory().clear();
+                            applySpectatorState(player);
+                            teleportAndRecord(player, snapshot, spectatorLocation(), result);
+                            return;
+                        }
+                        prepareParticipantForRound(player, snapshot, false);
+                        scatter.teleportAsync(player, snapshot.teamId())
+                                .whenComplete(
+                                        (ignored, failure) ->
+                                                recordArrival(snapshot, result, failure));
+                        return;
+                    }
                     player.getInventory().clear();
-                    applySpectatorState(player);
-                    teleportAndRecord(player, snapshot, spectatorLocation(), result);
-                    return;
-                }
-                prepareParticipantForRound(player, snapshot, false);
-                scatter.teleportAsync(player, snapshot.teamId())
-                        .whenComplete((ignored, failure) -> recordArrival(snapshot, result, failure));
-                return;
-            }
-            player.getInventory().clear();
-            if (snapshot.role() == ParticipantRole.SPECTATOR) applySpectatorState(player);
-            else applyWaitingParticipantMode(player, currentState == MatchState.COUNTDOWN && introductionActive);
-            Location destination = currentState == MatchState.COUNTDOWN && introductionActive
-                    ? introductionLocation() : spectatorLocation();
-            teleportAndRecord(player, snapshot, destination, result);
-        });
+                    if (snapshot.role() == ParticipantRole.SPECTATOR) applySpectatorState(player);
+                    else
+                        applyWaitingParticipantMode(
+                                player, currentState == MatchState.COUNTDOWN && introductionActive);
+                    Location destination =
+                            currentState == MatchState.COUNTDOWN && introductionActive
+                                    ? introductionLocation()
+                                    : spectatorLocation();
+                    teleportAndRecord(player, snapshot, destination, result);
+                });
         return result;
     }
 
-    private void teleportAndRecord(Player player, PlayerSnapshot snapshot, Location destination,
-                                   CompletableFuture<Boolean> result) {
+    private void teleportAndRecord(
+            Player player,
+            PlayerSnapshot snapshot,
+            Location destination,
+            CompletableFuture<Boolean> result) {
         if (destination == null) {
             result.complete(false);
             return;
         }
-        player.teleportAsync(destination).whenComplete((success, error) -> {
-            Throwable failure = error;
-            if (failure == null && !Boolean.TRUE.equals(success)) {
-                failure = new IllegalStateException("Bingo arrival teleport was rejected");
-            }
-            recordArrival(snapshot, result, failure);
-        });
+        player.teleportAsync(destination)
+                .whenComplete(
+                        (success, error) -> {
+                            Throwable failure = error;
+                            if (failure == null && !Boolean.TRUE.equals(success)) {
+                                failure =
+                                        new IllegalStateException(
+                                                "Bingo arrival teleport was rejected");
+                            }
+                            recordArrival(snapshot, result, failure);
+                        });
     }
 
-    private void recordArrival(PlayerSnapshot snapshot, CompletableFuture<Boolean> result, Throwable error) {
+    private void recordArrival(
+            PlayerSnapshot snapshot, CompletableFuture<Boolean> result, Throwable error) {
         if (error != null) {
             result.completeExceptionally(error);
             return;
@@ -429,17 +507,24 @@ final class WorkerMatchSession {
         // A late spectator or reconnect gets a new Player entity. Reconcile both directions after
         // admission so active players cannot briefly see the spectator's body.
         scheduler.runGlobal(this::reconcileVisibility);
-        emit(MatchEventType.PLAYER_ARRIVED, Map.of(
-                "playerId", snapshot.uuid().toString(), "role", snapshot.role().name()))
-                .whenComplete((ignored, publishError) -> {
-                    if (publishError == null) result.complete(true);
-                    else result.completeExceptionally(publishError);
-                });
+        emit(
+                        MatchEventType.PLAYER_ARRIVED,
+                        Map.of(
+                                "playerId",
+                                snapshot.uuid().toString(),
+                                "role",
+                                snapshot.role().name()))
+                .whenComplete(
+                        (ignored, publishError) -> {
+                            if (publishError == null) result.complete(true);
+                            else result.completeExceptionally(publishError);
+                        });
     }
 
     CompletionStage<Boolean> startCommit() {
         synchronized (this) {
-            if (lifecycle.state() == MatchState.COUNTDOWN || lifecycle.state() == MatchState.RUNNING) {
+            if (lifecycle.state() == MatchState.COUNTDOWN
+                    || lifecycle.state() == MatchState.RUNNING) {
                 return CompletableFuture.completedFuture(true);
             }
             if (lifecycle.state() != MatchState.ROUTING || !allPlayersArrived()) {
@@ -451,14 +536,21 @@ final class WorkerMatchSession {
         if (manifest.runtimeRules().showIntroduction()
                 && !manifest.runtimeRules().introductionRules().isEmpty()) {
             introductionActive = true;
-            forEachOnlineParticipant((player, snapshot) -> {
-                if (snapshot.role() == ParticipantRole.PLAYER) applyIntroductionMode(player);
-                else applySpectatorState(player);
-                Location destination = introductionLocation();
-                if (destination != null) player.teleportAsync(destination);
-                showTitle(player, message("game.introduction-title", "%game%", gameName()),
-                        Component.empty(), 1, 100, 1);
-            });
+            forEachOnlineParticipant(
+                    (player, snapshot) -> {
+                        if (snapshot.role() == ParticipantRole.PLAYER)
+                            applyIntroductionMode(player);
+                        else applySpectatorState(player);
+                        Location destination = introductionLocation();
+                        if (destination != null) player.teleportAsync(destination);
+                        showTitle(
+                                player,
+                                message("game.introduction-title", "%game%", gameName()),
+                                Component.empty(),
+                                1,
+                                100,
+                                1);
+                    });
             introductionTick(0);
         } else {
             startFormalPreparation();
@@ -468,7 +560,9 @@ final class WorkerMatchSession {
 
     private synchronized boolean allPlayersArrived() {
         return manifest.participants().stream()
-                .filter(player -> player.role() == ParticipantRole.PLAYER && player.requiredAtStart())
+                .filter(
+                        player ->
+                                player.role() == ParticipantRole.PLAYER && player.requiredAtStart())
                 .allMatch(player -> arrived.contains(player.uuid()));
     }
 
@@ -478,12 +572,15 @@ final class WorkerMatchSession {
             beginRunning();
             return;
         }
-        Component title = message("game.start-countdown-title", "%time%", Integer.toString(remaining));
+        Component title =
+                message("game.start-countdown-title", "%time%", Integer.toString(remaining));
         Component subtitle = message("game.start-countdown-subtitle", "%game%", gameName());
-        forEachOnlinePlayer(player -> {
-            showTitle(player, title, subtitle, 1, 20, 1);
-            player.playNote(player.getLocation(), Instrument.BIT, Note.natural(0, Note.Tone.C));
-        });
+        forEachOnlinePlayer(
+                player -> {
+                    showTitle(player, title, subtitle, 1, 20, 1);
+                    player.playNote(
+                            player.getLocation(), Instrument.BIT, Note.natural(0, Note.Tone.C));
+                });
         scheduler.runGlobalLater(() -> finalCountdown(remaining - 1), 20L);
     }
 
@@ -492,14 +589,19 @@ final class WorkerMatchSession {
             if (lifecycle.state() != MatchState.COUNTDOWN) return;
         }
         int duration = manifest.runtimeRules().introductionSeconds();
-        int section = WorkerPresentationService.sectionAt(elapsedSeconds, duration,
-                manifest.runtimeRules().introductionRules().size());
+        int section =
+                WorkerPresentationService.sectionAt(
+                        elapsedSeconds,
+                        duration,
+                        manifest.runtimeRules().introductionRules().size());
         if (section >= 0) {
             List<String> lines = manifest.runtimeRules().introductionRules().get(section);
-            forEachOnlinePlayer(player -> {
-                WorkerPresentationService.sendSection(player, lines);
-                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1F, 1F);
-            });
+            forEachOnlinePlayer(
+                    player -> {
+                        WorkerPresentationService.sendSection(player, lines);
+                        player.playSound(
+                                player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1F, 1F);
+                    });
         }
         if (elapsedSeconds >= duration) {
             introductionActive = false;
@@ -508,8 +610,13 @@ final class WorkerMatchSession {
             return;
         }
         int remaining = duration - elapsedSeconds;
-        Component preparation = message("game.preparation-countdown", "%game%", gameName(),
-                "%time%", Integer.toString(remaining));
+        Component preparation =
+                message(
+                        "game.preparation-countdown",
+                        "%game%",
+                        gameName(),
+                        "%time%",
+                        Integer.toString(remaining));
         updateTimerBossBar(preparation, remaining, duration);
         scheduler.runGlobalLater(() -> introductionTick(elapsedSeconds + 1), 20L);
     }
@@ -519,23 +626,24 @@ final class WorkerMatchSession {
         Component preparationTitle = message("bingo.start-preparation-title");
         Component preparationSubtitle = message("bingo.start-preparation-subtitle");
         Location destination = spectatorLocation();
-        forEachOnlineParticipant((player, snapshot) -> {
-            if (snapshot.role() == ParticipantRole.SPECTATOR) {
-                applySpectatorState(player);
-            } else {
-                player.getInventory().clear();
-                PlayerStateService.clearEffects(player);
-                player.setGameMode(GameMode.ADVENTURE);
-                player.setInvulnerable(false);
-                player.setFlying(false);
-                player.setAllowFlight(false);
-            }
-            PlayerStateService.resetVitals(player);
-            PlayerStateService.resetExperience(player);
-            if (destination != null) player.teleportAsync(destination);
-            player.sendMessage(preparationMessage);
-            showTitle(player, preparationTitle, preparationSubtitle, 1, 20, 1);
-        });
+        forEachOnlineParticipant(
+                (player, snapshot) -> {
+                    if (snapshot.role() == ParticipantRole.SPECTATOR) {
+                        applySpectatorState(player);
+                    } else {
+                        player.getInventory().clear();
+                        PlayerStateService.clearEffects(player);
+                        player.setGameMode(GameMode.ADVENTURE);
+                        player.setInvulnerable(false);
+                        player.setFlying(false);
+                        player.setAllowFlight(false);
+                    }
+                    PlayerStateService.resetVitals(player);
+                    PlayerStateService.resetExperience(player);
+                    if (destination != null) player.teleportAsync(destination);
+                    player.sendMessage(preparationMessage);
+                    showTitle(player, preparationTitle, preparationSubtitle, 1, 20, 1);
+                });
         preparationTick(manifest.runtimeRules().preparationSeconds());
     }
 
@@ -548,26 +656,37 @@ final class WorkerMatchSession {
             prepareRoundAndScatter();
             return;
         }
-        Component preparation = message("game.preparation-countdown", "%game%", gameName(),
-                "%time%", Integer.toString(remaining));
+        Component preparation =
+                message(
+                        "game.preparation-countdown",
+                        "%game%",
+                        gameName(),
+                        "%time%",
+                        Integer.toString(remaining));
         updateTimerBossBar(preparation, remaining, manifest.runtimeRules().preparationSeconds());
         scheduler.runGlobalLater(() -> preparationTick(remaining - 1), 20L);
     }
 
     private void prepareRoundAndScatter() {
-        String scatterWorld = manifest.scoring().variant().remix() == BingoRemix.NETHER
-                ? config.nether() : config.overworld();
+        String scatterWorld =
+                manifest.scoring().variant().remix() == BingoRemix.NETHER
+                        ? config.nether()
+                        : config.overworld();
         World world = plugin.getServer().getWorld(scatterWorld);
         if (world == null) {
             abort("overworld-unavailable-before-scatter");
             return;
         }
         world.setTime(BingoWorldRules.START_TIME);
-        List<Integer> playingTeams = participants.values().stream()
-                .filter(snapshot -> snapshot.role() == ParticipantRole.PLAYER)
-                .map(PlayerSnapshot::teamId).distinct().toList();
-        CompletableFuture<Void> locations = scatter.prepareAsync(world, playingTeams,
-                manifest.runtimeRules().scatterMaxTries());
+        List<Integer> playingTeams =
+                participants.values().stream()
+                        .filter(snapshot -> snapshot.role() == ParticipantRole.PLAYER)
+                        .map(PlayerSnapshot::teamId)
+                        .distinct()
+                        .toList();
+        CompletableFuture<Void> locations =
+                scatter.prepareAsync(
+                        world, playingTeams, manifest.runtimeRules().scatterMaxTries());
         roundPrepared = true;
         updateSidebar();
         List<CompletableFuture<Void>> preparations = new ArrayList<>();
@@ -576,59 +695,111 @@ final class WorkerMatchSession {
             Player player = plugin.getServer().getPlayer(snapshot.uuid());
             if (player == null) continue;
             if (snapshot.role() == ParticipantRole.SPECTATOR) {
-                preparations.add(scheduler.runEntityFuture(player, () -> applySpectatorState(player)));
+                preparations.add(
+                        scheduler.runEntityFuture(player, () -> applySpectatorState(player)));
             } else {
-                preparations.add(scheduler.runEntityFuture(player,
-                        () -> {
-                            if (!preparedPlayers.contains(snapshot.uuid())) {
-                                prepareParticipantForRound(player, snapshot, false);
-                            }
-                        }));
+                preparations.add(
+                        scheduler.runEntityFuture(
+                                player,
+                                () -> {
+                                    if (!preparedPlayers.contains(snapshot.uuid())) {
+                                        prepareParticipantForRound(player, snapshot, false);
+                                    }
+                                }));
             }
         }
         CompletableFuture.allOf(preparations.toArray(CompletableFuture[]::new))
-                .whenComplete((ignored, failure) -> scheduler.runGlobal(() -> {
-                    if (state() != MatchState.COUNTDOWN) return;
-                    if (failure != null) {
-                        plugin.getLogger().log(Level.SEVERE, "Unable to prepare Bingo team spawns", failure);
-                        abort("team-scatter-prepare-failed");
-                        return;
-                    }
-                    List<CompletableFuture<Void>> teleports = new ArrayList<>();
-                    for (PlayerSnapshot snapshot : participants.values()) {
-                        if (snapshot.role() != ParticipantRole.PLAYER) continue;
-                        Player player = plugin.getServer().getPlayer(snapshot.uuid());
-                        if (player != null) teleports.add(scatter.teleportAsync(player, snapshot.teamId()));
-                    }
-                    CompletableFuture.allOf(teleports.toArray(CompletableFuture[]::new))
-                            .whenComplete((placed, teleportFailure) -> scheduler.runGlobal(() -> {
-                                if (state() != MatchState.COUNTDOWN) return;
-                                if (teleportFailure != null) {
-                                    plugin.getLogger().log(Level.SEVERE, "Unable to scatter Bingo teams", teleportFailure);
-                                    abort("team-scatter-teleport-failed");
-                                    return;
-                                }
-                                finalCountdown(manifest.runtimeRules().finalCountdownSeconds());
-                            }));
-                }));
+                .whenComplete(
+                        (ignored, failure) ->
+                                scheduler.runGlobal(
+                                        () -> {
+                                            if (state() != MatchState.COUNTDOWN) return;
+                                            if (failure != null) {
+                                                plugin.getLogger()
+                                                        .log(
+                                                                Level.SEVERE,
+                                                                "Unable to prepare Bingo team"
+                                                                        + " spawns",
+                                                                failure);
+                                                abort("team-scatter-prepare-failed");
+                                                return;
+                                            }
+                                            List<CompletableFuture<Void>> teleports =
+                                                    new ArrayList<>();
+                                            for (PlayerSnapshot snapshot : participants.values()) {
+                                                if (snapshot.role() != ParticipantRole.PLAYER)
+                                                    continue;
+                                                Player player =
+                                                        plugin.getServer()
+                                                                .getPlayer(snapshot.uuid());
+                                                if (player != null)
+                                                    teleports.add(
+                                                            scatter.teleportAsync(
+                                                                    player, snapshot.teamId()));
+                                            }
+                                            CompletableFuture.allOf(
+                                                            teleports.toArray(
+                                                                    CompletableFuture[]::new))
+                                                    .whenComplete(
+                                                            (placed, teleportFailure) ->
+                                                                    scheduler.runGlobal(
+                                                                            () -> {
+                                                                                if (state()
+                                                                                        != MatchState
+                                                                                                .COUNTDOWN)
+                                                                                    return;
+                                                                                if (teleportFailure
+                                                                                        != null) {
+                                                                                    plugin.getLogger()
+                                                                                            .log(
+                                                                                                    Level
+                                                                                                            .SEVERE,
+                                                                                                    "Unable"
+                                                                                                        + " to scatter"
+                                                                                                        + " Bingo"
+                                                                                                        + " teams",
+                                                                                                    teleportFailure);
+                                                                                    abort(
+                                                                                            "team-scatter-teleport-failed");
+                                                                                    return;
+                                                                                }
+                                                                                finalCountdown(
+                                                                                        manifest.runtimeRules()
+                                                                                                .finalCountdownSeconds());
+                                                                            }));
+                                        }));
     }
 
     private void startHeartbeat() {
         if (heartbeatTask != null) return;
-        heartbeatTask = scheduler.runGlobalTimer(() -> emit(MatchEventType.HEARTBEAT,
-                Map.of("state", state().name(), "online", Integer.toString(onlineParticipantCount()))), 100L, 100L);
+        heartbeatTask =
+                scheduler.runGlobalTimer(
+                        () ->
+                                emit(
+                                        MatchEventType.HEARTBEAT,
+                                        Map.of(
+                                                "state",
+                                                state().name(),
+                                                "online",
+                                                Integer.toString(onlineParticipantCount()))),
+                        100L,
+                        100L);
         spectatorSyncTask = scheduler.runGlobalTimer(this::syncSpectators, 20L, 20L);
     }
 
-    /** Re-issues the read-only card set after reconnects or inventory reconciliation by another plugin. */
+    /**
+     * Re-issues the read-only card set after reconnects or inventory reconciliation by another
+     * plugin.
+     */
     private void syncSpectators() {
         if (state().terminal()) return;
         reconcileVisibility();
-        forEachOnlineParticipant((player, snapshot) -> {
-            if (snapshot.role() == ParticipantRole.SPECTATOR) {
-                applySpectatorState(player);
-            }
-        });
+        forEachOnlineParticipant(
+                (player, snapshot) -> {
+                    if (snapshot.role() == ParticipantRole.SPECTATOR) {
+                        applySpectatorState(player);
+                    }
+                });
     }
 
     private void beginRunning() {
@@ -662,54 +833,69 @@ final class WorkerMatchSession {
         updateSidebar();
         Component startTitle = message("bingo.game-start-title");
         Component startSubtitle = message("bingo.game-start-subtitle");
-        forEachOnlinePlayer(player -> {
-            player.sendActionBar(message("game.start-action-bar", "%game%", gameName()));
-            showTitle(player, startTitle, startSubtitle, 1, 20, 1);
-            player.playNote(player.getLocation(), Instrument.BIT, Note.natural(1, Note.Tone.C));
-        });
+        forEachOnlinePlayer(
+                player -> {
+                    player.sendActionBar(message("game.start-action-bar", "%game%", gameName()));
+                    showTitle(player, startTitle, startSubtitle, 1, 20, 1);
+                    player.playNote(
+                            player.getLocation(), Instrument.BIT, Note.natural(1, Note.Tone.C));
+                });
         emit(MatchEventType.STARTED, Map.of());
         endTask = scheduler.runGlobalLater(() -> finish("timer"), manifest.durationSeconds() * 20L);
         timerTask = scheduler.runGlobalTimer(this::updateRunningTimer, 1L, 20L);
         startHeartbeat();
         long pvpDelay = Math.max(1L, manifest.runtimeRules().pvpGraceSeconds() * 20L);
-        pvpTask = scheduler.runGlobalLater(() -> {
-            setPvp(true);
-            pvpEnabled = true;
-            forEachOnlinePlayer(player -> player.sendActionBar(message("bingo.pvp-started")));
-        }, pvpDelay);
+        pvpTask =
+                scheduler.runGlobalLater(
+                        () -> {
+                            setPvp(true);
+                            pvpEnabled = true;
+                            forEachOnlinePlayer(
+                                    player -> player.sendActionBar(message("bingo.pvp-started")));
+                        },
+                        pvpDelay);
         startTimedRemix();
     }
 
     void observe(Player player) {
-        if (state() != MatchState.RUNNING) return;
+        if (state() != MatchState.RUNNING || player.getGameMode() == GameMode.SPECTATOR) return;
         PlayerSnapshot participant = participants.get(player.getUniqueId());
         if (participant == null || participant.role() != ParticipantRole.PLAYER) return;
         BingoPermanentEffectService.ensure(player, permanentEffects);
         int teamId = participant.teamId();
-        for (int cellIndex : objectivesFor(player.getUniqueId()).matching(player,
-                cellIndex -> canAttempt(teamId, cellIndex))) {
+        for (int cellIndex :
+                objectivesFor(player.getUniqueId())
+                        .matching(player, cellIndex -> canAttempt(teamId, cellIndex))) {
             acceptCompletion(participant, cellIndex);
         }
     }
 
     void observeAdvancement(Player player, org.bukkit.advancement.Advancement advancement) {
-        if (state() != MatchState.RUNNING) return;
+        if (state() != MatchState.RUNNING || player.getGameMode() == GameMode.SPECTATOR) return;
         PlayerSnapshot participant = participants.get(player.getUniqueId());
         if (participant == null || participant.role() != ParticipantRole.PLAYER) return;
-        for (int cellIndex : objectivesFor(player.getUniqueId()).matchingAdvancement(advancement,
-                cellIndex -> canAttempt(participant.teamId(), cellIndex)))
+        for (int cellIndex :
+                objectivesFor(player.getUniqueId())
+                        .matchingAdvancement(
+                                advancement,
+                                cellIndex -> canAttempt(participant.teamId(), cellIndex)))
             acceptCompletion(participant, cellIndex);
         objectivesFor(player.getUniqueId()).recordCount(player, "advancement_count");
         observe(player);
     }
 
     void observeEventSignal(Player player, String trigger, String param) {
-        if (state() != MatchState.RUNNING) return;
+        if (state() != MatchState.RUNNING || player.getGameMode() == GameMode.SPECTATOR) return;
         PlayerSnapshot participant = participants.get(player.getUniqueId());
         if (participant == null || participant.role() != ParticipantRole.PLAYER) return;
         int teamId = participant.teamId();
-        for (int cellIndex : objectivesFor(player.getUniqueId()).matchingEventSignal(player, trigger, param,
-                cellIndex -> canAttempt(teamId, cellIndex))) {
+        for (int cellIndex :
+                objectivesFor(player.getUniqueId())
+                        .matchingEventSignal(
+                                player,
+                                trigger,
+                                param,
+                                cellIndex -> canAttempt(teamId, cellIndex))) {
             acceptCompletion(participant, cellIndex);
         }
     }
@@ -726,9 +912,14 @@ final class WorkerMatchSession {
         observe(player);
     }
 
-    void recordRidingMovement(Player player, org.bukkit.Statistic statistic, double centimeters, BingoRidingTravel.Source source) {
+    void recordRidingMovement(
+            Player player,
+            org.bukkit.Statistic statistic,
+            double centimeters,
+            BingoRidingTravel.Source source) {
         if (!isRunningPlayer(player.getUniqueId())) return;
-        objectivesFor(player.getUniqueId()).recordRidingMovement(player, statistic, centimeters, source);
+        objectivesFor(player.getUniqueId())
+                .recordRidingMovement(player, statistic, centimeters, source);
         observe(player);
     }
 
@@ -741,15 +932,25 @@ final class WorkerMatchSession {
             if (!canAttempt(player.teamId(), cellIndex)) return;
             TeamCell completionKey = new TeamCell(player.teamId(), cellIndex);
             if (!completedTeamCells.add(completionKey)) return;
-            observation = new CompletionObservation(manifest.matchId(), manifest.epoch(), ++completionSeq,
-                    player.teamId(), player.uuid(), cellIndex, elapsedTicks());
+            observation =
+                    new CompletionObservation(
+                            manifest.matchId(),
+                            manifest.epoch(),
+                            ++completionSeq,
+                            player.teamId(),
+                            player.uuid(),
+                            cellIndex,
+                            elapsedTicks());
             decision = scoring.apply(observation);
             if (!decision.accepted()) {
                 completedTeamCells.remove(completionKey);
-                throw new IllegalStateException("Locally validated Bingo completion was rejected: "
-                        + decision.rejectionReason());
+                throw new IllegalStateException(
+                        "Locally validated Bingo completion was rejected: "
+                                + decision.rejectionReason());
             }
-            completionTeamsByCell.computeIfAbsent(cellIndex, ignored -> new ArrayList<>()).add(player.teamId());
+            completionTeamsByCell
+                    .computeIfAbsent(cellIndex, ignored -> new ArrayList<>())
+                    .add(player.teamId());
             hiddenCells.remove(cellIndex);
             settleParallax(player.teamId(), cellIndex);
             if (manifest.scoring().variant().remix() == BingoRemix.COOP) {
@@ -761,27 +962,44 @@ final class WorkerMatchSession {
             }
             outgoingEventSeq = ++eventSeq;
         }
-        MatchEvent event = MatchMessages.taskCompleted(observation, outgoingEventSeq, Clock.systemUTC());
-        events.publishEvent(event).exceptionally(error -> {
-            plugin.getLogger().log(Level.SEVERE, "Unable to publish Bingo completion " + event.messageId(), error);
-            return null;
-        });
-        Component completion = message("bingo.task-completed", "%points%",
-                Integer.toString(decision.cellPoints() + decision.linePointsPerMember()));
+        MatchEvent event =
+                MatchMessages.taskCompleted(observation, outgoingEventSeq, Clock.systemUTC());
+        events.publishEvent(event)
+                .exceptionally(
+                        error -> {
+                            plugin.getLogger()
+                                    .log(
+                                            Level.SEVERE,
+                                            "Unable to publish Bingo completion "
+                                                    + event.messageId(),
+                                            error);
+                            return null;
+                        });
+        Component completion =
+                message(
+                        "bingo.task-completed",
+                        "%points%",
+                        Integer.toString(decision.cellPoints() + decision.linePointsPerMember()));
         TeamSnapshot team = teams.get(player.teamId());
         Component playerName = Component.text(player.username(), teamColor(team));
         Component taskName = WorkerMenuService.displayName(taskAt(cellIndex, player.uuid()));
-        completion = completion.replaceText(builder -> builder.matchLiteral("%player%").replacement(playerName))
-                .replaceText(builder -> builder.matchLiteral("%task%").replacement(taskName));
+        completion =
+                completion
+                        .replaceText(
+                                builder -> builder.matchLiteral("%player%").replacement(playerName))
+                        .replaceText(
+                                builder -> builder.matchLiteral("%task%").replacement(taskName));
         Component finalCompletion = completion;
-        forEachOnlineParticipant((audience, participant) -> {
-            audience.sendMessage(finalCompletion);
-            if (participant.role() == ParticipantRole.PLAYER
-                    && player.teamId().equals(participant.teamId())) {
-                audience.sendActionBar(finalCompletion);
-                audience.playSound(audience.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1F, 1.5F);
-            }
-        });
+        forEachOnlineParticipant(
+                (audience, participant) -> {
+                    audience.sendMessage(finalCompletion);
+                    if (participant.role() == ParticipantRole.PLAYER
+                            && player.teamId().equals(participant.teamId())) {
+                        audience.sendActionBar(finalCompletion);
+                        audience.playSound(
+                                audience.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1F, 1.5F);
+                    }
+                });
         requestSidebarUpdate();
         if (scoring.hasWon(player.teamId())) {
             winnerTeamId = player.teamId();
@@ -800,15 +1018,18 @@ final class WorkerMatchSession {
         if (manifest.scoring().variant().mode().locksCells()
                 && completionTeamsByCell.containsKey(cellIndex)) return false;
         if (manifest.scoring().variant().remix() != BingoRemix.CHAIN) return true;
-        boolean hasCompletion = completedTeamCells.stream().anyMatch(cell -> cell.teamId() == teamId);
+        boolean hasCompletion =
+                completedTeamCells.stream().anyMatch(cell -> cell.teamId() == teamId);
         if (!hasCompletion) return true;
         int width = manifest.scoring().cardWidth();
         int x = cellIndex % width;
         int y = cellIndex / width;
         return (x > 0 && completedTeamCells.contains(new TeamCell(teamId, cellIndex - 1)))
-                || (x + 1 < width && completedTeamCells.contains(new TeamCell(teamId, cellIndex + 1)))
+                || (x + 1 < width
+                        && completedTeamCells.contains(new TeamCell(teamId, cellIndex + 1)))
                 || (y > 0 && completedTeamCells.contains(new TeamCell(teamId, cellIndex - width)))
-                || (y + 1 < width && completedTeamCells.contains(new TeamCell(teamId, cellIndex + width)));
+                || (y + 1 < width
+                        && completedTeamCells.contains(new TeamCell(teamId, cellIndex + width)));
     }
 
     private void applyVariantWorldRules() {
@@ -820,17 +1041,23 @@ final class WorkerMatchSession {
 
     private void startTimedRemix() {
         switch (manifest.scoring().variant().remix()) {
-            case BLIND -> remixTask = scheduler.runGlobalLater(this::revealBlindCell, 3L * 60L * 20L);
-            case FINALE -> remixTask = scheduler.runGlobalLater(this::lockFinaleCell, 5L * 60L * 20L);
-            case VARIATION -> remixTask = scheduler.runGlobalLater(this::varyOpenCells, 4L * 60L * 20L);
-            default -> { }
+            case BLIND ->
+                    remixTask = scheduler.runGlobalLater(this::revealBlindCell, 3L * 60L * 20L);
+            case FINALE ->
+                    remixTask = scheduler.runGlobalLater(this::lockFinaleCell, 5L * 60L * 20L);
+            case VARIATION ->
+                    remixTask = scheduler.runGlobalLater(this::varyOpenCells, 4L * 60L * 20L);
+            default -> {}
         }
     }
 
     private void revealBlindCell() {
         if (state() != MatchState.RUNNING || hiddenCells.isEmpty()) return;
         List<Integer> candidates = new ArrayList<>(hiddenCells);
-        int cell = candidates.get(java.util.concurrent.ThreadLocalRandom.current().nextInt(candidates.size()));
+        int cell =
+                candidates.get(
+                        java.util.concurrent.ThreadLocalRandom.current()
+                                .nextInt(candidates.size()));
         hiddenCells.remove(cell);
         forEachOnlinePlayer(player -> player.sendMessage(message("remix.blind-revealed")));
         remixTask = scheduler.runGlobalLater(this::revealBlindCell, 60L * 20L);
@@ -838,16 +1065,26 @@ final class WorkerMatchSession {
 
     private void lockFinaleCell() {
         if (state() != MatchState.RUNNING) return;
-        List<Integer> candidates = manifest.tasks().stream().map(BingoTaskSpec::cellIndex)
-                .filter(cell -> !lockedCells.contains(cell))
-                .filter(cell -> teams.keySet().stream().noneMatch(team ->
-                        completedTeamCells.contains(new TeamCell(team, cell))))
-                .toList();
+        List<Integer> candidates =
+                manifest.tasks().stream()
+                        .map(BingoTaskSpec::cellIndex)
+                        .filter(cell -> !lockedCells.contains(cell))
+                        .filter(
+                                cell ->
+                                        teams.keySet().stream()
+                                                .noneMatch(
+                                                        team ->
+                                                                completedTeamCells.contains(
+                                                                        new TeamCell(team, cell))))
+                        .toList();
         if (candidates.isEmpty()) {
             scheduler.runGlobal(() -> finish("finale-exhausted"));
             return;
         }
-        int cell = candidates.get(java.util.concurrent.ThreadLocalRandom.current().nextInt(candidates.size()));
+        int cell =
+                candidates.get(
+                        java.util.concurrent.ThreadLocalRandom.current()
+                                .nextInt(candidates.size()));
         lockedCells.add(cell);
         forEachOnlinePlayer(player -> player.sendMessage(message("remix.finale-locked")));
         remixTask = scheduler.runGlobalLater(this::lockFinaleCell, 60L * 20L);
@@ -855,10 +1092,18 @@ final class WorkerMatchSession {
 
     private void varyOpenCells() {
         if (state() != MatchState.RUNNING) return;
-        List<Integer> open = activeTasks.stream().map(BingoTaskSpec::cellIndex)
-                .filter(cell -> teams.keySet().stream().noneMatch(team ->
-                        completedTeamCells.contains(new TeamCell(team, cell))))
-                .sorted().toList();
+        List<Integer> open =
+                activeTasks.stream()
+                        .map(BingoTaskSpec::cellIndex)
+                        .filter(
+                                cell ->
+                                        teams.keySet().stream()
+                                                .noneMatch(
+                                                        team ->
+                                                                completedTeamCells.contains(
+                                                                        new TeamCell(team, cell))))
+                        .sorted()
+                        .toList();
         if (open.size() > 1) {
             Map<Integer, BingoTaskSpec> byCell = new HashMap<>();
             activeTasks.forEach(task -> byCell.put(task.cellIndex(), task));
@@ -867,16 +1112,24 @@ final class WorkerMatchSession {
             for (int index = 0; index < open.size(); index++) {
                 int targetCell = open.get(index);
                 BingoTaskSpec source = byCell.get(open.get((index + 1) % open.size()));
-                changed.put(targetCell, new BingoTaskSpec(targetCell,
-                        source.taskId() + "#v" + variationGeneration,
-                        source.taskType(), source.attributes()));
+                changed.put(
+                        targetCell,
+                        new BingoTaskSpec(
+                                targetCell,
+                                source.taskId() + "#v" + variationGeneration,
+                                source.taskType(),
+                                source.attributes()));
             }
-            activeTasks = changed.values().stream()
-                    .sorted(java.util.Comparator.comparingInt(BingoTaskSpec::cellIndex)).toList();
+            activeTasks =
+                    changed.values().stream()
+                            .sorted(java.util.Comparator.comparingInt(BingoTaskSpec::cellIndex))
+                            .toList();
             objectives.replace(activeTasks);
-            forEachOnlineParticipant((player, snapshot) -> {
-                if (snapshot.role() == ParticipantRole.PLAYER) objectives.captureBaselines(player);
-            });
+            forEachOnlineParticipant(
+                    (player, snapshot) -> {
+                        if (snapshot.role() == ParticipantRole.PLAYER)
+                            objectives.captureBaselines(player);
+                    });
             forEachOnlinePlayer(player -> player.sendMessage(message("remix.variation-refreshed")));
         }
         remixTask = scheduler.runGlobalLater(this::varyOpenCells, 4L * 60L * 20L);
@@ -890,7 +1143,9 @@ final class WorkerMatchSession {
             java.util.Random random = new java.util.Random(manifest.cardSeed() + teamId * 7919L);
             for (int index = cells - 1; index > 0; index--) {
                 int swap = random.nextInt(index + 1);
-                int value = order[index]; order[index] = order[swap]; order[swap] = value;
+                int value = order[index];
+                order[index] = order[swap];
+                order[swap] = value;
             }
             parallaxOrders.put(teamId, order);
         }
@@ -900,13 +1155,19 @@ final class WorkerMatchSession {
         for (PlayerSnapshot participant : manifest.participants()) {
             if (participant.role() != ParticipantRole.PLAYER) continue;
             List<BingoTaskSpec> shuffled = new ArrayList<>(manifest.tasks());
-            java.util.Collections.shuffle(shuffled,
-                    new java.util.Random(manifest.cardSeed() + participant.uuid().hashCode() * 1_000_003L));
+            java.util.Collections.shuffle(
+                    shuffled,
+                    new java.util.Random(
+                            manifest.cardSeed() + participant.uuid().hashCode() * 1_000_003L));
             List<BingoTaskSpec> playerTasks = new ArrayList<>(shuffled.size());
             for (int cell = 0; cell < shuffled.size(); cell++) {
                 BingoTaskSpec source = shuffled.get(cell);
-                playerTasks.add(new BingoTaskSpec(cell, source.taskId() + "@" + cell,
-                        source.taskType(), source.attributes()));
+                playerTasks.add(
+                        new BingoTaskSpec(
+                                cell,
+                                source.taskId() + "@" + cell,
+                                source.taskType(),
+                                source.attributes()));
             }
             List<BingoTaskSpec> frozen = List.copyOf(playerTasks);
             differentialTasks.put(participant.uuid(), frozen);
@@ -923,21 +1184,40 @@ final class WorkerMatchSession {
         if (order == null) return;
         int displayedAt = -1;
         for (int index = 0; index < order.length; index++)
-            if (order[index] == trueIndex) { displayedAt = index; break; }
+            if (order[index] == trueIndex) {
+                displayedAt = index;
+                break;
+            }
         if (displayedAt < 0 || displayedAt == trueIndex) return;
         int displaced = order[trueIndex];
         order[trueIndex] = trueIndex;
         order[displayedAt] = displaced;
     }
 
-    List<BingoTaskSpec> tasksSnapshot() { return activeTasks; }
+    List<BingoTaskSpec> tasksSnapshot() {
+        return activeTasks;
+    }
+
     List<BingoTaskSpec> tasksSnapshot(UUID playerId) {
         return differentialTasks.getOrDefault(playerId, activeTasks);
     }
-    boolean cellHidden(int cell) { return hiddenCells.contains(cell); }
-    boolean cellLocked(int cell) { return lockedCells.contains(cell); }
-    Set<Integer> hiddenSnapshot() { return Set.copyOf(hiddenCells); }
-    Set<Integer> lockedSnapshot() { return Set.copyOf(lockedCells); }
+
+    boolean cellHidden(int cell) {
+        return hiddenCells.contains(cell);
+    }
+
+    boolean cellLocked(int cell) {
+        return lockedCells.contains(cell);
+    }
+
+    Set<Integer> hiddenSnapshot() {
+        return Set.copyOf(hiddenCells);
+    }
+
+    Set<Integer> lockedSnapshot() {
+        return Set.copyOf(lockedCells);
+    }
+
     int[] displayOrder(int teamId) {
         int[] order = parallaxOrders.get(teamId);
         return order == null ? null : order.clone();
@@ -951,10 +1231,12 @@ final class WorkerMatchSession {
     CompletionStage<Boolean> finish(String reason) {
         BingoResult result;
         synchronized (this) {
-            if (lifecycle.state() == MatchState.FINISHED || lifecycle.state() == MatchState.ABORTED) {
+            if (lifecycle.state() == MatchState.FINISHED
+                    || lifecycle.state() == MatchState.ABORTED) {
                 return CompletableFuture.completedFuture(true);
             }
-            if (lifecycle.state() != MatchState.RUNNING) return CompletableFuture.completedFuture(false);
+            if (lifecycle.state() != MatchState.RUNNING)
+                return CompletableFuture.completedFuture(false);
             lifecycle.transitionTo(MatchState.SETTLING);
             result = scoring.result();
         }
@@ -970,23 +1252,36 @@ final class WorkerMatchSession {
         synchronized (this) {
             lifecycle.transitionTo(MatchState.FINISHED);
         }
-        TeamSnapshot winner = winnerTeamId == null ? resolveWinner(result) : teams.get(winnerTeamId);
+        TeamSnapshot winner =
+                winnerTeamId == null ? resolveWinner(result) : teams.get(winnerTeamId);
         winnerTeamId = winner == null ? null : winner.id();
         updateSidebar();
-        Component winnerMessage = winner == null ? null
-                : message("bingo.game-winner", "%points%",
-                Integer.toString(result.teamScores().getOrDefault(winner.id(), 0)))
-                .replaceText(builder -> builder.matchLiteral("%team%")
-                        .replacement(LegacyText.component(winner.name(), teamColor(winner))));
+        Component winnerMessage =
+                winner == null
+                        ? null
+                        : message(
+                                        "bingo.game-winner",
+                                        "%points%",
+                                        Integer.toString(
+                                                result.teamScores().getOrDefault(winner.id(), 0)))
+                                .replaceText(
+                                        builder ->
+                                                builder.matchLiteral("%team%")
+                                                        .replacement(
+                                                                LegacyText.component(
+                                                                        winner.name(),
+                                                                        teamColor(winner))));
         Component endTitle = message("game.completion-title");
         Component endSubtitle = message("bingo.game-end-subtitle");
-        // Spectators are part of the frozen participant roster, so they receive the same authoritative
+        // Spectators are part of the frozen participant roster, so they receive the same
+        // authoritative
         // winner/chat/title result as players before the return route starts.
-        forEachOnlineParticipant((player, snapshot) -> {
-            if (winnerMessage != null) player.sendMessage(winnerMessage);
-            player.sendActionBar(message("game.end-action-bar", "%game%", gameName()));
-            showTitle(player, endTitle, endSubtitle, 1, 20, 1);
-        });
+        forEachOnlineParticipant(
+                (player, snapshot) -> {
+                    if (winnerMessage != null) player.sendMessage(winnerMessage);
+                    player.sendActionBar(message("game.end-action-bar", "%game%", gameName()));
+                    showTitle(player, endTitle, endSubtitle, 1, 20, 1);
+                });
         // Match Core's post-game result display window; otherwise the proxy transfer hides the
         // winner/end title in the same tick it is sent.
         scheduler.runGlobalLater(this::routeEveryoneBack, 200L);
@@ -1001,7 +1296,8 @@ final class WorkerMatchSession {
         cancelTasks();
         worlds.freeze();
         setPvp(true);
-        CompletionStage<MatchEvent> published = emit(MatchEventType.ABORTED, Map.of("reason", reason));
+        CompletionStage<MatchEvent> published =
+                emit(MatchEventType.ABORTED, Map.of("reason", reason));
         routeEveryoneBack();
         return published.thenApply(ignored -> true);
     }
@@ -1016,7 +1312,8 @@ final class WorkerMatchSession {
             if ((current == MatchState.COUNTDOWN || current == MatchState.RUNNING)
                     && isBingoWorldName(quitWorldName)) {
                 // Proxy reconnects may load the player's data from another backend. Keep an
-                // authoritative worker-side position so returning to this match never scatters them.
+                // authoritative worker-side position so returning to this match never scatters
+                // them.
                 lastQuitLocations.put(playerId, quitLocation);
             }
         }
@@ -1028,8 +1325,9 @@ final class WorkerMatchSession {
     void requestVoluntaryLeave(Player player) {
         if (!isPlaying(player.getUniqueId())) return;
         player.sendMessage(message("worker.play.leave.started"));
-        emit(MatchEventType.PLAYER_LEFT, Map.of(
-                "playerId", player.getUniqueId().toString(), "intent", "voluntary"));
+        emit(
+                MatchEventType.PLAYER_LEFT,
+                Map.of("playerId", player.getUniqueId().toString(), "intent", "voluntary"));
     }
 
     CompletionStage<Boolean> removeParticipants(Set<UUID> playerIds) {
@@ -1054,8 +1352,9 @@ final class WorkerMatchSession {
         boolean empty;
         MatchState current;
         synchronized (this) {
-            empty = participants.values().stream().noneMatch(
-                    participant -> participant.role() == ParticipantRole.PLAYER);
+            empty =
+                    participants.values().stream()
+                            .noneMatch(participant -> participant.role() == ParticipantRole.PLAYER);
             current = lifecycle.state();
         }
         if (!empty) {
@@ -1075,8 +1374,10 @@ final class WorkerMatchSession {
             if (existing != null && existing.role() == ParticipantRole.PLAYER) {
                 return CompletableFuture.completedFuture(false);
             }
-            participants.put(playerId, new PlayerSnapshot(playerId, username,
-                    ParticipantRole.SPECTATOR, null, false, points));
+            participants.put(
+                    playerId,
+                    new PlayerSnapshot(
+                            playerId, username, ParticipantRole.SPECTATOR, null, false, points));
         }
         updateSidebar();
         reconcileVisibility();
@@ -1091,10 +1392,13 @@ final class WorkerMatchSession {
         synchronized (this) {
             snapshot = participants.get(player.getUniqueId());
             if (snapshot == null || lifecycle.state().terminal()) return;
-            boolean aggregate = snapshot.role() == ParticipantRole.SPECTATOR
-                    && Integer.valueOf(SPECTATOR_CARD_TEAM).equals(selectedTeamId);
-            int viewedTeam = snapshot.role() == ParticipantRole.PLAYER
-                    ? snapshot.teamId() : selectedTeamId == null ? firstTeamId() : selectedTeamId;
+            boolean aggregate =
+                    snapshot.role() == ParticipantRole.SPECTATOR
+                            && Integer.valueOf(SPECTATOR_CARD_TEAM).equals(selectedTeamId);
+            int viewedTeam =
+                    snapshot.role() == ParticipantRole.PLAYER
+                            ? snapshot.teamId()
+                            : selectedTeamId == null ? firstTeamId() : selectedTeamId;
             if (!aggregate && !teams.containsKey(viewedTeam)) return;
             if (!aggregate && viewedTeam >= 0) {
                 for (TeamCell completed : completedTeamCells) {
@@ -1103,26 +1407,45 @@ final class WorkerMatchSession {
             }
             completionTeamsByCell.forEach((cell, teams) -> all.put(cell, List.copyOf(teams)));
         }
-        boolean aggregate = snapshot.role() == ParticipantRole.SPECTATOR
-                && Integer.valueOf(SPECTATOR_CARD_TEAM).equals(selectedTeamId);
-        int viewedTeam = snapshot.role() == ParticipantRole.PLAYER
-                ? snapshot.teamId() : selectedTeamId == null ? firstTeamId() : selectedTeamId;
-        List<BingoTaskSpec> viewedTasks = snapshot.role() == ParticipantRole.PLAYER || !aggregate
-                ? tasksSnapshot(snapshot.uuid()) : tasksSnapshot();
-        WorkerMenuService.openCard(player, manifest, viewedTasks, Set.copyOf(own), Map.copyOf(all),
-                hiddenSnapshot(), lockedSnapshot(), aggregate ? null : displayOrder(viewedTeam), aggregate);
+        boolean aggregate =
+                snapshot.role() == ParticipantRole.SPECTATOR
+                        && Integer.valueOf(SPECTATOR_CARD_TEAM).equals(selectedTeamId);
+        int viewedTeam =
+                snapshot.role() == ParticipantRole.PLAYER
+                        ? snapshot.teamId()
+                        : selectedTeamId == null ? firstTeamId() : selectedTeamId;
+        List<BingoTaskSpec> viewedTasks =
+                snapshot.role() == ParticipantRole.PLAYER || !aggregate
+                        ? tasksSnapshot(snapshot.uuid())
+                        : tasksSnapshot();
+        WorkerMenuService.openCard(
+                player,
+                manifest,
+                viewedTasks,
+                Set.copyOf(own),
+                Map.copyOf(all),
+                hiddenSnapshot(),
+                lockedSnapshot(),
+                aggregate ? null : displayOrder(viewedTeam),
+                aggregate);
     }
 
     boolean isSpectatorCard(ItemStack item) {
-        if (item == null || item.getType() != Material.FILLED_MAP || item.getItemMeta() == null) return false;
-        String value = item.getItemMeta().getPersistentDataContainer().get(cardKey, PersistentDataType.STRING);
+        if (item == null || item.getType() != Material.FILLED_MAP || item.getItemMeta() == null)
+            return false;
+        String value =
+                item.getItemMeta()
+                        .getPersistentDataContainer()
+                        .get(cardKey, PersistentDataType.STRING);
         return (manifest.matchId() + ":spectator").equals(value);
     }
 
     Integer boundCardTeam(ItemStack item) {
         if (item == null || item.getType() != Material.FILLED_MAP) return null;
-        String value = item.getItemMeta().getPersistentDataContainer().get(
-                cardKey, PersistentDataType.STRING);
+        String value =
+                item.getItemMeta()
+                        .getPersistentDataContainer()
+                        .get(cardKey, PersistentDataType.STRING);
         if (value == null) return null;
         String prefix = manifest.matchId() + ":";
         if (!value.startsWith(prefix)) return null;
@@ -1139,26 +1462,49 @@ final class WorkerMatchSession {
         PlayerSnapshot snapshot;
         synchronized (this) {
             snapshot = participants.get(player.getUniqueId());
-            if (snapshot == null || snapshot.teamId() == null || lifecycle.state().terminal()) return;
+            if (snapshot == null || snapshot.teamId() == null || lifecycle.state().terminal())
+                return;
         }
         TeamSnapshot team = teams.get(snapshot.teamId());
-        if (team != null) WorkerMenuService.openTeammates(player, manifest, team, manifest.participants());
+        if (team != null)
+            WorkerMenuService.openTeammates(player, manifest, team, manifest.participants());
     }
 
     void openSpectatorTargets(Player player) {
         PlayerSnapshot snapshot = participants.get(player.getUniqueId());
-        if (snapshot == null || snapshot.role() != ParticipantRole.SPECTATOR || lifecycle.state().terminal()) return;
-        WorkerMenuService.openSpectatorTargets(player, manifest, manifest.participants());
+        if (snapshot == null
+                || snapshot.role() != ParticipantRole.SPECTATOR
+                || lifecycle.state().terminal()) return;
+        WorkerMenuService.openSpectatorTargets(
+                player, manifest, List.copyOf(participants.values()));
     }
 
     void teleportToSpectatorTarget(Player player, UUID targetId) {
         PlayerSnapshot source = participants.get(player.getUniqueId());
-        if (source == null || source.role() != ParticipantRole.SPECTATOR || lifecycle.state().terminal()) return;
+        if (source == null
+                || source.role() != ParticipantRole.SPECTATOR
+                || lifecycle.state().terminal()) return;
         PlayerSnapshot snapshot = participants.get(targetId);
-        if (snapshot == null || snapshot.role() != ParticipantRole.PLAYER) return;
+        if (snapshot == null || targetId.equals(player.getUniqueId())) return;
         Player target = Bukkit.getPlayer(targetId);
         if (target == null || !target.isOnline()) return;
-        scheduler.runEntity(player, () -> player.teleportAsync(target.getLocation()));
+        scheduler
+                .supplyEntity(target, target::getLocation)
+                .thenAccept(
+                        location -> {
+                            if (location != null)
+                                scheduler.runEntity(
+                                        player,
+                                        () -> {
+                                            PlayerSnapshot current =
+                                                    participants.get(player.getUniqueId());
+                                            if (!lifecycle.state().terminal()
+                                                    && current != null
+                                                    && current.role() == ParticipantRole.SPECTATOR
+                                                    && participants.containsKey(targetId))
+                                                player.teleportAsync(location);
+                                        });
+                        });
     }
 
     void teleportToTeammate(Player player, UUID targetId) {
@@ -1168,7 +1514,9 @@ final class WorkerMatchSession {
             if (lifecycle.state() != MatchState.RUNNING) return;
             source = participants.get(player.getUniqueId());
             target = participants.get(targetId);
-            if (source == null || target == null || source.teamId() == null
+            if (source == null
+                    || target == null
+                    || source.teamId() == null
                     || !source.teamId().equals(target.teamId())) return;
         }
         Player onlineTarget = plugin.getServer().getPlayer(targetId);
@@ -1176,22 +1524,48 @@ final class WorkerMatchSession {
             player.sendMessage(message("compass.target_offline"));
             return;
         }
-        scheduler.supplyEntity(onlineTarget, onlineTarget::getLocation).thenAccept(location -> {
-            if (location == null) return;
-            scheduler.runEntity(player, () -> player.teleportAsync(location).thenAccept(success -> {
-                if (!success) return;
-                Component confirmation = message("compass.teleport_success")
-                        .replaceText(builder -> builder.matchLiteral("{0}")
-                                .replacement(Component.text(target.username(), teamColor(teams.get(target.teamId())))));
-                scheduler.runEntity(player, () -> player.sendMessage(confirmation));
-            }));
-        });
+        scheduler
+                .supplyEntity(onlineTarget, onlineTarget::getLocation)
+                .thenAccept(
+                        location -> {
+                            if (location == null) return;
+                            scheduler.runEntity(
+                                    player,
+                                    () ->
+                                            player.teleportAsync(location)
+                                                    .thenAccept(
+                                                            success -> {
+                                                                if (!success) return;
+                                                                Component confirmation =
+                                                                        message(
+                                                                                        "compass.teleport_success")
+                                                                                .replaceText(
+                                                                                        builder ->
+                                                                                                builder.matchLiteral(
+                                                                                                                "{0}")
+                                                                                                        .replacement(
+                                                                                                                Component
+                                                                                                                        .text(
+                                                                                                                                target
+                                                                                                                                        .username(),
+                                                                                                                                teamColor(
+                                                                                                                                        teams
+                                                                                                                                                .get(
+                                                                                                                                                        target
+                                                                                                                                                                .teamId())))));
+                                                                scheduler.runEntity(
+                                                                        player,
+                                                                        () ->
+                                                                                player.sendMessage(
+                                                                                        confirmation));
+                                                            }));
+                        });
     }
 
     synchronized Map<Integer, List<Integer>> completionSnapshot() {
         Map<Integer, List<Integer>> snapshot = new HashMap<>();
-        completionTeamsByCell.forEach((cell, completedTeams) ->
-                snapshot.put(cell, List.copyOf(completedTeams)));
+        completionTeamsByCell.forEach(
+                (cell, completedTeams) -> snapshot.put(cell, List.copyOf(completedTeams)));
         return Map.copyOf(snapshot);
     }
 
@@ -1207,7 +1581,8 @@ final class WorkerMatchSession {
             view.setScale(MapView.Scale.NORMAL);
             view.setTrackingPosition(false);
             view.setUnlimitedTracking(false);
-            for (MapRenderer renderer : new ArrayList<>(view.getRenderers())) view.removeRenderer(renderer);
+            for (MapRenderer renderer : new ArrayList<>(view.getRenderers()))
+                view.removeRenderer(renderer);
             view.addRenderer(new WorkerCardMapRenderer(manifest, team.id(), this));
             cardViews.put(team.id(), view);
         }
@@ -1215,7 +1590,8 @@ final class WorkerMatchSession {
         spectatorCardView.setScale(MapView.Scale.NORMAL);
         spectatorCardView.setTrackingPosition(false);
         spectatorCardView.setUnlimitedTracking(false);
-        for (MapRenderer renderer : new ArrayList<>(spectatorCardView.getRenderers())) spectatorCardView.removeRenderer(renderer);
+        for (MapRenderer renderer : new ArrayList<>(spectatorCardView.getRenderers()))
+            spectatorCardView.removeRenderer(renderer);
         spectatorCardView.addRenderer(new WorkerCardMapRenderer(manifest, this));
         if (!differentialTasks.isEmpty()) {
             for (PlayerSnapshot participant : manifest.participants()) {
@@ -1224,9 +1600,11 @@ final class WorkerMatchSession {
                 view.setScale(MapView.Scale.NORMAL);
                 view.setTrackingPosition(false);
                 view.setUnlimitedTracking(false);
-                for (MapRenderer renderer : new ArrayList<>(view.getRenderers())) view.removeRenderer(renderer);
-                view.addRenderer(new WorkerCardMapRenderer(manifest, participant.teamId(),
-                        participant.uuid(), this));
+                for (MapRenderer renderer : new ArrayList<>(view.getRenderers()))
+                    view.removeRenderer(renderer);
+                view.addRenderer(
+                        new WorkerCardMapRenderer(
+                                manifest, participant.teamId(), participant.uuid(), this));
                 playerCardViews.put(participant.uuid(), view);
             }
         }
@@ -1243,7 +1621,8 @@ final class WorkerMatchSession {
         ItemStack card = cardItem(teamId, player.getUniqueId());
         if (card == null) return;
         ItemStack offhand = player.getInventory().getItemInOffHand();
-        if (offhand == null || offhand.getType().isAir()) player.getInventory().setItemInOffHand(card);
+        if (offhand == null || offhand.getType().isAir())
+            player.getInventory().setItemInOffHand(card);
         else if (!player.getInventory().addItem(card).isEmpty())
             player.getWorld().dropItemNaturally(player.getLocation(), card);
     }
@@ -1253,35 +1632,63 @@ final class WorkerMatchSession {
     }
 
     private ItemStack cardItem(int teamId, UUID playerId) {
-        MapView view = playerId == null ? cardViews.get(teamId)
-                : playerCardViews.getOrDefault(playerId, cardViews.get(teamId));
+        MapView view =
+                playerId == null
+                        ? cardViews.get(teamId)
+                        : playerCardViews.getOrDefault(playerId, cardViews.get(teamId));
         if (view == null) return null;
         ItemStack card = new ItemStack(Material.FILLED_MAP);
-        card.editMeta(MapMeta.class, meta -> {
-            meta.setMapView(view);
-            TeamSnapshot team = teams.get(teamId);
-            meta.displayName(message("card.map_name", "{0}", team == null ? "" : team.name())
-                    .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false));
-            meta.lore(List.of(message("card.map_hint")
-                    .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false)));
-            meta.getPersistentDataContainer().set(cardKey, PersistentDataType.STRING,
-                    manifest.matchId() + ":" + teamId);
-        });
+        card.editMeta(
+                MapMeta.class,
+                meta -> {
+                    meta.setMapView(view);
+                    TeamSnapshot team = teams.get(teamId);
+                    meta.displayName(
+                            message("card.map_name", "{0}", team == null ? "" : team.name())
+                                    .decoration(
+                                            net.kyori.adventure.text.format.TextDecoration.ITALIC,
+                                            false));
+                    meta.lore(
+                            List.of(
+                                    message("card.map_hint")
+                                            .decoration(
+                                                    net.kyori.adventure.text.format.TextDecoration
+                                                            .ITALIC,
+                                                    false)));
+                    meta.getPersistentDataContainer()
+                            .set(
+                                    cardKey,
+                                    PersistentDataType.STRING,
+                                    manifest.matchId() + ":" + teamId);
+                });
         return card;
     }
 
     private ItemStack spectatorCardItem() {
         if (spectatorCardView == null) return null;
         ItemStack card = new ItemStack(Material.FILLED_MAP);
-        card.editMeta(MapMeta.class, meta -> {
-            meta.setMapView(spectatorCardView);
-            meta.displayName(message("card.spectator_map_name")
-                    .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false));
-            meta.lore(List.of(message("card.map_hint")
-                    .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false)));
-            meta.getPersistentDataContainer().set(cardKey, PersistentDataType.STRING,
-                    manifest.matchId() + ":spectator");
-        });
+        card.editMeta(
+                MapMeta.class,
+                meta -> {
+                    meta.setMapView(spectatorCardView);
+                    meta.displayName(
+                            message("card.spectator_map_name")
+                                    .decoration(
+                                            net.kyori.adventure.text.format.TextDecoration.ITALIC,
+                                            false));
+                    meta.lore(
+                            List.of(
+                                    message("card.map_hint")
+                                            .decoration(
+                                                    net.kyori.adventure.text.format.TextDecoration
+                                                            .ITALIC,
+                                                    false)));
+                    meta.getPersistentDataContainer()
+                            .set(
+                                    cardKey,
+                                    PersistentDataType.STRING,
+                                    manifest.matchId() + ":spectator");
+                });
         return card;
     }
 
@@ -1349,16 +1756,23 @@ final class WorkerMatchSession {
         restoreRoundLocation(player, snapshot, lastQuitLocation);
     }
 
-    private void restoreRoundLocation(Player player, PlayerSnapshot snapshot, Location lastQuitLocation) {
+    private void restoreRoundLocation(
+            Player player, PlayerSnapshot snapshot, Location lastQuitLocation) {
         if (scatter.hasPlacedPlayer(snapshot.uuid())) {
             restoreQuitLocation(player, lastQuitLocation);
             return;
         }
-        scatter.teleportAsync(player, snapshot.teamId()).whenComplete((ignored, failure) -> {
-            if (failure == null) return;
-            plugin.getLogger().log(Level.WARNING, "Unable to place returning Bingo player at team spawn", failure);
-            scheduler.runGlobal(() -> abort("team-scatter-teleport-failed"));
-        });
+        scatter.teleportAsync(player, snapshot.teamId())
+                .whenComplete(
+                        (ignored, failure) -> {
+                            if (failure == null) return;
+                            plugin.getLogger()
+                                    .log(
+                                            Level.WARNING,
+                                            "Unable to place returning Bingo player at team spawn",
+                                            failure);
+                            scheduler.runGlobal(() -> abort("team-scatter-teleport-failed"));
+                        });
     }
 
     private void restoreQuitLocation(Player player, Location location) {
@@ -1368,13 +1782,16 @@ final class WorkerMatchSession {
 
     private boolean isBingoWorldName(String name) {
         if (name == null) return false;
-        return name.equals(config.overworld()) || name.equals(config.nether()) || name.equals(config.end());
+        return name.equals(config.overworld())
+                || name.equals(config.nether())
+                || name.equals(config.end());
     }
 
-    private void prepareParticipantForRound(Player player, PlayerSnapshot snapshot, boolean preserveInventory) {
+    private void prepareParticipantForRound(
+            Player player, PlayerSnapshot snapshot, boolean preserveInventory) {
         TeamSnapshot team = teams.get(snapshot.teamId());
         if (team == null) return;
-        BingoSpectatorService.clear(player);
+        SpectatorStateService.clear(player);
         if (!preserveInventory) {
             player.getInventory().clear();
             PlayerStateService.clearEffects(player);
@@ -1386,8 +1803,12 @@ final class WorkerMatchSession {
         player.setFlying(false);
         PlayerStateService.resetVitals(player);
         if (!BingoStarterKitService.hasKit(player)) {
-            WorkerStarterKit.give(player, team, manifest.runtimeRules().presentation(),
-                    manifest.scoring().variant().remix(), manifest.runMode() == MatchRunMode.DAILY);
+            WorkerStarterKit.give(
+                    player,
+                    team,
+                    manifest.runtimeRules().presentation(),
+                    manifest.scoring().variant().remix(),
+                    manifest.runMode() == MatchRunMode.DAILY);
         }
         ensureCard(player, team.id());
         BingoPermanentEffectService.ensure(player, permanentEffects);
@@ -1398,7 +1819,7 @@ final class WorkerMatchSession {
     }
 
     private void applyWaitingParticipantMode(Player player, boolean introduction) {
-        BingoSpectatorService.clear(player);
+        SpectatorStateService.clear(player);
         if (introduction) {
             applyIntroductionMode(player);
             return;
@@ -1410,9 +1831,11 @@ final class WorkerMatchSession {
     }
 
     private void applyIntroductionMode(Player player) {
-        BingoSpectatorService.clear(player);
-        GameMode mode = manifest.runtimeRules().introductionMode() == BingoIntroductionMode.SPECTATOR
-                ? GameMode.SPECTATOR : GameMode.ADVENTURE;
+        SpectatorStateService.clear(player);
+        GameMode mode =
+                manifest.runtimeRules().introductionMode() == BingoIntroductionMode.SPECTATOR
+                        ? GameMode.SPECTATOR
+                        : GameMode.ADVENTURE;
         player.setGameMode(mode);
         player.setInvulnerable(false);
         if (mode == GameMode.ADVENTURE) {
@@ -1429,18 +1852,20 @@ final class WorkerMatchSession {
             sidebar.show(player);
             refreshSidebar(player, snapshot);
         }
-        BingoSpectatorService.apply(player);
+        SpectatorStateService.apply(player, true);
         applySpectatorControls(player);
         if (roundPrepared) ensureSpectatorCards(player);
     }
 
     boolean handleSpectatorControl(Player player, ItemStack control, boolean rightClick) {
         PlayerSnapshot snapshot = participants.get(player.getUniqueId());
-        if (snapshot == null || snapshot.role() != ParticipantRole.SPECTATOR || control == null) return false;
+        if (snapshot == null || snapshot.role() != ParticipantRole.SPECTATOR || control == null)
+            return false;
         ItemMeta meta = control.getItemMeta();
         if (meta == null) return false;
-        String action = meta.getPersistentDataContainer().get(
-                spectatorControlKey, PersistentDataType.STRING);
+        String action =
+                meta.getPersistentDataContainer()
+                        .get(spectatorControlKey, PersistentDataType.STRING);
         if (action == null) return false;
         if (action.equals("teleport")) {
             if (rightClick) openSpectatorTargets(player);
@@ -1448,11 +1873,15 @@ final class WorkerMatchSession {
         }
         if (action.equals("speed")) {
             float delta = rightClick ? -.05F : .05F;
-            player.setFlySpeed(Math.max(MIN_SPECTATOR_SPEED,
-                    Math.min(MAX_SPECTATOR_SPEED, player.getFlySpeed() + delta)));
+            player.setFlySpeed(
+                    Math.max(
+                            MIN_SPECTATOR_SPEED,
+                            Math.min(MAX_SPECTATOR_SPEED, player.getFlySpeed() + delta)));
             applySpectatorControls(player);
-            spectatorFeedback(player, message("spectator.speed.feedback",
-                            "%speed%", spectatorSpeed(player)), NamedTextColor.YELLOW,
+            spectatorFeedback(
+                    player,
+                    message("spectator.speed.feedback", "%speed%", spectatorSpeed(player)),
+                    NamedTextColor.YELLOW,
                     delta > 0 ? 1.25F : 0.8F);
             return true;
         }
@@ -1461,26 +1890,49 @@ final class WorkerMatchSession {
 
     private void applySpectatorControls(Player player) {
         // Slot 1 is reserved for the Bingo card.
-        player.getInventory().setItem(0, spectatorControl(Material.COMPASS, "teleport",
-                message("spectator.teleport.name").color(NamedTextColor.GREEN)
-                        .decorate(TextDecoration.BOLD),
-                List.of(message("spectator.teleport.hint").color(NamedTextColor.GRAY))));
-        player.getInventory().setItem(7, spectatorControl(Material.FEATHER, "speed",
-                message("spectator.speed.name", "%speed%", spectatorSpeed(player))
-                        .color(NamedTextColor.YELLOW)
-                        .decorate(TextDecoration.BOLD),
-                List.of(message("spectator.speed.faster").color(NamedTextColor.GREEN),
-                        message("spectator.speed.slower").color(NamedTextColor.RED))));
+        player.getInventory()
+                .setItem(
+                        0,
+                        spectatorControl(
+                                Material.COMPASS,
+                                "teleport",
+                                message("spectator.teleport.name")
+                                        .color(NamedTextColor.GREEN)
+                                        .decorate(TextDecoration.BOLD),
+                                List.of(
+                                        message("spectator.teleport.hint")
+                                                .color(NamedTextColor.GRAY))));
+        player.getInventory()
+                .setItem(
+                        7,
+                        spectatorControl(
+                                Material.FEATHER,
+                                "speed",
+                                message("spectator.speed.name", "%speed%", spectatorSpeed(player))
+                                        .color(NamedTextColor.YELLOW)
+                                        .decorate(TextDecoration.BOLD),
+                                List.of(
+                                        message("spectator.speed.faster")
+                                                .color(NamedTextColor.GREEN),
+                                        message("spectator.speed.slower")
+                                                .color(NamedTextColor.RED))));
     }
 
-    private ItemStack spectatorControl(Material material, String action, Component name,
-                                       List<Component> lore) {
+    private ItemStack spectatorControl(
+            Material material, String action, Component name, List<Component> lore) {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
-        meta.displayName(name.decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
-        meta.lore(lore.stream().map(line -> line.decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE)).toList());
-        meta.getPersistentDataContainer().set(spectatorControlKey,
-                PersistentDataType.STRING, action);
+        meta.displayName(
+                name.decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
+        meta.lore(
+                lore.stream()
+                        .map(
+                                line ->
+                                        line.decorationIfAbsent(
+                                                TextDecoration.ITALIC, TextDecoration.State.FALSE))
+                        .toList());
+        meta.getPersistentDataContainer()
+                .set(spectatorControlKey, PersistentDataType.STRING, action);
         item.setItemMeta(meta);
         return item;
     }
@@ -1489,7 +1941,8 @@ final class WorkerMatchSession {
         return Math.round(player.getFlySpeed() * 100F) + "%";
     }
 
-    private static void spectatorFeedback(Player player, Component message, NamedTextColor color, float pitch) {
+    private static void spectatorFeedback(
+            Player player, Component message, NamedTextColor color, float pitch) {
         player.sendActionBar(message.color(color).decorate(TextDecoration.BOLD));
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.7F, pitch);
     }
@@ -1521,14 +1974,16 @@ final class WorkerMatchSession {
         clearVisibility();
         clearNativeTeams();
         worlds.freeze();
-        CompletionStage<MatchEvent> published = emit(MatchEventType.PREPARE_FAILED, Map.of("reason", reason));
+        CompletionStage<MatchEvent> published =
+                emit(MatchEventType.PREPARE_FAILED, Map.of("reason", reason));
         worldReset.run();
         return published.thenApply(ignored -> false);
     }
 
     CompletionStage<Boolean> rejectPreparation(String reason) {
         synchronized (this) {
-            if (lifecycle.state() != MatchState.CREATED) return CompletableFuture.completedFuture(false);
+            if (lifecycle.state() != MatchState.CREATED)
+                return CompletableFuture.completedFuture(false);
             lifecycle.transitionTo(MatchState.PREPARING);
         }
         return failPreparation(reason);
@@ -1537,8 +1992,14 @@ final class WorkerMatchSession {
     private CompletionStage<MatchEvent> emit(MatchEventType type, Map<String, String> attributes) {
         MatchEvent event;
         synchronized (this) {
-            event = MatchMessages.event(manifest.matchId(), manifest.epoch(), ++eventSeq,
-                    type, attributes, Clock.systemUTC());
+            event =
+                    MatchMessages.event(
+                            manifest.matchId(),
+                            manifest.epoch(),
+                            ++eventSeq,
+                            type,
+                            attributes,
+                            Clock.systemUTC());
         }
         return events.publishEvent(event).thenApply(ignored -> event);
     }
@@ -1554,8 +2015,7 @@ final class WorkerMatchSession {
             Player player = plugin.getServer().getPlayer(participant.uuid());
             if (player != null) {
                 clearStateAndReturn(player);
-            }
-            else returnRouter.request(participant.uuid());
+            } else returnRouter.request(participant.uuid());
         }
         worldReset.run();
     }
@@ -1567,21 +2027,29 @@ final class WorkerMatchSession {
      * the lobby. The return request is therefore chained to the completed entity cleanup.
      */
     private void clearStateAndReturn(Player player) {
-        CompletableFuture<Void> cleared = scheduler.runEntityFuture(player, () -> {
-            sidebar.hide(player);
-            player.getInventory().clear();
-            BingoSpectatorService.clear(player);
-            PlayerStateService.clearEffects(player);
-            PlayerStateService.resetVitals(player);
-            player.setGameMode(GameMode.ADVENTURE);
-        });
-        cleared.whenComplete((ignored, failure) -> {
-            if (failure != null) {
-                plugin.getLogger().log(java.util.logging.Level.WARNING,
-                        "Unable to clear Bingo player state before return " + player.getUniqueId(), failure);
-            }
-            returnRouter.request(player.getUniqueId());
-        });
+        CompletableFuture<Void> cleared =
+                scheduler.runEntityFuture(
+                        player,
+                        () -> {
+                            sidebar.hide(player);
+                            player.getInventory().clear();
+                            SpectatorStateService.clear(player);
+                            PlayerStateService.clearEffects(player);
+                            PlayerStateService.resetVitals(player);
+                            player.setGameMode(GameMode.ADVENTURE);
+                        });
+        cleared.whenComplete(
+                (ignored, failure) -> {
+                    if (failure != null) {
+                        plugin.getLogger()
+                                .log(
+                                        java.util.logging.Level.WARNING,
+                                        "Unable to clear Bingo player state before return "
+                                                + player.getUniqueId(),
+                                        failure);
+                    }
+                    returnRouter.request(player.getUniqueId());
+                });
     }
 
     private void createNativeTeams() {
@@ -1590,8 +2058,14 @@ final class WorkerMatchSession {
         try {
             for (TeamSnapshot team : manifest.teams()) {
                 String scoreboardId = nativeTeamId(team.id());
-                Team nativeTeam = nativeTeams.replaceTeam(scoreboardId, team.name(), team.colorName(),
-                        team.colorCode(), List.of(), Team.OptionStatus.ALWAYS);
+                Team nativeTeam =
+                        nativeTeams.replaceTeam(
+                                scoreboardId,
+                                team.name(),
+                                team.colorName(),
+                                team.colorCode(),
+                                List.of(),
+                                Team.OptionStatus.ALWAYS);
                 nativeTeamOverlay.own(nativeTeam);
                 nativeScoreboardTeams.put(team.id(), nativeTeam);
             }
@@ -1650,8 +2124,12 @@ final class WorkerMatchSession {
             // The same platform limitation may also reject cleanup operations.
         }
         nativeScoreboardTeams.clear();
-        plugin.getLogger().warning("Native Bingo team projection is unavailable on this platform; "
-                + "continuing without native scoreboard teams (" + unsupported.getMessage() + ")");
+        plugin.getLogger()
+                .warning(
+                        "Native Bingo team projection is unavailable on this platform; "
+                                + "continuing without native scoreboard teams ("
+                                + unsupported.getMessage()
+                                + ")");
     }
 
     static String nativeTeamId(int teamId) {
@@ -1672,83 +2150,55 @@ final class WorkerMatchSession {
         hideTimerBossBar();
     }
 
-    /**
-     * Mirrors Core's visibility contract on the worker connection. Participants see one another,
-     * active participants do not see spectators, and spectators see every participant.
-     *
-     * <p>Folia requires the viewer's entity scheduler for these packet-backed operations, so the
-     * global match coordinator only resolves the roster and schedules the actual calls.</p>
-     */
     private void reconcileVisibility() {
-        if (state().terminal()) return;
-        List<Map.Entry<Player, PlayerSnapshot>> online = new ArrayList<>();
-        for (PlayerSnapshot snapshot : participants.values()) {
-            Player player = plugin.getServer().getPlayer(snapshot.uuid());
-            if (player != null && player.isOnline()) online.add(Map.entry(player, snapshot));
-        }
-        for (Map.Entry<Player, PlayerSnapshot> viewerEntry : online) {
-            Player viewer = viewerEntry.getKey();
-            boolean viewerIsSpectator = viewerEntry.getValue().role() == ParticipantRole.SPECTATOR;
-            for (Map.Entry<Player, PlayerSnapshot> targetEntry : online) {
-                Player target = targetEntry.getKey();
-                if (viewer.equals(target)) continue;
-                boolean targetIsSpectator = targetEntry.getValue().role() == ParticipantRole.SPECTATOR;
-                // Spectators can watch active players; participants must not see spectators, and
-                // the custom Adventure-mode presentation hides spectator entities in both directions.
-                boolean visible = !targetIsSpectator;
-                scheduler.runEntity(viewer, () -> {
-                    if (visible) viewer.showEntity(plugin, target);
-                    else viewer.hideEntity(plugin, target);
-                });
-            }
-        }
+        if (plugin instanceof BingoWorkerPlugin worker) worker.reconcilePlayerVisibility();
     }
 
-    /** Releases a removed participant's target from every remaining viewer before routing it away. */
-    private void releaseVisibilityForTarget(UUID targetId) {
-        Player target = plugin.getServer().getPlayer(targetId);
-        if (target == null) return;
-        for (UUID viewerId : participants.keySet()) {
-            if (viewerId.equals(targetId)) continue;
-            Player viewer = plugin.getServer().getPlayer(viewerId);
-            if (viewer != null) scheduler.runEntity(viewer, () -> viewer.showEntity(plugin, target));
-        }
+    private void releaseVisibilityForTarget(UUID playerId) {
+        if (plugin instanceof BingoWorkerPlugin worker) worker.releasePlayerVisibility(playerId);
     }
 
-    /** Removes this match's hides before players are handed back to Core. */
     private void clearVisibility() {
-        List<Player> online = new ArrayList<>();
-        for (PlayerSnapshot snapshot : participants.values()) {
-            Player player = plugin.getServer().getPlayer(snapshot.uuid());
-            if (player != null && player.isOnline()) online.add(player);
-        }
-        for (Player viewer : online) {
-            for (Player target : online) {
-                if (!viewer.equals(target)) scheduler.runEntity(viewer, () -> viewer.showEntity(plugin, target));
-            }
-        }
+        for (UUID id : participants.keySet()) releaseVisibilityForTarget(id);
     }
 
     private void updateRunningTimer() {
         if (state() != MatchState.RUNNING) return;
-        int remaining = Math.max(0, manifest.durationSeconds()
-                - (int) ((System.currentTimeMillis() - startedAtMillis) / 1000L));
+        int remaining =
+                Math.max(
+                        0,
+                        manifest.durationSeconds()
+                                - (int) ((System.currentTimeMillis() - startedAtMillis) / 1000L));
         int elapsed = manifest.durationSeconds() - remaining;
-        if (manifest.runMode() != MatchRunMode.DAILY && remaining > 0 && fireworkSupply.shouldRefill(elapsed)) {
-            forEachOnlineParticipant((player, snapshot) -> {
-                if (state() == MatchState.RUNNING && snapshot.role() == ParticipantRole.PLAYER)
-                    BingoFireworkSupply.give(player);
-            });
+        if (manifest.runMode() != MatchRunMode.DAILY
+                && remaining > 0
+                && fireworkSupply.shouldRefill(elapsed)) {
+            forEachOnlineParticipant(
+                    (player, snapshot) -> {
+                        if (state() == MatchState.RUNNING
+                                && snapshot.role() == ParticipantRole.PLAYER)
+                            BingoFireworkSupply.give(player);
+                    });
         }
-        int graceRemaining = Math.max(0, manifest.runtimeRules().pvpGraceSeconds()
-                - (manifest.durationSeconds() - remaining));
-        Component title = message("bingo.timer", "%time%", DurationText.minutesSeconds(remaining)).append(
-                WorkerPresentationService.component(" &#bababa• ")).append(pvpEnabled
-                ? message("bingo.pvp-active")
-                : message("bingo.pvp-protection", "%time%", Integer.toString(graceRemaining)));
+        int graceRemaining =
+                Math.max(
+                        0,
+                        manifest.runtimeRules().pvpGraceSeconds()
+                                - (manifest.durationSeconds() - remaining));
+        Component title =
+                message("bingo.timer", "%time%", DurationText.minutesSeconds(remaining))
+                        .append(WorkerPresentationService.component(" &#bababa• "))
+                        .append(
+                                pvpEnabled
+                                        ? message("bingo.pvp-active")
+                                        : message(
+                                                "bingo.pvp-protection",
+                                                "%time%",
+                                                Integer.toString(graceRemaining)));
         updateTimerBossBar(title, remaining, manifest.durationSeconds());
         if (!pvpEnabled && graceRemaining >= 1 && graceRemaining <= 10) {
-            Component warning = message("bingo.pvp-countdown", "%time%", Integer.toString(graceRemaining));
+            Component warning =
+                    message("bingo.pvp-countdown", "%time%", Integer.toString(graceRemaining));
             forEachOnlinePlayer(player -> player.sendActionBar(warning));
         }
     }
@@ -1756,7 +2206,9 @@ final class WorkerMatchSession {
     private void updateTimerBossBar(Component title, int remaining, int duration) {
         float progress = duration <= 0 ? 0F : Math.clamp(remaining / (float) duration, 0F, 1F);
         if (timerBossBar == null) {
-            BossBar bar = BossBar.bossBar(title, progress, BossBar.Color.YELLOW, BossBar.Overlay.PROGRESS);
+            BossBar bar =
+                    BossBar.bossBar(
+                            title, progress, BossBar.Color.YELLOW, BossBar.Overlay.PROGRESS);
             timerBossBar = bar;
             forEachOnlinePlayer(player -> player.showBossBar(bar));
         } else {
@@ -1774,16 +2226,18 @@ final class WorkerMatchSession {
     private void updateSidebar() {
         BingoResult result = scoring.result();
         MatchState currentState = state();
-        forEachOnlineParticipant((player, snapshot) ->
-                renderSidebar(player, snapshot, result, currentState));
+        forEachOnlineParticipant(
+                (player, snapshot) -> renderSidebar(player, snapshot, result, currentState));
     }
 
     private void requestSidebarUpdate() {
         if (!sidebarRefreshPending.compareAndSet(false, true)) return;
-        scheduler.runGlobalLater(() -> {
-            sidebarRefreshPending.set(false);
-            updateSidebar();
-        }, 1L);
+        scheduler.runGlobalLater(
+                () -> {
+                    sidebarRefreshPending.set(false);
+                    updateSidebar();
+                },
+                1L);
     }
 
     private void refreshSidebar(Player player, PlayerSnapshot viewer) {
@@ -1791,8 +2245,8 @@ final class WorkerMatchSession {
         renderSidebar(player, viewer, scoring.result(), currentState);
     }
 
-    private void renderSidebar(Player player, PlayerSnapshot viewer, BingoResult result,
-                               MatchState currentState) {
+    private void renderSidebar(
+            Player player, PlayerSnapshot viewer, BingoResult result, MatchState currentState) {
         if (manifest.runtimeRules().presentation().messages().containsKey("sidebar.line-count")) {
             renderConfiguredSidebar(player, viewer, result, currentState);
             return;
@@ -1800,40 +2254,56 @@ final class WorkerMatchSession {
         List<Component> lines = new ArrayList<>();
         lines.add(message("board.separator"));
         lines.add(message("board.current_game", "{0}", gameName()));
-        lines.add(message("board.current_status", "{0}",
-                WorkerPresentationService.sidebarStatus(manifest.runtimeRules().presentation(), currentState)));
+        lines.add(
+                message(
+                        "board.current_status",
+                        "{0}",
+                        WorkerPresentationService.sidebarStatus(
+                                manifest.runtimeRules().presentation(), currentState)));
         lines.add(message("board.teams_header"));
         Integer viewerTeamId = viewer.role() == ParticipantRole.PLAYER ? viewer.teamId() : null;
-        for (WorkerSidebarRanking.Entry entry : WorkerSidebarRanking.select(result, teams, viewerTeamId)) {
+        for (WorkerSidebarRanking.Entry entry :
+                WorkerSidebarRanking.select(result, teams, viewerTeamId)) {
             TeamSnapshot team = entry.team();
             String key = entry.viewerTeam() ? "board.own_team_score" : "board.team_score";
             Component teamName = LegacyText.component(team.name(), teamColor(team));
             if (entry.viewerTeam()) teamName = teamName.decorate(TextDecoration.BOLD);
-            Component row = message(key,
-                    "{0}", Integer.toString(entry.rank()),
-                    "{2}", Integer.toString(result.teamScores().getOrDefault(team.id(), 0)),
-                    "{3}", Integer.toString(result.completedCells().getOrDefault(team.id(), 0)),
-                    "{4}", Integer.toString(manifest.tasks().size()));
+            Component row =
+                    message(
+                            key,
+                            "{0}",
+                            Integer.toString(entry.rank()),
+                            "{2}",
+                            Integer.toString(result.teamScores().getOrDefault(team.id(), 0)),
+                            "{3}",
+                            Integer.toString(result.completedCells().getOrDefault(team.id(), 0)),
+                            "{4}",
+                            Integer.toString(manifest.tasks().size()));
             Component finalTeamName = teamName;
-            lines.add(row.replaceText(builder -> builder.matchLiteral("{1}").replacement(finalTeamName)));
+            lines.add(
+                    row.replaceText(
+                            builder -> builder.matchLiteral("{1}").replacement(finalTeamName)));
         }
         lines.add(Component.empty());
         lines.add(message("board.footer"));
         sidebar.render(player, message("board.title"), lines);
     }
 
-    private void renderConfiguredSidebar(Player player, PlayerSnapshot viewer, BingoResult result,
-                                         MatchState currentState) {
+    private void renderConfiguredSidebar(
+            Player player, PlayerSnapshot viewer, BingoResult result, MatchState currentState) {
         BingoPresentation presentation = manifest.runtimeRules().presentation();
         int count;
         try {
-            count = Integer.parseInt(presentation.messages().getOrDefault("sidebar.line-count", "0"));
+            count =
+                    Integer.parseInt(
+                            presentation.messages().getOrDefault("sidebar.line-count", "0"));
         } catch (NumberFormatException ignored) {
             count = 0;
         }
         String status = WorkerPresentationService.sidebarStatus(presentation, currentState);
         Integer viewerTeamId = viewer.role() == ParticipantRole.PLAYER ? viewer.teamId() : null;
-        int viewerTasks = viewerTeamId == null ? 0 : result.completedCells().getOrDefault(viewerTeamId, 0);
+        int viewerTasks =
+                viewerTeamId == null ? 0 : result.completedCells().getOrDefault(viewerTeamId, 0);
         List<Component> lines = new ArrayList<>();
         for (int index = 0; index < count; index++) {
             String raw = presentation.messages().getOrDefault("sidebar.line." + index, "");
@@ -1845,23 +2315,43 @@ final class WorkerMatchSession {
             lines.add(WorkerPresentationService.component(raw));
         }
         if (lines.size() > 15) lines = new ArrayList<>(lines.subList(0, 15));
-        sidebar.render(player, WorkerPresentationService.component(
-                presentation.messages().getOrDefault("sidebar.title", plainMessage("board.title"))), lines);
+        sidebar.render(
+                player,
+                WorkerPresentationService.component(
+                        presentation
+                                .messages()
+                                .getOrDefault("sidebar.title", plainMessage("board.title"))),
+                lines);
     }
 
-    private void appendConfiguredRanking(List<Component> lines, BingoResult result, Integer viewerTeamId,
-                                         BingoPresentation presentation) {
-        String normal = presentation.messages().getOrDefault("sidebar.ranking-line",
-                "{rank.team-color}{rank.position}. {rank.team} &f{rank.score}");
+    private void appendConfiguredRanking(
+            List<Component> lines,
+            BingoResult result,
+            Integer viewerTeamId,
+            BingoPresentation presentation) {
+        String normal =
+                presentation
+                        .messages()
+                        .getOrDefault(
+                                "sidebar.ranking-line",
+                                "{rank.team-color}{rank.position}. {rank.team} &f{rank.score}");
         String own = presentation.messages().getOrDefault("sidebar.own-ranking-line", normal);
-        for (WorkerSidebarRanking.Entry entry : WorkerSidebarRanking.select(result, teams, viewerTeamId)) {
+        for (WorkerSidebarRanking.Entry entry :
+                WorkerSidebarRanking.select(result, teams, viewerTeamId)) {
             TeamSnapshot team = entry.team();
-            String raw = (entry.viewerTeam() ? own : normal)
-                    .replace("{rank.team-color}", team.colorCode())
-                    .replace("{rank.position}", Integer.toString(entry.rank()))
-                    .replace("{rank.team}", team.name())
-                    .replace("{rank.score}", Integer.toString(result.teamScores().getOrDefault(team.id(), 0)))
-                    .replace("{rank.tasks}", Integer.toString(result.completedCells().getOrDefault(team.id(), 0)));
+            String raw =
+                    (entry.viewerTeam() ? own : normal)
+                            .replace("{rank.team-color}", team.colorCode())
+                            .replace("{rank.position}", Integer.toString(entry.rank()))
+                            .replace("{rank.team}", team.name())
+                            .replace(
+                                    "{rank.score}",
+                                    Integer.toString(
+                                            result.teamScores().getOrDefault(team.id(), 0)))
+                            .replace(
+                                    "{rank.tasks}",
+                                    Integer.toString(
+                                            result.completedCells().getOrDefault(team.id(), 0)));
             lines.add(WorkerPresentationService.component(raw));
         }
     }
@@ -1876,7 +2366,8 @@ final class WorkerMatchSession {
     }
 
     private Component message(String key, String... replacements) {
-        return WorkerPresentationService.message(manifest.runtimeRules().presentation(), key, replacements);
+        return WorkerPresentationService.message(
+                manifest.runtimeRules().presentation(), key, replacements);
     }
 
     private BingoTaskSpec taskAt(int cellIndex) {
@@ -1887,7 +2378,10 @@ final class WorkerMatchSession {
         return tasksSnapshot(playerId).stream()
                 .filter(task -> task.cellIndex() == cellIndex)
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Missing Bingo task for cell " + cellIndex));
+                .orElseThrow(
+                        () ->
+                                new IllegalStateException(
+                                        "Missing Bingo task for cell " + cellIndex));
     }
 
     private TeamSnapshot resolveWinner(BingoResult result) {
@@ -1904,18 +2398,30 @@ final class WorkerMatchSession {
         return color == null ? NamedTextColor.WHITE : color;
     }
 
-    private static void showTitle(Player player, Component title, Component subtitle,
-                                  int fadeInTicks, int stayTicks, int fadeOutTicks) {
-        player.showTitle(Title.title(title, subtitle, Title.Times.times(
-                Duration.ofMillis(fadeInTicks * 50L), Duration.ofMillis(stayTicks * 50L),
-                Duration.ofMillis(fadeOutTicks * 50L))));
+    private static void showTitle(
+            Player player,
+            Component title,
+            Component subtitle,
+            int fadeInTicks,
+            int stayTicks,
+            int fadeOutTicks) {
+        player.showTitle(
+                Title.title(
+                        title,
+                        subtitle,
+                        Title.Times.times(
+                                Duration.ofMillis(fadeInTicks * 50L),
+                                Duration.ofMillis(stayTicks * 50L),
+                                Duration.ofMillis(fadeOutTicks * 50L))));
     }
 
     private void setPvp(boolean enabled) {
-        BingoWorldRules.setPvp(java.util.Arrays.asList(
-                plugin.getServer().getWorld(config.overworld()),
-                plugin.getServer().getWorld(config.nether()),
-                plugin.getServer().getWorld(config.end())), enabled);
+        BingoWorldRules.setPvp(
+                java.util.Arrays.asList(
+                        plugin.getServer().getWorld(config.overworld()),
+                        plugin.getServer().getWorld(config.nether()),
+                        plugin.getServer().getWorld(config.end())),
+                enabled);
     }
 
     private Location introductionLocation() {
@@ -1931,14 +2437,22 @@ final class WorkerMatchSession {
     }
 
     private Location location(BingoLocationSnapshot snapshot) {
-        String worldName = switch (snapshot.dimension()) {
-            case OVERWORLD -> config.overworld();
-            case NETHER -> config.nether();
-            case THE_END -> config.end();
-        };
+        String worldName =
+                switch (snapshot.dimension()) {
+                    case OVERWORLD -> config.overworld();
+                    case NETHER -> config.nether();
+                    case THE_END -> config.end();
+                };
         World world = plugin.getServer().getWorld(worldName);
-        return world == null ? null : new Location(world, snapshot.x(), snapshot.y(), snapshot.z(),
-                snapshot.yaw(), snapshot.pitch());
+        return world == null
+                ? null
+                : new Location(
+                        world,
+                        snapshot.x(),
+                        snapshot.y(),
+                        snapshot.z(),
+                        snapshot.yaw(),
+                        snapshot.pitch());
     }
 
     private long elapsedTicks() {
@@ -1962,17 +2476,18 @@ final class WorkerMatchSession {
         for (Player player : online) scheduler.runEntity(player, () -> action.accept(player));
     }
 
-    private void forEachOnlineParticipant(java.util.function.BiConsumer<Player, PlayerSnapshot> action) {
+    private void forEachOnlineParticipant(
+            java.util.function.BiConsumer<Player, PlayerSnapshot> action) {
         List<Map.Entry<Player, PlayerSnapshot>> online = new ArrayList<>();
         for (PlayerSnapshot snapshot : participants.values()) {
             Player player = plugin.getServer().getPlayer(snapshot.uuid());
             if (player != null) online.add(Map.entry(player, snapshot));
         }
         for (Map.Entry<Player, PlayerSnapshot> entry : online) {
-            scheduler.runEntity(entry.getKey(), () -> action.accept(entry.getKey(), entry.getValue()));
+            scheduler.runEntity(
+                    entry.getKey(), () -> action.accept(entry.getKey(), entry.getValue()));
         }
     }
 
-    private record TeamCell(int teamId, int cellIndex) {
-    }
+    private record TeamCell(int teamId, int cellIndex) {}
 }

@@ -3,7 +3,9 @@ package ink.ziip.championshipscore.configuration.manager;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.configuration.config.BaseConfigurationFile;
+
 import lombok.Getter;
+
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -25,8 +27,7 @@ public abstract class BaseConfigurationManager extends BaseManager {
     }
 
     @Override
-    public void unload() {
-    }
+    public void unload() {}
 
     public boolean reload() {
         Map<BaseConfigurationFile, String> snapshots = new IdentityHashMap<>();
@@ -34,12 +35,10 @@ public abstract class BaseConfigurationManager extends BaseManager {
             snapshots.put(configurationFile, configurationFile.captureRuntimeConfiguration());
 
         for (BaseConfigurationFile baseConfigurationFile : configs) {
-            if (baseConfigurationFile.initializeConfigurationChecked(plugin.getFolder()))
-                continue;
+            if (baseConfigurationFile.initializeConfigurationChecked(plugin.getFolder())) continue;
             snapshots.forEach(BaseConfigurationFile::restoreRuntimeConfiguration);
             return false;
         }
         return true;
     }
-
 }

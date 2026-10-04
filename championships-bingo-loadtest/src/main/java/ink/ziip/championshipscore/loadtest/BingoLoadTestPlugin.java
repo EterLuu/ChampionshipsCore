@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.loadtest;
 
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
+
 import org.bukkit.Chunk;
 import org.bukkit.HeightMap;
 import org.bukkit.Location;
@@ -52,19 +53,34 @@ public final class BingoLoadTestPlugin extends JavaPlugin {
         }
         controller = new ChunkStressController(this, settings);
         getServer().getPluginManager().registerEvents(controller, this);
-        if (getCommand("chunkstress") != null) getCommand("chunkstress").setExecutor(this::executeCommand);
+        if (getCommand("chunkstress") != null)
+            getCommand("chunkstress").setExecutor(this::executeCommand);
 
         if (getConfig().getBoolean("auto-start", false)) {
             // One shot: a later restart must never destroy more map unless explicitly armed again.
             getConfig().set("auto-start", false);
             saveConfig();
             long delay = Math.max(1L, getConfig().getLong("start-delay-seconds", 20L) * 20L);
-            getServer().getGlobalRegionScheduler().runDelayed(this, ignored -> {
-                if (!controller.start()) getLogger().severe("Automatic chunk stress test could not start");
-            }, delay);
-            getLogger().warning("One-shot chunk stress test armed; it will start in " + (delay / 20L) + "s");
+            getServer()
+                    .getGlobalRegionScheduler()
+                    .runDelayed(
+                            this,
+                            ignored -> {
+                                if (!controller.start())
+                                    getLogger()
+                                            .severe("Automatic chunk stress test could not start");
+                            },
+                            delay);
+            getLogger()
+                    .warning(
+                            "One-shot chunk stress test armed; it will start in "
+                                    + (delay / 20L)
+                                    + "s");
         } else {
-            getLogger().info("Chunk stress test is idle; use /chunkstress start or arm auto-start in config.yml");
+            getLogger()
+                    .info(
+                            "Chunk stress test is idle; use /chunkstress start or arm auto-start in"
+                                    + " config.yml");
         }
     }
 
@@ -73,11 +89,15 @@ public final class BingoLoadTestPlugin extends JavaPlugin {
         if (controller != null) controller.stop("plugin-disable", false);
     }
 
-    private boolean executeCommand(CommandSender sender, Command command, String label, String[] args) {
+    private boolean executeCommand(
+            CommandSender sender, Command command, String label, String[] args) {
         if (args.length != 1) return false;
         return switch (args[0].toLowerCase(java.util.Locale.ROOT)) {
             case "start" -> {
-                sender.sendMessage(controller.start() ? "Chunk stress test started" : "Chunk stress test is busy");
+                sender.sendMessage(
+                        controller.start()
+                                ? "Chunk stress test started"
+                                : "Chunk stress test is busy");
                 yield true;
             }
             case "stop" -> {
@@ -96,11 +116,16 @@ public final class BingoLoadTestPlugin extends JavaPlugin {
 
 final class ChunkStressController implements Listener {
     private static final int TEAM_COUNT = 8;
-    static final List<EntityType> MONSTER_TYPES = List.of(
-            EntityType.ZOMBIE, EntityType.SKELETON, EntityType.SPIDER, EntityType.CREEPER);
-    static final List<EntityType> CREATURE_TYPES = List.of(
-            EntityType.COW, EntityType.SHEEP, EntityType.PIG, EntityType.CHICKEN,
-            EntityType.RABBIT, EntityType.GOAT);
+    static final List<EntityType> MONSTER_TYPES =
+            List.of(EntityType.ZOMBIE, EntityType.SKELETON, EntityType.SPIDER, EntityType.CREEPER);
+    static final List<EntityType> CREATURE_TYPES =
+            List.of(
+                    EntityType.COW,
+                    EntityType.SHEEP,
+                    EntityType.PIG,
+                    EntityType.CHICKEN,
+                    EntityType.RABBIT,
+                    EntityType.GOAT);
 
     private final BingoLoadTestPlugin plugin;
     private final StressSettings settings;
@@ -177,18 +202,34 @@ final class ChunkStressController implements Listener {
         lastRateSampleTicks = 0L;
         lastSafetySampleNanos = lastTickNanos;
         lastSafetySampleTicks = 0L;
-        tickTask = plugin.getServer().getGlobalRegionScheduler().runAtFixedRate(
-                plugin, ignored -> tick(), 1L, 1L);
-        plugin.getLogger().warning("CHUNK_STRESS START world=" + world.getName()
-                + " stages=" + settings.stages() + " view=" + settings.viewDistance()
-                + " maxConcurrent=" + settings.maxConcurrentLoads()
-                + " stationarySeparation=" + settings.stationaryPlayerSeparationBlocks()
-                + " entitySpawnBand=" + settings.entityMinimumSpawnDistanceBlocks()
-                + "-" + settings.entityMaximumSpawnDistanceBlocks()
-                + " layoutSwitchInterval=" + settings.layoutSwitchIntervalSeconds() + "s"
-                + " stationaryDispersalSpeed="
-                + settings.stationaryDispersalSpeedBlocksPerSecond()
-                + " entitySpawnRate=" + settings.entitySpawnsPerTick() + "/tick");
+        tickTask =
+                plugin.getServer()
+                        .getGlobalRegionScheduler()
+                        .runAtFixedRate(plugin, ignored -> tick(), 1L, 1L);
+        plugin.getLogger()
+                .warning(
+                        "CHUNK_STRESS START world="
+                                + world.getName()
+                                + " stages="
+                                + settings.stages()
+                                + " view="
+                                + settings.viewDistance()
+                                + " maxConcurrent="
+                                + settings.maxConcurrentLoads()
+                                + " stationarySeparation="
+                                + settings.stationaryPlayerSeparationBlocks()
+                                + " entitySpawnBand="
+                                + settings.entityMinimumSpawnDistanceBlocks()
+                                + "-"
+                                + settings.entityMaximumSpawnDistanceBlocks()
+                                + " layoutSwitchInterval="
+                                + settings.layoutSwitchIntervalSeconds()
+                                + "s"
+                                + " stationaryDispersalSpeed="
+                                + settings.stationaryDispersalSpeedBlocksPerSecond()
+                                + " entitySpawnRate="
+                                + settings.entitySpawnsPerTick()
+                                + "/tick");
         return true;
     }
 
@@ -256,8 +297,11 @@ final class ChunkStressController implements Listener {
 
         Location spawn = selected.getSpawnLocation();
         int maximumWalkers = settings.stages().getLast().walkers();
-        int maximumStationary = settings.stages().stream()
-                .mapToInt(StressSettings.Stage::stationaryWalkers).max().orElse(0);
+        int maximumStationary =
+                settings.stages().stream()
+                        .mapToInt(StressSettings.Stage::stationaryWalkers)
+                        .max()
+                        .orElse(0);
         for (int index = 0; index < maximumWalkers; index++) {
             int team = index % TEAM_COUNT;
             int member = index / TEAM_COUNT;
@@ -269,15 +313,23 @@ final class ChunkStressController implements Listener {
             double dispersedX = anchorX;
             double dispersedZ = anchorZ;
             if (index < maximumStationary) {
-                StationaryLayout.Point dispersed = StationaryLayout.dispersed(
-                        anchorX, anchorZ, anchorAngle, member,
-                        settings.stationaryPlayerSeparationBlocks());
+                StationaryLayout.Point dispersed =
+                        StationaryLayout.dispersed(
+                                anchorX,
+                                anchorZ,
+                                anchorAngle,
+                                member,
+                                settings.stationaryPlayerSeparationBlocks());
                 dispersedX = dispersed.x();
                 dispersedZ = dispersed.z();
                 if (layout == Layout.CONCENTRATED) {
-                    StationaryLayout.Point rendezvous = StationaryLayout.dispersed(
-                            anchorX, anchorZ, anchorAngle, 0,
-                            settings.stationaryPlayerSeparationBlocks());
+                    StationaryLayout.Point rendezvous =
+                            StationaryLayout.dispersed(
+                                    anchorX,
+                                    anchorZ,
+                                    anchorAngle,
+                                    0,
+                                    settings.stationaryPlayerSeparationBlocks());
                     x = rendezvous.x();
                     z = rendezvous.z();
                 } else {
@@ -287,15 +339,23 @@ final class ChunkStressController implements Listener {
             }
             double fanOffset = (member - 3.5) * 0.055;
             double direction = anchorAngle + fanOffset;
-            walkers.add(new VirtualWalker(team, x, z, dispersedX, dispersedZ,
-                    Math.cos(direction), Math.sin(direction)));
+            walkers.add(
+                    new VirtualWalker(
+                            team,
+                            x,
+                            z,
+                            dispersedX,
+                            dispersedZ,
+                            Math.cos(direction),
+                            Math.sin(direction)));
         }
     }
 
     private void tick() {
         if (state != State.RUNNING) return;
         long nowNanos = System.nanoTime();
-        maximumTickGapMillis = Math.max(maximumTickGapMillis, (nowNanos - lastTickNanos) / 1_000_000L);
+        maximumTickGapMillis =
+                Math.max(maximumTickGapMillis, (nowNanos - lastTickNanos) / 1_000_000L);
         lastTickNanos = nowNanos;
         logicalTicks++;
 
@@ -343,18 +403,32 @@ final class ChunkStressController implements Listener {
         layoutSwitches++;
         if (layout == Layout.CONCENTRATED) {
             layout = Layout.DISPERSING;
-            plugin.getLogger().warning("CHUNK_STRESS LAYOUT layout=" + layout
-                    + " switch=" + layoutSwitches + " stationary=" + stage.stationaryWalkers()
-                    + " speed=" + settings.stationaryDispersalSpeedBlocksPerSecond());
+            plugin.getLogger()
+                    .warning(
+                            "CHUNK_STRESS LAYOUT layout="
+                                    + layout
+                                    + " switch="
+                                    + layoutSwitches
+                                    + " stationary="
+                                    + stage.stationaryWalkers()
+                                    + " speed="
+                                    + settings.stationaryDispersalSpeedBlocksPerSecond());
             return;
         }
 
         layout = Layout.CONCENTRATED;
         int rendezvousMember = (layoutSwitches / 2) % 4;
         concentrateStationaryWalkers(stage, rendezvousMember);
-        plugin.getLogger().warning("CHUNK_STRESS LAYOUT layout=" + layout
-                + " switch=" + layoutSwitches + " stationary=" + stage.stationaryWalkers()
-                + " rendezvousMember=" + (rendezvousMember + 1));
+        plugin.getLogger()
+                .warning(
+                        "CHUNK_STRESS LAYOUT layout="
+                                + layout
+                                + " switch="
+                                + layoutSwitches
+                                + " stationary="
+                                + stage.stationaryWalkers()
+                                + " rendezvousMember="
+                                + (rendezvousMember + 1));
     }
 
     private void concentrateStationaryWalkers(StressSettings.Stage stage, int rendezvousMember) {
@@ -372,8 +446,10 @@ final class ChunkStressController implements Listener {
     }
 
     private void moveStationaryWalkers(StressSettings.Stage stage) {
-        double distance = settings.stationaryDispersalSpeedBlocksPerSecond()
-                * settings.movementPeriodTicks() / 20.0;
+        double distance =
+                settings.stationaryDispersalSpeedBlocksPerSecond()
+                        * settings.movementPeriodTicks()
+                        / 20.0;
         for (int index = 0; index < stage.stationaryWalkers(); index++) {
             VirtualWalker walker = walkers.get(index);
             double deltaX = walker.dispersedX - walker.x;
@@ -403,11 +479,14 @@ final class ChunkStressController implements Listener {
         for (ChunkPos entered : next) {
             if (walker.window.contains(entered)) continue;
             int count = references.merge(entered, 1, Integer::sum);
-            if (count == 1 && !tickets.containsKey(entered) && pending.add(entered)) queue.add(entered);
+            if (count == 1 && !tickets.containsKey(entered) && pending.add(entered))
+                queue.add(entered);
         }
         for (ChunkPos exited : walker.window) {
             if (next.contains(exited)) continue;
-            Integer remaining = references.computeIfPresent(exited, (ignored, count) -> count <= 1 ? null : count - 1);
+            Integer remaining =
+                    references.computeIfPresent(
+                            exited, (ignored, count) -> count <= 1 ? null : count - 1);
             if (remaining == null) {
                 // Real player chunk loaders cancel obsolete requests as their view window moves.
                 // Keep submitted loads deduplicated, but make queued stale entries cheap to skip.
@@ -420,7 +499,8 @@ final class ChunkStressController implements Listener {
 
     private void drainQueue() {
         int submitted = 0;
-        while (inflight < settings.maxConcurrentLoads() && submitted < settings.maxSubmissionsPerTick()) {
+        while (inflight < settings.maxConcurrentLoads()
+                && submitted < settings.maxSubmissionsPerTick()) {
             ChunkPos position = queue.poll();
             if (position == null) return;
             if (!pending.contains(position) || !references.containsKey(position)) {
@@ -434,14 +514,25 @@ final class ChunkStressController implements Listener {
             maximumInflight = Math.max(maximumInflight, inflight);
             long started = System.nanoTime();
             long generation = runGeneration;
-            world.getChunkAtAsync(position.x(), position.z(), true).whenComplete((chunk, error) ->
-                    plugin.getServer().getGlobalRegionScheduler().execute(plugin,
-                            () -> completeLoad(generation, position, chunk, error, started)));
+            world.getChunkAtAsync(position.x(), position.z(), true)
+                    .whenComplete(
+                            (chunk, error) ->
+                                    plugin.getServer()
+                                            .getGlobalRegionScheduler()
+                                            .execute(
+                                                    plugin,
+                                                    () ->
+                                                            completeLoad(
+                                                                    generation,
+                                                                    position,
+                                                                    chunk,
+                                                                    error,
+                                                                    started)));
         }
     }
 
-    private void completeLoad(long generation, ChunkPos position, Chunk chunk, Throwable error,
-                              long startedNanos) {
+    private void completeLoad(
+            long generation, ChunkPos position, Chunk chunk, Throwable error, long startedNanos) {
         if (generation != runGeneration) return;
         inflight = Math.max(0, inflight - 1);
         loading.remove(position);
@@ -449,41 +540,57 @@ final class ChunkStressController implements Listener {
         loadLatency.record((System.nanoTime() - startedNanos) / 1_000_000L);
         if (error != null || chunk == null) {
             failedLoads++;
-            if (error != null) plugin.getLogger().log(Level.WARNING,
-                    "Chunk stress load failed at " + position, error);
+            if (error != null)
+                plugin.getLogger()
+                        .log(Level.WARNING, "Chunk stress load failed at " + position, error);
             return;
         }
         completedLoads++;
         if (state != State.RUNNING || !references.containsKey(position)) return;
         Location owner = ownerLocation(position);
-        plugin.getServer().getRegionScheduler().execute(plugin, owner, () -> {
-            if (state != State.RUNNING || !references.containsKey(position)) return;
-            chunk.addPluginChunkTicket(plugin);
-            tickets.put(position, chunk);
-        });
+        plugin.getServer()
+                .getRegionScheduler()
+                .execute(
+                        plugin,
+                        owner,
+                        () -> {
+                            if (state != State.RUNNING || !references.containsKey(position)) return;
+                            chunk.addPluginChunkTicket(plugin);
+                            tickets.put(position, chunk);
+                        });
     }
 
     private void scheduleTicketRelease(ChunkPos position) {
-        plugin.getServer().getGlobalRegionScheduler().runDelayed(plugin, ignored -> {
-            if (references.containsKey(position)) return;
-            Chunk chunk = tickets.remove(position);
-            if (chunk != null) removeTicket(position, chunk);
-        }, Math.max(1, settings.releaseDelayTicks()));
+        plugin.getServer()
+                .getGlobalRegionScheduler()
+                .runDelayed(
+                        plugin,
+                        ignored -> {
+                            if (references.containsKey(position)) return;
+                            Chunk chunk = tickets.remove(position);
+                            if (chunk != null) removeTicket(position, chunk);
+                        },
+                        Math.max(1, settings.releaseDelayTicks()));
     }
 
     private void removeTicket(ChunkPos position, Chunk chunk) {
-        plugin.getServer().getRegionScheduler().execute(plugin, ownerLocation(position),
-                () -> chunk.removePluginChunkTicket(plugin));
+        plugin.getServer()
+                .getRegionScheduler()
+                .execute(
+                        plugin,
+                        ownerLocation(position),
+                        () -> chunk.removePluginChunkTicket(plugin));
     }
 
     private Location ownerLocation(ChunkPos position) {
-        return new Location(world, position.x() * 16.0 + 8.0, world.getMinHeight(),
-                position.z() * 16.0 + 8.0);
+        return new Location(
+                world, position.x() * 16.0 + 8.0, world.getMinHeight(), position.z() * 16.0 + 8.0);
     }
 
     private void advanceStageIfDue() {
         StressSettings.Stage stage = settings.stages().get(stageIndex);
-        if (System.currentTimeMillis() - stageStartedMillis < stage.durationSeconds() * 1000L) return;
+        if (System.currentTimeMillis() - stageStartedMillis < stage.durationSeconds() * 1000L)
+            return;
         if (stageIndex + 1 >= settings.stages().size()) {
             stop("completed", true);
             return;
@@ -492,27 +599,41 @@ final class ChunkStressController implements Listener {
         stageStartedMillis = System.currentTimeMillis();
         StressSettings.Stage next = settings.stages().get(stageIndex);
         activate(next.walkers());
-        plugin.getLogger().warning("CHUNK_STRESS STAGE walkers=" + next.walkers()
-                + " stationary=" + next.stationaryWalkers() + " flying=" + next.flyingWalkers()
-                + " mode=" + next.mode() + " speed=" + next.speedBlocksPerSecond()
-                + " targetWorldEntities=" + next.targetWorldEntities()
-                + " duration=" + next.durationSeconds() + "s");
+        plugin.getLogger()
+                .warning(
+                        "CHUNK_STRESS STAGE walkers="
+                                + next.walkers()
+                                + " stationary="
+                                + next.stationaryWalkers()
+                                + " flying="
+                                + next.flyingWalkers()
+                                + " mode="
+                                + next.mode()
+                                + " speed="
+                                + next.speedBlocksPerSecond()
+                                + " targetWorldEntities="
+                                + next.targetWorldEntities()
+                                + " duration="
+                                + next.durationSeconds()
+                                + "s");
     }
 
     private void enforceLimits() {
         if (completedLoads >= settings.maxCompletedLoads()) stop("max-completed-loads", true);
         else if (pending.size() > settings.maxPendingRequests()) stop("max-pending-requests", true);
-        else if (failedLoads + entitySpawnFailures.get() >= settings.maxFailures()) stop("max-failures", true);
+        else if (failedLoads + entitySpawnFailures.get() >= settings.maxFailures())
+            stop("max-failures", true);
         else if (consecutiveLowTpsSamples >= settings.lowTpsGraceSamples()) {
             stop("minimum-scheduler-tps", true);
-        }
-        else if (latestFreeDiskBytes < settings.minimumFreeDiskBytes()) stop("minimum-free-disk", true);
+        } else if (latestFreeDiskBytes < settings.minimumFreeDiskBytes())
+            stop("minimum-free-disk", true);
     }
 
     private void spawnEntitiesForStage() {
         StressSettings.Stage stage = settings.stages().get(stageIndex);
         if (stage.targetWorldEntities() <= 0 || stage.stationaryWalkers() <= 0) return;
-        int missing = stage.targetWorldEntities() - latestWorldEntities - entitySpawnsInflight.get();
+        int missing =
+                stage.targetWorldEntities() - latestWorldEntities - entitySpawnsInflight.get();
         int budget = Math.min(settings.entitySpawnsPerTick(), Math.max(0, missing));
         for (int index = 0; index < budget; index++) {
             if (!scheduleEntitySpawn()) break;
@@ -523,9 +644,12 @@ final class ChunkStressController implements Listener {
         StressSettings.Stage stage = settings.stages().get(stageIndex);
         for (int attempts = 0; attempts < stage.stationaryWalkers() * 8; attempts++) {
             long sequence = entitySpawnSequence++;
-            NaturalSpawnPlanner.Offset offset = NaturalSpawnPlanner.offset(sequence,
-                    stage.stationaryWalkers(), settings.entityMinimumSpawnDistanceBlocks() + 1.0,
-                    settings.entityMaximumSpawnDistanceBlocks() - 1.0);
+            NaturalSpawnPlanner.Offset offset =
+                    NaturalSpawnPlanner.offset(
+                            sequence,
+                            stage.stationaryWalkers(),
+                            settings.entityMinimumSpawnDistanceBlocks() + 1.0,
+                            settings.entityMaximumSpawnDistanceBlocks() - 1.0);
             VirtualWalker stationaryWalker = walkers.get(offset.ownerIndex());
             int blockX = (int) Math.floor(stationaryWalker.x + offset.x());
             int blockZ = (int) Math.floor(stationaryWalker.z + offset.z());
@@ -536,43 +660,65 @@ final class ChunkStressController implements Listener {
         return false;
     }
 
-    private boolean scheduleNaturalEntitySpawn(long sequence, int ownerIndex, int blockX, int blockZ) {
+    private boolean scheduleNaturalEntitySpawn(
+            long sequence, int ownerIndex, int blockX, int blockZ) {
         Location owner = new Location(world, blockX + 0.5, world.getMinHeight(), blockZ + 0.5);
         EntityType type = entityTypeFor(sequence);
         long generation = runGeneration;
         entitySpawnsInflight.incrementAndGet();
-        plugin.getServer().getRegionScheduler().execute(plugin, owner, () -> {
-            try {
-                StressSettings.Stage current = settings.stages().get(stageIndex);
-                if (generation != runGeneration || state != State.RUNNING
-                        || current.targetWorldEntities() <= 0
-                        || ownerIndex >= current.stationaryWalkers()
-                        || !isWithinNaturalSpawnBand(blockX, blockZ, walkers.get(ownerIndex))) {
-                    return;
-                }
-                int chunkX = blockX >> 4;
-                int chunkZ = blockZ >> 4;
-                if (!world.isChunkLoaded(chunkX, chunkZ)) return;
-                int blockY = world.getHighestBlockYAt(blockX, blockZ,
-                        HeightMap.MOTION_BLOCKING_NO_LEAVES) + 1;
-                Location spawn = new Location(world, blockX + 0.5, blockY, blockZ + 0.5);
-                Entity entity = world.spawnEntity(spawn, type, CreatureSpawnEvent.SpawnReason.NATURAL);
-                entity.setPersistent(false);
-                entity.setInvulnerable(true);
-                if (entity instanceof LivingEntity living) {
-                    living.setRemoveWhenFarAway(false);
-                    living.setAI(true);
-                }
-                managedEntities.put(entity.getUniqueId(), entity);
-            } catch (RuntimeException error) {
-                int failures = entitySpawnFailures.incrementAndGet();
-                if (failures <= 5 || failures % 100 == 0) {
-                    plugin.getLogger().log(Level.WARNING, "Entity stress spawn failed", error);
-                }
-            } finally {
-                if (generation == runGeneration) entitySpawnsInflight.decrementAndGet();
-            }
-        });
+        plugin.getServer()
+                .getRegionScheduler()
+                .execute(
+                        plugin,
+                        owner,
+                        () -> {
+                            try {
+                                StressSettings.Stage current = settings.stages().get(stageIndex);
+                                if (generation != runGeneration
+                                        || state != State.RUNNING
+                                        || current.targetWorldEntities() <= 0
+                                        || ownerIndex >= current.stationaryWalkers()
+                                        || !isWithinNaturalSpawnBand(
+                                                blockX, blockZ, walkers.get(ownerIndex))) {
+                                    return;
+                                }
+                                int chunkX = blockX >> 4;
+                                int chunkZ = blockZ >> 4;
+                                if (!world.isChunkLoaded(chunkX, chunkZ)) return;
+                                int blockY =
+                                        world.getHighestBlockYAt(
+                                                        blockX,
+                                                        blockZ,
+                                                        HeightMap.MOTION_BLOCKING_NO_LEAVES)
+                                                + 1;
+                                Location spawn =
+                                        new Location(world, blockX + 0.5, blockY, blockZ + 0.5);
+                                Entity entity =
+                                        world.spawnEntity(
+                                                spawn,
+                                                type,
+                                                CreatureSpawnEvent.SpawnReason.NATURAL);
+                                entity.setPersistent(false);
+                                entity.setInvulnerable(true);
+                                if (entity instanceof LivingEntity living) {
+                                    living.setRemoveWhenFarAway(false);
+                                    living.setAI(true);
+                                }
+                                managedEntities.put(entity.getUniqueId(), entity);
+                            } catch (RuntimeException error) {
+                                int failures = entitySpawnFailures.incrementAndGet();
+                                if (failures <= 5 || failures % 100 == 0) {
+                                    plugin.getLogger()
+                                            .log(
+                                                    Level.WARNING,
+                                                    "Entity stress spawn failed",
+                                                    error);
+                                }
+                            } finally {
+                                if (generation == runGeneration)
+                                    entitySpawnsInflight.decrementAndGet();
+                            }
+                        });
         return true;
     }
 
@@ -599,39 +745,70 @@ final class ChunkStressController implements Listener {
         scheduleCleanupBatch(entityIterator, ticketIterator);
     }
 
-    private void scheduleCleanupBatch(Iterator<Map.Entry<UUID, Entity>> entityIterator,
-                                      Iterator<Map.Entry<ChunkPos, Chunk>> ticketIterator) {
-        plugin.getServer().getAsyncScheduler().runDelayed(plugin, ignored -> {
-            int entityBudget = 256;
-            while (entityBudget-- > 0 && entityIterator.hasNext()) {
-                Map.Entry<UUID, Entity> entry = entityIterator.next();
-                UUID uuid = entry.getKey();
-                Entity entity = entry.getValue();
-                boolean scheduled = entity.getScheduler().execute(plugin, entity::remove,
-                        () -> managedEntities.remove(uuid, entity), 1L);
-                if (!scheduled) managedEntities.remove(uuid, entity);
-            }
+    private void scheduleCleanupBatch(
+            Iterator<Map.Entry<UUID, Entity>> entityIterator,
+            Iterator<Map.Entry<ChunkPos, Chunk>> ticketIterator) {
+        plugin.getServer()
+                .getAsyncScheduler()
+                .runDelayed(
+                        plugin,
+                        ignored -> {
+                            int entityBudget = 256;
+                            while (entityBudget-- > 0 && entityIterator.hasNext()) {
+                                Map.Entry<UUID, Entity> entry = entityIterator.next();
+                                UUID uuid = entry.getKey();
+                                Entity entity = entry.getValue();
+                                boolean scheduled =
+                                        entity.getScheduler()
+                                                .execute(
+                                                        plugin,
+                                                        entity::remove,
+                                                        () -> managedEntities.remove(uuid, entity),
+                                                        1L);
+                                if (!scheduled) managedEntities.remove(uuid, entity);
+                            }
 
-            int ticketBudget = 256;
-            while (ticketBudget-- > 0 && ticketIterator.hasNext()) {
-                Map.Entry<ChunkPos, Chunk> entry = ticketIterator.next();
-                if (tickets.remove(entry.getKey(), entry.getValue())) {
-                    removeTicket(entry.getKey(), entry.getValue());
-                }
-            }
+                            int ticketBudget = 256;
+                            while (ticketBudget-- > 0 && ticketIterator.hasNext()) {
+                                Map.Entry<ChunkPos, Chunk> entry = ticketIterator.next();
+                                if (tickets.remove(entry.getKey(), entry.getValue())) {
+                                    removeTicket(entry.getKey(), entry.getValue());
+                                }
+                            }
 
-            if (entityIterator.hasNext() || ticketIterator.hasNext()) {
-                scheduleCleanupBatch(entityIterator, ticketIterator);
-                return;
-            }
-            plugin.getServer().getGlobalRegionScheduler().execute(plugin, () -> {
-                state = State.FINISHED;
-                plugin.getServer().getGlobalRegionScheduler().runDelayed(plugin, task ->
-                        plugin.getLogger().info("CHUNK_STRESS CLEANUP managedRemaining="
-                                + managedEntities.size() + " ticketsRemaining=" + tickets.size()
-                                + " worldEntities=" + world.getEntityCount()), 40L);
-            });
-        }, 50L, TimeUnit.MILLISECONDS);
+                            if (entityIterator.hasNext() || ticketIterator.hasNext()) {
+                                scheduleCleanupBatch(entityIterator, ticketIterator);
+                                return;
+                            }
+                            plugin.getServer()
+                                    .getGlobalRegionScheduler()
+                                    .execute(
+                                            plugin,
+                                            () -> {
+                                                state = State.FINISHED;
+                                                plugin.getServer()
+                                                        .getGlobalRegionScheduler()
+                                                        .runDelayed(
+                                                                plugin,
+                                                                task ->
+                                                                        plugin.getLogger()
+                                                                                .info(
+                                                                                        "CHUNK_STRESS"
+                                                                                            + " CLEANUP"
+                                                                                            + " managedRemaining="
+                                                                                                + managedEntities
+                                                                                                        .size()
+                                                                                                + " ticketsRemaining="
+                                                                                                + tickets
+                                                                                                        .size()
+                                                                                                + " worldEntities="
+                                                                                                + world
+                                                                                                        .getEntityCount()),
+                                                                40L);
+                                            });
+                        },
+                        50L,
+                        TimeUnit.MILLISECONDS);
     }
 
     @EventHandler
@@ -641,22 +818,34 @@ final class ChunkStressController implements Listener {
 
     private void checkDiskAsync() {
         if (!diskCheckPending.compareAndSet(false, true)) return;
-        plugin.getServer().getAsyncScheduler().runNow(plugin, ignored -> {
-            long usable = 0L;
-            try {
-                Path path = plugin.getDataFolder().toPath();
-                Files.createDirectories(path);
-                FileStore store = Files.getFileStore(path);
-                usable = store.getUsableSpace();
-            } catch (IOException error) {
-                plugin.getLogger().log(Level.WARNING, "Unable to read free disk space", error);
-            }
-            long result = usable;
-            plugin.getServer().getGlobalRegionScheduler().execute(plugin, () -> {
-                if (result > 0L) latestFreeDiskBytes = result;
-                diskCheckPending.set(false);
-            });
-        });
+        plugin.getServer()
+                .getAsyncScheduler()
+                .runNow(
+                        plugin,
+                        ignored -> {
+                            long usable = 0L;
+                            try {
+                                Path path = plugin.getDataFolder().toPath();
+                                Files.createDirectories(path);
+                                FileStore store = Files.getFileStore(path);
+                                usable = store.getUsableSpace();
+                            } catch (IOException error) {
+                                plugin.getLogger()
+                                        .log(
+                                                Level.WARNING,
+                                                "Unable to read free disk space",
+                                                error);
+                            }
+                            long result = usable;
+                            plugin.getServer()
+                                    .getGlobalRegionScheduler()
+                                    .execute(
+                                            plugin,
+                                            () -> {
+                                                if (result > 0L) latestFreeDiskBytes = result;
+                                                diskCheckPending.set(false);
+                                            });
+                        });
     }
 
     private void sampleSchedulerRate(long nowNanos) {
@@ -690,61 +879,147 @@ final class ChunkStressController implements Listener {
         LatencyHistogram.Snapshot latency = loadLatency.snapshot();
         StressSettings.Stage stage = settings.stages().get(stageIndex);
         int active = state == State.RUNNING ? stage.walkers() : 0;
-        return "stage=" + (stageIndex + 1) + "/" + settings.stages().size()
-                + " mode=" + stage.mode() + " speed=" + stage.speedBlocksPerSecond()
-                + " layout=" + layout + " layoutSwitches=" + layoutSwitches
-                + " walkers=" + active + " stationary="
+        return "stage="
+                + (stageIndex + 1)
+                + "/"
+                + settings.stages().size()
+                + " mode="
+                + stage.mode()
+                + " speed="
+                + stage.speedBlocksPerSecond()
+                + " layout="
+                + layout
+                + " layoutSwitches="
+                + layoutSwitches
+                + " walkers="
+                + active
+                + " stationary="
                 + (state == State.RUNNING ? stage.stationaryWalkers() : 0)
-                + " flying=" + (state == State.RUNNING ? stage.flyingWalkers() : 0)
-                + " schedulerTps=" + twoDecimals(schedulerTps)
-                + " schedulerMspt=" + twoDecimals(schedulerMspt)
-                + " safetyTps=" + twoDecimals(safetySchedulerTps)
-                + " lowTpsSamples=" + consecutiveLowTpsSamples
-                + " completed=" + completedLoads + " failed=" + failedLoads
-                + " pending=" + pending.size() + " rawQueue=" + queue.size()
-                + " inflight=" + inflight + " tickets=" + tickets.size()
-                + " worldEntities=" + latestWorldEntities + " managedEntities=" + managedEntities.size()
-                + " targetPerStationary=" + (stage.stationaryWalkers() == 0 ? 0
-                : (stage.targetWorldEntities() + stage.stationaryWalkers() - 1)
-                / stage.stationaryWalkers())
-                + " entityInflight=" + entitySpawnsInflight.get()
-                + " entityFailed=" + entitySpawnFailures.get()
-                + " latencyAvgMs=" + latency.averageMillis() + " p95Ms=" + latency.p95Millis()
-                + " p99Ms=" + latency.p99Millis() + " maxMs=" + latency.maximumMillis()
-                + " maxTickGapMs=" + maximumTickGapMillis
-                + " freeGiB=" + (latestFreeDiskBytes == Long.MAX_VALUE ? "unknown"
-                : latestFreeDiskBytes / 1024L / 1024L / 1024L);
+                + " flying="
+                + (state == State.RUNNING ? stage.flyingWalkers() : 0)
+                + " schedulerTps="
+                + twoDecimals(schedulerTps)
+                + " schedulerMspt="
+                + twoDecimals(schedulerMspt)
+                + " safetyTps="
+                + twoDecimals(safetySchedulerTps)
+                + " lowTpsSamples="
+                + consecutiveLowTpsSamples
+                + " completed="
+                + completedLoads
+                + " failed="
+                + failedLoads
+                + " pending="
+                + pending.size()
+                + " rawQueue="
+                + queue.size()
+                + " inflight="
+                + inflight
+                + " tickets="
+                + tickets.size()
+                + " worldEntities="
+                + latestWorldEntities
+                + " managedEntities="
+                + managedEntities.size()
+                + " targetPerStationary="
+                + (stage.stationaryWalkers() == 0
+                        ? 0
+                        : (stage.targetWorldEntities() + stage.stationaryWalkers() - 1)
+                                / stage.stationaryWalkers())
+                + " entityInflight="
+                + entitySpawnsInflight.get()
+                + " entityFailed="
+                + entitySpawnFailures.get()
+                + " latencyAvgMs="
+                + latency.averageMillis()
+                + " p95Ms="
+                + latency.p95Millis()
+                + " p99Ms="
+                + latency.p99Millis()
+                + " maxMs="
+                + latency.maximumMillis()
+                + " maxTickGapMs="
+                + maximumTickGapMillis
+                + " freeGiB="
+                + (latestFreeDiskBytes == Long.MAX_VALUE
+                        ? "unknown"
+                        : latestFreeDiskBytes / 1024L / 1024L / 1024L);
     }
 
     private String summary(String reason) {
         long duration = Math.max(0L, System.currentTimeMillis() - runStartedMillis);
-        return "reason=" + reason + " durationMs=" + duration + " completed=" + completedLoads
-                + " failed=" + failedLoads + " stale=" + staleRequests + " maxQueue=" + maximumQueue
-                + " maxRawQueue=" + maximumRawQueue + " maxInflight=" + maximumInflight
-                + " minSchedulerTps=" + twoDecimals(minimumSchedulerTps)
-                + " maxSchedulerMspt=" + twoDecimals(maximumSchedulerMspt)
-                + " maxWorldEntities=" + maximumWorldEntities
-                + " maxManagedEntities=" + maximumManagedEntities + " " + liveMetrics();
+        return "reason="
+                + reason
+                + " durationMs="
+                + duration
+                + " completed="
+                + completedLoads
+                + " failed="
+                + failedLoads
+                + " stale="
+                + staleRequests
+                + " maxQueue="
+                + maximumQueue
+                + " maxRawQueue="
+                + maximumRawQueue
+                + " maxInflight="
+                + maximumInflight
+                + " minSchedulerTps="
+                + twoDecimals(minimumSchedulerTps)
+                + " maxSchedulerMspt="
+                + twoDecimals(maximumSchedulerMspt)
+                + " maxWorldEntities="
+                + maximumWorldEntities
+                + " maxManagedEntities="
+                + maximumManagedEntities
+                + " "
+                + liveMetrics();
     }
 
     private void writeReport(String summary) {
-        plugin.getServer().getAsyncScheduler().runNow(plugin, ignored -> {
-            try {
-                Path directory = plugin.getDataFolder().toPath();
-                Files.createDirectories(directory);
-                String line = "{\"timestamp\":\"" + Instant.now() + "\",\"summary\":\""
-                        + summary.replace("\\", "\\\\").replace("\"", "\\\"") + "\"}\n";
-                Files.writeString(directory.resolve("results.jsonl"), line, StandardCharsets.UTF_8,
-                        StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-            } catch (IOException error) {
-                plugin.getLogger().log(Level.SEVERE, "Unable to write chunk stress result", error);
-            }
-        });
+        plugin.getServer()
+                .getAsyncScheduler()
+                .runNow(
+                        plugin,
+                        ignored -> {
+                            try {
+                                Path directory = plugin.getDataFolder().toPath();
+                                Files.createDirectories(directory);
+                                String line =
+                                        "{\"timestamp\":\""
+                                                + Instant.now()
+                                                + "\",\"summary\":\""
+                                                + summary.replace("\\", "\\\\")
+                                                        .replace("\"", "\\\"")
+                                                + "\"}\n";
+                                Files.writeString(
+                                        directory.resolve("results.jsonl"),
+                                        line,
+                                        StandardCharsets.UTF_8,
+                                        StandardOpenOption.CREATE,
+                                        StandardOpenOption.APPEND);
+                            } catch (IOException error) {
+                                plugin.getLogger()
+                                        .log(
+                                                Level.SEVERE,
+                                                "Unable to write chunk stress result",
+                                                error);
+                            }
+                        });
     }
 
-    private enum State { IDLE, RUNNING, STOPPING, FINISHED }
+    private enum State {
+        IDLE,
+        RUNNING,
+        STOPPING,
+        FINISHED
+    }
 
-    private enum Layout { FIXED, CONCENTRATED, DISPERSING }
+    private enum Layout {
+        FIXED,
+        CONCENTRATED,
+        DISPERSING
+    }
 
     private static final class VirtualWalker {
         private final int team;
@@ -757,8 +1032,14 @@ final class ChunkStressController implements Listener {
         private boolean active;
         private Set<ChunkPos> window = Set.of();
 
-        private VirtualWalker(int team, double x, double z, double dispersedX, double dispersedZ,
-                              double dx, double dz) {
+        private VirtualWalker(
+                int team,
+                double x,
+                double z,
+                double dispersedX,
+                double dispersedZ,
+                double dx,
+                double dz) {
             this.team = team;
             this.x = x;
             this.z = z;

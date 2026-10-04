@@ -5,7 +5,9 @@ import ink.ziip.championshipscore.platform.bukkit.bingo.map.TaskImageAtlas;
 import ink.ziip.championshipscore.protocol.BingoTaskSpec;
 import ink.ziip.championshipscore.protocol.MatchManifest;
 import ink.ziip.championshipscore.protocol.TeamSnapshot;
+
 import net.kyori.adventure.key.Key;
+
 import org.bukkit.Material;
 import org.bukkit.Statistic;
 import org.bukkit.advancement.Advancement;
@@ -38,8 +40,11 @@ final class WorkerCardMapRenderer extends MapRenderer {
         this(manifest, null, null, session);
     }
 
-    WorkerCardMapRenderer(MatchManifest manifest, Integer viewerTeam, java.util.UUID viewerPlayer,
-                          WorkerMatchSession session) {
+    WorkerCardMapRenderer(
+            MatchManifest manifest,
+            Integer viewerTeam,
+            java.util.UUID viewerPlayer,
+            WorkerMatchSession session) {
         super(false);
         this.manifest = manifest;
         this.viewerTeam = viewerTeam;
@@ -53,11 +58,22 @@ final class WorkerCardMapRenderer extends MapRenderer {
         Integer winner = session.winnerTeamId();
         int[] displayOrder = viewerTeam == null ? null : session.displayOrder(viewerTeam);
         if (winner != null) displayOrder = null;
-        List<BingoTaskSpec> renderedTasks = viewerPlayer == null
-                ? session.tasksSnapshot() : session.tasksSnapshot(viewerPlayer);
-        String signature = renderedTasks + "|" + completions + "|winner=" + winner
-                + "|hidden=" + session.hiddenSnapshot() + "|locked=" + session.lockedSnapshot()
-                + "|order=" + java.util.Arrays.toString(displayOrder);
+        List<BingoTaskSpec> renderedTasks =
+                viewerPlayer == null
+                        ? session.tasksSnapshot()
+                        : session.tasksSnapshot(viewerPlayer);
+        String signature =
+                renderedTasks
+                        + "|"
+                        + completions
+                        + "|winner="
+                        + winner
+                        + "|hidden="
+                        + session.hiddenSnapshot()
+                        + "|locked="
+                        + session.lockedSnapshot()
+                        + "|order="
+                        + java.util.Arrays.toString(displayOrder);
         if (signature.equals(lastSignature)) return;
         BufferedImage background = TaskImageAtlas.background();
         if (background != null) drawImage(canvas, 0, 0, background);
@@ -67,8 +83,11 @@ final class WorkerCardMapRenderer extends MapRenderer {
         List<BingoTaskSpec> tasks = renderedTasks;
         for (int displaySlot = 0; displaySlot < tasks.size(); displaySlot++) {
             int trueIndex = displayOrder == null ? displaySlot : displayOrder[displaySlot];
-            BingoTaskSpec task = tasks.stream().filter(candidate -> candidate.cellIndex() == trueIndex)
-                    .findFirst().orElseThrow();
+            BingoTaskSpec task =
+                    tasks.stream()
+                            .filter(candidate -> candidate.cellIndex() == trueIndex)
+                            .findFirst()
+                            .orElseThrow();
             int gridX = displaySlot % width + offset;
             int gridY = displaySlot / width + offset;
             boolean completed = !completions.getOrDefault(trueIndex, List.of()).isEmpty();
@@ -78,7 +97,8 @@ final class WorkerCardMapRenderer extends MapRenderer {
             drawBorders(canvas, gridX, gridY, completions.getOrDefault(trueIndex, List.of()));
         }
         if (winner == null) {
-            if (viewerTeam != null) drawCompletedLines(canvas, completions, width, offset, viewerTeam);
+            if (viewerTeam != null)
+                drawCompletedLines(canvas, completions, width, offset, viewerTeam);
         } else {
             // Local Bingo ends in TOP_SCORE mode: the final overlay highlights every cell completed
             // by the winner rather than pretending that one of their completed lines decided it.
@@ -97,17 +117,23 @@ final class WorkerCardMapRenderer extends MapRenderer {
         int y = gridY * 24 + 4;
         if ("statistic".equals(task.taskType())) {
             Key subject = WorkerTaskDisplay.statisticSubject(task);
-            Statistic statistic = WorkerTaskDisplay.enumValue(Statistic.class, task.attributes().get("statistic"));
+            Statistic statistic =
+                    WorkerTaskDisplay.enumValue(
+                            Statistic.class, task.attributes().get("statistic"));
             boolean any = Boolean.parseBoolean(task.attributes().get("display.any-template"));
-            BufferedImage cell = statistic == null ? null : any
-                    ? TaskImageAtlas.statisticCell(subject, (BufferedImage) null)
-                    : TaskImageAtlas.statisticCell(subject, statistic);
+            BufferedImage cell =
+                    statistic == null
+                            ? null
+                            : any
+                                    ? TaskImageAtlas.statisticCell(subject, (BufferedImage) null)
+                                    : TaskImageAtlas.statisticCell(subject, statistic);
             // statisticCell is already the full 24x24 slot, unlike the normal 22x22 sprites.
             if (cell != null) drawImage(canvas, x, y, cell);
             if (any) drawSetBadge(canvas, x, y);
         } else if ("event".equals(task.taskType())) {
             Key subject = WorkerTaskDisplay.key(task.attributes().get("display.icon-key"));
-            if (subject == null) subject = WorkerTaskDisplay.key(task.attributes().get("display.entity"));
+            if (subject == null)
+                subject = WorkerTaskDisplay.key(task.attributes().get("display.entity"));
             if (subject == null) subject = WorkerTaskDisplay.icon(task).key();
             boolean any = Boolean.parseBoolean(task.attributes().get("display.any-template"));
             BufferedImage badge = null;
@@ -122,7 +148,9 @@ final class WorkerCardMapRenderer extends MapRenderer {
             if (any) drawSetBadge(canvas, x, y);
         } else if ("potion".equals(task.taskType())) {
             Material material = WorkerTaskDisplay.icon(task);
-            BufferedImage image = TaskImageAtlas.potionImageFor(potionInfix(material), task.attributes().get("effect"));
+            BufferedImage image =
+                    TaskImageAtlas.potionImageFor(
+                            potionInfix(material), task.attributes().get("effect"));
             if (image == null) image = atlas(material);
             if (image != null) drawImage(canvas, x + 1, y + 1, image);
         } else if ("item_set".equals(task.taskType())) {
@@ -136,19 +164,26 @@ final class WorkerCardMapRenderer extends MapRenderer {
         } else {
             Material icon = WorkerTaskDisplay.icon(task);
             if ("advancement".equals(task.taskType())) {
-                Advancement advancement = WorkerTaskDisplay.advancement(task.attributes().get("key"));
+                Advancement advancement =
+                        WorkerTaskDisplay.advancement(task.attributes().get("key"));
                 if (advancement != null && advancement.getDisplay() != null) {
-                    BufferedImage frame = TaskImageAtlas.advancementFrame(advancement.getDisplay().frame());
+                    BufferedImage frame =
+                            TaskImageAtlas.advancementFrame(advancement.getDisplay().frame());
                     if (frame != null) drawImageClipped(canvas, x - 1, y - 1, frame, x, y, 24, 24);
                 }
             }
             Key frozenKey = WorkerTaskDisplay.key(task.attributes().get("display.icon-key"));
-            BufferedImage image = frozenKey == null ? atlas(icon) : TaskImageAtlas.imageFor(frozenKey);
+            BufferedImage image =
+                    frozenKey == null ? atlas(icon) : TaskImageAtlas.imageFor(frozenKey);
             if (image != null) drawImage(canvas, x + 1, y + 1, image);
         }
         int amount = WorkerTaskDisplay.amount(task);
         if (amount > 1 || "statistic".equals(task.taskType())) {
-            drawAmount(canvas, gridX, gridY, amount,
+            drawAmount(
+                    canvas,
+                    gridX,
+                    gridY,
+                    amount,
                     "statistic".equals(task.taskType()) || "event".equals(task.taskType()));
         }
     }
@@ -164,12 +199,16 @@ final class WorkerCardMapRenderer extends MapRenderer {
         final int inset = 1, thickness = 2;
         final int lo = inset, hi = size - inset;
         byte[] colors = new byte[filled];
-        for (int index = 0; index < filled; index++) colors[index] = teamColor(completedTeams.get(index));
+        for (int index = 0; index < filled; index++)
+            colors[index] = teamColor(completedTeams.get(index));
         double cx = ox + size / 2.0 - 0.5, cy = oy + size / 2.0 - 0.5;
         for (int dy = lo; dy < hi; dy++) {
             for (int dx = lo; dx < hi; dx++) {
-                boolean onRing = dx < lo + thickness || dx >= hi - thickness
-                        || dy < lo + thickness || dy >= hi - thickness;
+                boolean onRing =
+                        dx < lo + thickness
+                                || dx >= hi - thickness
+                                || dy < lo + thickness
+                                || dy >= hi - thickness;
                 if (!onRing) continue;
                 if (segments == 1) {
                     pixel(canvas, ox + dx, oy + dy, colors[0]);
@@ -184,8 +223,12 @@ final class WorkerCardMapRenderer extends MapRenderer {
         }
     }
 
-    private void drawCompletedLines(MapCanvas canvas, Map<Integer, List<Integer>> completions,
-                                    int width, int offset, int lineTeam) {
+    private void drawCompletedLines(
+            MapCanvas canvas,
+            Map<Integer, List<Integer>> completions,
+            int width,
+            int offset,
+            int lineTeam) {
         List<int[]> lines = new ArrayList<>();
         for (int row = 0; row < width; row++) {
             int[] line = new int[width];
@@ -230,13 +273,24 @@ final class WorkerCardMapRenderer extends MapRenderer {
             int extendedEndX = (int) Math.round(endX + dx / length * extend);
             int extendedEndY = (int) Math.round(endY + dy / length * extend);
             long seed = ((long) first * 73856093L) ^ ((long) last * 19349663L);
-            drawScribbleLine(canvas, extendedStartX, extendedStartY, extendedEndX, extendedEndY,
-                    color, 3, seed);
+            drawScribbleLine(
+                    canvas,
+                    extendedStartX,
+                    extendedStartY,
+                    extendedEndX,
+                    extendedEndY,
+                    color,
+                    3,
+                    seed);
         }
     }
 
-    private void drawWinningCellHighlights(MapCanvas canvas, Map<Integer, List<Integer>> completions,
-                                           int width, int offset, int winner) {
+    private void drawWinningCellHighlights(
+            MapCanvas canvas,
+            Map<Integer, List<Integer>> completions,
+            int width,
+            int offset,
+            int winner) {
         byte color = teamColor(winner);
         for (int cell = 0; cell < manifest.tasks().size(); cell++) {
             if (!completions.getOrDefault(cell, List.of()).contains(winner)) continue;
@@ -268,28 +322,35 @@ final class WorkerCardMapRenderer extends MapRenderer {
         };
     }
 
-    static void drawAmount(MapCanvas canvas, int gridX, int gridY, int amount, boolean shiftUpLeft) {
+    static void drawAmount(
+            MapCanvas canvas, int gridX, int gridY, int amount, boolean shiftUpLeft) {
         String text = Integer.toString(amount);
         int xStart = text.length() == 1 ? 6 : 0;
         int delta = shiftUpLeft ? -1 : 0;
-        canvas.drawText(gridX * 24 + 17 + xStart + delta, gridY * 24 + 21 + delta,
-                MinecraftFont.Font, "§47;" + amount);
-        canvas.drawText(gridX * 24 + 16 + xStart + delta, gridY * 24 + 20 + delta,
-                MinecraftFont.Font, "§58;" + amount);
+        canvas.drawText(
+                gridX * 24 + 17 + xStart + delta,
+                gridY * 24 + 21 + delta,
+                MinecraftFont.Font,
+                "§47;" + amount);
+        canvas.drawText(
+                gridX * 24 + 16 + xStart + delta,
+                gridY * 24 + 20 + delta,
+                MinecraftFont.Font,
+                "§58;" + amount);
     }
 
     private static final int GLYPH_W = 4;
     private static final int GLYPH_H = 5;
     private static final int GLYPH_GAP = 1;
     private static final int[][] ANY_GLYPHS = {
-            {0b0110, 0b1001, 0b1111, 0b1001, 0b1001},
-            {0b1001, 0b1101, 0b1011, 0b1001, 0b1001},
-            {0b1001, 0b1001, 0b0110, 0b0010, 0b0010},
+        {0b0110, 0b1001, 0b1111, 0b1001, 0b1001},
+        {0b1001, 0b1101, 0b1011, 0b1001, 0b1001},
+        {0b1001, 0b1001, 0b0110, 0b0010, 0b0010},
     };
     private static final int[][] ALL_GLYPHS = {
-            {0b0110, 0b1001, 0b1111, 0b1001, 0b1001},
-            {0b1000, 0b1000, 0b1000, 0b1000, 0b1111},
-            {0b1000, 0b1000, 0b1000, 0b1000, 0b1111},
+        {0b0110, 0b1001, 0b1111, 0b1001, 0b1001},
+        {0b1000, 0b1000, 0b1000, 0b1000, 0b1111},
+        {0b1000, 0b1000, 0b1000, 0b1000, 0b1111},
     };
 
     private static void drawSetBadge(MapCanvas canvas, int x, int y) {
@@ -333,8 +394,15 @@ final class WorkerCardMapRenderer extends MapRenderer {
         }
     }
 
-    private static void drawImageClipped(MapCanvas canvas, int x, int y, BufferedImage image,
-                                         int clipX, int clipY, int clipWidth, int clipHeight) {
+    private static void drawImageClipped(
+            MapCanvas canvas,
+            int x,
+            int y,
+            BufferedImage image,
+            int clipX,
+            int clipY,
+            int clipWidth,
+            int clipHeight) {
         byte[] colors = MapColorMatcher.indices(image);
         for (int imageY = 0; imageY < image.getHeight(); imageY++) {
             int pixelY = y + imageY;
@@ -348,8 +416,8 @@ final class WorkerCardMapRenderer extends MapRenderer {
         }
     }
 
-    private static void drawScribbleLine(MapCanvas canvas, int x1, int y1, int x2, int y2,
-                                         byte color, int radius, long seed) {
+    private static void drawScribbleLine(
+            MapCanvas canvas, int x1, int y1, int x2, int y2, byte color, int radius, long seed) {
         double dx = x2 - x1, dy = y2 - y1;
         double length = Math.hypot(dx, dy);
         if (length < 1) return;
@@ -368,7 +436,8 @@ final class WorkerCardMapRenderer extends MapRenderer {
         }
     }
 
-    private static void stampBrush(MapCanvas canvas, int centerX, int centerY, int radius, byte color) {
+    private static void stampBrush(
+            MapCanvas canvas, int centerX, int centerY, int radius, byte color) {
         for (int dy = -radius; dy <= radius; dy++) {
             for (int dx = -radius; dx <= radius; dx++) {
                 if (dx * dx + dy * dy > radius * radius + radius) continue;
@@ -382,8 +451,11 @@ final class WorkerCardMapRenderer extends MapRenderer {
         final int halo = 2;
         for (int dy = 1; dy < size - 1; dy++) {
             for (int dx = 1; dx < size - 1; dx++) {
-                boolean onRing = dx < 1 + halo || dx >= size - 1 - halo
-                        || dy < 1 + halo || dy >= size - 1 - halo;
+                boolean onRing =
+                        dx < 1 + halo
+                                || dx >= size - 1 - halo
+                                || dy < 1 + halo
+                                || dy >= size - 1 - halo;
                 if (onRing) pixel(canvas, originX + dx, originY + dy, color);
             }
         }
@@ -395,6 +467,7 @@ final class WorkerCardMapRenderer extends MapRenderer {
     }
 
     private static void pixel(MapCanvas canvas, int x, int y, byte color) {
-        if (x >= 0 && x < 128 && y >= 0 && y < 128) canvas.setPixelColor(x, y, MapColorMatcher.color(color));
+        if (x >= 0 && x < 128 && y >= 0 && y < 128)
+            canvas.setPixelColor(x, y, MapColorMatcher.color(color));
     }
 }

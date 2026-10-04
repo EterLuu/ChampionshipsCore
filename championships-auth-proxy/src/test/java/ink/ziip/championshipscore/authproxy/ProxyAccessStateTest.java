@@ -1,5 +1,10 @@
 package ink.ziip.championshipscore.authproxy;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -8,16 +13,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 class ProxyAccessStateTest {
     private static final String UUID = "11111111-1111-4111-8111-111111111111";
 
-    @TempDir
-    Path tempDirectory;
+    @TempDir Path tempDirectory;
 
     @Test
     void persistsProfilesBansMaintenanceAndCursorAcrossRestart() throws Exception {
@@ -34,9 +33,14 @@ class ProxyAccessStateTest {
 
         assertEquals("9", restored.cursor());
         assertTrue(restored.initialized());
-        assertEquals(UUID, restored.cachedProfile("allowedplayer", Duration.ZERO, Instant.now()).uuid);
-        assertEquals("BANNED", restored.cachedProfile("BannedPlayer", Duration.ZERO, Instant.now()).status);
-        assertEquals("rule violation", restored.cachedProfile("BannedPlayer", Duration.ZERO, Instant.now()).reason);
+        assertEquals(
+                UUID, restored.cachedProfile("allowedplayer", Duration.ZERO, Instant.now()).uuid);
+        assertEquals(
+                "BANNED",
+                restored.cachedProfile("BannedPlayer", Duration.ZERO, Instant.now()).status);
+        assertEquals(
+                "rule violation",
+                restored.cachedProfile("BannedPlayer", Duration.ZERO, Instant.now()).reason);
     }
 
     @Test
@@ -52,7 +56,8 @@ class ProxyAccessStateTest {
 
     @Test
     void appliesRenameRevocationAndMaintenanceFromIncrementalState() throws Exception {
-        ProxyAccessState state = new ProxyAccessState(tempDirectory.resolve("changes.properties").toFile());
+        ProxyAccessState state =
+                new ProxyAccessState(tempDirectory.resolve("changes.properties").toFile());
         ProxyIdentityClient.ProxyBanSnapshot snapshot = new ProxyIdentityClient.ProxyBanSnapshot();
         snapshot.maintenance = false;
         snapshot.nextCursor = "2";
@@ -79,21 +84,29 @@ class ProxyAccessStateTest {
         batch.nextCursor = "4";
         batch.changes = List.of();
         state.applyChanges(batch, Instant.now());
-        assertEquals("MAINTENANCE", state.cachedProfile("NewName", Duration.ZERO, Instant.now()).status);
+        assertEquals(
+                "MAINTENANCE", state.cachedProfile("NewName", Duration.ZERO, Instant.now()).status);
     }
 
     @Test
     void optionalMaximumAgeRejectsStaleProfiles() throws Exception {
-        ProxyAccessState state = new ProxyAccessState(tempDirectory.resolve("stale.properties").toFile());
+        ProxyAccessState state =
+                new ProxyAccessState(tempDirectory.resolve("stale.properties").toFile());
         ProxyIdentityClient.LoginProfile live = profile(null, "ALLOWED", UUID);
         Instant recordedAt = Instant.parse("2026-08-30T00:00:00Z");
         state.recordLiveProfile("Player", live, recordedAt);
 
-        assertEquals(UUID, state.cachedProfile("Player", Duration.ZERO, recordedAt.plus(Duration.ofDays(30))).uuid);
-        assertNull(state.cachedProfile("Player", Duration.ofHours(1), recordedAt.plus(Duration.ofHours(2))));
+        assertEquals(
+                UUID,
+                state.cachedProfile("Player", Duration.ZERO, recordedAt.plus(Duration.ofDays(30)))
+                        .uuid);
+        assertNull(
+                state.cachedProfile(
+                        "Player", Duration.ofHours(1), recordedAt.plus(Duration.ofHours(2))));
     }
 
-    private static ProxyIdentityClient.LoginProfile profile(String username, String status, String uuid) {
+    private static ProxyIdentityClient.LoginProfile profile(
+            String username, String status, String uuid) {
         ProxyIdentityClient.LoginProfile profile = new ProxyIdentityClient.LoginProfile();
         profile.username = username;
         profile.status = status;
@@ -101,7 +114,8 @@ class ProxyAccessStateTest {
         return profile;
     }
 
-    private static ProxyIdentityClient.ProxyBan ban(String username, String reason, String expiresAt) {
+    private static ProxyIdentityClient.ProxyBan ban(
+            String username, String reason, String expiresAt) {
         ProxyIdentityClient.ProxyBan ban = new ProxyIdentityClient.ProxyBan();
         ban.username = username;
         ban.reason = reason;

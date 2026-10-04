@@ -2,12 +2,13 @@ package ink.ziip.championshipscore.api.game.bingo.gui;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
-import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
-import ink.ziip.championshipscore.api.game.bingo.BingoArea;
 import ink.ziip.championshipscore.api.game.bingo.game.BingoRound;
+import ink.ziip.championshipscore.api.game.bingo.runtime.BingoArea;
 import ink.ziip.championshipscore.api.game.bingo.util.BingoTeamAdapter;
 import ink.ziip.championshipscore.api.game.bingo.util.MessageService;
+import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -57,17 +58,21 @@ public final class CardItemListener extends BaseListener {
         if (item == null || item.getType() != Material.FILLED_MAP) return;
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return;
-        String teamId = meta.getPersistentDataContainer().get(CardMapItem.CARD_KEY, PersistentDataType.STRING);
+        String teamId =
+                meta.getPersistentDataContainer()
+                        .get(CardMapItem.CARD_KEY, PersistentDataType.STRING);
         if (teamId == null) return;
 
         if (a == Action.RIGHT_CLICK_BLOCK) return;
         if (event.getHand() == EquipmentSlot.HAND
-                && isOffhandWeapon(event.getPlayer().getInventory().getItemInOffHand().getType())) return;
+                && isOffhandWeapon(event.getPlayer().getInventory().getItemInOffHand().getType()))
+            return;
 
         Player player = event.getPlayer();
         Long lastConsumed = lastConsumedAt.get(player.getUniqueId());
         if (lastConsumed != null
-                && System.currentTimeMillis() - lastConsumed < CONSUME_TO_CARD_OPEN_COOLDOWN_MILLIS) {
+                && System.currentTimeMillis() - lastConsumed
+                        < CONSUME_TO_CARD_OPEN_COOLDOWN_MILLIS) {
             event.setCancelled(true);
             return;
         }
@@ -81,18 +86,32 @@ public final class CardItemListener extends BaseListener {
         var msg = MessageService.global();
         if (CardMapItem.SPECTATOR_CARD_ID.equals(teamId)) {
             if (!bingoArea.isManagedSpectator(player) || round.teams().isEmpty()) return;
-            round.cardFor(round.teams().getFirst()).ifPresent(card ->
-                    CardView.open(player, card, round.displayInfo(),
-                            msg.component("card.spectator_map_name"), null));
+            round.cardFor(round.teams().getFirst())
+                    .ifPresent(
+                            card ->
+                                    CardView.open(
+                                            player,
+                                            card,
+                                            round.displayInfo(),
+                                            msg.component("card.spectator_map_name"),
+                                            null));
             return;
         }
-        ChampionshipTeam team = round.teams().stream()
-                .filter(candidate -> teamId.equals(BingoTeamAdapter.id(candidate)))
-                .findFirst().orElse(null);
+        ChampionshipTeam team =
+                round.teams().stream()
+                        .filter(candidate -> teamId.equals(BingoTeamAdapter.id(candidate)))
+                        .findFirst()
+                        .orElse(null);
         if (team == null) return;
-        round.cardForPlayer(player.getUniqueId(), team).ifPresent(card ->
-                CardView.open(player, card, round.displayInfo(),
-                        msg.component("card.map_name", team.getName()), BingoTeamAdapter.id(team)));
+        round.cardForPlayer(player.getUniqueId(), team)
+                .ifPresent(
+                        card ->
+                                CardView.open(
+                                        player,
+                                        card,
+                                        round.displayInfo(),
+                                        msg.component("card.map_name", team.getName()),
+                                        BingoTeamAdapter.id(team)));
     }
 
     private static boolean isOffhandWeapon(Material m) {
@@ -120,8 +139,11 @@ public final class CardItemListener extends BaseListener {
             return;
         }
         ItemMeta meta = stack.getItemMeta();
-        String teamId = meta == null ? null
-                : meta.getPersistentDataContainer().get(CardMapItem.CARD_KEY, PersistentDataType.STRING);
+        String teamId =
+                meta == null
+                        ? null
+                        : meta.getPersistentDataContainer()
+                                .get(CardMapItem.CARD_KEY, PersistentDataType.STRING);
         if (CardMapItem.SPECTATOR_CARD_ID.equals(teamId)) {
             BingoArea bingoArea = bingoAreaOf((Player) event.getEntity());
             if (bingoArea == null || !bingoArea.isManagedSpectator((Player) event.getEntity())) {

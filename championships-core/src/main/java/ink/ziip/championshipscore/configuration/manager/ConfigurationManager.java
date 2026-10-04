@@ -3,8 +3,8 @@ package ink.ziip.championshipscore.configuration.manager;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.configuration.config.BaseConfigurationFile;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageConfig;
 
 public class ConfigurationManager extends BaseConfigurationManager {
@@ -19,8 +19,7 @@ public class ConfigurationManager extends BaseConfigurationManager {
 
     public CCConfig getCCConfig() {
         for (BaseConfigurationFile configurationFile : getConfigs()) {
-            if (configurationFile instanceof CCConfig)
-                return (CCConfig) configurationFile;
+            if (configurationFile instanceof CCConfig) return (CCConfig) configurationFile;
         }
         throw new IllegalStateException("No configuration file found.");
     }

@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.presentation.sidebar;
 
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.jetbrains.annotations.NotNull;
@@ -26,9 +27,16 @@ public final class SidebarConfiguration {
     private final Map<GameTypeEnum, GameTemplate> games;
     private final Map<String, String> values;
 
-    private SidebarConfiguration(boolean enabled, boolean papiFallback, long updateIntervalTicks,
-                                 Template lobby, Template dailyLobby, Template mapStatus, Template mapEdit,
-                                 Map<GameTypeEnum, GameTemplate> games, Map<String, String> values) {
+    private SidebarConfiguration(
+            boolean enabled,
+            boolean papiFallback,
+            long updateIntervalTicks,
+            Template lobby,
+            Template dailyLobby,
+            Template mapStatus,
+            Template mapEdit,
+            Map<GameTypeEnum, GameTemplate> games,
+            Map<String, String> values) {
         this.enabled = enabled;
         this.papiFallback = papiFallback;
         this.updateIntervalTicks = updateIntervalTicks;
@@ -43,7 +51,8 @@ public final class SidebarConfiguration {
     public static @NotNull SidebarConfiguration load(@NotNull File file) {
         YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
         int version = yaml.getInt("version", -1);
-        if (version != 1) throw new IllegalArgumentException("unsupported scoreboards.yml version " + version);
+        if (version != 1)
+            throw new IllegalArgumentException("unsupported scoreboards.yml version " + version);
 
         Map<String, String> styles = new LinkedHashMap<>();
         ConfigurationSection styleSection = yaml.getConfigurationSection("style");
@@ -64,19 +73,22 @@ public final class SidebarConfiguration {
 
         Template lobby = template(yaml, "boards.lobby", styles, true);
         Template dailyLobby = template(yaml, "boards.daily-lobby", styles, false);
-        if (dailyLobby == null) dailyLobby = new Template(
-                "&#3fb2ba[&#31e061CC&#3fb2ba]", List.of(
-                "&#4f4f4f&m+-------------------+",
-                "&#dfff2b当前游戏: &#f6ffa8{daily.selected-game}",
-                "&#ff0808当前状态: &#ff7373{daily.queue-state}",
-                "",
-                "&f同行队长: &#24abff{daily.party-leader}",
-                "&f同行人数: &#ff6e26{daily.party-size}",
-                "",
-                "&#4287f5等候人数: &#ff6e26{daily.queue-players}",
-                "&#4287f5启程倒计时: &#ff6e26{daily.countdown}",
-                "",
-                "&aHAMMER&f x &cRIA&f x &#ae70ffINF&f x &#036eb7&lHS"));
+        if (dailyLobby == null)
+            dailyLobby =
+                    new Template(
+                            "&#3fb2ba[&#31e061CC&#3fb2ba]",
+                            List.of(
+                                    "&#4f4f4f&m+-------------------+",
+                                    "&#dfff2b当前游戏: &#f6ffa8{daily.selected-game}",
+                                    "&#ff0808当前状态: &#ff7373{daily.queue-state}",
+                                    "",
+                                    "&f同行队长: &#24abff{daily.party-leader}",
+                                    "&f同行人数: &#ff6e26{daily.party-size}",
+                                    "",
+                                    "&#4287f5等候人数: &#ff6e26{daily.queue-players}",
+                                    "&#4287f5启程倒计时: &#ff6e26{daily.countdown}",
+                                    "",
+                                    "&aHAMMER&f x &cRIA&f x &#ae70ffINF&f x &#036eb7&lHS"));
         Template mapStatus = template(yaml, "boards.map-status", styles, true);
         Template mapEdit = template(yaml, "boards.map-edit", styles, true);
 
@@ -85,11 +97,13 @@ public final class SidebarConfiguration {
         for (GameTypeEnum gameType : GameTypeEnum.values()) {
             ConfigurationSection gameSection = findSection(gamesSection, gameType.name());
             if (gameSection == null) {
-                throw new IllegalArgumentException("missing game sidebar template " + gameType.name());
+                throw new IllegalArgumentException(
+                        "missing game sidebar template " + gameType.name());
             }
             Template base = template(gameSection, styles, true);
             String rankingLine = style(gameSection.getString("ranking-line", ""), styles);
-            String ownRankingLine = style(gameSection.getString("own-ranking-line", rankingLine), styles);
+            String ownRankingLine =
+                    style(gameSection.getString("own-ranking-line", rankingLine), styles);
             Map<String, Template> mapOverrides = new LinkedHashMap<>();
             ConfigurationSection maps = gameSection.getConfigurationSection("maps");
             if (maps != null) {
@@ -97,45 +111,63 @@ public final class SidebarConfiguration {
                     ConfigurationSection override = maps.getConfigurationSection(mapName);
                     if (override == null) continue;
                     String title = style(override.getString("title", base.title()), styles);
-                    List<String> lines = override.contains("lines")
-                            ? override.getStringList("lines").stream().map(line -> style(line, styles)).toList()
-                            : base.lines();
+                    List<String> lines =
+                            override.contains("lines")
+                                    ? override.getStringList("lines").stream()
+                                            .map(line -> style(line, styles))
+                                            .toList()
+                                    : base.lines();
                     validateLines("boards.games." + gameType.name() + ".maps." + mapName, lines);
                     mapOverrides.put(mapName.toLowerCase(Locale.ROOT), new Template(title, lines));
                 }
             }
-            games.put(gameType, new GameTemplate(base, Map.copyOf(mapOverrides), rankingLine, ownRankingLine));
+            games.put(
+                    gameType,
+                    new GameTemplate(base, Map.copyOf(mapOverrides), rankingLine, ownRankingLine));
         }
 
         long interval = yaml.getLong("settings.update-interval-ticks", 20L);
         if (interval < 1L) throw new IllegalArgumentException("update interval must be positive");
-        return new SidebarConfiguration(yaml.getBoolean("settings.enabled", true),
-                yaml.getBoolean("settings.papi-fallback", true), interval,
-                lobby, dailyLobby, mapStatus, mapEdit, games, values);
+        return new SidebarConfiguration(
+                yaml.getBoolean("settings.enabled", true),
+                yaml.getBoolean("settings.papi-fallback", true),
+                interval,
+                lobby,
+                dailyLobby,
+                mapStatus,
+                mapEdit,
+                games,
+                values);
     }
 
-    private static Template template(YamlConfiguration yaml, String path, Map<String, String> styles,
-                                     boolean required) {
-        ConfigurationSection section = required ? requiredSection(yaml, path) : yaml.getConfigurationSection(path);
+    private static Template template(
+            YamlConfiguration yaml, String path, Map<String, String> styles, boolean required) {
+        ConfigurationSection section =
+                required ? requiredSection(yaml, path) : yaml.getConfigurationSection(path);
         return template(section, styles, required);
     }
 
-    private static Template template(ConfigurationSection section, Map<String, String> styles,
-                                     boolean required) {
+    private static Template template(
+            ConfigurationSection section, Map<String, String> styles, boolean required) {
         if (section == null) {
             if (required) throw new IllegalArgumentException("missing sidebar section");
             return null;
         }
         String title = style(section.getString("title", ""), styles);
-        List<String> lines = section.getStringList("lines").stream().map(line -> style(line, styles)).toList();
-        if (title.isBlank()) throw new IllegalArgumentException("sidebar title must not be blank at " + section.getCurrentPath());
+        List<String> lines =
+                section.getStringList("lines").stream().map(line -> style(line, styles)).toList();
+        if (title.isBlank())
+            throw new IllegalArgumentException(
+                    "sidebar title must not be blank at " + section.getCurrentPath());
         validateLines(section.getCurrentPath(), lines);
         return new Template(title, lines);
     }
 
     private static void validateLines(String path, List<String> lines) {
-        if (lines.isEmpty()) throw new IllegalArgumentException("sidebar lines must not be empty at " + path);
-        if (lines.size() > MAX_LINES) throw new IllegalArgumentException("too many sidebar lines at " + path);
+        if (lines.isEmpty())
+            throw new IllegalArgumentException("sidebar lines must not be empty at " + path);
+        if (lines.size() > MAX_LINES)
+            throw new IllegalArgumentException("too many sidebar lines at " + path);
     }
 
     private static ConfigurationSection requiredSection(YamlConfiguration yaml, String path) {
@@ -215,8 +247,11 @@ public final class SidebarConfiguration {
         }
     }
 
-    public record GameTemplate(Template base, Map<String, Template> mapOverrides,
-                               String rankingLine, String ownRankingLine) {
+    public record GameTemplate(
+            Template base,
+            Map<String, Template> mapOverrides,
+            String rankingLine,
+            String ownRankingLine) {
         public Template templateFor(String mapName) {
             if (mapName == null) return base;
             return mapOverrides.getOrDefault(mapName.toLowerCase(Locale.ROOT), base);

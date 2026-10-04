@@ -3,9 +3,12 @@ package ink.ziip.championshipscore.api.game.bingo.task;
 import ink.ziip.championshipscore.api.game.bingo.task.pool.Dimension;
 import ink.ziip.championshipscore.api.game.bingo.util.BingoComponents;
 import ink.ziip.championshipscore.api.game.bingo.util.MessageService;
+
 import io.papermc.paper.advancement.AdvancementDisplay;
+
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+
 import org.bukkit.Material;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.inventory.ItemStack;
@@ -34,8 +37,7 @@ public record AdvancementTask(Advancement advancement, Dimension dimension) impl
 
     @Override
     public Component getName() {
-        var builder = Component.text().append(Component.text("["))
-                .color(NamedTextColor.GREEN);
+        var builder = Component.text().append(Component.text("[")).color(NamedTextColor.GREEN);
         if (advancement == null) {
             builder.append(MessageService.global().component("task.unknown_advancement"));
         } else {
@@ -47,16 +49,17 @@ public record AdvancementTask(Advancement advancement, Dimension dimension) impl
 
     @Override
     public Component[] getItemDescription() {
-        return new Component[]{
-                MessageService.global().component("task.advancement")
-        };
+        return new Component[] {MessageService.global().component("task.advancement")};
     }
 
-    // Advancement descriptions can contain newlines, so they only go to chat, never item names/lore.
+    // Advancement descriptions can contain newlines, so they only go to chat, never item
+    // names/lore.
     @Override
     public Component getChatDescription() {
         if (advancement == null) {
-            return MessageService.global().component("task.unknown_advancement").color(NamedTextColor.DARK_AQUA);
+            return MessageService.global()
+                    .component("task.unknown_advancement")
+                    .color(NamedTextColor.DARK_AQUA);
         }
         return BingoComponents.advancementDescription(advancement).color(NamedTextColor.DARK_AQUA);
     }
@@ -69,7 +72,8 @@ public record AdvancementTask(Advancement advancement, Dimension dimension) impl
     @Override
     public Material getDisplayMaterial(CardDisplayInfo context) {
         Material icon = displayIcon();
-        if (context.advancementDisplay() == TaskDisplayMode.GENERIC_TASK_ITEMS || icon == Material.AIR) {
+        if (context.advancementDisplay() == TaskDisplayMode.GENERIC_TASK_ITEMS
+                || icon == Material.AIR) {
             return Material.FILLED_MAP;
         }
         return icon;
@@ -83,7 +87,9 @@ public record AdvancementTask(Advancement advancement, Dimension dimension) impl
         return advancement.getDisplay().frame();
     }
 
-    /** The advancement's full display stack (keeps pattern data, e.g. the ominous banner patterns). */
+    /**
+     * The advancement's full display stack (keeps pattern data, e.g. the ominous banner patterns).
+     */
     public @Nullable ItemStack displayIconStack() {
         if (advancement == null || advancement.getDisplay() == null) {
             return null;
@@ -99,7 +105,7 @@ public record AdvancementTask(Advancement advancement, Dimension dimension) impl
     public boolean usesOminousBannerIcon() {
         return advancement != null
                 && (advancement.key().value().equals("adventure/voluntary_exile")
-                || advancement.key().value().equals("adventure/hero_of_the_village"));
+                        || advancement.key().value().equals("adventure/hero_of_the_village"));
     }
 
     /**

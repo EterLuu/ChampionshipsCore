@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.game.instance;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
+
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -9,8 +10,8 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.player.PlayerDropItemEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPickupArrowEvent;
 
@@ -23,7 +24,8 @@ public class GameInstanceHandler extends BaseListener {
     }
 
     private boolean isCountdownParticipant(Player player) {
-        return baseArea.getGameStageEnum() == ink.ziip.championshipscore.api.object.stage.GameStageEnum.COUNTDOWN
+        return baseArea.getGameStageEnum()
+                        == ink.ziip.championshipscore.api.game.model.GameStageEnum.COUNTDOWN
                 && !baseArea.notAreaPlayer(player);
     }
 
@@ -36,7 +38,8 @@ public class GameInstanceHandler extends BaseListener {
     }
 
     private boolean isProtectedParticipant(Player player) {
-        return baseArea.isSpectator(player) || isIntroductionParticipant(player)
+        return baseArea.isSpectator(player)
+                || isIntroductionParticipant(player)
                 || isCountdownParticipant(player);
     }
 
@@ -115,21 +118,30 @@ public class GameInstanceHandler extends BaseListener {
     @Override
     public void handleRoutedPlayerMoveLow(PlayerMoveEvent event) {
         Player player = event.getPlayer();
-        if (event.getTo() != null && event.getTo().getY() < -50
+        if (plugin.getGameManager().getSpectatorManager().isSpectatorLike(player.getUniqueId())) {
+            if (event.getTo() != null && event.getTo().getY() < -64D)
+                player.teleport(baseArea.getSpectatorSpawnLocation());
+            return;
+        }
+        if (event.getTo() != null
+                && event.getTo().getY() < -50
                 && isIntroductionParticipant(player)) {
-            player.teleport(baseArea.getPreparationTeleportLocation(baseArea.getSpectatorSpawnLocation()));
+            player.teleport(
+                    baseArea.getPreparationTeleportLocation(baseArea.getSpectatorSpawnLocation()));
             return;
         }
         if (isCountdownMovementFrozen(player)
-                && baseArea.getGameTypeEnum() == ink.ziip.championshipscore.api.object.game.GameTypeEnum.Bingo) {
-            ink.ziip.championshipscore.platform.bukkit.bingo.BingoCountdownMovement.constrain(event);
+                && baseArea.getGameTypeEnum()
+                        == ink.ziip.championshipscore.api.game.model.GameTypeEnum.Bingo) {
+            ink.ziip.championshipscore.platform.bukkit.bingo.BingoCountdownMovement.constrain(
+                    event);
             return;
         }
         if (isCountdownMovementFrozen(player)
                 && event.getTo() != null
                 && (event.getFrom().getX() != event.getTo().getX()
-                || event.getFrom().getY() != event.getTo().getY()
-                || event.getFrom().getZ() != event.getTo().getZ())) {
+                        || event.getFrom().getY() != event.getTo().getY()
+                        || event.getFrom().getZ() != event.getTo().getZ())) {
             event.setCancelled(true);
             return;
         }

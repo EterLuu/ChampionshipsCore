@@ -1,10 +1,13 @@
 package ink.ziip.championshipscore.api.game.bingo;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.api.game.bingo.config.BingoConfig;
+import ink.ziip.championshipscore.api.game.bingo.execution.BingoExecutionMode;
 import ink.ziip.championshipscore.api.game.bingo.gui.CardItemListener;
 import ink.ziip.championshipscore.api.game.bingo.gui.CardMenuListener;
-import ink.ziip.championshipscore.platform.bukkit.bingo.map.TaskImageAtlas;
-import ink.ziip.championshipscore.api.game.bingo.execution.BingoExecutionMode;
+import ink.ziip.championshipscore.api.game.bingo.mechanics.BingoCompassListener;
+import ink.ziip.championshipscore.api.game.bingo.mechanics.BingoStarterKit;
+import ink.ziip.championshipscore.api.game.bingo.runtime.BingoArea;
 import ink.ziip.championshipscore.api.game.bingo.task.TaskGenerator;
 import ink.ziip.championshipscore.api.game.bingo.task.pool.TagFilterLoader;
 import ink.ziip.championshipscore.api.game.bingo.task.pool.TaskPoolLoader;
@@ -12,20 +15,23 @@ import ink.ziip.championshipscore.api.game.bingo.task.pool.TaskPoolSource;
 import ink.ziip.championshipscore.api.game.bingo.task.pool.TaskPoolSpec;
 import ink.ziip.championshipscore.api.game.bingo.task.pool.TierlistLoader;
 import ink.ziip.championshipscore.api.game.bingo.util.MessageService;
-import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
-import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
-import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.configuration.config.BaseConfigurationFile;
-import ink.ziip.championshipscore.platform.bukkit.scheduler.PlatformScheduler;
+import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.logging.LogText;
+import ink.ziip.championshipscore.platform.bukkit.bingo.BingoPortalRouter;
+import ink.ziip.championshipscore.platform.bukkit.bingo.map.TaskImageAtlas;
 import ink.ziip.championshipscore.util.world.WorldManager;
-import ink.ziip.championshipscore.util.Utils;
+
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.InputStream;
@@ -37,14 +43,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * Owns the bingo areas and the one-time bingo subsystem init: localisation, the card pool / tier list /
- * tag filters, the map-render image atlas, and the global GUI + portal listeners. Per-area configs live
- * in {@code plugin/bingo/areas/*.yml}; the rest of the bingo data (config.yml, lang, cards, tags,
- * tierlists) lives directly under {@code plugin/bingo/}.
+ * Owns the bingo areas and the one-time bingo subsystem init: localisation, the card pool / tier
+ * list / tag filters, the map-render image atlas, and the global GUI + portal listeners. Per-area
+ * configs live in {@code plugin/bingo/areas/*.yml}; the rest of the bingo data (config.yml, lang,
+ * cards, tags, tierlists) lives directly under {@code plugin/bingo/}.
  */
 public class BingoManager extends BaseGameInstanceManager<BingoArea> {
     private MessageService messageService;
@@ -75,16 +79,23 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
         dailyRemixChance = Math.clamp(config.getDouble("remix.chance", 0.05D), 0D, 1D);
 
         // Localisation must exist before any area renders task names.
-        messageService = new MessageService(plugin, config.getString("prefix", ""), config.getString("locale", "zh_CN"));
+        messageService =
+                new MessageService(
+                        plugin,
+                        config.getString("prefix", ""),
+                        config.getString("locale", "zh_CN"));
 
         boolean remote = remoteExecutionConfigured();
         if (!remote) {
-            boolean worldsReady = loadBingoWorld(WorldManager.BINGO_OVERWORLD, World.Environment.NORMAL);
+            boolean worldsReady =
+                    loadBingoWorld(WorldManager.BINGO_OVERWORLD, World.Environment.NORMAL);
             worldsReady &= loadBingoWorld(WorldManager.BINGO_NETHER, World.Environment.NETHER);
             worldsReady &= loadBingoWorld(WorldManager.BINGO_END, World.Environment.THE_END);
             if (!worldsReady) {
-                plugin.getLogger().severe(Utils.formatGameLog(GameTypeEnum.Bingo, "-", "加载", "世界",
-                        "世界加载失败，游戏未注册"));
+                plugin.getLogger()
+                        .severe(
+                                LogText.formatGameLog(
+                                        GameTypeEnum.Bingo, "-", "加载", "世界", "世界加载失败，游戏未注册"));
                 return;
             }
         }
@@ -95,20 +106,23 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
             cardItemListener.register();
             compassListener = new BingoCompassListener(plugin);
             compassListener.register();
-            registerGlobal(new PortalListener("bingo"));
+            registerGlobal(new BingoPortalRouter("bingo"));
         }
 
-        // Register map instances before deferring the expensive card-pool/image initialization. This
-        // makes the area visible to commands and schedules as soon as the persistent worlds are ready.
+        // Register map instances before deferring the expensive card-pool/image initialization.
+        // This
+        // makes the area visible to commands and schedules as soon as the persistent worlds are
+        // ready.
         if (remote) loadRemoteAreaConfigs(new File(bingoDir, "areas"));
         else loadAreas(new File(bingoDir, "areas"));
 
         // Defer pool/atlas initialization to the first tick, when advancements, recipes and the map
         // palette are all available.
-        new PlatformScheduler(plugin).runGlobal(() -> {
-            taskPoolReady = applyContentConfiguration(config);
-            if (!remote) TaskImageAtlas.ensureLoaded();
-        });
+        deferMapLoad(
+                () -> {
+                    taskPoolReady = applyContentConfiguration(config);
+                    if (!remote) TaskImageAtlas.ensureLoaded();
+                });
     }
 
     /** Reloads the Bingo language and objective sources after active matches have been reset. */
@@ -116,16 +130,29 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
         if (messageService == null) return CompletableFuture.completedFuture(true);
         taskPoolReady = false;
         CompletableFuture<Boolean> result = new CompletableFuture<>();
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            try {
-                YamlConfiguration config = loadGlobalConfig(new File(plugin.getDataFolder(), "bingo"));
-                result.complete(config != null && applyContentConfiguration(config));
-            } catch (RuntimeException failure) {
-                plugin.getLogger().log(Level.SEVERE, Utils.formatGameLog(GameTypeEnum.Bingo, "-",
-                        "重载", "内容", "Bingo 内容配置重载失败"), failure);
-                result.complete(false);
-            }
-        });
+        Bukkit.getScheduler()
+                .runTaskAsynchronously(
+                        plugin,
+                        () -> {
+                            try {
+                                YamlConfiguration config =
+                                        loadGlobalConfig(new File(plugin.getDataFolder(), "bingo"));
+                                result.complete(
+                                        config != null && applyContentConfiguration(config));
+                            } catch (RuntimeException failure) {
+                                plugin.getLogger()
+                                        .log(
+                                                Level.SEVERE,
+                                                LogText.formatGameLog(
+                                                        GameTypeEnum.Bingo,
+                                                        "-",
+                                                        "重载",
+                                                        "内容",
+                                                        "Bingo 内容配置重载失败"),
+                                                failure);
+                                result.complete(false);
+                            }
+                        });
         return result;
     }
 
@@ -146,15 +173,13 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
     }
 
     private void loadRemoteAreaConfigs(File areasFolder) {
-        areasFolder.mkdirs();
-        String[] areaList = areasFolder.list((directory, name) -> name.toLowerCase().endsWith(".yml"));
-        if (areaList == null) return;
-        for (String file : areaList) {
-            String name = file.substring(0, file.length() - 4);
-            BingoConfig config = new BingoConfig(plugin, name);
-            config.initializeConfiguration(plugin.getFolder());
-            remoteAreaConfigs.put(name, config);
-        }
+        loadMapDefinitions(
+                areasFolder,
+                (name, file) -> {
+                    BingoConfig config = new BingoConfig(plugin, name);
+                    config.initializeConfiguration(plugin.getFolder());
+                    remoteAreaConfigs.put(name, config);
+                });
     }
 
     public boolean remoteExecutionConfigured() {
@@ -175,9 +200,17 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
         return taskPoolReady;
     }
 
-    public int dailyVoteSeconds() { return dailyVoteSeconds; }
-    public boolean dailyRemixEnabled() { return dailyRemixEnabled; }
-    public double dailyRemixChance() { return dailyRemixChance; }
+    public int dailyVoteSeconds() {
+        return dailyVoteSeconds;
+    }
+
+    public boolean dailyRemixEnabled() {
+        return dailyRemixEnabled;
+    }
+
+    public double dailyRemixChance() {
+        return dailyRemixChance;
+    }
 
     public BingoConfig getRemoteConfig(String area) {
         return remoteAreaConfigs.get(area);
@@ -190,13 +223,11 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
     }
 
     private void loadAreas(File areasFolder) {
-        areasFolder.mkdirs();
-        String[] areaList = areasFolder.list((d, n) -> n.toLowerCase().endsWith(".yml"));
-        if (areaList == null) return;
-        for (String file : areaList) {
-            String name = file.substring(0, file.length() - 4);
-            areas.put(name, new BingoArea(plugin, new BingoConfig(plugin, name)));
-        }
+        loadMapDefinitions(
+                areasFolder,
+                (name, file) -> {
+                    areas.put(name, new BingoArea(plugin, new BingoConfig(plugin, name)));
+                });
     }
 
     private @Nullable YamlConfiguration loadGlobalConfig(File bingoDir) {
@@ -205,19 +236,30 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
             try (InputStream in = plugin.getResource("bingo/config.yml")) {
                 if (in != null) Files.copy(in, configFile.toPath());
             } catch (Exception e) {
-                plugin.getLogger().warning(Utils.formatGameLog(GameTypeEnum.Bingo, "-", "加载", "配置",
-                        "无法写出 bingo/config.yml | " + e.getMessage()));
+                plugin.getLogger()
+                        .warning(
+                                LogText.formatGameLog(
+                                        GameTypeEnum.Bingo,
+                                        "-",
+                                        "加载",
+                                        "配置",
+                                        "无法写出 bingo/config.yml | " + e.getMessage()));
             }
         }
         if (!configFile.isFile()) return null;
         try {
             YamlConfiguration config = new YamlConfiguration();
             config.load(configFile);
-            BaseConfigurationFile.validateVersion(config.getInt("config-version", -1), 3, "bingo/config.yml");
+            BaseConfigurationFile.validateVersion(
+                    config.getInt("config-version", -1), 3, "bingo/config.yml");
             return config;
         } catch (Exception failure) {
-            plugin.getLogger().log(Level.SEVERE, Utils.formatGameLog(GameTypeEnum.Bingo, "-", "加载", "配置",
-                    "无法解析 bingo/config.yml"), failure);
+            plugin.getLogger()
+                    .log(
+                            Level.SEVERE,
+                            LogText.formatGameLog(
+                                    GameTypeEnum.Bingo, "-", "加载", "配置", "无法解析 bingo/config.yml"),
+                            failure);
             return null;
         }
     }
@@ -229,7 +271,7 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
     private int[] readDifficultyWeights(YamlConfiguration config) {
         List<Integer> list = config.getIntegerList("cards.difficulty-weights");
         if (list == null || list.isEmpty()) {
-            return new int[]{3, 5, 2, 1, 0};
+            return new int[] {3, 5, 2, 1, 0};
         }
         int[] weights = new int[list.size()];
         for (int i = 0; i < list.size(); i++) weights[i] = list.get(i);
@@ -245,11 +287,7 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
     public void unload() {
         taskPoolReady = false;
         configuredExecutionMode = null;
-        for (BingoArea area : areas.values()) {
-            if (area.getGameStageEnum() != GameStageEnum.WAITING) {
-                area.abortAndReset();
-            }
-        }
+        stopOwnedAreas();
         for (Listener listener : globalListeners) {
             HandlerList.unregisterAll(listener);
         }
@@ -272,8 +310,7 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
 
     @Override
     public boolean addArea(String name) {
-        if (areas.containsKey(name) || remoteAreaConfigs.containsKey(name))
-            return false;
+        if (areas.containsKey(name) || remoteAreaConfigs.containsKey(name)) return false;
 
         BingoConfig bingoConfig = new BingoConfig(plugin, name);
         bingoConfig.initializeConfiguration(plugin.getFolder());
@@ -294,7 +331,9 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
 
     @Override
     public synchronized boolean canRenameArea(@NotNull String name) {
-        return remoteExecutionConfigured() ? remoteAreaConfigs.containsKey(name) : super.canRenameArea(name);
+        return remoteExecutionConfigured()
+                ? remoteAreaConfigs.containsKey(name)
+                : super.canRenameArea(name);
     }
 
     @Override
@@ -311,7 +350,8 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
     }
 
     @Override
-    public synchronized boolean loadAreaAfterRename(@NotNull String name, @NotNull String worldName) {
+    public synchronized boolean loadAreaAfterRename(
+            @NotNull String name, @NotNull String worldName) {
         if (!remoteExecutionConfigured()) return super.loadAreaAfterRename(name, worldName);
         if (remoteAreaConfigs.containsKey(name)) return false;
         BingoConfig config = new BingoConfig(plugin, name);

@@ -1,7 +1,9 @@
 package ink.ziip.championshipscore.integration.papi;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
+
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
+
 import org.jetbrains.annotations.NotNull;
 
 public abstract class BasePlaceholder extends PlaceholderExpansion {

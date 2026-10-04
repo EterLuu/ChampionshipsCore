@@ -4,8 +4,7 @@ import java.util.Objects;
 
 /** Stable, per-application-instance consumer-group names used for Redis Stream fan-out. */
 public final class RedisGroupNames {
-    private RedisGroupNames() {
-    }
+    private RedisGroupNames() {}
 
     public static String databaseSync(String prefix, String instanceId) {
         return group(prefix, "data", instanceId);

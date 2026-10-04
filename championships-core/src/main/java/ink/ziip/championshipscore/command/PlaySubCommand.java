@@ -1,7 +1,8 @@
 package ink.ziip.championshipscore.command;
 
-import ink.ziip.championshipscore.util.Utils;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.presentation.text.CoreMessages;
+
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -16,10 +17,13 @@ public final class PlaySubCommand extends BaseSubCommand {
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
-                             @NotNull String label, @NotNull String[] args) {
+    public boolean onCommand(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args) {
         if (!(sender instanceof Player player)) {
-            Utils.sendAdminError(sender, MessageConfig.COMMAND_PLAYER_ONLY);
+            CoreMessages.sendAdminError(sender, MessageConfig.COMMAND_PLAYER_ONLY);
             return true;
         }
         if (args.length == 0) {
@@ -28,8 +32,12 @@ public final class PlaySubCommand extends BaseSubCommand {
         }
         if (args.length == 1 && args[0].equalsIgnoreCase("leave")) {
             if (!plugin.getDailyManager().leavePlay(player.getUniqueId()))
-                player.sendMessage(ink.ziip.championshipscore.util.Utils.translateColorCodes(
-                        Utils.dailyMessage(ink.ziip.championshipscore.configuration.config.message.MessageConfig.DAILY_NOT_IN_PLAY)));
+                player.sendMessage(
+                        ink.ziip.championshipscore.platform.bukkit.text.LegacyText
+                                .translateColorCodes(
+                                        CoreMessages.dailyMessage(
+                                                ink.ziip.championshipscore.configuration.config
+                                                        .message.MessageConfig.DAILY_NOT_IN_PLAY)));
             return true;
         }
         if (args.length == 1 && args[0].equalsIgnoreCase("leaderboard")) {
@@ -41,8 +49,11 @@ public final class PlaySubCommand extends BaseSubCommand {
     }
 
     @Override
-    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
-                                                 @NotNull String label, @NotNull String[] args) {
+    public @Nullable List<String> onTabComplete(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args) {
         return args.length == 1 ? complete(List.of("leave", "leaderboard"), args[0]) : List.of();
     }
 }

@@ -22,16 +22,17 @@ public record MatchManifest(
         BingoRuntimeRules runtimeRules,
         List<BingoTaskSpec> tasks,
         List<TeamSnapshot> teams,
-        List<PlayerSnapshot> participants
-) {
+        List<PlayerSnapshot> participants) {
     public MatchManifest {
         ProtocolVersion.requireSupported(protocolVersion);
         ProtocolSupport.required(matchId, "matchId");
         if (epoch < 1) throw new IllegalArgumentException("epoch must be positive");
-        if (createdAtEpochMilli < 1) throw new IllegalArgumentException("createdAtEpochMilli must be positive");
+        if (createdAtEpochMilli < 1)
+            throw new IllegalArgumentException("createdAtEpochMilli must be positive");
         workerId = ProtocolSupport.nonBlank(workerId, "workerId");
         ProtocolSupport.required(runMode, "runMode");
-        if (durationSeconds < 1) throw new IllegalArgumentException("durationSeconds must be positive");
+        if (durationSeconds < 1)
+            throw new IllegalArgumentException("durationSeconds must be positive");
         configHash = ProtocolSupport.nonBlank(configHash, "configHash");
         ProtocolSupport.required(scoring, "scoring");
         ProtocolSupport.required(runtimeRules, "runtimeRules");
@@ -41,17 +42,20 @@ public record MatchManifest(
 
         int expectedCells = Math.multiplyExact(scoring.cardWidth(), scoring.cardWidth());
         if (tasks.size() != expectedCells) {
-            throw new IllegalArgumentException("tasks must contain exactly " + expectedCells + " card cells");
+            throw new IllegalArgumentException(
+                    "tasks must contain exactly " + expectedCells + " card cells");
         }
 
         Set<Integer> cellIndexes = new HashSet<>();
         Set<String> taskIds = new HashSet<>();
         for (BingoTaskSpec task : tasks) {
             if (task.cellIndex() >= expectedCells || !cellIndexes.add(task.cellIndex())) {
-                throw new IllegalArgumentException("task cell indexes must be unique and inside the card");
+                throw new IllegalArgumentException(
+                        "task cell indexes must be unique and inside the card");
             }
             if (!taskIds.add(task.taskId())) {
-                throw new IllegalArgumentException("taskId must be unique within a card: " + task.taskId());
+                throw new IllegalArgumentException(
+                        "taskId must be unique within a card: " + task.taskId());
             }
         }
 
@@ -63,21 +67,25 @@ public record MatchManifest(
             }
             for (UUID member : team.members()) {
                 if (!rosterMembers.add(member)) {
-                    throw new IllegalArgumentException("a member cannot belong to multiple frozen teams: " + member);
+                    throw new IllegalArgumentException(
+                            "a member cannot belong to multiple frozen teams: " + member);
                 }
             }
         }
         Set<UUID> participantIds = new HashSet<>();
         for (PlayerSnapshot participant : participants) {
             if (!participantIds.add(participant.uuid())) {
-                throw new IllegalArgumentException("participant UUIDs must be unique: " + participant.uuid());
+                throw new IllegalArgumentException(
+                        "participant UUIDs must be unique: " + participant.uuid());
             }
             if (participant.teamId() != null && !teamById.containsKey(participant.teamId())) {
-                throw new IllegalArgumentException("participant references unknown team: " + participant.teamId());
+                throw new IllegalArgumentException(
+                        "participant references unknown team: " + participant.teamId());
             }
             if (participant.role() == ParticipantRole.PLAYER
                     && !teamById.get(participant.teamId()).members().contains(participant.uuid())) {
-                throw new IllegalArgumentException("participant is not present in the frozen team membership");
+                throw new IllegalArgumentException(
+                        "participant is not present in the frozen team membership");
             }
         }
     }

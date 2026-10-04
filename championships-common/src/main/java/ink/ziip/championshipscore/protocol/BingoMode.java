@@ -7,8 +7,19 @@ public enum BingoMode {
     QUANTITY,
     POINTS;
 
-    public boolean locksCells() { return this == DOMINATION; }
-    public boolean linesWin() { return this == DOMINATION || this == SPEEDRUN; }
-    public boolean fullCardWins() { return this == QUANTITY; }
-    public boolean usesPoints() { return this == POINTS; }
+    public boolean locksCells() {
+        return this == DOMINATION;
+    }
+
+    public boolean linesWin() {
+        return this == DOMINATION || this == SPEEDRUN;
+    }
+
+    public boolean fullCardWins() {
+        return this == QUANTITY;
+    }
+
+    public boolean usesPoints() {
+        return this == POINTS;
+    }
 }

@@ -15,15 +15,18 @@ public record ScoringDecision(
         int linePointsPerMember,
         int completedLines,
         int teamScore,
-        List<PlayerAward> awards
-) {
+        List<PlayerAward> awards) {
     public ScoringDecision {
         Objects.requireNonNull(observation, "observation");
         rejectionReason = rejectionReason == null ? "" : rejectionReason;
         awards = List.copyOf(awards);
-        if (claimRank < -1 || cellPoints < 0 || linePointsPerMember < 0
-                || completedLines < 0 || teamScore < 0) {
-            throw new IllegalArgumentException("score fields must be non-negative (claimRank may be -1)");
+        if (claimRank < -1
+                || cellPoints < 0
+                || linePointsPerMember < 0
+                || completedLines < 0
+                || teamScore < 0) {
+            throw new IllegalArgumentException(
+                    "score fields must be non-negative (claimRank may be -1)");
         }
     }
 }

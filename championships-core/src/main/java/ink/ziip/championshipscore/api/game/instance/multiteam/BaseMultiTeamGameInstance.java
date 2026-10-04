@@ -4,13 +4,16 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
-import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
+import ink.ziip.championshipscore.api.game.model.GameStageEnum;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.api.game.spatial.TeleportPositions;
 import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+
 import lombok.Getter;
+
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
@@ -24,8 +27,11 @@ public abstract class BaseMultiTeamGameInstance extends BaseGameInstance {
     protected final List<UUID> gamePlayers = new ArrayList<>();
     protected final List<ChampionshipTeam> gameTeams = new ArrayList<>();
 
-    public BaseMultiTeamGameInstance(ChampionshipsCore plugin, GameTypeEnum gameTypeEnum,
-                                     BaseListener gameHandler, BaseGameConfig gameConfig) {
+    public BaseMultiTeamGameInstance(
+            ChampionshipsCore plugin,
+            GameTypeEnum gameTypeEnum,
+            BaseListener gameHandler,
+            BaseGameConfig gameConfig) {
         super(plugin, gameTypeEnum, gameHandler, gameConfig);
     }
 
@@ -54,12 +60,20 @@ public abstract class BaseMultiTeamGameInstance extends BaseGameInstance {
     }
 
     public boolean tryStartGame(List<ChampionshipTeam> championshipTeams, List<UUID> players) {
-        if (getGameStageEnum() != GameStageEnum.WAITING || !validTeams(championshipTeams)
-                || players == null || players.isEmpty()
+        if (getGameStageEnum() != GameStageEnum.WAITING
+                || !validTeams(championshipTeams)
+                || players == null
+                || players.isEmpty()
                 || players.stream().anyMatch(Objects::isNull)
                 || players.size() != new HashSet<>(players).size()
-                || players.stream().anyMatch(player -> championshipTeams.stream()
-                        .noneMatch(team -> team.getMembers().contains(player))))
+                || players.stream()
+                        .anyMatch(
+                                player ->
+                                        championshipTeams.stream()
+                                                .noneMatch(
+                                                        team ->
+                                                                team.getMembers()
+                                                                        .contains(player))))
             return false;
         cancelPostGameRoutingBeforeStart();
         setGameStageEnum(GameStageEnum.LOADING);
@@ -73,7 +87,8 @@ public abstract class BaseMultiTeamGameInstance extends BaseGameInstance {
     }
 
     private static boolean validTeams(List<ChampionshipTeam> teams) {
-        if (teams == null || teams.isEmpty() || teams.stream().anyMatch(Objects::isNull)) return false;
+        if (teams == null || teams.isEmpty() || teams.stream().anyMatch(Objects::isNull))
+            return false;
         Set<UUID> players = new HashSet<>();
         for (ChampionshipTeam team : teams) {
             if (team.getMembers().isEmpty() || !players.addAll(team.getMembers())) return false;
@@ -94,18 +109,18 @@ public abstract class BaseMultiTeamGameInstance extends BaseGameInstance {
 
         StringBuilder stringBuilder = new StringBuilder();
 
-        stringBuilder.append(MessageConfig.GAME_BOARD_BAR
-                        .replace("%game%", gameTypeEnum.toString()))
+        stringBuilder
+                .append(MessageConfig.GAME_BOARD_BAR.replace("%game%", gameTypeEnum.toString()))
                 .append("\n");
 
         int i = 1;
         for (Map.Entry<ChampionshipTeam, Double> entry : list) {
-            if (i > 5)
-                break;
-            String row = MessageConfig.GAME_BOARD_RWO
-                    .replace("%team_rank%", String.valueOf(i))
-                    .replace("%team%", entry.getKey().getColoredName())
-                    .replace("%team_point%", Utils.formatPoints(entry.getValue()));
+            if (i > 5) break;
+            String row =
+                    MessageConfig.GAME_BOARD_RWO
+                            .replace("%team_rank%", String.valueOf(i))
+                            .replace("%team%", entry.getKey().getColoredName())
+                            .replace("%team_point%", LegacyText.formatPoints(entry.getValue()));
 
             stringBuilder.append(row).append("\n");
 
@@ -138,8 +153,7 @@ public abstract class BaseMultiTeamGameInstance extends BaseGameInstance {
         List<Player> players = new ArrayList<>();
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
-            if (player != null && isManagedSpectator(player))
-                players.add(player);
+            if (player != null && isManagedSpectator(player)) players.add(player);
         }
         return players;
     }
@@ -180,9 +194,14 @@ public abstract class BaseMultiTeamGameInstance extends BaseGameInstance {
                     player.setGameMode(gameMode);
                 } else {
                     ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-                    championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
-                        if (player.isOnline()) player.setGameMode(gameMode);
-                    });
+                    championshipsCore
+                            .getServer()
+                            .getScheduler()
+                            .runTask(
+                                    championshipsCore,
+                                    () -> {
+                                        if (player.isOnline()) player.setGameMode(gameMode);
+                                    });
                 }
             }
         }
@@ -202,11 +221,9 @@ public abstract class BaseMultiTeamGameInstance extends BaseGameInstance {
     public void setFoodLevelForAllGamePlayers(int level) {
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
-            if (player != null)
-                player.setFoodLevel(level);
+            if (player != null) player.setFoodLevel(level);
         }
     }
-
 
     @Override
     public void teleportAllPlayers(Location location) {
@@ -214,7 +231,8 @@ public abstract class BaseMultiTeamGameInstance extends BaseGameInstance {
             UUID uuid = gamePlayers.get(index);
             Player player = Bukkit.getPlayer(uuid);
             if (player != null)
-                player.teleport(Utils.getCollisionSafeTeleportLocation(location, index));
+                player.teleport(
+                        TeleportPositions.getCollisionSafeTeleportLocation(location, index));
         }
     }
 
@@ -232,8 +250,7 @@ public abstract class BaseMultiTeamGameInstance extends BaseGameInstance {
     public void cleanInventoryForAllGamePlayers() {
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
-            if (player != null)
-                player.getInventory().clear();
+            if (player != null) player.getInventory().clear();
         }
     }
 
@@ -241,8 +258,7 @@ public abstract class BaseMultiTeamGameInstance extends BaseGameInstance {
     public void playSoundToAllGamePlayers(Sound sound, float volume, float pitch) {
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
-            if (player != null)
-                player.playSound(player.getLocation(), sound, volume, pitch);
+            if (player != null) player.playSound(player.getLocation(), sound, volume, pitch);
         }
     }
 
@@ -250,8 +266,7 @@ public abstract class BaseMultiTeamGameInstance extends BaseGameInstance {
     public void playNoteToAllGamePlayers(Instrument instrument, Note note) {
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
-            if (player != null)
-                player.playNote(player.getLocation(), instrument, note);
+            if (player != null) player.playNote(player.getLocation(), instrument, note);
         }
     }
 

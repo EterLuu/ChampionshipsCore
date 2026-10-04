@@ -7,13 +7,16 @@ import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.reflect.StructureModifier;
 import com.comphenix.protocol.wrappers.EnumWrappers;
 import com.comphenix.protocol.wrappers.WrappedChatComponent;
+
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
-import ink.ziip.championshipscore.util.Utils;
+
 import me.clip.placeholderapi.PlaceholderAPI;
+
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.title.Title;
+
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -23,8 +26,8 @@ import java.time.Duration;
 import java.util.UUID;
 
 public class ChampionshipPlayer {
-    @NotNull
-    private final UUID playerUUID;
+    @NotNull private final UUID playerUUID;
+
     protected ChampionshipPlayer(@NotNull UUID uuid) {
         this.playerUUID = uuid;
     }
@@ -36,11 +39,12 @@ public class ChampionshipPlayer {
 
     public void sendActionBar(String content) {
         Player player = getPlayer();
-        if (player == null)
-            return;
+        if (player == null) return;
         ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
-        WrappedChatComponent wrappedChatComponent = WrappedChatComponent.fromLegacyText(setPlaceholders(content));
-        PacketContainer packetContainer = protocolManager.createPacket(PacketType.Play.Server.SYSTEM_CHAT);
+        WrappedChatComponent wrappedChatComponent =
+                WrappedChatComponent.fromLegacyText(setPlaceholders(content));
+        PacketContainer packetContainer =
+                protocolManager.createPacket(PacketType.Play.Server.SYSTEM_CHAT);
         StructureModifier<Integer> integers = packetContainer.getIntegers();
         if (integers.size() == 1) {
             integers.write(0, (int) EnumWrappers.ChatType.GAME_INFO.getId());
@@ -53,10 +57,11 @@ public class ChampionshipPlayer {
 
     public void setRedScreen() {
         Player player = getPlayer();
-        PacketContainer packet = ProtocolLibrary.getProtocolManager().createPacket(PacketType.Play.Server.SET_BORDER_WARNING_DISTANCE);
+        PacketContainer packet =
+                ProtocolLibrary.getProtocolManager()
+                        .createPacket(PacketType.Play.Server.SET_BORDER_WARNING_DISTANCE);
 
-        if (player == null)
-            return;
+        if (player == null) return;
 
         World world = player.getWorld();
 
@@ -69,10 +74,11 @@ public class ChampionshipPlayer {
 
     public void removeRedScreen() {
         Player player = getPlayer();
-        if (player == null)
-            return;
+        if (player == null) return;
 
-        PacketContainer packet = ProtocolLibrary.getProtocolManager().createPacket(PacketType.Play.Server.SET_BORDER_WARNING_DISTANCE);
+        PacketContainer packet =
+                ProtocolLibrary.getProtocolManager()
+                        .createPacket(PacketType.Play.Server.SET_BORDER_WARNING_DISTANCE);
 
         packet.getModifier().writeDefaults();
         packet.getIntegers().write(0, 0);
@@ -81,22 +87,19 @@ public class ChampionshipPlayer {
 
     public void sendMessage(String content) {
         Player player = getPlayer();
-        if (player == null)
-            return;
-        player.sendMessage(Utils.translateColorCodes(setPlaceholders(content)));
+        if (player == null) return;
+        player.sendMessage(LegacyText.translateColorCodes(setPlaceholders(content)));
     }
 
     public void setLevel(int level) {
         Player player = getPlayer();
-        if (player == null)
-            return;
+        if (player == null) return;
         player.setLevel(level);
     }
 
     public void playSound(Sound sound, float volume, float pitch) {
         Player player = getPlayer();
-        if (player == null)
-            return;
+        if (player == null) return;
         player.playSound(player.getLocation(), sound, volume, pitch);
     }
 
@@ -106,27 +109,30 @@ public class ChampionshipPlayer {
 
     public void sendTitle(String title, String subTitle, int stayTicks) {
         Player player = getPlayer();
-        if (player == null)
-            return;
-        // Use the shared serializer so six-digit colours are handled consistently with chat and boss bars.
+        if (player == null) return;
+        // Use the shared serializer so six-digit colours are handled consistently with chat and
+        // boss bars.
         Component titleComponent = LegacyText.component(setPlaceholders(title));
         Component subTitleComponent = LegacyText.component(setPlaceholders(subTitle));
         // fade-in 1 tick, caller-defined stay, fade-out 1 tick
-        Title.Times times = Title.Times.times(Duration.ofMillis(50),
-                Duration.ofMillis(Math.max(0, stayTicks) * 50L), Duration.ofMillis(50));
+        Title.Times times =
+                Title.Times.times(
+                        Duration.ofMillis(50),
+                        Duration.ofMillis(Math.max(0, stayTicks) * 50L),
+                        Duration.ofMillis(50));
         player.showTitle(Title.title(titleComponent, subTitleComponent, times));
     }
 
     private String setPlaceholders(String content) {
         OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(playerUUID);
-        return Utils.translateColorCodes(PlaceholderAPI.setPlaceholders(offlinePlayer, content));
+        return LegacyText.translateColorCodes(
+                PlaceholderAPI.setPlaceholders(offlinePlayer, content));
     }
 
     @Nullable
     public ChampionshipTeam getChampionshipTeam() {
         Player player = getPlayer();
-        if (player == null)
-            return null;
+        if (player == null) return null;
         return ChampionshipsCore.getInstance().getTeamManager().getTeamByPlayer(player);
     }
 }

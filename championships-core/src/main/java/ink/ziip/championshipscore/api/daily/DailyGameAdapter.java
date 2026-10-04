@@ -1,21 +1,27 @@
 package ink.ziip.championshipscore.api.daily;
 
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 /** Small game-specific boundary; queueing, parties, teams, persistence and UI stay reusable. */
 public interface DailyGameAdapter {
-    @NotNull GameTypeEnum game();
-    @NotNull DailyRules rules();
+    @NotNull
+    GameTypeEnum game();
+
+    @NotNull
+    DailyRules rules();
+
     /** Number of runtime slots that can accept a new session right now. */
     int availableSlots();
-    @NotNull CompletionStage<StartResult> start(@NotNull List<ChampionshipTeam> teams);
+
+    @NotNull
+    CompletionStage<StartResult> start(@NotNull List<ChampionshipTeam> teams);
 
     record StartResult(String map, BaseGameInstance instance) {}
 }

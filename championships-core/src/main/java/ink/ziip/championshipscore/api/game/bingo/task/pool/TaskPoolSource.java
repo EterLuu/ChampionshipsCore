@@ -8,8 +8,7 @@ public final class TaskPoolSource {
     private static volatile TaskPoolSpec active;
     private static volatile String activeName = "default";
 
-    private TaskPoolSource() {
-    }
+    private TaskPoolSource() {}
 
     public static void set(TaskPoolSpec spec) {
         active = spec;

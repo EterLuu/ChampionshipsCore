@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.command;
 
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -21,9 +22,10 @@ public final class GameTabCompletion {
                 .toList();
     }
 
-    public static @NotNull List<String> mapNames(@Nullable GameTypeEnum game,
-                                                  @NotNull Set<GameTypeEnum> enabledGames,
-                                                  @NotNull Collection<String> mapNames) {
+    public static @NotNull List<String> mapNames(
+            @Nullable GameTypeEnum game,
+            @NotNull Set<GameTypeEnum> enabledGames,
+            @NotNull Collection<String> mapNames) {
         if (game == null || !enabledGames.contains(game)) return List.of();
         List<String> candidates = new ArrayList<>();
         for (String mapName : mapNames) {

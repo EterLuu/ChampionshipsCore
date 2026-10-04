@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.bingo.task;
 
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoObjectiveProgressTracker;
+
 import org.bukkit.entity.Player;
 
 /** Core-facing player adapter for the shared match-scoped Bingo objective tracker. */

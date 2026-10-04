@@ -21,8 +21,11 @@ final class ProxyBanSynchronizer implements Runnable {
     private int consecutiveFailures;
     private long lastUnavailableLogAt;
 
-    ProxyBanSynchronizer(ProxyIdentityClient client, ProxyAccessState state,
-                         BanKick kickBannedPlayer, Logger logger) {
+    ProxyBanSynchronizer(
+            ProxyIdentityClient client,
+            ProxyAccessState state,
+            BanKick kickBannedPlayer,
+            Logger logger) {
         this.client = client;
         this.state = state;
         this.kickBannedPlayer = kickBannedPlayer;
@@ -52,8 +55,10 @@ final class ProxyBanSynchronizer implements Runnable {
         long now = System.currentTimeMillis();
         if (consecutiveFailures == 1 || now - lastUnavailableLogAt >= 60_000L) {
             lastUnavailableLogAt = now;
-            logger.warning("Auth proxy web service unavailable; retrying (attempt "
-                    + consecutiveFailures + ")");
+            logger.warning(
+                    "Auth proxy web service unavailable; retrying (attempt "
+                            + consecutiveFailures
+                            + ")");
         }
     }
 
@@ -76,10 +81,13 @@ final class ProxyBanSynchronizer implements Runnable {
         }
         state.applyChanges(batch, Instant.now());
         for (ProxyIdentityClient.ProxyChange change : batch.changes) {
-            boolean banned = change != null && (change.status == null
-                    ? "BANNED".equals(change.operation)
-                    : "BANNED".equals(change.status));
-            if (banned && isActive(change.expiresAt)
+            boolean banned =
+                    change != null
+                            && (change.status == null
+                                    ? "BANNED".equals(change.operation)
+                                    : "BANNED".equals(change.status));
+            if (banned
+                    && isActive(change.expiresAt)
                     && isMinecraftUsername(change.authmeUsername)) {
                 kick(change.authmeUsername, change.reason, change.expiresAt);
             }
@@ -109,5 +117,4 @@ final class ProxyBanSynchronizer implements Runnable {
     private static boolean isMinecraftUsername(String username) {
         return username != null && username.matches("^[A-Za-z0-9_]{3,16}$");
     }
-
 }

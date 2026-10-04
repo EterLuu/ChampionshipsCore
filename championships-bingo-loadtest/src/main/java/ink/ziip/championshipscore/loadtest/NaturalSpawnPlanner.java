@@ -4,12 +4,13 @@ final class NaturalSpawnPlanner {
     private static final double GOLDEN_ANGLE = Math.PI * (3.0 - Math.sqrt(5.0));
     private static final double GOLDEN_FRACTION = 0.6180339887498949;
 
-    private NaturalSpawnPlanner() {
-    }
+    private NaturalSpawnPlanner() {}
 
-    static Offset offset(long sequence, int ownerCount, double minimumDistance,
-                         double maximumDistance) {
-        if (sequence < 0L || ownerCount < 1 || minimumDistance < 0.0
+    static Offset offset(
+            long sequence, int ownerCount, double minimumDistance, double maximumDistance) {
+        if (sequence < 0L
+                || ownerCount < 1
+                || minimumDistance < 0.0
                 || maximumDistance <= minimumDistance) {
             throw new IllegalArgumentException("Invalid natural spawn planner input");
         }

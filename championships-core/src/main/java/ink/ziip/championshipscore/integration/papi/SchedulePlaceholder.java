@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.integration.papi;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.schedule.ScheduleManager;
+
 import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
 
@@ -54,9 +55,12 @@ public class SchedulePlaceholder extends BasePlaceholder {
         if (params.startsWith("round_riptiderush") || params.startsWith("round_raftsurvival")) {
             return String.valueOf(scheduleManager.getRiptideRushScheduleManager().getSubRound());
         }
-        if (params.equals("round_frostbite")) return String.valueOf(scheduleManager.getFrostbiteScheduleManager().getSubRound());
+        if (params.equals("round_frostbite"))
+            return String.valueOf(scheduleManager.getFrostbiteScheduleManager().getSubRound());
         if (params.startsWith("round_points")) {
-            return String.valueOf(plugin.getRankManager().getPointMultiple(plugin.getRankManager().getRound() + 1));
+            return String.valueOf(
+                    plugin.getRankManager()
+                            .getPointMultiple(plugin.getRankManager().getRound() + 1));
         }
 
         // Placeholder is unknown by the Expansion

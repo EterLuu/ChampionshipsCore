@@ -3,8 +3,10 @@ package ink.ziip.championshipscore.api.schedule.tgttos;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
-import ink.ziip.championshipscore.api.game.tgttos.TGTTOSTeamArea;
+import ink.ziip.championshipscore.api.game.tgttos.runtime.TGTTOSTeamArea;
+
 import lombok.Setter;
+
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 

@@ -1,9 +1,5 @@
 package ink.ziip.championshipscore.api.game.area.prepare.step;
 
-import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
-import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
@@ -11,7 +7,11 @@ import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
 import ink.ziip.championshipscore.api.game.arena.ArenaGrid;
 import ink.ziip.championshipscore.api.game.arena.ArenaPreparer;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+import ink.ziip.championshipscore.presentation.text.CoreMessages;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -26,8 +26,8 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
- * Stamps {@code count} copies into the editable world. This deliberately does not snapshot/reload the
- * world: publish performs that expensive operation once, after every geometry step validates.
+ * Stamps {@code count} copies into the editable world. This deliberately does not snapshot/reload
+ * the world: publish performs that expensive operation once, after every geometry step validates.
  */
 public class StampStep extends PrepareStep {
 
@@ -39,34 +39,62 @@ public class StampStep extends PrepareStep {
     private final int maxCount;
     private final boolean keepSourceCopy;
 
-    public StampStep(@NotNull Function<ChampionshipsCore, File> fileResolver, @NotNull ArenaGrid grid,
-                     @NotNull BiConsumer<SetupTarget, Integer> copyCountWriter) {
-        this(fileResolver, (target, size) -> grid, copyCountWriter, null, null, Integer.MAX_VALUE, true);
+    public StampStep(
+            @NotNull Function<ChampionshipsCore, File> fileResolver,
+            @NotNull ArenaGrid grid,
+            @NotNull BiConsumer<SetupTarget, Integer> copyCountWriter) {
+        this(
+                fileResolver,
+                (target, size) -> grid,
+                copyCountWriter,
+                null,
+                null,
+                Integer.MAX_VALUE,
+                true);
     }
 
-    public StampStep(@NotNull Function<ChampionshipsCore, File> fileResolver, @NotNull ArenaGrid grid,
-                     @NotNull BiConsumer<SetupTarget, Integer> copyCountWriter, int maxCount) {
+    public StampStep(
+            @NotNull Function<ChampionshipsCore, File> fileResolver,
+            @NotNull ArenaGrid grid,
+            @NotNull BiConsumer<SetupTarget, Integer> copyCountWriter,
+            int maxCount) {
         this(fileResolver, (target, size) -> grid, copyCountWriter, null, null, maxCount, true);
     }
 
-    private StampStep(@NotNull Function<ChampionshipsCore, File> fileResolver,
-                      @NotNull BiFunction<SetupTarget, Vector, ArenaGrid> gridResolver,
-                      @NotNull BiConsumer<SetupTarget, Integer> copyCountWriter,
-                      BiConsumer<SetupTarget, Vector> sizeWriter,
-                      BiConsumer<PrepareSession, World> preStampCleaner,
-                      int maxCount, boolean ignored) {
-        this(fileResolver, gridResolver, copyCountWriter, sizeWriter, preStampCleaner, maxCount, false, ignored);
+    private StampStep(
+            @NotNull Function<ChampionshipsCore, File> fileResolver,
+            @NotNull BiFunction<SetupTarget, Vector, ArenaGrid> gridResolver,
+            @NotNull BiConsumer<SetupTarget, Integer> copyCountWriter,
+            BiConsumer<SetupTarget, Vector> sizeWriter,
+            BiConsumer<PrepareSession, World> preStampCleaner,
+            int maxCount,
+            boolean ignored) {
+        this(
+                fileResolver,
+                gridResolver,
+                copyCountWriter,
+                sizeWriter,
+                preStampCleaner,
+                maxCount,
+                false,
+                ignored);
     }
 
-    private StampStep(@NotNull Function<ChampionshipsCore, File> fileResolver,
-                      @NotNull BiFunction<SetupTarget, Vector, ArenaGrid> gridResolver,
-                      @NotNull BiConsumer<SetupTarget, Integer> copyCountWriter,
-                      BiConsumer<SetupTarget, Vector> sizeWriter,
-                      BiConsumer<PrepareSession, World> preStampCleaner,
-                      int maxCount, boolean keepSourceCopy, boolean ignored) {
-        super("stamp",
-                LegacyText.component(GuiConfig.text("map-editor.menus.step-list.items.stamp.title")),
-                LegacyText.component(GuiConfig.line("map-editor.menus.step-list.items.stamp.lore", 0)),
+    private StampStep(
+            @NotNull Function<ChampionshipsCore, File> fileResolver,
+            @NotNull BiFunction<SetupTarget, Vector, ArenaGrid> gridResolver,
+            @NotNull BiConsumer<SetupTarget, Integer> copyCountWriter,
+            BiConsumer<SetupTarget, Vector> sizeWriter,
+            BiConsumer<PrepareSession, World> preStampCleaner,
+            int maxCount,
+            boolean keepSourceCopy,
+            boolean ignored) {
+        super(
+                "stamp",
+                LegacyText.component(
+                        GuiConfig.text("map-editor.menus.step-list.items.stamp.title")),
+                LegacyText.component(
+                        GuiConfig.line("map-editor.menus.step-list.items.stamp.lore", 0)),
                 Material.DISPENSER,
                 StepCaptureType.STAMP);
         this.fileResolver = fileResolver;
@@ -78,46 +106,89 @@ public class StampStep extends PrepareStep {
         this.keepSourceCopy = keepSourceCopy;
     }
 
-    public StampStep(@NotNull Function<ChampionshipsCore, File> fileResolver, @NotNull ArenaGrid grid,
-                     @NotNull BiConsumer<SetupTarget, Integer> copyCountWriter,
-                     @NotNull BiConsumer<SetupTarget, Vector> sizeWriter) {
-        this(fileResolver, (target, size) -> grid, copyCountWriter, sizeWriter, null, Integer.MAX_VALUE, true);
+    public StampStep(
+            @NotNull Function<ChampionshipsCore, File> fileResolver,
+            @NotNull ArenaGrid grid,
+            @NotNull BiConsumer<SetupTarget, Integer> copyCountWriter,
+            @NotNull BiConsumer<SetupTarget, Vector> sizeWriter) {
+        this(
+                fileResolver,
+                (target, size) -> grid,
+                copyCountWriter,
+                sizeWriter,
+                null,
+                Integer.MAX_VALUE,
+                true);
     }
 
-    public StampStep(@NotNull Function<ChampionshipsCore, File> fileResolver, @NotNull ArenaGrid grid,
-                     @NotNull BiConsumer<SetupTarget, Integer> copyCountWriter,
-                     @NotNull BiConsumer<SetupTarget, Vector> sizeWriter, int maxCount) {
-        this(fileResolver, (target, size) -> grid, copyCountWriter, sizeWriter, null, maxCount, true);
+    public StampStep(
+            @NotNull Function<ChampionshipsCore, File> fileResolver,
+            @NotNull ArenaGrid grid,
+            @NotNull BiConsumer<SetupTarget, Integer> copyCountWriter,
+            @NotNull BiConsumer<SetupTarget, Vector> sizeWriter,
+            int maxCount) {
+        this(
+                fileResolver,
+                (target, size) -> grid,
+                copyCountWriter,
+                sizeWriter,
+                null,
+                maxCount,
+                true);
     }
 
-    public static StampStep adaptive(@NotNull Function<ChampionshipsCore, File> fileResolver,
-                                     @NotNull BiFunction<SetupTarget, Vector, ArenaGrid> gridResolver,
-                                     @NotNull BiConsumer<SetupTarget, Integer> copyCountWriter) {
-        return new StampStep(fileResolver, gridResolver, copyCountWriter, null, null,
-                Integer.MAX_VALUE, true);
+    public static StampStep adaptive(
+            @NotNull Function<ChampionshipsCore, File> fileResolver,
+            @NotNull BiFunction<SetupTarget, Vector, ArenaGrid> gridResolver,
+            @NotNull BiConsumer<SetupTarget, Integer> copyCountWriter) {
+        return new StampStep(
+                fileResolver, gridResolver, copyCountWriter, null, null, Integer.MAX_VALUE, true);
     }
 
-    public static StampStep adaptiveKeepingSource(@NotNull Function<ChampionshipsCore, File> fileResolver,
-                                                   @NotNull BiFunction<SetupTarget, Vector, ArenaGrid> gridResolver,
-                                                   @NotNull BiConsumer<SetupTarget, Integer> copyCountWriter) {
-        return new StampStep(fileResolver, gridResolver, copyCountWriter, null, null,
-                Integer.MAX_VALUE, true, true);
+    public static StampStep adaptiveKeepingSource(
+            @NotNull Function<ChampionshipsCore, File> fileResolver,
+            @NotNull BiFunction<SetupTarget, Vector, ArenaGrid> gridResolver,
+            @NotNull BiConsumer<SetupTarget, Integer> copyCountWriter) {
+        return new StampStep(
+                fileResolver,
+                gridResolver,
+                copyCountWriter,
+                null,
+                null,
+                Integer.MAX_VALUE,
+                true,
+                true);
     }
 
-    public static StampStep adaptiveKeepingSource(@NotNull Function<ChampionshipsCore, File> fileResolver,
-                                                   @NotNull BiFunction<SetupTarget, Vector, ArenaGrid> gridResolver,
-                                                   @NotNull BiConsumer<SetupTarget, Integer> copyCountWriter,
-                                                   @NotNull BiConsumer<PrepareSession, World> preStampCleaner) {
-        return new StampStep(fileResolver, gridResolver, copyCountWriter, null, preStampCleaner,
-                Integer.MAX_VALUE, true, true);
+    public static StampStep adaptiveKeepingSource(
+            @NotNull Function<ChampionshipsCore, File> fileResolver,
+            @NotNull BiFunction<SetupTarget, Vector, ArenaGrid> gridResolver,
+            @NotNull BiConsumer<SetupTarget, Integer> copyCountWriter,
+            @NotNull BiConsumer<PrepareSession, World> preStampCleaner) {
+        return new StampStep(
+                fileResolver,
+                gridResolver,
+                copyCountWriter,
+                null,
+                preStampCleaner,
+                Integer.MAX_VALUE,
+                true,
+                true);
     }
 
-    public static StampStep adaptive(@NotNull Function<ChampionshipsCore, File> fileResolver,
-                                     @NotNull BiFunction<SetupTarget, Vector, ArenaGrid> gridResolver,
-                                     @NotNull BiConsumer<SetupTarget, Integer> copyCountWriter,
-                                     @NotNull BiConsumer<PrepareSession, World> preStampCleaner) {
-        return new StampStep(fileResolver, gridResolver, copyCountWriter, null, preStampCleaner,
-                Integer.MAX_VALUE, true);
+    public static StampStep adaptive(
+            @NotNull Function<ChampionshipsCore, File> fileResolver,
+            @NotNull BiFunction<SetupTarget, Vector, ArenaGrid> gridResolver,
+            @NotNull BiConsumer<SetupTarget, Integer> copyCountWriter,
+            @NotNull BiConsumer<PrepareSession, World> preStampCleaner) {
+        return new StampStep(
+                fileResolver,
+                gridResolver,
+                copyCountWriter,
+                null,
+                preStampCleaner,
+                Integer.MAX_VALUE,
+                true);
     }
 
     @Override
@@ -128,22 +199,28 @@ public class StampStep extends PrepareStep {
     @Override
     public String stamp(@NotNull PrepareSession session, @NotNull Player player, int count) {
         if (count < 1) {
-            return Utils.formatAdminError(MessageConfig.MAP_EDITOR_STEP_ARENA_COUNT_POSITIVE);
+            return CoreMessages.formatAdminError(
+                    MessageConfig.MAP_EDITOR_STEP_ARENA_COUNT_POSITIVE);
         }
         if (count > maxCount) {
-            return Utils.formatAdminError(MessageConfig.MAP_EDITOR_STEP_ARENA_MAX_COUNT.replace("%max%", String.valueOf(maxCount)));
+            return CoreMessages.formatAdminError(
+                    MessageConfig.MAP_EDITOR_STEP_ARENA_MAX_COUNT.replace(
+                            "%max%", String.valueOf(maxCount)));
         }
         File file = fileResolver.apply(session.getPlugin());
         if (!file.isFile()) {
-            return Utils.formatAdminError(MessageConfig.MAP_EDITOR_STEP_ARENA_TEMPLATE_MISSING);
+            return CoreMessages.formatAdminError(
+                    MessageConfig.MAP_EDITOR_STEP_ARENA_TEMPLATE_MISSING);
         }
         String worldName = session.getTarget().worldName();
         World world = Bukkit.getWorld(worldName);
         if (world == null) {
-            return Utils.formatAdminError(MessageConfig.MAP_EDITOR_STEP_WORLD_NOT_LOADED.replace("%world%", worldName));
+            return CoreMessages.formatAdminError(
+                    MessageConfig.MAP_EDITOR_STEP_WORLD_NOT_LOADED.replace("%world%", worldName));
         }
         if (!session.getTarget().canSaveMap()) {
-            return Utils.formatAdminError(MessageConfig.MAP_EDITOR_STEP_ARENA_INSTANCE_RUNNING);
+            return CoreMessages.formatAdminError(
+                    MessageConfig.MAP_EDITOR_STEP_ARENA_INSTANCE_RUNNING);
         }
         ArenaGrid resolvedGrid;
         try {
@@ -151,12 +228,14 @@ public class StampStep extends PrepareStep {
             if (preStampCleaner != null) preStampCleaner.accept(session, world);
             resolvedGrid = gridResolver.apply(session.getTarget(), size);
             if (keepSourceCopy)
-                ArenaPreparer.stampAdditionalCopies(session.getPlugin(), world, file, resolvedGrid, count);
-            else
-                ArenaPreparer.stampCopies(session.getPlugin(), world, file, resolvedGrid, count);
+                ArenaPreparer.stampAdditionalCopies(
+                        session.getPlugin(), world, file, resolvedGrid, count);
+            else ArenaPreparer.stampCopies(session.getPlugin(), world, file, resolvedGrid, count);
             if (sizeWriter != null) sizeWriter.accept(session.getTarget(), size);
         } catch (Exception e) {
-            return Utils.formatAdminError(MessageConfig.MAP_EDITOR_STEP_ARENA_GENERATE_FAILED.replace("%detail%", e.getMessage()));
+            return CoreMessages.formatAdminError(
+                    MessageConfig.MAP_EDITOR_STEP_ARENA_GENERATE_FAILED.replace(
+                            "%detail%", e.getMessage()));
         }
 
         copyCountWriter.accept(session.getTarget(), count);
@@ -165,8 +244,12 @@ public class StampStep extends PrepareStep {
         Bukkit.getScheduler().runTask(session.getPlugin(), () -> player.teleport(dest));
         session.setWorldConfirmed(true);
         session.setStamped(true);
-        return Utils.formatAdminSuccess(keepSourceCopy
-                ? MessageConfig.MAP_EDITOR_STEP_ARENA_TOTAL_SET.replace("%count%", String.valueOf(count)).replace("%copies%", String.valueOf(Math.max(0, count - 1)))
-                : MessageConfig.MAP_EDITOR_STEP_ARENA_GENERATED.replace("%count%", String.valueOf(count)));
+        return CoreMessages.formatAdminSuccess(
+                keepSourceCopy
+                        ? MessageConfig.MAP_EDITOR_STEP_ARENA_TOTAL_SET
+                                .replace("%count%", String.valueOf(count))
+                                .replace("%copies%", String.valueOf(Math.max(0, count - 1)))
+                        : MessageConfig.MAP_EDITOR_STEP_ARENA_GENERATED.replace(
+                                "%count%", String.valueOf(count)));
     }
 }

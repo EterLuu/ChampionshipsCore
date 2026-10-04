@@ -14,23 +14,28 @@ import java.util.TreeMap;
 
 /** Deterministic digest of every frozen input that can alter Worker-side Bingo execution. */
 public final class BingoManifestHasher {
-    private BingoManifestHasher() {
-    }
+    private BingoManifestHasher() {}
 
-    public static String hash(int durationSeconds, long cardSeed, BingoScoringRules scoring,
-                              BingoRuntimeRules runtimeRules, List<BingoTaskSpec> tasks) {
+    public static String hash(
+            int durationSeconds,
+            long cardSeed,
+            BingoScoringRules scoring,
+            BingoRuntimeRules runtimeRules,
+            List<BingoTaskSpec> tasks) {
         ProtocolSupport.required(scoring, "scoring");
         ProtocolSupport.required(runtimeRules, "runtimeRules");
         ProtocolSupport.required(tasks, "tasks");
         try (ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-             DataOutputStream out = new DataOutputStream(bytes)) {
+                DataOutputStream out = new DataOutputStream(bytes)) {
             out.writeInt(ProtocolVersion.CURRENT);
             out.writeInt(durationSeconds);
             out.writeLong(cardSeed);
             writeScoring(out, scoring);
             writeRuntimeRules(out, runtimeRules);
-            List<BingoTaskSpec> ordered = tasks.stream()
-                    .sorted(Comparator.comparingInt(BingoTaskSpec::cellIndex)).toList();
+            List<BingoTaskSpec> ordered =
+                    tasks.stream()
+                            .sorted(Comparator.comparingInt(BingoTaskSpec::cellIndex))
+                            .toList();
             out.writeInt(ordered.size());
             for (BingoTaskSpec task : ordered) {
                 out.writeInt(task.cellIndex());
@@ -52,11 +57,16 @@ public final class BingoManifestHasher {
 
     public static String hash(MatchManifest manifest) {
         ProtocolSupport.required(manifest, "manifest");
-        return hash(manifest.durationSeconds(), manifest.cardSeed(), manifest.scoring(),
-                manifest.runtimeRules(), manifest.tasks());
+        return hash(
+                manifest.durationSeconds(),
+                manifest.cardSeed(),
+                manifest.scoring(),
+                manifest.runtimeRules(),
+                manifest.tasks());
     }
 
-    private static void writeScoring(DataOutputStream out, BingoScoringRules scoring) throws IOException {
+    private static void writeScoring(DataOutputStream out, BingoScoringRules scoring)
+            throws IOException {
         out.writeInt(scoring.cardWidth());
         out.writeInt(scoring.claimPoints().size());
         for (int points : scoring.claimPoints()) out.writeInt(points);
@@ -71,7 +81,8 @@ public final class BingoManifestHasher {
         for (String item : scoring.variant().genesisItems()) writeString(out, item);
     }
 
-    private static void writeRuntimeRules(DataOutputStream out, BingoRuntimeRules rules) throws IOException {
+    private static void writeRuntimeRules(DataOutputStream out, BingoRuntimeRules rules)
+            throws IOException {
         out.writeInt(rules.preparationSeconds());
         out.writeInt(rules.finalCountdownSeconds());
         out.writeInt(rules.scatterRadius());
@@ -98,7 +109,8 @@ public final class BingoManifestHasher {
         }
     }
 
-    private static void writeLocation(DataOutputStream out, BingoLocationSnapshot location) throws IOException {
+    private static void writeLocation(DataOutputStream out, BingoLocationSnapshot location)
+            throws IOException {
         out.writeBoolean(location != null);
         if (location == null) return;
         writeString(out, location.dimension().name());

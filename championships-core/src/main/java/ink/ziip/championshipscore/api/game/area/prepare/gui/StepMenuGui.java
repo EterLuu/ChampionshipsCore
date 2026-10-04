@@ -1,24 +1,23 @@
 package ink.ziip.championshipscore.api.game.area.prepare.gui;
 
-import ink.ziip.championshipscore.api.gui.MenuInventory;
-import ink.ziip.championshipscore.api.gui.MenuId;
-import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
-import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareKeys;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareModeInventory;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
+import ink.ziip.championshipscore.api.gui.MenuId;
+import ink.ziip.championshipscore.api.gui.MenuInventory;
+import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.TextDecoration;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
@@ -26,7 +25,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-/** A paged, six-row step picker. It keeps large prepare flows usable without excessive page hopping. */
+/**
+ * A paged, six-row step picker. It keeps large prepare flows usable without excessive page hopping.
+ */
 public final class StepMenuGui {
     private static final String MENU_PATH = MenuId.MAP_EDITOR_STEP_LIST.path();
     private static final int PAGE_SIZE = 45;
@@ -36,8 +37,7 @@ public final class StepMenuGui {
     private static final int FIRST_STEP_SLOT = 0;
     private static final int LAST_STEP_SLOT = 44;
 
-    private StepMenuGui() {
-    }
+    private StepMenuGui() {}
 
     public static final class Holder implements MenuInventory {
         final PrepareSession session;
@@ -56,8 +56,8 @@ public final class StepMenuGui {
 
     public static void open(@NotNull Player player, @NotNull PrepareSession session) {
         Holder holder = new Holder(session);
-        GuiConfig.MenuSpec menu = GuiConfig.menu(MENU_PATH, 54,
-                GuiConfig.text(MENU_PATH + ".title"), List.of());
+        GuiConfig.MenuSpec menu =
+                GuiConfig.menu(MENU_PATH, 54, GuiConfig.text(MENU_PATH + ".title"), List.of());
         Inventory inventory = Bukkit.createInventory(holder, menu.size(), menu.title());
         holder.inventory = inventory;
         refresh(holder);
@@ -75,7 +75,8 @@ public final class StepMenuGui {
         for (int slot = FIRST_STEP_SLOT; slot <= LAST_STEP_SLOT; slot++) {
             int index = first + slot;
             if (index < session.getSteps().size()) {
-                inventory.setItem(slot, stepItem(session, session.getSteps().get(index), index + 1));
+                inventory.setItem(
+                        slot, stepItem(session, session.getSteps().get(index), index + 1));
             } else {
                 inventory.setItem(slot, filler());
             }
@@ -83,20 +84,44 @@ public final class StepMenuGui {
 
         boolean hasPrev = holder.page > 0;
         boolean hasNext = holder.page + 1 < pageCount;
-        inventory.setItem(PREVIOUS_SLOT, configured("previous", hasPrev ? null : "disabled",
-                Map.of("page", holder.page, "pages", pageCount, "total", session.getSteps().size())));
+        inventory.setItem(
+                PREVIOUS_SLOT,
+                configured(
+                        "previous",
+                        hasPrev ? null : "disabled",
+                        Map.of(
+                                "page",
+                                holder.page,
+                                "pages",
+                                pageCount,
+                                "total",
+                                session.getSteps().size())));
         inventory.setItem(BACK_SLOT, configured("back", null, Map.of()));
-        inventory.setItem(NEXT_SLOT, configured("next", hasNext ? null : "disabled",
-                Map.of("page", holder.page + 2, "pages", pageCount)));
+        inventory.setItem(
+                NEXT_SLOT,
+                configured(
+                        "next",
+                        hasNext ? null : "disabled",
+                        Map.of("page", holder.page + 2, "pages", pageCount)));
     }
 
-    private static ItemStack configured(@NotNull String item, String state, @NotNull Map<String, ?> placeholders) {
-        return ConfiguredGui.item(MENU_PATH + ".items." + item, state, placeholders,
-                Material.BARRIER, Component.text(item), List.of(), false);
+    private static ItemStack configured(
+            @NotNull String item, String state, @NotNull Map<String, ?> placeholders) {
+        return ConfiguredGui.item(
+                MENU_PATH + ".items." + item,
+                state,
+                placeholders,
+                Material.BARRIER,
+                Component.text(item),
+                List.of(),
+                false);
     }
 
-    public static void handleClick(@NotNull PrepareSessionManager manager, @NotNull InventoryClickEvent event,
-                                   @NotNull Player player, @NotNull Holder holder) {
+    public static void handleClick(
+            @NotNull PrepareSessionManager manager,
+            @NotNull InventoryClickEvent event,
+            @NotNull Player player,
+            @NotNull Holder holder) {
         event.setCancelled(true);
         if (event.getClickedInventory() != event.getView().getTopInventory()) return;
         PrepareSession session = manager.getSession(player);
@@ -144,31 +169,48 @@ public final class StepMenuGui {
         return Math.max(1, (session.getSteps().size() + PAGE_SIZE - 1) / PAGE_SIZE);
     }
 
-    private static ItemStack stepItem(@NotNull PrepareSession session, @NotNull PrepareStep step, int number) {
+    private static ItemStack stepItem(
+            @NotNull PrepareSession session, @NotNull PrepareStep step, int number) {
         boolean set = step.isSet(session);
         int count = step.captureType() == StepCaptureType.LIST ? step.listCount(session) : 0;
-        String stateKey = switch (step.captureType()) {
-            case CONFIRM_WORLD -> session.isWorldConfirmed() ? "confirmed" : "unconfirmed";
-            case STAMP -> session.isStamped() ? "stamped" : "unstamped";
-            case LIST -> set ? "set-list" : "unset";
-            default -> set ? "set" : "unset";
-        };
-        String state = step.stateText(session) != null
-                ? step.stateText(session)
-                : GuiConfig.text(MENU_PATH + ".items.step.states." + stateKey + ".title",
-                        Map.of("count", count));
-        String action = GuiConfig.text(MENU_PATH + ".items.step.actions."
-                + step.captureType().name().toLowerCase(Locale.ROOT).replace('_', '-') + ".title");
+        String stateKey =
+                switch (step.captureType()) {
+                    case CONFIRM_WORLD -> session.isWorldConfirmed() ? "confirmed" : "unconfirmed";
+                    case STAMP -> session.isStamped() ? "stamped" : "unstamped";
+                    case LIST -> set ? "set-list" : "unset";
+                    default -> set ? "set" : "unset";
+                };
+        String state =
+                step.stateText(session) != null
+                        ? step.stateText(session)
+                        : GuiConfig.text(
+                                MENU_PATH + ".items.step.states." + stateKey + ".title",
+                                Map.of("count", count));
+        String action =
+                GuiConfig.text(
+                        MENU_PATH
+                                + ".items.step.actions."
+                                + step.captureType()
+                                        .name()
+                                        .toLowerCase(Locale.ROOT)
+                                        .replace('_', '-')
+                                + ".title");
         ItemStack fallback = PrepareKeys.item(step.icon(), Component.empty(), List.of());
-        // The step state is rendered in the lore. Passing it to ConfiguredGui would replace the complete
+        // The step state is rendered in the lore. Passing it to ConfiguredGui would replace the
+        // complete
         // title with the state's short label and hide the step number/name.
-        ItemStack item = ConfiguredGui.item(MENU_PATH + ".items.step", null, Map.of(
-                        "number", number,
-                        "title", step.displayName(),
-                        "description", step.description(),
-                        "count", count,
-                        "state", state,
-                        "action", action), fallback);
+        ItemStack item =
+                ConfiguredGui.item(
+                        MENU_PATH + ".items.step",
+                        null,
+                        Map.of(
+                                "number", number,
+                                "title", step.displayName(),
+                                "description", step.description(),
+                                "count", count,
+                                "state", state,
+                                "action", action),
+                        fallback);
         PrepareKeys.setStep(item, step.key());
         return item;
     }

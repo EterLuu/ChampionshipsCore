@@ -2,16 +2,18 @@ package ink.ziip.championshipscore.util.world;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.api.game.spatial.TeleportPositions;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.logging.LogText;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoWorldRules;
-import ink.ziip.championshipscore.util.Utils;
+
 import org.bukkit.*;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.WanderingTrader;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.WanderingTrader;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -54,11 +56,15 @@ public class WorldManager extends BaseManager {
             DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss-SSS").withZone(ZoneId.systemDefault());
 
     private final Set<String> preparedWorlds = new HashSet<>();
+
     /** Names of worlds loaded through {@link #loadWorld}; feeding {@link ArenaWorldListener}. */
     private final Set<String> arenaWorlds = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
     private final ArenaWorldListener arenaListener;
-    private final String repairSession = REPAIR_SESSION_FORMAT.format(Instant.now())
-            + "-" + UUID.randomUUID().toString().substring(0, 8);
+    private final String repairSession =
+            REPAIR_SESSION_FORMAT.format(Instant.now())
+                    + "-"
+                    + UUID.randomUUID().toString().substring(0, 8);
     private boolean featureSeedReferenceLoaded;
     private Set<String> currentFeatureSeedKeys;
 
@@ -70,14 +76,15 @@ public class WorldManager extends BaseManager {
     @Override
     public void load() {
         World lobby = CCConfig.LOBBY_LOCATION == null ? null : CCConfig.LOBBY_LOCATION.getWorld();
-        if (lobby == null && !Bukkit.getWorlds().isEmpty())
-            lobby = Bukkit.getWorlds().get(0);
+        if (lobby == null && !Bukkit.getWorlds().isEmpty()) lobby = Bukkit.getWorlds().get(0);
         if (lobby == null) {
-            plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("WorldManager", "大厅", "大厅世界未加载"));
+            plugin.getLogger()
+                    .log(Level.SEVERE, LogText.formatModuleLog("WorldManager", "大厅", "大厅世界未加载"));
             return;
         }
 
-        // The lobby is Paper's normal level-name world. CC configures it but never creates/unloads it.
+        // The lobby is Paper's normal level-name world. CC configures it but never creates/unloads
+        // it.
         // WorldGuard remains responsible for its protected regions and the dedicated PvP region.
         lobby.setDifficulty(Difficulty.PEACEFUL);
         lobby.setSpawnFlags(false, true);
@@ -88,10 +95,20 @@ public class WorldManager extends BaseManager {
         lobby.setGameRule(GameRules.SEND_COMMAND_FEEDBACK, false);
         lobby.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
         lobby.setGameRule(GameRules.IMMEDIATE_RESPAWN, true);
-        plugin.getLogger().log(Level.INFO, Utils.formatModuleLog("WorldManager", "大厅",
-                "世界=" + lobby.getName() + " 类型=服务端管理 naturalMonsters=" + lobby.getAllowMonsters()
-                        + " naturalAnimals=" + lobby.getAllowAnimals()
-                        + " spawnMobs=" + lobby.getGameRuleValue(GameRules.SPAWN_MOBS)));
+        plugin.getLogger()
+                .log(
+                        Level.INFO,
+                        LogText.formatModuleLog(
+                                "WorldManager",
+                                "大厅",
+                                "世界="
+                                        + lobby.getName()
+                                        + " 类型=服务端管理 naturalMonsters="
+                                        + lobby.getAllowMonsters()
+                                        + " naturalAnimals="
+                                        + lobby.getAllowAnimals()
+                                        + " spawnMobs="
+                                        + lobby.getGameRuleValue(GameRules.SPAWN_MOBS)));
 
         arenaListener.register();
     }
@@ -104,19 +121,19 @@ public class WorldManager extends BaseManager {
 
     /**
      * The on-disk parent directory that holds every world folder. Since MC 26.1 custom worlds are
-     * stored as dimensions under {@code <level>/dimensions/minecraft/} instead of as top-level folders
-     * in the server container, so {@link org.bukkit.Server#getWorldContainer()} no longer points at
-     * them. The main world is always loaded and always first, so its folder's parent is the common
-     * parent of every world dimension. Must be called on the main thread.
+     * stored as dimensions under {@code <level>/dimensions/minecraft/} instead of as top-level
+     * folders in the server container, so {@link org.bukkit.Server#getWorldContainer()} no longer
+     * points at them. The main world is always loaded and always first, so its folder's parent is
+     * the common parent of every world dimension. Must be called on the main thread.
      */
     public File getDimensionsContainer() {
         return Bukkit.getWorlds().get(0).getWorldFolder().getParentFile();
     }
 
     /**
-     * Resolves the on-disk folder for {@code worldName} under the MC 26.1+ dimensions layout, working
-     * even when that world is not loaded. Folder names are lower-cased with spaces replaced by
-     * underscores, matching how the server names dimension folders.
+     * Resolves the on-disk folder for {@code worldName} under the MC 26.1+ dimensions layout,
+     * working even when that world is not loaded. Folder names are lower-cased with spaces replaced
+     * by underscores, matching how the server names dimension folders.
      */
     public File getWorldFolder(String worldName) {
         String folder = worldName.toLowerCase(Locale.ENGLISH).replace(' ', '_');
@@ -131,8 +148,7 @@ public class WorldManager extends BaseManager {
      * @return true when the world was loaded successfully
      */
     public boolean loadWorld(String worldName, World.Environment environment, boolean readOnly) {
-        if (!prepareWorldForFirstLoad(worldName))
-            return false;
+        if (!prepareWorldForFirstLoad(worldName)) return false;
 
         WorldCreator worldCreator = new WorldCreator(worldName);
         worldCreator.environment(environment);
@@ -142,8 +158,11 @@ public class WorldManager extends BaseManager {
         World world = worldCreator.createWorld();
 
         if (world == null) {
-            plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("WorldManager", "加载",
-                    "小游戏世界=" + worldName + " 加载失败"));
+            plugin.getLogger()
+                    .log(
+                            Level.SEVERE,
+                            LogText.formatModuleLog(
+                                    "WorldManager", "加载", "小游戏世界=" + worldName + " 加载失败"));
             return false;
         }
 
@@ -166,21 +185,31 @@ public class WorldManager extends BaseManager {
         // All server-managed worlds use the immediate-respawn flow. This keeps lobby and arena
         // behavior consistent with Bingo and games that configure the rule explicitly.
         world.setGameRule(GameRules.IMMEDIATE_RESPAWN, true);
-        plugin.getLogger().log(Level.INFO, Utils.formatModuleLog("WorldManager", "加载",
-                "小游戏世界=" + worldName + " 生成器=虚空 naturalMonsters=" + world.getAllowMonsters()
-                        + " naturalAnimals=" + world.getAllowAnimals()
-                        + " spawnMobs=" + world.getGameRuleValue(GameRules.SPAWN_MOBS)));
+        plugin.getLogger()
+                .log(
+                        Level.INFO,
+                        LogText.formatModuleLog(
+                                "WorldManager",
+                                "加载",
+                                "小游戏世界="
+                                        + worldName
+                                        + " 生成器=虚空 naturalMonsters="
+                                        + world.getAllowMonsters()
+                                        + " naturalAnimals="
+                                        + world.getAllowAnimals()
+                                        + " spawnMobs="
+                                        + world.getGameRuleValue(GameRules.SPAWN_MOBS)));
         arenaWorlds.add(worldName);
         return true;
     }
 
     /**
      * Loads one Bingo dimension with vanilla terrain and survival spawning. Bingo cards explicitly
-     * include animal and hostile-mob objectives, so it intentionally does not use the arena profile.
+     * include animal and hostile-mob objectives, so it intentionally does not use the arena
+     * profile.
      */
     public boolean loadBingoWorld(String worldName, World.Environment environment) {
-        if (!prepareWorldForFirstLoad(worldName))
-            return false;
+        if (!prepareWorldForFirstLoad(worldName)) return false;
 
         World world = Bukkit.getWorld(worldName);
         if (world == null) {
@@ -189,8 +218,15 @@ public class WorldManager extends BaseManager {
             world = creator.createWorld();
         }
         if (world == null) {
-            plugin.getLogger().log(Level.SEVERE, Utils.formatGameLog(GameTypeEnum.Bingo, "-", "加载", "世界",
-                    "世界=" + worldName + " 加载失败"));
+            plugin.getLogger()
+                    .log(
+                            Level.SEVERE,
+                            LogText.formatGameLog(
+                                    GameTypeEnum.Bingo,
+                                    "-",
+                                    "加载",
+                                    "世界",
+                                    "世界=" + worldName + " 加载失败"));
             return false;
         }
 
@@ -198,11 +234,24 @@ public class WorldManager extends BaseManager {
         // immediate-respawn setting; do not override that policy with the ordinary arena default.
         BingoWorldRules.configure(world);
         BingoWorldRules.applyPhase(world, BingoWorldRules.Phase.RUNNING, false);
-        plugin.getLogger().log(Level.INFO, Utils.formatGameLog(GameTypeEnum.Bingo, "-", "加载", "世界",
-                "世界=" + worldName + " 环境=" + environment
-                        + " naturalMonsters=" + world.getAllowMonsters()
-                        + " naturalAnimals=" + world.getAllowAnimals()
-                        + " spawnMobs=" + world.getGameRuleValue(GameRules.SPAWN_MOBS)));
+        plugin.getLogger()
+                .log(
+                        Level.INFO,
+                        LogText.formatGameLog(
+                                GameTypeEnum.Bingo,
+                                "-",
+                                "加载",
+                                "世界",
+                                "世界="
+                                        + worldName
+                                        + " 环境="
+                                        + environment
+                                        + " naturalMonsters="
+                                        + world.getAllowMonsters()
+                                        + " naturalAnimals="
+                                        + world.getAllowAnimals()
+                                        + " spawnMobs="
+                                        + world.getGameRuleValue(GameRules.SPAWN_MOBS)));
         return true;
     }
 
@@ -227,20 +276,16 @@ public class WorldManager extends BaseManager {
     }
 
     public static World.Environment getBingoEnvironment(String worldName) {
-        if (BINGO_OVERWORLD.equals(worldName))
-            return World.Environment.NORMAL;
-        if (BINGO_NETHER.equals(worldName))
-            return World.Environment.NETHER;
-        if (BINGO_END.equals(worldName))
-            return World.Environment.THE_END;
+        if (BINGO_OVERWORLD.equals(worldName)) return World.Environment.NORMAL;
+        if (BINGO_NETHER.equals(worldName)) return World.Environment.NETHER;
+        if (BINGO_END.equals(worldName)) return World.Environment.THE_END;
         return null;
     }
 
     /** Resolves the server-owned main world without relying on a hard-coded world name. */
     public World getMainWorld() {
         World lobby = CCConfig.LOBBY_LOCATION == null ? null : CCConfig.LOBBY_LOCATION.getWorld();
-        if (lobby != null)
-            return lobby;
+        if (lobby != null) return lobby;
         return Bukkit.getWorlds().isEmpty() ? null : Bukkit.getWorlds().get(0);
     }
 
@@ -251,8 +296,7 @@ public class WorldManager extends BaseManager {
 
     public List<String> getLoadedWorldNames() {
         List<String> names = new ArrayList<>();
-        for (World world : Bukkit.getWorlds())
-            names.add(world.getName());
+        for (World world : Bukkit.getWorlds()) names.add(world.getName());
         Collections.sort(names);
         return names;
     }
@@ -267,8 +311,7 @@ public class WorldManager extends BaseManager {
         if (folders != null) {
             Set<String> builtInDimensions = Set.of("overworld", "the_nether", "the_end");
             for (File folder : folders) {
-                if (!builtInDimensions.contains(folder.getName()))
-                    names.add(folder.getName());
+                if (!builtInDimensions.contains(folder.getName())) names.add(folder.getName());
             }
         }
         List<String> sorted = new ArrayList<>(names);
@@ -287,14 +330,16 @@ public class WorldManager extends BaseManager {
      */
     public synchronized boolean prepareWorldForFirstLoad(String worldName) {
         String key = worldName.toLowerCase(Locale.ENGLISH);
-        if (preparedWorlds.contains(key))
-            return true;
+        if (preparedWorlds.contains(key)) return true;
 
         File template = new File(new File(plugin.getDataFolder(), "maps"), worldName);
         if (!repairPaperWorldConfiguration(worldName, "maps", template)
                 || !repairPaperWorldConfiguration(worldName, "worlds", getWorldFolder(worldName))) {
-            plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("WorldManager", "修复",
-                    "世界=" + worldName + " 首次加载前修复失败，已取消加载"));
+            plugin.getLogger()
+                    .log(
+                            Level.SEVERE,
+                            LogText.formatModuleLog(
+                                    "WorldManager", "修复", "世界=" + worldName + " 首次加载前修复失败，已取消加载"));
             return false;
         }
 
@@ -302,36 +347,40 @@ public class WorldManager extends BaseManager {
         return true;
     }
 
-    private boolean repairPaperWorldConfiguration(String worldName, String category, File worldDirectory) {
+    private boolean repairPaperWorldConfiguration(
+            String worldName, String category, File worldDirectory) {
         File configFile = new File(worldDirectory, "paper-world.yml");
-        if (!configFile.isFile())
-            return true;
+        if (!configFile.isFile()) return true;
 
         YamlConfiguration config = new YamlConfiguration();
         config.options().parseComments(true);
         try {
             config.load(configFile);
         } catch (IOException | InvalidConfigurationException exception) {
-            plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("WorldManager", "修复",
-                    "无法读取 " + configFile.getPath()), exception);
+            plugin.getLogger()
+                    .log(
+                            Level.SEVERE,
+                            LogText.formatModuleLog(
+                                    "WorldManager", "修复", "无法读取 " + configFile.getPath()),
+                            exception);
             return false;
         }
 
         ConfigurationSection features = config.getConfigurationSection("feature-seeds.features");
-        if (features == null || features.getKeys(false).isEmpty())
-            return true;
+        if (features == null || features.getKeys(false).isEmpty()) return true;
 
         Set<String> referenceKeys = getCurrentFeatureSeedKeys();
         Set<String> staleKeys = new LinkedHashSet<>(features.getKeys(false));
-        if (referenceKeys != null)
-            staleKeys.removeAll(referenceKeys);
-        if (staleKeys.isEmpty())
-            return true;
+        if (referenceKeys != null) staleKeys.removeAll(referenceKeys);
+        if (staleKeys.isEmpty()) return true;
 
-        File backup = new File(new File(new File(plugin.getDataFolder(), "world-repair-backups"), repairSession),
-                category + File.separator + worldName);
-        if (!backupWorldDirectory(worldDirectory, backup))
-            return false;
+        File backup =
+                new File(
+                        new File(
+                                new File(plugin.getDataFolder(), "world-repair-backups"),
+                                repairSession),
+                        category + File.separator + worldName);
+        if (!backupWorldDirectory(worldDirectory, backup)) return false;
 
         Map<String, Object> repairedFeatures = new LinkedHashMap<>(features.getValues(false));
         staleKeys.forEach(repairedFeatures::remove);
@@ -347,21 +396,39 @@ public class WorldManager extends BaseManager {
         try {
             saveYamlAtomically(config, configFile);
         } catch (IOException exception) {
-            plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("WorldManager", "修复",
-                    "备份已保留，但无法写入 " + configFile.getPath()), exception);
+            plugin.getLogger()
+                    .log(
+                            Level.SEVERE,
+                            LogText.formatModuleLog(
+                                    "WorldManager", "修复", "备份已保留，但无法写入 " + configFile.getPath()),
+                            exception);
             return false;
         }
 
-        plugin.getLogger().log(Level.WARNING, Utils.formatModuleLog("WorldManager", "修复",
-                "世界=" + worldName + " 来源=" + category + " 删除失效 feature-seeds=" + staleKeys.size()
-                        + " 备份=" + backup.getPath() + " 键=" + String.join(",", staleKeys)));
+        plugin.getLogger()
+                .log(
+                        Level.WARNING,
+                        LogText.formatModuleLog(
+                                "WorldManager",
+                                "修复",
+                                "世界="
+                                        + worldName
+                                        + " 来源="
+                                        + category
+                                        + " 删除失效 feature-seeds="
+                                        + staleKeys.size()
+                                        + " 备份="
+                                        + backup.getPath()
+                                        + " 键="
+                                        + String.join(",", staleKeys)));
         return true;
     }
 
-    /** Uses the already-loaded main world's Paper config as the registry snapshot for this process. */
+    /**
+     * Uses the already-loaded main world's Paper config as the registry snapshot for this process.
+     */
     private Set<String> getCurrentFeatureSeedKeys() {
-        if (featureSeedReferenceLoaded)
-            return currentFeatureSeedKeys;
+        if (featureSeedReferenceLoaded) return currentFeatureSeedKeys;
         featureSeedReferenceLoaded = true;
 
         World mainWorld = getMainWorld();
@@ -370,29 +437,43 @@ public class WorldManager extends BaseManager {
             YamlConfiguration reference = new YamlConfiguration();
             try {
                 reference.load(referenceFile);
-                ConfigurationSection features = reference.getConfigurationSection("feature-seeds.features");
+                ConfigurationSection features =
+                        reference.getConfigurationSection("feature-seeds.features");
                 if (features != null && !features.getKeys(false).isEmpty()) {
                     currentFeatureSeedKeys = Set.copyOf(features.getKeys(false));
                     return currentFeatureSeedKeys;
                 }
             } catch (IOException | InvalidConfigurationException exception) {
-                plugin.getLogger().log(Level.WARNING, Utils.formatModuleLog("WorldManager", "修复",
-                        "无法读取主世界 feature-seeds 基准=" + referenceFile.getPath()), exception);
+                plugin.getLogger()
+                        .log(
+                                Level.WARNING,
+                                LogText.formatModuleLog(
+                                        "WorldManager",
+                                        "修复",
+                                        "无法读取主世界 feature-seeds 基准=" + referenceFile.getPath()),
+                                exception);
             }
         }
 
-        plugin.getLogger().log(Level.WARNING, Utils.formatModuleLog("WorldManager", "修复",
-                "当前 Paper feature-seeds 基准不可用；遇到旧配置时将清空 features 段并由 Paper 重建"));
+        plugin.getLogger()
+                .log(
+                        Level.WARNING,
+                        LogText.formatModuleLog(
+                                "WorldManager",
+                                "修复",
+                                "当前 Paper feature-seeds 基准不可用；遇到旧配置时将清空 features 段并由 Paper 重建"));
         currentFeatureSeedKeys = null;
         return null;
     }
 
     private boolean backupWorldDirectory(File source, File target) {
-        if (!source.isDirectory())
-            return true;
+        if (!source.isDirectory()) return true;
         if (target.exists()) {
-            plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("WorldManager", "备份",
-                    "拒绝覆盖已有备份=" + target.getPath()));
+            plugin.getLogger()
+                    .log(
+                            Level.SEVERE,
+                            LogText.formatModuleLog(
+                                    "WorldManager", "备份", "拒绝覆盖已有备份=" + target.getPath()));
             return false;
         }
 
@@ -400,37 +481,53 @@ public class WorldManager extends BaseManager {
         Path targetPath = target.toPath();
         try {
             Files.createDirectories(targetPath.getParent());
-            Files.walkFileTree(sourcePath, new SimpleFileVisitor<>() {
-                @Override
-                public FileVisitResult preVisitDirectory(Path directory, BasicFileAttributes attributes)
-                        throws IOException {
-                    Files.createDirectory(targetPath.resolve(sourcePath.relativize(directory)));
-                    return FileVisitResult.CONTINUE;
-                }
+            Files.walkFileTree(
+                    sourcePath,
+                    new SimpleFileVisitor<>() {
+                        @Override
+                        public FileVisitResult preVisitDirectory(
+                                Path directory, BasicFileAttributes attributes) throws IOException {
+                            Files.createDirectory(
+                                    targetPath.resolve(sourcePath.relativize(directory)));
+                            return FileVisitResult.CONTINUE;
+                        }
 
-                @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attributes) throws IOException {
-                    Files.copy(file, targetPath.resolve(sourcePath.relativize(file)),
-                            StandardCopyOption.COPY_ATTRIBUTES);
-                    return FileVisitResult.CONTINUE;
-                }
-            });
+                        @Override
+                        public FileVisitResult visitFile(Path file, BasicFileAttributes attributes)
+                                throws IOException {
+                            Files.copy(
+                                    file,
+                                    targetPath.resolve(sourcePath.relativize(file)),
+                                    StandardCopyOption.COPY_ATTRIBUTES);
+                            return FileVisitResult.CONTINUE;
+                        }
+                    });
             return true;
         } catch (IOException exception) {
             deleteTree(targetPath);
-            plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("WorldManager", "备份",
-                    "世界完整备份失败，源=" + source.getPath() + " 目标=" + target.getPath()), exception);
+            plugin.getLogger()
+                    .log(
+                            Level.SEVERE,
+                            LogText.formatModuleLog(
+                                    "WorldManager",
+                                    "备份",
+                                    "世界完整备份失败，源=" + source.getPath() + " 目标=" + target.getPath()),
+                            exception);
             return false;
         }
     }
 
     private void saveYamlAtomically(YamlConfiguration config, File target) throws IOException {
         Path targetPath = target.toPath();
-        Path temporary = targetPath.resolveSibling(target.getName() + ".cc-repair-" + UUID.randomUUID());
+        Path temporary =
+                targetPath.resolveSibling(target.getName() + ".cc-repair-" + UUID.randomUUID());
         try {
             config.save(temporary.toFile());
             try {
-                Files.move(temporary, targetPath, StandardCopyOption.ATOMIC_MOVE,
+                Files.move(
+                        temporary,
+                        targetPath,
+                        StandardCopyOption.ATOMIC_MOVE,
                         StandardCopyOption.REPLACE_EXISTING);
             } catch (AtomicMoveNotSupportedException exception) {
                 Files.move(temporary, targetPath, StandardCopyOption.REPLACE_EXISTING);
@@ -441,66 +538,78 @@ public class WorldManager extends BaseManager {
     }
 
     private void deleteTree(Path root) {
-        if (!Files.exists(root))
-            return;
+        if (!Files.exists(root)) return;
         try {
-            Files.walkFileTree(root, new SimpleFileVisitor<>() {
-                @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attributes) throws IOException {
-                    Files.deleteIfExists(file);
-                    return FileVisitResult.CONTINUE;
-                }
+            Files.walkFileTree(
+                    root,
+                    new SimpleFileVisitor<>() {
+                        @Override
+                        public FileVisitResult visitFile(Path file, BasicFileAttributes attributes)
+                                throws IOException {
+                            Files.deleteIfExists(file);
+                            return FileVisitResult.CONTINUE;
+                        }
 
-                @Override
-                public FileVisitResult postVisitDirectory(Path directory, IOException exception) throws IOException {
-                    if (exception != null)
-                        throw exception;
-                    Files.deleteIfExists(directory);
-                    return FileVisitResult.CONTINUE;
-                }
-            });
+                        @Override
+                        public FileVisitResult postVisitDirectory(
+                                Path directory, IOException exception) throws IOException {
+                            if (exception != null) throw exception;
+                            Files.deleteIfExists(directory);
+                            return FileVisitResult.CONTINUE;
+                        }
+                    });
         } catch (IOException exception) {
-            plugin.getLogger().log(Level.WARNING, Utils.formatModuleLog("WorldManager", "备份",
-                    "无法清理不完整备份=" + root), exception);
+            plugin.getLogger()
+                    .log(
+                            Level.WARNING,
+                            LogText.formatModuleLog("WorldManager", "备份", "无法清理不完整备份=" + root),
+                            exception);
         }
     }
 
     public boolean copyWorldFiles(File source, File target) {
         try {
             List<String> ignore = List.of("uid.dat", "session.dat", "session.lock");
-            if (ignore.contains(source.getName()))
-                return true;
-            if (!source.exists())
-                throw new FileNotFoundException(source.getPath());
+            if (ignore.contains(source.getName())) return true;
+            if (!source.exists()) throw new FileNotFoundException(source.getPath());
 
             if (source.isDirectory()) {
                 if (!target.isDirectory() && !target.mkdirs())
                     throw new IOException("无法创建目标目录 " + target.getPath());
                 String[] files = source.list();
-                if (files == null)
-                    throw new IOException("无法读取源目录 " + source.getPath());
+                if (files == null) throw new IOException("无法读取源目录 " + source.getPath());
                 for (String file : files) {
                     File srcFile = new File(source, file);
                     File destFile = new File(target, file);
-                    if (!copyWorldFiles(srcFile, destFile))
-                        return false;
+                    if (!copyWorldFiles(srcFile, destFile)) return false;
                 }
             } else {
                 try (java.io.InputStream in = new java.io.FileInputStream(source);
-                     OutputStream out = new java.io.FileOutputStream(target)) {
+                        OutputStream out = new java.io.FileOutputStream(target)) {
                     byte[] buffer = new byte[64 * 1024];
                     int length;
-                    while ((length = in.read(buffer)) > 0)
-                        out.write(buffer, 0, length);
+                    while ((length = in.read(buffer)) > 0) out.write(buffer, 0, length);
                 }
             }
             return true;
         } catch (FileNotFoundException e) {
-            plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("WorldManager", "复制",
-                    "源文件不存在=" + source.getPath() + " 目标=" + target.getPath()), e);
+            plugin.getLogger()
+                    .log(
+                            Level.SEVERE,
+                            LogText.formatModuleLog(
+                                    "WorldManager",
+                                    "复制",
+                                    "源文件不存在=" + source.getPath() + " 目标=" + target.getPath()),
+                            e);
         } catch (IOException e) {
-            plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("WorldManager", "复制",
-                    "世界文件复制失败，源=" + source.getPath() + " 目标=" + target.getPath()), e);
+            plugin.getLogger()
+                    .log(
+                            Level.SEVERE,
+                            LogText.formatModuleLog(
+                                    "WorldManager",
+                                    "复制",
+                                    "世界文件复制失败，源=" + source.getPath() + " 目标=" + target.getPath()),
+                            e);
         }
         return false;
     }
@@ -519,16 +628,24 @@ public class WorldManager extends BaseManager {
         return moveDirectory(getWorldFolder(oldWorldName), getWorldFolder(newWorldName));
     }
 
-    /** Moves a related directory, such as a prepared map template, without replacing its destination. */
+    /**
+     * Moves a related directory, such as a prepared map template, without replacing its
+     * destination.
+     */
     public boolean moveDirectory(File source, File target) {
-        if (!source.isDirectory() || target.exists())
-            return false;
+        if (!source.isDirectory() || target.exists()) return false;
         try {
             Files.move(source.toPath(), target.toPath());
             return true;
         } catch (IOException exception) {
-            plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("WorldManager", "重命名",
-                    "无法移动 " + source.getPath() + " -> " + target.getPath()), exception);
+            plugin.getLogger()
+                    .log(
+                            Level.SEVERE,
+                            LogText.formatModuleLog(
+                                    "WorldManager",
+                                    "重命名",
+                                    "无法移动 " + source.getPath() + " -> " + target.getPath()),
+                            exception);
             return false;
         }
     }
@@ -536,18 +653,20 @@ public class WorldManager extends BaseManager {
     public boolean unloadWorld(String worldName, boolean save) {
         World world = plugin.getServer().getWorld(worldName);
 
-        if (world == null || isMainWorld(world))
-            return false;
+        if (world == null || isMainWorld(world)) return false;
 
         for (Player player : new ArrayList<>(world.getPlayers()))
-            player.teleport(Utils.getScatteredLobbyLocation(CCConfig.LOBBY_LOCATION, player));
+            player.teleport(
+                    TeleportPositions.getScatteredLobbyLocation(CCConfig.LOBBY_LOCATION, player));
         boolean unloaded = plugin.getServer().unloadWorld(world, save);
-        if (unloaded)
-            arenaWorlds.remove(worldName);
+        if (unloaded) arenaWorlds.remove(worldName);
         return unloaded;
     }
 
-    /** True for worlds loaded through {@link #loadWorld} with the arena profile (void, no natural spawns). */
+    /**
+     * True for worlds loaded through {@link #loadWorld} with the arena profile (void, no natural
+     * spawns).
+     */
     public boolean isArenaWorld(World world) {
         return world != null && arenaWorlds.contains(world.getName());
     }

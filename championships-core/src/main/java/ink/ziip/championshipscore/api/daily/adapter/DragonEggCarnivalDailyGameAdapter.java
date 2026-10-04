@@ -3,14 +3,14 @@ package ink.ziip.championshipscore.api.daily.adapter;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.daily.DailyGameAdapter;
 import ink.ziip.championshipscore.api.daily.DailyRules;
-import ink.ziip.championshipscore.api.game.decarnival.DragonEggCarnivalArea;
-import ink.ziip.championshipscore.api.object.game.GameRunMode;
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
-import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
+import ink.ziip.championshipscore.api.game.decarnival.runtime.DragonEggCarnivalArea;
+import ink.ziip.championshipscore.api.game.model.GameRunMode;
+import ink.ziip.championshipscore.api.game.model.GameStageEnum;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Comparator;
 import java.util.List;
@@ -32,7 +32,8 @@ public final class DragonEggCarnivalDailyGameAdapter implements DailyGameAdapter
 
     @Override
     public @NotNull DailyRules rules() {
-        return new DailyRules(CCConfig.DAILY_DRAGON_EGG_CARNIVAL_MIN_PLAYERS,
+        return new DailyRules(
+                CCConfig.DAILY_DRAGON_EGG_CARNIVAL_MIN_PLAYERS,
                 CCConfig.DAILY_DRAGON_EGG_CARNIVAL_MAX_PLAYERS,
                 CCConfig.DAILY_DRAGON_EGG_CARNIVAL_TEAM_SIZE,
                 CCConfig.DAILY_DRAGON_EGG_CARNIVAL_TEAMS,
@@ -48,9 +49,16 @@ public final class DragonEggCarnivalDailyGameAdapter implements DailyGameAdapter
     public @NotNull CompletionStage<StartResult> start(@NotNull List<ChampionshipTeam> teams) {
         if (teams.size() != 2) return CompletableFuture.completedFuture(null);
         for (DragonEggCarnivalArea area : candidates()) {
-            if (plugin.getGameManager().joinTeamArea(GameTypeEnum.DragonEggCarnival,
-                    area.getGameConfig().getConfigName(), teams.get(0), teams.get(1), false, GameRunMode.DAILY)) {
-                return CompletableFuture.completedFuture(new StartResult(area.getGameConfig().getConfigName(), area));
+            if (plugin.getGameManager()
+                    .joinTeamArea(
+                            GameTypeEnum.DragonEggCarnival,
+                            area.getGameConfig().getConfigName(),
+                            teams.get(0),
+                            teams.get(1),
+                            false,
+                            GameRunMode.DAILY)) {
+                return CompletableFuture.completedFuture(
+                        new StartResult(area.getGameConfig().getConfigName(), area));
             }
         }
         return CompletableFuture.completedFuture(null);
@@ -60,10 +68,16 @@ public final class DragonEggCarnivalDailyGameAdapter implements DailyGameAdapter
         return plugin.getGameManager().getDragonEggCarnivalManager().getRuntimeInstances().stream()
                 .filter(area -> area.getGameStageEnum() == GameStageEnum.WAITING)
                 .filter(area -> plugin.getDailyManager().session(area) == null)
-                .filter(area -> plugin.getPrepareSessionManager().canStart(GameTypeEnum.DragonEggCarnival,
-                        area.getGameConfig().getConfigName()))
-                .sorted(Comparator.comparing(area -> area.getGameConfig().getConfigName(),
-                        String.CASE_INSENSITIVE_ORDER))
+                .filter(
+                        area ->
+                                plugin.getPrepareSessionManager()
+                                        .canStart(
+                                                GameTypeEnum.DragonEggCarnival,
+                                                area.getGameConfig().getConfigName()))
+                .sorted(
+                        Comparator.comparing(
+                                area -> area.getGameConfig().getConfigName(),
+                                String.CASE_INSENSITIVE_ORDER))
                 .toList();
     }
 }

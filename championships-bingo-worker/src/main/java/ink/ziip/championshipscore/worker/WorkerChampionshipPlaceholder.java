@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.worker;
 
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
+
 import org.bukkit.OfflinePlayer;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;

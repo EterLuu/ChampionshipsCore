@@ -2,8 +2,6 @@ package ink.ziip.championshipscore.api.player;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
-import ink.ziip.championshipscore.api.player.dao.PlayerDao;
-import ink.ziip.championshipscore.api.player.dao.PlayerDaoImpl;
 import ink.ziip.championshipscore.api.player.entry.PlayerEntry;
 import ink.ziip.championshipscore.api.player.entry.PlayerIdentityMigrationResult;
 import ink.ziip.championshipscore.api.player.entry.PlayerUnknownRemovalResult;
@@ -11,29 +9,34 @@ import ink.ziip.championshipscore.api.player.entry.PlayerUuidMigration;
 import ink.ziip.championshipscore.api.player.identity.PlayerUuidLookupException;
 import ink.ziip.championshipscore.api.player.identity.PlayerUuidSource;
 import ink.ziip.championshipscore.api.player.identity.ProfileUuidResolver;
+import ink.ziip.championshipscore.auth.AuthIdentity;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.database.player.PlayerDao;
+import ink.ziip.championshipscore.database.player.PlayerDaoImpl;
 import ink.ziip.championshipscore.database.sync.DatabaseSyncDomain;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.logging.LogText;
+
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Locale;
+import java.time.Duration;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
-import java.time.Duration;
 
 public class PlayerManager extends BaseManager {
     private final Map<UUID, ChampionshipPlayer> cachedPlayers = new ConcurrentHashMap<>();
     private final Map<String, UUID> cachedPlayerUUID = new ConcurrentHashMap<>();
     private final Map<UUID, String> cachedPlayerName = new ConcurrentHashMap<>();
-    private final Map<UUID, PlayerIdentityMigrationResult> pendingIdentityMigrations = new ConcurrentHashMap<>();
+    private final Map<UUID, PlayerIdentityMigrationResult> pendingIdentityMigrations =
+            new ConcurrentHashMap<>();
     private final Map<String, Object> identityLocks = new ConcurrentHashMap<>();
     private final PlayerDao playerDao;
     private final ProfileUuidResolver profileUuidResolver;
@@ -44,9 +47,11 @@ public class PlayerManager extends BaseManager {
         playerDao = new PlayerDaoImpl();
         uuidSource = PlayerUuidSource.parse(CCConfig.IDENTITY_MODE);
         uuidSource.validateConfiguration(CCConfig.IDENTITY_PROFILE_API_BASE_URL);
-        profileUuidResolver = new ProfileUuidResolver(
-                Duration.ofSeconds(Math.max(1L, CCConfig.IDENTITY_CONNECT_TIMEOUT_SECONDS)),
-                Duration.ofSeconds(Math.max(1L, CCConfig.IDENTITY_REQUEST_TIMEOUT_SECONDS)));
+        profileUuidResolver =
+                new ProfileUuidResolver(
+                        Duration.ofSeconds(Math.max(1L, CCConfig.IDENTITY_CONNECT_TIMEOUT_SECONDS)),
+                        Duration.ofSeconds(
+                                Math.max(1L, CCConfig.IDENTITY_REQUEST_TIMEOUT_SECONDS)));
     }
 
     @Override
@@ -91,108 +96,206 @@ public class PlayerManager extends BaseManager {
             plugin.getRankManager().refreshAfterPendingPointWrites();
         }
         if (migration.successful() && migration.changed()) {
-            plugin.getRedisManager().publishDatabaseChange("player-identity-migrated",
-                    DatabaseSyncDomain.PLAYER, DatabaseSyncDomain.TEAM, DatabaseSyncDomain.RANK);
+            plugin.getRedisManager()
+                    .publishDatabaseChange(
+                            "player-identity-migrated",
+                            DatabaseSyncDomain.PLAYER,
+                            DatabaseSyncDomain.TEAM,
+                            DatabaseSyncDomain.RANK);
         }
     }
 
     /** Applies an approved name change before the player logs in again. */
     @NotNull
-    public CompletionStage<PlayerIdentityMigrationResult> migrateApprovedName(@NotNull String oldName,
-                                                                                @NotNull String newName,
-                                                                                @Nullable UUID replacementUuid) {
-        return CompletableFuture.supplyAsync(() -> playerDao.migrateNameChange(oldName, newName, replacementUuid))
-                .thenApply(migration -> {
-                    if (!migration.successful()) return migration;
-                    cacheIdentity(newName, migration.currentUuid(), migration.previousUuids());
-                    Bukkit.getScheduler().runTask(plugin, () -> {
-                        plugin.getTeamManager().applyIdentityMigration(migration);
-                        if (migration.migratedPointRows() > 0)
-                            plugin.getRankManager().refreshAfterPendingPointWrites();
-                        plugin.getRedisManager().publishDatabaseChange("player-name-changed",
-                                DatabaseSyncDomain.PLAYER, DatabaseSyncDomain.TEAM, DatabaseSyncDomain.RANK);
-                    });
-                    return migration;
-                });
+    public CompletionStage<PlayerIdentityMigrationResult> migrateApprovedName(
+            @NotNull String oldName, @NotNull String newName, @Nullable UUID replacementUuid) {
+        return CompletableFuture.supplyAsync(
+                        () -> playerDao.migrateNameChange(oldName, newName, replacementUuid))
+                .thenApply(
+                        migration -> {
+                            if (!migration.successful()) return migration;
+                            cacheIdentity(
+                                    newName, migration.currentUuid(), migration.previousUuids());
+                            Bukkit.getScheduler()
+                                    .runTask(
+                                            plugin,
+                                            () -> {
+                                                plugin.getTeamManager()
+                                                        .applyIdentityMigration(migration);
+                                                if (migration.migratedPointRows() > 0)
+                                                    plugin.getRankManager()
+                                                            .refreshAfterPendingPointWrites();
+                                                plugin.getRedisManager()
+                                                        .publishDatabaseChange(
+                                                                "player-name-changed",
+                                                                DatabaseSyncDomain.PLAYER,
+                                                                DatabaseSyncDomain.TEAM,
+                                                                DatabaseSyncDomain.RANK);
+                                            });
+                            return migration;
+                        });
     }
 
     /** Rewrites all durable Core identities in one database transaction. */
     public CompletionStage<Integer> migrateIdentities(@NotNull List<PlayerUuidMigration> players) {
         return CompletableFuture.supplyAsync(() -> playerDao.migrateIdentities(players))
-                .thenCompose(changed -> {
-                    invalidateDatabaseIdentityCache();
-                    return plugin.getTeamManager().refreshFormalTeamsFromDatabase().thenCompose(ignored -> {
-                        CompletableFuture<Integer> completed = new CompletableFuture<>();
-                        Bukkit.getScheduler().runTask(plugin, () -> {
-                            try {
-                                plugin.getRankManager().refreshAfterPendingPointWrites();
-                                plugin.getRedisManager().publishDatabaseChange("player-identities-migrated",
-                                        DatabaseSyncDomain.PLAYER, DatabaseSyncDomain.TEAM, DatabaseSyncDomain.RANK);
-                                completed.complete(changed);
-                            } catch (RuntimeException failure) {
-                                completed.completeExceptionally(failure);
-                            }
+                .thenCompose(
+                        changed -> {
+                            invalidateDatabaseIdentityCache();
+                            return plugin.getTeamManager()
+                                    .refreshFormalTeamsFromDatabase()
+                                    .thenCompose(
+                                            ignored -> {
+                                                CompletableFuture<Integer> completed =
+                                                        new CompletableFuture<>();
+                                                Bukkit.getScheduler()
+                                                        .runTask(
+                                                                plugin,
+                                                                () -> {
+                                                                    try {
+                                                                        plugin.getRankManager()
+                                                                                .refreshAfterPendingPointWrites();
+                                                                        plugin.getRedisManager()
+                                                                                .publishDatabaseChange(
+                                                                                        "player-identities-migrated",
+                                                                                        DatabaseSyncDomain
+                                                                                                .PLAYER,
+                                                                                        DatabaseSyncDomain
+                                                                                                .TEAM,
+                                                                                        DatabaseSyncDomain
+                                                                                                .RANK);
+                                                                        completed.complete(changed);
+                                                                    } catch (
+                                                                            RuntimeException
+                                                                                    failure) {
+                                                                        completed
+                                                                                .completeExceptionally(
+                                                                                        failure);
+                                                                    }
+                                                                });
+                                                return completed;
+                                            });
                         });
-                        return completed;
-                    });
-                });
     }
 
-    /** Removes every durable Core identity outside the allowlist, then reconciles database-backed caches. */
-    public CompletionStage<PlayerUnknownRemovalResult> removeUnknown(@NotNull Set<UUID> allowedUuids) {
+    /**
+     * Removes every durable Core identity outside the allowlist, then reconciles database-backed
+     * caches.
+     */
+    public CompletionStage<PlayerUnknownRemovalResult> removeUnknown(
+            @NotNull Set<UUID> allowedUuids) {
         return CompletableFuture.supplyAsync(() -> playerDao.removeUnknown(allowedUuids))
-                .thenCompose(result -> {
-                    invalidateDatabaseIdentityCache();
-                    CompletableFuture<Void> teams = plugin.getTeamManager()
-                            .refreshFormalTeamsFromDatabase().toCompletableFuture();
-                    CompletableFuture<Void> daily = plugin.getDailyStatsManager()
-                            .reloadFromDatabase().toCompletableFuture();
-                    return CompletableFuture.allOf(teams, daily).thenApply(ignored -> result);
-                })
-                .thenCompose(result -> {
-                    CompletableFuture<PlayerUnknownRemovalResult> completed = new CompletableFuture<>();
-                    Bukkit.getScheduler().runTask(plugin, () -> {
-                        try {
-                            plugin.getRankManager().refreshAfterPendingPointWrites();
-                            plugin.getRedisManager().publishDatabaseChange("player-unknown-removed",
-                                    DatabaseSyncDomain.PLAYER, DatabaseSyncDomain.TEAM, DatabaseSyncDomain.RANK);
-                            completed.complete(result);
-                        } catch (RuntimeException failure) {
-                            completed.completeExceptionally(failure);
-                        }
-                    });
-                    return completed;
-                });
+                .thenCompose(
+                        result -> {
+                            invalidateDatabaseIdentityCache();
+                            CompletableFuture<Void> teams =
+                                    plugin.getTeamManager()
+                                            .refreshFormalTeamsFromDatabase()
+                                            .toCompletableFuture();
+                            CompletableFuture<Void> daily =
+                                    plugin.getDailyStatsManager()
+                                            .reloadFromDatabase()
+                                            .toCompletableFuture();
+                            return CompletableFuture.allOf(teams, daily)
+                                    .thenApply(ignored -> result);
+                        })
+                .thenCompose(
+                        result -> {
+                            CompletableFuture<PlayerUnknownRemovalResult> completed =
+                                    new CompletableFuture<>();
+                            Bukkit.getScheduler()
+                                    .runTask(
+                                            plugin,
+                                            () -> {
+                                                try {
+                                                    plugin.getRankManager()
+                                                            .refreshAfterPendingPointWrites();
+                                                    plugin.getRedisManager()
+                                                            .publishDatabaseChange(
+                                                                    "player-unknown-removed",
+                                                                    DatabaseSyncDomain.PLAYER,
+                                                                    DatabaseSyncDomain.TEAM,
+                                                                    DatabaseSyncDomain.RANK);
+                                                    completed.complete(result);
+                                                } catch (RuntimeException failure) {
+                                                    completed.completeExceptionally(failure);
+                                                }
+                                            });
+                            return completed;
+                        });
     }
 
     @NotNull
-    public PlayerIdentityMigrationResult prepareIdentity(@NotNull String username, @NotNull UUID currentUuid) {
+    public PlayerIdentityMigrationResult prepareIdentity(
+            @NotNull String username, @NotNull UUID currentUuid) {
         PlayerIdentityMigrationResult modeFailure = validateOnlineUuid(username, currentUuid);
         if (modeFailure != null) {
             pendingIdentityMigrations.put(currentUuid, modeFailure);
-            plugin.getLogger().severe(Utils.formatModuleLog("Player", "IdentitySync",
-                    "玩家=" + username + " 当前UUID=" + currentUuid + " 模式校验失败=" + modeFailure.failureReason()));
+            plugin.getLogger()
+                    .severe(
+                            LogText.formatModuleLog(
+                                    "Player",
+                                    "IdentitySync",
+                                    "玩家="
+                                            + username
+                                            + " 当前UUID="
+                                            + currentUuid
+                                            + " 模式校验失败="
+                                            + modeFailure.failureReason()));
             return modeFailure;
         }
         String normalizedName = normalizeName(username);
         PlayerIdentityMigrationResult result;
-        Object identityLock = identityLocks.computeIfAbsent(normalizedName, ignored -> new Object());
+        Object identityLock =
+                identityLocks.computeIfAbsent(normalizedName, ignored -> new Object());
         synchronized (identityLock) {
             result = playerDao.synchronizeIdentity(username, currentUuid);
             pendingIdentityMigrations.put(currentUuid, result);
         }
 
         if (!result.successful()) {
-            plugin.getLogger().severe(Utils.formatModuleLog("Player", "IdentitySync",
-                    "玩家=" + username + " 当前UUID=" + currentUuid + " 同步失败=" + result.failureReason()));
+            plugin.getLogger()
+                    .severe(
+                            LogText.formatModuleLog(
+                                    "Player",
+                                    "IdentitySync",
+                                    "玩家="
+                                            + username
+                                            + " 当前UUID="
+                                            + currentUuid
+                                            + " 同步失败="
+                                            + result.failureReason()));
         } else if (result.hasTeamConflict()) {
-            plugin.getLogger().warning(Utils.formatModuleLog("Player", "IdentitySync",
-                    "玩家=" + username + " 当前UUID=" + currentUuid + " 旧UUID=" + result.previousUuids()
-                            + " 队伍冲突=" + result.conflictingTeamIds() + "，未自动选择队伍"));
+            plugin.getLogger()
+                    .warning(
+                            LogText.formatModuleLog(
+                                    "Player",
+                                    "IdentitySync",
+                                    "玩家="
+                                            + username
+                                            + " 当前UUID="
+                                            + currentUuid
+                                            + " 旧UUID="
+                                            + result.previousUuids()
+                                            + " 队伍冲突="
+                                            + result.conflictingTeamIds()
+                                            + "，未自动选择队伍"));
         } else if (result.changed()) {
-            plugin.getLogger().info(Utils.formatModuleLog("Player", "IdentitySync",
-                    "玩家=" + username + " 旧UUID=" + result.previousUuids() + " 新UUID=" + currentUuid
-                            + " 队伍=" + result.resolvedTeamId() + " 迁移积分记录=" + result.migratedPointRows()));
+            plugin.getLogger()
+                    .info(
+                            LogText.formatModuleLog(
+                                    "Player",
+                                    "IdentitySync",
+                                    "玩家="
+                                            + username
+                                            + " 旧UUID="
+                                            + result.previousUuids()
+                                            + " 新UUID="
+                                            + currentUuid
+                                            + " 队伍="
+                                            + result.resolvedTeamId()
+                                            + " 迁移积分记录="
+                                            + result.migratedPointRows()));
         }
         return result;
     }
@@ -200,69 +303,94 @@ public class PlayerManager extends BaseManager {
     /** Resolves the configured server identity without blocking the server thread. */
     public CompletionStage<UUID> resolvePlayerUUID(@NotNull String name) {
         if (!name.matches("[A-Za-z0-9_]{3,16}")) {
-            return CompletableFuture.failedFuture(new PlayerUuidLookupException(
-                    PlayerUuidLookupException.Reason.INVALID_USERNAME,
-                    "Invalid Minecraft username: " + name));
+            return CompletableFuture.failedFuture(
+                    new PlayerUuidLookupException(
+                            PlayerUuidLookupException.Reason.INVALID_USERNAME,
+                            "Invalid Minecraft username: " + name));
         }
         String normalizedName = normalizeName(name);
-        Player online = Bukkit.getOnlinePlayers().stream()
-                .filter(player -> player.getName().equalsIgnoreCase(name)).findFirst().orElse(null);
+        Player online =
+                Bukkit.getOnlinePlayers().stream()
+                        .filter(player -> player.getName().equalsIgnoreCase(name))
+                        .findFirst()
+                        .orElse(null);
         if (online != null) {
-            PlayerIdentityMigrationResult modeFailure = validateOnlineUuid(online.getName(), online.getUniqueId());
+            PlayerIdentityMigrationResult modeFailure =
+                    validateOnlineUuid(online.getName(), online.getUniqueId());
             if (modeFailure != null) {
-                return CompletableFuture.failedFuture(new PlayerUuidLookupException(
-                        PlayerUuidLookupException.Reason.IDENTITY_CONFLICT, modeFailure.failureReason()));
+                return CompletableFuture.failedFuture(
+                        new PlayerUuidLookupException(
+                                PlayerUuidLookupException.Reason.IDENTITY_CONFLICT,
+                                modeFailure.failureReason()));
             }
             cacheIdentity(online.getName(), online.getUniqueId(), java.util.Set.of());
             return CompletableFuture.completedFuture(online.getUniqueId());
         }
         CompletableFuture<UUID> resolved = new CompletableFuture<>();
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-            try {
-                UUID uuid = resolveConfiguredUuid(name);
-                PlayerIdentityMigrationResult migration = playerDao.synchronizeIdentity(name, uuid);
-                if (!migration.successful() || migration.hasTeamConflict()) {
-                    throw new PlayerUuidLookupException(PlayerUuidLookupException.Reason.IDENTITY_CONFLICT,
-                            migration.failureReason() == null
-                                    ? "Core identity conflict for " + name : migration.failureReason());
-                }
-                cachedPlayerUUID.put(normalizedName, uuid);
-                cachedPlayerName.put(uuid, name);
-                if (migration.changed()) {
-                    plugin.getRedisManager().publishDatabaseChange("player-identity-resolved",
-                            DatabaseSyncDomain.PLAYER, DatabaseSyncDomain.TEAM, DatabaseSyncDomain.RANK);
-                }
-                resolved.complete(uuid);
-            } catch (Exception failure) {
-                resolved.completeExceptionally(failure);
-            }
-        });
+        plugin.getServer()
+                .getScheduler()
+                .runTaskAsynchronously(
+                        plugin,
+                        () -> {
+                            try {
+                                UUID uuid = resolveConfiguredUuid(name);
+                                PlayerIdentityMigrationResult migration =
+                                        playerDao.synchronizeIdentity(name, uuid);
+                                if (!migration.successful() || migration.hasTeamConflict()) {
+                                    throw new PlayerUuidLookupException(
+                                            PlayerUuidLookupException.Reason.IDENTITY_CONFLICT,
+                                            migration.failureReason() == null
+                                                    ? "Core identity conflict for " + name
+                                                    : migration.failureReason());
+                                }
+                                cachedPlayerUUID.put(normalizedName, uuid);
+                                cachedPlayerName.put(uuid, name);
+                                if (migration.changed()) {
+                                    plugin.getRedisManager()
+                                            .publishDatabaseChange(
+                                                    "player-identity-resolved",
+                                                    DatabaseSyncDomain.PLAYER,
+                                                    DatabaseSyncDomain.TEAM,
+                                                    DatabaseSyncDomain.RANK);
+                                }
+                                resolved.complete(uuid);
+                            } catch (Exception failure) {
+                                resolved.completeExceptionally(failure);
+                            }
+                        });
         return resolved;
     }
 
     /**
      * Resolves an offline player's UUID from the configured source without changing stored data.
-     * This is never used for an online player: its UUID always comes from the proxy/Bukkit login profile.
+     * This is never used for an online player: its UUID always comes from the proxy/Bukkit login
+     * profile.
      */
     public UUID resolveConfiguredUuid(@NotNull String name) throws PlayerUuidLookupException {
         if (!name.matches("[A-Za-z0-9_]{3,16}")) {
-            throw new PlayerUuidLookupException(PlayerUuidLookupException.Reason.INVALID_USERNAME,
+            throw new PlayerUuidLookupException(
+                    PlayerUuidLookupException.Reason.INVALID_USERNAME,
                     "Invalid Minecraft username: " + name);
         }
         if (uuidSource == PlayerUuidSource.PROFILE_UUID) {
             return profileUuidResolver.resolve(CCConfig.IDENTITY_PROFILE_API_BASE_URL, name);
         }
-        return Utils.getPlayerUUID(name);
+        return AuthIdentity.offlineUuid(name);
     }
 
     /** Returns a failed migration when an injected UUID contradicts OFFLINE mode. */
-    private @Nullable PlayerIdentityMigrationResult validateOnlineUuid(@NotNull String username,
-                                                                        @NotNull UUID currentUuid) {
+    private @Nullable PlayerIdentityMigrationResult validateOnlineUuid(
+            @NotNull String username, @NotNull UUID currentUuid) {
         if (uuidSource != PlayerUuidSource.OFFLINE) return null;
-        UUID expected = Utils.getPlayerUUID(username);
+        UUID expected = AuthIdentity.vanillaOfflineUuid(username);
         if (expected.equals(currentUuid)) return null;
-        return PlayerIdentityMigrationResult.failed(username, currentUuid,
-                "identity.mode=OFFLINE requires UUID " + expected + " but login supplied " + currentUuid);
+        return PlayerIdentityMigrationResult.failed(
+                username,
+                currentUuid,
+                "identity.mode=OFFLINE requires UUID "
+                        + expected
+                        + " but login supplied "
+                        + currentUuid);
     }
 
     public String getPlayerName(@NotNull UUID uuid) {
@@ -279,13 +407,17 @@ public class PlayerManager extends BaseManager {
     /** Loads historical identities away from the server thread for GUI selectors. */
     public CompletionStage<List<PlayerEntry>> getKnownPlayersAsync() {
         CompletableFuture<List<PlayerEntry>> result = new CompletableFuture<>();
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-            try {
-                result.complete(List.copyOf(playerDao.getPlayerList()));
-            } catch (Exception failure) {
-                result.completeExceptionally(failure);
-            }
-        });
+        plugin.getServer()
+                .getScheduler()
+                .runTaskAsynchronously(
+                        plugin,
+                        () -> {
+                            try {
+                                result.complete(List.copyOf(playerDao.getPlayerList()));
+                            } catch (Exception failure) {
+                                result.completeExceptionally(failure);
+                            }
+                        });
         return result;
     }
 
@@ -297,8 +429,7 @@ public class PlayerManager extends BaseManager {
 
     public ChampionshipPlayer getPlayer(@NotNull UUID uuid) {
         ChampionshipPlayer championshipPlayer = cachedPlayers.get(uuid);
-        if (championshipPlayer == null)
-            return addPlayer(uuid);
+        if (championshipPlayer == null) return addPlayer(uuid);
         return championshipPlayer;
     }
 
@@ -311,8 +442,10 @@ public class PlayerManager extends BaseManager {
         cacheIdentity(username, currentUuid, java.util.Set.of());
     }
 
-    private void cacheIdentity(@NotNull String username, @NotNull UUID currentUuid,
-                               @NotNull java.util.Set<UUID> previousUuids) {
+    private void cacheIdentity(
+            @NotNull String username,
+            @NotNull UUID currentUuid,
+            @NotNull java.util.Set<UUID> previousUuids) {
         String normalizedName = normalizeName(username);
         UUID replacedUuid = cachedPlayerUUID.put(normalizedName, currentUuid);
         if (replacedUuid != null && !replacedUuid.equals(currentUuid)) {

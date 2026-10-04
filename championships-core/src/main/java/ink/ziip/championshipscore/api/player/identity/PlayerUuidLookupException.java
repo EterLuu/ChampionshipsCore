@@ -11,7 +11,8 @@ public final class PlayerUuidLookupException extends Exception {
         this.reason = reason;
     }
 
-    public PlayerUuidLookupException(@NotNull Reason reason, @NotNull String message, Throwable cause) {
+    public PlayerUuidLookupException(
+            @NotNull Reason reason, @NotNull String message, Throwable cause) {
         super(message, cause);
         this.reason = reason;
     }

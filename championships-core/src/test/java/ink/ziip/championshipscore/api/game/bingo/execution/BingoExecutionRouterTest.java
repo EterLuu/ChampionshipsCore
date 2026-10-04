@@ -1,6 +1,11 @@
 package ink.ziip.championshipscore.api.game.bingo.execution;
 
-import ink.ziip.championshipscore.api.object.game.GameRunMode;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import ink.ziip.championshipscore.api.game.model.GameRunMode;
+
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -8,12 +13,9 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 class BingoExecutionRouterTest {
-    private static final BingoStartRequest EVENT = new BingoStartRequest("bingo", true, GameRunMode.EVENT);
+    private static final BingoStartRequest EVENT =
+            new BingoStartRequest("bingo", true, GameRunMode.EVENT);
 
     @Test
     void standaloneRequestCannotEnableEventIntroduction() {

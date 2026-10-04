@@ -9,8 +9,8 @@ public class SingleGameEndEvent extends ChampionshipsCoreEvent {
     private final BaseMultiTeamGameInstance gameInstance;
     private final List<ChampionshipTeam> championshipTeams;
 
-    public SingleGameEndEvent(BaseMultiTeamGameInstance gameInstance,
-                              List<ChampionshipTeam> championshipTeams) {
+    public SingleGameEndEvent(
+            BaseMultiTeamGameInstance gameInstance, List<ChampionshipTeam> championshipTeams) {
         this.gameInstance = gameInstance;
         this.championshipTeams = championshipTeams;
     }

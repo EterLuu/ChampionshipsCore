@@ -1,15 +1,16 @@
 package ink.ziip.championshipscore.api.daily;
 
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DailyQueueTest {
     private final DailyRules rules = new DailyRules(2, 8, 4, 2, 5);
@@ -25,15 +26,24 @@ class DailyQueueTest {
         assertEquals(Set.of(first, second), queue.removePlayer(first));
         assertEquals(0, queue.size());
 
-        queue.restore(List.of(new DailyQueue.Group(group, new java.util.LinkedHashSet<>(Set.of(first, second)))), rules);
+        queue.restore(
+                List.of(
+                        new DailyQueue.Group(
+                                group, new java.util.LinkedHashSet<>(Set.of(first, second)))),
+                rules);
         assertEquals(2, queue.size());
     }
 
     @Test
     void rejectsPartyLargerThanOneTeam() {
         DailyQueue queue = new DailyQueue(GameTypeEnum.AceRace);
-        Set<UUID> players = Set.of(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
-                UUID.randomUUID(), UUID.randomUUID());
+        Set<UUID> players =
+                Set.of(
+                        UUID.randomUUID(),
+                        UUID.randomUUID(),
+                        UUID.randomUUID(),
+                        UUID.randomUUID(),
+                        UUID.randomUUID());
 
         assertFalse(queue.canAdd(players, rules));
     }

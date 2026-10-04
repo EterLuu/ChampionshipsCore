@@ -1,25 +1,26 @@
 package ink.ziip.championshipscore.database;
 
 import com.zaxxer.hikari.HikariDataSource;
+
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+
 import org.jetbrains.annotations.NotNull;
 
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Connection pool plus the single entry point for schema provisioning.
  *
- * <p><b>数据库结构变更规范：</b>所有 schema 变更必须走
- * {@link DatabaseMigrationController}：在 {@code MIGRATIONS} 注册表中<b>追加</b>新版本迁移
- * （只追加，绝不修改或删除已有迁移），并同步更新 {@code database/schema.sql} 保持当前完整结构。
- * 禁止在本类或任何 DAO 里直接执行 ALTER/CREATE 等结构变更语句——旧库升级只能通过迁移控制器完成。
+ * <p><b>数据库结构变更规范：</b>所有 schema 变更必须走 {@link DatabaseMigrationController}：在 {@code MIGRATIONS}
+ * 注册表中<b>追加</b>新版本迁移 （只追加，绝不修改或删除已有迁移），并同步更新 {@code database/schema.sql} 保持当前完整结构。 禁止在本类或任何 DAO
+ * 里直接执行 ALTER/CREATE 等结构变更语句——旧库升级只能通过迁移控制器完成。
  */
 public class DatabaseManager extends BaseManager {
     private static final String DATA_POOL_NAME = "ChampionshipsCoreHikariPool";
@@ -59,16 +60,17 @@ public class DatabaseManager extends BaseManager {
     public CompletionStage<Void> loadAsync() {
         shuttingDown = false;
         long generation = lifecycleGeneration.incrementAndGet();
-        return CompletableFuture.runAsync(() -> {
-            if (shuttingDown || generation != lifecycleGeneration.get())
-                throw new CancellationException("Database bootstrap cancelled");
-            configureAndInitialize();
-            if (shuttingDown || generation != lifecycleGeneration.get()) {
-                HikariDataSource current = dataSource;
-                if (current != null && !current.isClosed()) current.close();
-                throw new CancellationException("Database bootstrap cancelled");
-            }
-        });
+        return CompletableFuture.runAsync(
+                () -> {
+                    if (shuttingDown || generation != lifecycleGeneration.get())
+                        throw new CancellationException("Database bootstrap cancelled");
+                    configureAndInitialize();
+                    if (shuttingDown || generation != lifecycleGeneration.get()) {
+                        HikariDataSource current = dataSource;
+                        if (current != null && !current.isClosed()) current.close();
+                        throw new CancellationException("Database bootstrap cancelled");
+                    }
+                });
     }
 
     private void preloadClass(String className) {
@@ -90,17 +92,30 @@ public class DatabaseManager extends BaseManager {
     }
 
     public void initialize() throws IllegalStateException {
-        if (shuttingDown)
-            throw new IllegalStateException("Database is shutting down");
+        if (shuttingDown) throw new IllegalStateException("Database is shutting down");
         dataSource = new HikariDataSource();
 
         dataSource.setPoolName(DATA_POOL_NAME);
         dataSource.setDriverClassName(driverClass);
 
         if (CCConfig.DATABASE_TYPE.equals("MARIADB"))
-            dataSource.setJdbcUrl("jdbc:mariadb://" + CCConfig.DATABASE_ADDRESS + ":" + CCConfig.DATABASE_PORT + "/" + CCConfig.DATABASE_NAME + "?autoReconnect=true&useSSL=false&useUnicode=true&characterEncoding=UTF-8");
+            dataSource.setJdbcUrl(
+                    "jdbc:mariadb://"
+                            + CCConfig.DATABASE_ADDRESS
+                            + ":"
+                            + CCConfig.DATABASE_PORT
+                            + "/"
+                            + CCConfig.DATABASE_NAME
+                            + "?autoReconnect=true&useSSL=false&useUnicode=true&characterEncoding=UTF-8");
         else
-            dataSource.setJdbcUrl("jdbc:mysql://" + CCConfig.DATABASE_ADDRESS + ":" + CCConfig.DATABASE_PORT + "/" + CCConfig.DATABASE_NAME + "?autoReconnect=true&useSSL=false&useUnicode=true&characterEncoding=UTF-8");
+            dataSource.setJdbcUrl(
+                    "jdbc:mysql://"
+                            + CCConfig.DATABASE_ADDRESS
+                            + ":"
+                            + CCConfig.DATABASE_PORT
+                            + "/"
+                            + CCConfig.DATABASE_NAME
+                            + "?autoReconnect=true&useSSL=false&useUnicode=true&characterEncoding=UTF-8");
         dataSource.setUsername(CCConfig.DATABASE_USERNAME);
         dataSource.setPassword(CCConfig.DATABASE_PASSWORD);
 
@@ -118,7 +133,8 @@ public class DatabaseManager extends BaseManager {
             // Schema upgrades are version-controlled; see DatabaseMigrationController.
             new DatabaseMigrationController(plugin).migrate(connection);
         } catch (SQLException e) {
-            throw new IllegalStateException("Failed to establish a connection to the MySQL database.", e);
+            throw new IllegalStateException(
+                    "Failed to establish a connection to the MySQL database.", e);
         } catch (IllegalStateException e) {
             throw e;
         }
@@ -144,12 +160,10 @@ public class DatabaseManager extends BaseManager {
     }
 
     public Connection getConnection() throws SQLException {
-        if (shuttingDown)
-            throw new SQLException("ChampionshipsCore database is shutting down");
+        if (shuttingDown) throw new SQLException("ChampionshipsCore database is shutting down");
         if (dataSource == null)
             throw new SQLException("ChampionshipsCore database has not been initialized");
-        if (!dataSource.isClosed())
-            return dataSource.getConnection();
+        if (!dataSource.isClosed()) return dataSource.getConnection();
 
         initialize();
         return dataSource.getConnection();

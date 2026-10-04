@@ -11,6 +11,5 @@ public final class GuiText {
         return String.format(java.util.Locale.ROOT, "%d, %d, %d", x, y, z);
     }
 
-    private GuiText() {
-    }
+    private GuiText() {}
 }

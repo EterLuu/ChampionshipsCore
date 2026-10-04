@@ -7,11 +7,12 @@ import ink.ziip.championshipscore.platform.bukkit.text.PlayerPresentation;
 import ink.ziip.championshipscore.protocol.BingoPresentation;
 import ink.ziip.championshipscore.protocol.MatchCommand;
 import ink.ziip.championshipscore.protocol.MatchManifest;
-import ink.ziip.championshipscore.protocol.MatchState;
 import ink.ziip.championshipscore.protocol.transport.DeliveryDisposition;
 import ink.ziip.championshipscore.protocol.transport.InboundDelivery;
 import ink.ziip.championshipscore.protocol.transport.MatchInboundMessage;
+
 import net.kyori.adventure.text.Component;
+
 import org.bukkit.Keyed;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
@@ -47,9 +48,13 @@ final class WorkerMatchRegistry {
     private boolean latestDaily;
     private boolean worldSlotConsumed;
 
-    WorkerMatchRegistry(Plugin plugin, WorkerConfig config, DurableEventOutbox events,
-                        WorkerReturnRouter returnRouter, WorkerWorldController worlds,
-                        NativeTeamService nativeTeams) {
+    WorkerMatchRegistry(
+            Plugin plugin,
+            WorkerConfig config,
+            DurableEventOutbox events,
+            WorkerReturnRouter returnRouter,
+            WorkerWorldController worlds,
+            NativeTeamService nativeTeams) {
         this.plugin = plugin;
         this.config = config;
         this.events = events;
@@ -58,8 +63,10 @@ final class WorkerMatchRegistry {
         this.nativeTeams = nativeTeams;
         this.scheduler = new PlatformScheduler(plugin);
         this.recipeKeys = loadRecipeKeys(plugin);
-        this.worldReset = config.allowWorldReuseWithoutReset()
-                ? null : new WorkerWorldResetCoordinator(plugin, config);
+        this.worldReset =
+                config.allowWorldReuseWithoutReset()
+                        ? null
+                        : new WorkerWorldResetCoordinator(plugin, config);
     }
 
     CompletionStage<DeliveryDisposition> handle(InboundDelivery<MatchInboundMessage> delivery) {
@@ -68,23 +75,28 @@ final class WorkerMatchRegistry {
             return CompletableFuture.completedFuture(DeliveryDisposition.DEAD_LETTER);
         }
         if (message instanceof MatchInboundMessage.Manifest manifestMessage) {
-            return scheduler.supplyGlobal(() -> acceptManifest(manifestMessage.manifest()))
+            return scheduler
+                    .supplyGlobal(() -> acceptManifest(manifestMessage.manifest()))
                     .thenApply(ignored -> DeliveryDisposition.ACK);
         }
         MatchCommand command = ((MatchInboundMessage.Command) message).command();
-        return scheduler.supplyGlobal(() -> dispatch(command)).thenCompose(stage -> stage)
-                .thenApply(success -> success ? DeliveryDisposition.ACK : DeliveryDisposition.RETRY);
+        return scheduler
+                .supplyGlobal(() -> dispatch(command))
+                .thenCompose(stage -> stage)
+                .thenApply(
+                        success -> success ? DeliveryDisposition.ACK : DeliveryDisposition.RETRY);
     }
 
     private synchronized boolean acceptManifest(MatchManifest manifest) {
         if (!config.workerId().equals(manifest.workerId())) {
-            throw new IllegalArgumentException("Manifest targets a different worker: " + manifest.workerId());
+            throw new IllegalArgumentException(
+                    "Manifest targets a different worker: " + manifest.workerId());
         }
         MatchManifest known = manifests.get(manifest.matchId());
         if (known != null && manifest.epoch() < known.epoch()) return false;
         if (known != null && manifest.epoch() == known.epoch() && !known.equals(manifest)) {
-            throw new IllegalArgumentException("Manifest changed without advancing its epoch: "
-                    + manifest.matchId());
+            throw new IllegalArgumentException(
+                    "Manifest changed without advancing its epoch: " + manifest.matchId());
         }
         manifests.put(manifest.matchId(), manifest);
         latestPresentation = manifest.runtimeRules().presentation();
@@ -97,17 +109,38 @@ final class WorkerMatchRegistry {
             case PREPARE -> prepare(command);
             case START_COMMIT -> withActive(command, WorkerMatchSession::startCommit);
             case FORCE_END -> withActive(command, session -> session.finish("force-end"));
-            case ABORT -> withActive(command, session -> session.abort(
-                    command.attributes().getOrDefault("reason", "core-abort")));
-            case ADD_SPECTATOR -> withActive(command, session -> session.addSpectator(
-                    UUID.fromString(command.attributes().get("playerId")),
-                    command.attributes().getOrDefault("username", "Spectator"),
-                    Double.parseDouble(command.attributes().getOrDefault("points", "0"))));
-            case REMOVE_SPECTATOR -> withActive(command, session -> session.removeSpectator(
-                    UUID.fromString(command.attributes().get("playerId"))));
-            case REMOVE_PARTICIPANTS -> withActive(command, session -> session.removeParticipants(
-                    parsePlayers(command.attributes().get("players"))));
-            case SHUTDOWN_WHEN_IDLE -> CompletableFuture.completedFuture(active == null || active.state().terminal());
+            case ABORT ->
+                    withActive(
+                            command,
+                            session ->
+                                    session.abort(
+                                            command.attributes()
+                                                    .getOrDefault("reason", "core-abort")));
+            case ADD_SPECTATOR ->
+                    withActive(
+                            command,
+                            session ->
+                                    session.addSpectator(
+                                            UUID.fromString(command.attributes().get("playerId")),
+                                            command.attributes()
+                                                    .getOrDefault("username", "Spectator"),
+                                            Double.parseDouble(
+                                                    command.attributes()
+                                                            .getOrDefault("points", "0"))));
+            case REMOVE_SPECTATOR ->
+                    withActive(
+                            command,
+                            session ->
+                                    session.removeSpectator(
+                                            UUID.fromString(command.attributes().get("playerId"))));
+            case REMOVE_PARTICIPANTS ->
+                    withActive(
+                            command,
+                            session ->
+                                    session.removeParticipants(
+                                            parsePlayers(command.attributes().get("players"))));
+            case SHUTDOWN_WHEN_IDLE ->
+                    CompletableFuture.completedFuture(active == null || active.state().terminal());
         };
     }
 
@@ -122,8 +155,16 @@ final class WorkerMatchRegistry {
             }
             if (!active.state().terminal()) return CompletableFuture.completedFuture(false);
         }
-        active = new WorkerMatchSession(plugin, config, manifest, events, returnRouter, worlds, nativeTeams,
-                worldReset == null ? () -> { } : worldReset::request);
+        active =
+                new WorkerMatchSession(
+                        plugin,
+                        config,
+                        manifest,
+                        events,
+                        returnRouter,
+                        worlds,
+                        nativeTeams,
+                        worldReset == null ? () -> {} : worldReset::request);
         if (worldSlotConsumed && !config.allowWorldReuseWithoutReset()) {
             return active.rejectPreparation("world-slot-requires-reset");
         }
@@ -134,7 +175,9 @@ final class WorkerMatchRegistry {
     private synchronized CompletionStage<Boolean> withActive(
             MatchCommand command,
             java.util.function.Function<WorkerMatchSession, CompletionStage<Boolean>> action) {
-        if (active == null || !active.matchId().equals(command.matchId()) || active.epoch() != command.epoch()) {
+        if (active == null
+                || !active.matchId().equals(command.matchId())
+                || active.epoch() != command.epoch()) {
             return CompletableFuture.completedFuture(false);
         }
         return action.apply(active);
@@ -148,16 +191,31 @@ final class WorkerMatchRegistry {
         }
         if (session != null && session.owns(player.getUniqueId())) {
             returnRouter.cancel(player.getUniqueId());
-            session.playerArrived(player).thenAccept(accepted -> {
-                if (!accepted) returnRouter.request(player);
-            }).exceptionally(error -> {
-                plugin.getLogger().warning("Unable to admit Bingo player " + player.getUniqueId()
-                        + ": " + error.getMessage());
-                returnRouter.request(player);
-                return null;
-            });
+            session.playerArrived(player)
+                    .thenAccept(
+                            accepted -> {
+                                if (!accepted) returnRouter.request(player);
+                            })
+                    .exceptionally(
+                            error -> {
+                                plugin.getLogger()
+                                        .warning(
+                                                "Unable to admit Bingo player "
+                                                        + player.getUniqueId()
+                                                        + ": "
+                                                        + error.getMessage());
+                                returnRouter.request(player);
+                                return null;
+                            });
             return;
         }
+        scheduler.runEntity(
+                player,
+                () -> {
+                    ink.ziip.championshipscore.platform.bukkit.player.SpectatorStateService.clear(
+                            player);
+                    player.setGameMode(org.bukkit.GameMode.ADVENTURE);
+                });
         // A proxy may reconnect a player to their last server. The worker is never a lobby: anyone
         // without live match ownership is immediately returned to Core, including after settlement.
         returnRouter.request(player);
@@ -178,7 +236,9 @@ final class WorkerMatchRegistry {
         synchronized (this) {
             session = active;
         }
-        if (session == null || session.state().terminal() || !session.isPlaying(player.getUniqueId())) {
+        if (session == null
+                || session.state().terminal()
+                || !session.isPlaying(player.getUniqueId())) {
             sendConfiguredMessage(player, "worker.play.leave.not-playing");
             return;
         }
@@ -207,20 +267,34 @@ final class WorkerMatchRegistry {
             return;
         }
         String reason = "admin-stop:" + sender.getName();
-        plugin.getLogger().info("Admin match stop requested by " + sender.getName() + " (" + reason + ")");
-        WorkerAdminStop.request(task -> scheduler.runGlobal(task), session::state,
-                () -> session.finish(reason), () -> session.abort(reason))
-                .whenComplete((stopped, failure) -> {
-                    if (failure != null) {
-                        plugin.getLogger().log(java.util.logging.Level.SEVERE,
-                                "Admin match stop failed: " + reason, failure);
-                        return;
-                    }
-                    Runnable feedback = () -> sendConfiguredMessage(sender, Boolean.TRUE.equals(stopped)
-                            ? "worker.admin.stop.started" : "worker.admin.stop.no-active-match");
-                    if (sender instanceof Player player) scheduler.runEntity(player, feedback);
-                    else scheduler.runGlobal(feedback);
-                });
+        plugin.getLogger()
+                .info("Admin match stop requested by " + sender.getName() + " (" + reason + ")");
+        WorkerAdminStop.request(
+                        task -> scheduler.runGlobal(task),
+                        session::state,
+                        () -> session.finish(reason),
+                        () -> session.abort(reason))
+                .whenComplete(
+                        (stopped, failure) -> {
+                            if (failure != null) {
+                                plugin.getLogger()
+                                        .log(
+                                                java.util.logging.Level.SEVERE,
+                                                "Admin match stop failed: " + reason,
+                                                failure);
+                                return;
+                            }
+                            Runnable feedback =
+                                    () ->
+                                            sendConfiguredMessage(
+                                                    sender,
+                                                    Boolean.TRUE.equals(stopped)
+                                                            ? "worker.admin.stop.started"
+                                                            : "worker.admin.stop.no-active-match");
+                            if (sender instanceof Player player)
+                                scheduler.runEntity(player, feedback);
+                            else scheduler.runGlobal(feedback);
+                        });
     }
 
     private static Set<UUID> parsePlayers(String value) {
@@ -241,10 +315,13 @@ final class WorkerMatchRegistry {
     void requestObserve(Player player) {
         UUID playerId = player.getUniqueId();
         if (!pendingObservations.add(playerId)) return;
-        scheduler.runEntityLater(player, () -> {
-            pendingObservations.remove(playerId);
-            observe(player);
-        }, 1L);
+        scheduler.runEntityLater(
+                player,
+                () -> {
+                    pendingObservations.remove(playerId);
+                    observe(player);
+                },
+                1L);
     }
 
     void observeAdvancement(Player player, org.bukkit.advancement.Advancement advancement) {
@@ -260,7 +337,8 @@ final class WorkerMatchRegistry {
         synchronized (this) {
             session = active;
         }
-        if (session != null) session.observeEventSignal(player, trigger, param == null ? "" : param);
+        if (session != null)
+            session.observeEventSignal(player, trigger, param == null ? "" : param);
     }
 
     void recordEventDistinct(Player player, String bucket, String value) {
@@ -279,7 +357,11 @@ final class WorkerMatchRegistry {
         if (session != null) session.recordEventCount(player, bucket);
     }
 
-    void recordRidingMovement(Player player, org.bukkit.Statistic statistic, double centimeters, BingoRidingTravel.Source source) {
+    void recordRidingMovement(
+            Player player,
+            org.bukkit.Statistic statistic,
+            double centimeters,
+            BingoRidingTravel.Source source) {
         WorkerMatchSession session;
         synchronized (this) {
             session = active;
@@ -305,7 +387,9 @@ final class WorkerMatchRegistry {
 
     boolean clearsInventoryOnDeath(Player player) {
         WorkerMatchSession session;
-        synchronized (this) { session = active; }
+        synchronized (this) {
+            session = active;
+        }
         return session != null && session.clearsInventoryOnDeath(player.getUniqueId());
     }
 
@@ -314,7 +398,7 @@ final class WorkerMatchRegistry {
     }
 
     synchronized boolean isRunningPlayer(UUID playerId) {
-        return active != null && active.isRunningPlayer(playerId);
+        return !isSpectator(playerId) && active != null && active.isRunningPlayer(playerId);
     }
 
     synchronized String resolveChampionshipPlaceholder(UUID playerId, String params) {
@@ -323,8 +407,13 @@ final class WorkerMatchRegistry {
 
     synchronized PlayerPresentation playerPresentation(UUID playerId) {
         return active == null
-                ? new PlayerPresentation(latestPresentation == null
-                        ? "" : latestPresentation.message("papi.spectator"), null, false, latestDaily)
+                ? new PlayerPresentation(
+                        latestPresentation == null
+                                ? ""
+                                : latestPresentation.message("papi.spectator"),
+                        null,
+                        false,
+                        latestDaily)
                 : active.playerPresentation(playerId);
     }
 
@@ -354,9 +443,12 @@ final class WorkerMatchRegistry {
 
     private static Set<NamespacedKey> loadRecipeKeys(Plugin plugin) {
         Set<NamespacedKey> keys = new LinkedHashSet<>();
-        plugin.getServer().recipeIterator().forEachRemaining(recipe -> {
-            if (recipe instanceof Keyed keyed) keys.add(keyed.getKey());
-        });
+        plugin.getServer()
+                .recipeIterator()
+                .forEachRemaining(
+                        recipe -> {
+                            if (recipe instanceof Keyed keyed) keys.add(keyed.getKey());
+                        });
         return Set.copyOf(keys);
     }
 
@@ -368,7 +460,11 @@ final class WorkerMatchRegistry {
         return active != null && active.canPickupSpectatorCard(playerId);
     }
 
-    synchronized boolean isSpectator(UUID playerId) { return active != null && active.isSpectator(playerId); }
+    synchronized boolean isSpectator(UUID playerId) {
+        Player online = plugin.getServer().getPlayer(playerId);
+        return active != null && active.isSpectator(playerId)
+                || online != null && online.getGameMode() == org.bukkit.GameMode.SPECTATOR;
+    }
 
     synchronized boolean canUseBingoUi(UUID playerId) {
         return active != null && active.canUseBingoUi(playerId);
@@ -383,7 +479,7 @@ final class WorkerMatchRegistry {
     }
 
     synchronized boolean isProtectedParticipant(UUID playerId) {
-        return active != null && active.isProtectedParticipant(playerId);
+        return isSpectator(playerId) || active != null && active.isProtectedParticipant(playerId);
     }
 
     synchronized boolean isFinalCountdownPlayer(UUID playerId) {
@@ -416,13 +512,17 @@ final class WorkerMatchRegistry {
 
     void openSpectatorTargets(Player player) {
         WorkerMatchSession session;
-        synchronized (this) { session = active; }
+        synchronized (this) {
+            session = active;
+        }
         if (session != null) session.openSpectatorTargets(player);
     }
 
     void teleportToSpectatorTarget(Player player, UUID targetId) {
         WorkerMatchSession session;
-        synchronized (this) { session = active; }
+        synchronized (this) {
+            session = active;
+        }
         if (session != null) session.teleportToSpectatorTarget(player, targetId);
     }
 
@@ -438,10 +538,18 @@ final class WorkerMatchRegistry {
         if (active == null) return false;
         MatchManifest manifest = manifests.get(active.matchId());
         if (manifest == null) return false;
-        Integer firstTeam = manifest.participants().stream().filter(player -> player.uuid().equals(first))
-                .map(player -> player.teamId()).findFirst().orElse(null);
-        Integer secondTeam = manifest.participants().stream().filter(player -> player.uuid().equals(second))
-                .map(player -> player.teamId()).findFirst().orElse(null);
+        Integer firstTeam =
+                manifest.participants().stream()
+                        .filter(player -> player.uuid().equals(first))
+                        .map(player -> player.teamId())
+                        .findFirst()
+                        .orElse(null);
+        Integer secondTeam =
+                manifest.participants().stream()
+                        .filter(player -> player.uuid().equals(second))
+                        .map(player -> player.teamId())
+                        .findFirst()
+                        .orElse(null);
         return firstTeam != null && firstTeam.equals(secondTeam);
     }
 

@@ -1,20 +1,21 @@
 package ink.ziip.championshipscore.command.event;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.finale.FinaleGameRegistry;
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.api.event.EventTeamImport;
 import ink.ziip.championshipscore.api.event.WebEventApiClient;
+import ink.ziip.championshipscore.api.finale.FinaleGameRegistry;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.entry.TeamImportEntry;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -22,6 +23,7 @@ import java.util.UUID;
 
 final class EventCommandSupport {
     private static final Map<String, String> TEAM_COLORS = createTeamColors();
+
     private EventCommandSupport() {}
 
     static @Nullable GameTypeEnum parse(@NotNull String raw) {
@@ -43,39 +45,56 @@ final class EventCommandSupport {
     }
 
     static @NotNull WebEventApiClient webClient() {
-        return new WebEventApiClient(CCConfig.WEB_LEADERBOARD_SYNC_BASE_URL,
+        return new WebEventApiClient(
+                CCConfig.WEB_LEADERBOARD_SYNC_BASE_URL,
                 Boolean.TRUE.equals(CCConfig.WEB_LEADERBOARD_SYNC_ALLOW_INSECURE_PRIVATE_HTTP),
                 CCConfig.WEB_LEADERBOARD_SYNC_CONNECT_TIMEOUT_SECONDS,
                 CCConfig.WEB_LEADERBOARD_SYNC_REQUEST_TIMEOUT_SECONDS);
     }
 
     static @NotNull List<TeamImportEntry> validateImport(@NotNull EventTeamImport imported) {
-        if (imported.event() == null || imported.event().slug() == null || imported.event().title() == null
+        if (imported.event() == null
+                || imported.event().slug() == null
+                || imported.event().title() == null
                 || !imported.event().slug().matches("[a-z0-9][a-z0-9-]{1,31}")
                 || imported.event().title().isBlank())
             throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_INCOMPLETE);
         if (!"READY".equals(imported.event().lifecycleStatus()))
             throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_NOT_READY);
-        if (imported.event().games() == null || imported.event().games().isEmpty()
+        if (imported.event().games() == null
+                || imported.event().games().isEmpty()
                 || imported.event().games().size() > 16)
             throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_GAMES_EMPTY);
         Set<GameTypeEnum> eventGames = new HashSet<>();
         for (EventTeamImport.Game configured : imported.event().games()) {
-            GameTypeEnum game = configured == null || configured.key() == null
-                    ? null : GameTypeEnum.fromCommand(configured.key());
+            GameTypeEnum game =
+                    configured == null || configured.key() == null
+                            ? null
+                            : GameTypeEnum.fromCommand(configured.key());
             if (game == null || !eventGames.add(game))
-                throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_GAME_INVALID
-                        .replace("%game%", configured == null ? "null" : configured.key()));
-            if (configured.variantKey() == null || !configured.variantKey().matches("[a-z0-9][a-z0-9-]{0,39}")
-                    || configured.label() == null || configured.label().isBlank() || configured.label().length() > 80)
-                throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_VARIANT_INVALID
-                        .replace("%game%", configured.key()));
+                throw new IllegalArgumentException(
+                        MessageConfig.EVENT_IMPORT_GAME_INVALID.replace(
+                                "%game%", configured == null ? "null" : configured.key()));
+            if (configured.variantKey() == null
+                    || !configured.variantKey().matches("[a-z0-9][a-z0-9-]{0,39}")
+                    || configured.label() == null
+                    || configured.label().isBlank()
+                    || configured.label().length() > 80)
+                throw new IllegalArgumentException(
+                        MessageConfig.EVENT_IMPORT_VARIANT_INVALID.replace(
+                                "%game%", configured.key()));
         }
         if (imported.event().roundMultipliers() == null
-                || imported.event().roundMultipliers().size() != eventGames.stream().filter(game -> !FinaleGameRegistry.isRegistered(game)).count())
+                || imported.event().roundMultipliers().size()
+                        != eventGames.stream()
+                                .filter(game -> !FinaleGameRegistry.isRegistered(game))
+                                .count())
             throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_MULTIPLIER_COUNT_INVALID);
         for (Double multiplier : imported.event().roundMultipliers()) {
-            if (multiplier == null || !Double.isFinite(multiplier) || multiplier < 0D || multiplier > 100D)
+            if (multiplier == null
+                    || !Double.isFinite(multiplier)
+                    || multiplier < 0D
+                    || multiplier > 100D)
                 throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_MULTIPLIER_INVALID);
         }
         if (imported.teams().isEmpty() || imported.teams().size() > TEAM_COLORS.size())
@@ -88,35 +107,45 @@ final class EventCommandSupport {
         for (EventTeamImport.Team team : imported.teams()) {
             String name = team.name().trim();
             String color = team.colorName().toLowerCase(Locale.ROOT);
-            if (name.isBlank() || name.length() > 64 || name.chars().anyMatch(Character::isISOControl))
-                throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_TEAM_NAME_INVALID.replace("%team%", name));
+            if (name.isBlank()
+                    || name.length() > 64
+                    || name.chars().anyMatch(Character::isISOControl))
+                throw new IllegalArgumentException(
+                        MessageConfig.EVENT_IMPORT_TEAM_NAME_INVALID.replace("%team%", name));
             if (!names.add(name.toLowerCase(Locale.ROOT)))
-                throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_TEAM_NAME_DUPLICATE.replace("%team%", name));
+                throw new IllegalArgumentException(
+                        MessageConfig.EVENT_IMPORT_TEAM_NAME_DUPLICATE.replace("%team%", name));
             if (!colors.add(color))
-                throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_TEAM_COLOR_DUPLICATE.replace("%color%", color));
+                throw new IllegalArgumentException(
+                        MessageConfig.EVENT_IMPORT_TEAM_COLOR_DUPLICATE.replace("%color%", color));
             String expectedHex = TEAM_COLORS.get(color);
             if (expectedHex == null || !expectedHex.equalsIgnoreCase(team.colorHex()))
-                throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_TEAM_COLOR_FIXED.replace("%color%", color));
+                throw new IllegalArgumentException(
+                        MessageConfig.EVENT_IMPORT_TEAM_COLOR_FIXED.replace("%color%", color));
             if (team.members().isEmpty() || team.members().size() > CCConfig.TEAM_MAX_MEMBERS)
-                throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_TEAM_SIZE_INVALID
-                        .replace("%team%", name)
-                        .replace("%min%", "1")
-                        .replace("%max%", String.valueOf(CCConfig.TEAM_MAX_MEMBERS)));
+                throw new IllegalArgumentException(
+                        MessageConfig.EVENT_IMPORT_TEAM_SIZE_INVALID
+                                .replace("%team%", name)
+                                .replace("%min%", "1")
+                                .replace("%max%", String.valueOf(CCConfig.TEAM_MAX_MEMBERS)));
             List<TeamImportEntry.Member> members = new ArrayList<>();
             for (EventTeamImport.Member member : team.members()) {
                 if (!member.username().matches("[A-Za-z0-9_]{3,16}"))
-                    throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_USERNAME_INVALID
-                            .replace("%player%", member.username()));
+                    throw new IllegalArgumentException(
+                            MessageConfig.EVENT_IMPORT_USERNAME_INVALID.replace(
+                                    "%player%", member.username()));
                 UUID uuid;
                 try {
                     uuid = UUID.fromString(member.uuid());
                 } catch (IllegalArgumentException failure) {
-                    throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_UUID_INVALID
-                            .replace("%player%", member.username()));
+                    throw new IllegalArgumentException(
+                            MessageConfig.EVENT_IMPORT_UUID_INVALID.replace(
+                                    "%player%", member.username()));
                 }
                 if (!uuids.add(uuid) || !usernames.add(member.username().toLowerCase(Locale.ROOT)))
-                    throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_PLAYER_DUPLICATE
-                            .replace("%player%", member.username()));
+                    throw new IllegalArgumentException(
+                            MessageConfig.EVENT_IMPORT_PLAYER_DUPLICATE.replace(
+                                    "%player%", member.username()));
                 members.add(new TeamImportEntry.Member(uuid, member.username()));
             }
             teams.add(new TeamImportEntry(name, color, expectedHex, List.copyOf(members)));
@@ -126,14 +155,22 @@ final class EventCommandSupport {
 
     private static Map<String, String> createTeamColors() {
         Map<String, String> colors = new HashMap<>();
-        colors.put("white", "#F9FFFE"); colors.put("orange", "#F9801D");
-        colors.put("magenta", "#C74EBD"); colors.put("light_blue", "#3AB3DA");
-        colors.put("yellow", "#FED83D"); colors.put("lime", "#80C71F");
-        colors.put("pink", "#F38BAA"); colors.put("gray", "#474F52");
-        colors.put("light_gray", "#9D9D97"); colors.put("cyan", "#169C9C");
-        colors.put("purple", "#8932B8"); colors.put("blue", "#3C44AA");
-        colors.put("brown", "#835432"); colors.put("green", "#5E7C16");
-        colors.put("red", "#B02E26"); colors.put("black", "#1D1D21");
+        colors.put("white", "#F9FFFE");
+        colors.put("orange", "#F9801D");
+        colors.put("magenta", "#C74EBD");
+        colors.put("light_blue", "#3AB3DA");
+        colors.put("yellow", "#FED83D");
+        colors.put("lime", "#80C71F");
+        colors.put("pink", "#F38BAA");
+        colors.put("gray", "#474F52");
+        colors.put("light_gray", "#9D9D97");
+        colors.put("cyan", "#169C9C");
+        colors.put("purple", "#8932B8");
+        colors.put("blue", "#3C44AA");
+        colors.put("brown", "#835432");
+        colors.put("green", "#5E7C16");
+        colors.put("red", "#B02E26");
+        colors.put("black", "#1D1D21");
         return Map.copyOf(colors);
     }
 }

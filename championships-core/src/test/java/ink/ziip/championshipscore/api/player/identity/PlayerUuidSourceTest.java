@@ -1,10 +1,10 @@
 package ink.ziip.championshipscore.api.player.identity;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import org.junit.jupiter.api.Test;
 
 class PlayerUuidSourceTest {
     @Test
@@ -23,13 +23,23 @@ class PlayerUuidSourceTest {
 
     @Test
     void profileUuidRequiresAUsableProfileApiBaseUrl() {
-        assertDoesNotThrow(() -> PlayerUuidSource.PROFILE_UUID
-                .validateConfiguration("http://cc-web:3000/api/yggdrasil"));
+        assertDoesNotThrow(
+                () ->
+                        PlayerUuidSource.PROFILE_UUID.validateConfiguration(
+                                "http://cc-web:3000/api/yggdrasil"));
         assertDoesNotThrow(() -> PlayerUuidSource.OFFLINE.validateConfiguration(null));
-        assertThrows(IllegalArgumentException.class, () -> PlayerUuidSource.PROFILE_UUID.validateConfiguration(""));
-        assertThrows(IllegalArgumentException.class, () -> PlayerUuidSource.PROFILE_UUID
-                .validateConfiguration("ftp://profiles.example.test"));
-        assertThrows(IllegalArgumentException.class, () -> PlayerUuidSource.PROFILE_UUID
-                .validateConfiguration("https://profiles.example.test?unexpected=true"));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> PlayerUuidSource.PROFILE_UUID.validateConfiguration(""));
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        PlayerUuidSource.PROFILE_UUID.validateConfiguration(
+                                "ftp://profiles.example.test"));
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        PlayerUuidSource.PROFILE_UUID.validateConfiguration(
+                                "https://profiles.example.test?unexpected=true"));
     }
 }

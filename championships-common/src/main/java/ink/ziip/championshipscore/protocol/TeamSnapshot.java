@@ -11,9 +11,9 @@ public record TeamSnapshot(
         String colorName,
         String colorCode,
         List<UUID> members,
-        double points
-) {
-    public TeamSnapshot(int id, String name, String colorName, String colorCode, List<UUID> members) {
+        double points) {
+    public TeamSnapshot(
+            int id, String name, String colorName, String colorCode, List<UUID> members) {
         this(id, name, colorName, colorCode, members, 0D);
     }
 

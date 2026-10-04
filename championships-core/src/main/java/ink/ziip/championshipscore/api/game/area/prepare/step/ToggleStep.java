@@ -4,7 +4,9 @@ import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
+
 import net.kyori.adventure.text.Component;
+
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -17,9 +19,13 @@ public final class ToggleStep extends PrepareStep {
     private final Function<SetupTarget, String> state;
     private final Consumer<SetupTarget> toggle;
 
-    public ToggleStep(@NotNull String key, @NotNull Component name, @NotNull Component description,
-                      @NotNull Material icon, @NotNull Function<SetupTarget, String> state,
-                      @NotNull Consumer<SetupTarget> toggle) {
+    public ToggleStep(
+            @NotNull String key,
+            @NotNull Component name,
+            @NotNull Component description,
+            @NotNull Material icon,
+            @NotNull Function<SetupTarget, String> state,
+            @NotNull Consumer<SetupTarget> toggle) {
         super(key, name, description, icon, StepCaptureType.TOGGLE);
         this.state = state;
         this.toggle = toggle;

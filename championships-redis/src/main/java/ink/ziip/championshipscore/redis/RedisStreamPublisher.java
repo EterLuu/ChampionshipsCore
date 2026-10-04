@@ -6,11 +6,11 @@ import io.lettuce.core.XAddArgs;
 import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.api.async.RedisAsyncCommands;
 
+import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
-import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Generic long-lived Redis Stream publisher; application protocols own their field schema. */
@@ -37,13 +37,20 @@ public final class RedisStreamPublisher implements AutoCloseable {
 
     public CompletionStage<String> append(String stream, Map<String, String> fields) {
         requireOpen();
-        if (stream == null || stream.isBlank()) throw new IllegalArgumentException("stream must not be blank");
+        if (stream == null || stream.isBlank())
+            throw new IllegalArgumentException("stream must not be blank");
         Objects.requireNonNull(fields, "fields");
         if (fields.isEmpty()) throw new IllegalArgumentException("fields must not be empty");
         Map<String, String> copy = new LinkedHashMap<>(fields);
-        if (copy.entrySet().stream().anyMatch(entry -> entry.getKey() == null || entry.getKey().isBlank()
-                || entry.getValue() == null)) throw new IllegalArgumentException("fields contain null/blank keys");
-        XAddArgs args = new XAddArgs().maxlen(config.approximateMaxStreamLength()).approximateTrimming();
+        if (copy.entrySet().stream()
+                .anyMatch(
+                        entry ->
+                                entry.getKey() == null
+                                        || entry.getKey().isBlank()
+                                        || entry.getValue() == null))
+            throw new IllegalArgumentException("fields contain null/blank keys");
+        XAddArgs args =
+                new XAddArgs().maxlen(config.approximateMaxStreamLength()).approximateTrimming();
         return commands.xadd(stream, args, copy);
     }
 

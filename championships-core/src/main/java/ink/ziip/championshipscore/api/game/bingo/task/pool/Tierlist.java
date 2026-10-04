@@ -9,15 +9,14 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
- * The source of objective difficulty, decoupled from the catalog. A tier list maps
- * {@linkplain PoolEntrySpec#objectiveId() objective ids} (literals or {@code *}/{@code ?} globs) to a
- * {@link Difficulty}. An unmatched objective falls back to MEDIUM.
+ * The source of objective difficulty, decoupled from the catalog. A tier list maps {@linkplain
+ * PoolEntrySpec#objectiveId() objective ids} (literals or {@code *}/{@code ?} globs) to a {@link
+ * Difficulty}. An unmatched objective falls back to MEDIUM.
  */
 public final class Tierlist {
     public static final Tierlist EMPTY = new Tierlist(new EnumMap<>(Difficulty.class));
 
-    private record Rule(Difficulty tier, Pattern pattern) {
-    }
+    private record Rule(Difficulty tier, Pattern pattern) {}
 
     private final List<Rule> rules;
 
@@ -66,8 +65,9 @@ public final class Tierlist {
             }
         }
         regex.append('$');
-        return Pattern.compile(regex.toString(), Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE
-                | Pattern.UNICODE_CHARACTER_CLASS);
+        return Pattern.compile(
+                regex.toString(),
+                Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE | Pattern.UNICODE_CHARACTER_CLASS);
     }
 
     /** Convenience: normalised lookup key used when reading the YAML tier sections. */

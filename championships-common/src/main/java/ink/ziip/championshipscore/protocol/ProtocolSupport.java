@@ -6,8 +6,7 @@ import java.util.Map;
 import java.util.Objects;
 
 final class ProtocolSupport {
-    private ProtocolSupport() {
-    }
+    private ProtocolSupport() {}
 
     static <T> T required(T value, String name) {
         return Objects.requireNonNull(value, name);
@@ -35,8 +34,11 @@ final class ProtocolSupport {
     static Map<String, String> immutableAttributes(Map<String, String> attributes) {
         Objects.requireNonNull(attributes, "attributes");
         LinkedHashMap<String, String> copy = new LinkedHashMap<>();
-        attributes.forEach((key, value) -> copy.put(
-                nonBlank(key, "attribute key"), required(value, "attribute value")));
+        attributes.forEach(
+                (key, value) ->
+                        copy.put(
+                                nonBlank(key, "attribute key"),
+                                required(value, "attribute value")));
         return Map.copyOf(copy);
     }
 }

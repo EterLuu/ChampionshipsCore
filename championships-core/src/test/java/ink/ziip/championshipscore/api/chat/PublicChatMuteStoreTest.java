@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.chat;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -12,23 +14,37 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 class PublicChatMuteStoreTest {
     @TempDir Path directory;
 
-    @Test void durationSupportsCombinedUnitsAndRejectsPartialZeroAndOverflowInput() {
+    @Test
+    void durationSupportsCombinedUnitsAndRejectsPartialZeroAndOverflowInput() {
         assertEquals(5_400_000, MuteDuration.parseMillis("1h30m"));
         assertEquals(90_061_000, MuteDuration.parseMillis("1d1h1m1s"));
         assertEquals(604_800_000, MuteDuration.parseMillis("1W"));
-        for (String invalid : new String[]{"", "0s", "30", "-1m", "1.5h", "1hgarbage", " 1h", "1h 30m",
-                "9223372036854775807w", "999999999999999999999999999s"})
-            assertThrows(IllegalArgumentException.class, () -> MuteDuration.parseMillis(invalid), invalid);
+        for (String invalid :
+                new String[] {
+                    "",
+                    "0s",
+                    "30",
+                    "-1m",
+                    "1.5h",
+                    "1hgarbage",
+                    " 1h",
+                    "1h 30m",
+                    "9223372036854775807w",
+                    "999999999999999999999999999s"
+                })
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> MuteDuration.parseMillis(invalid),
+                    invalid);
         assertEquals("1h30m", MuteDuration.formatMillis(5_400_000));
         assertEquals("1s", MuteDuration.formatMillis(1));
     }
 
-    @Test void absoluteExpirySurvivesRestartAndElapsesWhileOffline() throws Exception {
+    @Test
+    void absoluteExpirySurvivesRestartAndElapsesWhileOffline() throws Exception {
         var clock = new MutableClock();
         var file = directory.resolve("mutes.yml");
         var store = new PublicChatMuteStore(file, clock);
@@ -45,7 +61,8 @@ class PublicChatMuteStoreTest {
         assertNull(restarted.activeMute(id));
     }
 
-    @Test void permanentMutesAndUnmutePersistAndLaterActionsReplaceEarlierState() throws Exception {
+    @Test
+    void permanentMutesAndUnmutePersistAndLaterActionsReplaceEarlierState() throws Exception {
         var clock = new MutableClock();
         var file = directory.resolve("mutes.yml");
         var store = new PublicChatMuteStore(file, clock);
@@ -66,7 +83,8 @@ class PublicChatMuteStoreTest {
         assertNull(store.activeMute(id));
     }
 
-    @Test void failedWritesPreserveTheLastCommittedRuntimeState() throws Exception {
+    @Test
+    void failedWritesPreserveTheLastCommittedRuntimeState() throws Exception {
         var file = directory.resolve("mutes.yml");
         var store = new PublicChatMuteStore(file, new MutableClock());
         UUID id = UUID.randomUUID();
@@ -74,13 +92,16 @@ class PublicChatMuteStoreTest {
         Files.move(file, directory.resolve("original.yml"));
         Files.createDirectory(file);
         Files.writeString(file.resolve("blocker"), "cannot replace this directory");
-        assertThrows(IOException.class, () -> store.mute(id, "Player", 60_000, "replacement", "Console"));
+        assertThrows(
+                IOException.class,
+                () -> store.mute(id, "Player", 60_000, "replacement", "Console"));
         assertEquals(original, store.activeMute(id));
         assertThrows(IOException.class, () -> store.unmute(id));
         assertEquals(original, store.activeMute(id));
     }
 
-    @Test void malformedReloadDoesNotEraseCommittedMutes() throws Exception {
+    @Test
+    void malformedReloadDoesNotEraseCommittedMutes() throws Exception {
         var file = directory.resolve("mutes.yml");
         var store = new PublicChatMuteStore(file, new MutableClock());
         UUID id = UUID.randomUUID();
@@ -88,16 +109,32 @@ class PublicChatMuteStoreTest {
         Files.writeString(file, "mutes:\n  " + id + ":\n    name: Player\n");
         assertThrows(IOException.class, store::load);
         assertEquals(original, store.activeMute(id));
-        Files.writeString(file, "mutes:\n  " + id + ":\n    name: Player\n    reason: original\n"
-                + "    actor: Admin\n    created-at: 1000\n    expires-at: 0.5\n");
+        Files.writeString(
+                file,
+                "mutes:\n  "
+                        + id
+                        + ":\n    name: Player\n    reason: original\n"
+                        + "    actor: Admin\n    created-at: 1000\n    expires-at: 0.5\n");
         assertThrows(IOException.class, store::load);
         assertEquals(original, store.activeMute(id));
     }
 
     private static final class MutableClock extends Clock {
         long now = 1_000;
-        @Override public ZoneId getZone() { return ZoneOffset.UTC; }
-        @Override public Clock withZone(ZoneId zone) { return this; }
-        @Override public Instant instant() { return Instant.ofEpochMilli(now); }
+
+        @Override
+        public ZoneId getZone() {
+            return ZoneOffset.UTC;
+        }
+
+        @Override
+        public Clock withZone(ZoneId zone) {
+            return this;
+        }
+
+        @Override
+        public Instant instant() {
+            return Instant.ofEpochMilli(now);
+        }
     }
 }

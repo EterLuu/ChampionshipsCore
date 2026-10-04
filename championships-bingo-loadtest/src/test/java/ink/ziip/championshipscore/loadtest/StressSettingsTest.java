@@ -1,16 +1,17 @@
 package ink.ziip.championshipscore.loadtest;
 
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.junit.jupiter.api.Test;
 
 class StressSettingsTest {
     @Test
     void acceptsMixedStagesWithHalfStationaryWalkers() throws Exception {
         YamlConfiguration config = new YamlConfiguration();
-        config.loadFromString("""
+        config.loadFromString(
+                """
                 stage-walkers: [8, 32, 64]
                 stage-duration-seconds: [120, 120, 180]
                 stage-modes: [mixed, mixed, mixed]
@@ -36,7 +37,8 @@ class StressSettingsTest {
     @Test
     void rejectsMismatchedStageMetadata() throws Exception {
         YamlConfiguration config = new YamlConfiguration();
-        config.loadFromString("""
+        config.loadFromString(
+                """
                 stage-walkers: [8, 64]
                 stage-duration-seconds: [60, 60]
                 stage-modes: [flight]
@@ -48,7 +50,8 @@ class StressSettingsTest {
     @Test
     void rejectsLegacyTopLevelSpeedAndMissingPerStageValues() throws Exception {
         YamlConfiguration config = new YamlConfiguration();
-        config.loadFromString("""
+        config.loadFromString(
+                """
                 stage-walkers: [8]
                 stage-duration-seconds: [60]
                 stage-modes: [flight]
@@ -61,7 +64,8 @@ class StressSettingsTest {
     @Test
     void rejectsOddMixedWalkerCount() throws Exception {
         YamlConfiguration config = new YamlConfiguration();
-        config.loadFromString("""
+        config.loadFromString(
+                """
                 stage-walkers: [7]
                 stage-duration-seconds: [60]
                 stage-modes: [mixed]

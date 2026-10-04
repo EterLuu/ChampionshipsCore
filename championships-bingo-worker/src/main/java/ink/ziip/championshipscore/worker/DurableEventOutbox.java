@@ -21,7 +21,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/** File-backed worker outbox: an event is durable before Redis publication and deleted after XADD. */
+/**
+ * File-backed worker outbox: an event is durable before Redis publication and deleted after XADD.
+ */
 final class DurableEventOutbox implements MatchEventPublisher {
     private final MatchEventPublisher delegate;
     private final Path directory;
@@ -40,61 +42,90 @@ final class DurableEventOutbox implements MatchEventPublisher {
     }
 
     CompletionStage<Integer> replay() {
-        return CompletableFuture.supplyAsync(() -> {
-            try (var files = Files.list(directory)) {
-                List<Path> pending = files.filter(path -> path.getFileName().toString().endsWith(".event"))
-                        .sorted(Comparator.comparing(path -> path.getFileName().toString()))
-                        .toList();
-                List<MatchEvent> events = new ArrayList<>(pending.size());
-                for (Path path : pending) events.add(codec.decodeEvent(Files.readAllBytes(path)));
-                return events;
-            } catch (IOException failure) {
-                throw new java.io.UncheckedIOException(failure);
-            }
-        }).thenCompose(events -> {
-            CompletionStage<Integer> chain = CompletableFuture.completedFuture(0);
-            for (MatchEvent event : events) {
-                chain = chain.thenCompose(count -> publishWithRetry(event).thenApply(ignored -> count + 1));
-            }
-            return chain;
-        });
+        return CompletableFuture.supplyAsync(
+                        () -> {
+                            try (var files = Files.list(directory)) {
+                                List<Path> pending =
+                                        files.filter(
+                                                        path ->
+                                                                path.getFileName()
+                                                                        .toString()
+                                                                        .endsWith(".event"))
+                                                .sorted(
+                                                        Comparator.comparing(
+                                                                path ->
+                                                                        path.getFileName()
+                                                                                .toString()))
+                                                .toList();
+                                List<MatchEvent> events = new ArrayList<>(pending.size());
+                                for (Path path : pending)
+                                    events.add(codec.decodeEvent(Files.readAllBytes(path)));
+                                return events;
+                            } catch (IOException failure) {
+                                throw new java.io.UncheckedIOException(failure);
+                            }
+                        })
+                .thenCompose(
+                        events -> {
+                            CompletionStage<Integer> chain = CompletableFuture.completedFuture(0);
+                            for (MatchEvent event : events) {
+                                chain =
+                                        chain.thenCompose(
+                                                count ->
+                                                        publishWithRetry(event)
+                                                                .thenApply(ignored -> count + 1));
+                            }
+                            return chain;
+                        });
     }
 
     @Override
     public synchronized CompletionStage<DeliveryReceipt> publishEvent(MatchEvent event) {
         CompletableFuture<DeliveryReceipt> result = new CompletableFuture<>();
         CompletableFuture<Void> staged = CompletableFuture.runAsync(() -> stage(event));
-        publicationTail = publicationTail.handle((ignored, previousFailure) -> null)
-                .thenCompose(ignored -> staged)
-                .thenCompose(ignored -> publishWithRetry(event))
-                .handle((receipt, failure) -> {
-                    if (failure == null) result.complete(receipt);
-                    else result.completeExceptionally(failure);
-                    return null;
-                });
+        publicationTail =
+                publicationTail
+                        .handle((ignored, previousFailure) -> null)
+                        .thenCompose(ignored -> staged)
+                        .thenCompose(ignored -> publishWithRetry(event))
+                        .handle(
+                                (receipt, failure) -> {
+                                    if (failure == null) result.complete(receipt);
+                                    else result.completeExceptionally(failure);
+                                    return null;
+                                });
         return result;
     }
 
     private CompletionStage<DeliveryReceipt> publishStaged(MatchEvent event) {
-        return delegate.publishEvent(event).thenApply(receipt -> {
-            try {
-                Files.deleteIfExists(path(event));
-            } catch (IOException failure) {
-                throw new java.io.UncheckedIOException(failure);
-            }
-            return receipt;
-        });
+        return delegate.publishEvent(event)
+                .thenApply(
+                        receipt -> {
+                            try {
+                                Files.deleteIfExists(path(event));
+                            } catch (IOException failure) {
+                                throw new java.io.UncheckedIOException(failure);
+                            }
+                            return receipt;
+                        });
     }
 
     private CompletionStage<DeliveryReceipt> publishWithRetry(MatchEvent event) {
-        if (closed.get()) return CompletableFuture.failedFuture(new IllegalStateException("Event outbox is closed"));
-        return publishStaged(event).handle((receipt, failure) -> {
-            if (failure == null) return CompletableFuture.completedFuture(receipt);
-            if (closed.get()) return CompletableFuture.<DeliveryReceipt>failedFuture(failure);
-            return CompletableFuture.runAsync(() -> { },
-                            CompletableFuture.delayedExecutor(1, TimeUnit.SECONDS))
-                    .thenCompose(ignored -> publishWithRetry(event));
-        }).thenCompose(stage -> stage);
+        if (closed.get())
+            return CompletableFuture.failedFuture(
+                    new IllegalStateException("Event outbox is closed"));
+        return publishStaged(event)
+                .handle(
+                        (receipt, failure) -> {
+                            if (failure == null) return CompletableFuture.completedFuture(receipt);
+                            if (closed.get())
+                                return CompletableFuture.<DeliveryReceipt>failedFuture(failure);
+                            return CompletableFuture.runAsync(
+                                            () -> {},
+                                            CompletableFuture.delayedExecutor(1, TimeUnit.SECONDS))
+                                    .thenCompose(ignored -> publishWithRetry(event));
+                        })
+                .thenCompose(stage -> stage);
     }
 
     private void stage(MatchEvent event) {
@@ -102,8 +133,13 @@ final class DurableEventOutbox implements MatchEventPublisher {
             Path target = path(event);
             if (Files.exists(target)) return;
             Path temporary = temporaryPath(event);
-            Files.write(temporary, codec.encodeEvent(event), StandardOpenOption.CREATE,
-                    StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE, StandardOpenOption.SYNC);
+            Files.write(
+                    temporary,
+                    codec.encodeEvent(event),
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.TRUNCATE_EXISTING,
+                    StandardOpenOption.WRITE,
+                    StandardOpenOption.SYNC);
             try {
                 Files.move(temporary, target, StandardCopyOption.ATOMIC_MOVE);
             } catch (java.nio.file.AtomicMoveNotSupportedException unsupported) {
@@ -115,8 +151,10 @@ final class DurableEventOutbox implements MatchEventPublisher {
     }
 
     private Path path(MatchEvent event) {
-        return directory.resolve(String.format("%020d-%020d-%s.event",
-                event.createdAtEpochMilli(), event.seq(), event.messageId()));
+        return directory.resolve(
+                String.format(
+                        "%020d-%020d-%s.event",
+                        event.createdAtEpochMilli(), event.seq(), event.messageId()));
     }
 
     private Path temporaryPath(MatchEvent event) {
@@ -125,7 +163,8 @@ final class DurableEventOutbox implements MatchEventPublisher {
 
     private void recoverTemporaryFiles() throws IOException {
         try (var files = Files.list(directory)) {
-            for (Path temporary : files.filter(path -> path.getFileName().toString().endsWith(".tmp")).toList()) {
+            for (Path temporary :
+                    files.filter(path -> path.getFileName().toString().endsWith(".tmp")).toList()) {
                 MatchEvent event = codec.decodeEvent(Files.readAllBytes(temporary));
                 Path target = path(event);
                 if (Files.exists(target)) {

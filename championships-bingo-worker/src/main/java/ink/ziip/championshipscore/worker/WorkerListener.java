@@ -1,18 +1,22 @@
 package ink.ziip.championshipscore.worker;
 
-import ink.ziip.championshipscore.platform.bukkit.bingo.BingoRidingTravel;
 import com.destroystokyo.paper.event.player.PlayerAdvancementCriterionGrantEvent;
-import io.papermc.paper.event.entity.EntityCompostItemEvent;
-import io.papermc.paper.event.entity.EntityInsideBlockEvent;
-import io.papermc.paper.event.player.PlayerShieldDisableEvent;
+
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoNameTagObjective;
+import ink.ziip.championshipscore.platform.bukkit.bingo.BingoRidingTravel;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoStarterKitService;
 import ink.ziip.championshipscore.platform.bukkit.scheduler.PlatformScheduler;
-import ink.ziip.championshipscore.platform.bukkit.text.PlayerPresentation;
 import ink.ziip.championshipscore.platform.bukkit.text.ChatMessageText;
+import ink.ziip.championshipscore.platform.bukkit.text.PlayerPresentation;
 import ink.ziip.championshipscore.platform.bukkit.text.TeamChatCommandParser;
+
+import io.papermc.paper.event.entity.EntityCompostItemEvent;
+import io.papermc.paper.event.entity.EntityInsideBlockEvent;
 import io.papermc.paper.event.player.AsyncChatEvent;
+import io.papermc.paper.event.player.PlayerShieldDisableEvent;
+
 import net.kyori.adventure.text.Component;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -22,10 +26,8 @@ import org.bukkit.block.Block;
 import org.bukkit.block.Campfire;
 import org.bukkit.block.data.Levelled;
 import org.bukkit.entity.Ageable;
-import org.bukkit.entity.Boat;
-import org.bukkit.entity.Player;
-import org.bukkit.entity.Projectile;
 import org.bukkit.entity.AreaEffectCloud;
+import org.bukkit.entity.Boat;
 import org.bukkit.entity.EnderCrystal;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -33,69 +35,71 @@ import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.Firework;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
 import org.bukkit.entity.TNTPrimed;
 import org.bukkit.entity.Tameable;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.CreatureSpawnEvent;
-import org.bukkit.event.entity.EntityBreedEvent;
-import org.bukkit.event.entity.EntityChangeBlockEvent;
-import org.bukkit.event.entity.EntityInteractEvent;
-import org.bukkit.event.entity.EntityMountEvent;
-import org.bukkit.event.entity.EntityPickupItemEvent;
-import org.bukkit.event.entity.EntityDeathEvent;
-import org.bukkit.event.entity.EntityExplodeEvent;
-import org.bukkit.event.entity.EntityTameEvent;
-import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
-import org.bukkit.event.entity.EntityTargetEvent;
-import org.bukkit.event.entity.AreaEffectCloudApplyEvent;
-import org.bukkit.event.entity.PotionSplashEvent;
-import org.bukkit.event.entity.ProjectileHitEvent;
-import org.bukkit.event.entity.ProjectileLaunchEvent;
-import org.bukkit.event.inventory.CraftItemEvent;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryDragEvent;
-import org.bukkit.event.hanging.HangingPlaceEvent;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDropItemEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.inventory.EquipmentSlot;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.PotionMeta;
+import org.bukkit.event.entity.AreaEffectCloudApplyEvent;
+import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.event.entity.EntityBreedEvent;
+import org.bukkit.event.entity.EntityChangeBlockEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.EntityInteractEvent;
+import org.bukkit.event.entity.EntityMountEvent;
+import org.bukkit.event.entity.EntityPickupItemEvent;
+import org.bukkit.event.entity.EntityTameEvent;
+import org.bukkit.event.entity.EntityTargetEvent;
+import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
+import org.bukkit.event.entity.PlayerLeashEntityEvent;
+import org.bukkit.event.entity.PotionSplashEvent;
+import org.bukkit.event.entity.ProjectileHitEvent;
+import org.bukkit.event.entity.ProjectileLaunchEvent;
+import org.bukkit.event.hanging.HangingPlaceEvent;
+import org.bukkit.event.inventory.CraftItemEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerAdvancementDoneEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerInteractEntityEvent;
-import org.bukkit.event.player.PlayerInteractAtEntityEvent;
-import org.bukkit.event.player.PlayerItemBreakEvent;
-import org.bukkit.event.player.PlayerItemConsumeEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.event.player.PlayerCommandPreprocessEvent;
-import org.bukkit.event.player.PlayerPickupArrowEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.event.player.PlayerRespawnEvent;
-import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerArmorStandManipulateEvent;
 import org.bukkit.event.player.PlayerAttemptPickupItemEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerBucketEntityEvent;
 import org.bukkit.event.player.PlayerBucketFillEvent;
-import org.bukkit.event.player.PlayerSwapHandItemsEvent;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerInteractAtEntityEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerItemBreakEvent;
+import org.bukkit.event.player.PlayerItemConsumeEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerPickupArrowEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerShearEntityEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.event.player.PlayerUnleashEntityEvent;
-import org.bukkit.event.entity.PlayerLeashEntityEvent;
 import org.bukkit.event.raid.RaidTriggerEvent;
 import org.bukkit.event.vehicle.VehicleEnterEvent;
 import org.bukkit.event.vehicle.VehicleEntityCollisionEvent;
 import org.bukkit.event.vehicle.VehicleMoveEvent;
 import org.bukkit.event.world.GenericGameEvent;
+import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.projectiles.ProjectileSource;
 import org.bukkit.potion.PotionType;
+import org.bukkit.projectiles.ProjectileSource;
 
 import java.util.Map;
 import java.util.Set;
@@ -103,17 +107,28 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 final class WorkerListener implements Listener {
-    private static final Set<Material> SOUPS = Set.of(
-            Material.BEETROOT_SOUP, Material.MUSHROOM_STEW, Material.RABBIT_STEW, Material.SUSPICIOUS_STEW);
-    private static final Set<String> TOOL_MATERIALS = Set.of(
-            "WOODEN", "STONE", "IRON", "GOLDEN", "DIAMOND", "COPPER");
-    private static final Set<String> TOOL_TYPES = Set.of("PICKAXE", "AXE", "SHOVEL", "HOE", "SWORD");
-    private static final Set<Material> MISC_TOOLS = Set.of(
-            Material.FISHING_ROD, Material.FLINT_AND_STEEL, Material.SHEARS, Material.BRUSH,
-            Material.CARROT_ON_A_STICK, Material.WARPED_FUNGUS_ON_A_STICK);
-    private static final Set<String> ARMOR_MATERIALS = Set.of(
-            "LEATHER", "COPPER", "GOLDEN", "CHAINMAIL", "IRON", "DIAMOND");
-    private static final Set<String> ARMOR_TYPES = Set.of("HELMET", "CHESTPLATE", "LEGGINGS", "BOOTS");
+    private static final Set<Material> SOUPS =
+            Set.of(
+                    Material.BEETROOT_SOUP,
+                    Material.MUSHROOM_STEW,
+                    Material.RABBIT_STEW,
+                    Material.SUSPICIOUS_STEW);
+    private static final Set<String> TOOL_MATERIALS =
+            Set.of("WOODEN", "STONE", "IRON", "GOLDEN", "DIAMOND", "COPPER");
+    private static final Set<String> TOOL_TYPES =
+            Set.of("PICKAXE", "AXE", "SHOVEL", "HOE", "SWORD");
+    private static final Set<Material> MISC_TOOLS =
+            Set.of(
+                    Material.FISHING_ROD,
+                    Material.FLINT_AND_STEEL,
+                    Material.SHEARS,
+                    Material.BRUSH,
+                    Material.CARROT_ON_A_STICK,
+                    Material.WARPED_FUNGUS_ON_A_STICK);
+    private static final Set<String> ARMOR_MATERIALS =
+            Set.of("LEATHER", "COPPER", "GOLDEN", "CHAINMAIL", "IRON", "DIAMOND");
+    private static final Set<String> ARMOR_TYPES =
+            Set.of("HELMET", "CHESTPLATE", "LEGGINGS", "BOOTS");
 
     private final WorkerMatchRegistry registry;
     private final PlatformScheduler scheduler;
@@ -133,8 +148,9 @@ final class WorkerListener implements Listener {
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         PlayerPresentation presentation = registry.playerPresentation(player.getUniqueId());
-        event.joinMessage(Component.translatable("multiplayer.player.joined",
-                presentation.identity(player.getName())));
+        event.joinMessage(
+                Component.translatable(
+                        "multiplayer.player.joined", presentation.identity(player.getName())));
         registry.onJoin(event.getPlayer());
     }
 
@@ -142,8 +158,9 @@ final class WorkerListener implements Listener {
     public void onQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
         PlayerPresentation presentation = registry.playerPresentation(player.getUniqueId());
-        event.quitMessage(Component.translatable("multiplayer.player.left",
-                presentation.identity(player.getName())));
+        event.quitMessage(
+                Component.translatable(
+                        "multiplayer.player.left", presentation.identity(player.getName())));
         registry.onQuit(event.getPlayer());
     }
 
@@ -151,8 +168,10 @@ final class WorkerListener implements Listener {
     public void onChat(AsyncChatEvent event) {
         Player player = event.getPlayer();
         PlayerPresentation presentation = registry.playerPresentation(player.getUniqueId());
-        event.renderer((source, sourceDisplayName, message, viewer) ->
-                presentation.chatLine(player.getName(), ChatMessageText.format(player, message)));
+        event.renderer(
+                (source, sourceDisplayName, message, viewer) ->
+                        presentation.chatLine(
+                                player.getName(), ChatMessageText.format(player, message)));
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -195,12 +214,20 @@ final class WorkerListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onSpectatorInventoryClick(InventoryClickEvent event) {
-        if (event.getWhoClicked() instanceof Player player && registry.isSpectator(player.getUniqueId())) { event.setCancelled(true); player.updateInventory(); }
+        if (event.getWhoClicked() instanceof Player player
+                && registry.isSpectator(player.getUniqueId())) {
+            event.setCancelled(true);
+            player.updateInventory();
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onSpectatorInventoryDrag(InventoryDragEvent event) {
-        if (event.getWhoClicked() instanceof Player player && registry.isSpectator(player.getUniqueId())) { event.setCancelled(true); player.updateInventory(); }
+        if (event.getWhoClicked() instanceof Player player
+                && registry.isSpectator(player.getUniqueId())) {
+            event.setCancelled(true);
+            player.updateInventory();
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -230,13 +257,15 @@ final class WorkerListener implements Listener {
             if (!player.getActivePotionEffects().isEmpty()) {
                 registry.observeEventSignal(player, "remove_effect_milk", "");
             }
-        } else if (type == Material.POTION && item.getItemMeta() instanceof PotionMeta meta
+        } else if (type == Material.POTION
+                && item.getItemMeta() instanceof PotionMeta meta
                 && meta.getBasePotionType() == PotionType.WATER) {
             registry.observeEventSignal(player, "drink", "WATER_BOTTLE");
         } else if (type.isEdible()) {
             registry.observeEventSignal(player, "eat", type.name());
             registry.recordEventDistinct(player, "eat_unique", type.name());
-            if (SOUPS.contains(type)) registry.recordEventDistinct(player, "eat_all:SOUPS", type.name());
+            if (SOUPS.contains(type))
+                registry.recordEventDistinct(player, "eat_all:SOUPS", type.name());
         }
     }
 
@@ -261,7 +290,8 @@ final class WorkerListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEventTame(EntityTameEvent event) {
-        if (event.getOwner() instanceof Player player && registry.isRunningPlayer(player.getUniqueId())) {
+        if (event.getOwner() instanceof Player player
+                && registry.isRunningPlayer(player.getUniqueId())) {
             registry.observeEventSignal(player, "tame", event.getEntityType().name());
         }
     }
@@ -269,13 +299,15 @@ final class WorkerListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEventLeash(PlayerLeashEntityEvent event) {
         if (registry.isRunningPlayer(event.getPlayer().getUniqueId())) {
-            registry.observeEventSignal(event.getPlayer(), "leash", event.getEntity().getType().name());
+            registry.observeEventSignal(
+                    event.getPlayer(), "leash", event.getEntity().getType().name());
         }
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEventBreed(EntityBreedEvent event) {
-        if (!(event.getBreeder() instanceof Player player) || !registry.isRunningPlayer(player.getUniqueId())) return;
+        if (!(event.getBreeder() instanceof Player player)
+                || !registry.isRunningPlayer(player.getUniqueId())) return;
         String species = event.getMother().getType().name();
         registry.observeEventSignal(player, "breed", species);
         registry.recordEventDistinct(player, "breed_unique", species);
@@ -284,18 +316,22 @@ final class WorkerListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEventInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
-        if (!registry.isRunningPlayer(player.getUniqueId()) || event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        if (!registry.isRunningPlayer(player.getUniqueId())
+                || event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         Block block = event.getClickedBlock();
         ItemStack item = event.getItem();
         if (block == null) return;
         Material type = block.getType();
         if ((type == Material.SUSPICIOUS_SAND || type == Material.SUSPICIOUS_GRAVEL)
-                && item != null && item.getType() == Material.BRUSH) {
+                && item != null
+                && item.getType() == Material.BRUSH) {
             recentBrushUses.put(player.getUniqueId(), System.currentTimeMillis());
         } else if (type == Material.COMPOSTER && isComposterFull(block)) {
             registry.observeEventSignal(player, "use", "COMPOSTER");
         } else if ((type == Material.CAMPFIRE || type == Material.SOUL_CAMPFIRE)
-                && item != null && item.getType().isEdible() && campfireHasFreeSlot(block)) {
+                && item != null
+                && item.getType().isEdible()
+                && campfireHasFreeSlot(block)) {
             scheduler.runEntityLater(player, () -> checkCampfireFilled(block, player), 1L);
         } else if (type == Material.CAKE && player.getFoodLevel() < 20) {
             registry.observeEventSignal(player, "eat", "CAKE");
@@ -304,7 +340,8 @@ final class WorkerListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEventCompost(EntityCompostItemEvent event) {
-        if (!(event.getEntity() instanceof Player player) || !registry.isRunningPlayer(player.getUniqueId())) return;
+        if (!(event.getEntity() instanceof Player player)
+                || !registry.isRunningPlayer(player.getUniqueId())) return;
         Material type = event.getItem().getType();
         if (type.isEdible()) registry.recordEventDistinct(player, "compost_unique", type.name());
     }
@@ -327,7 +364,8 @@ final class WorkerListener implements Listener {
         if (!registry.isRunningPlayer(player.getUniqueId())) return;
         ItemStack item = player.getInventory().getItem(event.getHand());
         if (item.getType() == Material.GOLDEN_DANDELION
-                && event.getRightClicked() instanceof Ageable ageable && !ageable.isAdult()) {
+                && event.getRightClicked() instanceof Ageable ageable
+                && !ageable.isAdult()) {
             registry.observeEventSignal(player, "use_golden_dandelion", "");
             return;
         }
@@ -352,7 +390,8 @@ final class WorkerListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEventHangingPlace(HangingPlaceEvent event) {
         Player player = event.getPlayer();
-        if (player != null && registry.isRunningPlayer(player.getUniqueId())
+        if (player != null
+                && registry.isRunningPlayer(player.getUniqueId())
                 && event.getEntity().getType() == EntityType.PAINTING) {
             registry.observeEventSignal(player, "place", "PAINTING");
         }
@@ -367,7 +406,8 @@ final class WorkerListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEventProjectileLaunch(ProjectileLaunchEvent event) {
-        if (event.getEntity() instanceof Firework firework && firework.getShooter() instanceof Player player
+        if (event.getEntity() instanceof Firework firework
+                && firework.getShooter() instanceof Player player
                 && registry.isRunningPlayer(player.getUniqueId())) {
             registry.observeEventSignal(player, "shoot_firework_crossbow", "");
         }
@@ -383,7 +423,8 @@ final class WorkerListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEventTarget(EntityTargetLivingEntityEvent event) {
-        if (!(event.getTarget() instanceof Player player) || !registry.isRunningPlayer(player.getUniqueId())) return;
+        if (!(event.getTarget() instanceof Player player)
+                || !registry.isRunningPlayer(player.getUniqueId())) return;
         EntityType type = event.getEntity().getType();
         if (type == EntityType.ENDERMAN || type == EntityType.ZOMBIFIED_PIGLIN) {
             registry.observeEventSignal(player, "enrage", type.name());
@@ -409,37 +450,44 @@ final class WorkerListener implements Listener {
         } else if (Tag.ENTITY_TYPES_ARTHROPOD.isTagged(type)) {
             registry.recordEventCount(player, "kill_family:ARTHROPOD");
         }
-        if (living instanceof Monster) registry.recordEventDistinct(player, "kill_unique:HOSTILE", type.name());
+        if (living instanceof Monster)
+            registry.recordEventDistinct(player, "kill_unique:HOSTILE", type.name());
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onProtectedDrop(PlayerDropItemEvent event) {
-        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId())) event.setCancelled(true);
+        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId()))
+            event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onProtectedPlace(BlockPlaceEvent event) {
-        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId())) event.setCancelled(true);
+        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId()))
+            event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onProtectedBreak(BlockBreakEvent event) {
-        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId())) event.setCancelled(true);
+        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId()))
+            event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onProtectedInteract(PlayerInteractEvent event) {
-        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId())) event.setCancelled(true);
+        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId()))
+            event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onProtectedInteractEntity(PlayerInteractEntityEvent event) {
-        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId())) event.setCancelled(true);
+        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId()))
+            event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onProtectedInteractAtEntity(PlayerInteractAtEntityEvent event) {
-        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId())) event.setCancelled(true);
+        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId()))
+            event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -494,12 +542,14 @@ final class WorkerListener implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onProtectedArrowPickup(PlayerPickupArrowEvent event) {
-        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId())) event.setCancelled(true);
+        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId()))
+            event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onProtectedAttemptPickup(PlayerAttemptPickupItemEvent event) {
-        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId())) event.setCancelled(true);
+        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId()))
+            event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -523,8 +573,12 @@ final class WorkerListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onRidingMove(org.bukkit.event.player.PlayerMoveEvent event) {
         double centimeters = BingoRidingTravel.distance(event);
-        if (centimeters > 0) registry.recordRidingMovement(event.getPlayer(),
-                BingoRidingTravel.statistic(event.getPlayer().getVehicle()), centimeters, BingoRidingTravel.Source.PLAYER);
+        if (centimeters > 0)
+            registry.recordRidingMovement(
+                    event.getPlayer(),
+                    BingoRidingTravel.statistic(event.getPlayer().getVehicle()),
+                    centimeters,
+                    BingoRidingTravel.Source.PLAYER);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -534,8 +588,10 @@ final class WorkerListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onVehicleMove(VehicleMoveEvent event) {
-        // Living mounts use EntityMoveEvent; keeping these streams disjoint avoids duplicate credit.
-        if (event.getVehicle() instanceof Boat || event.getVehicle() instanceof org.bukkit.entity.Minecart)
+        // Living mounts use EntityMoveEvent; keeping these streams disjoint avoids duplicate
+        // credit.
+        if (event.getVehicle() instanceof Boat
+                || event.getVehicle() instanceof org.bukkit.entity.Minecart)
             recordVehicleTravel(event.getVehicle(), event.getFrom(), event.getTo());
     }
 
@@ -546,53 +602,63 @@ final class WorkerListener implements Listener {
         if (centimeters <= 0) return;
         for (org.bukkit.entity.Entity passenger : vehicle.getPassengers()) {
             if (passenger instanceof Player player)
-                registry.recordRidingMovement(player, statistic, centimeters, BingoRidingTravel.Source.VEHICLE);
+                registry.recordRidingMovement(
+                        player, statistic, centimeters, BingoRidingTravel.Source.VEHICLE);
         }
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onProtectedArmorStand(PlayerArmorStandManipulateEvent event) {
-        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId())) event.setCancelled(true);
+        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId()))
+            event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onProtectedBucketEmpty(PlayerBucketEmptyEvent event) {
-        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId())) event.setCancelled(true);
+        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId()))
+            event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onProtectedBucketFill(PlayerBucketFillEvent event) {
-        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId())) event.setCancelled(true);
+        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId()))
+            event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onProtectedBucketEntity(PlayerBucketEntityEvent event) {
-        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId())) event.setCancelled(true);
+        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId()))
+            event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onProtectedSwapHands(PlayerSwapHandItemsEvent event) {
-        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId())) event.setCancelled(true);
+        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId()))
+            event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onProtectedLeash(PlayerLeashEntityEvent event) {
-        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId())) event.setCancelled(true);
+        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId()))
+            event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onProtectedShear(PlayerShearEntityEvent event) {
-        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId())) event.setCancelled(true);
+        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId()))
+            event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onProtectedUnleash(PlayerUnleashEntityEvent event) {
-        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId())) event.setCancelled(true);
+        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId()))
+            event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onProtectedRaidTrigger(RaidTriggerEvent event) {
-        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId())) event.setCancelled(true);
+        if (registry.isProtectedParticipant(event.getPlayer().getUniqueId()))
+            event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -618,7 +684,8 @@ final class WorkerListener implements Listener {
     public void onCriterionGrant(PlayerAdvancementCriterionGrantEvent event) {
         if (!registry.isPlaying(event.getPlayer().getUniqueId())) return;
         NamespacedKey key = event.getAdvancement().getKey();
-        if (key != null && BingoStarterKitService.conflictingAdvancementKeys().contains(key.getKey())) {
+        if (key != null
+                && BingoStarterKitService.conflictingAdvancementKeys().contains(key.getKey())) {
             event.setCancelled(true);
         }
     }
@@ -628,18 +695,23 @@ final class WorkerListener implements Listener {
         Location location = registry.respawnLocation(event.getPlayer());
         if (location == null) return;
         event.setRespawnLocation(location);
-        scheduler.runEntityLater(event.getPlayer(), () -> registry.restoreAfterRespawn(event.getPlayer()), 1L);
+        scheduler.runEntityLater(
+                event.getPlayer(), () -> registry.restoreAfterRespawn(event.getPlayer()), 1L);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onCompass(PlayerInteractEvent event) {
-        if (event.getItem() == null || !registry.canUseBingoUi(event.getPlayer().getUniqueId())) return;
+        if (event.getItem() == null || !registry.canUseBingoUi(event.getPlayer().getUniqueId()))
+            return;
         Action action = event.getAction();
-        if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK
-                && action != Action.LEFT_CLICK_AIR && action != Action.LEFT_CLICK_BLOCK) return;
+        if (action != Action.RIGHT_CLICK_AIR
+                && action != Action.RIGHT_CLICK_BLOCK
+                && action != Action.LEFT_CLICK_AIR
+                && action != Action.LEFT_CLICK_BLOCK) return;
         boolean rightClick = action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK;
         if (event.getHand() == EquipmentSlot.HAND
-                && registry.handleSpectatorControl(event.getPlayer(), event.getItem(), rightClick)) {
+                && registry.handleSpectatorControl(
+                        event.getPlayer(), event.getItem(), rightClick)) {
             event.setCancelled(true);
             return;
         }
@@ -647,21 +719,28 @@ final class WorkerListener implements Listener {
         if (type != org.bukkit.Material.COMPASS && type != org.bukkit.Material.FILLED_MAP) return;
         if (type == org.bukkit.Material.COMPASS
                 && !registry.isRunningPlayer(event.getPlayer().getUniqueId())) return;
-        Integer selectedTeam = type == org.bukkit.Material.FILLED_MAP
-                ? registry.boundCardTeam(event.getItem()) : null;
+        Integer selectedTeam =
+                type == org.bukkit.Material.FILLED_MAP
+                        ? registry.boundCardTeam(event.getItem())
+                        : null;
         if (type == org.bukkit.Material.FILLED_MAP && selectedTeam == null) return;
         if (type == org.bukkit.Material.FILLED_MAP && !rightClick) return;
         if (action == Action.RIGHT_CLICK_BLOCK) return;
-        if (type == org.bukkit.Material.FILLED_MAP && event.getHand() == EquipmentSlot.HAND
-                && isOffhandWeapon(event.getPlayer().getInventory().getItemInOffHand().getType())) return;
+        if (type == org.bukkit.Material.FILLED_MAP
+                && event.getHand() == EquipmentSlot.HAND
+                && isOffhandWeapon(event.getPlayer().getInventory().getItemInOffHand().getType()))
+            return;
         event.setCancelled(true);
         if (type == org.bukkit.Material.FILLED_MAP) {
             // Opening in the interaction callback can be overwritten by the client's use-item
             // acknowledgement on Folia. Defer exactly one entity tick, preserving ownership.
-            scheduler.runEntityLater(event.getPlayer(),
-                    () -> registry.openCard(event.getPlayer(), selectedTeam), 1L);
+            scheduler.runEntityLater(
+                    event.getPlayer(),
+                    () -> registry.openCard(event.getPlayer(), selectedTeam),
+                    1L);
         } else {
-            scheduler.runEntityLater(event.getPlayer(), () -> registry.openTeammates(event.getPlayer()), 1L);
+            scheduler.runEntityLater(
+                    event.getPlayer(), () -> registry.openTeammates(event.getPlayer()), 1L);
         }
     }
 
@@ -670,13 +749,17 @@ final class WorkerListener implements Listener {
         if (!WorkerMenuService.isReadOnly(event.getView().getTopInventory())) return;
         event.setCancelled(true);
         if (!(event.getWhoClicked() instanceof Player player)) return;
-        UUID target = WorkerMenuService.teammateTarget(event.getView().getTopInventory(), event.getRawSlot());
+        UUID target =
+                WorkerMenuService.teammateTarget(
+                        event.getView().getTopInventory(), event.getRawSlot());
         if (target != null) {
             player.closeInventory();
             registry.teleportToTeammate(player, target);
             return;
         }
-        UUID spectatorTarget = WorkerMenuService.spectatorTarget(event.getView().getTopInventory(), event.getRawSlot());
+        UUID spectatorTarget =
+                WorkerMenuService.spectatorTarget(
+                        event.getView().getTopInventory(), event.getRawSlot());
         if (spectatorTarget != null) {
             player.closeInventory();
             registry.teleportToSpectatorTarget(player, spectatorTarget);
@@ -685,7 +768,8 @@ final class WorkerListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onMenuDrag(InventoryDragEvent event) {
-        if (WorkerMenuService.isReadOnly(event.getView().getTopInventory())) event.setCancelled(true);
+        if (WorkerMenuService.isReadOnly(event.getView().getTopInventory()))
+            event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -705,9 +789,10 @@ final class WorkerListener implements Listener {
             event.setCancelled(true);
             return;
         }
-        boolean allowed = teamId == Integer.MIN_VALUE
-                ? registry.canPickupSpectatorCard(player.getUniqueId())
-                : registry.canPickupCard(player.getUniqueId(), teamId);
+        boolean allowed =
+                teamId == Integer.MIN_VALUE
+                        ? registry.canPickupSpectatorCard(player.getUniqueId())
+                        : registry.canPickupCard(player.getUniqueId(), teamId);
         if (!allowed) event.setCancelled(true);
     }
 
@@ -715,7 +800,8 @@ final class WorkerListener implements Listener {
     public void onDamage(EntityDamageByEntityEvent event) {
         if (!(event.getEntity() instanceof Player victim)) return;
         UUID attacker = attackerId(event.getDamager());
-        if (attacker != null && registry.isRunningPlayer(victim.getUniqueId())
+        if (attacker != null
+                && registry.isRunningPlayer(victim.getUniqueId())
                 && registry.sameTeam(attacker, victim.getUniqueId())) {
             event.setCancelled(true);
         }
@@ -725,9 +811,12 @@ final class WorkerListener implements Listener {
     public void onPotionSplash(PotionSplashEvent event) {
         UUID thrower = shooterId(event.getPotion().getShooter());
         if (thrower == null || !registry.isRunningPlayer(thrower)) return;
-        event.getAffectedEntities().removeIf(entity -> entity instanceof Player victim
-                && !victim.getUniqueId().equals(thrower)
-                && registry.sameTeam(thrower, victim.getUniqueId()));
+        event.getAffectedEntities()
+                .removeIf(
+                        entity ->
+                                entity instanceof Player victim
+                                        && !victim.getUniqueId().equals(thrower)
+                                        && registry.sameTeam(thrower, victim.getUniqueId()));
     }
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
@@ -735,16 +824,20 @@ final class WorkerListener implements Listener {
         AreaEffectCloud cloud = event.getEntity();
         UUID source = shooterId(cloud.getSource());
         if (source == null || !registry.isRunningPlayer(source)) return;
-        event.getAffectedEntities().removeIf(entity -> entity instanceof Player victim
-                && !victim.getUniqueId().equals(source)
-                && registry.sameTeam(source, victim.getUniqueId()));
+        event.getAffectedEntities()
+                .removeIf(
+                        entity ->
+                                entity instanceof Player victim
+                                        && !victim.getUniqueId().equals(source)
+                                        && registry.sameTeam(source, victim.getUniqueId()));
     }
 
     private Player nearestRunningPlayer(Entity center, double radius) {
         Player best = null;
         double bestDistance = Double.MAX_VALUE;
         for (Entity entity : center.getNearbyEntities(radius, radius, radius)) {
-            if (!(entity instanceof Player player) || !registry.isRunningPlayer(player.getUniqueId())) continue;
+            if (!(entity instanceof Player player)
+                    || !registry.isRunningPlayer(player.getUniqueId())) continue;
             double distance = player.getLocation().distanceSquared(center.getLocation());
             if (distance < bestDistance) {
                 best = player;
@@ -755,7 +848,8 @@ final class WorkerListener implements Listener {
     }
 
     private Player recentPumpkinPlacer(Location spawnLocation) {
-        if (lastPumpkinPlacer == null || lastPumpkinLocation == null
+        if (lastPumpkinPlacer == null
+                || lastPumpkinLocation == null
                 || System.currentTimeMillis() - lastPumpkinPlacedAt > 5_000L
                 || !lastPumpkinLocation.getWorld().equals(spawnLocation.getWorld())
                 || lastPumpkinLocation.distanceSquared(spawnLocation) > 64.0) return null;
@@ -787,7 +881,8 @@ final class WorkerListener implements Listener {
     }
 
     private void checkCampfireFilled(Block block, Player player) {
-        if (!registry.isRunningPlayer(player.getUniqueId()) || !(block.getState() instanceof Campfire campfire)) return;
+        if (!registry.isRunningPlayer(player.getUniqueId())
+                || !(block.getState() instanceof Campfire campfire)) return;
         for (int slot = 0; slot < campfire.getSize(); slot++) {
             ItemStack item = campfire.getItem(slot);
             if (item == null || item.getType().isAir()) return;
@@ -797,13 +892,17 @@ final class WorkerListener implements Listener {
 
     private static boolean isArmor(Material type) {
         String[] parts = type.name().split("_", 2);
-        return parts.length == 2 && ARMOR_MATERIALS.contains(parts[0]) && ARMOR_TYPES.contains(parts[1]);
+        return parts.length == 2
+                && ARMOR_MATERIALS.contains(parts[0])
+                && ARMOR_TYPES.contains(parts[1]);
     }
 
     private static boolean isTool(Material type) {
         if (MISC_TOOLS.contains(type)) return true;
         String[] parts = type.name().split("_", 2);
-        return parts.length == 2 && TOOL_MATERIALS.contains(parts[0]) && TOOL_TYPES.contains(parts[1]);
+        return parts.length == 2
+                && TOOL_MATERIALS.contains(parts[0])
+                && TOOL_TYPES.contains(parts[1]);
     }
 
     private static String resolveDeathCause(Player player) {
@@ -812,13 +911,20 @@ final class WorkerListener implements Listener {
         if (last instanceof EntityDamageByEntityEvent damage) {
             Entity damager = damage.getDamager();
             switch (damager.getType()) {
-                case IRON_GOLEM: return "IRON_GOLEM";
-                case POLAR_BEAR: return "POLAR_BEAR";
-                case WARDEN: return "WARDEN";
-                case BEE: return "BEE";
-                case FIREWORK_ROCKET: return "FIREWORK";
-                case TNT_MINECART: return "TNT_MINECART";
-                case TRIDENT: return "TRIDENT";
+                case IRON_GOLEM:
+                    return "IRON_GOLEM";
+                case POLAR_BEAR:
+                    return "POLAR_BEAR";
+                case WARDEN:
+                    return "WARDEN";
+                case BEE:
+                    return "BEE";
+                case FIREWORK_ROCKET:
+                    return "FIREWORK";
+                case TNT_MINECART:
+                    return "TNT_MINECART";
+                case TRIDENT:
+                    return "TRIDENT";
                 case FALLING_BLOCK:
                     if (damager instanceof FallingBlock falling) {
                         Material material = falling.getBlockData().getMaterial();
@@ -869,7 +975,9 @@ final class WorkerListener implements Listener {
     }
 
     private static boolean isOffhandWeapon(org.bukkit.Material material) {
-        return material == org.bukkit.Material.SHIELD || material == org.bukkit.Material.TRIDENT
-                || material == org.bukkit.Material.BOW || material == org.bukkit.Material.CROSSBOW;
+        return material == org.bukkit.Material.SHIELD
+                || material == org.bukkit.Material.TRIDENT
+                || material == org.bukkit.Material.BOW
+                || material == org.bukkit.Material.CROSSBOW;
     }
 }

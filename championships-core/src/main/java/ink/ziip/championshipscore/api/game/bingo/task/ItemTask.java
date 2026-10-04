@@ -3,8 +3,10 @@ package ink.ziip.championshipscore.api.game.bingo.task;
 import ink.ziip.championshipscore.api.game.bingo.task.pool.Dimension;
 import ink.ziip.championshipscore.api.game.bingo.util.BingoComponents;
 import ink.ziip.championshipscore.api.game.bingo.util.MessageService;
+
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+
 import org.bukkit.Material;
 
 import java.util.Objects;
@@ -38,15 +40,15 @@ public record ItemTask(Material itemType, int count, Dimension dimension) implem
 
     @Override
     public Component getName() {
-        return Component.text().color(NamedTextColor.YELLOW)
-                .append(BingoComponents.itemName(itemType)).build();
+        return Component.text()
+                .color(NamedTextColor.YELLOW)
+                .append(BingoComponents.itemName(itemType))
+                .build();
     }
 
     @Override
     public Component[] getItemDescription() {
-        return new Component[]{
-                MessageService.global().component("task.collect")
-        };
+        return new Component[] {MessageService.global().component("task.collect")};
     }
 
     @Override

@@ -1,12 +1,13 @@
 package ink.ziip.championshipscore.api.schedule.tntrun;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.schedule.BaseSingleGameSchedule;
 import ink.ziip.championshipscore.api.schedule.FormalEventMapResolver;
 
 public class TNTRunScheduleManager extends BaseSingleGameSchedule {
-    public TNTRunScheduleManager(ChampionshipsCore championshipsCore, TNTRunScheduleHandler handler) {
+    public TNTRunScheduleManager(
+            ChampionshipsCore championshipsCore, TNTRunScheduleHandler handler) {
         super(championshipsCore, handler, GameTypeEnum.TNTRun);
         handler.setScheduleManager(this);
     }
@@ -20,5 +21,4 @@ public class TNTRunScheduleManager extends BaseSingleGameSchedule {
     public int getTotalRounds() {
         return 3;
     }
-
 }

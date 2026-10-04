@@ -1,16 +1,16 @@
 package ink.ziip.championshipscore.authbridge.bridge;
 
 import ink.ziip.championshipscore.auth.AuthIdentity;
+
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Locale;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.UUID;
-import java.util.LinkedHashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class LocalAccessState {
     private final File file;
@@ -31,7 +31,9 @@ public final class LocalAccessState {
 
     public UUID expectedUuid(String username) {
         Identity identity = identities.get(normalize(username));
-        if (identity == null || identity.minecraftUuid() == null || identity.minecraftUuid().isBlank()) return null;
+        if (identity == null
+                || identity.minecraftUuid() == null
+                || identity.minecraftUuid().isBlank()) return null;
         try {
             return UUID.fromString(identity.minecraftUuid());
         } catch (IllegalArgumentException ignored) {
@@ -66,11 +68,15 @@ public final class LocalAccessState {
         }
     }
 
-    public synchronized void ban(String username, String reason, String expiresAt) throws IOException {
+    public synchronized void ban(String username, String reason, String expiresAt)
+            throws IOException {
         AuthIdentity.requireUsername(username);
         if (expiresAt != null && !expiresAt.isBlank()) java.time.Instant.parse(expiresAt);
-        bans.put(normalize(username), new Ban(reason == null ? "" : reason,
-                expiresAt == null || expiresAt.isBlank() ? null : expiresAt));
+        bans.put(
+                normalize(username),
+                new Ban(
+                        reason == null ? "" : reason,
+                        expiresAt == null || expiresAt.isBlank() ? null : expiresAt));
         save();
     }
 
@@ -83,7 +89,8 @@ public final class LocalAccessState {
     public synchronized void retainIdentities(Set<String> usernames) throws IOException {
         Set<String> normalized = new java.util.HashSet<>();
         for (String username : usernames) {
-            if (username == null) throw new IllegalArgumentException("Allowed username is required");
+            if (username == null)
+                throw new IllegalArgumentException("Allowed username is required");
             normalized.add(normalize(username));
         }
         identities.keySet().retainAll(normalized);
@@ -91,13 +98,21 @@ public final class LocalAccessState {
         save();
     }
 
-    public void rename(String oldUsername, String newUsername, String accountId, String minecraftUuid) {
+    public void rename(
+            String oldUsername, String newUsername, String accountId, String minecraftUuid) {
         String oldKey = normalize(oldUsername);
         String newKey = normalize(newUsername);
         Identity existing = identities.remove(oldKey);
-        if (existing != null) identities.put(newKey, new Identity(
-                accountId == null || accountId.isBlank() ? existing.accountId() : accountId,
-                minecraftUuid == null || minecraftUuid.isBlank() ? existing.minecraftUuid() : minecraftUuid));
+        if (existing != null)
+            identities.put(
+                    newKey,
+                    new Identity(
+                            accountId == null || accountId.isBlank()
+                                    ? existing.accountId()
+                                    : accountId,
+                            minecraftUuid == null || minecraftUuid.isBlank()
+                                    ? existing.minecraftUuid()
+                                    : minecraftUuid));
         Integer version = authVersions.remove(oldKey);
         if (version != null) authVersions.merge(newKey, version, Math::max);
     }
@@ -132,7 +147,9 @@ public final class LocalAccessState {
     }
 
     public synchronized void beginMaintenance(String jobId) throws IOException {
-        if (maintenanceJobId != null && !maintenanceJobId.isBlank() && !maintenanceJobId.equals(jobId)) {
+        if (maintenanceJobId != null
+                && !maintenanceJobId.isBlank()
+                && !maintenanceJobId.equals(jobId)) {
             throw new IllegalStateException("A different maintenance job is still incomplete");
         }
         maintenanceJobId = jobId;
@@ -168,7 +185,8 @@ public final class LocalAccessState {
         return pendingControlCompletion;
     }
 
-    public synchronized void stageControlCompletion(String jobId, Map<String, Object> result) throws IOException {
+    public synchronized void stageControlCompletion(String jobId, Map<String, Object> result)
+            throws IOException {
         pendingControlCompletion = new ControlCompletion(jobId, Map.copyOf(result));
         save();
     }
@@ -181,11 +199,13 @@ public final class LocalAccessState {
         save();
     }
 
-    public synchronized void migrateIdentityUuids(Map<String, String> uuidsByAccountId) throws IOException {
-        identities.replaceAll((name, identity) -> {
-            String uuid = uuidsByAccountId.get(identity.accountId());
-            return uuid == null ? identity : new Identity(identity.accountId(), uuid);
-        });
+    public synchronized void migrateIdentityUuids(Map<String, String> uuidsByAccountId)
+            throws IOException {
+        identities.replaceAll(
+                (name, identity) -> {
+                    String uuid = uuidsByAccountId.get(identity.accountId());
+                    return uuid == null ? identity : new Identity(identity.accountId(), uuid);
+                });
         save();
     }
 
@@ -197,41 +217,50 @@ public final class LocalAccessState {
         maintenanceJobId = yaml.getString("maintenance-job-id", yaml.getString("migration-job-id"));
         pendingAckCursor = yaml.getString("pending-ack.cursor");
         var identitySectionRoot = yaml.getConfigurationSection("identities");
-        if (identitySectionRoot == null) identitySectionRoot = yaml.getConfigurationSection("whitelist");
-        if (identitySectionRoot != null) for (String key : identitySectionRoot.getKeys(false)) {
-            var identitySection = identitySectionRoot.getConfigurationSection(key);
-            if (identitySection == null) {
-                String legacy = identitySectionRoot.getString(key, "");
-                identities.put(key, new Identity(legacy, legacy));
-            } else {
-                String accountId = identitySection.getString("account-id", "");
-                identities.put(key, new Identity(accountId,
-                        identitySection.getString("minecraft-uuid", accountId)));
+        if (identitySectionRoot == null)
+            identitySectionRoot = yaml.getConfigurationSection("whitelist");
+        if (identitySectionRoot != null)
+            for (String key : identitySectionRoot.getKeys(false)) {
+                var identitySection = identitySectionRoot.getConfigurationSection(key);
+                if (identitySection == null) {
+                    String legacy = identitySectionRoot.getString(key, "");
+                    identities.put(key, new Identity(legacy, legacy));
+                } else {
+                    String accountId = identitySection.getString("account-id", "");
+                    identities.put(
+                            key,
+                            new Identity(
+                                    accountId,
+                                    identitySection.getString("minecraft-uuid", accountId)));
+                }
             }
-        }
         String pendingControlId = yaml.getString("pending-control-completion.job-id");
         if (pendingControlId != null && !pendingControlId.isBlank()) {
             Map<String, Object> result = new LinkedHashMap<>();
             var section = yaml.getConfigurationSection("pending-control-completion.result");
-            if (section != null) for (String key : section.getKeys(false)) result.put(key, section.get(key));
+            if (section != null)
+                for (String key : section.getKeys(false)) result.put(key, section.get(key));
             pendingControlCompletion = new ControlCompletion(pendingControlId, Map.copyOf(result));
         }
         var versionSection = yaml.getConfigurationSection("auth-versions");
-        if (versionSection != null) for (String key : versionSection.getKeys(false)) authVersions.put(key, versionSection.getInt(key));
+        if (versionSection != null)
+            for (String key : versionSection.getKeys(false))
+                authVersions.put(key, versionSection.getInt(key));
         var banSection = yaml.getConfigurationSection("bans");
-        if (banSection != null) for (String key : banSection.getKeys(false)) {
-            var entry = banSection.getConfigurationSection(key);
-            if (entry == null) continue;
-            String expiresAt = entry.getString("expires-at");
-            if (expiresAt != null && !expiresAt.isBlank()) {
-                try {
-                    java.time.Instant.parse(expiresAt);
-                } catch (java.time.format.DateTimeParseException ignored) {
-                    continue;
+        if (banSection != null)
+            for (String key : banSection.getKeys(false)) {
+                var entry = banSection.getConfigurationSection(key);
+                if (entry == null) continue;
+                String expiresAt = entry.getString("expires-at");
+                if (expiresAt != null && !expiresAt.isBlank()) {
+                    try {
+                        java.time.Instant.parse(expiresAt);
+                    } catch (java.time.format.DateTimeParseException ignored) {
+                        continue;
+                    }
                 }
+                bans.put(key, new Ban(entry.getString("reason", ""), expiresAt));
             }
-            bans.put(key, new Ban(entry.getString("reason", ""), expiresAt));
-        }
     }
 
     private void save() throws IOException {
@@ -241,19 +270,23 @@ public final class LocalAccessState {
         yaml.set("binding-snapshot-applied", bindingSnapshotApplied);
         yaml.set("maintenance-job-id", maintenanceJobId);
         yaml.set("pending-ack.cursor", pendingAckCursor);
-        yaml.set("pending-control-completion.job-id",
+        yaml.set(
+                "pending-control-completion.job-id",
                 pendingControlCompletion == null ? null : pendingControlCompletion.jobId());
-        yaml.set("pending-control-completion.result",
+        yaml.set(
+                "pending-control-completion.result",
                 pendingControlCompletion == null ? null : pendingControlCompletion.result());
-        identities.forEach((name, identity) -> {
-            yaml.set("identities." + name + ".account-id", identity.accountId());
-            yaml.set("identities." + name + ".minecraft-uuid", identity.minecraftUuid());
-        });
+        identities.forEach(
+                (name, identity) -> {
+                    yaml.set("identities." + name + ".account-id", identity.accountId());
+                    yaml.set("identities." + name + ".minecraft-uuid", identity.minecraftUuid());
+                });
         authVersions.forEach((name, version) -> yaml.set("auth-versions." + name, version));
-        bans.forEach((name, ban) -> {
-            yaml.set("bans." + name + ".reason", ban.reason());
-            yaml.set("bans." + name + ".expires-at", ban.expiresAt());
-        });
+        bans.forEach(
+                (name, ban) -> {
+                    yaml.set("bans." + name + ".reason", ban.reason());
+                    yaml.set("bans." + name + ".expires-at", ban.expiresAt());
+                });
         yaml.save(file);
     }
 
@@ -261,15 +294,11 @@ public final class LocalAccessState {
         return AuthIdentity.normalizeUsername(username);
     }
 
-    public record Identity(String accountId, String minecraftUuid) {
-    }
+    public record Identity(String accountId, String minecraftUuid) {}
 
-    public record Ban(String reason, String expiresAt) {
-    }
+    public record Ban(String reason, String expiresAt) {}
 
-    public record PendingAcknowledgement(String cursor) {
-    }
+    public record PendingAcknowledgement(String cursor) {}
 
-    public record ControlCompletion(String jobId, Map<String, Object> result) {
-    }
+    public record ControlCompletion(String jobId, Map<String, Object> result) {}
 }

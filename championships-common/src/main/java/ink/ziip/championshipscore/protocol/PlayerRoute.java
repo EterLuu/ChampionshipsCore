@@ -9,15 +9,15 @@ public record PlayerRoute(
         long epoch,
         String serverName,
         ParticipantRole role,
-        long expiresAtEpochMilli
-) {
+        long expiresAtEpochMilli) {
     public PlayerRoute {
         ProtocolSupport.required(playerId, "playerId");
         ProtocolSupport.required(matchId, "matchId");
         if (epoch < 1) throw new IllegalArgumentException("epoch must be positive");
         serverName = ProtocolSupport.nonBlank(serverName, "serverName");
         ProtocolSupport.required(role, "role");
-        if (expiresAtEpochMilli < 1) throw new IllegalArgumentException("expiresAtEpochMilli must be positive");
+        if (expiresAtEpochMilli < 1)
+            throw new IllegalArgumentException("expiresAtEpochMilli must be positive");
     }
 
     public boolean expiredAt(long epochMilli) {

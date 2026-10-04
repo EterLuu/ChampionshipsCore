@@ -17,14 +17,15 @@ final class WorkerScatterPlan {
     private static final int MAX_SEARCH_RADIUS = 512;
     private static final int MAX_TERRITORY_GAP = 1_024;
 
-    private WorkerScatterPlan() {
-    }
+    private WorkerScatterPlan() {}
 
     static Map<Integer, SearchArea> create(Collection<Integer> teamIds, Random random) {
         List<Integer> teams = new ArrayList<>(teamIds.stream().distinct().sorted().toList());
         if (teams.isEmpty()) return Map.of();
-        if (teams.size() == 1) return Map.of(teams.getFirst(),
-                new SearchArea(MIN_COORDINATE, MAX_COORDINATE, MIN_COORDINATE, MAX_COORDINATE));
+        if (teams.size() == 1)
+            return Map.of(
+                    teams.getFirst(),
+                    new SearchArea(MIN_COORDINATE, MAX_COORDINATE, MIN_COORDINATE, MAX_COORDINATE));
 
         int side = (int) Math.ceil(Math.sqrt(teams.size()));
         int radius = Math.min(MAX_SEARCH_RADIUS, (MAX_COORDINATE - MIN_COORDINATE) / (4 * side));
@@ -47,7 +48,11 @@ final class WorkerScatterPlan {
             SearchArea farthest = null;
             double greatestDistance = -1;
             for (SearchArea candidate : candidates) {
-                double nearest = selected.stream().mapToDouble(candidate::distanceSquared).min().orElseThrow();
+                double nearest =
+                        selected.stream()
+                                .mapToDouble(candidate::distanceSquared)
+                                .min()
+                                .orElseThrow();
                 if (nearest > greatestDistance) {
                     greatestDistance = nearest;
                     farthest = candidate;
@@ -58,11 +63,14 @@ final class WorkerScatterPlan {
         }
         Collections.shuffle(teams, random);
         Map<Integer, SearchArea> result = new LinkedHashMap<>();
-        for (int index = 0; index < teams.size(); index++) result.put(teams.get(index), selected.get(index));
+        for (int index = 0; index < teams.size(); index++)
+            result.put(teams.get(index), selected.get(index));
         return Collections.unmodifiableMap(result);
     }
 
-    /** A larger, still isolated search area for ocean or hazardous terrain near the preferred spot. */
+    /**
+     * A larger, still isolated search area for ocean or hazardous terrain near the preferred spot.
+     */
     static SearchArea expand(SearchArea area, int teamCount) {
         if (teamCount <= 1) return area;
         int side = (int) Math.ceil(Math.sqrt(teamCount));

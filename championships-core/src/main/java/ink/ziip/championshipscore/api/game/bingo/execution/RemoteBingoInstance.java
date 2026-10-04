@@ -3,12 +3,13 @@ package ink.ziip.championshipscore.api.game.bingo.execution;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
-import ink.ziip.championshipscore.api.game.bingo.BingoConfig;
+import ink.ziip.championshipscore.api.game.bingo.config.BingoConfig;
 import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameInstance;
-import ink.ziip.championshipscore.api.object.game.GameRunMode;
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
-import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
+import ink.ziip.championshipscore.api.game.model.GameRunMode;
+import ink.ziip.championshipscore.api.game.model.GameStageEnum;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -26,7 +27,8 @@ public final class RemoteBingoInstance extends BaseMultiTeamGameInstance {
     private final long epoch;
     private int timer;
 
-    public RemoteBingoInstance(ChampionshipsCore plugin, BingoConfig config, UUID matchId, long epoch) {
+    public RemoteBingoInstance(
+            ChampionshipsCore plugin, BingoConfig config, UUID matchId, long epoch) {
         super(plugin, GameTypeEnum.Bingo, new RemoteListener(plugin), config);
         this.matchId = matchId;
         this.epoch = epoch;
@@ -52,7 +54,8 @@ public final class RemoteBingoInstance extends BaseMultiTeamGameInstance {
     }
 
     public void markReady() {
-        if (getGameStageEnum() == GameStageEnum.LOADING) setGameStageEnum(GameStageEnum.PREPARATION);
+        if (getGameStageEnum() == GameStageEnum.LOADING)
+            setGameStageEnum(GameStageEnum.PREPARATION);
     }
 
     public void markCountdown() {
@@ -68,7 +71,8 @@ public final class RemoteBingoInstance extends BaseMultiTeamGameInstance {
     }
 
     public void completeFromRemote() {
-        if (getGameStageEnum() == GameStageEnum.END || getGameStageEnum() == GameStageEnum.WAITING) return;
+        if (getGameStageEnum() == GameStageEnum.END || getGameStageEnum() == GameStageEnum.WAITING)
+            return;
         setGameStageEnum(GameStageEnum.END);
         beginPostGameSettlement();
         publishGameEndEvent(new SingleGameEndEvent(this, List.copyOf(gameTeams)));
@@ -120,12 +124,10 @@ public final class RemoteBingoInstance extends BaseMultiTeamGameInstance {
     }
 
     @Override
-    public void handlePlayerDeath(@NotNull PlayerDeathEvent event) {
-    }
+    public void handlePlayerDeath(@NotNull PlayerDeathEvent event) {}
 
     @Override
-    public void handlePlayerQuit(@NotNull PlayerQuitEvent event) {
-    }
+    public void handlePlayerQuit(@NotNull PlayerQuitEvent event) {}
 
     @Override
     public void handlePlayerJoin(@NotNull PlayerJoinEvent event) {

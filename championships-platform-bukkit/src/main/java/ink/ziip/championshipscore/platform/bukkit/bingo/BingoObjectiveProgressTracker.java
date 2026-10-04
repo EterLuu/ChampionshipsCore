@@ -26,7 +26,8 @@ public class BingoObjectiveProgressTracker implements BingoObjectiveProgress {
     @Override
     public void recordDistinct(UUID playerId, String bucket, String value) {
         distinct.computeIfAbsent(bucket, ignored -> new ConcurrentHashMap<>())
-                .computeIfAbsent(playerId, ignored -> ConcurrentHashMap.newKeySet()).add(value);
+                .computeIfAbsent(playerId, ignored -> ConcurrentHashMap.newKeySet())
+                .add(value);
     }
 
     @Override
@@ -36,7 +37,8 @@ public class BingoObjectiveProgressTracker implements BingoObjectiveProgress {
 
     @Override
     public void increment(UUID playerId, String bucket) {
-        counts.computeIfAbsent(bucket, ignored -> new ConcurrentHashMap<>()).merge(playerId, 1, Integer::sum);
+        counts.computeIfAbsent(bucket, ignored -> new ConcurrentHashMap<>())
+                .merge(playerId, 1, Integer::sum);
     }
 
     @Override
@@ -46,15 +48,18 @@ public class BingoObjectiveProgressTracker implements BingoObjectiveProgress {
 
     @Override
     public long observeElapsed(UUID playerId, String bucket, boolean active) {
-        Map<UUID, Long> observations = observedAt.computeIfAbsent(bucket, ignored -> new ConcurrentHashMap<>());
+        Map<UUID, Long> observations =
+                observedAt.computeIfAbsent(bucket, ignored -> new ConcurrentHashMap<>());
         long now = nanoTime.getAsLong();
         if (!active) {
             observations.remove(playerId);
             return elapsedMillis.getOrDefault(bucket, Map.of()).getOrDefault(playerId, 0L);
         }
         Long previous = observations.put(playerId, now);
-        if (previous == null) return elapsedMillis.getOrDefault(bucket, Map.of()).getOrDefault(playerId, 0L);
-        return elapsedMillis.computeIfAbsent(bucket, ignored -> new ConcurrentHashMap<>())
+        if (previous == null)
+            return elapsedMillis.getOrDefault(bucket, Map.of()).getOrDefault(playerId, 0L);
+        return elapsedMillis
+                .computeIfAbsent(bucket, ignored -> new ConcurrentHashMap<>())
                 .merge(playerId, Math.max(0L, now - previous) / 1_000_000L, Long::sum);
     }
 

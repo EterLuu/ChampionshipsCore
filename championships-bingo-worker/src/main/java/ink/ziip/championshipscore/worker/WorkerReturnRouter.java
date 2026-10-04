@@ -2,7 +2,9 @@ package ink.ziip.championshipscore.worker;
 
 import ink.ziip.championshipscore.platform.bukkit.proxy.PluginMessagePlayerRouter;
 import ink.ziip.championshipscore.platform.bukkit.scheduler.PlatformScheduler;
+
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
+
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
@@ -12,8 +14,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Worker-only return queue. A successful plugin-message write is not a proxy transfer acknowledgement,
- * so requests stay queued until the player actually leaves this backend.
+ * Worker-only return queue. A successful plugin-message write is not a proxy transfer
+ * acknowledgement, so requests stay queued until the player actually leaves this backend.
  */
 final class WorkerReturnRouter implements AutoCloseable {
     private static final long RETRY_PERIOD_TICKS = 40L;
@@ -28,8 +30,9 @@ final class WorkerReturnRouter implements AutoCloseable {
         this.plugin = Objects.requireNonNull(plugin, "plugin");
         this.router = Objects.requireNonNull(router, "router");
         this.returnServer = requireServer(returnServer);
-        this.retryTask = new PlatformScheduler(plugin).runGlobalTimer(
-                this::retryPending, RETRY_PERIOD_TICKS, RETRY_PERIOD_TICKS);
+        this.retryTask =
+                new PlatformScheduler(plugin)
+                        .runGlobalTimer(this::retryPending, RETRY_PERIOD_TICKS, RETRY_PERIOD_TICKS);
     }
 
     void request(Player player) {

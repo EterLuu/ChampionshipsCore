@@ -2,16 +2,19 @@ package ink.ziip.championshipscore.api.schedule.parkourtag;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
-import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagArea;
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
-import ink.ziip.championshipscore.api.object.game.GameRunMode;
-import ink.ziip.championshipscore.api.object.schedule.TwoVTwoVector;
-import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageConfig;
+import ink.ziip.championshipscore.api.game.model.GameRunMode;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.api.game.parkourtag.runtime.ParkourTagArea;
 import ink.ziip.championshipscore.api.schedule.FormalEventMapResolver;
 import ink.ziip.championshipscore.api.schedule.FormalPairingScheduler;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.api.schedule.model.TwoVTwoVector;
+import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageConfig;
+import ink.ziip.championshipscore.logging.LogText;
+import ink.ziip.championshipscore.presentation.text.CoreMessages;
+
 import lombok.Getter;
+
 import org.bukkit.Sound;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scheduler.BukkitTask;
@@ -27,11 +30,9 @@ public class ParkourTagScheduleManager extends BaseManager {
     private final Map<ChampionshipTeam, Double> standings = new HashMap<>();
     private final Set<String> previousOpponents = new HashSet<>();
     private int totalRounds;
-    @Getter
-    private int subRound;
+    @Getter private int subRound;
     private int timer;
-    @Getter
-    private boolean enabled;
+    @Getter private boolean enabled;
     private BukkitTask firstStartTask;
     private BukkitTask startTask;
     private String scheduledMapName;
@@ -48,11 +49,19 @@ public class ParkourTagScheduleManager extends BaseManager {
     private boolean cycleGeneratePairs() {
         this.rounds.clear();
 
-        List<ChampionshipTeam> selectedTeams = new ArrayList<>(plugin.getTeamManager().getTeamList());
+        List<ChampionshipTeam> selectedTeams =
+                new ArrayList<>(
+                        plugin.getScheduleManager().participatingTeams(GameTypeEnum.ParkourTag));
 
         if (selectedTeams.size() < 2 || selectedTeams.size() % 2 != 0) {
-            plugin.getLogger().warning(Utils.formatGameLog(GameTypeEnum.ParkourTag, "-", "调度", "对阵",
-                    "队伍数=" + selectedTeams.size() + "，至少需要两支且必须为偶数"));
+            plugin.getLogger()
+                    .warning(
+                            LogText.formatGameLog(
+                                    GameTypeEnum.ParkourTag,
+                                    "-",
+                                    "调度",
+                                    "对阵",
+                                    "队伍数=" + selectedTeams.size() + "，至少需要两支且必须为偶数"));
             return false;
         }
 
@@ -62,7 +71,9 @@ public class ParkourTagScheduleManager extends BaseManager {
         standings.clear();
         teams.forEach(team -> standings.put(team, 0D));
         previousOpponents.clear();
-        rounds.addAll(FormalPairingScheduler.roundRobin(teams, FormalPairingScheduler.seededRounds(teams.size())));
+        rounds.addAll(
+                FormalPairingScheduler.roundRobin(
+                        teams, FormalPairingScheduler.seededRounds(teams.size())));
         rounds.forEach(round -> FormalPairingScheduler.rememberOpponents(round, previousOpponents));
         return !this.rounds.isEmpty();
     }
@@ -86,19 +97,43 @@ public class ParkourTagScheduleManager extends BaseManager {
         if (!cycleGeneratePairs()) return;
         scheduledMapName = FormalEventMapResolver.map(plugin, GameTypeEnum.ParkourTag, 1);
         if (scheduledMapName == null
-                || plugin.getGameManager().getParkourTagManager().getArea(scheduledMapName) == null) {
-            plugin.getLogger().warning(Utils.formatGameLog(GameTypeEnum.ParkourTag, "-", "调度", "启动",
-                    "无法开始：缺少 formal-events 地图 " + scheduledMapName));
+                || plugin.getGameManager().getParkourTagManager().getArea(scheduledMapName)
+                        == null) {
+            plugin.getLogger()
+                    .warning(
+                            LogText.formatGameLog(
+                                    GameTypeEnum.ParkourTag,
+                                    "-",
+                                    "调度",
+                                    "启动",
+                                    "无法开始：缺少 formal-events 地图 " + scheduledMapName));
             return;
         }
         int requiredInstances = rounds.getFirst().size();
-        long availableInstances = plugin.getGameManager().getParkourTagManager()
-                .getMapInstances(scheduledMapName).stream()
-                .filter(instance -> instance.getGameStageEnum() == ink.ziip.championshipscore.api.object.stage.GameStageEnum.WAITING)
-                .count();
+        long availableInstances =
+                plugin
+                        .getGameManager()
+                        .getParkourTagManager()
+                        .getMapInstances(scheduledMapName)
+                        .stream()
+                        .filter(
+                                instance ->
+                                        instance.getGameStageEnum()
+                                                == ink.ziip.championshipscore.api.game.model
+                                                        .GameStageEnum.WAITING)
+                        .count();
         if (availableInstances < requiredInstances) {
-            plugin.getLogger().warning(Utils.formatGameLog(GameTypeEnum.ParkourTag, scheduledMapName, "调度", "启动",
-                    "无法开始：需要实例=" + requiredInstances + "，空闲实例=" + availableInstances));
+            plugin.getLogger()
+                    .warning(
+                            LogText.formatGameLog(
+                                    GameTypeEnum.ParkourTag,
+                                    scheduledMapName,
+                                    "调度",
+                                    "启动",
+                                    "无法开始：需要实例="
+                                            + requiredInstances
+                                            + "，空闲实例="
+                                            + availableInstances));
             scheduledMapName = null;
             return;
         }
@@ -109,31 +144,38 @@ public class ParkourTagScheduleManager extends BaseManager {
         timer = 10;
         subRound = 0;
 
-        firstStartTask = scheduler.runTaskTimer(plugin, () -> {
+        firstStartTask =
+                scheduler.runTaskTimer(
+                        plugin,
+                        () -> {
+                            plugin.getScheduleManager()
+                                    .showRoundPreparationCountdown(
+                                            GameTypeEnum.ParkourTag, 1, timer);
 
-            plugin.getScheduleManager().showRoundPreparationCountdown(GameTypeEnum.ParkourTag, 1, timer);
+                            if (timer == 10) {
+                                CoreMessages.sendMessageToAllPlayers(
+                                        CoreMessages.getMessage(ScheduleMessageConfig.PARKOUR_TAG));
+                            }
 
-            if (timer == 10) {
-                Utils.sendMessageToAllPlayers(Utils.getMessage(ScheduleMessageConfig.PARKOUR_TAG));
-            }
+                            if (timer == 5) {
+                                CoreMessages.sendMessageToAllPlayers(
+                                        CoreMessages.getMessage(
+                                                ScheduleMessageConfig.PARKOUR_TAG_POINTS));
+                            }
 
-            if (timer == 5) {
-                Utils.sendMessageToAllPlayers(Utils.getMessage(ScheduleMessageConfig.PARKOUR_TAG_POINTS));
-            }
-
-            if (timer == 0) {
-                subRound = 0;
-                startParkourTagRound();
-                if (firstStartTask != null)
-                    firstStartTask.cancel();
-            }
-            timer--;
-        }, 0, 20L);
+                            if (timer == 0) {
+                                subRound = 0;
+                                startParkourTagRound();
+                                if (firstStartTask != null) firstStartTask.cancel();
+                            }
+                            timer--;
+                        },
+                        0,
+                        20L);
     }
 
     public void startParkourTagRound() {
-        if (!enabled)
-            return;
+        if (!enabled) return;
 
         subRound++;
         if (subRound > totalRounds) {
@@ -155,21 +197,34 @@ public class ParkourTagScheduleManager extends BaseManager {
 
         List<TwoVTwoVector> pairs = rounds.get(subRound - 1);
 
-        List<ParkourTagArea> started = plugin.getGameManager()
-                .joinParkourTagInstances(areaName, pairs, subRound == 1, GameRunMode.EVENT);
+        List<ParkourTagArea> started =
+                plugin.getGameManager()
+                        .joinParkourTagInstances(areaName, pairs, subRound == 1, GameRunMode.EVENT);
         if (started != null) {
             activeRoundInstances.clear();
             activeRoundInstances.addAll(started);
-            plugin.getLogger().info(Utils.formatGameLog(GameTypeEnum.ParkourTag, areaName, "调度", "轮次",
-                    "第 " + subRound + " 轮开始，对局数=" + pairs.size()));
+            plugin.getLogger()
+                    .info(
+                            LogText.formatGameLog(
+                                    GameTypeEnum.ParkourTag,
+                                    areaName,
+                                    "调度",
+                                    "轮次",
+                                    "第 " + subRound + " 轮开始，对局数=" + pairs.size()));
         } else {
             abortSchedule("第 " + subRound + " 轮启动失败");
         }
     }
 
     private void abortSchedule(String reason) {
-        plugin.getLogger().warning(Utils.formatGameLog(GameTypeEnum.ParkourTag,
-                scheduledMapName == null ? "-" : scheduledMapName, "调度", "中止", reason));
+        plugin.getLogger()
+                .warning(
+                        LogText.formatGameLog(
+                                GameTypeEnum.ParkourTag,
+                                scheduledMapName == null ? "-" : scheduledMapName,
+                                "调度",
+                                "中止",
+                                reason));
         if (firstStartTask != null) firstStartTask.cancel();
         if (startTask != null) startTask.cancel();
         enabled = false;
@@ -181,10 +236,9 @@ public class ParkourTagScheduleManager extends BaseManager {
     }
 
     public void endSchedule() {
-        if (firstStartTask != null)
-            firstStartTask.cancel();
-        if (startTask != null)
-            startTask.cancel();
+        plugin.getScheduleManager().clearStartSelection(GameTypeEnum.ParkourTag);
+        if (firstStartTask != null) firstStartTask.cancel();
+        if (startTask != null) startTask.cancel();
 
         enabled = false;
         activeRoundInstances.clear();
@@ -201,32 +255,38 @@ public class ParkourTagScheduleManager extends BaseManager {
     }
 
     public void nextParkourTagRound() {
-        if (!enabled)
-            return;
+        if (!enabled) return;
 
         subRound++;
         if (subRound > totalRounds) {
             endSchedule();
             return;
         }
-        Utils.playSoundToAllPlayers(Sound.ENTITY_PLAYER_LEVELUP, 1, 1F);
+        CoreMessages.playSoundToAllPlayers(Sound.ENTITY_PLAYER_LEVELUP, 1, 1F);
 
         timer = ROUND_TRANSITION_SECONDS;
-        startTask = scheduler.runTaskTimer(plugin, () -> {
+        startTask =
+                scheduler.runTaskTimer(
+                        plugin,
+                        () -> {
+                            plugin.getScheduleManager()
+                                    .showRoundPreparationCountdown(
+                                            GameTypeEnum.ParkourTag, subRound, timer);
 
-            plugin.getScheduleManager().showRoundPreparationCountdown(GameTypeEnum.ParkourTag, subRound, timer);
+                            if (timer == ROUND_TRANSITION_SECONDS) {
+                                CoreMessages.sendMessageToAllPlayers(
+                                        CoreMessages.getMessage(
+                                                ScheduleMessageConfig.NEXT_ROUND_SOON));
+                            }
 
-            if (timer == ROUND_TRANSITION_SECONDS) {
-                Utils.sendMessageToAllPlayers(Utils.getMessage(ScheduleMessageConfig.NEXT_ROUND_SOON));
-            }
-
-            if (timer == 0) {
-                startRoundBattle();
-                if (startTask != null)
-                    startTask.cancel();
-            }
-            timer--;
-        }, 0, 20L);
+                            if (timer == 0) {
+                                startRoundBattle();
+                                if (startTask != null) startTask.cancel();
+                            }
+                            timer--;
+                        },
+                        0,
+                        20L);
     }
 
     /** Called when the Parkour Tag area finishes a whole round (all its parallel matches done). */
@@ -248,11 +308,15 @@ public class ParkourTagScheduleManager extends BaseManager {
         if (!activeRoundInstances.isEmpty()) return;
 
         boolean hasNextRound = prepareNextRound();
-        plugin.getScheduleManager().settleEventRound(GameTypeEnum.ParkourTag, hasNextRound, () -> {
-            if (!enabled) return;
-            if (hasNextRound) nextParkourTagRound();
-            else endSchedule();
-        });
+        plugin.getScheduleManager()
+                .settleEventRound(
+                        GameTypeEnum.ParkourTag,
+                        hasNextRound,
+                        () -> {
+                            if (!enabled) return;
+                            if (hasNextRound) nextParkourTagRound();
+                            else endSchedule();
+                        });
     }
 
     public boolean hasNextRound() {
@@ -262,15 +326,21 @@ public class ParkourTagScheduleManager extends BaseManager {
     private boolean prepareNextRound() {
         if (!hasNextRound()) return false;
         if (rounds.size() > subRound) return true;
-        List<TwoVTwoVector> next = FormalPairingScheduler.standingsRound(teams, standings, previousOpponents);
+        List<TwoVTwoVector> next =
+                FormalPairingScheduler.standingsRound(teams, standings, previousOpponents);
         if (next.isEmpty()) {
-            plugin.getLogger().warning(Utils.formatGameLog(GameTypeEnum.ParkourTag, scheduledMapName,
-                    "调度", "对阵", "无法在不重复对手的前提下生成第 " + (subRound + 1) + " 轮"));
+            plugin.getLogger()
+                    .warning(
+                            LogText.formatGameLog(
+                                    GameTypeEnum.ParkourTag,
+                                    scheduledMapName,
+                                    "调度",
+                                    "对阵",
+                                    "无法在不重复对手的前提下生成第 " + (subRound + 1) + " 轮"));
             return false;
         }
         rounds.add(next);
         FormalPairingScheduler.rememberOpponents(next, previousOpponents);
         return true;
     }
-
 }

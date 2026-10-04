@@ -1,9 +1,10 @@
 package ink.ziip.championshipscore.integration.papi;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.vote.VoteManager;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -57,13 +58,11 @@ public class VotePlaceholder extends BasePlaceholder {
         /* Player required placeholders */
 
         Player player = offlinePlayer.getPlayer();
-        if (player == null)
-            return MessageConfig.PLACEHOLDER_NONE;
+        if (player == null) return MessageConfig.PLACEHOLDER_NONE;
 
         if (params.startsWith("player_vote")) {
             GameTypeEnum gameTypeEnum = voteManager.getPlayerVote(player);
-            if (gameTypeEnum == null)
-                return MessageConfig.PLACEHOLDER_NONE;
+            if (gameTypeEnum == null) return MessageConfig.PLACEHOLDER_NONE;
             return gameTypeEnum.name();
         }
 

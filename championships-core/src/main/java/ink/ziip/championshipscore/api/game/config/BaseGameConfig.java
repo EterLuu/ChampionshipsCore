@@ -3,11 +3,12 @@ package ink.ziip.championshipscore.api.game.config;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.configuration.ConfigOption;
 import ink.ziip.championshipscore.configuration.config.BaseConfigurationFile;
-import ink.ziip.championshipscore.configuration.config.ConfigurationValueReader;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.logging.LogText;
+
 import lombok.Getter;
-import org.bukkit.Location;
+
 import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -16,10 +17,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Field;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -61,60 +60,53 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
         return getFolderName() + getConfigName() + ".yml";
     }
 
-    @Override
-    public void saveOptions() {
-        try {
-            saveCustomOptions();
-
-            for (Field field : getConfigFields()) {
-                field.setAccessible(true);
-                ConfigOption co = field.getDeclaredAnnotation(ConfigOption.class);
-                if (co != null) {
-                    if (field.getType() == Location.class) {
-                        saveRawLocation(co.path(), (Location) field.get(this));
-                    } else {
-                        configuration.set(co.path(), field.get(this));
-                    }
-                }
-            }
-
-            configuration.save(configurationPath.toFile());
-        } catch (Exception exception) {
-            plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("GameConfig", "保存",
-                    "配置文件=" + getFileName() + " 保存选项失败"), exception);
-        }
-    }
-
     /**
      * Rebinds this map definition from one physical world to another. Map worlds contain a mixture
-     * of raw Location sections and string-serialized locations, so both representations must
-     * move together with the {@code world-name} field.
+     * of raw Location sections and string-serialized locations, so both representations must move
+     * together with the {@code world-name} field.
      *
      * @return whether this configuration owned {@code oldWorldName} and was saved successfully
      */
-    public boolean renameWorldReferences(@NotNull String oldWorldName, @NotNull World oldWorld,
-                                         @NotNull World newWorld) {
-        if (configuration == null || configurationPath == null
+    public boolean renameWorldReferences(
+            @NotNull String oldWorldName, @NotNull World oldWorld, @NotNull World newWorld) {
+        if (configuration == null
+                || configurationPath == null
                 || !oldWorldName.equals(configuration.getString("world-name"))) {
             return false;
         }
 
         configuration.set("world-name", newWorld.getName());
-        rewriteWorldReferences(configuration, oldWorldName, oldWorld.getKey().toString(),
-                newWorld.getName(), newWorld.getKey().toString());
+        rewriteWorldReferences(
+                configuration,
+                oldWorldName,
+                oldWorld.getKey().toString(),
+                newWorld.getName(),
+                newWorld.getKey().toString());
         try {
             configuration.save(configurationPath.toFile());
             loadFileOptions();
             return true;
         } catch (Exception exception) {
-            plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("GameConfig", "重命名世界",
-                    "配置文件=" + getFileName() + " 无法更新世界=" + oldWorldName
-                            + " -> " + newWorld.getName()), exception);
+            plugin.getLogger()
+                    .log(
+                            Level.SEVERE,
+                            LogText.formatModuleLog(
+                                    "GameConfig",
+                                    "重命名世界",
+                                    "配置文件="
+                                            + getFileName()
+                                            + " 无法更新世界="
+                                            + oldWorldName
+                                            + " -> "
+                                            + newWorld.getName()),
+                            exception);
             return false;
         }
     }
 
-    /** True when this map's physical world name is configurable rather than derived by game code. */
+    /**
+     * True when this map's physical world name is configurable rather than derived by game code.
+     */
     public boolean ownsNamedWorld(@NotNull String worldName) {
         return configuration != null && worldName.equals(configuration.getString("world-name"));
     }
@@ -124,7 +116,9 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
         configuration.set("world-name", worldName);
         for (Field field : getConfigFields()) {
             ConfigOption option = field.getDeclaredAnnotation(ConfigOption.class);
-            if (option == null || !"world-name".equals(option.path()) || field.getType() != String.class) continue;
+            if (option == null
+                    || !"world-name".equals(option.path())
+                    || field.getType() != String.class) continue;
             try {
                 field.setAccessible(true);
                 field.set(this, worldName);
@@ -144,13 +138,17 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
     }
 
     public boolean isWorldBindingPending() {
-        return configuration != null && configuration.contains("world-name")
+        return configuration != null
+                && configuration.contains("world-name")
                 && configuration.getString("world-name", "").isBlank();
     }
 
-    private static void rewriteWorldReferences(@NotNull ConfigurationSection section,
-                                               @NotNull String oldWorldName, @NotNull String oldWorldKey,
-                                               @NotNull String newWorldName, @NotNull String newWorldKey) {
+    private static void rewriteWorldReferences(
+            @NotNull ConfigurationSection section,
+            @NotNull String oldWorldName,
+            @NotNull String oldWorldKey,
+            @NotNull String newWorldName,
+            @NotNull String newWorldKey) {
         for (String key : section.getKeys(false)) {
             Object value = section.get(key);
             if (value instanceof ConfigurationSection child) {
@@ -175,58 +173,22 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
         }
     }
 
-    private void saveRawLocation(@NotNull String path, Location location) {
-        configuration.set(path, null);
-        if (location == null) return;
-        ConfigurationSection section = configuration.createSection(path);
-        if (location.getWorld() != null) section.set("world_key", location.getWorld().getKey().toString());
-        section.set("x", location.getX());
-        section.set("y", location.getY());
-        section.set("z", location.getZ());
-        section.set("pitch", location.getPitch());
-        section.set("yaw", location.getYaw());
-    }
-
     @Override
     protected Object coerceLocationSection(Object value, Field field) {
         return coerceLocationSection(value, field, false);
     }
 
     @Override
-    public void loadFromConfiguration(@NotNull YamlConfiguration yamlConfiguration) {
-        for (Field field : getConfigFields()) {
-            field.setAccessible(true);
-            ConfigOption configOption = field.getDeclaredAnnotation(ConfigOption.class);
-            if (configOption != null) {
-                try {
-                    Object value = ConfigurationValueReader.read(yamlConfiguration, configOption.path(), field);
-
-                    // Locations may be stored as a raw section (no '==' marker); rebuild them.
-                    value = coerceLocationSection(value, field);
-
-                    if (value != null) {
-                        if (value instanceof String)
-                            value = Utils.translateColorCodes((String) value);
-                        field.set(this, value);
-                    }
-                    else if (!configOption.nullable() && !loadingDefaults) {
-                        plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("GameConfig", "加载",
-                                "配置文件=" + getFileName() + " 缺少路径=" + configOption.path()));
-                    }
-                } catch (Exception exception) {
-                    plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("GameConfig", "加载",
-                            "配置文件=" + getFileName() + " 路径=" + configOption.path() + " 加载失败"), exception);
-                }
-            }
-        }
+    public void loadFromConfiguration(@NotNull YamlConfiguration document) {
+        super.loadFromConfiguration(document);
         rebindUnresolvedLocationWorlds();
     }
 
     /**
      * Map locations may be read while their physical world is not loaded yet. Once a map is
      * reloaded after its world has been loaded, attach that world to every raw location section so
-     * shared lifecycle teleports (including the rule-introduction spawn) cannot pass a null world to
-     * Bukkit. Locations that already resolve to a world are left untouched.
+     * shared lifecycle teleports (including the rule-introduction spawn) cannot pass a null world
+     * to Bukkit. Locations that already resolve to a world are left untouched.
      */
     private void rebindUnresolvedLocationWorlds() {
         String configuredWorld = getConfiguredWorld();
@@ -247,7 +209,8 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
 
     /**
      * Spawn point of the optional rule-introduction phase: players gather here for the 45s rules
-     * broadcast, then move to the normal preparation spawn. When empty, the spectator spawn is used.
+     * broadcast, then move to the normal preparation spawn. When empty, the spectator spawn is
+     * used.
      */
     @ConfigOption(path = "introduction-spawn-point", nullable = true)
     protected Location introductionSpawnPoint;
@@ -258,7 +221,8 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
 
     /**
      * Optional cuboid removed during the opening countdown. The coordinates are block-inclusive
-     * WorldEdit endpoints in this map's world; replica-based games translate them per copy at runtime.
+     * WorldEdit endpoints in this map's world; replica-based games translate them per copy at
+     * runtime.
      */
     @ConfigOption(path = "countdown-block-disappearance.pos1", nullable = true)
     protected Vector countdownBlockDisappearancePos1;
@@ -276,7 +240,8 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
 
     public GameMode getIntroductionGameMode() {
         return "SPECTATOR".equalsIgnoreCase(introductionGameModeName)
-                ? GameMode.SPECTATOR : GameMode.ADVENTURE;
+                ? GameMode.SPECTATOR
+                : GameMode.ADVENTURE;
     }
 
     public void setIntroductionGameMode(GameMode gameMode) {
@@ -302,26 +267,11 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
     }
 
     /**
-     * Rule sections broadcast one-by-one in chat during the introduction phase; each inner list is one
-     * message block. Leave empty to skip the introduction.
+     * Rule sections broadcast one-by-one in chat during the introduction phase; each inner list is
+     * one message block. Leave empty to skip the introduction.
      */
     @ConfigOption(path = "rules", nullable = true)
     protected List<List<String>> rules;
-
-    /**
-     * Collects the declared fields of the concrete config class and its superclasses up to (and
-     * including) {@link BaseGameConfig}, so options declared once on the base class (like
-     * {@link #introductionSpawnPoint} and {@link #rules}) are loaded/saved for every game config.
-     */
-    private List<Field> getConfigFields() {
-        List<Field> fields = new ArrayList<>();
-        Class<?> type = getClass();
-        while (type != null && type != BaseConfigurationFile.class) {
-            fields.addAll(Arrays.asList(type.getDeclaredFields()));
-            type = type.getSuperclass();
-        }
-        return fields;
-    }
 
     public abstract String getAreaName();
 
@@ -345,7 +295,9 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
         return isPreparePublished() && !isPrepareDirty();
     }
 
-    /** Called only for a newly created map, so an incomplete map can never be started accidentally. */
+    /**
+     * Called only for a newly created map, so an incomplete map can never be started accidentally.
+     */
     public void beginPrepareDraft() {
         preparePublished = false;
         prepareDirty = true;
@@ -354,7 +306,10 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
         saveOptions();
     }
 
-    /** Any guided edit invalidates the last published revision until the admin validates and publishes. */
+    /**
+     * Any guided edit invalidates the last published revision until the admin validates and
+     * publishes.
+     */
     public void markPrepareDirty() {
         prepareDirty = true;
         saveOptions();

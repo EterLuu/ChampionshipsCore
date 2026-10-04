@@ -1,8 +1,10 @@
 package ink.ziip.championshipscore.platform.bukkit.scoreboard;
 
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
+
 import org.bukkit.Bukkit;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
@@ -19,11 +21,12 @@ import java.util.Set;
  *
  * <p>Folia does not support allocating and assigning per-player scoreboards, and native team
  * mutation is platform-dependent. Keeping the optional projection here gives Core and remote
- * workers the same colour and membership semantics where supported, without sharing either
- * plugin's business-level team manager.</p>
+ * workers the same colour and membership semantics where supported, without sharing either plugin's
+ * business-level team manager.
  */
 public final class NativeTeamService {
     private final Scoreboard scoreboard;
+
     /** Optional projections can be disabled permanently when a platform rejects team mutation. */
     private volatile boolean mutationSupported = true;
 
@@ -33,7 +36,8 @@ public final class NativeTeamService {
 
     public static NativeTeamService mainScoreboard() {
         ScoreboardManager manager = Bukkit.getScoreboardManager();
-        if (manager == null) throw new IllegalStateException("The main scoreboard is not available");
+        if (manager == null)
+            throw new IllegalStateException("The main scoreboard is not available");
         return new NativeTeamService(manager.getMainScoreboard());
     }
 
@@ -54,9 +58,13 @@ public final class NativeTeamService {
     }
 
     /** Replaces a team with one exact, fully configured projection. */
-    public Team replaceTeam(String scoreboardId, String displayName, String colorName,
-                            String colorCode, Collection<String> entries,
-                            Team.OptionStatus collisionRule) {
+    public Team replaceTeam(
+            String scoreboardId,
+            String displayName,
+            String colorName,
+            String colorCode,
+            Collection<String> entries,
+            Team.OptionStatus collisionRule) {
         validateScoreboardId(scoreboardId);
         Team previous = scoreboard.getTeam(scoreboardId);
         unregister(previous);
@@ -72,8 +80,12 @@ public final class NativeTeamService {
     }
 
     /** Creates a team when absent, then applies the same metadata used by replacement. */
-    public Team getOrCreateTeam(String scoreboardId, String displayName, String colorName,
-                                String colorCode, Team.OptionStatus collisionRule) {
+    public Team getOrCreateTeam(
+            String scoreboardId,
+            String displayName,
+            String colorName,
+            String colorCode,
+            Team.OptionStatus collisionRule) {
         validateScoreboardId(scoreboardId);
         Team team = scoreboard.getTeam(scoreboardId);
         if (team == null) team = scoreboard.registerNewTeam(scoreboardId);
@@ -81,14 +93,19 @@ public final class NativeTeamService {
         return team;
     }
 
-    public void configure(Team team, String displayName, String colorName, String colorCode,
-                          Team.OptionStatus collisionRule) {
+    public void configure(
+            Team team,
+            String displayName,
+            String colorName,
+            String colorCode,
+            Team.OptionStatus collisionRule) {
         Objects.requireNonNull(team, "team");
         NamedTextColor color = resolveNamedColor(colorName, colorCode);
-        team.displayName(LegacyText.component(Objects.requireNonNull(displayName, "displayName"), color));
+        team.displayName(
+                LegacyText.component(Objects.requireNonNull(displayName, "displayName"), color));
         team.color(color);
-        team.setOption(Team.Option.COLLISION_RULE,
-                Objects.requireNonNull(collisionRule, "collisionRule"));
+        team.setOption(
+                Team.Option.COLLISION_RULE, Objects.requireNonNull(collisionRule, "collisionRule"));
     }
 
     /** Makes the native entry set exactly match the requested usernames. */

@@ -9,8 +9,8 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Emitted by the authentication bridge after an approved Minecraft name change.
- * The bridge supplies the currently effective UUID that authlib also forwards at login.
+ * Emitted by the authentication bridge after an approved Minecraft name change. The bridge supplies
+ * the currently effective UUID that authlib also forwards at login.
  */
 public final class PlayerNameChangeEvent extends Event {
     private static final HandlerList HANDLERS = new HandlerList();
@@ -20,8 +20,8 @@ public final class PlayerNameChangeEvent extends Event {
     private final UUID replacementUuid;
     private final CompletableFuture<Boolean> completion = new CompletableFuture<>();
 
-    public PlayerNameChangeEvent(@NotNull String oldName, @NotNull String newName,
-                                 @Nullable UUID replacementUuid) {
+    public PlayerNameChangeEvent(
+            @NotNull String oldName, @NotNull String newName, @Nullable UUID replacementUuid) {
         super(true);
         this.oldName = oldName;
         this.newName = newName;

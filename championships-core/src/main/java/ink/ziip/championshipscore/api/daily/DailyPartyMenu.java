@@ -1,21 +1,21 @@
 package ink.ziip.championshipscore.api.daily;
 
-import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
-import ink.ziip.championshipscore.api.gui.MenuInventory;
 import ink.ziip.championshipscore.api.gui.MenuId;
+import ink.ziip.championshipscore.api.gui.MenuInventory;
 import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.GuiText;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.NotNull;
@@ -55,7 +55,8 @@ final class DailyPartyMenu {
 
     void refreshOpenMenus() {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player.getOpenInventory().getTopInventory().getHolder() instanceof PartyHolder holder) refresh(holder);
+            if (player.getOpenInventory().getTopInventory().getHolder()
+                    instanceof PartyHolder holder) refresh(holder);
         }
     }
 
@@ -64,18 +65,35 @@ final class DailyPartyMenu {
             player.closeInventory();
             return;
         }
-        if (slot == slot("close", CLOSE_SLOT)) { player.closeInventory(); return; }
-        if (slot == slot("back", BACK_SLOT)) { daily.openMenu(player); clickSound(player, 1F); return; }
-        if (slot == slot("refresh", REFRESH_SLOT)) { refresh(holder); clickSound(player, 1.1F); return; }
+        if (slot == slot("close", CLOSE_SLOT)) {
+            player.closeInventory();
+            return;
+        }
+        if (slot == slot("back", BACK_SLOT)) {
+            daily.openMenu(player);
+            clickSound(player, 1F);
+            return;
+        }
+        if (slot == slot("refresh", REFRESH_SLOT)) {
+            refresh(holder);
+            clickSound(player, 1.1F);
+            return;
+        }
         if (slot == slot("invitation", INVITE_SLOT)) {
-            DailyPartyManager.PendingInvite invite = daily.partyManager().pendingInvite(player.getUniqueId());
+            DailyPartyManager.PendingInvite invite =
+                    daily.partyManager().pendingInvite(player.getUniqueId());
             if (invite != null) {
                 DailyParty party = daily.partyManager().accept(player.getUniqueId());
                 if (party == null) {
-                    daily.message(player.getUniqueId(), MessageConfig.MAP_EDITOR_DAILY_PARTY_INVITATION_CANNOT_ACCEPT);
+                    daily.message(
+                            player.getUniqueId(),
+                            MessageConfig.MAP_EDITOR_DAILY_PARTY_INVITATION_CANNOT_ACCEPT);
                 } else {
                     for (UUID member : party.members())
-                        daily.message(member, MessageConfig.MAP_EDITOR_DAILY_PARTY_MEMBER_JOINED.replace("%player%", player.getName()));
+                        daily.message(
+                                member,
+                                MessageConfig.MAP_EDITOR_DAILY_PARTY_MEMBER_JOINED.replace(
+                                        "%player%", player.getName()));
                 }
                 refresh(holder);
                 clickSound(player, party == null ? 0.8F : 1.2F);
@@ -85,16 +103,26 @@ final class DailyPartyMenu {
         if (slot == slot("action", ACTION_SLOT)) {
             DailyParty party = daily.partyManager().getParty(player.getUniqueId());
             if (party == null) {
-                daily.message(player.getUniqueId(), MessageConfig.MAP_EDITOR_DAILY_PARTY_CLICK_ONLINE_TO_INVITE);
+                daily.message(
+                        player.getUniqueId(),
+                        MessageConfig.MAP_EDITOR_DAILY_PARTY_CLICK_ONLINE_TO_INVITE);
                 clickSound(player, 1F);
                 return;
             }
             boolean leader = party.isLeader(player.getUniqueId());
-            boolean success = leader ? daily.partyManager().disband(player.getUniqueId())
-                    : daily.partyManager().leave(player.getUniqueId());
-            if (success) daily.message(player.getUniqueId(), leader ? MessageConfig.MAP_EDITOR_DAILY_PARTY_DISBANDED
-                    : MessageConfig.MAP_EDITOR_DAILY_PARTY_LEFT);
-            else daily.message(player.getUniqueId(), MessageConfig.MAP_EDITOR_DAILY_PARTY_CANNOT_MODIFY);
+            boolean success =
+                    leader
+                            ? daily.partyManager().disband(player.getUniqueId())
+                            : daily.partyManager().leave(player.getUniqueId());
+            if (success)
+                daily.message(
+                        player.getUniqueId(),
+                        leader
+                                ? MessageConfig.MAP_EDITOR_DAILY_PARTY_DISBANDED
+                                : MessageConfig.MAP_EDITOR_DAILY_PARTY_LEFT);
+            else
+                daily.message(
+                        player.getUniqueId(), MessageConfig.MAP_EDITOR_DAILY_PARTY_CANNOT_MODIFY);
             refresh(holder);
             clickSound(player, success ? 1F : 0.8F);
             return;
@@ -102,10 +130,18 @@ final class DailyPartyMenu {
         UUID target = holder.targetsBySlot.get(slot);
         if (target == null) return;
         if (!daily.partyManager().invite(player.getUniqueId(), target)) {
-            daily.message(player.getUniqueId(), MessageConfig.MAP_EDITOR_DAILY_PARTY_PLAYER_CANNOT_INVITE);
+            daily.message(
+                    player.getUniqueId(),
+                    MessageConfig.MAP_EDITOR_DAILY_PARTY_PLAYER_CANNOT_INVITE);
         } else {
-            daily.message(player.getUniqueId(), MessageConfig.MAP_EDITOR_DAILY_PARTY_INVITATION_SENT.replace("%target%", playerName(target)));
-            daily.message(target, MessageConfig.MAP_EDITOR_DAILY_PARTY_INVITED_BY.replace("%player%", player.getName()));
+            daily.message(
+                    player.getUniqueId(),
+                    MessageConfig.MAP_EDITOR_DAILY_PARTY_INVITATION_SENT.replace(
+                            "%target%", playerName(target)));
+            daily.message(
+                    target,
+                    MessageConfig.MAP_EDITOR_DAILY_PARTY_INVITED_BY.replace(
+                            "%player%", player.getName()));
         }
         refresh(holder);
         clickSound(player, 1.1F);
@@ -116,58 +152,102 @@ final class DailyPartyMenu {
         inventory.clear();
         holder.targetsBySlot.clear();
         ItemStack border = configured("border", null, Map.of(), Material.BLACK_STAINED_GLASS_PANE);
-        for (int slot : GuiConfig.slots(MENU_PATH + ".layout.border",
-                List.of(0, 1, 2, 3, 5, 6, 8, 46, 48, 50, 51, 52)))
+        for (int slot :
+                GuiConfig.slots(
+                        MENU_PATH + ".layout.border",
+                        List.of(0, 1, 2, 3, 5, 6, 8, 46, 48, 50, 51, 52)))
             if (slot >= 0 && slot < inventory.getSize()) inventory.setItem(slot, border);
 
         DailyParty party = daily.partyManager().getParty(holder.viewer);
         inventory.setItem(slot("summary", SUMMARY_SLOT), summaryItem(holder.viewer, party));
         DailyPartyManager.PendingInvite pending = daily.partyManager().pendingInvite(holder.viewer);
-        inventory.setItem(slot("invitation", INVITE_SLOT), configured("invitation", pending == null ? "none" : "pending",
-                Map.of("inviter", pending == null ? "" : playerName(pending.leader())), Material.PAPER));
+        inventory.setItem(
+                slot("invitation", INVITE_SLOT),
+                configured(
+                        "invitation",
+                        pending == null ? "none" : "pending",
+                        Map.of("inviter", pending == null ? "" : playerName(pending.leader())),
+                        Material.PAPER));
 
         boolean canManage = party == null || party.isLeader(holder.viewer);
-        List<Integer> playerSlots = GuiConfig.slots(MENU_PATH + ".layout.content", defaultPlayerSlots());
-        List<Player> candidates = new ArrayList<>(Bukkit.getOnlinePlayers().stream()
-                .filter(player -> !player.getUniqueId().equals(holder.viewer))
-                .sorted(Comparator.comparing(Player::getName, String.CASE_INSENSITIVE_ORDER))
-                .limit(playerSlots.size()).toList());
+        List<Integer> playerSlots =
+                GuiConfig.slots(MENU_PATH + ".layout.content", defaultPlayerSlots());
+        List<Player> candidates =
+                new ArrayList<>(
+                        Bukkit.getOnlinePlayers().stream()
+                                .filter(player -> !player.getUniqueId().equals(holder.viewer))
+                                .sorted(
+                                        Comparator.comparing(
+                                                Player::getName, String.CASE_INSENSITIVE_ORDER))
+                                .limit(playerSlots.size())
+                                .toList());
         int index = 0;
         for (Player candidate : candidates) {
             int slot = playerSlots.get(index++);
             UUID candidateId = candidate.getUniqueId();
             DailyParty candidateParty = daily.partyManager().getParty(candidateId);
-            DailyManager.PartyUnavailableReason unavailableReason = daily.partyUnavailableReason(candidateId);
-            String state = !canManage ? "locked"
-                    : unavailableReason == null ? "available" : unavailableReason.state();
+            DailyManager.PartyUnavailableReason unavailableReason =
+                    daily.partyUnavailableReason(candidateId);
+            String state =
+                    !canManage
+                            ? "locked"
+                            : unavailableReason == null ? "available" : unavailableReason.state();
             inventory.setItem(slot, playerItem(candidate, candidateParty, state));
             if (canManage && unavailableReason == null) holder.targetsBySlot.put(slot, candidateId);
         }
-        if (candidates.isEmpty()) inventory.setItem(slot("empty", 22), configured("empty", null, Map.of(), Material.GRAY_DYE));
+        if (candidates.isEmpty())
+            inventory.setItem(
+                    slot("empty", 22), configured("empty", null, Map.of(), Material.GRAY_DYE));
 
-        String actionState = party == null ? "invite" : party.isLeader(holder.viewer) ? "disband" : "leave";
-        inventory.setItem(slot("action", ACTION_SLOT), configured("action", actionState, Map.of(), party == null ? Material.LIME_DYE : Material.RED_DYE));
-        inventory.setItem(slot("back", BACK_SLOT), configured("back", null, Map.of(), Material.ARROW));
-        inventory.setItem(slot("refresh", REFRESH_SLOT), configured("refresh", null, Map.of(), Material.CLOCK));
-        inventory.setItem(slot("close", CLOSE_SLOT), configured("close", null, Map.of(), Material.BARRIER));
+        String actionState =
+                party == null ? "invite" : party.isLeader(holder.viewer) ? "disband" : "leave";
+        inventory.setItem(
+                slot("action", ACTION_SLOT),
+                configured(
+                        "action",
+                        actionState,
+                        Map.of(),
+                        party == null ? Material.LIME_DYE : Material.RED_DYE));
+        inventory.setItem(
+                slot("back", BACK_SLOT), configured("back", null, Map.of(), Material.ARROW));
+        inventory.setItem(
+                slot("refresh", REFRESH_SLOT),
+                configured("refresh", null, Map.of(), Material.CLOCK));
+        inventory.setItem(
+                slot("close", CLOSE_SLOT), configured("close", null, Map.of(), Material.BARRIER));
     }
 
     private ItemStack summaryItem(UUID viewer, DailyParty party) {
-        ItemStack item = configured("summary", party == null ? "solo" : "party",
-                Map.of("leader", party == null ? "-" : playerName(party.leader()),
-                        "size", party == null ? 1 : party.size(),
-                        "game", party == null || party.selectedGame() == null ? "-" : party.selectedGame().toString()),
-                Material.PLAYER_HEAD);
+        ItemStack item =
+                configured(
+                        "summary",
+                        party == null ? "solo" : "party",
+                        Map.of(
+                                "leader",
+                                party == null ? "-" : playerName(party.leader()),
+                                "size",
+                                party == null ? 1 : party.size(),
+                                "game",
+                                party == null || party.selectedGame() == null
+                                        ? "-"
+                                        : party.selectedGame().toString()),
+                        Material.PLAYER_HEAD);
         if (party != null) {
             List<Component> members = new ArrayList<>();
             for (UUID member : party.members())
-                members.add(Component.text(member.equals(party.leader())
-                        ? GuiText.LEADER_MARK : GuiText.MEMBER_MARK,
-                        member.equals(party.leader()) ? NamedTextColor.GOLD : NamedTextColor.GRAY)
-                        .append(LegacyText.component(playerName(member))));
+                members.add(
+                        Component.text(
+                                        member.equals(party.leader())
+                                                ? GuiText.LEADER_MARK
+                                                : GuiText.MEMBER_MARK,
+                                        member.equals(party.leader())
+                                                ? NamedTextColor.GOLD
+                                                : NamedTextColor.GRAY)
+                                .append(LegacyText.component(playerName(member))));
             ItemMeta meta = item.getItemMeta();
             if (meta != null) {
-                List<Component> lore = new ArrayList<>(meta.lore() == null ? List.of() : meta.lore());
+                List<Component> lore =
+                        new ArrayList<>(meta.lore() == null ? List.of() : meta.lore());
                 lore.addAll(members);
                 meta.lore(lore);
                 item.setItemMeta(meta);
@@ -177,10 +257,16 @@ final class DailyPartyMenu {
     }
 
     private ItemStack playerItem(Player player, DailyParty party, String state) {
-        return configured("player", state,
-                Map.of("player", player.getName(),
-                        "leader", party == null ? "-" : playerName(party.leader()),
-                        "size", party == null ? 0 : party.size()),
+        return configured(
+                "player",
+                state,
+                Map.of(
+                        "player",
+                        player.getName(),
+                        "leader",
+                        party == null ? "-" : playerName(party.leader()),
+                        "size",
+                        party == null ? 0 : party.size()),
                 Material.PLAYER_HEAD);
     }
 
@@ -194,9 +280,16 @@ final class DailyPartyMenu {
         return ConfiguredGui.slot(MENU_PATH + ".items." + item, fallback);
     }
 
-    private static ItemStack configured(String item, String state, Map<String, ?> placeholders, Material material) {
-        return ConfiguredGui.item(MENU_PATH + ".items." + item, state, placeholders, material,
-                Component.empty(), List.of(), false);
+    private static ItemStack configured(
+            String item, String state, Map<String, ?> placeholders, Material material) {
+        return ConfiguredGui.item(
+                MENU_PATH + ".items." + item,
+                state,
+                placeholders,
+                material,
+                Component.empty(),
+                List.of(),
+                false);
     }
 
     private String playerName(UUID player) {

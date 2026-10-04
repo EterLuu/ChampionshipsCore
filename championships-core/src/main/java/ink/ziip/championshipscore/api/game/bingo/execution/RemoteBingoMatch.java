@@ -1,18 +1,19 @@
 package ink.ziip.championshipscore.api.game.bingo.execution;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.api.daily.DailyRecordType;
+import ink.ziip.championshipscore.api.game.model.GameRunMode;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.bingo.engine.BingoResult;
 import ink.ziip.championshipscore.bingo.engine.BingoScoringEngine;
 import ink.ziip.championshipscore.bingo.engine.PlayerAward;
 import ink.ziip.championshipscore.bingo.engine.ScoringDecision;
-import ink.ziip.championshipscore.api.daily.DailyRecordType;
-import ink.ziip.championshipscore.api.object.game.GameRunMode;
-import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.platform.bukkit.scheduler.PlatformScheduler;
 import ink.ziip.championshipscore.protocol.DeterministicIds;
 import ink.ziip.championshipscore.protocol.MatchCommand;
 import ink.ziip.championshipscore.protocol.MatchCommandType;
 import ink.ziip.championshipscore.protocol.MatchEvent;
-import ink.ziip.championshipscore.protocol.MatchEventType;
 import ink.ziip.championshipscore.protocol.MatchManifest;
 import ink.ziip.championshipscore.protocol.MatchMessages;
 import ink.ziip.championshipscore.protocol.MatchState;
@@ -22,20 +23,18 @@ import ink.ziip.championshipscore.protocol.PlayerRoute;
 import ink.ziip.championshipscore.protocol.transport.MatchCommandPublisher;
 import ink.ziip.championshipscore.protocol.transport.PlayerRoutingGateway;
 import ink.ziip.championshipscore.protocol.transport.RouteReceipt;
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
-import ink.ziip.championshipscore.platform.bukkit.scheduler.PlatformScheduler;
 
 import java.time.Clock;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /** Core-side authoritative replay and lifecycle for one remote execution. */
 final class RemoteBingoMatch {
@@ -52,20 +51,30 @@ final class RemoteBingoMatch {
     private final Set<UUID> addedSpectators = new HashSet<>();
     private final Set<UUID> removedSpectators = new HashSet<>();
     private final List<PendingAward> pendingAwards = new ArrayList<>();
-    private final Map<UUID, CompletableFuture<Boolean>> spectatorAddAcks = new ConcurrentHashMap<>();
-    private final Map<UUID, CompletableFuture<Boolean>> spectatorRemoveAcks = new ConcurrentHashMap<>();
+    private final Map<UUID, CompletableFuture<Boolean>> spectatorAddAcks =
+            new ConcurrentHashMap<>();
+    private final Map<UUID, CompletableFuture<Boolean>> spectatorRemoveAcks =
+            new ConcurrentHashMap<>();
+
     /** Cells already claimed by any team, used to credit "first completion of the cell". */
     private final Set<Integer> claimedCells = new HashSet<>();
+
     private final Map<Integer, Integer> firstCompletionsByTeam = new ConcurrentHashMap<>();
     private final CompletableFuture<Void> terminal = new CompletableFuture<>();
     private boolean normalStopRequested;
     private long lastEventSeq;
     private long lastActivityMillis = System.currentTimeMillis();
+
     /** Latest worker heartbeat online count; -1 means no valid heartbeat has arrived yet. */
     private int remoteOnlineParticipantCount = -1;
 
-    RemoteBingoMatch(ChampionshipsCore plugin, MatchManifest manifest, RemoteBingoInstance instance,
-                     MatchCommandPublisher commands, PlayerRoutingGateway router, String workerServer) {
+    RemoteBingoMatch(
+            ChampionshipsCore plugin,
+            MatchManifest manifest,
+            RemoteBingoInstance instance,
+            MatchCommandPublisher commands,
+            PlayerRoutingGateway router,
+            String workerServer) {
         this.plugin = plugin;
         this.manifest = manifest;
         this.instance = instance;
@@ -108,32 +117,37 @@ final class RemoteBingoMatch {
             if (event.seq() != lastEventSeq + 1) return CompletableFuture.completedFuture(false);
         }
 
-        CompletionStage<Boolean> result = switch (event.type()) {
-            case READY -> onReady(event);
-            case PLAYER_ARRIVED -> onPlayerArrived(event);
-            case SPECTATOR_ADDED -> completed(() -> acknowledgeSpectator(event, spectatorAddAcks));
-            case SPECTATOR_REMOVED -> completed(() -> acknowledgeSpectator(event, spectatorRemoveAcks));
-            case STARTED -> completed(this::markStarted);
-            case TASK_COMPLETED -> completed(() -> applyCompletion(event));
-            case FINISHED -> finish(event);
-            case PREPARE_FAILED, FAILED, ABORTED -> completed(this::abort);
-            case PLAYER_LEFT -> onPlayerLeft(event);
-            case HEARTBEAT -> completed(() -> applyHeartbeat(event));
-        };
-        return result.thenApply(success -> {
-            if (success) {
-                synchronized (this) {
-                    lastEventSeq = event.seq();
-                    lastActivityMillis = System.currentTimeMillis();
-                }
-            }
-            return success;
-        });
+        CompletionStage<Boolean> result =
+                switch (event.type()) {
+                    case READY -> onReady(event);
+                    case PLAYER_ARRIVED -> onPlayerArrived(event);
+                    case SPECTATOR_ADDED ->
+                            completed(() -> acknowledgeSpectator(event, spectatorAddAcks));
+                    case SPECTATOR_REMOVED ->
+                            completed(() -> acknowledgeSpectator(event, spectatorRemoveAcks));
+                    case STARTED -> completed(this::markStarted);
+                    case TASK_COMPLETED -> completed(() -> applyCompletion(event));
+                    case FINISHED -> finish(event);
+                    case PREPARE_FAILED, FAILED, ABORTED -> completed(this::abort);
+                    case PLAYER_LEFT -> onPlayerLeft(event);
+                    case HEARTBEAT -> completed(() -> applyHeartbeat(event));
+                };
+        return result.thenApply(
+                success -> {
+                    if (success) {
+                        synchronized (this) {
+                            lastEventSeq = event.seq();
+                            lastActivityMillis = System.currentTimeMillis();
+                        }
+                    }
+                    return success;
+                });
     }
 
     private CompletionStage<Boolean> onReady(MatchEvent event) {
         synchronized (this) {
-            if (lifecycle.state() != MatchState.PREPARING && lifecycle.state() != MatchState.READY) {
+            if (lifecycle.state() != MatchState.PREPARING
+                    && lifecycle.state() != MatchState.READY) {
                 return CompletableFuture.completedFuture(false);
             }
             String hash = event.attributes().get("configHash");
@@ -147,29 +161,49 @@ final class RemoteBingoMatch {
         }
 
         long expires = System.currentTimeMillis() + 120_000L;
-        List<ink.ziip.championshipscore.protocol.PlayerSnapshot> routedParticipants = manifest.participants().stream()
-                .filter(player -> player.requiredAtStart()
-                        || plugin.getServer().getPlayer(player.uuid()) != null)
-                .toList();
-        List<CompletionStage<RouteReceipt>> routes = routedParticipants.stream()
-                .map(player -> router.route(new PlayerRoute(player.uuid(), manifest.matchId(), manifest.epoch(),
-                        workerServer, player.role(), expires)))
-                .toList();
-        CompletableFuture<?>[] futures = routes.stream().map(CompletionStage::toCompletableFuture)
-                .toArray(CompletableFuture[]::new);
-        return CompletableFuture.allOf(futures).thenApply(ignored -> {
-            for (int index = 0; index < routes.size(); index++) {
-                RouteReceipt receipt = routes.get(index).toCompletableFuture().join();
-                if (!receipt.accepted()
-                        && routedParticipants.get(index).role() == ParticipantRole.PLAYER) {
-                    return false;
-                }
-            }
-            synchronized (this) {
-                if (lifecycle.state() == MatchState.READY) lifecycle.transitionTo(MatchState.ROUTING);
-            }
-            return true;
-        });
+        List<ink.ziip.championshipscore.protocol.PlayerSnapshot> routedParticipants =
+                manifest.participants().stream()
+                        .filter(
+                                player ->
+                                        player.requiredAtStart()
+                                                || plugin.getServer().getPlayer(player.uuid())
+                                                        != null)
+                        .toList();
+        List<CompletionStage<RouteReceipt>> routes =
+                routedParticipants.stream()
+                        .map(
+                                player ->
+                                        router.route(
+                                                new PlayerRoute(
+                                                        player.uuid(),
+                                                        manifest.matchId(),
+                                                        manifest.epoch(),
+                                                        workerServer,
+                                                        player.role(),
+                                                        expires)))
+                        .toList();
+        CompletableFuture<?>[] futures =
+                routes.stream()
+                        .map(CompletionStage::toCompletableFuture)
+                        .toArray(CompletableFuture[]::new);
+        return CompletableFuture.allOf(futures)
+                .thenApply(
+                        ignored -> {
+                            for (int index = 0; index < routes.size(); index++) {
+                                RouteReceipt receipt =
+                                        routes.get(index).toCompletableFuture().join();
+                                if (!receipt.accepted()
+                                        && routedParticipants.get(index).role()
+                                                == ParticipantRole.PLAYER) {
+                                    return false;
+                                }
+                            }
+                            synchronized (this) {
+                                if (lifecycle.state() == MatchState.READY)
+                                    lifecycle.transitionTo(MatchState.ROUTING);
+                            }
+                            return true;
+                        });
     }
 
     private CompletionStage<Boolean> onPlayerArrived(MatchEvent event) {
@@ -183,29 +217,43 @@ final class RemoteBingoMatch {
         synchronized (this) {
             if (lifecycle.state() != MatchState.ROUTING) {
                 ParticipantRole role = roleOf(playerId);
-                boolean liveLateArrival = role != null && role.name().equals(event.attributes().get("role"))
-                        && (lifecycle.state() == MatchState.COUNTDOWN || lifecycle.state() == MatchState.RUNNING);
+                boolean liveLateArrival =
+                        role != null
+                                && role.name().equals(event.attributes().get("role"))
+                                && (lifecycle.state() == MatchState.COUNTDOWN
+                                        || lifecycle.state() == MatchState.RUNNING);
                 return CompletableFuture.completedFuture(liveLateArrival);
             }
-            boolean isPlayer = manifest.participants().stream().anyMatch(player ->
-                    player.uuid().equals(playerId) && player.role() == ParticipantRole.PLAYER);
+            boolean isPlayer =
+                    manifest.participants().stream()
+                            .anyMatch(
+                                    player ->
+                                            player.uuid().equals(playerId)
+                                                    && player.role() == ParticipantRole.PLAYER);
             if (isPlayer) arrivedPlayers.add(playerId);
-            shouldCommit = manifest.participants().stream()
-                    .filter(player -> player.role() == ParticipantRole.PLAYER && player.requiredAtStart())
-                    .allMatch(player -> arrivedPlayers.contains(player.uuid()));
+            shouldCommit =
+                    manifest.participants().stream()
+                            .filter(
+                                    player ->
+                                            player.role() == ParticipantRole.PLAYER
+                                                    && player.requiredAtStart())
+                            .allMatch(player -> arrivedPlayers.contains(player.uuid()));
         }
         if (!shouldCommit) return CompletableFuture.completedFuture(true);
-        MatchCommand start = MatchMessages.command(manifest.matchId(), manifest.epoch(),
-                MatchCommandType.START_COMMIT);
-        return commands.publishCommand(start).thenApply(ignored -> {
-            synchronized (this) {
-                if (lifecycle.state() == MatchState.ROUTING) {
-                    lifecycle.transitionTo(MatchState.COUNTDOWN);
-                    instance.markCountdown();
-                }
-            }
-            return true;
-        });
+        MatchCommand start =
+                MatchMessages.command(
+                        manifest.matchId(), manifest.epoch(), MatchCommandType.START_COMMIT);
+        return commands.publishCommand(start)
+                .thenApply(
+                        ignored -> {
+                            synchronized (this) {
+                                if (lifecycle.state() == MatchState.ROUTING) {
+                                    lifecycle.transitionTo(MatchState.COUNTDOWN);
+                                    instance.markCountdown();
+                                }
+                            }
+                            return true;
+                        });
     }
 
     private CompletionStage<Boolean> onPlayerLeft(MatchEvent event) {
@@ -242,31 +290,55 @@ final class RemoteBingoMatch {
             pendingAwards.add(new PendingAward(decision.observation().seq(), award));
         }
         if (instance.getRunMode() == GameRunMode.DAILY) {
-            List<Integer> progressedTeams = manifest.scoring().variant().remix()
-                    == ink.ziip.championshipscore.protocol.BingoRemix.COOP
-                    ? manifest.teams().stream().map(ink.ziip.championshipscore.protocol.TeamSnapshot::id).toList()
-                    : List.of(decision.observation().teamId());
+            List<Integer> progressedTeams =
+                    manifest.scoring().variant().remix()
+                                    == ink.ziip.championshipscore.protocol.BingoRemix.COOP
+                            ? manifest.teams().stream()
+                                    .map(ink.ziip.championshipscore.protocol.TeamSnapshot::id)
+                                    .toList()
+                            : List.of(decision.observation().teamId());
             for (int progressedTeamId : progressedTeams) {
-                ChampionshipTeam team = instance.getGameTeams().stream()
-                        .filter(candidate -> candidate.getMembers().equals(
-                                Set.copyOf(manifest.teamsById().get(progressedTeamId).members())))
-                        .findFirst().orElse(null);
+                ChampionshipTeam team =
+                        instance.getGameTeams().stream()
+                                .filter(
+                                        candidate ->
+                                                candidate
+                                                        .getMembers()
+                                                        .equals(
+                                                                Set.copyOf(
+                                                                        manifest.teamsById()
+                                                                                .get(
+                                                                                        progressedTeamId)
+                                                                                .members())))
+                                .findFirst()
+                                .orElse(null);
                 if (team == null) continue;
                 long durationMillis = decision.observation().observedGameTick() * 50L;
-                int completed = scoring.result().completedCells()
-                        .getOrDefault(progressedTeamId, 0);
+                int completed = scoring.result().completedCells().getOrDefault(progressedTeamId, 0);
                 int firsts = firstCompletionsByTeam.getOrDefault(progressedTeamId, 0);
-                plugin.getDailyManager().statsManager().recordBingoProgress(
-                        instance, team, decision.completedLines(), completed, firsts);
+                plugin.getDailyManager()
+                        .statsManager()
+                        .recordBingoProgress(
+                                instance, team, decision.completedLines(), completed, firsts);
                 if (decision.completedLines() > 0) {
-                    plugin.getDailyManager().statsManager().recordTeamMilestone(instance, team,
-                            DailyRecordType.BINGO_FIRST_LINE, durationMillis,
-                            decision.observation().playerId());
+                    plugin.getDailyManager()
+                            .statsManager()
+                            .recordTeamMilestone(
+                                    instance,
+                                    team,
+                                    DailyRecordType.BINGO_FIRST_LINE,
+                                    durationMillis,
+                                    decision.observation().playerId());
                 }
                 if (completed >= manifest.tasks().size()) {
-                    plugin.getDailyManager().statsManager().recordTeamMilestone(instance, team,
-                            DailyRecordType.BINGO_FULL_CARD, durationMillis,
-                            decision.observation().playerId());
+                    plugin.getDailyManager()
+                            .statsManager()
+                            .recordTeamMilestone(
+                                    instance,
+                                    team,
+                                    DailyRecordType.BINGO_FULL_CARD,
+                                    durationMillis,
+                                    decision.observation().playerId());
                 }
             }
         }
@@ -276,24 +348,39 @@ final class RemoteBingoMatch {
     private CompletionStage<Boolean> finish(MatchEvent event) {
         BingoResult local = scoring.result();
         if (!local.resultHash().equals(required(event, "resultHash"))) {
-            throw new IllegalStateException("Worker/Core Bingo result hash mismatch for " + manifest.matchId());
+            throw new IllegalStateException(
+                    "Worker/Core Bingo result hash mismatch for " + manifest.matchId());
         }
-        List<ink.ziip.championshipscore.api.rank.RankManager.PointSubmission> submissions = new ArrayList<>();
+        List<ink.ziip.championshipscore.api.rank.RankManager.PointSubmission> submissions =
+                new ArrayList<>();
         if (instance.isEventRun()) {
             for (PendingAward pending : pendingAwards) {
                 PlayerAward award = pending.award();
-                UUID transactionId = DeterministicIds.scoreTransaction(manifest.matchId(), manifest.epoch(),
-                        pending.completionSeq(), award.playerId(), award.kind());
-                submissions.add(new ink.ziip.championshipscore.api.rank.RankManager.PointSubmission(
-                        transactionId, award.playerId(), null, GameTypeEnum.Bingo,
-                        instance.getGameConfig().getAreaName(),
-                        manifest.matchId() + ":" + manifest.epoch(), award.points()));
+                UUID transactionId =
+                        DeterministicIds.scoreTransaction(
+                                manifest.matchId(),
+                                manifest.epoch(),
+                                pending.completionSeq(),
+                                award.playerId(),
+                                award.kind());
+                submissions.add(
+                        new ink.ziip.championshipscore.api.rank.RankManager.PointSubmission(
+                                transactionId,
+                                award.playerId(),
+                                null,
+                                GameTypeEnum.Bingo,
+                                instance.getGameConfig().getAreaName(),
+                                manifest.matchId() + ":" + manifest.epoch(),
+                                award.points()));
             }
         }
-        return plugin.getRankManager().addPlayerPointsBatch(submissions)
-                .thenCompose(staged -> staged
-                        ? scheduler.supplyGlobal(this::finishAccepted)
-                        : CompletableFuture.completedFuture(false));
+        return plugin.getRankManager()
+                .addPlayerPointsBatch(submissions)
+                .thenCompose(
+                        staged ->
+                                staged
+                                        ? scheduler.supplyGlobal(this::finishAccepted)
+                                        : CompletableFuture.completedFuture(false));
     }
 
     private boolean finishAccepted() {
@@ -330,21 +417,37 @@ final class RemoteBingoMatch {
     }
 
     MatchCommand abortCommand(String reason) {
-        return MatchMessages.command(manifest.matchId(), manifest.epoch(), MatchCommandType.ABORT,
-                Map.of("reason", reason), Clock.systemUTC());
+        return MatchMessages.command(
+                manifest.matchId(),
+                manifest.epoch(),
+                MatchCommandType.ABORT,
+                Map.of("reason", reason),
+                Clock.systemUTC());
     }
 
     MatchCommand forceEndCommand(String reason) {
-        return MatchMessages.command(manifest.matchId(), manifest.epoch(), MatchCommandType.FORCE_END,
-                Map.of("reason", reason), Clock.systemUTC());
+        return MatchMessages.command(
+                manifest.matchId(),
+                manifest.epoch(),
+                MatchCommandType.FORCE_END,
+                Map.of("reason", reason),
+                Clock.systemUTC());
     }
 
     CompletionStage<Boolean> removeParticipants(Set<UUID> players) {
         if (players.isEmpty()) return CompletableFuture.completedFuture(true);
-        String joined = players.stream().map(UUID::toString).sorted()
-                .collect(java.util.stream.Collectors.joining(","));
-        MatchCommand command = MatchMessages.command(manifest.matchId(), manifest.epoch(),
-                MatchCommandType.REMOVE_PARTICIPANTS, Map.of("players", joined), Clock.systemUTC());
+        String joined =
+                players.stream()
+                        .map(UUID::toString)
+                        .sorted()
+                        .collect(java.util.stream.Collectors.joining(","));
+        MatchCommand command =
+                MatchMessages.command(
+                        manifest.matchId(),
+                        manifest.epoch(),
+                        MatchCommandType.REMOVE_PARTICIPANTS,
+                        Map.of("players", joined),
+                        Clock.systemUTC());
         return commands.publishCommand(command).thenApply(ignored -> true);
     }
 
@@ -354,28 +457,48 @@ final class RemoteBingoMatch {
             removedSpectators.remove(playerId);
             addedSpectators.add(playerId);
         }
-        MatchCommand add = MatchMessages.command(manifest.matchId(), manifest.epoch(),
-                MatchCommandType.ADD_SPECTATOR,
-                Map.of("playerId", playerId.toString(), "username", username,
-                        "points", Double.toString(points)), Clock.systemUTC());
+        MatchCommand add =
+                MatchMessages.command(
+                        manifest.matchId(),
+                        manifest.epoch(),
+                        MatchCommandType.ADD_SPECTATOR,
+                        Map.of(
+                                "playerId",
+                                playerId.toString(),
+                                "username",
+                                username,
+                                "points",
+                                Double.toString(points)),
+                        Clock.systemUTC());
         CompletableFuture<Boolean> acknowledged = new CompletableFuture<>();
         spectatorAddAcks.put(playerId, acknowledged);
         return commands.publishCommand(add)
                 .thenCompose(ignored -> acknowledged.orTimeout(10, TimeUnit.SECONDS))
-                .thenCompose(accepted -> {
-                    if (!accepted) return CompletableFuture.completedFuture(false);
-                    return router.route(new PlayerRoute(playerId, manifest.matchId(), manifest.epoch(),
-                                    workerServer, ParticipantRole.SPECTATOR,
-                                    System.currentTimeMillis() + 120_000L))
-                            .thenApply(RouteReceipt::accepted);
-                })
-                .whenComplete((ignored, failure) -> spectatorAddAcks.remove(playerId, acknowledged));
+                .thenCompose(
+                        accepted -> {
+                            if (!accepted) return CompletableFuture.completedFuture(false);
+                            return router.route(
+                                            new PlayerRoute(
+                                                    playerId,
+                                                    manifest.matchId(),
+                                                    manifest.epoch(),
+                                                    workerServer,
+                                                    ParticipantRole.SPECTATOR,
+                                                    System.currentTimeMillis() + 120_000L))
+                                    .thenApply(RouteReceipt::accepted);
+                        })
+                .whenComplete(
+                        (ignored, failure) -> spectatorAddAcks.remove(playerId, acknowledged));
     }
 
     CompletionStage<Boolean> removeSpectator(UUID playerId) {
         synchronized (this) {
-            boolean frozenSpectator = manifest.participants().stream().anyMatch(player ->
-                    player.uuid().equals(playerId) && player.role() == ParticipantRole.SPECTATOR);
+            boolean frozenSpectator =
+                    manifest.participants().stream()
+                            .anyMatch(
+                                    player ->
+                                            player.uuid().equals(playerId)
+                                                    && player.role() == ParticipantRole.SPECTATOR);
             if (!frozenSpectator && !addedSpectators.contains(playerId)) {
                 return CompletableFuture.completedFuture(true);
             }
@@ -383,17 +506,23 @@ final class RemoteBingoMatch {
             addedSpectators.remove(playerId);
             if (lifecycle.state().terminal()) return CompletableFuture.completedFuture(true);
         }
-        MatchCommand remove = MatchMessages.command(manifest.matchId(), manifest.epoch(),
-                MatchCommandType.REMOVE_SPECTATOR, Map.of("playerId", playerId.toString()), Clock.systemUTC());
+        MatchCommand remove =
+                MatchMessages.command(
+                        manifest.matchId(),
+                        manifest.epoch(),
+                        MatchCommandType.REMOVE_SPECTATOR,
+                        Map.of("playerId", playerId.toString()),
+                        Clock.systemUTC());
         CompletableFuture<Boolean> acknowledged = new CompletableFuture<>();
         spectatorRemoveAcks.put(playerId, acknowledged);
         return commands.publishCommand(remove)
                 .thenCompose(ignored -> acknowledged.orTimeout(10, TimeUnit.SECONDS))
-                .whenComplete((ignored, failure) -> spectatorRemoveAcks.remove(playerId, acknowledged));
+                .whenComplete(
+                        (ignored, failure) -> spectatorRemoveAcks.remove(playerId, acknowledged));
     }
 
-    private boolean acknowledgeSpectator(MatchEvent event,
-                                          Map<UUID, CompletableFuture<Boolean>> acknowledgements) {
+    private boolean acknowledgeSpectator(
+            MatchEvent event, Map<UUID, CompletableFuture<Boolean>> acknowledgements) {
         UUID playerId = UUID.fromString(required(event, "playerId"));
         CompletableFuture<Boolean> acknowledgement = acknowledgements.remove(playerId);
         if (acknowledgement != null) acknowledgement.complete(true);
@@ -404,8 +533,12 @@ final class RemoteBingoMatch {
         synchronized (this) {
             if (removedSpectators.contains(playerId)) return null;
         }
-        ParticipantRole frozen = manifest.participants().stream()
-                .filter(player -> player.uuid().equals(playerId)).map(player -> player.role()).findFirst().orElse(null);
+        ParticipantRole frozen =
+                manifest.participants().stream()
+                        .filter(player -> player.uuid().equals(playerId))
+                        .map(player -> player.role())
+                        .findFirst()
+                        .orElse(null);
         if (frozen != null) return frozen;
         synchronized (this) {
             return addedSpectators.contains(playerId) ? ParticipantRole.SPECTATOR : null;
@@ -413,7 +546,8 @@ final class RemoteBingoMatch {
     }
 
     synchronized boolean heartbeatExpired(long nowMillis, long timeoutMillis) {
-        return (lifecycle.state() == MatchState.COUNTDOWN || lifecycle.state() == MatchState.RUNNING)
+        return (lifecycle.state() == MatchState.COUNTDOWN
+                        || lifecycle.state() == MatchState.RUNNING)
                 && nowMillis - lastActivityMillis > timeoutMillis;
     }
 
@@ -428,7 +562,8 @@ final class RemoteBingoMatch {
             int count = Integer.parseInt(online);
             if (count >= 0) remoteOnlineParticipantCount = count;
         } catch (NumberFormatException ignored) {
-            // Keep accepting the heartbeat for liveness even if an older worker omits a valid count.
+            // Keep accepting the heartbeat for liveness even if an older worker omits a valid
+            // count.
         }
         return true;
     }
@@ -439,10 +574,10 @@ final class RemoteBingoMatch {
 
     private static String required(MatchEvent event, String key) {
         String value = event.attributes().get(key);
-        if (value == null || value.isBlank()) throw new IllegalArgumentException("Missing event attribute " + key);
+        if (value == null || value.isBlank())
+            throw new IllegalArgumentException("Missing event attribute " + key);
         return value;
     }
 
-    private record PendingAward(long completionSeq, PlayerAward award) {
-    }
+    private record PendingAward(long completionSeq, PlayerAward award) {}
 }

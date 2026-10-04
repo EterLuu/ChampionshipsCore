@@ -15,14 +15,16 @@ import com.sk89q.worldedit.function.operation.ForwardExtentCopy;
 import com.sk89q.worldedit.function.operation.Operation;
 import com.sk89q.worldedit.function.operation.Operations;
 import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldedit.regions.CuboidRegion;
 import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.regions.RegionSelector;
-import com.sk89q.worldedit.regions.CuboidRegion;
-import com.sk89q.worldedit.world.block.BlockTypes;
-import com.sk89q.worldedit.world.block.BlockState;
 import com.sk89q.worldedit.session.ClipboardHolder;
+import com.sk89q.worldedit.world.block.BlockState;
+import com.sk89q.worldedit.world.block.BlockTypes;
+
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
+
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
@@ -50,19 +52,19 @@ public class WorldEditManager extends BaseManager {
     }
 
     @Override
-    public void load() {
-
-    }
+    public void load() {}
 
     @Override
-    public void unload() {
-
-    }
+    public void unload() {}
 
     public Vector[] getPlayerSelection(@NotNull Player player, boolean blockVector) {
         Vector[] vectors = new Vector[2];
         BukkitPlayer bukkitPlayer = BukkitAdapter.adapt(player);
-        RegionSelector selector = worldEdit.getSessionManager().get(bukkitPlayer).getRegionSelector(bukkitPlayer.getWorld());
+        RegionSelector selector =
+                worldEdit
+                        .getSessionManager()
+                        .get(bukkitPlayer)
+                        .getRegionSelector(bukkitPlayer.getWorld());
         BlockVector3 v1 = selector.getRegion().getMinimumPoint();
         BlockVector3 v2 = selector.getRegion().getMaximumPoint();
         if (blockVector) {
@@ -82,49 +84,53 @@ public class WorldEditManager extends BaseManager {
     }
 
     /**
-     * Saves {@code player}'s current WorldEdit selection to {@code file} as a Sponge schematic, capturing
-     * blocks and entities. The clipboard origin is set to the selection's minimum corner so the schematic
-     * pastes back predictably via {@link #pasteSchematic}.
+     * Saves {@code player}'s current WorldEdit selection to {@code file} as a Sponge schematic,
+     * capturing blocks and entities. The clipboard origin is set to the selection's minimum corner
+     * so the schematic pastes back predictably via {@link #pasteSchematic}.
      *
      * @throws Exception if there is no selection or the write fails
      */
-    public void saveSelectionAsSchematic(@NotNull Player player, @NotNull File file) throws Exception {
+    public void saveSelectionAsSchematic(@NotNull Player player, @NotNull File file)
+            throws Exception {
         saveSelectionAsSchematic(player, file, true);
     }
 
     /** Saves only the selected blocks and block-entity state, without copying living entities. */
-    public void saveSelectionAsBlockSchematic(@NotNull Player player, @NotNull File file) throws Exception {
+    public void saveSelectionAsBlockSchematic(@NotNull Player player, @NotNull File file)
+            throws Exception {
         saveSelectionAsSchematic(player, file, false);
     }
 
-    private void saveSelectionAsSchematic(@NotNull Player player, @NotNull File file, boolean copyEntities)
-            throws Exception {
+    private void saveSelectionAsSchematic(
+            @NotNull Player player, @NotNull File file, boolean copyEntities) throws Exception {
         BukkitPlayer bukkitPlayer = BukkitAdapter.adapt(player);
         com.sk89q.worldedit.world.World weWorld = bukkitPlayer.getWorld();
-        RegionSelector selector = worldEdit.getSessionManager().get(bukkitPlayer).getRegionSelector(weWorld);
-        if (!selector.isDefined())
-            throw new IllegalStateException("WorldEdit 选区未完整设置");
+        RegionSelector selector =
+                worldEdit.getSessionManager().get(bukkitPlayer).getRegionSelector(weWorld);
+        if (!selector.isDefined()) throw new IllegalStateException("WorldEdit 选区未完整设置");
         Region region = selector.getRegion();
 
         BlockArrayClipboard clipboard = new BlockArrayClipboard(region);
         clipboard.setOrigin(region.getMinimumPoint());
         try (EditSession editSession = worldEdit.newEditSession(weWorld)) {
-            ForwardExtentCopy copy = new ForwardExtentCopy(editSession, region, clipboard, region.getMinimumPoint());
+            ForwardExtentCopy copy =
+                    new ForwardExtentCopy(editSession, region, clipboard, region.getMinimumPoint());
             copy.setCopyingEntities(copyEntities);
             Operations.complete(copy);
         }
 
         File parent = file.getParentFile();
         if (parent != null) parent.mkdirs();
-        try (ClipboardWriter writer = BuiltInClipboardFormat.SPONGE_V3_SCHEMATIC.getWriter(new FileOutputStream(file))) {
+        try (ClipboardWriter writer =
+                BuiltInClipboardFormat.SPONGE_V3_SCHEMATIC.getWriter(new FileOutputStream(file))) {
             writer.write(clipboard);
         }
     }
 
     /**
-     * Block dimensions {@code (width, height, length)} of the schematic in {@code file} — i.e. how far it
-     * extends along +X/+Y/+Z from its minimum corner. Lets callers derive a copy's bounding box from its
-     * paste origin without maintaining a separate region.
+     * Block dimensions {@code (width, height, length)} of the schematic in {@code file} — i.e. how
+     * far it extends along +X/+Y/+Z from its minimum corner. Lets callers derive a copy's bounding
+     * box from its paste origin without maintaining a separate region.
      *
      * @throws IOException if the file is missing/unreadable or the format cannot be detected
      */
@@ -140,17 +146,18 @@ public class WorldEditManager extends BaseManager {
     }
 
     /**
-     * Reads the exact non-air block inventory stored in a schematic without pasting it into a world.
-     * Material manifests use this so their contents always describe the refill source of truth rather
-     * than whatever an administrator may currently be editing in the live map.
+     * Reads the exact non-air block inventory stored in a schematic without pasting it into a
+     * world. Material manifests use this so their contents always describe the refill source of
+     * truth rather than whatever an administrator may currently be editing in the live map.
      */
-    public @NotNull SchematicBlockInventory readSchematicBlockInventory(@NotNull File file) throws IOException {
+    public @NotNull SchematicBlockInventory readSchematicBlockInventory(@NotNull File file)
+            throws IOException {
         if (!file.isFile()) throw new IOException("schematic not found: " + file.getName());
         ClipboardFormat format = ClipboardFormats.findByFile(file);
         if (format == null) throw new IOException("unknown schematic format: " + file.getName());
 
         try (ClipboardReader reader = format.getReader(new FileInputStream(file));
-             Clipboard clipboard = reader.read()) {
+                Clipboard clipboard = reader.read()) {
             Map<String, Long> materials = new TreeMap<>();
             Map<String, Long> blockData = new TreeMap<>();
             long nonAirBlocks = 0L;
@@ -161,19 +168,26 @@ public class WorldEditManager extends BaseManager {
                 materials.merge(state.getBlockType().id(), 1L, Long::sum);
                 blockData.merge(state.getAsString(), 1L, Long::sum);
             }
-            return new SchematicBlockInventory(clipboard.getVolume(), nonAirBlocks,
-                    Collections.unmodifiableMap(materials), Collections.unmodifiableMap(blockData));
+            return new SchematicBlockInventory(
+                    clipboard.getVolume(),
+                    nonAirBlocks,
+                    Collections.unmodifiableMap(materials),
+                    Collections.unmodifiableMap(blockData));
         }
     }
 
-    public record SchematicBlockInventory(long volume, long nonAirBlocks,
-                                          @NotNull Map<String, Long> materials,
-                                          @NotNull Map<String, Long> blockData) {
-    }
+    public record SchematicBlockInventory(
+            long volume,
+            long nonAirBlocks,
+            @NotNull Map<String, Long> materials,
+            @NotNull Map<String, Long> blockData) {}
 
-    /** Atomically rewrites transformed block states in a schematic; unchanged files are not rewritten. */
-    public static int rewriteSchematicBlockStates(@NotNull File file,
-                                                   @NotNull UnaryOperator<String> transformer) throws IOException {
+    /**
+     * Atomically rewrites transformed block states in a schematic; unchanged files are not
+     * rewritten.
+     */
+    public static int rewriteSchematicBlockStates(
+            @NotNull File file, @NotNull UnaryOperator<String> transformer) throws IOException {
         if (!file.isFile()) throw new IOException("schematic not found: " + file.getName());
         ClipboardFormat format = ClipboardFormats.findByFile(file);
         if (format == null) throw new IOException("unknown schematic format: " + file.getName());
@@ -196,11 +210,15 @@ public class WorldEditManager extends BaseManager {
             File parent = file.getParentFile();
             Path temporary = Files.createTempFile(parent.toPath(), file.getName() + ".", ".tmp");
             try {
-                try (ClipboardWriter writer = format.getWriter(new FileOutputStream(temporary.toFile()))) {
+                try (ClipboardWriter writer =
+                        format.getWriter(new FileOutputStream(temporary.toFile()))) {
                     writer.write(clipboard);
                 }
                 try {
-                    Files.move(temporary, file.toPath(), StandardCopyOption.REPLACE_EXISTING,
+                    Files.move(
+                            temporary,
+                            file.toPath(),
+                            StandardCopyOption.REPLACE_EXISTING,
                             StandardCopyOption.ATOMIC_MOVE);
                 } catch (AtomicMoveNotSupportedException ignored) {
                     Files.move(temporary, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
@@ -210,7 +228,8 @@ public class WorldEditManager extends BaseManager {
             }
             return changed;
         } catch (Exception exception) {
-            throw exception instanceof IOException io ? io
+            throw exception instanceof IOException io
+                    ? io
                     : new IOException("failed to rewrite schematic " + file.getName(), exception);
         } finally {
             clipboard.close();
@@ -218,13 +237,14 @@ public class WorldEditManager extends BaseManager {
     }
 
     /**
-     * Pastes the schematic in {@code file} into {@code world} so its minimum corner lands exactly at
-     * {@code (x, y, z)} — independent of where the schematic was originally copied from. Air is preserved
-     * (so the paste overwrites whatever was there). Must run on the main thread.
+     * Pastes the schematic in {@code file} into {@code world} so its minimum corner lands exactly
+     * at {@code (x, y, z)} — independent of where the schematic was originally copied from. Air is
+     * preserved (so the paste overwrites whatever was there). Must run on the main thread.
      *
      * @throws IOException if the file is missing/unreadable or the format cannot be detected
      */
-    public void pasteSchematic(@NotNull World world, @NotNull File file, int x, int y, int z) throws IOException {
+    public void pasteSchematic(@NotNull World world, @NotNull File file, int x, int y, int z)
+            throws IOException {
         if (!file.isFile()) throw new IOException("schematic not found: " + file.getName());
         ClipboardFormat format = ClipboardFormats.findByFile(file);
         if (format == null) throw new IOException("unknown schematic format: " + file.getName());
@@ -233,26 +253,37 @@ public class WorldEditManager extends BaseManager {
             Clipboard clipboard = reader.read();
             BlockVector3 min = clipboard.getRegion().getMinimumPoint();
             BlockVector3 origin = clipboard.getOrigin();
-            // Paste places the clipboard origin at to; offset so the minimum corner ends up at (x,y,z).
+            // Paste places the clipboard origin at to; offset so the minimum corner ends up at
+            // (x,y,z).
             BlockVector3 to = BlockVector3.at(x, y, z).subtract(min).add(origin);
             try (EditSession editSession = worldEdit.newEditSession(BukkitAdapter.adapt(world))) {
-                Operation operation = new ClipboardHolder(clipboard)
-                        .createPaste(editSession)
-                        .to(to)
-                        .ignoreAirBlocks(false)
-                        .build();
+                Operation operation =
+                        new ClipboardHolder(clipboard)
+                                .createPaste(editSession)
+                                .to(to)
+                                .ignoreAirBlocks(false)
+                                .build();
                 Operations.complete(operation);
             }
         }
     }
 
-    /** Clears an exact minimum-corner/dimensions cuboid before an adaptive layout is stamped again. */
-    public void clearCuboid(@NotNull World world, @NotNull Vector origin, @NotNull Vector dimensions) throws Exception {
-        BlockVector3 min = BlockVector3.at(origin.getBlockX(), origin.getBlockY(), origin.getBlockZ());
-        BlockVector3 max = min.add(dimensions.getBlockX() - 1, dimensions.getBlockY() - 1,
-                dimensions.getBlockZ() - 1);
+    /**
+     * Clears an exact minimum-corner/dimensions cuboid before an adaptive layout is stamped again.
+     */
+    public void clearCuboid(
+            @NotNull World world, @NotNull Vector origin, @NotNull Vector dimensions)
+            throws Exception {
+        BlockVector3 min =
+                BlockVector3.at(origin.getBlockX(), origin.getBlockY(), origin.getBlockZ());
+        BlockVector3 max =
+                min.add(
+                        dimensions.getBlockX() - 1,
+                        dimensions.getBlockY() - 1,
+                        dimensions.getBlockZ() - 1);
         try (EditSession editSession = worldEdit.newEditSession(BukkitAdapter.adapt(world))) {
-            editSession.setBlocks((Region) new CuboidRegion(min, max), BlockTypes.AIR.getDefaultState());
+            editSession.setBlocks(
+                    (Region) new CuboidRegion(min, max), BlockTypes.AIR.getDefaultState());
         }
     }
 }

@@ -5,7 +5,8 @@ import net.kyori.adventure.text.Component;
 import java.util.Objects;
 
 /** Player identity metadata shared by Core and Bukkit game workers. */
-public record PlayerPresentation(String label, String teamColorCode, boolean activePlayer, boolean daily) {
+public record PlayerPresentation(
+        String label, String teamColorCode, boolean activePlayer, boolean daily) {
     public PlayerPresentation {
         Objects.requireNonNull(label, "label");
     }
@@ -19,12 +20,15 @@ public record PlayerPresentation(String label, String teamColorCode, boolean act
     }
 
     public Component identity(String playerName) {
-        return ChampionshipTabText.playerIdentityComponent(label, teamColorCode, activePlayer, playerName);
+        return ChampionshipTabText.playerIdentityComponent(
+                label, teamColorCode, activePlayer, playerName);
     }
 
     public Component chatLine(String playerName, Component message) {
         return daily
-                ? ChampionshipTabText.dailyChatLine(label, teamColorCode, activePlayer, playerName, message)
-                : ChampionshipTabText.chatLine(label, teamColorCode, activePlayer, playerName, message);
+                ? ChampionshipTabText.dailyChatLine(
+                        label, teamColorCode, activePlayer, playerName, message)
+                : ChampionshipTabText.chatLine(
+                        label, teamColorCode, activePlayer, playerName, message);
     }
 }

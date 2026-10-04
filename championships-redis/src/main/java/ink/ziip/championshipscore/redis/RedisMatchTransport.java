@@ -8,14 +8,15 @@ import ink.ziip.championshipscore.protocol.MatchManifest;
 import ink.ziip.championshipscore.protocol.transport.DeliveryReceipt;
 import ink.ziip.championshipscore.protocol.transport.MatchCommandPublisher;
 import ink.ziip.championshipscore.protocol.transport.MatchEventPublisher;
+
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.RedisURI;
 import io.lettuce.core.XAddArgs;
 import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.api.async.RedisAsyncCommands;
 
-import java.time.Instant;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -58,16 +59,24 @@ public final class RedisMatchTransport implements MatchCommandPublisher, MatchEv
         requireOpen();
         Objects.requireNonNull(manifest, "manifest");
         if (!config.workerId().equals(manifest.workerId())) {
-            return CompletableFuture.failedFuture(new IllegalArgumentException(
-                    "Manifest targets worker " + manifest.workerId() + " but transport targets " + config.workerId()));
+            return CompletableFuture.failedFuture(
+                    new IllegalArgumentException(
+                            "Manifest targets worker "
+                                    + manifest.workerId()
+                                    + " but transport targets "
+                                    + config.workerId()));
         }
-        UUID messageId = DeterministicIds.uuidV5(manifest.matchId(), "manifest:" + manifest.epoch());
+        UUID messageId =
+                DeterministicIds.uuidV5(manifest.matchId(), "manifest:" + manifest.epoch());
         String payload = Base64.getEncoder().encodeToString(codec.encodeManifest(manifest));
-        Map<String, String> fields = baseFields("manifest", messageId, manifest.matchId(), manifest.epoch());
+        Map<String, String> fields =
+                baseFields("manifest", messageId, manifest.matchId(), manifest.epoch());
         fields.put("payload", payload);
 
-        // Keep the latest manifest addressable for reconnect/recovery and also append it to the worker's
-        // ordered command stream. SET precedes XADD; a missing stream entry is detectable and retryable
+        // Keep the latest manifest addressable for reconnect/recovery and also append it to the
+        // worker's
+        // ordered command stream. SET precedes XADD; a missing stream entry is detectable and
+        // retryable
         // through the deterministic message ID, while consumers never see an absent manifest value.
         return commands.set(config.manifestKey(manifest.matchId(), manifest.epoch()), payload)
                 .thenCompose(ignored -> append(config.commandStream(), fields, messageId));
@@ -77,8 +86,8 @@ public final class RedisMatchTransport implements MatchCommandPublisher, MatchEv
     public CompletionStage<DeliveryReceipt> publishCommand(MatchCommand command) {
         requireOpen();
         Objects.requireNonNull(command, "command");
-        Map<String, String> fields = baseFields(
-                "command", command.messageId(), command.matchId(), command.epoch());
+        Map<String, String> fields =
+                baseFields("command", command.messageId(), command.matchId(), command.epoch());
         fields.put("commandType", command.type().name());
         fields.put("payload", Base64.getEncoder().encodeToString(codec.encodeCommand(command)));
         return append(config.commandStream(), fields, command.messageId());
@@ -88,7 +97,8 @@ public final class RedisMatchTransport implements MatchCommandPublisher, MatchEv
     public CompletionStage<DeliveryReceipt> publishEvent(MatchEvent event) {
         requireOpen();
         Objects.requireNonNull(event, "event");
-        Map<String, String> fields = baseFields("event", event.messageId(), event.matchId(), event.epoch());
+        Map<String, String> fields =
+                baseFields("event", event.messageId(), event.matchId(), event.epoch());
         fields.put("eventType", event.type().name());
         fields.put("seq", Long.toString(event.seq()));
         fields.put("workerId", config.workerId());
@@ -98,9 +108,13 @@ public final class RedisMatchTransport implements MatchCommandPublisher, MatchEv
 
     private CompletionStage<DeliveryReceipt> append(
             String stream, Map<String, String> fields, UUID messageId) {
-        XAddArgs args = new XAddArgs().maxlen(config.approximateMaxStreamLength()).approximateTrimming();
-        return commands.xadd(stream, args, fields).thenApply(position ->
-                new DeliveryReceipt(messageId, stream, position, Instant.now().toEpochMilli()));
+        XAddArgs args =
+                new XAddArgs().maxlen(config.approximateMaxStreamLength()).approximateTrimming();
+        return commands.xadd(stream, args, fields)
+                .thenApply(
+                        position ->
+                                new DeliveryReceipt(
+                                        messageId, stream, position, Instant.now().toEpochMilli()));
     }
 
     private static Map<String, String> baseFields(
@@ -120,7 +134,8 @@ public final class RedisMatchTransport implements MatchCommandPublisher, MatchEv
     @Override
     public void close() {
         if (!closed.compareAndSet(false, true)) return;
-        // Let Lettuce drain callbacks before tearing down its Netty/classloader resources. Immediate
+        // Let Lettuce drain callbacks before tearing down its Netty/classloader resources.
+        // Immediate
         // shutdown can race AsyncCommand completion and surface as "zip file closed" during reload.
         client.shutdown(Duration.ofMillis(100), Duration.ofSeconds(5));
     }

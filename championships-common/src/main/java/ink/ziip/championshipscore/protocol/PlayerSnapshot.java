@@ -9,14 +9,17 @@ public record PlayerSnapshot(
         ParticipantRole role,
         Integer teamId,
         boolean requiredAtStart,
-        double points
-) {
+        double points) {
     public PlayerSnapshot(UUID uuid, String username, ParticipantRole role, Integer teamId) {
         this(uuid, username, role, teamId, true, 0D);
     }
 
-    public PlayerSnapshot(UUID uuid, String username, ParticipantRole role, Integer teamId,
-                          boolean requiredAtStart) {
+    public PlayerSnapshot(
+            UUID uuid,
+            String username,
+            ParticipantRole role,
+            Integer teamId,
+            boolean requiredAtStart) {
         this(uuid, username, role, teamId, requiredAtStart, 0D);
     }
 

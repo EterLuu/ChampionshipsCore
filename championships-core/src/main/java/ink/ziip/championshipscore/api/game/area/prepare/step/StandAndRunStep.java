@@ -4,8 +4,10 @@ import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.api.game.spatial.TeleportPositions;
+
 import net.kyori.adventure.text.Component;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -15,8 +17,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 
 /**
- * Captures the player's current location into a config field (the "stand here, then click" pattern used by
- * every {@code *SpawnPoint} / {@code *Spawn} option across the games).
+ * Captures the player's current location into a config field (the "stand here, then click" pattern
+ * used by every {@code *SpawnPoint} / {@code *Spawn} option across the games).
  */
 public class StandAndRunStep extends PrepareStep {
 
@@ -24,11 +26,14 @@ public class StandAndRunStep extends PrepareStep {
     private final BiConsumer<SetupTarget, Location> setter;
     private final String doneMessage;
 
-    public StandAndRunStep(@NotNull String key, @NotNull Component name, @NotNull Component description,
-                           @NotNull Material icon,
-                           @NotNull Predicate<SetupTarget> setPredicate,
-                           @NotNull BiConsumer<SetupTarget, Location> setter,
-                           @NotNull String doneMessage) {
+    public StandAndRunStep(
+            @NotNull String key,
+            @NotNull Component name,
+            @NotNull Component description,
+            @NotNull Material icon,
+            @NotNull Predicate<SetupTarget> setPredicate,
+            @NotNull BiConsumer<SetupTarget, Location> setter,
+            @NotNull String doneMessage) {
         super(key, name, description, icon, StepCaptureType.STAND_AND_RUN);
         this.setPredicate = setPredicate;
         this.setter = setter;
@@ -42,7 +47,7 @@ public class StandAndRunStep extends PrepareStep {
 
     @Override
     public String capture(@NotNull PrepareSession session, @NotNull Player player) {
-        setter.accept(session.getTarget(), Utils.centerOnBlock(player.getLocation()));
+        setter.accept(session.getTarget(), TeleportPositions.centerOnBlock(player.getLocation()));
         session.markDirty();
         return doneMessage;
     }

@@ -8,8 +8,7 @@ public final class TierlistSource {
     private static volatile Tierlist active = Tierlist.EMPTY;
     private static volatile String activeName = "";
 
-    private TierlistSource() {
-    }
+    private TierlistSource() {}
 
     public static void set(Tierlist tierlist, String name) {
         active = tierlist == null ? Tierlist.EMPTY : tierlist;

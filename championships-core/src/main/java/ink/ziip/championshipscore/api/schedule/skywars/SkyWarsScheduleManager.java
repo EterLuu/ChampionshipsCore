@@ -1,13 +1,14 @@
 package ink.ziip.championshipscore.api.schedule.skywars;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.schedule.BaseSingleGameSchedule;
 import ink.ziip.championshipscore.api.schedule.FormalEventMapResolver;
 
 public class SkyWarsScheduleManager extends BaseSingleGameSchedule {
 
-    public SkyWarsScheduleManager(ChampionshipsCore championshipsCore, SkyWarsScheduleHandler handler) {
+    public SkyWarsScheduleManager(
+            ChampionshipsCore championshipsCore, SkyWarsScheduleHandler handler) {
         super(championshipsCore, handler, GameTypeEnum.SkyWars);
         handler.setScheduleManager(this);
     }
@@ -21,5 +22,4 @@ public class SkyWarsScheduleManager extends BaseSingleGameSchedule {
     public int getTotalRounds() {
         return FormalEventMapResolver.maps(plugin, gameTypeEnum).size();
     }
-
 }

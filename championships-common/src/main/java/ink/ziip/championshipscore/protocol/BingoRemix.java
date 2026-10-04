@@ -29,8 +29,19 @@ public enum BingoRemix {
 
     public boolean modifiesCard() {
         return switch (this) {
-            case NETHER, SCALE, DIFFERENTIAL, BLIND, FEAST, GENESIS, COLORFUL, CHAIN,
-                    VARIATION, FINALE, PARALLAX, SPEEDRUN -> true;
+            case NETHER,
+                    SCALE,
+                    DIFFERENTIAL,
+                    BLIND,
+                    FEAST,
+                    GENESIS,
+                    COLORFUL,
+                    CHAIN,
+                    VARIATION,
+                    FINALE,
+                    PARALLAX,
+                    SPEEDRUN ->
+                    true;
             case NONE, UPGRADE, COOP, ETERNAL_NIGHT, POLAR_DAY -> false;
         };
     }

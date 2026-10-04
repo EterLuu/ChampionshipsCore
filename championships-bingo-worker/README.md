@@ -1,114 +1,99 @@
-# Championships Bingo Folia Worker
+# Championships Bingo Worker
 
-Bingo Folia Worker 是 ChampionshipsCore 远程 Bingo 的执行面。Core 冻结比赛 manifest、掌握赛程与正式积分；Worker 在独立 Folia 服务端执行世界、玩家状态、任务观察、界面和事件回传。Core 保持权威数据与赛程控制，Worker 专注低延迟玩法执行，两者共同完成一场可迁移、可扩展的 Bingo。
+Bingo Worker 在独立 Folia 服务端执行 ChampionshipsCore 的远程 Bingo：管理世界、玩家状态、任务观察和界面，并向 Core 回传事件。Core 冻结比赛 manifest，负责赛程、数据库和最终积分。
 
-完整协议、状态机和故障边界见 [跨服拆分架构](../docs/bingo-remote-architecture.md)，64 人容量与配置依据见 [性能指南](../docs/bingo-64-player-performance-report.md)。
+## 要求
 
-## 要求与构建
+- Java 25、Folia 26.2 与 PacketEvents 2.13.0。
+- 配套版本的 Core、双方可访问的 Redis。
+- BungeeCord，或启用 BungeeCord 兼容 channel 的 Velocity。
+- 已加载的主世界、下界和末地，三个维度位于同一主世界目录下。
+- 能处理世界重置标记的外部服务管理流程，见下方说明。
 
-- Java 25 和与项目 API 匹配的 Folia 26.2
-- 可由 Core 与 Worker 同时访问的 Redis
-- BungeeCord，或启用了 BungeeCord 兼容 channel 的 Velocity
-- 与 Worker 使用同一版本/协议的 ChampionshipsCore
-- PlaceholderAPI 可选；FastBoard 和内部模块已打进 Worker JAR
+PlaceholderAPI 可选；FastBoard、Redis 客户端和内部共享模块已包含在 Worker JAR 中。服务端与插件版本以当前 POM 和插件描述为准。
 
-从仓库根目录构建：
+## 构建与安装
+
+从仓库根目录执行：
 
 ```bash
-mvn -pl championships-bingo-worker -am clean package
+mvn -B -ntp -pl championships-bingo-worker -am clean package
 ```
 
-产物为 `championships-bingo-worker/target/championships-bingo-worker-1.3-SNAPSHOT.jar`。替换运行 JAR 后重启 Bingo 服务。共享协议、Bingo engine、Bukkit 平台层、Redis transport 或跨服展示变化时，Core 与 Worker 成对构建、部署和重启。
-
-## 与 Core 的共享运行时
-
-Worker 与本地 Bingo 共用 ChampionshipsCore 的共享模块。以下行为只需在一个模块中修改，随后验证 `LOCAL` 与 `REMOTE` 两条路径：
-
-- 物品、进度、统计和事件型任务的判定及比赛内进度；
-- 世界 gamerule、昼夜/天气、难度、PvP、死亡保留和流浪商人策略；
-- 玩家生命、饱食、经验、效果、飞行与危险状态清理；
-- 队伍颜色、玩家身份、聊天行、加入/退出消息和原生计分板队伍投影；
-- 规则介绍时间线、`mm:ss` 计时文本、Sidebar 排名窗口及纯 Java 计分结果。
-
-Core 是 manifest、赛程、正式积分与数据库的唯一 owner。Worker 使用 manifest 中冻结的名册、任务、规则和展示文案，比赛规则在开局瞬间固定下来，整局保持一致。
+将 `championships-bingo-worker/target/championships-bingo-worker-1.3-SNAPSHOT.jar` 与 PacketEvents 安装到独立 Folia 的 `plugins/`。首次启动生成配置时默认 `enabled: false`；停止服务器后填写配置、准备世界和代理路由，再启用。
 
 ## 配置
 
-首次启动会生成 `plugins/ChampionshipsBingoWorker/config.yml`：
+配置文件为 `plugins/ChampionshipsBingoWorker/config.yml`。以下为部署示例，主机名、代理服务名和世界名需与实际基础设施一致；合并到生成文件中：
+
+```yaml
+enabled: true
+worker-id: bingo-1
+redis:
+  uri: redis://redis-host:6379/0
+  namespace: championships
+  consumer-group: bingo-workers
+proxy:
+  channel: BungeeCord
+  return-server: core
+worlds:
+  overworld: bingo
+  nether: bingo_nether
+  the-end: bingo_the_end
+  allow-reuse-without-reset: false
+```
 
 | 配置 | 含义 |
 | --- | --- |
-| `enabled` | Worker 总开关；首次核对 Redis、代理和世界后启用 |
-| `worker-id` | 物理 Worker 标识，与 Core 的 `bingo.worker-id` 一致 |
-| `redis.uri` / `namespace` | Redis 地址和隔离命名空间；只允许 Core/Worker 网络访问 |
-| `redis.consumer-group` | Worker 命令流 consumer group |
-| `stream-max-length` | Streams 近似保留上限，覆盖所有未确认事件 |
-| `block-timeout-ms` | 阻塞读取等待时间 |
-| `reclaim-idle-ms` / `max-deliveries` | pending 接管阈值和进入 DLQ 前最大投递次数 |
-| `proxy.channel` | BungeeCord 使用 `BungeeCord`；Velocity 可按代理设置改为兼容 channel |
-| `proxy.return-server` | 比赛结束、拒绝直连或失去 ownership 时返回的 Core 服务名 |
-| `worlds.*` | 一个比赛 slot 的主世界、下界和末地名称 |
-| `allow-reuse-without-reset` | 生产保持 `false`；本地开发可跳过世界重置流程 |
-| `worlds.seed-filter.*` | 新世界创建前的内置群系 seed 筛选；默认启用，不依赖外部程序 |
+| `worker-id` | 与 Core `bingo.worker-id` 一致；不同实例使用不同 ID |
+| `redis.uri` / `redis.namespace` | 与 Core 指向同一 Redis 和命名空间 |
+| `redis.stream-max-length` | Streams 近似保留上限 |
+| `redis.block-timeout-ms` | 阻塞读取等待时间 |
+| `redis.reclaim-idle-ms` / `redis.max-deliveries` | pending 接管与 DLQ 投递阈值 |
+| `proxy.return-server` | 代理注册的 Core 服务名，需替换生成模板中的默认值 |
+| `worlds.allow-reuse-without-reset` | 正式比赛保持 `false`；`true` 仅供允许复用世界的开发场景 |
+| `worlds.seed-filter.*` | 内嵌 SeedLab 群系筛选，不需要外部程序或网络服务 |
 
-Worker JAR 内置了 SeedLab 26.2 的 Overworld 群系预测器和数据，不需要安装
-`mc-worldgen-seed-lab`、`mcquery`、Python 或网络服务。筛选器会在出生点 2000 格内按
-默认 32 格间隔采样，最多处理 128 个随机候选，并将群系种类数最高的 seed 写入
-`.bingo-seed`。14 秒默认时间窗通常可以完成约 45 个候选；时间到达后保留已完成候选的
-最佳结果。Worker 会把同一个 seed 传给三个维度；内置预测器加载失败时，
-`required: false` 会回退到随机 seed，`required: true` 会拒绝启动。
+SeedLab 默认半径 2000 格、采样步长 32 格、最多 128 个候选、时间窗 14000 毫秒；实际完成数量取决于资源预算。筛选仅在插件发现需要创建新世界时运行，不会改写已由 Folia 启动加载的世界 seed；Folia 部署应在外部世界准备流程中明确选择 seed。在该创建路径中预测器不可用时，`required: false` 可回退随机 seed，`required: true` 拒绝启动。许可见 [第三方声明](THIRD-PARTY-NOTICES.md)。
 
-参数示例：
+任务、计分、倒计时、PvP、效果、语言和 `scoreboards.yml` 模板由 Core 冻结到 manifest。修改 Core 配置影响新比赛，当前比赛继续使用已有快照。
 
-```bash
-worlds:
-  seed-filter:
-    enabled: true
-    required: false
-    radius-blocks: 2000
-    candidates: 128
-    sample-step-blocks: 32
-    timeout-ms: 14000
+## 世界重置接入
+
+Worker 每个进程只承载一个活动比赛。`worlds.allow-reuse-without-reset: false` 时，比赛结束后先将玩家送回 Core；全部玩家离开后写入世界容器目录下的 `.championships-bingo-reset`，随后关闭 Folia。
+
+标记采用 UTF-8 三行格式：
+
+```text
+1
+<主世界目录名>
+<主世界目录名>.cc-reset-<UUID>
 ```
 
-第三方来源与 MIT 许可证文本见 [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md)。
+部署方的监督进程应在 Java 完全退出、世界锁释放后读取标记，校验目录均为世界容器内的直接子目录，再把旧主世界目录移到第三行指定的退役目录，处理标记并重新启动 Folia。新 Worker 会异步清理同名 `.cc-reset-` 退役目录。三维度不在同一主世界根目录时，重置协调器会拒绝该布局。
 
-倒计时、散布、任务、计分、PvP、常驻效果、语言、Sidebar 和队伍展示由 Core 在开局时冻结进 manifest。改动 Core 的 Bingo 配置后，新比赛立即使用新规则，正在运行的比赛继续使用开局时的 manifest。`worker-id` 参与聊天 consumer group 命名，多个 Worker 使用不同 ID，让每个实例都收到完整公共聊天。
+仓库不提供监督脚本。普通自动重启若不处理标记，会重复加载旧世界；仅安装 Worker JAR 不构成完整的世界重置部署。新世界的创建、seed 筛选与预生成应纳入外部启动流程，并在接受下一场比赛前完成。
 
-## 部署与运行流程
+## 首次联调
 
-1. 把 `scripts/bingo-reset-loop.sh` 部署到服务端根目录，并让容器/面板用它包装原有 Java 启动命令，例如 `./bingo-reset-loop.sh -- java <原有 JVM 参数> -jar folia.jar --nogui`。脚本作为 Java 的父进程持续运行。
-2. 启动 Redis、Core、代理和 Worker，确认 Worker 已启用且命名空间/consumer group 正常。
-3. 代理禁止玩家手动选择 Bingo 服务，并配置连接失败回退 Core。
-4. 先以一支测试队伍走通 `PREPARING → READY → ROUTING → COUNTDOWN → RUNNING → FINISHED`。
-5. 同时核对 Core 与 Worker 的任务完成、队伍颜色、TAB/Sidebar、普通跨服聊天和 `/teammsg`；这些属于共享玩家可见契约。
-6. 一局结束后确认玩家已返回 Core；Worker 写入重置交接标记并关闭 Folia，监督脚本在 Java 完全退出后移走旧世界、重新启动 Folia，新进程随后在后台删除旧世界。
+1. 在代理注册 Core 和 Worker 服务名，禁止玩家直接选择 Worker，设置连接失败回退 Core。
+2. 核对 Redis、世界名和重置流程，确认启动日志无错误。
+3. Core 先保持 `LOCAL`；空闲时按 [跨服架构](../docs/bingo-remote-architecture.md) 配置 `REMOTE`。
+4. 用测试队伍走通准备、转服、倒计时、任务、结算和返回。
+5. 核对卡片、积分、队伍颜色、完整 Tab、旁观、侧栏、普通聊天和 `/teammsg`。
+6. 确认停服、移走旧世界、重启和第二局均成功，再进行 [容量验证](../docs/bingo-64-player-performance-report.md)。
 
-`LOCAL/REMOTE` 切换安排在空闲窗口；每组 Bingo 三维度同一时间服务一个比赛 slot；生产环境保持 `allow-reuse-without-reset: false`，由重置循环清理旧世界。
+## 排障
 
-## Folia 与性能原则
-
-- 所有实体和区域操作继续经 entity/region scheduler；全局生命周期使用 global scheduler。
-- 64 人按四人队构成 16 支队伍，尽早把队内玩家也散开，让热点分布在多个 region 中。
-- 生产世界优先预生成，把首次生成新区块的尾延迟移出正式比赛。
-- 先采用性能指南中的 view/simulation distance、4 个 tick thread 和实体保护线，再根据 spark/Folia region 数据逐项 A/B 调整。
-- 观察任务采用事件触发并按玩家每 tick 合并；Sidebar 与 BossBar 只在数据变化时更新。新增事件入口复用这些合并路径。
-
-## 排障检查表
-
-| 现象 | 优先检查 |
+| 现象 | 检查项 |
 | --- | --- |
-| Core 一直等 `READY` | Worker `enabled`、`worker-id`、Redis URI/namespace、命令流 pending/DLQ、三世界是否成功加载 |
-| 玩家没有转服 | 代理服务名、Plugin Message channel、玩家是否属于 manifest、Worker 是否已 READY |
-| 玩家到达后比赛不开始 | `requiredAtStart` 到达状态、`PLAYER_ARRIVED` 序列、Core arrival timeout |
-| 任务不计数或重复 | Worker objective 日志、事件序列/completion sequence、outbox、Core inbox |
-| 两端任务判定或展示不同 | Core/Worker 构建来源、重启状态、manifest 协议版本；Worker 只执行 manifest 规则 |
-| Worker 看不到 Core 聊天 | Redis URI/namespace、Core `instance-id`、Worker `worker-id`、聊天 consumer group 和 Redis 连接告警 |
-| 队伍颜色或 `/teammsg` 异常 | manifest 队伍快照、原生 scoreboard team 是否可变；平台拒绝变更时确认已进入插件侧命令降级 |
-| 比赛结束无法返回 | `proxy.return-server`、代理 channel、Core 服务是否可用 |
-| TPS 低但总 CPU 不高 | 每个 Folia region 的 TPS/MSPT、chunk 和 entity 数；热点通常位于单个 region |
-| 下一局被拒绝 | 脏世界保护生效；恢复快照或重建 Worker |
+| Core 等不到 `READY` | `enabled`、worker ID、Redis 命名空间、pending/DLQ、世界加载 |
+| 玩家未转服或比赛未开始 | 代理服务名、channel、manifest 名册、`PLAYER_ARRIVED` 和到达超时 |
+| 任务不计数或重复 | objective 日志、event/completion 序列、Worker outbox 与 Core inbox |
+| 两端展示不一致 | 构建版本、重启状态、manifest、共享平台层 |
+| 跨服聊天缺失 | Core `instance-id`、Worker `worker-id`、Redis consumer group |
+| 结束后无法返回 | `proxy.return-server`、Core 可用性、代理 channel |
+| TPS 降低 | 各 Folia region 的 MSPT、实体和区块分布，磁盘与新区块生成 |
+| 第二局拒绝或复用旧世界 | 重置标记、监督进程、世界布局与脏世界保护 |
 
-Worker 事件先进入本地 outbox，再发往 Redis。Redis 故障期间保留 outbox、日志和 consumer group 数据，恢复后按事件序列继续投递比赛事件。公共聊天按 30 秒即时投递语义处理；故障窗口结束后，公共聊天从恢复时刻进入新的实时窗口。
-
-Bingo 全部骑乘路程（马科含驴/骡/骆驼、猪、炽足兽、快乐恶魂、鹦鹉螺及僵尸变种、船、矿车）由 Core/Worker 共用计量器按原版统计分类、三维距离逐段累计。玩家移动与载具移动独立累计，再与本局原版增量取最大值，不相加；载具移动覆盖直接乘客，取消移动和传送事件不计入。包含往返并保留小数厘米，切换坐骑类别不会串计。任务目标单位不变，`count: 20` 仍为 200 格；补偿仅用于 Bingo 判题，不修改玩家原版统计。
+Redis 故障时保留本地 outbox，恢复后按序重投。公共聊天只保留实时窗口。共享实现、线程约束和升级要求见 [开发指南](../docs/development.md) 与 [旁观契约](../docs/spectator-visibility-contract.md)。替换 JAR 后重启；共享代码变化时 Core 与 Worker 成对升级。

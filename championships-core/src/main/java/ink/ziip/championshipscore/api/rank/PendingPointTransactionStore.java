@@ -1,9 +1,10 @@
 package ink.ziip.championshipscore.api.rank;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.rank.entry.PlayerPointEntry;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.logging.LogText;
+
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.jetbrains.annotations.NotNull;
@@ -30,7 +31,9 @@ final class PendingPointTransactionStore {
     private final Map<String, Map<String, Object>> unreadable = new LinkedHashMap<>();
 
     PendingPointTransactionStore(@NotNull ChampionshipsCore plugin) {
-        this(plugin.getDataFolder().toPath().resolve("pending-point-transactions.yml"), plugin.getLogger());
+        this(
+                plugin.getDataFolder().toPath().resolve("pending-point-transactions.yml"),
+                plugin.getLogger());
     }
 
     PendingPointTransactionStore(Path file, java.util.logging.Logger logger) {
@@ -52,29 +55,32 @@ final class PendingPointTransactionStore {
             try {
                 UUID transactionId = UUID.fromString(key);
                 String path = "transactions." + key + ".";
-                PlayerPointEntry entry = PlayerPointEntry.builder()
-                        .transactionId(transactionId)
-                        .uuid(UUID.fromString(yaml.getString(path + "uuid", "")))
-                        .username(yaml.getString(path + "username", ""))
-                        .teamId(yaml.getInt(path + "team-id"))
-                        .team(yaml.getString(path + "team", ""))
-                        .rivalId(yaml.getInt(path + "rival-id"))
-                        .rival(yaml.getString(path + "rival", ""))
-                        .game(GameTypeEnum.valueOf(yaml.getString(path + "game", "")))
-                        .area(yaml.getString(path + "area", ""))
-                        .round(yaml.getString(path + "round", ""))
-                        .points(yaml.getDouble(path + "points"))
-                        .time(yaml.getString(path + "time", ""))
-                        .valid(1)
-                        .build();
+                PlayerPointEntry entry =
+                        PlayerPointEntry.builder()
+                                .transactionId(transactionId)
+                                .uuid(UUID.fromString(yaml.getString(path + "uuid", "")))
+                                .username(yaml.getString(path + "username", ""))
+                                .teamId(yaml.getInt(path + "team-id"))
+                                .team(yaml.getString(path + "team", ""))
+                                .rivalId(yaml.getInt(path + "rival-id"))
+                                .rival(yaml.getString(path + "rival", ""))
+                                .game(GameTypeEnum.valueOf(yaml.getString(path + "game", "")))
+                                .area(yaml.getString(path + "area", ""))
+                                .round(yaml.getString(path + "round", ""))
+                                .points(yaml.getDouble(path + "points"))
+                                .time(yaml.getString(path + "time", ""))
+                                .valid(1)
+                                .build();
                 pending.put(transactionId, entry);
             } catch (Exception exception) {
                 ConfigurationSection invalidSection = root.getConfigurationSection(key);
                 if (invalidSection != null) {
                     unreadable.put(key, invalidSection.getValues(true));
                 }
-                logger.log(Level.SEVERE, Utils.formatModuleLog("Rank", "暂存事务",
-                        "无法读取事务=" + key + "，该记录保留在暂存文件中"), exception);
+                logger.log(
+                        Level.SEVERE,
+                        LogText.formatModuleLog("Rank", "暂存事务", "无法读取事务=" + key + "，该记录保留在暂存文件中"),
+                        exception);
             }
         }
         return new ArrayList<>(pending.values());
@@ -117,19 +123,30 @@ final class PendingPointTransactionStore {
         if (!removed.isEmpty() && !save()) removed.forEach(pending::put);
     }
 
-    synchronized boolean renameArea(@NotNull GameTypeEnum game, @NotNull String oldArea,
-                                    @NotNull String newArea) {
+    synchronized boolean renameArea(
+            @NotNull GameTypeEnum game, @NotNull String oldArea, @NotNull String newArea) {
         Map<UUID, PlayerPointEntry> replacements = new LinkedHashMap<>();
         for (Map.Entry<UUID, PlayerPointEntry> pendingEntry : pending.entrySet()) {
             PlayerPointEntry entry = pendingEntry.getValue();
             if (entry.getGame() != game || !entry.getArea().equalsIgnoreCase(oldArea)) continue;
-            replacements.put(pendingEntry.getKey(), PlayerPointEntry.builder()
-                    .id(entry.getId()).transactionId(entry.getTransactionId())
-                    .uuid(entry.getUuid()).username(entry.getUsername())
-                    .teamId(entry.getTeamId()).team(entry.getTeam())
-                    .rivalId(entry.getRivalId()).rival(entry.getRival())
-                    .game(entry.getGame()).area(newArea).round(entry.getRound())
-                    .points(entry.getPoints()).time(entry.getTime()).valid(entry.getValid()).build());
+            replacements.put(
+                    pendingEntry.getKey(),
+                    PlayerPointEntry.builder()
+                            .id(entry.getId())
+                            .transactionId(entry.getTransactionId())
+                            .uuid(entry.getUuid())
+                            .username(entry.getUsername())
+                            .teamId(entry.getTeamId())
+                            .team(entry.getTeam())
+                            .rivalId(entry.getRivalId())
+                            .rival(entry.getRival())
+                            .game(entry.getGame())
+                            .area(newArea)
+                            .round(entry.getRound())
+                            .points(entry.getPoints())
+                            .time(entry.getTime())
+                            .valid(entry.getValid())
+                            .build());
         }
         if (replacements.isEmpty()) return true;
         Map<UUID, PlayerPointEntry> originals = new LinkedHashMap<>();
@@ -170,7 +187,11 @@ final class PendingPointTransactionStore {
             Files.createDirectories(file.getParent());
             yaml.save(temporary.toFile());
             try {
-                Files.move(temporary, file, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+                Files.move(
+                        temporary,
+                        file,
+                        StandardCopyOption.ATOMIC_MOVE,
+                        StandardCopyOption.REPLACE_EXISTING);
             } catch (AtomicMoveNotSupportedException exception) {
                 Files.move(temporary, file, StandardCopyOption.REPLACE_EXISTING);
             }
@@ -178,8 +199,10 @@ final class PendingPointTransactionStore {
             return true;
         } catch (Exception exception) {
             dirty = true;
-            logger.log(Level.SEVERE, Utils.formatModuleLog("Rank", "暂存事务",
-                    "无法写入积分暂存文件=" + file), exception);
+            logger.log(
+                    Level.SEVERE,
+                    LogText.formatModuleLog("Rank", "暂存事务", "无法写入积分暂存文件=" + file),
+                    exception);
             try {
                 Files.deleteIfExists(temporary);
             } catch (IOException ignored) {

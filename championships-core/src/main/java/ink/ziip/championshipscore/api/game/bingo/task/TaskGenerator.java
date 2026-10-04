@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.api.game.bingo.task.pool.TagFilters;
 import ink.ziip.championshipscore.api.game.bingo.task.pool.TaskPool;
 import ink.ziip.championshipscore.api.game.bingo.task.pool.TaskPoolEntry;
 import ink.ziip.championshipscore.api.game.bingo.task.pool.TaskPoolSource;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Statistic;
@@ -34,24 +35,40 @@ import java.util.function.Predicate;
  * the static tag layer plus per-round dimension excludes/caps apply.
  */
 public final class TaskGenerator {
-    public record GeneratorSettings(long seed,
-                                    Set<TaskData.TaskType> includedTypes,
-                                    CardSize size,
-                                    Set<String> extraExcludedTags,
-                                    Map<String, Integer> extraTagCaps,
-                                    int[] roundDifficultyWeights,
-                                    double netherFraction,
-                                    boolean colorful,
-                                    List<TaskData> seedTasks) {
-        public GeneratorSettings(long seed, Set<TaskData.TaskType> includedTypes, CardSize size,
-                                 Set<String> extraExcludedTags, Map<String, Integer> extraTagCaps) {
-            this(seed, includedTypes, size, extraExcludedTags, extraTagCaps, null, 0D, false, List.of());
+    public record GeneratorSettings(
+            long seed,
+            Set<TaskData.TaskType> includedTypes,
+            CardSize size,
+            Set<String> extraExcludedTags,
+            Map<String, Integer> extraTagCaps,
+            int[] roundDifficultyWeights,
+            double netherFraction,
+            boolean colorful,
+            List<TaskData> seedTasks) {
+        public GeneratorSettings(
+                long seed,
+                Set<TaskData.TaskType> includedTypes,
+                CardSize size,
+                Set<String> extraExcludedTags,
+                Map<String, Integer> extraTagCaps) {
+            this(
+                    seed,
+                    includedTypes,
+                    size,
+                    extraExcludedTags,
+                    extraTagCaps,
+                    null,
+                    0D,
+                    false,
+                    List.of());
         }
 
         public GeneratorSettings {
-            extraExcludedTags = extraExcludedTags == null ? Set.of() : Set.copyOf(extraExcludedTags);
+            extraExcludedTags =
+                    extraExcludedTags == null ? Set.of() : Set.copyOf(extraExcludedTags);
             extraTagCaps = extraTagCaps == null ? Map.of() : Map.copyOf(extraTagCaps);
-            roundDifficultyWeights = roundDifficultyWeights == null ? null : roundDifficultyWeights.clone();
+            roundDifficultyWeights =
+                    roundDifficultyWeights == null ? null : roundDifficultyWeights.clone();
             seedTasks = seedTasks == null ? List.of() : List.copyOf(seedTasks);
             netherFraction = Math.clamp(netherFraction, 0D, 1D);
         }
@@ -60,10 +77,11 @@ public final class TaskGenerator {
     private static final TaskData DEFAULT_TASK = new ItemTask(Material.DIRT, 1);
 
     /**
-     * Per-tier selection weights indexed by {@link ink.ziip.championshipscore.api.game.bingo.task.pool.Difficulty#ordinal()},
-     * overriding each tier's built-in weight. A weight of 0 excludes that tier entirely. Null = use the
-     * built-in tier weights. Installed once at startup from the bingo config
-     * (default {@code [3,5,2,1,0]} = EASY:MEDIUM:ADVANCED:HARD = 3:5:2:1, VERY_HARD excluded).
+     * Per-tier selection weights indexed by {@link
+     * ink.ziip.championshipscore.api.game.bingo.task.pool.Difficulty#ordinal()}, overriding each
+     * tier's built-in weight. A weight of 0 excludes that tier entirely. Null = use the built-in
+     * tier weights. Installed once at startup from the bingo config (default {@code [3,5,2,1,0]} =
+     * EASY:MEDIUM:ADVANCED:HARD = 3:5:2:1, VERY_HARD excluded).
      */
     private static volatile int[] difficultyWeights;
 
@@ -72,9 +90,10 @@ public final class TaskGenerator {
     }
 
     /**
-     * A predicate that reports whether a task would be trivialised by the starter kit (handed out at
-     * round start), so those objectives are kept off every card. Installed once at startup from
-     * {@link ink.ziip.championshipscore.api.game.bingo.BingoStarterKit#trivialises}. Null = no kit filter.
+     * A predicate that reports whether a task would be trivialised by the starter kit (handed out
+     * at round start), so those objectives are kept off every card. Installed once at startup from
+     * {@link ink.ziip.championshipscore.api.game.bingo.mechanics.BingoStarterKit#trivialises}. Null
+     * = no kit filter.
      */
     private static volatile Predicate<TaskData> kitFilter;
 
@@ -82,14 +101,18 @@ public final class TaskGenerator {
         kitFilter = filter;
     }
 
-    /** Chance an item-collect task is rerolled into a "craft that item" task (only if it's craftable). */
+    /**
+     * Chance an item-collect task is rerolled into a "craft that item" task (only if it's
+     * craftable).
+     */
     private static final double CRAFT_CONVERSION_CHANCE = 0.05;
 
     /**
-     * Selection-weight multiplier for {@code one_of} buckets. Each set is its own standalone bucket, so
-     * the ~20 sets would otherwise compete as ~20 independent MEDIUM-weight buckets and crowd a card
-     * with several "any X" cells. Halving their weight keeps them varied but down to roughly one per
-     * card, without mislabeling their difficulty tier (which difficulty-filtered modes rely on).
+     * Selection-weight multiplier for {@code one_of} buckets. Each set is its own standalone
+     * bucket, so the ~20 sets would otherwise compete as ~20 independent MEDIUM-weight buckets and
+     * crowd a card with several "any X" cells. Halving their weight keeps them varied but down to
+     * roughly one per card, without mislabeling their difficulty tier (which difficulty-filtered
+     * modes rely on).
      */
     private static final double ONE_OF_WEIGHT_FACTOR = 0.5;
 
@@ -101,10 +124,12 @@ public final class TaskGenerator {
 
         TaskPool pool = TaskPoolSource.pool().filter(settings.includedTypes(), Set.of());
         // Merge the static config tag layer with this round's dynamic dimension rules.
-        TagFilters filters = TagFilters.active().merged(settings.extraExcludedTags(), settings.extraTagCaps());
+        TagFilters filters =
+                TagFilters.active().merged(settings.extraExcludedTags(), settings.extraTagCaps());
 
         List<TaskPoolEntry> entries = new ArrayList<>(pool.entries());
-        // Tag layer: drop any objective carrying an excluded tag (unobtainable, a disabled dimension, …).
+        // Tag layer: drop any objective carrying an excluded tag (unobtainable, a disabled
+        // dimension, …).
         entries.removeIf(e -> filters.isExcluded(e.task()));
         // Starter-kit layer: drop any objective the kit would auto-complete at round start.
         if (kitFilter != null) {
@@ -119,8 +144,10 @@ public final class TaskGenerator {
         // Per-card running counts for capped tags, shared across every sampling call.
         Map<String, Integer> tagCounts = new HashMap<>();
 
-        int[] weights = settings.roundDifficultyWeights() == null
-                ? difficultyWeights : settings.roundDifficultyWeights();
+        int[] weights =
+                settings.roundDifficultyWeights() == null
+                        ? difficultyWeights
+                        : settings.roundDifficultyWeights();
         List<TaskData> picked = new ArrayList<>(fullCardSize);
         for (TaskData seed : settings.seedTasks()) {
             if (picked.size() >= fullCardSize || hasCollision(seed, usedSubjects)) continue;
@@ -129,24 +156,39 @@ public final class TaskGenerator {
             picked.add(seed);
         }
         if (settings.colorful() && picked.size() < fullCardSize) {
-            picked.addAll(pickColorTasks(entries, Math.min(16, fullCardSize - picked.size()), rng,
-                    weights, usedSubjects, filters, tagCounts));
+            picked.addAll(
+                    pickColorTasks(
+                            entries,
+                            Math.min(16, fullCardSize - picked.size()),
+                            rng,
+                            weights,
+                            usedSubjects,
+                            filters,
+                            tagCounts));
         }
         int remaining = fullCardSize - picked.size();
         if (remaining > 0 && settings.netherFraction() > 0D) {
             List<TaskPoolEntry> nether = new ArrayList<>();
             List<TaskPoolEntry> other = new ArrayList<>();
             for (TaskPoolEntry entry : entries) {
-                if (entry.task().dimension() == ink.ziip.championshipscore.api.game.bingo.task.pool.Dimension.NETHER)
+                if (entry.task().dimension()
+                        == ink.ziip.championshipscore.api.game.bingo.task.pool.Dimension.NETHER)
                     nether.add(entry);
                 else other.add(entry);
             }
-            int netherCount = Math.min(remaining, (int) Math.round(fullCardSize * settings.netherFraction()));
-            picked.addAll(weightedSample(nether, netherCount, rng, usedSubjects, filters, tagCounts, weights));
+            int netherCount =
+                    Math.min(remaining, (int) Math.round(fullCardSize * settings.netherFraction()));
+            picked.addAll(
+                    weightedSample(
+                            nether, netherCount, rng, usedSubjects, filters, tagCounts, weights));
             remaining = fullCardSize - picked.size();
-            picked.addAll(weightedSample(other, remaining, rng, usedSubjects, filters, tagCounts, weights));
+            picked.addAll(
+                    weightedSample(
+                            other, remaining, rng, usedSubjects, filters, tagCounts, weights));
         } else if (remaining > 0) {
-            picked.addAll(weightedSample(entries, remaining, rng, usedSubjects, filters, tagCounts, weights));
+            picked.addAll(
+                    weightedSample(
+                            entries, remaining, rng, usedSubjects, filters, tagCounts, weights));
         }
 
         Collections.shuffle(picked, rng);
@@ -154,15 +196,21 @@ public final class TaskGenerator {
     }
 
     /**
-     * Category-aware weighted sampling without replacement. Entries are grouped by category (null-category
-     * entries each form a singleton bucket). Each bucket gets a single Efraimidis–Spirakis key
-     * {@code u^(1/weight)}; the {@code count} largest keys win, and from each winning bucket one member is
-     * picked uniformly at random — so a category's chance is independent of how many siblings it holds.
-     * Pads with {@link #DEFAULT_TASK} if too few buckets exist.
+     * Category-aware weighted sampling without replacement. Entries are grouped by category
+     * (null-category entries each form a singleton bucket). Each bucket gets a single
+     * Efraimidis–Spirakis key {@code u^(1/weight)}; the {@code count} largest keys win, and from
+     * each winning bucket one member is picked uniformly at random — so a category's chance is
+     * independent of how many siblings it holds. Pads with {@link #DEFAULT_TASK} if too few buckets
+     * exist.
      */
-    private static List<TaskData> weightedSample(List<TaskPoolEntry> entries, int count, Random rng,
-                                                  Set<String> usedSubjects, TagFilters filters,
-                                                  Map<String, Integer> tagCounts, int[] weights) {
+    private static List<TaskData> weightedSample(
+            List<TaskPoolEntry> entries,
+            int count,
+            Random rng,
+            Set<String> usedSubjects,
+            TagFilters filters,
+            Map<String, Integer> tagCounts,
+            int[] weights) {
         Map<String, List<TaskPoolEntry>> categorised = new HashMap<>();
         List<List<TaskPoolEntry>> buckets = new ArrayList<>();
         for (TaskPoolEntry entry : entries) {
@@ -174,8 +222,7 @@ public final class TaskGenerator {
         }
         buckets.addAll(categorised.values());
 
-        record Keyed(List<TaskPoolEntry> bucket, double key) {
-        }
+        record Keyed(List<TaskPoolEntry> bucket, double key) {}
         List<Keyed> keyed = new ArrayList<>(buckets.size());
         for (List<TaskPoolEntry> bucket : buckets) {
             int w = weightFor(bucket.get(0), weights);
@@ -193,7 +240,8 @@ public final class TaskGenerator {
         for (Keyed k : keyed) {
             if (picked.size() >= count) break;
             TaskData choice = chooseMember(k.bucket(), usedSubjects, rng, filters, tagCounts);
-            if (choice == null) continue; // bucket exhausted: every member collides or hits a tag cap
+            if (choice == null)
+                continue; // bucket exhausted: every member collides or hits a tag cap
             addSubjectKeys(choice, usedSubjects);
             addTagCounts(choice, filters, tagCounts);
             picked.add(choice);
@@ -204,21 +252,29 @@ public final class TaskGenerator {
         return picked;
     }
 
-    private static List<TaskData> pickColorTasks(List<TaskPoolEntry> entries, int maxColors, Random rng,
-                                                 int[] weights, Set<String> usedSubjects,
-                                                 TagFilters filters, Map<String, Integer> tagCounts) {
+    private static List<TaskData> pickColorTasks(
+            List<TaskPoolEntry> entries,
+            int maxColors,
+            Random rng,
+            int[] weights,
+            Set<String> usedSubjects,
+            TagFilters filters,
+            Map<String, Integer> tagCounts) {
         Map<String, List<TaskPoolEntry>> byColor = new HashMap<>();
         for (TaskPoolEntry entry : entries) {
             String color = colorKey(entry.task());
-            if (color != null) byColor.computeIfAbsent(color, ignored -> new ArrayList<>()).add(entry);
+            if (color != null)
+                byColor.computeIfAbsent(color, ignored -> new ArrayList<>()).add(entry);
         }
         List<String> colors = new ArrayList<>(byColor.keySet());
         Collections.shuffle(colors, rng);
         List<TaskData> selected = new ArrayList<>();
         for (String color : colors) {
             if (selected.size() >= maxColors) break;
-            List<TaskPoolEntry> candidates = byColor.get(color).stream()
-                    .filter(entry -> weightFor(entry, weights) > 0).toList();
+            List<TaskPoolEntry> candidates =
+                    byColor.get(color).stream()
+                            .filter(entry -> weightFor(entry, weights) > 0)
+                            .toList();
             if (candidates.isEmpty()) continue;
             TaskData choice = chooseMember(candidates, usedSubjects, rng, filters, tagCounts);
             if (choice == null) continue;
@@ -229,8 +285,12 @@ public final class TaskGenerator {
         return selected;
     }
 
-    private static TaskData chooseMember(List<TaskPoolEntry> bucket, Set<String> usedSubjects, Random rng,
-                                         TagFilters filters, Map<String, Integer> tagCounts) {
+    private static TaskData chooseMember(
+            List<TaskPoolEntry> bucket,
+            Set<String> usedSubjects,
+            Random rng,
+            TagFilters filters,
+            Map<String, Integer> tagCounts) {
         int start = rng.nextInt(bucket.size());
         for (int offset = 0; offset < bucket.size(); offset++) {
             TaskData task = bucket.get((start + offset) % bucket.size()).task();
@@ -241,7 +301,8 @@ public final class TaskGenerator {
         return null;
     }
 
-    private static boolean exceedsCap(TaskData task, TagFilters filters, Map<String, Integer> tagCounts) {
+    private static boolean exceedsCap(
+            TaskData task, TagFilters filters, Map<String, Integer> tagCounts) {
         if (!filters.hasCaps()) return false;
         for (String tag : filters.tagsOf(task)) {
             Integer cap = filters.cap(tag);
@@ -250,7 +311,8 @@ public final class TaskGenerator {
         return false;
     }
 
-    private static void addTagCounts(TaskData task, TagFilters filters, Map<String, Integer> tagCounts) {
+    private static void addTagCounts(
+            TaskData task, TagFilters filters, Map<String, Integer> tagCounts) {
         if (!filters.hasCaps()) return;
         for (String tag : filters.tagsOf(task)) {
             if (filters.cap(tag) != null) tagCounts.merge(tag, 1, Integer::sum);
@@ -268,13 +330,18 @@ public final class TaskGenerator {
         usedSubjects.addAll(subjectsOf(task));
     }
 
-    /** All subject keys a task occupies: a single item/color for most kinds, every member for a set. */
+    /**
+     * All subject keys a task occupies: a single item/color for most kinds, every member for a set.
+     */
     private static Set<String> subjectsOf(TaskData task) {
         Set<String> out = new HashSet<>();
         if (task instanceof OneOfTask set) {
-            // A one_of can span any family (woods, stones, colours, …), so dedup only at the item level:
-            // every member is claimed so no individual member (or overlapping set) appears elsewhere on
-            // the card. We deliberately skip colour-family keys here - a whole-family set (e.g. "any
+            // A one_of can span any family (woods, stones, colours, …), so dedup only at the item
+            // level:
+            // every member is claimed so no individual member (or overlapping set) appears
+            // elsewhere on
+            // the card. We deliberately skip colour-family keys here - a whole-family set (e.g.
+            // "any
             // wool") must not ban every same-coloured item from the rest of the card.
             for (Material material : set.items()) {
                 out.add("item:" + material);
@@ -282,7 +349,8 @@ public final class TaskGenerator {
             return out;
         }
         if (task instanceof AllOfTask set) {
-            // Complete-set tasks need the same item-level exclusivity: an individual furnace can't sit
+            // Complete-set tasks need the same item-level exclusivity: an individual furnace can't
+            // sit
             // beside "collect all furnaces" on one card.
             for (Material material : set.items()) {
                 out.add("item:" + material);
@@ -290,7 +358,8 @@ public final class TaskGenerator {
             return out;
         }
         if (task instanceof PotionTask potion) {
-            // Claim the potion's material so an effect potion and the generic "collect a potion" (or a
+            // Claim the potion's material so an effect potion and the generic "collect a potion"
+            // (or a
             // second potion of the same form) can't both land on one card.
             out.add("item:" + potion.form().material.name());
             return out;
@@ -311,28 +380,41 @@ public final class TaskGenerator {
             // co-exist; kill and untyped statistics have no item, so key on their own identity.
             StatisticHandle h = statisticTask.statistic();
             if (h.itemType() != null) return "item:" + h.itemType();
-            return h.entityType() != null ? "kill:" + h.entityType() : "stat:" + h.statisticType().name();
+            return h.entityType() != null
+                    ? "kill:" + h.entityType()
+                    : "stat:" + h.statisticType().name();
         }
         if (task instanceof AdvancementTask advancementTask) {
-            return "adv:" + (advancementTask.advancement() == null ? "unknown"
-                    : advancementTask.advancement().key().value());
+            return "adv:"
+                    + (advancementTask.advancement() == null
+                            ? "unknown"
+                            : advancementTask.advancement().key().value());
         }
         return null;
     }
 
-    private static final Set<String> COLOR_SUFFIXES = Set.of(
-            "_DYE", "_WOOL", "_CARPET", "_BED", "_BANNER",
-            "_STAINED_GLASS", "_STAINED_GLASS_PANE",
-            "_CONCRETE", "_CONCRETE_POWDER",
-            "_TERRACOTTA", "_GLAZED_TERRACOTTA",
-            "_CANDLE", "_HARNESS"
-    );
+    private static final Set<String> COLOR_SUFFIXES =
+            Set.of(
+                    "_DYE",
+                    "_WOOL",
+                    "_CARPET",
+                    "_BED",
+                    "_BANNER",
+                    "_STAINED_GLASS",
+                    "_STAINED_GLASS_PANE",
+                    "_CONCRETE",
+                    "_CONCRETE_POWDER",
+                    "_TERRACOTTA",
+                    "_GLAZED_TERRACOTTA",
+                    "_CANDLE",
+                    "_HARNESS");
 
     private static String colorKey(TaskData task) {
         Material material = null;
         if (task instanceof ItemTask itemTask) {
             material = itemTask.itemType();
-        } else if (task instanceof StatisticTask statisticTask && statisticTask.statistic().itemType() != null) {
+        } else if (task instanceof StatisticTask statisticTask
+                && statisticTask.statistic().itemType() != null) {
             material = statisticTask.statistic().itemType();
         }
         return colorKeyFor(material);
@@ -352,8 +434,10 @@ public final class TaskGenerator {
         return null;
     }
 
-    /** Selection weight for a bucket's representative entry: the configured tier override, else the
-     *  tier's built-in weight. A returned 0 excludes the bucket. */
+    /**
+     * Selection weight for a bucket's representative entry: the configured tier override, else the
+     * tier's built-in weight. A returned 0 excludes the bucket.
+     */
     private static int weightFor(TaskPoolEntry entry, int[] dw) {
         if (dw == null) return entry.difficulty().weight;
         int ord = entry.difficulty().ordinal();
@@ -361,25 +445,29 @@ public final class TaskGenerator {
     }
 
     /**
-     * With probability {@link #CRAFT_CONVERSION_CHANCE}, rerolls an item-collect task into a
-     * "craft that item" task — but only when the item is actually craftable. The subject identity is
+     * With probability {@link #CRAFT_CONVERSION_CHANCE}, rerolls an item-collect task into a "craft
+     * that item" task — but only when the item is actually craftable. The subject identity is
      * preserved, so this never reintroduces a collect/craft duplicate on one card.
      */
     private static TaskData maybeCraftify(TaskData task, Random rng) {
         if (!(task instanceof ItemTask itemTask)) return task;
         if (rng.nextDouble() >= CRAFT_CONVERSION_CHANCE) return task;
         if (!isCraftable(itemTask.itemType())) return task;
-        return new StatisticTask(new StatisticHandle(Statistic.CRAFT_ITEM, itemTask.itemType()),
-                itemTask.count(), itemTask.dimension());
+        return new StatisticTask(
+                new StatisticHandle(Statistic.CRAFT_ITEM, itemTask.itemType()),
+                itemTask.count(),
+                itemTask.dimension());
     }
 
     private static boolean isCraftable(Material material) {
-        return CRAFTABLE_CACHE.computeIfAbsent(material, m -> {
-            if (!m.isItem()) return false;
-            for (Recipe recipe : Bukkit.getRecipesFor(new ItemStack(m))) {
-                if (recipe instanceof CraftingRecipe) return true;
-            }
-            return false;
-        });
+        return CRAFTABLE_CACHE.computeIfAbsent(
+                material,
+                m -> {
+                    if (!m.isItem()) return false;
+                    for (Recipe recipe : Bukkit.getRecipesFor(new ItemStack(m))) {
+                        if (recipe instanceof CraftingRecipe) return true;
+                    }
+                    return false;
+                });
     }
 }

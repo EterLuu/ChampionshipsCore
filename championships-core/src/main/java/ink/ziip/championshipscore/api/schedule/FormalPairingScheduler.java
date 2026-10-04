@@ -1,6 +1,6 @@
 package ink.ziip.championshipscore.api.schedule;
 
-import ink.ziip.championshipscore.api.object.schedule.TwoVTwoVector;
+import ink.ziip.championshipscore.api.schedule.model.TwoVTwoVector;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 
 import java.util.*;
@@ -21,8 +21,11 @@ public final class FormalPairingScheduler {
     }
 
     public static List<List<TwoVTwoVector>> roundRobin(List<ChampionshipTeam> teams, int count) {
-        if (teams == null || teams.size() < 2 || teams.size() % 2 != 0
-                || new HashSet<>(teams).size() != teams.size() || count <= 0) return List.of();
+        if (teams == null
+                || teams.size() < 2
+                || teams.size() % 2 != 0
+                || new HashSet<>(teams).size() != teams.size()
+                || count <= 0) return List.of();
         int roundsToMake = Math.min(count, totalRounds(teams.size()));
         List<ChampionshipTeam> ring = new ArrayList<>(teams);
         List<List<TwoVTwoVector>> rounds = new ArrayList<>();
@@ -37,45 +40,65 @@ public final class FormalPairingScheduler {
     }
 
     /**
-     * Creates one standings round. Teams are ordered by score, then by the supplied list order.
-     * A backtracking matching keeps adjacent standings together while guaranteeing no old pair is
+     * Creates one standings round. Teams are ordered by score, then by the supplied list order. A
+     * backtracking matching keeps adjacent standings together while guaranteeing no old pair is
      * used again whenever a valid matching exists.
      */
-    public static List<TwoVTwoVector> standingsRound(List<ChampionshipTeam> teams,
-                                                      Map<ChampionshipTeam, Double> scores,
-                                                      Set<String> previousOpponents) {
+    public static List<TwoVTwoVector> standingsRound(
+            List<ChampionshipTeam> teams,
+            Map<ChampionshipTeam, Double> scores,
+            Set<String> previousOpponents) {
         if (teams == null || teams.size() < 2 || teams.size() % 2 != 0) return List.of();
         List<ChampionshipTeam> ordered = new ArrayList<>(teams);
         Map<ChampionshipTeam, Integer> seedOrder = new HashMap<>();
         for (int i = 0; i < ordered.size(); i++) seedOrder.put(ordered.get(i), i);
-        ordered.sort(Comparator
-                .comparingDouble((ChampionshipTeam team) -> scores.getOrDefault(team, 0D)).reversed()
-                .thenComparingInt(seedOrder::get));
+        ordered.sort(
+                Comparator.comparingDouble((ChampionshipTeam team) -> scores.getOrDefault(team, 0D))
+                        .reversed()
+                        .thenComparingInt(seedOrder::get));
 
         List<TwoVTwoVector> result = new ArrayList<>();
         Set<ChampionshipTeam> used = new HashSet<>();
-        if (!match(ordered, scores, previousOpponents == null ? Set.of() : previousOpponents,
-                used, result)) return List.of();
+        if (!match(
+                ordered,
+                scores,
+                previousOpponents == null ? Set.of() : previousOpponents,
+                used,
+                result)) return List.of();
         return List.copyOf(result);
     }
 
-    private static boolean match(List<ChampionshipTeam> ordered,
-                                 Map<ChampionshipTeam, Double> scores,
-                                 Set<String> previous,
-                                 Set<ChampionshipTeam> used,
-                                 List<TwoVTwoVector> result) {
+    private static boolean match(
+            List<ChampionshipTeam> ordered,
+            Map<ChampionshipTeam, Double> scores,
+            Set<String> previous,
+            Set<ChampionshipTeam> used,
+            List<TwoVTwoVector> result) {
         if (used.size() == ordered.size()) return true;
-        ChampionshipTeam first = ordered.stream().filter(team -> !used.contains(team)).findFirst().orElse(null);
+        ChampionshipTeam first =
+                ordered.stream().filter(team -> !used.contains(team)).findFirst().orElse(null);
         if (first == null) return true;
         int firstIndex = ordered.indexOf(first);
-        List<ChampionshipTeam> candidates = ordered.stream()
-                .filter(team -> !used.contains(team) && team != first
-                        && !previous.contains(opponentKey(first, team)))
-                .sorted(Comparator
-                        .comparingDouble((ChampionshipTeam team) ->
-                                Math.abs(scores.getOrDefault(first, 0D) - scores.getOrDefault(team, 0D)))
-                        .thenComparingInt(team -> Math.abs(ordered.indexOf(team) - firstIndex)))
-                .toList();
+        List<ChampionshipTeam> candidates =
+                ordered.stream()
+                        .filter(
+                                team ->
+                                        !used.contains(team)
+                                                && team != first
+                                                && !previous.contains(opponentKey(first, team)))
+                        .sorted(
+                                Comparator.comparingDouble(
+                                                (ChampionshipTeam team) ->
+                                                        Math.abs(
+                                                                scores.getOrDefault(first, 0D)
+                                                                        - scores.getOrDefault(
+                                                                                team, 0D)))
+                                        .thenComparingInt(
+                                                team ->
+                                                        Math.abs(
+                                                                ordered.indexOf(team)
+                                                                        - firstIndex)))
+                        .toList();
         for (ChampionshipTeam second : candidates) {
             used.add(first);
             used.add(second);

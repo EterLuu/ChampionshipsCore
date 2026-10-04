@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 3
+  version: 4
 name: area
 world-name:
 prepare:
@@ -16,7 +16,12 @@ timer: 240
 area-pos1:
 area-pos2:
 spectator-spawn-point:
-player-spawn-point:
+copies: 0
+copy-size:
+copy-layout: {}
+copy-bounds: []
+spawn-points: []
+copy-spawn:
 
 # ──规则介绍阶段（introduction）────────────────────────────
 #游戏正式开始前，玩家会先被传送到introduction-spawn-point，在45秒内于聊天框分段播报下面的
@@ -27,13 +32,13 @@ introduction-spawn-point:
 rules:
   - - "&#696969==========&r &#ff6b26[&6烫手鳕鱼&#ff6b26] &#696969==========&r"
     - "&#fff566鳕鱼烫手！快把它塞给别人！！"
-    - "&#ededed开局鳕鱼会随机落在一名玩家身上"
+    - "&#ededed每个子场地开局随机选择一名持鱼玩家"
     - "&#ededed持有者每3秒被烫掉&#ff6b26&l2点血"
     - "&#ededed攻击其他玩家即可把鳕鱼传给他"
     - "&#ededed血量归零即出局，活到最后才是赢家"
   - - "&#696969==========&r&#fff566积分规则&#696969==========&r"
-    - "&#ededed鳕鱼每次易手，接手者&#fff566+10分"
-    - "&#ededed每轮结束时的存活者：&#fff566+15分"
+    - "&#ededed初始及淘汰后随机选中的持鱼者：&#fff566+10分"
+    - "&#ededed每淘汰一人，所有存活者&#fff566+15分；全队淘汰额外再奖励一次"
     - "&#ededed按淘汰顺序排名：前三&#fff566+25/+20/+15"
   - - "&#696969==========&r&#fff566小提示&#696969==========&r"
     - "&#fff566鳕鱼在手，血条在抖——赶紧传出去！"

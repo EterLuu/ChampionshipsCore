@@ -1,10 +1,12 @@
 package ink.ziip.championshipscore.api.game.bingo.util;
 
-import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
-import net.kyori.adventure.text.format.TextColor;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+
+import net.kyori.adventure.text.format.TextColor;
+
+import org.junit.jupiter.api.Test;
 
 class MessageServiceTest {
     @Test

@@ -4,7 +4,9 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.rank.RankManager;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+import ink.ziip.championshipscore.presentation.text.CoreMessages;
+
 import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
 
@@ -31,10 +33,11 @@ public class LeaderboardPlaceholder extends BasePlaceholder {
             try {
                 int num = Integer.parseInt(params.replace("player_", ""));
 
-                Map.Entry<UUID, Double> playerEntry = rankManager.getPlayerLeaderboard().get(num - 1);
+                Map.Entry<UUID, Double> playerEntry =
+                        rankManager.getPlayerLeaderboard().get(num - 1);
                 return MessageConfig.RANK_PLAYER_BOARD_ENTRY
-                        .replace("%player%", Utils.formatPlayerName(playerEntry.getKey()))
-                        .replace("%player_point%", Utils.formatPoints(playerEntry.getValue()));
+                        .replace("%player%", CoreMessages.formatPlayerName(playerEntry.getKey()))
+                        .replace("%player_point%", LegacyText.formatPoints(playerEntry.getValue()));
             } catch (Exception ignored) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
@@ -43,10 +46,11 @@ public class LeaderboardPlaceholder extends BasePlaceholder {
             try {
                 int num = Integer.parseInt(params.replace("team_", ""));
 
-                Map.Entry<ChampionshipTeam, Double> teamEntry = rankManager.getTeamLeaderboard().get(num - 1);
+                Map.Entry<ChampionshipTeam, Double> teamEntry =
+                        rankManager.getTeamLeaderboard().get(num - 1);
                 return MessageConfig.RANK_TEAM_BOARD_ENTRY
                         .replace("%team%", teamEntry.getKey().getColoredName())
-                        .replace("%team_point%", Utils.formatPoints(teamEntry.getValue()));
+                        .replace("%team_point%", LegacyText.formatPoints(teamEntry.getValue()));
             } catch (Exception ignored) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }

@@ -7,6 +7,4 @@ public record BridgeControlPlayer(
         String uuidSource,
         String minecraftUuid,
         String fromUuid,
-        String toUuid
-) {
-}
+        String toUuid) {}

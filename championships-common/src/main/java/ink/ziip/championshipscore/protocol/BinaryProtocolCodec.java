@@ -25,137 +25,199 @@ public final class BinaryProtocolCodec {
 
     public byte[] encodeManifest(MatchManifest manifest) {
         ProtocolSupport.required(manifest, "manifest");
-        return encode(MANIFEST, out -> {
-            out.writeInt(manifest.protocolVersion());
-            writeUuid(out, manifest.matchId());
-            out.writeLong(manifest.epoch());
-            out.writeLong(manifest.createdAtEpochMilli());
-            writeString(out, manifest.workerId());
-            writeString(out, manifest.runMode().name());
-            out.writeInt(manifest.durationSeconds());
-            out.writeLong(manifest.cardSeed());
-            writeString(out, manifest.configHash());
-            writeScoring(out, manifest.scoring());
-            writeRuntimeRules(out, manifest.runtimeRules());
+        return encode(
+                MANIFEST,
+                out -> {
+                    out.writeInt(manifest.protocolVersion());
+                    writeUuid(out, manifest.matchId());
+                    out.writeLong(manifest.epoch());
+                    out.writeLong(manifest.createdAtEpochMilli());
+                    writeString(out, manifest.workerId());
+                    writeString(out, manifest.runMode().name());
+                    out.writeInt(manifest.durationSeconds());
+                    out.writeLong(manifest.cardSeed());
+                    writeString(out, manifest.configHash());
+                    writeScoring(out, manifest.scoring());
+                    writeRuntimeRules(out, manifest.runtimeRules());
 
-            out.writeInt(manifest.tasks().size());
-            for (BingoTaskSpec task : manifest.tasks()) {
-                out.writeInt(task.cellIndex());
-                writeString(out, task.taskId());
-                writeString(out, task.taskType());
-                writeAttributes(out, task.attributes());
-            }
+                    out.writeInt(manifest.tasks().size());
+                    for (BingoTaskSpec task : manifest.tasks()) {
+                        out.writeInt(task.cellIndex());
+                        writeString(out, task.taskId());
+                        writeString(out, task.taskType());
+                        writeAttributes(out, task.attributes());
+                    }
 
-            out.writeInt(manifest.teams().size());
-            for (TeamSnapshot team : manifest.teams()) {
-                out.writeInt(team.id());
-                writeString(out, team.name());
-                writeString(out, team.colorName());
-                writeString(out, team.colorCode());
-                out.writeInt(team.members().size());
-                for (UUID member : team.members()) writeUuid(out, member);
-                out.writeDouble(team.points());
-            }
+                    out.writeInt(manifest.teams().size());
+                    for (TeamSnapshot team : manifest.teams()) {
+                        out.writeInt(team.id());
+                        writeString(out, team.name());
+                        writeString(out, team.colorName());
+                        writeString(out, team.colorCode());
+                        out.writeInt(team.members().size());
+                        for (UUID member : team.members()) writeUuid(out, member);
+                        out.writeDouble(team.points());
+                    }
 
-            out.writeInt(manifest.participants().size());
-            for (PlayerSnapshot participant : manifest.participants()) {
-                writeUuid(out, participant.uuid());
-                writeString(out, participant.username());
-                writeString(out, participant.role().name());
-                out.writeBoolean(participant.teamId() != null);
-                if (participant.teamId() != null) out.writeInt(participant.teamId());
-                out.writeBoolean(participant.requiredAtStart());
-                out.writeDouble(participant.points());
-            }
-        });
+                    out.writeInt(manifest.participants().size());
+                    for (PlayerSnapshot participant : manifest.participants()) {
+                        writeUuid(out, participant.uuid());
+                        writeString(out, participant.username());
+                        writeString(out, participant.role().name());
+                        out.writeBoolean(participant.teamId() != null);
+                        if (participant.teamId() != null) out.writeInt(participant.teamId());
+                        out.writeBoolean(participant.requiredAtStart());
+                        out.writeDouble(participant.points());
+                    }
+                });
     }
 
     public MatchManifest decodeManifest(byte[] bytes) {
-        return decode(bytes, MANIFEST, in -> {
-            int protocolVersion = in.readInt();
-            UUID matchId = readUuid(in);
-            long epoch = in.readLong();
-            long createdAt = in.readLong();
-            String workerId = readString(in);
-            MatchRunMode runMode = readEnum(in, MatchRunMode.class);
-            int duration = in.readInt();
-            long seed = in.readLong();
-            String configHash = readString(in);
-            BingoScoringRules scoring = readScoring(in);
-            BingoRuntimeRules runtimeRules = readRuntimeRules(in);
+        return decode(
+                bytes,
+                MANIFEST,
+                in -> {
+                    int protocolVersion = in.readInt();
+                    UUID matchId = readUuid(in);
+                    long epoch = in.readLong();
+                    long createdAt = in.readLong();
+                    String workerId = readString(in);
+                    MatchRunMode runMode = readEnum(in, MatchRunMode.class);
+                    int duration = in.readInt();
+                    long seed = in.readLong();
+                    String configHash = readString(in);
+                    BingoScoringRules scoring = readScoring(in);
+                    BingoRuntimeRules runtimeRules = readRuntimeRules(in);
 
-            List<BingoTaskSpec> tasks = new ArrayList<>();
-            for (int remaining = readSize(in, "tasks"); remaining > 0; remaining--) {
-                tasks.add(new BingoTaskSpec(in.readInt(), readString(in), readString(in), readAttributes(in)));
-            }
+                    List<BingoTaskSpec> tasks = new ArrayList<>();
+                    for (int remaining = readSize(in, "tasks"); remaining > 0; remaining--) {
+                        tasks.add(
+                                new BingoTaskSpec(
+                                        in.readInt(),
+                                        readString(in),
+                                        readString(in),
+                                        readAttributes(in)));
+                    }
 
-            List<TeamSnapshot> teams = new ArrayList<>();
-            for (int remaining = readSize(in, "teams"); remaining > 0; remaining--) {
-                int teamId = in.readInt();
-                String name = readString(in);
-                String colorName = readString(in);
-                String colorCode = readString(in);
-                List<UUID> members = new ArrayList<>();
-                for (int memberCount = readSize(in, "members"); memberCount > 0; memberCount--) {
-                    members.add(readUuid(in));
-                }
-                teams.add(new TeamSnapshot(teamId, name, colorName, colorCode, members, in.readDouble()));
-            }
+                    List<TeamSnapshot> teams = new ArrayList<>();
+                    for (int remaining = readSize(in, "teams"); remaining > 0; remaining--) {
+                        int teamId = in.readInt();
+                        String name = readString(in);
+                        String colorName = readString(in);
+                        String colorCode = readString(in);
+                        List<UUID> members = new ArrayList<>();
+                        for (int memberCount = readSize(in, "members");
+                                memberCount > 0;
+                                memberCount--) {
+                            members.add(readUuid(in));
+                        }
+                        teams.add(
+                                new TeamSnapshot(
+                                        teamId,
+                                        name,
+                                        colorName,
+                                        colorCode,
+                                        members,
+                                        in.readDouble()));
+                    }
 
-            List<PlayerSnapshot> participants = new ArrayList<>();
-            for (int remaining = readSize(in, "participants"); remaining > 0; remaining--) {
-                UUID uuid = readUuid(in);
-                String username = readString(in);
-                ParticipantRole role = readEnum(in, ParticipantRole.class);
-                Integer teamId = in.readBoolean() ? in.readInt() : null;
-                participants.add(new PlayerSnapshot(uuid, username, role, teamId,
-                        in.readBoolean(), in.readDouble()));
-            }
-            return new MatchManifest(protocolVersion, matchId, epoch, createdAt, workerId, runMode,
-                    duration, seed, configHash, scoring, runtimeRules, tasks, teams, participants);
-        });
+                    List<PlayerSnapshot> participants = new ArrayList<>();
+                    for (int remaining = readSize(in, "participants"); remaining > 0; remaining--) {
+                        UUID uuid = readUuid(in);
+                        String username = readString(in);
+                        ParticipantRole role = readEnum(in, ParticipantRole.class);
+                        Integer teamId = in.readBoolean() ? in.readInt() : null;
+                        participants.add(
+                                new PlayerSnapshot(
+                                        uuid,
+                                        username,
+                                        role,
+                                        teamId,
+                                        in.readBoolean(),
+                                        in.readDouble()));
+                    }
+                    return new MatchManifest(
+                            protocolVersion,
+                            matchId,
+                            epoch,
+                            createdAt,
+                            workerId,
+                            runMode,
+                            duration,
+                            seed,
+                            configHash,
+                            scoring,
+                            runtimeRules,
+                            tasks,
+                            teams,
+                            participants);
+                });
     }
 
     public byte[] encodeCommand(MatchCommand command) {
         ProtocolSupport.required(command, "command");
-        return encode(COMMAND, out -> {
-            out.writeInt(command.protocolVersion());
-            writeUuid(out, command.messageId());
-            writeUuid(out, command.matchId());
-            out.writeLong(command.epoch());
-            out.writeLong(command.createdAtEpochMilli());
-            writeString(out, command.type().name());
-            writeAttributes(out, command.attributes());
-        });
+        return encode(
+                COMMAND,
+                out -> {
+                    out.writeInt(command.protocolVersion());
+                    writeUuid(out, command.messageId());
+                    writeUuid(out, command.matchId());
+                    out.writeLong(command.epoch());
+                    out.writeLong(command.createdAtEpochMilli());
+                    writeString(out, command.type().name());
+                    writeAttributes(out, command.attributes());
+                });
     }
 
     public MatchCommand decodeCommand(byte[] bytes) {
-        return decode(bytes, COMMAND, in -> new MatchCommand(
-                in.readInt(), readUuid(in), readUuid(in), in.readLong(), in.readLong(),
-                readEnum(in, MatchCommandType.class), readAttributes(in)));
+        return decode(
+                bytes,
+                COMMAND,
+                in ->
+                        new MatchCommand(
+                                in.readInt(),
+                                readUuid(in),
+                                readUuid(in),
+                                in.readLong(),
+                                in.readLong(),
+                                readEnum(in, MatchCommandType.class),
+                                readAttributes(in)));
     }
 
     public byte[] encodeEvent(MatchEvent event) {
         ProtocolSupport.required(event, "event");
-        return encode(EVENT, out -> {
-            out.writeInt(event.protocolVersion());
-            writeUuid(out, event.messageId());
-            writeUuid(out, event.matchId());
-            out.writeLong(event.epoch());
-            out.writeLong(event.seq());
-            out.writeLong(event.createdAtEpochMilli());
-            writeString(out, event.type().name());
-            writeAttributes(out, event.attributes());
-        });
+        return encode(
+                EVENT,
+                out -> {
+                    out.writeInt(event.protocolVersion());
+                    writeUuid(out, event.messageId());
+                    writeUuid(out, event.matchId());
+                    out.writeLong(event.epoch());
+                    out.writeLong(event.seq());
+                    out.writeLong(event.createdAtEpochMilli());
+                    writeString(out, event.type().name());
+                    writeAttributes(out, event.attributes());
+                });
     }
 
     public MatchEvent decodeEvent(byte[] bytes) {
-        return decode(bytes, EVENT, in -> new MatchEvent(
-                in.readInt(), readUuid(in), readUuid(in), in.readLong(), in.readLong(), in.readLong(),
-                readEnum(in, MatchEventType.class), readAttributes(in)));
+        return decode(
+                bytes,
+                EVENT,
+                in ->
+                        new MatchEvent(
+                                in.readInt(),
+                                readUuid(in),
+                                readUuid(in),
+                                in.readLong(),
+                                in.readLong(),
+                                in.readLong(),
+                                readEnum(in, MatchEventType.class),
+                                readAttributes(in)));
     }
 
-    private static void writeScoring(DataOutputStream out, BingoScoringRules scoring) throws IOException {
+    private static void writeScoring(DataOutputStream out, BingoScoringRules scoring)
+            throws IOException {
         out.writeInt(scoring.cardWidth());
         out.writeInt(scoring.claimPoints().size());
         for (int points : scoring.claimPoints()) out.writeInt(points);
@@ -186,11 +248,13 @@ public final class BinaryProtocolCodec {
         List<String> genesisItems = new ArrayList<>();
         for (int remaining = readSize(in, "genesisItems"); remaining > 0; remaining--)
             genesisItems.add(readString(in));
-        BingoVariantRules variant = new BingoVariantRules(mode, difficulty, winLines, remix, genesisItems);
+        BingoVariantRules variant =
+                new BingoVariantRules(mode, difficulty, winLines, remix, genesisItems);
         return new BingoScoringRules(width, points, lineBonus, majorLines, minorBonus, variant);
     }
 
-    private static void writeRuntimeRules(DataOutputStream out, BingoRuntimeRules rules) throws IOException {
+    private static void writeRuntimeRules(DataOutputStream out, BingoRuntimeRules rules)
+            throws IOException {
         out.writeInt(rules.preparationSeconds());
         out.writeInt(rules.finalCountdownSeconds());
         out.writeInt(rules.scatterRadius());
@@ -236,13 +300,25 @@ public final class BinaryProtocolCodec {
         BingoIntroductionMode introductionMode = readEnum(in, BingoIntroductionMode.class);
         BingoLocationSnapshot introductionSpawn = readLocation(in);
         BingoLocationSnapshot spectatorSpawn = readLocation(in);
-        return new BingoRuntimeRules(preparationSeconds, finalCountdownSeconds, scatterRadius, scatterJitter,
-                scatterMaxTries, pvpGrace, effects, showIntroduction, introductionSeconds, rules,
-                introductionMode, introductionSpawn, spectatorSpawn,
+        return new BingoRuntimeRules(
+                preparationSeconds,
+                finalCountdownSeconds,
+                scatterRadius,
+                scatterJitter,
+                scatterMaxTries,
+                pvpGrace,
+                effects,
+                showIntroduction,
+                introductionSeconds,
+                rules,
+                introductionMode,
+                introductionSpawn,
+                spectatorSpawn,
                 new BingoPresentation(readAttributes(in)));
     }
 
-    private static void writeLocation(DataOutputStream out, BingoLocationSnapshot location) throws IOException {
+    private static void writeLocation(DataOutputStream out, BingoLocationSnapshot location)
+            throws IOException {
         out.writeBoolean(location != null);
         if (location == null) return;
         writeString(out, location.dimension().name());
@@ -255,11 +331,17 @@ public final class BinaryProtocolCodec {
 
     private static BingoLocationSnapshot readLocation(DataInputStream in) throws IOException {
         if (!in.readBoolean()) return null;
-        return new BingoLocationSnapshot(readEnum(in, BingoDimension.class), in.readDouble(),
-                in.readDouble(), in.readDouble(), in.readFloat(), in.readFloat());
+        return new BingoLocationSnapshot(
+                readEnum(in, BingoDimension.class),
+                in.readDouble(),
+                in.readDouble(),
+                in.readDouble(),
+                in.readFloat(),
+                in.readFloat());
     }
 
-    private static void writeAttributes(DataOutputStream out, Map<String, String> attributes) throws IOException {
+    private static void writeAttributes(DataOutputStream out, Map<String, String> attributes)
+            throws IOException {
         Map<String, String> sorted = new TreeMap<>(attributes);
         out.writeInt(sorted.size());
         for (Map.Entry<String, String> entry : sorted.entrySet()) {
@@ -287,14 +369,16 @@ public final class BinaryProtocolCodec {
 
     private static void writeString(DataOutputStream out, String value) throws IOException {
         byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-        if (bytes.length > MAX_STRING_BYTES) throw new IllegalArgumentException("String is too large");
+        if (bytes.length > MAX_STRING_BYTES)
+            throw new IllegalArgumentException("String is too large");
         out.writeInt(bytes.length);
         out.write(bytes);
     }
 
     private static String readString(DataInputStream in) throws IOException {
         int length = in.readInt();
-        if (length < 0 || length > MAX_STRING_BYTES) throw new IOException("Invalid string length " + length);
+        if (length < 0 || length > MAX_STRING_BYTES)
+            throw new IOException("Invalid string length " + length);
         byte[] bytes = in.readNBytes(length);
         if (bytes.length != length) throw new EOFException("Truncated string payload");
         return new String(bytes, StandardCharsets.UTF_8);
@@ -302,11 +386,13 @@ public final class BinaryProtocolCodec {
 
     private static int readSize(DataInputStream in, String name) throws IOException {
         int size = in.readInt();
-        if (size < 0 || size > MAX_COLLECTION_SIZE) throw new IOException("Invalid " + name + " size " + size);
+        if (size < 0 || size > MAX_COLLECTION_SIZE)
+            throw new IOException("Invalid " + name + " size " + size);
         return size;
     }
 
-    private static <E extends Enum<E>> E readEnum(DataInputStream in, Class<E> type) throws IOException {
+    private static <E extends Enum<E>> E readEnum(DataInputStream in, Class<E> type)
+            throws IOException {
         String name = readString(in);
         try {
             return Enum.valueOf(type, name);
@@ -317,14 +403,15 @@ public final class BinaryProtocolCodec {
 
     private static byte[] encode(int kind, Writer writer) {
         try (ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-             DataOutputStream out = new DataOutputStream(bytes)) {
+                DataOutputStream out = new DataOutputStream(bytes)) {
             out.writeInt(MAGIC);
             out.writeByte(kind);
             writer.write(out);
             out.flush();
             return bytes.toByteArray();
         } catch (IOException impossible) {
-            throw new IllegalStateException("Unable to encode in-memory protocol message", impossible);
+            throw new IllegalStateException(
+                    "Unable to encode in-memory protocol message", impossible);
         }
     }
 

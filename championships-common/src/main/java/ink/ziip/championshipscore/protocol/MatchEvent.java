@@ -12,15 +12,15 @@ public record MatchEvent(
         long seq,
         long createdAtEpochMilli,
         MatchEventType type,
-        Map<String, String> attributes
-) {
+        Map<String, String> attributes) {
     public MatchEvent {
         ProtocolVersion.requireSupported(protocolVersion);
         ProtocolSupport.required(messageId, "messageId");
         ProtocolSupport.required(matchId, "matchId");
         if (epoch < 1) throw new IllegalArgumentException("epoch must be positive");
         if (seq < 1) throw new IllegalArgumentException("seq must be positive");
-        if (createdAtEpochMilli < 1) throw new IllegalArgumentException("createdAtEpochMilli must be positive");
+        if (createdAtEpochMilli < 1)
+            throw new IllegalArgumentException("createdAtEpochMilli must be positive");
         ProtocolSupport.required(type, "type");
         attributes = ProtocolSupport.immutableAttributes(attributes);
     }

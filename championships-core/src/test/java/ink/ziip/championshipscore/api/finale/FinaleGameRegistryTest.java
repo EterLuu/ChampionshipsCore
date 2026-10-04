@@ -1,12 +1,13 @@
 package ink.ziip.championshipscore.api.finale;
 
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+
+import org.junit.jupiter.api.Test;
 
 class FinaleGameRegistryTest {
     @Test
@@ -23,7 +24,8 @@ class FinaleGameRegistryTest {
         assertNotNull(dragonEgg);
         assertEquals(GameTypeEnum.DragonEggCarnival, dragonEgg.gameType());
         assertEquals(GameTypeEnum.Dodgebolt, FinaleGameRegistry.parse("DODGEBOLT").gameType());
-        assertEquals(GameTypeEnum.SulfurSoccer, FinaleGameRegistry.parse("Sulfur-Soccer").gameType());
+        assertEquals(
+                GameTypeEnum.SulfurSoccer, FinaleGameRegistry.parse("Sulfur-Soccer").gameType());
         assertFalse(FinaleGameRegistry.parse("sulfursoccer").supportsPartialRoster());
     }
 }

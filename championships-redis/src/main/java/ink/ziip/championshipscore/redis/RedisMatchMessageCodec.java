@@ -2,8 +2,6 @@ package ink.ziip.championshipscore.redis;
 
 import ink.ziip.championshipscore.protocol.BinaryProtocolCodec;
 import ink.ziip.championshipscore.protocol.DeterministicIds;
-import ink.ziip.championshipscore.protocol.MatchCommand;
-import ink.ziip.championshipscore.protocol.MatchEvent;
 import ink.ziip.championshipscore.protocol.MatchManifest;
 import ink.ziip.championshipscore.protocol.transport.MatchInboundMessage;
 
@@ -37,16 +35,20 @@ public final class RedisMatchMessageCodec {
             throw new IllegalArgumentException("Invalid Base64 payload", invalid);
         }
 
-        MatchInboundMessage decoded = switch (kind) {
-            case "manifest" -> decodeManifest(metadataMessageId, payload);
-            case "command" -> new MatchInboundMessage.Command(codec.decodeCommand(payload));
-            case "event" -> new MatchInboundMessage.Event(codec.decodeEvent(payload));
-            default -> throw new IllegalArgumentException("Unknown match message kind " + kind);
-        };
+        MatchInboundMessage decoded =
+                switch (kind) {
+                    case "manifest" -> decodeManifest(metadataMessageId, payload);
+                    case "command" -> new MatchInboundMessage.Command(codec.decodeCommand(payload));
+                    case "event" -> new MatchInboundMessage.Event(codec.decodeEvent(payload));
+                    default ->
+                            throw new IllegalArgumentException(
+                                    "Unknown match message kind " + kind);
+                };
         if (!metadataMessageId.equals(decoded.messageId())
                 || !metadataMatchId.equals(decoded.matchId())
                 || metadataEpoch != decoded.epoch()) {
-            throw new IllegalArgumentException("Redis metadata does not match binary payload identity");
+            throw new IllegalArgumentException(
+                    "Redis metadata does not match binary payload identity");
         }
         return decoded;
     }
@@ -55,14 +57,16 @@ public final class RedisMatchMessageCodec {
         MatchManifest manifest = codec.decodeManifest(payload);
         UUID expected = DeterministicIds.uuidV5(manifest.matchId(), "manifest:" + manifest.epoch());
         if (!expected.equals(messageId)) {
-            throw new IllegalArgumentException("Manifest messageId is not deterministic for its match epoch");
+            throw new IllegalArgumentException(
+                    "Manifest messageId is not deterministic for its match epoch");
         }
         return new MatchInboundMessage.Manifest(messageId, manifest);
     }
 
     private static String required(Map<String, String> fields, String key) {
         String value = fields.get(key);
-        if (value == null || value.isBlank()) throw new IllegalArgumentException("Missing Redis field " + key);
+        if (value == null || value.isBlank())
+            throw new IllegalArgumentException("Missing Redis field " + key);
         return value;
     }
 

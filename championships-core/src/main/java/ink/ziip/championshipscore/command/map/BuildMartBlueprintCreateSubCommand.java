@@ -1,15 +1,16 @@
 package ink.ziip.championshipscore.command.map;
 
-import ink.ziip.championshipscore.api.game.buildmart.BuildMartConfig;
-import ink.ziip.championshipscore.api.game.buildmart.BuildMartCopperPolicy;
 import ink.ziip.championshipscore.api.game.buildmart.BuildMartManager;
-import ink.ziip.championshipscore.api.game.buildmart.BuildMartMaterialManifest;
 import ink.ziip.championshipscore.api.game.buildmart.blueprint.BlueprintBlock;
 import ink.ziip.championshipscore.api.game.buildmart.blueprint.BuildMartBlueprint;
 import ink.ziip.championshipscore.api.game.buildmart.blueprint.BuildMartBlueprintAuditor;
+import ink.ziip.championshipscore.api.game.buildmart.config.BuildMartConfig;
+import ink.ziip.championshipscore.api.game.buildmart.mechanics.BuildMartCopperPolicy;
+import ink.ziip.championshipscore.api.game.buildmart.runtime.BuildMartMaterialManifest;
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.presentation.text.CoreMessages;
+
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.command.Command;
@@ -25,7 +26,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** Exports a WorldEdit selection into a Build Mart blueprint and refreshes the shared order pool. */
+/**
+ * Exports a WorldEdit selection into a Build Mart blueprint and refreshes the shared order pool.
+ */
 public final class BuildMartBlueprintCreateSubCommand extends BaseSubCommand {
     private static final int MAX_BLOCKS = 20000;
     private static final int MAX_SIZE = 7;
@@ -35,8 +38,11 @@ public final class BuildMartBlueprintCreateSubCommand extends BaseSubCommand {
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label,
-                             @NotNull String[] args) {
+    public boolean onCommand(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args) {
         if ((args.length != 1 && args.length != 2) || !(sender instanceof Player player)) {
             sendUsage(sender);
             return true;
@@ -51,7 +57,7 @@ public final class BuildMartBlueprintCreateSubCommand extends BaseSubCommand {
                 return true;
             }
             if (overriddenStars < 1 || overriddenStars > 5) {
-                Utils.sendAdminError(sender, MessageConfig.BUILD_MART_BLUEPRINT_STARS_RANGE);
+                CoreMessages.sendAdminError(sender, MessageConfig.BUILD_MART_BLUEPRINT_STARS_RANGE);
                 return true;
             }
         }
@@ -60,7 +66,8 @@ public final class BuildMartBlueprintCreateSubCommand extends BaseSubCommand {
         try {
             selection = plugin.getWorldEditManager().getPlayerSelection(player, true);
         } catch (Exception exception) {
-            Utils.sendAdminError(sender, MessageConfig.BUILD_MART_BLUEPRINT_SELECTION_READ_FAILED);
+            CoreMessages.sendAdminError(
+                    sender, MessageConfig.BUILD_MART_BLUEPRINT_SELECTION_READ_FAILED);
             return true;
         }
         Vector min = Vector.getMinimum(selection[0], selection[1]);
@@ -71,15 +78,20 @@ public final class BuildMartBlueprintCreateSubCommand extends BaseSubCommand {
         int sizeY = max.getBlockY() - min.getBlockY() + 1;
         int sizeZ = max.getBlockZ() - min.getBlockZ() + 1;
         if (sizeY > MAX_SIZE) {
-            Utils.sendAdminError(sender, MessageConfig.BUILD_MART_BLUEPRINT_HEIGHT_LIMIT
-                    .replace("%limit%", String.valueOf(MAX_SIZE)).replace("%current%", String.valueOf(sizeY)));
+            CoreMessages.sendAdminError(
+                    sender,
+                    MessageConfig.BUILD_MART_BLUEPRINT_HEIGHT_LIMIT
+                            .replace("%limit%", String.valueOf(MAX_SIZE))
+                            .replace("%current%", String.valueOf(sizeY)));
             return true;
         }
         if (sizeX > MAX_SIZE || sizeZ > MAX_SIZE) {
-            Utils.sendAdminError(sender, MessageConfig.BUILD_MART_BLUEPRINT_FOOTPRINT_LIMIT
-                    .replace("%limit%", String.valueOf(MAX_SIZE))
-                    .replace("%x%", String.valueOf(sizeX))
-                    .replace("%z%", String.valueOf(sizeZ)));
+            CoreMessages.sendAdminError(
+                    sender,
+                    MessageConfig.BUILD_MART_BLUEPRINT_FOOTPRINT_LIMIT
+                            .replace("%limit%", String.valueOf(MAX_SIZE))
+                            .replace("%x%", String.valueOf(sizeX))
+                            .replace("%z%", String.valueOf(sizeZ)));
             return true;
         }
 
@@ -91,37 +103,44 @@ public final class BuildMartBlueprintCreateSubCommand extends BaseSubCommand {
                     Block block = world.getBlockAt(x, y, z);
                     if (block.getType().isAir()) continue;
                     if (!block.getBlockData().isSupported(block.getLocation())) {
-                        Utils.sendAdminError(sender, MessageConfig.BUILD_MART_BLUEPRINT_SAVE_FAILED
-                                .replace("%detail%", "方块缺少有效支撑: " + x + "," + y + "," + z));
+                        CoreMessages.sendAdminError(
+                                sender,
+                                MessageConfig.BUILD_MART_BLUEPRINT_SAVE_FAILED.replace(
+                                        "%detail%", "方块缺少有效支撑: " + x + "," + y + "," + z));
                         return true;
                     }
                     int ox = x - min.getBlockX();
                     int oy = y - min.getBlockY();
                     int oz = z - min.getBlockZ();
-                    org.bukkit.block.data.BlockData normalized = BuildMartCopperPolicy
-                            .normalizeBlueprint(block.getBlockData());
+                    org.bukkit.block.data.BlockData normalized =
+                            BuildMartCopperPolicy.normalizeBlueprint(block.getBlockData());
                     blocks.add(ox + "," + oy + "," + oz + "=" + normalized.getAsString());
                     blueprintBlocks.add(new BlueprintBlock(ox, oy, oz, normalized.clone()));
                     if (blocks.size() > MAX_BLOCKS) {
-                        Utils.sendAdminError(sender, MessageConfig.BUILD_MART_BLUEPRINT_BLOCK_LIMIT
-                            .replace("%limit%", String.valueOf(MAX_BLOCKS)));
+                        CoreMessages.sendAdminError(
+                                sender,
+                                MessageConfig.BUILD_MART_BLUEPRINT_BLOCK_LIMIT.replace(
+                                        "%limit%", String.valueOf(MAX_BLOCKS)));
                         return true;
                     }
                 }
             }
         }
         if (blocks.isEmpty()) {
-            Utils.sendAdminError(sender, MessageConfig.BUILD_MART_BLUEPRINT_EMPTY_SELECTION);
+            CoreMessages.sendAdminError(sender, MessageConfig.BUILD_MART_BLUEPRINT_EMPTY_SELECTION);
             return true;
         }
 
         BuildMartManager manager = plugin.getGameManager().getBuildMartManager();
         BuildMartConfig config = BuildMartBlueprintAuditSubCommand.resolveConfig(manager, null);
-        BuildMartMaterialManifest.AuditInventory inventory = config == null
-                ? new BuildMartMaterialManifest.AuditInventory(false, java.util.Map.of(), java.util.Map.of())
-                : BuildMartMaterialManifest.readAuditInventory(config);
+        BuildMartMaterialManifest.AuditInventory inventory =
+                config == null
+                        ? new BuildMartMaterialManifest.AuditInventory(
+                                false, java.util.Map.of(), java.util.Map.of())
+                        : BuildMartMaterialManifest.readAuditInventory(config);
         BuildMartBlueprint preliminary = new BuildMartBlueprint(name, name, 1, blueprintBlocks);
-        int suggestedStars = BuildMartBlueprintAuditor.audit(preliminary, inventory).suggestedStars();
+        int suggestedStars =
+                BuildMartBlueprintAuditor.audit(preliminary, inventory).suggestedStars();
         int stars = overriddenStars == null ? suggestedStars : overriddenStars;
 
         File dir = new File(new File(plugin.getDataFolder(), "buildmart"), "blueprints");
@@ -134,32 +153,41 @@ public final class BuildMartBlueprintCreateSubCommand extends BaseSubCommand {
         try {
             yaml.save(file);
         } catch (Exception exception) {
-            Utils.sendAdminError(sender, MessageConfig.BUILD_MART_BLUEPRINT_SAVE_FAILED
-                    .replace("%detail%", String.valueOf(exception.getMessage())));
+            CoreMessages.sendAdminError(
+                    sender,
+                    MessageConfig.BUILD_MART_BLUEPRINT_SAVE_FAILED.replace(
+                            "%detail%", String.valueOf(exception.getMessage())));
             return true;
         }
 
         manager.reloadOrderPool();
-        Utils.sendAdminSuccess(sender, (overriddenStars == null
-                ? MessageConfig.BUILD_MART_BLUEPRINT_EXPORTED_AUTO
-                : MessageConfig.BUILD_MART_BLUEPRINT_EXPORTED_MANUAL)
-                .replace("%name%", name)
-                .replace("%stars%", String.valueOf(stars))
-                .replace("%blocks%", String.valueOf(blocks.size())));
+        CoreMessages.sendAdminSuccess(
+                sender,
+                (overriddenStars == null
+                                ? MessageConfig.BUILD_MART_BLUEPRINT_EXPORTED_AUTO
+                                : MessageConfig.BUILD_MART_BLUEPRINT_EXPORTED_MANUAL)
+                        .replace("%name%", name)
+                        .replace("%stars%", String.valueOf(stars))
+                        .replace("%blocks%", String.valueOf(blocks.size())));
         BuildMartBlueprint saved = manager.getOrderPool().byId(name);
         if (saved != null) {
-            BuildMartBlueprintAuditor.Audit audit = BuildMartBlueprintAuditor.audit(saved, inventory);
+            BuildMartBlueprintAuditor.Audit audit =
+                    BuildMartBlueprintAuditor.audit(saved, inventory);
             BuildMartBlueprintAuditSubCommand.showAudit(sender, audit, config);
             if (overriddenStars != null && overriddenStars != suggestedStars) {
-                Utils.sendAdminError(sender, MessageConfig.BUILD_MART_BLUEPRINT_OVERRIDE_NOT_SUGGESTED);
+                CoreMessages.sendAdminError(
+                        sender, MessageConfig.BUILD_MART_BLUEPRINT_OVERRIDE_NOT_SUGGESTED);
             }
         }
         return true;
     }
 
     @Override
-    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
-                                                  @NotNull String label, @NotNull String[] args) {
+    public @Nullable List<String> onTabComplete(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args) {
         if (args.length == 2) return complete(List.of("1", "2", "3", "4", "5"), args[1]);
         return Collections.emptyList();
     }

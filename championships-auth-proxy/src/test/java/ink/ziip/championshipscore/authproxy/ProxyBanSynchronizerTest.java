@@ -1,6 +1,12 @@
 package ink.ziip.championshipscore.authproxy;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.sun.net.httpserver.HttpServer;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -15,39 +21,48 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 class ProxyBanSynchronizerTest {
     private static final String SECRET = "0123456789abcdef0123456789abcdef";
 
-    @TempDir
-    Path tempDirectory;
+    @TempDir Path tempDirectory;
 
     @Test
     void bootstrapsCurrentBansThenAppliesOnlyNewBanEvents() throws Exception {
         HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
-        server.createContext("/api/internal/bridge/proxy-ban-snapshot", exchange -> respond(exchange,
-                "{\"maintenance\":false,\"nextCursor\":\"9\",\"profiles\":[{\"username\":\"AllowedPlayer\",\"status\":\"ALLOWED\",\"uuid\":\"11111111-1111-4111-8111-111111111111\"}],\"bans\":[{\"username\":\"ActivePlayer\",\"reason\":\"snapshot\"},"
-                        + "{\"username\":\"ExpiredPlayer\",\"reason\":\"expired\",\"expiresAt\":\"2000-01-01T00:00:00Z\"}]}"));
-        server.createContext("/api/internal/bridge/proxy-changes", exchange -> respond(exchange,
-                "{\"maintenance\":false,\"nextCursor\":\"11\",\"changes\":[{\"operation\":\"BANNED\",\"authmeUsername\":\"NewPlayer\",\"status\":\"BANNED\",\"reason\":\"event\"},"
-                        + "{\"operation\":\"UNBANNED\",\"authmeUsername\":\"FormerPlayer\",\"status\":\"UNBOUND\"}]}"));
+        server.createContext(
+                "/api/internal/bridge/proxy-ban-snapshot",
+                exchange ->
+                        respond(
+                                exchange,
+                                "{\"maintenance\":false,\"nextCursor\":\"9\",\"profiles\":[{\"username\":\"AllowedPlayer\",\"status\":\"ALLOWED\",\"uuid\":\"11111111-1111-4111-8111-111111111111\"}],\"bans\":[{\"username\":\"ActivePlayer\",\"reason\":\"snapshot\"},"
+                                    + "{\"username\":\"ExpiredPlayer\",\"reason\":\"expired\",\"expiresAt\":\"2000-01-01T00:00:00Z\"}]}"));
+        server.createContext(
+                "/api/internal/bridge/proxy-changes",
+                exchange ->
+                        respond(
+                                exchange,
+                                "{\"maintenance\":false,\"nextCursor\":\"11\",\"changes\":[{\"operation\":\"BANNED\",\"authmeUsername\":\"NewPlayer\",\"status\":\"BANNED\",\"reason\":\"event\"},"
+                                    + "{\"operation\":\"UNBANNED\",\"authmeUsername\":\"FormerPlayer\",\"status\":\"UNBOUND\"}]}"));
         server.start();
         try {
             List<String> kicked = new ArrayList<>();
-            ProxyAccessState state = new ProxyAccessState(tempDirectory.resolve("ban-state.properties").toFile());
-            ProxyBanSynchronizer synchronizer = new ProxyBanSynchronizer(
-                    client(server), state, (username, reason, expiresAt) -> kicked.add(username + ":" + reason + ":" + expiresAt),
-                    java.util.logging.Logger.getLogger("test"));
+            ProxyAccessState state =
+                    new ProxyAccessState(tempDirectory.resolve("ban-state.properties").toFile());
+            ProxyBanSynchronizer synchronizer =
+                    new ProxyBanSynchronizer(
+                            client(server),
+                            state,
+                            (username, reason, expiresAt) ->
+                                    kicked.add(username + ":" + reason + ":" + expiresAt),
+                            java.util.logging.Logger.getLogger("test"));
 
             synchronizer.run();
             assertEquals(List.of("ActivePlayer:snapshot:null"), kicked);
             assertEquals("9", state.cursor());
-            assertEquals("11111111-1111-4111-8111-111111111111",
-                    state.cachedProfile("AllowedPlayer", Duration.ZERO, java.time.Instant.now()).uuid);
+            assertEquals(
+                    "11111111-1111-4111-8111-111111111111",
+                    state.cachedProfile("AllowedPlayer", Duration.ZERO, java.time.Instant.now())
+                            .uuid);
 
             synchronizer.run();
             assertEquals(List.of("ActivePlayer:snapshot:null", "NewPlayer:event:null"), kicked);
@@ -67,23 +82,29 @@ class ProxyBanSynchronizerTest {
         Logger logger = Logger.getLogger("proxy-test-" + System.nanoTime());
         logger.setUseParentHandlers(false);
         List<LogRecord> records = new ArrayList<>();
-        Handler handler = new Handler() {
-            @Override
-            public void publish(LogRecord record) {
-                records.add(record);
-            }
+        Handler handler =
+                new Handler() {
+                    @Override
+                    public void publish(LogRecord record) {
+                        records.add(record);
+                    }
 
-            @Override
-            public void flush() { }
+                    @Override
+                    public void flush() {}
 
-            @Override
-            public void close() { }
-        };
+                    @Override
+                    public void close() {}
+                };
         logger.addHandler(handler);
         try {
-            ProxyAccessState state = new ProxyAccessState(tempDirectory.resolve("unavailable.properties").toFile());
-            ProxyBanSynchronizer synchronizer = new ProxyBanSynchronizer(
-                    client("http://127.0.0.1:" + port), state, (username, reason, expiresAt) -> { }, logger);
+            ProxyAccessState state =
+                    new ProxyAccessState(tempDirectory.resolve("unavailable.properties").toFile());
+            ProxyBanSynchronizer synchronizer =
+                    new ProxyBanSynchronizer(
+                            client("http://127.0.0.1:" + port),
+                            state,
+                            (username, reason, expiresAt) -> {},
+                            logger);
 
             synchronizer.run();
             synchronizer.run();
@@ -103,11 +124,12 @@ class ProxyBanSynchronizerTest {
     }
 
     private static ProxyIdentityClient client(String baseUrl) {
-        return new ProxyIdentityClient(baseUrl, "cc-core", SECRET,
-                false, Duration.ofSeconds(1), Duration.ofSeconds(1));
+        return new ProxyIdentityClient(
+                baseUrl, "cc-core", SECRET, false, Duration.ofSeconds(1), Duration.ofSeconds(1));
     }
 
-    private static void respond(com.sun.net.httpserver.HttpExchange exchange, String body) throws java.io.IOException {
+    private static void respond(com.sun.net.httpserver.HttpExchange exchange, String body)
+            throws java.io.IOException {
         byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
         exchange.sendResponseHeaders(200, bytes.length);
         exchange.getResponseBody().write(bytes);

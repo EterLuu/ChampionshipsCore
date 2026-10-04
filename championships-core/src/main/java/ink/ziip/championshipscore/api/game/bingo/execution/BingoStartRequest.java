@@ -1,6 +1,6 @@
 package ink.ziip.championshipscore.api.game.bingo.execution;
 
-import ink.ziip.championshipscore.api.object.game.GameRunMode;
+import ink.ziip.championshipscore.api.game.model.GameRunMode;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.protocol.BingoVariantRules;
 
@@ -8,14 +8,21 @@ import java.util.List;
 import java.util.Objects;
 
 /** SCC-side request before either the local instance or a remote worker owns the game. */
-public record BingoStartRequest(String area, boolean showIntroduction, GameRunMode runMode,
-                                List<ChampionshipTeam> teams, BingoVariantRules variant) {
+public record BingoStartRequest(
+        String area,
+        boolean showIntroduction,
+        GameRunMode runMode,
+        List<ChampionshipTeam> teams,
+        BingoVariantRules variant) {
     public BingoStartRequest(String area, boolean showIntroduction, GameRunMode runMode) {
         this(area, showIntroduction, runMode, List.of(), BingoVariantRules.FIXED_POINTS);
     }
 
-    public BingoStartRequest(String area, boolean showIntroduction, GameRunMode runMode,
-                             List<ChampionshipTeam> teams) {
+    public BingoStartRequest(
+            String area,
+            boolean showIntroduction,
+            GameRunMode runMode,
+            List<ChampionshipTeam> teams) {
         this(area, showIntroduction, runMode, teams, BingoVariantRules.FIXED_POINTS);
     }
 

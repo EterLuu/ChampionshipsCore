@@ -1,20 +1,19 @@
 package ink.ziip.championshipscore.api.game.area.prepare;
 
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.gui.MenuId;
-import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
-import ink.ziip.championshipscore.configuration.config.message.GuiText;
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -22,14 +21,15 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Builds and refreshes the dedicated prepare-mode hotbar. The hotbar contains the fixed controls and one
- * entry point for the paged step menu; no step item is placed in the player's main inventory.
- * The WorldEdit wand is deliberately left untagged so WorldEdit's own interact handlers run.
+ * Builds and refreshes the dedicated prepare-mode hotbar. The hotbar contains the fixed controls
+ * and one entry point for the paged step menu; no step item is placed in the player's main
+ * inventory. The WorldEdit wand is deliberately left untagged so WorldEdit's own interact handlers
+ * run.
  */
 public final class PrepareModeInventory {
     private static final String MENU_PATH = MenuId.MAP_EDITOR_PREPARE_TOOLBAR.path();
-    private PrepareModeInventory() {
-    }
+
+    private PrepareModeInventory() {}
 
     /** Wipe the player's inventory completely and lay out the prepare hotbar. */
     public static void apply(@NotNull Player player, @NotNull PrepareSession session) {
@@ -58,21 +58,37 @@ public final class PrepareModeInventory {
         var workshop = session.getBlueprintWorkshop();
         if (workshop != null) {
             String path = MenuId.BUILD_MART_BLUEPRINTS.path() + ".items.";
-            ItemStack submit = ConfiguredGui.item(path + "submit", null, Map.of("name", workshop.name()), new ItemStack(Material.EMERALD_BLOCK));
+            ItemStack submit =
+                    ConfiguredGui.item(
+                            path + "submit",
+                            null,
+                            Map.of("name", workshop.name()),
+                            new ItemStack(Material.EMERALD_BLOCK));
             PrepareKeys.setAction(submit, "save-draft");
             inv.setItem(slot("save-draft", 6), submit);
-            ItemStack cancel = ConfiguredGui.item(path + "cancel", null, Map.of("name", workshop.name()), new ItemStack(Material.BARRIER));
+            ItemStack cancel =
+                    ConfiguredGui.item(
+                            path + "cancel",
+                            null,
+                            Map.of("name", workshop.name()),
+                            new ItemStack(Material.BARRIER));
             PrepareKeys.setAction(cancel, "exit");
             inv.setItem(slot("exit", 8), cancel);
         }
     }
 
-    /** Slots reserved for prepare controls and therefore never valid creative pick-block targets. */
+    /**
+     * Slots reserved for prepare controls and therefore never valid creative pick-block targets.
+     */
     public static boolean isControlSlot(@NotNull PrepareSession session, int slot) {
-        return slot == slot("status", 0) || slot == slot("teleport", 1)
-                || slot == slot("steps", 2) || slot == slot("validate", 3)
-                || slot == slot("publish", 4) || slot == slot("save-draft", 6)
-                || slot == slot("exit", 8) || session.requiresWorldEdit() && slot == slot("wand", 5);
+        return slot == slot("status", 0)
+                || slot == slot("teleport", 1)
+                || slot == slot("steps", 2)
+                || slot == slot("validate", 3)
+                || slot == slot("publish", 4)
+                || slot == slot("save-draft", 6)
+                || slot == slot("exit", 8)
+                || session.requiresWorldEdit() && slot == slot("wand", 5);
     }
 
     /**
@@ -93,32 +109,47 @@ public final class PrepareModeInventory {
     private static ItemStack statusItem(@NotNull Player player, @NotNull PrepareSession session) {
         GameTypeEnum game = session.getGameType();
         boolean inWorld = session.getFlow().isInCorrectWorld(player, session.getTarget());
-        String readiness = session.getTarget().config().isPrepareReady()
-                ? GuiConfig.text("map-editor.menus.prepare-toolbar.items.status.states.ready.title")
-                : GuiConfig.text("map-editor.menus.prepare-toolbar.items.status.states.draft.title");
-        ItemStack item = configured("status", Map.of(
-                "game", game,
-                "map", session.getAreaName(),
-                "world", session.getFlow().worldName(session.getTarget()),
-                "done", session.doneCount(),
-                "total", session.totalSteps(),
-                "readiness", readiness));
+        String readiness =
+                session.getTarget().config().isPrepareReady()
+                        ? GuiConfig.text(
+                                "map-editor.menus.prepare-toolbar.items.status.states.ready.title")
+                        : GuiConfig.text(
+                                "map-editor.menus.prepare-toolbar.items.status.states.draft.title");
+        ItemStack item =
+                configured(
+                        "status",
+                        Map.of(
+                                "game", game,
+                                "map", session.getAreaName(),
+                                "world", session.getFlow().worldName(session.getTarget()),
+                                "done", session.doneCount(),
+                                "total", session.totalSteps(),
+                                "readiness", readiness));
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
-            List<Component> lore = meta.lore() == null ? new ArrayList<>() : new ArrayList<>(meta.lore());
+            List<Component> lore =
+                    meta.lore() == null ? new ArrayList<>() : new ArrayList<>(meta.lore());
             List<String> pending = new ArrayList<>();
             for (PrepareStep step : session.getSteps()) {
                 if (!step.isSet(session)) pending.add(plain(step.displayName()));
             }
             if (pending.isEmpty()) {
-                lore.add(LegacyText.component(GuiConfig.text(
-                        "map-editor.menus.prepare-toolbar.items.status.states.complete.title")));
+                lore.add(
+                        LegacyText.component(
+                                GuiConfig.text(
+                                        "map-editor.menus.prepare-toolbar.items.status.states.complete.title")));
             } else {
-                lore.add(LegacyText.component(GuiConfig.text(
-                        "map-editor.menus.prepare-toolbar.items.status.states.pending.title")));
-                for (String pendingStep : pending) lore.add(LegacyText.component(GuiConfig.line(
-                        "map-editor.menus.prepare-toolbar.items.status.states.pending-entry.lore", 0,
-                        Map.of("step", pendingStep))));
+                lore.add(
+                        LegacyText.component(
+                                GuiConfig.text(
+                                        "map-editor.menus.prepare-toolbar.items.status.states.pending.title")));
+                for (String pendingStep : pending)
+                    lore.add(
+                            LegacyText.component(
+                                    GuiConfig.line(
+                                            "map-editor.menus.prepare-toolbar.items.status.states.pending-entry.lore",
+                                            0,
+                                            Map.of("step", pendingStep))));
             }
             meta.lore(lore);
             item.setItemMeta(meta);
@@ -128,9 +159,14 @@ public final class PrepareModeInventory {
 
     private static ItemStack teleportItem(@NotNull PrepareSession session) {
         String destination = session.getFlow().editorLocationName(session.getTarget());
-        ItemStack item = configured("teleport", Map.of(
-                "destination", destination,
-                "world", session.getFlow().worldName(session.getTarget())));
+        ItemStack item =
+                configured(
+                        "teleport",
+                        Map.of(
+                                "destination",
+                                destination,
+                                "world",
+                                session.getFlow().worldName(session.getTarget())));
         PrepareKeys.setAction(item, "teleport");
         return item;
     }
@@ -176,11 +212,13 @@ public final class PrepareModeInventory {
     }
 
     private static ItemStack configured(String item, Map<String, ?> placeholders) {
-        return ConfiguredGui.item(MENU_PATH + ".items." + item, null, placeholders, new ItemStack(Material.BARRIER));
+        return ConfiguredGui.item(
+                MENU_PATH + ".items." + item, null, placeholders, new ItemStack(Material.BARRIER));
     }
 
     private static ItemStack configured(String item, String state, Map<String, ?> placeholders) {
-        return ConfiguredGui.item(MENU_PATH + ".items." + item, state, placeholders, new ItemStack(Material.BARRIER));
+        return ConfiguredGui.item(
+                MENU_PATH + ".items." + item, state, placeholders, new ItemStack(Material.BARRIER));
     }
 
     private static String plain(Component c) {

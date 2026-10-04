@@ -2,7 +2,9 @@ package ink.ziip.championshipscore.command;
 
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+import ink.ziip.championshipscore.presentation.text.CoreMessages;
+
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -19,23 +21,28 @@ public class SpawnSubCommand extends BaseSubCommand {
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+    public boolean onCommand(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args) {
         if (args.length != 0) {
             sendUsage(sender);
             return true;
         }
         if (!(sender instanceof Player player)) {
-            Utils.sendAdminError(sender, MessageConfig.COMMAND_PLAYER_ONLY);
+            CoreMessages.sendAdminError(sender, MessageConfig.COMMAND_PLAYER_ONLY);
             return true;
         }
         if (plugin.getGameManager().getBasePlayerArea(player.getUniqueId()) != null
                 || plugin.getGameManager().getPlayerSpectatorStatus(player.getUniqueId()) != null) {
-            player.sendMessage(Utils.translateColorCodes(MessageConfig.SPAWN_IN_GAME_OR_SPECTATING));
+            player.sendMessage(
+                    LegacyText.translateColorCodes(MessageConfig.SPAWN_IN_GAME_OR_SPECTATING));
             return true;
         }
         Location lobby = CCConfig.LOBBY_LOCATION;
         if (lobby == null || lobby.getWorld() == null) {
-            Utils.sendAdminError(sender, MessageConfig.SPAWN_MISSING);
+            CoreMessages.sendAdminError(sender, MessageConfig.SPAWN_MISSING);
             return true;
         }
         player.teleport(lobby);
@@ -44,7 +51,11 @@ public class SpawnSubCommand extends BaseSubCommand {
     }
 
     @Override
-    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+    public @Nullable List<String> onTabComplete(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args) {
         return Collections.emptyList();
     }
 }

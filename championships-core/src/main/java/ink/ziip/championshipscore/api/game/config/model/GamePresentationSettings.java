@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** Variant-owned presentation content; spatial introduction points remain part of the map geometry. */
+/**
+ * Variant-owned presentation content; spatial introduction points remain part of the map geometry.
+ */
 public record GamePresentationSettings(List<List<String>> ruleSections) {
     public GamePresentationSettings {
         if (ruleSections == null) {

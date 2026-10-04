@@ -1,9 +1,9 @@
 package ink.ziip.championshipscore.worker.seedlab;
 
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.Test;
 
 class SeedLab26_2Test {
     @Test
@@ -12,7 +12,8 @@ class SeedLab26_2Test {
 
         assertEquals("minecraft:river", predictor.biome(123456789L, 0, 64, 0));
         assertEquals("minecraft:river", predictor.biome(123456789L, 1, 64, 0));
-        assertEquals("minecraft:old_growth_birch_forest", predictor.biome(123456789L, 1_000, 64, 1_000));
+        assertEquals(
+                "minecraft:old_growth_birch_forest", predictor.biome(123456789L, 1_000, 64, 1_000));
     }
 
     @Test

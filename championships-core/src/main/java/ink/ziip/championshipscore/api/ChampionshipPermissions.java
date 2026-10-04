@@ -6,6 +6,5 @@ public final class ChampionshipPermissions {
     public static final String ADMIN = "cc.admin";
     public static final String REFEREE = "cc.refuge";
 
-    private ChampionshipPermissions() {
-    }
+    private ChampionshipPermissions() {}
 }

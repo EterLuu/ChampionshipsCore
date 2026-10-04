@@ -1,24 +1,22 @@
 package ink.ziip.championshipscore.api.game.area.prepare.gui;
 
-import ink.ziip.championshipscore.api.gui.MenuInventory;
-import ink.ziip.championshipscore.api.gui.MenuId;
-import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
-import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareModeInventory;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
 import ink.ziip.championshipscore.api.game.area.prepare.tgttos.TGTTOSAreaTypeStep;
-import ink.ziip.championshipscore.api.game.tgttos.TGTTOSConfig;
+import ink.ziip.championshipscore.api.game.tgttos.config.TGTTOSConfig;
+import ink.ziip.championshipscore.api.gui.MenuId;
+import ink.ziip.championshipscore.api.gui.MenuInventory;
+import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
@@ -34,8 +32,7 @@ public final class TGTTOSAreaTypeGui {
     private static final int BACK_SLOT = 49;
     private static final int NEXT_SLOT = 53;
 
-    private TGTTOSAreaTypeGui() {
-    }
+    private TGTTOSAreaTypeGui() {}
 
     public static final class Holder implements MenuInventory {
         final PrepareSession session;
@@ -54,8 +51,10 @@ public final class TGTTOSAreaTypeGui {
         }
     }
 
-    public static void open(@NotNull Player player, @NotNull PrepareSession session,
-                            @NotNull TGTTOSAreaTypeStep step) {
+    public static void open(
+            @NotNull Player player,
+            @NotNull PrepareSession session,
+            @NotNull TGTTOSAreaTypeStep step) {
         Holder holder = new Holder(session, step);
         GuiConfig.MenuSpec menu = GuiConfig.menu(MENU_PATH, 54, "", List.of());
         holder.inventory = Bukkit.createInventory(holder, menu.size(), menu.title());
@@ -63,9 +62,11 @@ public final class TGTTOSAreaTypeGui {
         player.openInventory(holder.inventory);
     }
 
-    public static void handleClick(@NotNull PrepareSessionManager manager,
-                                   @NotNull InventoryClickEvent event, @NotNull Player player,
-                                   @NotNull Holder holder) {
+    public static void handleClick(
+            @NotNull PrepareSessionManager manager,
+            @NotNull InventoryClickEvent event,
+            @NotNull Player player,
+            @NotNull Holder holder) {
         event.setCancelled(true);
         if (event.getClickedInventory() != event.getView().getTopInventory()) return;
         PrepareSession session = manager.getSession(player);
@@ -108,22 +109,24 @@ public final class TGTTOSAreaTypeGui {
         String current = ((TGTTOSConfig) holder.session.getTarget().config()).getAreaType();
         for (int slot = OPTION_FIRST_SLOT; slot <= OPTION_LAST_SLOT; slot++) {
             int index = holder.page * PAGE_SIZE + slot;
-            inventory.setItem(slot, index < options.size()
-                    ? option(options.get(index), current)
-                    : filler());
+            inventory.setItem(
+                    slot, index < options.size() ? option(options.get(index), current) : filler());
         }
-        inventory.setItem(PREVIOUS_SLOT, holder.page > 0
-                ? configured("previous", null)
-                : filler());
+        inventory.setItem(PREVIOUS_SLOT, holder.page > 0 ? configured("previous", null) : filler());
         inventory.setItem(BACK_SLOT, configured("back", null));
-        inventory.setItem(NEXT_SLOT, holder.page + 1 < pageCount()
-                ? configured("next", null)
-                : filler());
+        inventory.setItem(
+                NEXT_SLOT, holder.page + 1 < pageCount() ? configured("next", null) : filler());
     }
 
     private static ItemStack configured(@NotNull String item, String state) {
-        return ConfiguredGui.item(MENU_PATH + ".items." + item, state, java.util.Map.of(),
-                Material.BARRIER, Component.text(item), List.of(), false);
+        return ConfiguredGui.item(
+                MENU_PATH + ".items." + item,
+                state,
+                java.util.Map.of(),
+                Material.BARRIER,
+                Component.text(item),
+                List.of(),
+                false);
     }
 
     private static int pageCount() {
@@ -133,8 +136,14 @@ public final class TGTTOSAreaTypeGui {
     private static ItemStack option(@NotNull TGTTOSAreaTypeStep.Option option, String current) {
         ItemStack item = new ItemStack(option.icon());
         boolean selected = option.value().equalsIgnoreCase(current == null ? "" : current);
-        return ConfiguredGui.item(MENU_PATH + ".items.option." + option.value().toLowerCase(), selected ? "selected" : "idle",
-                java.util.Map.of(), option.icon(), Component.empty(), List.of(), false);
+        return ConfiguredGui.item(
+                MENU_PATH + ".items.option." + option.value().toLowerCase(),
+                selected ? "selected" : "idle",
+                java.util.Map.of(),
+                option.icon(),
+                Component.empty(),
+                List.of(),
+                false);
     }
 
     private static ItemStack filler() {

@@ -5,6 +5,7 @@ No floor is detected or deleted heuristically. Every before/after document is
 recorded in the adjacent manifest; unknown or subsequently edited files fail
 the complete preflight before any file is written. Re-running is a no-op.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -35,7 +36,9 @@ def migrate(directory: Path, entries: list[dict], apply: bool = False) -> list[s
         for path, data in pending:
             temporary: str | None = None
             try:
-                with tempfile.NamedTemporaryFile(dir=directory, prefix=".floor-migration-", delete=False) as out:
+                with tempfile.NamedTemporaryFile(
+                    dir=directory, prefix=".floor-migration-", delete=False
+                ) as out:
                     temporary = out.name
                     os.fchmod(out.fileno(), path.stat().st_mode & 0o777)
                     out.write(data)
@@ -51,12 +54,18 @@ def migrate(directory: Path, entries: list[dict], apply: bool = False) -> list[s
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("blueprints", type=Path)
-    parser.add_argument("--apply", action="store_true", help="Write the reviewed changes (default: preflight only)")
-    parser.add_argument("--manifest", type=Path, default=MANIFEST, help="Reviewed before/after manifest")
+    parser.add_argument(
+        "--apply", action="store_true", help="Write the reviewed changes (default: preflight only)"
+    )
+    parser.add_argument(
+        "--manifest", type=Path, default=MANIFEST, help="Reviewed before/after manifest"
+    )
     args = parser.parse_args()
     entries = json.loads(args.manifest.read_text(encoding="utf-8"))["changes"]
     pending = migrate(args.blueprints, entries, args.apply)
-    print(f"{'Applied' if args.apply else 'Pending'}: {len(pending)} / {len(entries)} reviewed blueprints")
+    print(
+        f"{'Applied' if args.apply else 'Pending'}: {len(pending)} / {len(entries)} reviewed blueprints"
+    )
     for name in pending:
         print(name)
 

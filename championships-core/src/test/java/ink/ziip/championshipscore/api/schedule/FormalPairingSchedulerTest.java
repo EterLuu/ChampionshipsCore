@@ -1,12 +1,13 @@
 package ink.ziip.championshipscore.api.schedule;
 
-import ink.ziip.championshipscore.api.object.schedule.TwoVTwoVector;
+import static org.junit.jupiter.api.Assertions.*;
+
+import ink.ziip.championshipscore.api.schedule.model.TwoVTwoVector;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+
 import org.junit.jupiter.api.Test;
 
 import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class FormalPairingSchedulerTest {
     @Test
@@ -26,8 +27,9 @@ class FormalPairingSchedulerTest {
             Map<ChampionshipTeam, Double> scores = new HashMap<>();
             teams.forEach(team -> scores.put(team, 0D));
             Set<String> previous = new HashSet<>();
-            List<List<TwoVTwoVector>> seeded = FormalPairingScheduler.roundRobin(
-                    teams, FormalPairingScheduler.seededRounds(count));
+            List<List<TwoVTwoVector>> seeded =
+                    FormalPairingScheduler.roundRobin(
+                            teams, FormalPairingScheduler.seededRounds(count));
             seeded.forEach(round -> FormalPairingScheduler.rememberOpponents(round, previous));
             assertEquals(FormalPairingScheduler.seededRounds(count), seeded.size());
 
@@ -35,12 +37,18 @@ class FormalPairingSchedulerTest {
                 assertEveryTeamOnce(round, teams);
                 for (TwoVTwoVector pair : round) scores.merge(pair.getTeamOne(), 1D, Double::sum);
             }
-            for (int round = seeded.size(); round < FormalPairingScheduler.totalRounds(count); round++) {
-                List<TwoVTwoVector> next = FormalPairingScheduler.standingsRound(teams, scores, previous);
+            for (int round = seeded.size();
+                    round < FormalPairingScheduler.totalRounds(count);
+                    round++) {
+                List<TwoVTwoVector> next =
+                        FormalPairingScheduler.standingsRound(teams, scores, previous);
                 assertFalse(next.isEmpty());
                 assertEveryTeamOnce(next, teams);
                 for (TwoVTwoVector pair : next) {
-                    assertTrue(previous.add(FormalPairingScheduler.opponentKey(pair.getTeamOne(), pair.getTeamTwo())));
+                    assertTrue(
+                            previous.add(
+                                    FormalPairingScheduler.opponentKey(
+                                            pair.getTeamOne(), pair.getTeamTwo())));
                     scores.merge(pair.getTeamOne(), 1D, Double::sum);
                 }
             }
@@ -49,16 +57,20 @@ class FormalPairingSchedulerTest {
 
     @Test
     void pairsAdjacentStandingsWhenNoHistoryBlocksIt() {
-        List<ChampionshipTeam> teams = List.of(new TestTeam(1), new TestTeam(2),
-                new TestTeam(3), new TestTeam(4));
-        Map<ChampionshipTeam, Double> scores = Map.of(
-                teams.get(0), 5D, teams.get(1), 5D, teams.get(2), 1D, teams.get(3), 1D);
+        List<ChampionshipTeam> teams =
+                List.of(new TestTeam(1), new TestTeam(2), new TestTeam(3), new TestTeam(4));
+        Map<ChampionshipTeam, Double> scores =
+                Map.of(teams.get(0), 5D, teams.get(1), 5D, teams.get(2), 1D, teams.get(3), 1D);
         List<TwoVTwoVector> pairs = FormalPairingScheduler.standingsRound(teams, scores, Set.of());
-        assertEquals(Set.of(Set.of(teams.get(0), teams.get(1)), Set.of(teams.get(2), teams.get(3))),
-                pairs.stream().map(pair -> Set.of(pair.getTeamOne(), pair.getTeamTwo())).collect(java.util.stream.Collectors.toSet()));
+        assertEquals(
+                Set.of(Set.of(teams.get(0), teams.get(1)), Set.of(teams.get(2), teams.get(3))),
+                pairs.stream()
+                        .map(pair -> Set.of(pair.getTeamOne(), pair.getTeamTwo()))
+                        .collect(java.util.stream.Collectors.toSet()));
     }
 
-    private static void assertEveryTeamOnce(List<TwoVTwoVector> pairs, List<ChampionshipTeam> teams) {
+    private static void assertEveryTeamOnce(
+            List<TwoVTwoVector> pairs, List<ChampionshipTeam> teams) {
         Set<ChampionshipTeam> playing = new HashSet<>();
         for (TwoVTwoVector pair : pairs) {
             assertTrue(playing.add(pair.getTeamOne()));
@@ -68,6 +80,8 @@ class FormalPairingSchedulerTest {
     }
 
     private static final class TestTeam extends ChampionshipTeam {
-        TestTeam(int id) { super(id, "team-" + id, "red", "#FFFFFF", null); }
+        TestTeam(int id) {
+            super(id, "team-" + id, "red", "#FFFFFF", null);
+        }
     }
 }

@@ -4,6 +4,7 @@ main: ink.ziip.championshipscore.ChampionshipsCore
 api-version: '26.2'
 authors: [ Eter Lu, LettuceIce ]
 depend:
+  - packetevents
   - ProtocolLib
   - PlaceholderAPI
   - FastAsyncWorldEdit

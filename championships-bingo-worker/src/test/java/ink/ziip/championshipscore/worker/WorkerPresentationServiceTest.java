@@ -1,5 +1,10 @@
 package ink.ziip.championshipscore.worker;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import ink.ziip.championshipscore.bingo.engine.BingoResult;
 import ink.ziip.championshipscore.protocol.BingoPresentation;
 import ink.ziip.championshipscore.protocol.BingoTaskSpec;
@@ -7,18 +12,16 @@ import ink.ziip.championshipscore.protocol.MatchState;
 import ink.ziip.championshipscore.protocol.ParticipantRole;
 import ink.ziip.championshipscore.protocol.PlayerSnapshot;
 import ink.ziip.championshipscore.protocol.TeamSnapshot;
+
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+
+import org.bukkit.Material;
+import org.junit.jupiter.api.Test;
+
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
-import org.bukkit.Material;
-import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class WorkerPresentationServiceTest {
     @Test
@@ -32,67 +35,96 @@ class WorkerPresentationServiceTest {
 
     @Test
     void coreOwnedTemplateSurvivesPlaceholderResolution() {
-        BingoPresentation presentation = new BingoPresentation(Map.of(
-                "timer", "&#fff566宾果 &#bababa• &#ededed剩余 &#ff6b26%time%"));
-        String plain = PlainTextComponentSerializer.plainText().serialize(
-                WorkerPresentationService.message(presentation, "timer", "%time%", "09:59"));
+        BingoPresentation presentation =
+                new BingoPresentation(
+                        Map.of("timer", "&#fff566宾果 &#bababa• &#ededed剩余 &#ff6b26%time%"));
+        String plain =
+                PlainTextComponentSerializer.plainText()
+                        .serialize(
+                                WorkerPresentationService.message(
+                                        presentation, "timer", "%time%", "09:59"));
         assertEquals("宾果 • 剩余 09:59", plain);
     }
 
     @Test
     void dailyPrefixResolvesForParticipantAndSpectatorMessages() {
-        BingoPresentation presentation = new BingoPresentation(Map.of(
-                "prefix", "&a[游戏大厅] ",
-                "participant", "%prefix%欢迎 %player%",
-                "spectator", "%prefix%正在旁观 %player%"));
-        assertEquals("[游戏大厅] 欢迎 Alex", PlainTextComponentSerializer.plainText().serialize(
-                WorkerPresentationService.message(presentation, "participant", "%player%", "Alex")));
-        assertEquals("[游戏大厅] 正在旁观 Alex", PlainTextComponentSerializer.plainText().serialize(
-                WorkerPresentationService.message(presentation, "spectator", "%player%", "Alex")));
+        BingoPresentation presentation =
+                new BingoPresentation(
+                        Map.of(
+                                "prefix", "&a[游戏大厅] ",
+                                "participant", "%prefix%欢迎 %player%",
+                                "spectator", "%prefix%正在旁观 %player%"));
+        assertEquals(
+                "[游戏大厅] 欢迎 Alex",
+                PlainTextComponentSerializer.plainText()
+                        .serialize(
+                                WorkerPresentationService.message(
+                                        presentation, "participant", "%player%", "Alex")));
+        assertEquals(
+                "[游戏大厅] 正在旁观 Alex",
+                PlainTextComponentSerializer.plainText()
+                        .serialize(
+                                WorkerPresentationService.message(
+                                        presentation, "spectator", "%player%", "Alex")));
     }
 
     @Test
     void oldManifestsWithoutPrefixRemainRenderable() {
         BingoPresentation presentation = new BingoPresentation(Map.of("notice", "%prefix%已加入"));
-        assertEquals("已加入", PlainTextComponentSerializer.plainText().serialize(
-                WorkerPresentationService.message(presentation, "notice")));
+        assertEquals(
+                "已加入",
+                PlainTextComponentSerializer.plainText()
+                        .serialize(WorkerPresentationService.message(presentation, "notice")));
     }
 
     @Test
     void prefixInsideReplacementMessageIsAlsoResolved() {
-        BingoPresentation presentation = new BingoPresentation(Map.of(
-                "prefix", "&a[大厅] ", "notice", "%message%"));
-        assertEquals("[大厅] 已退出", PlainTextComponentSerializer.plainText().serialize(
-                WorkerPresentationService.message(presentation, "notice", "%message%", "%prefix%已退出")));
+        BingoPresentation presentation =
+                new BingoPresentation(Map.of("prefix", "&a[大厅] ", "notice", "%message%"));
+        assertEquals(
+                "[大厅] 已退出",
+                PlainTextComponentSerializer.plainText()
+                        .serialize(
+                                WorkerPresentationService.message(
+                                        presentation, "notice", "%message%", "%prefix%已退出")));
     }
 
     @Test
     void configuredStatusLineUsesTheSameLabelAndValueLayoutAsCore() {
-        String rendered = WorkerPresentationService.sidebarLine(
-                "#1da4ad场地状态: #f6ffa8{game.status}", "宾果时速", "进行中", 4);
+        String rendered =
+                WorkerPresentationService.sidebarLine(
+                        "#1da4ad场地状态: #f6ffa8{game.status}", "宾果时速", "进行中", 4);
 
         assertEquals("#1da4ad场地状态: #f6ffa8进行中", rendered);
-        assertEquals("场地状态: 进行中", PlainTextComponentSerializer.plainText()
-                .serialize(WorkerPresentationService.component(rendered)));
+        assertEquals(
+                "场地状态: 进行中",
+                PlainTextComponentSerializer.plainText()
+                        .serialize(WorkerPresentationService.component(rendered)));
     }
 
     @Test
     void runningSidebarStatusDoesNotDuplicateTheBossBarTimer() {
-        BingoPresentation presentation = new BingoPresentation(Map.of(
-                "sidebar.status.progress", "比赛中"));
-        assertEquals("比赛中", WorkerPresentationService.sidebarStatus(presentation, MatchState.RUNNING));
+        BingoPresentation presentation =
+                new BingoPresentation(Map.of("sidebar.status.progress", "比赛中"));
+        assertEquals(
+                "比赛中", WorkerPresentationService.sidebarStatus(presentation, MatchState.RUNNING));
     }
 
     @Test
     void sidebarStatusRejectsIncompleteManifestPresentation() {
-        assertThrows(IllegalArgumentException.class, () -> WorkerPresentationService.sidebarStatus(
-                new BingoPresentation(Map.of()), MatchState.RUNNING));
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        WorkerPresentationService.sidebarStatus(
+                                new BingoPresentation(Map.of()), MatchState.RUNNING));
     }
 
     @Test
     void ordinarySidebarPlaceholdersStillResolveNormally() {
-        assertEquals("宾果时速 / 4", WorkerPresentationService.sidebarLine(
-                "{game.name} / {viewer.tasks}", "宾果时速", "ignored", 4));
+        assertEquals(
+                "宾果时速 / 4",
+                WorkerPresentationService.sidebarLine(
+                        "{game.name} / {viewer.tasks}", "宾果时速", "ignored", 4));
     }
 
     @Test
@@ -103,7 +135,8 @@ class WorkerPresentationServiceTest {
         List<WorkerSidebarRanking.Entry> rows = WorkerSidebarRanking.select(result, teams, 10);
 
         assertEquals(9, rows.size());
-        assertEquals(List.of(1, 2, 3, 4, 5, 6, 7, 8, 10),
+        assertEquals(
+                List.of(1, 2, 3, 4, 5, 6, 7, 8, 10),
                 rows.stream().map(row -> row.team().id()).toList());
         assertEquals(10, rows.getLast().rank());
         assertTrue(rows.getLast().viewerTeam());
@@ -111,7 +144,8 @@ class WorkerPresentationServiceTest {
 
     @Test
     void participantTeamInsideTopEightIsHighlightedWithoutDuplication() {
-        List<WorkerSidebarRanking.Entry> rows = WorkerSidebarRanking.select(result(10), teams(10), 3);
+        List<WorkerSidebarRanking.Entry> rows =
+                WorkerSidebarRanking.select(result(10), teams(10), 3);
 
         assertEquals(8, rows.size());
         assertTrue(rows.get(2).viewerTeam());
@@ -120,7 +154,8 @@ class WorkerPresentationServiceTest {
 
     @Test
     void spectatorSeesOnlyTopEightWithoutHighlight() {
-        List<WorkerSidebarRanking.Entry> rows = WorkerSidebarRanking.select(result(10), teams(10), null);
+        List<WorkerSidebarRanking.Entry> rows =
+                WorkerSidebarRanking.select(result(10), teams(10), null);
 
         assertEquals(8, rows.size());
         assertTrue(rows.stream().noneMatch(WorkerSidebarRanking.Entry::viewerTeam));
@@ -147,16 +182,27 @@ class WorkerPresentationServiceTest {
     }
 
     private static final UUID PLAYER_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
-    private static final BingoPresentation PRESENTATION = new BingoPresentation(Map.of(
-            "game.name", "宾果时速", "papi.none", "无", "papi.spectator", "旁观",
-            "presentation.daily-game", "&6%game%",
-            "presentation.tab.team-footer", "&f队伍: %team% &f| 积分: %points%",
-            "presentation.tab.daily-team-footer", "&f队伍: %team%",
-            "presentation.tab.current-game-footer", "&f当前游戏: &b%game%"));
-    private static final TeamSnapshot TEAM = new TeamSnapshot(3, "金队", "YELLOW", "&#fff566",
-            List.of(PLAYER_ID), 1234.5D);
-    private static final PlayerSnapshot PLAYER = new PlayerSnapshot(PLAYER_ID, "Player",
-            ParticipantRole.PLAYER, 3, true, 321.5D);
+    private static final BingoPresentation PRESENTATION =
+            new BingoPresentation(
+                    Map.of(
+                            "game.name",
+                            "宾果时速",
+                            "papi.none",
+                            "无",
+                            "papi.spectator",
+                            "旁观",
+                            "presentation.daily-game",
+                            "&6%game%",
+                            "presentation.tab.team-footer",
+                            "&f队伍: %team% &f| 积分: %points%",
+                            "presentation.tab.daily-team-footer",
+                            "&f队伍: %team%",
+                            "presentation.tab.current-game-footer",
+                            "&f当前游戏: &b%game%"));
+    private static final TeamSnapshot TEAM =
+            new TeamSnapshot(3, "金队", "YELLOW", "&#fff566", List.of(PLAYER_ID), 1234.5D);
+    private static final PlayerSnapshot PLAYER =
+            new PlayerSnapshot(PLAYER_ID, "Player", ParticipantRole.PLAYER, 3, true, 321.5D);
 
     @Test
     void matchesCoreTeamAndPointPlaceholders() {
@@ -167,24 +213,31 @@ class WorkerPresentationServiceTest {
         assertEquals("322", resolve("player_points"));
         assertEquals("1235", resolve("player_team_points"));
         assertEquals("§x§f§f§f§5§6§6", resolve("tab_name_color"));
-        assertEquals("§f队伍: §x§f§f§f§5§6§6金队 §f| 积分: 1235",
-                resolve("tab_footer_status"));
+        assertEquals("§f队伍: §x§f§f§f§5§6§6金队 §f| 积分: 1235", resolve("tab_footer_status"));
         assertNull(resolve("player_rank"));
     }
 
     @Test
     void spectatorUsesCoreFallbackTextAndZeroPoints() {
-        PlayerSnapshot spectator = new PlayerSnapshot(PLAYER_ID, "Viewer",
-                ParticipantRole.SPECTATOR, null, false, 0D);
+        PlayerSnapshot spectator =
+                new PlayerSnapshot(PLAYER_ID, "Viewer", ParticipantRole.SPECTATOR, null, false, 0D);
 
-        assertEquals("旁观", WorkerChampionshipPlaceholderValues.resolve(
-                spectator, null, PRESENTATION, "player_team_name"));
-        assertEquals("无", WorkerChampionshipPlaceholderValues.resolve(
-                spectator, null, PRESENTATION, "player_team_color"));
-        assertEquals("0", WorkerChampionshipPlaceholderValues.resolve(
-                spectator, null, PRESENTATION, "player_team_points"));
-        assertEquals("§f", WorkerChampionshipPlaceholderValues.resolve(
-                spectator, null, PRESENTATION, "tab_name_color"));
+        assertEquals(
+                "旁观",
+                WorkerChampionshipPlaceholderValues.resolve(
+                        spectator, null, PRESENTATION, "player_team_name"));
+        assertEquals(
+                "无",
+                WorkerChampionshipPlaceholderValues.resolve(
+                        spectator, null, PRESENTATION, "player_team_color"));
+        assertEquals(
+                "0",
+                WorkerChampionshipPlaceholderValues.resolve(
+                        spectator, null, PRESENTATION, "player_team_points"));
+        assertEquals(
+                "§f",
+                WorkerChampionshipPlaceholderValues.resolve(
+                        spectator, null, PRESENTATION, "tab_name_color"));
     }
 
     @Test
@@ -195,28 +248,44 @@ class WorkerPresentationServiceTest {
 
     @Test
     void dailyShowsItsTemporaryColorTeamWithoutChampionshipPoints() {
-        assertEquals("§x§f§f§f§5§6§6金队", WorkerChampionshipPlaceholderValues.resolve(
-                PLAYER, TEAM, PRESENTATION, "player_team_name", true));
-        assertEquals("YELLOW", WorkerChampionshipPlaceholderValues.resolve(
-                PLAYER, TEAM, PRESENTATION, "player_team_color", true));
-        assertEquals("0", WorkerChampionshipPlaceholderValues.resolve(
-                PLAYER, TEAM, PRESENTATION, "player_team_points", true));
-        assertEquals("§8[§x§f§f§f§5§6§6宾果时速§8]§r ", WorkerChampionshipPlaceholderValues.resolve(
-                PLAYER, TEAM, PRESENTATION, "tab_prefix", true));
-        assertEquals("§f队伍: §x§f§f§f§5§6§6金队", WorkerChampionshipPlaceholderValues.resolve(
-                PLAYER, TEAM, PRESENTATION, "tab_footer_status", true));
-        assertEquals("§x§f§f§f§5§6§6", WorkerChampionshipPlaceholderValues.resolve(
-                PLAYER, TEAM, PRESENTATION, "tab_name_color", true));
+        assertEquals(
+                "§x§f§f§f§5§6§6金队",
+                WorkerChampionshipPlaceholderValues.resolve(
+                        PLAYER, TEAM, PRESENTATION, "player_team_name", true));
+        assertEquals(
+                "YELLOW",
+                WorkerChampionshipPlaceholderValues.resolve(
+                        PLAYER, TEAM, PRESENTATION, "player_team_color", true));
+        assertEquals(
+                "0",
+                WorkerChampionshipPlaceholderValues.resolve(
+                        PLAYER, TEAM, PRESENTATION, "player_team_points", true));
+        assertEquals(
+                "§8[§x§f§f§f§5§6§6宾果时速§8]§r ",
+                WorkerChampionshipPlaceholderValues.resolve(
+                        PLAYER, TEAM, PRESENTATION, "tab_prefix", true));
+        assertEquals(
+                "§f队伍: §x§f§f§f§5§6§6金队",
+                WorkerChampionshipPlaceholderValues.resolve(
+                        PLAYER, TEAM, PRESENTATION, "tab_footer_status", true));
+        assertEquals(
+                "§x§f§f§f§5§6§6",
+                WorkerChampionshipPlaceholderValues.resolve(
+                        PLAYER, TEAM, PRESENTATION, "tab_name_color", true));
     }
 
     @Test
     void dailySpectatorUsesTheSameGameIdentityAsCore() {
-        PlayerSnapshot spectator = new PlayerSnapshot(PLAYER_ID, "Viewer",
-                ParticipantRole.SPECTATOR, null, false, 0D);
-        assertEquals("§8[§6宾果时速§8]§r ", WorkerChampionshipPlaceholderValues.resolve(
-                spectator, null, PRESENTATION, "tab_prefix", true));
-        assertEquals("§f当前游戏: §b宾果时速", WorkerChampionshipPlaceholderValues.resolve(
-                spectator, null, PRESENTATION, "tab_footer_status", true));
+        PlayerSnapshot spectator =
+                new PlayerSnapshot(PLAYER_ID, "Viewer", ParticipantRole.SPECTATOR, null, false, 0D);
+        assertEquals(
+                "§8[§6宾果时速§8]§r ",
+                WorkerChampionshipPlaceholderValues.resolve(
+                        spectator, null, PRESENTATION, "tab_prefix", true));
+        assertEquals(
+                "§f当前游戏: §b宾果时速",
+                WorkerChampionshipPlaceholderValues.resolve(
+                        spectator, null, PRESENTATION, "tab_footer_status", true));
     }
 
     private static String resolve(String params) {
@@ -225,11 +294,16 @@ class WorkerPresentationServiceTest {
 
     @Test
     void frozenDisplayFieldsWinOverExecutionAttributes() {
-        BingoTaskSpec task = new BingoTaskSpec(0, "jump", "statistic", Map.of(
-                "statistic", "JUMP",
-                "target", "7000",
-                "display.material", "RABBIT_FOOT",
-                "display.amount", "7"));
+        BingoTaskSpec task =
+                new BingoTaskSpec(
+                        0,
+                        "jump",
+                        "statistic",
+                        Map.of(
+                                "statistic", "JUMP",
+                                "target", "7000",
+                                "display.material", "RABBIT_FOOT",
+                                "display.amount", "7"));
 
         assertEquals(Material.RABBIT_FOOT, WorkerTaskDisplay.icon(task));
         assertEquals(7, WorkerTaskDisplay.amount(task));
@@ -238,10 +312,15 @@ class WorkerPresentationServiceTest {
 
     @Test
     void oldManifestStatisticsRetainOriginalIconsAndTravelUnits() {
-        BingoTaskSpec jump = new BingoTaskSpec(0, "jump", "statistic", Map.of(
-                "statistic", "JUMP", "target", "7"));
-        BingoTaskSpec travel = new BingoTaskSpec(1, "walk", "statistic", Map.of(
-                "statistic", "WALK_ONE_CM", "target", "12000"));
+        BingoTaskSpec jump =
+                new BingoTaskSpec(
+                        0, "jump", "statistic", Map.of("statistic", "JUMP", "target", "7"));
+        BingoTaskSpec travel =
+                new BingoTaskSpec(
+                        1,
+                        "walk",
+                        "statistic",
+                        Map.of("statistic", "WALK_ONE_CM", "target", "12000"));
 
         assertEquals(Material.RABBIT_FOOT, WorkerTaskDisplay.icon(jump));
         assertEquals(12, WorkerTaskDisplay.amount(travel));

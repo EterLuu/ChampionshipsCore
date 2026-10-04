@@ -8,8 +8,7 @@ public record RedisTransportConfig(
         String namespace,
         String workerId,
         long approximateMaxStreamLength,
-        Duration commandTimeout
-) {
+        Duration commandTimeout) {
     public RedisTransportConfig {
         Objects.requireNonNull(uri, "uri");
         Objects.requireNonNull(namespace, "namespace");

@@ -3,9 +3,10 @@ package ink.ziip.championshipscore.api.game.arena;
 import org.bukkit.util.Vector;
 
 /**
- * Lays copies in a straight line: copy {@code index} sits at {@code first + index * step}. Suited to games
- * with no central hub that just need N identical arenas side by side (e.g. TNT Run's load-balancing copies).
- * {@code step} should exceed the arena footprint along its axis so copies don't overlap.
+ * Lays copies in a straight line: copy {@code index} sits at {@code first + index * step}. Suited
+ * to games with no central hub that just need N identical arenas side by side (e.g. TNT Run's
+ * load-balancing copies). {@code step} should exceed the arena footprint along its axis so copies
+ * don't overlap.
  */
 public final class RowArenaGrid implements ArenaGrid {
     private final Vector first;

@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.platform.bukkit.bingo.map;
 
 import net.kyori.adventure.text.format.TextColor;
+
 import org.bukkit.map.MapPalette;
 import org.jetbrains.annotations.Nullable;
 
@@ -13,14 +14,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Converts true-colour sprites to Minecraft map-palette indices with a perceptual nearest-colour
- * search (CIELAB / CIE94 ΔE94), then lets the renderer write the matched colours via
- * {@link org.bukkit.map.MapCanvas#setPixelColor}. Palette colours are pre-converted to Lab once; per-sprite
- * results are cached so the per-pixel work happens once on load rather than every map tick.
+ * search (CIELAB / CIE94 ΔE94), then lets the renderer write the matched colours via {@link
+ * org.bukkit.map.MapCanvas#setPixelColor}. Palette colours are pre-converted to Lab once;
+ * per-sprite results are cached so the per-pixel work happens once on load rather than every map
+ * tick.
  */
 public final class MapColorMatcher {
     /** A palette colour in CIELAB plus its chroma C = hypot(a, b), precomputed for ΔE94. */
-    private record Entry(byte index, double l, double a, double b, double chroma) {
-    }
+    private record Entry(byte index, double l, double a, double b, double chroma) {}
 
     /** Map index for a fully-transparent pixel. */
     public static final byte TRANSPARENT = 0;
@@ -32,6 +33,7 @@ public final class MapColorMatcher {
      * stained glass renders identically to dyed concrete.
      */
     private static final int BG_R = (TaskImageAtlas.SLOT_SHADE_KEEP >> 16) & 0xff;
+
     private static final int BG_G = (TaskImageAtlas.SLOT_SHADE_KEEP >> 8) & 0xff;
     private static final int BG_B = TaskImageAtlas.SLOT_SHADE_KEEP & 0xff;
 
@@ -39,8 +41,7 @@ public final class MapColorMatcher {
     private static volatile Color[] paletteColors;
     private static final Map<BufferedImage, byte[]> CACHE = new ConcurrentHashMap<>();
 
-    private MapColorMatcher() {
-    }
+    private MapColorMatcher() {}
 
     @SuppressWarnings("removal")
     private static Entry[] palette() {

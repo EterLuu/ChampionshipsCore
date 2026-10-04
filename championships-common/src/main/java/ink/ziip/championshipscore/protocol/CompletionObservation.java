@@ -10,14 +10,15 @@ public record CompletionObservation(
         int teamId,
         UUID playerId,
         int cellIndex,
-        long observedGameTick
-) {
+        long observedGameTick) {
     public CompletionObservation {
         ProtocolSupport.required(matchId, "matchId");
         ProtocolSupport.required(playerId, "playerId");
-        if (epoch < 1 || seq < 1) throw new IllegalArgumentException("epoch and seq must be positive");
+        if (epoch < 1 || seq < 1)
+            throw new IllegalArgumentException("epoch and seq must be positive");
         if (teamId < 0 || cellIndex < 0 || observedGameTick < 0) {
-            throw new IllegalArgumentException("teamId, cellIndex and observedGameTick must be non-negative");
+            throw new IllegalArgumentException(
+                    "teamId, cellIndex and observedGameTick must be non-negative");
         }
     }
 }

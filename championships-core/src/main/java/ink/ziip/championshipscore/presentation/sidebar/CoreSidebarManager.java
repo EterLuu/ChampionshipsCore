@@ -1,32 +1,36 @@
 package ink.ziip.championshipscore.presentation.sidebar;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.ChampionshipPermissions;
 import ink.ziip.championshipscore.api.BaseManager;
-import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
-import ink.ziip.championshipscore.api.game.battlebox.BattleBoxArea;
-import ink.ziip.championshipscore.api.game.battlebox.BattleBoxMatch;
-import ink.ziip.championshipscore.api.game.bingo.BingoArea;
-import ink.ziip.championshipscore.api.game.bingo.game.BingoRound;
-import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
-import ink.ziip.championshipscore.api.game.frostbite.FrostbiteArea;
-import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
-import ink.ziip.championshipscore.api.game.laserbox.LaserBoxArea;
-import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
-import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagArea;
-import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagMatch;
-import ink.ziip.championshipscore.api.game.parkourwarrior.ParkourWarriorTeamArea;
-import ink.ziip.championshipscore.api.game.riptiderush.RiptideRushArea;
-import ink.ziip.championshipscore.api.game.snowball.SnowballShowdownTeamArea;
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
-import ink.ziip.championshipscore.api.object.game.GameRunMode;
-import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.api.ChampionshipPermissions;
 import ink.ziip.championshipscore.api.daily.DailyPlayerSnapshot;
+import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
+import ink.ziip.championshipscore.api.game.battlebox.runtime.BattleBoxArea;
+import ink.ziip.championshipscore.api.game.battlebox.runtime.BattleBoxMatch;
+import ink.ziip.championshipscore.api.game.bingo.game.BingoRound;
+import ink.ziip.championshipscore.api.game.bingo.runtime.BingoArea;
+import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
+import ink.ziip.championshipscore.api.game.frostbite.runtime.FrostbiteArea;
+import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
+import ink.ziip.championshipscore.api.game.laserbox.runtime.LaserBoxArea;
+import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
+import ink.ziip.championshipscore.api.game.model.GameRunMode;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.api.game.parkourtag.runtime.ParkourTagArea;
+import ink.ziip.championshipscore.api.game.parkourtag.runtime.ParkourTagMatch;
+import ink.ziip.championshipscore.api.game.parkourwarrior.runtime.ParkourWarriorTeamArea;
+import ink.ziip.championshipscore.api.game.riptiderush.runtime.RiptideRushArea;
+import ink.ziip.championshipscore.api.game.snowball.runtime.SnowballShowdownTeamArea;
+import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.logging.LogText;
 import ink.ziip.championshipscore.platform.bukkit.scoreboard.SharedSidebar;
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.shared.presentation.RankingWindow;
-import ink.ziip.championshipscore.util.Utils;
+
 import me.clip.placeholderapi.PlaceholderAPI;
+
 import net.kyori.adventure.text.Component;
+
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -43,7 +47,6 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,9 +71,18 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         if (!file.isFile()) plugin.saveResource("scoreboards.yml", false);
         reload();
         SidebarConfiguration config = configuration;
-        Component initialTitle = config == null ? Component.text("CC") : Utils.toComponent(config.lobby().title());
-        sidebar = new SharedSidebar("cc_sidebar", initialTitle,
-                warning -> plugin.getLogger().warning(Utils.formatModuleLog("Sidebar", "发包", warning)));
+        Component initialTitle =
+                config == null
+                        ? Component.text("CC")
+                        : LegacyText.component(config.lobby().title());
+        sidebar =
+                new SharedSidebar(
+                        "cc_sidebar",
+                        initialTitle,
+                        warning ->
+                                plugin.getLogger()
+                                        .warning(
+                                                LogText.formatModuleLog("Sidebar", "发包", warning)));
         Bukkit.getPluginManager().registerEvents(this, plugin);
         scheduleRefresh();
         Bukkit.getOnlinePlayers().forEach(this::refresh);
@@ -86,7 +98,10 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         sidebar = null;
     }
 
-    /** Atomically replaces the active snapshot; malformed edits leave the last good configuration live. */
+    /**
+     * Atomically replaces the active snapshot; malformed edits leave the last good configuration
+     * live.
+     */
     public boolean reload() {
         File file = new File(plugin.getDataFolder(), "scoreboards.yml");
         try {
@@ -95,11 +110,18 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
             rendered.clear();
             if (sidebar != null && !loaded.enabled()) sidebar.hideAll();
             if (sidebar != null) scheduleRefresh();
-            plugin.getLogger().info(Utils.formatModuleLog("Sidebar", "配置", "已加载 scoreboards.yml"));
+            plugin.getLogger()
+                    .info(LogText.formatModuleLog("Sidebar", "配置", "已加载 scoreboards.yml"));
             return true;
         } catch (RuntimeException exception) {
-            plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("Sidebar", "配置",
-                    "scoreboards.yml 无效，保留上一份有效配置 | " + exception.getMessage()), exception);
+            plugin.getLogger()
+                    .log(
+                            Level.SEVERE,
+                            LogText.formatModuleLog(
+                                    "Sidebar",
+                                    "配置",
+                                    "scoreboards.yml 无效，保留上一份有效配置 | " + exception.getMessage()),
+                            exception);
             return false;
         }
     }
@@ -124,8 +146,13 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         if (refreshTask != null) refreshTask.cancel();
         SidebarConfiguration config = configuration;
         if (config == null || !config.enabled() || !plugin.isEnabled()) return;
-        refreshTask = Bukkit.getScheduler().runTaskTimer(plugin,
-                () -> Bukkit.getOnlinePlayers().forEach(this::refresh), 1L, config.updateIntervalTicks());
+        refreshTask =
+                Bukkit.getScheduler()
+                        .runTaskTimer(
+                                plugin,
+                                () -> Bukkit.getOnlinePlayers().forEach(this::refresh),
+                                1L,
+                                config.updateIntervalTicks());
     }
 
     private void refresh(Player player) {
@@ -167,7 +194,9 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
             values.put("daily.selected-game", daily.selectedGame());
             values.put("daily.queue-state", daily.queueState());
             values.put("daily.queue-players", Integer.toString(daily.queuePlayers()));
-            values.put("daily.countdown", daily.countdown() < 0 ? "-" : Integer.toString(daily.countdown()));
+            values.put(
+                    "daily.countdown",
+                    daily.countdown() < 0 ? "-" : Integer.toString(daily.countdown()));
             return renderTemplate(player, config.dailyLobby(), values);
         }
 
@@ -178,10 +207,14 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         return renderTemplate(player, config.lobby(), Map.of());
     }
 
-    private RenderedSidebar renderGame(Player player, BaseGameInstance instance, boolean spectator,
-                                        SidebarConfiguration config) {
+    private RenderedSidebar renderGame(
+            Player player,
+            BaseGameInstance instance,
+            boolean spectator,
+            SidebarConfiguration config) {
         SidebarConfiguration.GameTemplate game = config.game(instance.getGameTypeEnum());
-        SidebarConfiguration.Template template = game.templateFor(instance.getGameConfig().getConfigName());
+        SidebarConfiguration.Template template =
+                game.templateFor(instance.getGameConfig().getConfigName());
         Map<String, String> values = new LinkedHashMap<>();
         values.put("game.name", instance.getGameTypeEnum().toString());
         values.put("game.map", Objects.toString(instance.getGameConfig().getConfigName(), "-"));
@@ -189,20 +222,34 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         values.put("game.status", instance.getGameStageEnum().toString());
         values.put("game.run-mode", instance.getRunMode().name());
         values.put("game.instance", Integer.toString(instance.getCopyIndex() + 1));
-        values.put("viewer.role", spectator
-                ? config.value("game.role-spectator", "观战")
-                : config.value("game.role-participant", "参赛"));
+        values.put(
+                "viewer.role",
+                spectator
+                        ? config.value("game.role-spectator", "观战")
+                        : config.value("game.role-participant", "参赛"));
         // A spectator may still have a persistent team assignment from the lobby or a previous
         // round.  Treat the view as neutral so the sidebar does not highlight that stale team.
-        ChampionshipTeam viewerTeam = spectator ? null : plugin.getTeamManager().getTeamByPlayer(player);
-        values.put("viewer.team", viewerTeam == null
-                ? config.value("game.spectator", "&7观战者") : viewerTeam.getColoredName());
+        ChampionshipTeam viewerTeam =
+                spectator ? null : plugin.getTeamManager().getTeamByPlayer(player);
+        values.put(
+                "viewer.team",
+                viewerTeam == null
+                        ? config.value("game.spectator", "&7观战者")
+                        : viewerTeam.getColoredName());
         if (instance instanceof BattleBoxArea area) {
             BattleBoxMatch match = area.currentMatch();
-            putMatchup(config, values, match == null ? null : match.getRight(), match == null ? null : match.getLeft());
+            putMatchup(
+                    config,
+                    values,
+                    match == null ? null : match.getRight(),
+                    match == null ? null : match.getLeft());
         } else if (instance instanceof ParkourTagArea area) {
             ParkourTagMatch match = area.currentMatch();
-            putMatchup(config, values, match == null ? null : match.getRight(), match == null ? null : match.getLeft());
+            putMatchup(
+                    config,
+                    values,
+                    match == null ? null : match.getRight(),
+                    match == null ? null : match.getLeft());
         }
         putGameValues(config, values, instance, player.getUniqueId(), spectator);
 
@@ -219,7 +266,8 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
             String line = raw;
             if (instance instanceof BingoArea bingo) {
                 BingoRound round = bingo.getRound();
-                int tasks = viewerTeam == null || round == null ? 0 : round.completedCount(viewerTeam);
+                int tasks =
+                        viewerTeam == null || round == null ? 0 : round.completedCount(viewerTeam);
                 line = line.replace("{viewer.tasks}", Integer.toString(tasks));
             }
             lines.add(line);
@@ -227,42 +275,68 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         return renderRaw(player, template.title(), lines, values, config.papiFallback());
     }
 
-    private static void putMatchup(SidebarConfiguration config, Map<String, String> values,
-                                   ChampionshipTeam right, ChampionshipTeam left) {
+    private static void putMatchup(
+            SidebarConfiguration config,
+            Map<String, String> values,
+            ChampionshipTeam right,
+            ChampionshipTeam left) {
         String undecided = config.value("match.undecided", "&7待定");
         values.put("match.right", right == null ? undecided : right.getColoredName());
         values.put("match.left", left == null ? undecided : left.getColoredName());
     }
 
-    static void putGameValues(SidebarConfiguration config, Map<String, String> values,
-                              BaseGameInstance instance, UUID viewer, boolean spectator) {
+    static void putGameValues(
+            SidebarConfiguration config,
+            Map<String, String> values,
+            BaseGameInstance instance,
+            UUID viewer,
+            boolean spectator) {
         if (instance instanceof RiptideRushArea area) {
             values.put("riptide.progress", area.getCourseProgressPercent() + "%");
             values.put("riptide.alive", Integer.toString(area.getSurvivedPlayerNums()));
             String key = area.getCurrentChallengeKey();
-            values.put("riptide.challenge", config.value("riptide.challenge." + key, "-")
-                    .replace("{round}", area.getColorFloorRoundProgress()));
+            values.put(
+                    "riptide.challenge",
+                    config.value("riptide.challenge." + key, "-")
+                            .replace("{round}", area.getColorFloorRoundProgress()));
         } else if (instance instanceof FrostbiteArea area) {
-            values.put("frostbite.kills", spectator ? "-" : Integer.toString(area.getPlayerKills(viewer)));
+            values.put(
+                    "frostbite.kills",
+                    spectator ? "-" : Integer.toString(area.getPlayerKills(viewer)));
             String key = spectator ? "spectator" : area.getPlayerStateKey(viewer);
             values.put("frostbite.state", config.value("frostbite.state." + key, "-"));
-        } else if (instance instanceof ink.ziip.championshipscore.api.game.sulfursoccer.SulfurSoccerArea area) {
-            putMatchup(config, values, area.getRightChampionshipTeam(), area.getLeftChampionshipTeam());
+        } else if (instance
+                instanceof
+                ink.ziip.championshipscore.api.game.sulfursoccer.runtime.SulfurSoccerArea area) {
+            putMatchup(
+                    config,
+                    values,
+                    area.getRightChampionshipTeam(),
+                    area.getLeftChampionshipTeam());
             values.put("sulfursoccer.right-goals", Integer.toString(area.getRightGoals()));
             values.put("sulfursoccer.left-goals", Integer.toString(area.getLeftGoals()));
-            values.put("sulfursoccer.target", Integer.toString(area.getGameConfig().getGoalsToWin()));
+            values.put(
+                    "sulfursoccer.target", Integer.toString(area.getGameConfig().getGoalsToWin()));
             values.put("sulfursoccer.state", area.getStateText());
         } else if (instance instanceof LaserBoxArea area) {
-            putMatchup(config, values, area.getRightChampionshipTeam(), area.getLeftChampionshipTeam());
+            putMatchup(
+                    config,
+                    values,
+                    area.getRightChampionshipTeam(),
+                    area.getLeftChampionshipTeam());
             values.put("laserbox.right-progress", Integer.toString(area.getRightProgress()));
             values.put("laserbox.left-progress", Integer.toString(area.getLeftProgress()));
-            values.put("laserbox.kills", spectator ? "-" : Integer.toString(area.getPlayerKills(viewer)));
+            values.put(
+                    "laserbox.kills",
+                    spectator ? "-" : Integer.toString(area.getPlayerKills(viewer)));
         }
     }
 
-    private List<String> renderLocalBingoRanking(SidebarConfiguration config, BingoArea bingo,
-                                                 SidebarConfiguration.GameTemplate template,
-                                                 ChampionshipTeam viewerTeam) {
+    private List<String> renderLocalBingoRanking(
+            SidebarConfiguration config,
+            BingoArea bingo,
+            SidebarConfiguration.GameTemplate template,
+            ChampionshipTeam viewerTeam) {
         BingoRound round = bingo.getRound();
         if (round == null) return List.of(config.value("ranking.none", "&7暂无排行"));
         List<ChampionshipTeam> ranked = round.rankedTeams();
@@ -270,35 +344,50 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         List<String> result = new ArrayList<>();
         for (ChampionshipTeam team : selected) {
             int position = ranked.indexOf(team) + 1;
-            String raw = bingo.getRunMode() == GameRunMode.DAILY
-                    ? team.equals(viewerTeam)
-                    ? config.value("ranking.bingo-daily-own-row", "{rank.team-color}&l▶ {rank.position}. {rank.team} &7({rank.tasks} 项)")
-                    : config.value("ranking.bingo-daily-row", "{rank.team-color}{rank.position}. {rank.team} &7({rank.tasks} 项)")
-                    : team.equals(viewerTeam) ? template.ownRankingLine() : template.rankingLine();
-            String line = raw.replace("{rank.team-color}", team.getColorCode())
-                    .replace("{rank.position}", Integer.toString(position))
-                    .replace("{rank.team}", team.getName())
-                    .replace("{rank.score}", Integer.toString(round.score(team)))
-                    .replace("{rank.tasks}", Integer.toString(round.completedCount(team)));
+            String raw =
+                    bingo.getRunMode() == GameRunMode.DAILY
+                            ? team.equals(viewerTeam)
+                                    ? config.value(
+                                            "ranking.bingo-daily-own-row",
+                                            "{rank.team-color}&l▶ {rank.position}. {rank.team}"
+                                                    + " &7({rank.tasks} 项)")
+                                    : config.value(
+                                            "ranking.bingo-daily-row",
+                                            "{rank.team-color}{rank.position}. {rank.team}"
+                                                    + " &7({rank.tasks} 项)")
+                            : team.equals(viewerTeam)
+                                    ? template.ownRankingLine()
+                                    : template.rankingLine();
+            String line =
+                    raw.replace("{rank.team-color}", team.getColorCode())
+                            .replace("{rank.position}", Integer.toString(position))
+                            .replace("{rank.team}", team.getName())
+                            .replace("{rank.score}", Integer.toString(round.score(team)))
+                            .replace("{rank.tasks}", Integer.toString(round.completedCount(team)));
             result.add(line);
         }
         return result;
     }
 
-    private List<String> renderLocalSnowballRanking(SidebarConfiguration config, Player player,
-                                                    SnowballShowdownTeamArea snowball,
-                                                    SidebarConfiguration.GameTemplate template) {
+    private List<String> renderLocalSnowballRanking(
+            SidebarConfiguration config,
+            Player player,
+            SnowballShowdownTeamArea snowball,
+            SidebarConfiguration.GameTemplate template) {
         List<ChampionshipTeam> ranked = snowball.getRankedTeams();
         if (ranked.isEmpty()) return List.of(config.value("ranking.none", "&7暂无排行"));
         ChampionshipTeam viewerTeam = plugin.getTeamManager().getTeamByPlayer(player);
         List<String> result = new ArrayList<>();
         for (ChampionshipTeam team : selectRankingRows(ranked, viewerTeam)) {
             int position = ranked.indexOf(team) + 1;
-            String raw = team.equals(viewerTeam) ? template.ownRankingLine() : template.rankingLine();
-            result.add(raw.replace("{rank.team-color}", team.getColorCode())
-                    .replace("{rank.position}", Integer.toString(position))
-                    .replace("{rank.team}", team.getName())
-                    .replace("{rank.score}", Integer.toString(snowball.getTeamScore(team))));
+            String raw =
+                    team.equals(viewerTeam) ? template.ownRankingLine() : template.rankingLine();
+            result.add(
+                    raw.replace("{rank.team-color}", team.getColorCode())
+                            .replace("{rank.position}", Integer.toString(position))
+                            .replace("{rank.team}", team.getName())
+                            .replace(
+                                    "{rank.score}", Integer.toString(snowball.getTeamScore(team))));
         }
         return result;
     }
@@ -307,7 +396,8 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         return RankingWindow.select(ranked, viewerEntry, 8);
     }
 
-    private RenderedSidebar renderEdit(Player player, PrepareSession session, SidebarConfiguration config) {
+    private RenderedSidebar renderEdit(
+            Player player, PrepareSession session, SidebarConfiguration config) {
         List<String> errors = session.getFlow().validateForDisplay(session);
         BaseGameConfig map = session.getTarget().config();
         boolean correctWorld = session.getFlow().isInCorrectWorld(player, session.getTarget());
@@ -315,42 +405,65 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         Map<String, String> values = new LinkedHashMap<>();
         values.put("edit.game", session.getGameType().toString());
         values.put("edit.map", session.getAreaName());
-        values.put("edit.world", session.getTarget().worldName().isBlank()
-                ? config.value("map-edit.world-unbound", "&c尚未绑定") : session.getTarget().worldName());
-        values.put("edit.world-status", correctWorld
-                ? config.value("map-edit.world-correct", "&a正确")
-                : config.value("map-edit.world-wrong", "&c错误"));
+        values.put(
+                "edit.world",
+                session.getTarget().worldName().isBlank()
+                        ? config.value("map-edit.world-unbound", "&c尚未绑定")
+                        : session.getTarget().worldName());
+        values.put(
+                "edit.world-status",
+                correctWorld
+                        ? config.value("map-edit.world-correct", "&a正确")
+                        : config.value("map-edit.world-wrong", "&c错误"));
         values.put("edit.done", Integer.toString(session.configDone()));
         values.put("edit.total", Integer.toString(session.configTotal()));
         values.put("edit.errors", Integer.toString(errors.size()));
         values.put("edit.progress-color", complete ? "&a" : "&e");
         values.put("edit.error-color", complete ? "&a" : "&c");
-        values.put("edit.revision", Integer.toString(Objects.requireNonNullElse(map.getPrepareRevision(), 0)));
+        values.put(
+                "edit.revision",
+                Integer.toString(Objects.requireNonNullElse(map.getPrepareRevision(), 0)));
         values.put("edit.publish-status", publishStatus(config, map));
         values.put("edit.warning", editWarning(config, map, complete, correctWorld));
         return renderTemplate(player, config.mapEdit(), values);
     }
 
-    private RenderedSidebar renderMapStatus(Player player, List<MapDescriptor> maps,
-                                             SidebarConfiguration config) {
+    private RenderedSidebar renderMapStatus(
+            Player player, List<MapDescriptor> maps, SidebarConfiguration config) {
         MapDescriptor primary = maps.getFirst();
         Map<String, String> values = new LinkedHashMap<>();
         values.put("world.name", player.getWorld().getName());
         values.put("map.count", Integer.toString(maps.size()));
-        values.put("map.publish-status", maps.stream().allMatch(entry -> entry.config().isPrepareReady())
-                ? config.value("map-publish.all-ready", "&a全部已发布")
-                : config.value("map-publish.any-unpublished", "&e存在草稿或未保存修改"));
-        values.put("map.runtime-status", maps.stream().map(entry -> entry.instance().getGameStageEnum().toString())
-                .distinct().reduce((left, right) -> left + "&7 / " + right)
-                .orElse(config.value("map-status.runtime-unknown", "&7未知")));
-        values.put("map.revision", Integer.toString(Objects.requireNonNullElse(primary.config().getPrepareRevision(), 0)));
+        values.put(
+                "map.publish-status",
+                maps.stream().allMatch(entry -> entry.config().isPrepareReady())
+                        ? config.value("map-publish.all-ready", "&a全部已发布")
+                        : config.value("map-publish.any-unpublished", "&e存在草稿或未保存修改"));
+        values.put(
+                "map.runtime-status",
+                maps.stream()
+                        .map(entry -> entry.instance().getGameStageEnum().toString())
+                        .distinct()
+                        .reduce((left, right) -> left + "&7 / " + right)
+                        .orElse(config.value("map-status.runtime-unknown", "&7未知")));
+        values.put(
+                "map.revision",
+                Integer.toString(
+                        Objects.requireNonNullElse(primary.config().getPrepareRevision(), 0)));
 
         List<Component> lines = new ArrayList<>();
         for (String raw : config.mapStatus().lines()) {
             if ("{map.entries}".equals(raw)) {
                 for (MapDescriptor descriptor : maps.stream().limit(4).toList()) {
-                    lines.add(Utils.toComponent("  " + gameColor(descriptor.game()) + descriptor.game()
-                            + " &8/ " + publishGlyph(descriptor.config()) + "&f" + descriptor.mapName()));
+                    lines.add(
+                            LegacyText.component(
+                                    "  "
+                                            + gameColor(descriptor.game())
+                                            + descriptor.game()
+                                            + " &8/ "
+                                            + publishGlyph(descriptor.config())
+                                            + "&f"
+                                            + descriptor.mapName()));
                 }
                 continue;
             }
@@ -363,49 +476,64 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         Map<String, MapDescriptor> unique = new LinkedHashMap<>();
         for (GameTypeEnum gameType : GameTypeEnum.values()) {
             if (!plugin.getGameManager().isGameManagerLoaded(gameType)) continue;
-            BaseGameInstanceManager<? extends BaseGameInstance> manager = plugin.getGameManager().getAreaManager(gameType);
+            BaseGameInstanceManager<? extends BaseGameInstance> manager =
+                    plugin.getGameManager().getAreaManager(gameType);
             if (manager == null) continue;
             for (BaseGameInstance instance : manager.getRuntimeInstances()) {
                 if (!world.getName().equals(instance.getWorldName())) continue;
-                String mapName = Objects.toString(instance.getGameConfig().getConfigName(), instance.getGameConfig().getAreaName());
-                unique.putIfAbsent(gameType.name() + '\u0000' + mapName.toLowerCase(java.util.Locale.ROOT),
+                String mapName =
+                        Objects.toString(
+                                instance.getGameConfig().getConfigName(),
+                                instance.getGameConfig().getAreaName());
+                unique.putIfAbsent(
+                        gameType.name() + '\u0000' + mapName.toLowerCase(java.util.Locale.ROOT),
                         new MapDescriptor(gameType, mapName, instance.getGameConfig(), instance));
             }
         }
         return unique.values().stream()
-                .sorted(Comparator.comparing((MapDescriptor value) -> value.game().ordinal())
-                        .thenComparing(MapDescriptor::mapName, String.CASE_INSENSITIVE_ORDER))
+                .sorted(
+                        Comparator.comparing((MapDescriptor value) -> value.game().ordinal())
+                                .thenComparing(
+                                        MapDescriptor::mapName, String.CASE_INSENSITIVE_ORDER))
                 .toList();
     }
 
-    private RenderedSidebar renderTemplate(Player player, SidebarConfiguration.Template template,
-                                           Map<String, String> values) {
+    private RenderedSidebar renderTemplate(
+            Player player, SidebarConfiguration.Template template, Map<String, String> values) {
         SidebarConfiguration config = configuration;
         boolean papi = config != null && config.papiFallback();
         return renderRaw(player, template.title(), template.lines(), values, papi);
     }
 
     /** Runs the PAPI compatibility pass once per viewer/snapshot rather than once per line. */
-    private RenderedSidebar renderRaw(Player player, String title, List<String> rawLines,
-                                      Map<String, String> values, boolean papi) {
+    private RenderedSidebar renderRaw(
+            Player player,
+            String title,
+            List<String> rawLines,
+            Map<String, String> values,
+            boolean papi) {
         Map<String, String> effectiveValues = withViewerValues(player, values);
         StringBuilder batch = new StringBuilder(replaceValues(title, effectiveValues));
-        for (String line : rawLines) batch.append('\u0000').append(replaceValues(line, effectiveValues));
+        for (String line : rawLines)
+            batch.append('\u0000').append(replaceValues(line, effectiveValues));
         String renderedBatch = batch.toString();
         if (papi && renderedBatch.indexOf('%') >= 0) {
             renderedBatch = PlaceholderAPI.setPlaceholders(player, renderedBatch);
         }
         String[] parts = renderedBatch.split(Character.toString(0), -1);
-        Component renderedTitle = Utils.toComponent(parts[0]);
+        Component renderedTitle = LegacyText.component(parts[0]);
         List<Component> lines = new ArrayList<>(rawLines.size());
-        for (int index = 1; index < parts.length; index++) lines.add(Utils.toComponent(parts[index]));
+        for (int index = 1; index < parts.length; index++)
+            lines.add(LegacyText.component(parts[index]));
         return normalize(renderedTitle, lines);
     }
 
     private static String replaceValues(String raw, Map<String, String> values) {
         String value = raw;
         for (Map.Entry<String, String> entry : values.entrySet()) {
-            value = value.replace("{" + entry.getKey() + "}", Objects.toString(entry.getValue(), ""));
+            value =
+                    value.replace(
+                            "{" + entry.getKey() + "}", Objects.toString(entry.getValue(), ""));
         }
         return value;
     }
@@ -413,7 +541,7 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
     private Component resolve(Player player, String raw, Map<String, String> values, boolean papi) {
         String value = replaceValues(raw, withViewerValues(player, values));
         if (papi && value.indexOf('%') >= 0) value = PlaceholderAPI.setPlaceholders(player, value);
-        return Utils.toComponent(value);
+        return LegacyText.component(value);
     }
 
     private Map<String, String> withViewerValues(Player player, Map<String, String> values) {
@@ -425,8 +553,10 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
     }
 
     private static RenderedSidebar normalize(Component title, List<Component> requested) {
-        if (requested.size() <= SidebarConfiguration.MAX_LINES) return new RenderedSidebar(title, List.copyOf(requested));
-        return new RenderedSidebar(title, List.copyOf(requested.subList(0, SidebarConfiguration.MAX_LINES)));
+        if (requested.size() <= SidebarConfiguration.MAX_LINES)
+            return new RenderedSidebar(title, List.copyOf(requested));
+        return new RenderedSidebar(
+                title, List.copyOf(requested.subList(0, SidebarConfiguration.MAX_LINES)));
     }
 
     private void hide(Player player) {
@@ -440,11 +570,16 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         return sidebar.value("map-publish.unpublished", "&c尚未发布");
     }
 
-    private static String editWarning(SidebarConfiguration sidebar, BaseGameConfig config,
-                                      boolean complete, boolean correctWorld) {
-        if (!correctWorld) return sidebar.value("map-edit.world-invalid", "&c&l✗ 当前不在绑定世界，无法安全捕获配置");
+    private static String editWarning(
+            SidebarConfiguration sidebar,
+            BaseGameConfig config,
+            boolean complete,
+            boolean correctWorld) {
+        if (!correctWorld)
+            return sidebar.value("map-edit.world-invalid", "&c&l✗ 当前不在绑定世界，无法安全捕获配置");
         if (!complete) return sidebar.value("map-edit.incomplete", "&c&l✗ 地图配置尚未完成");
-        if (config.isPrepareDirty()) return sidebar.value("map-edit.dirty", "#ff6b26&l⚠ 修改尚未发布，不能用于比赛");
+        if (config.isPrepareDirty())
+            return sidebar.value("map-edit.dirty", "#ff6b26&l⚠ 修改尚未发布，不能用于比赛");
         return sidebar.value("map-edit.complete", "&a&l✓ 配置完整且已发布");
     }
 
@@ -465,9 +600,13 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(PlayerJoinEvent event) {
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            if (event.getPlayer().isOnline()) invalidate(event.getPlayer());
-        }, 2L);
+        Bukkit.getScheduler()
+                .runTaskLater(
+                        plugin,
+                        () -> {
+                            if (event.getPlayer().isOnline()) invalidate(event.getPlayer());
+                        },
+                        2L);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -480,10 +619,8 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         invalidate(event.getPlayer());
     }
 
-    private record RenderedSidebar(Component title, List<Component> lines) {
-    }
+    private record RenderedSidebar(Component title, List<Component> lines) {}
 
-    private record MapDescriptor(GameTypeEnum game, String mapName, BaseGameConfig config,
-                                 BaseGameInstance instance) {
-    }
+    private record MapDescriptor(
+            GameTypeEnum game, String mapName, BaseGameConfig config, BaseGameInstance instance) {}
 }

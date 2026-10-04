@@ -12,6 +12,5 @@ public interface MatchCommandPublisher extends AutoCloseable {
     CompletionStage<DeliveryReceipt> publishCommand(MatchCommand command);
 
     @Override
-    default void close() {
-    }
+    default void close() {}
 }

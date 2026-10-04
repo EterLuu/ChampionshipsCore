@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.player.event;
 
 import ink.ziip.championshipscore.api.player.entry.PlayerUuidMigration;
+
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;

@@ -10,14 +10,14 @@ public record MatchCommand(
         long epoch,
         long createdAtEpochMilli,
         MatchCommandType type,
-        Map<String, String> attributes
-) {
+        Map<String, String> attributes) {
     public MatchCommand {
         ProtocolVersion.requireSupported(protocolVersion);
         ProtocolSupport.required(messageId, "messageId");
         ProtocolSupport.required(matchId, "matchId");
         if (epoch < 1) throw new IllegalArgumentException("epoch must be positive");
-        if (createdAtEpochMilli < 1) throw new IllegalArgumentException("createdAtEpochMilli must be positive");
+        if (createdAtEpochMilli < 1)
+            throw new IllegalArgumentException("createdAtEpochMilli must be positive");
         ProtocolSupport.required(type, "type");
         attributes = ProtocolSupport.immutableAttributes(attributes);
     }

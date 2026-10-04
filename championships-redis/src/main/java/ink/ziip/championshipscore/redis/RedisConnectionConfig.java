@@ -9,8 +9,7 @@ public record RedisConnectionConfig(
         String namespace,
         String instanceId,
         long approximateMaxStreamLength,
-        Duration commandTimeout
-) {
+        Duration commandTimeout) {
     public RedisConnectionConfig {
         Objects.requireNonNull(uri, "uri");
         Objects.requireNonNull(namespace, "namespace");

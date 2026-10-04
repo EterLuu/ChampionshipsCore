@@ -14,11 +14,11 @@
 | current effective UUID | 身份平台为已绑定玩家当前生效的 UUID。平台内部的历史迁移状态不会成为 Core 的配置模式。 |
 | server original identity | 身份平台统一账户关联的服务器原始身份，只有离线身份与 Mojang 正版身份两类，用于明确旧服务器资料的 UUID 语义。 |
 
-Core 的 `identity.mode` 只有 `OFFLINE` 与 `PROFILE_UUID`。`ONLINE`、`PROFILE_API`、`SERVER_UUID`、`CUSTOM_UUID` 都不是有效的 Core 模式。旧配置中的 `ONLINE` 和 `PROFILE_API` 仅作为迁移输入，最终迁移为 `PROFILE_UUID`。
+Core 的 `identity.mode` 只有 `OFFLINE` 与 `PROFILE_UUID`。`ONLINE`、`PROFILE_API`、`SERVER_UUID`、`CUSTOM_UUID` 都不是有效的 Core 模式。旧配置中的 `ONLINE` 和 `PROFILE_API` 必须显式改为 `PROFILE_UUID` 并配置档案服务；运行代码不识别这些旧值，也不自动改写已有玩家数据。
 
 ## 2. ChampionshipsCore 的身份规则
 
-Core 的身份策略负责在管理员只有玩家名、玩家当前不在线时确定应持久化的 UUID。账户制度、密码、皮肤和平台内 UUID 迁移由外部身份平台管理。
+Core 的身份策略负责在管理员只有玩家名、玩家当前不在线时确定应持久化的 UUID。Core 与认证组件共用 `championships-common` 的 `AuthIdentity` 校验用户名、解析 UUID 和计算离线身份。账户制度、密码、皮肤和平台内 UUID 迁移由外部身份平台管理。
 
 | 场景 | `OFFLINE` | `PROFILE_UUID` |
 | --- | --- | --- |
@@ -137,32 +137,21 @@ Bridge 根据事件来源执行离线计算或 Mojang 查询，并把 UUID 策�
 
 1. **准备**：停止新比赛、禁止相关玩家登录；备份 Core、AuthMe 和平台数据库；生成并人工审核 `old name -> fromUuid -> toUuid` 映射清单。
 2. **冻结**：身份平台创建带唯一 ID 的 `IDENTITY_MODE_MIGRATION` 控制任务，逐项携带固定的 `fromUuid` 与 `toUuid`。任务创建后按冻结映射执行。
-3. **执行**：确认服务器无人在线后，Bridge 对 AuthMe 与本地访问状态按冻结 UUID 迁移；Core 的队伍、积分、比赛与身份记录由专用 Core 迁移工具/管理流程在事务中迁移。
+3. **执行**：确认服务器无人在线后，Bridge 通过 `PlayerIdentityMigrationEvent` 把冻结映射交给 Core，并等待数据库事务完成，再处理 AuthMe 和本地访问状态。Core 未就绪、事务失败或等待超时均使控制任务失败，不继续提交。
 4. **校验**：检查每个 `toUuid` 唯一、所有外键记录数量符合预期、旧 UUID 无残留引用、玩家登录 UUID 与 profile directory 一致。
 5. **提交或回滚**：所有组件成功后，身份平台把状态切换为新 UUID。任一步失败均不确认控制任务，按备份和已记录的执行状态回滚；迁移使用同一冻结映射重试。
 
 常规“添加离线队员”使用普通身份规则；同名 UUID 冲突进入显式迁移流程。
 
-## 6. 部署与演进
+## 6. 配置和上线
 
-### 阶段 A：收敛 Core 身份源
+1. 根据登录链路选择 Core 模式：独立离线服使用 `OFFLINE`；正版或统一 UUID 部署使用 `PROFILE_UUID` 并填写对应的 profile directory。
+2. 使用 Bungee/AuthProxy 时，AuthBridge 设置 `access.admission-owner: PROXY`；没有代理准入时才选择 `BRIDGE`。两种模式都保留维护锁与实际 Bukkit UUID 检查。
+3. 先用一个测试账户核对代理预登录 UUID、档案查询 UUID、Paper `Player#getUniqueId()`、Core 队伍和 AuthMe 账号资料，确认所有环节使用同一身份。
+4. 已有 UUID 需要变化时，按上一节的冻结映射执行维护任务；仅修改 `identity.mode` 不会迁移数据库。任务通过后更新登录链路与 Core 配置，再恢复登录。
+5. 在测试服确认离线录入、首次登录、改名、UUID 冲突和档案服务不可用的结果，再应用到正式服务。
 
-1. 保留并测试 `OFFLINE` 的本地离线算法分支。
-2. 将 `PROFILE_UUID` 定义为通用 HTTP profile directory 查询。
-3. 在线玩家使用 `Player#getUniqueId()`；离线名称按当前模式进入对应分支。
-4. 将响应校验、同名冲突拒绝和故障策略写入单元与集成测试。
-
-### 阶段 B：收敛认证组件
-
-1. AuthBridge 只按 `UUID`、`OFFLINE` 或 `ONLINE` 的显式 `uuidSource` 执行全量账户事件。
-2. AuthProxy 限定为统一 UUID 部署，缺 UUID 时失败关闭。
-3. 对 authlib-injector 与 AuthProxy 执行部署检查：同一测试账户的代理预登录 UUID、Yggdrasil 查询 UUID、Paper `Player#getUniqueId()` 一致。
-
-### 阶段 C：迁移与上线
-
-1. 为 Core 提供显式 UUID 映射迁移入口、预检和可审计日志。
-2. 更新默认配置注释、管理员文档和运维清单，说明 `profile-api-base-url` 的通用语义。
-3. 先在测试服完成离线录入、首次登录、改名、UUID 冲突和服务不可用五类验收，再执行生产迁移。
+插件配置、客户端鉴权、事件 ACK 和控制任务字段见 [AuthBridge / AuthProxy 协议](auth-bridge-protocol.md)。代码接入和数据库职责见 [开发指南](development.md)。
 
 ## 7. 验收清单
 
@@ -183,16 +172,6 @@ Bridge 根据事件来源执行离线计算或 Mojang 查询，并把 UUID 策�
 | AuthBridge `ONLINE` 账户下发 | 只查询 Mojang 官方档案；查询失败时拒绝事件，不回退离线 UUID。 |
 | AuthBridge 密码同步与迁移 | 密码更新不计算 UUID；迁移仅使用冻结映射。 |
 
-## 8. 文档职责
+## 文档入口
 
-本文维护 Core 身份模型和跨组件不变量。后续拆分或更新文档时，至少保留以下边界：
-
-| 文档 | 内容 |
-| --- | --- |
-| `player-uuid-contract.md`（本文） | 全局术语、身份边界和 UUID 不变量。 |
-| `core-identity-mode.md` | Core 配置、离线名称查询、冲突报错与管理员操作。 |
-| `auth-bridge-protocol.md` | Bridge 事件/控制任务字段、幂等、确认与迁移状态。 |
-| `auth-proxy-deployment.md` | AuthProxy 与 authlib-injector 的安装顺序、同 UUID 校验、故障策略。 |
-| `identity-migration-runbook.md` | 生产前备份、映射审核、执行、回滚和验收记录模板。 |
-
-专门文档未创建前，本文就是实施与运维的完整方案。实现与本文不一致时，先更新设计并评审，再在相关组件中统一实现。
+本文定义身份模型与 UUID 不变量；认证连接器的安装和配置见 [认证部署指南](auth-deployment.md)，接口字段、幂等和控制任务见 [同步协议](auth-bridge-protocol.md)。身份平台是外部系统，本仓库不提供其服务端实现。

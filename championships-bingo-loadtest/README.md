@@ -1,10 +1,14 @@
 # Championships Bingo LoadTest
 
-Bingo LoadTest 用逻辑移动者重现远程 Bingo 的区块加载窗口和实体压力。它把玩家附近的 view-distance 窗口展开到可复现的场景中，并在停留者周围按自然刷怪距离带生成怪物与动物，帮助定位区块生成、region 热点和实体 tick 的容量边界。代理、Redis、任务完成和正式积分链路随后由正式部署验收覆盖。
+Bingo LoadTest 用逻辑移动者重现远程 Bingo 的区块加载窗口和实体压力。它把玩家附近的 view-distance 窗口展开到可复现的场景中，并在停留者周围按自然刷怪距离带生成怪物与动物，帮助定位区块生成、region 热点和实体 tick 的容量边界。代理、Redis、任务完成和正式积分链路需要另外进行真实连接验收。
 
 > 警告：测试会生成并保存大量新区块，最多主动创建数万实体。请在备份完毕、允许丢弃的世界运行；生产赛事服保持干净，安装此插件后测试结束即移除。停止测试会清理插件管理的实体和 chunk ticket，测试生成的新区块与地形修改保留在世界中。
 
-详细结果、已验证范围和 64 人推荐配置见 [性能指南](../docs/bingo-64-player-performance-report.md)。
+源码组织和通用验证命令见 [开发指南](../docs/development.md)。容量测试方法和验收边界见 [性能指南](../docs/bingo-64-player-performance-report.md)。
+
+## 要求
+
+Java 25、与项目 API 匹配的 Folia 26.2、可丢弃的测试世界，以及 Maven（构建）。以下命令从仓库根目录执行。
 
 ## 构建与使用
 
@@ -22,6 +26,8 @@ mvn -pl championships-bingo-loadtest -am clean package
 
 也可只为下一次重启把 `auto-start` 设为 `true`；插件加载后会立即把它持久化回 `false`。测试结束、清理日志完成后关闭服务并移除 JAR。
 
+首次使用先选择一个低负载阶段，核对世界名与磁盘保护阈值，再逐步增加压力。模板中的大实体目标是压力测试输入，不能作为正式服容量承诺。
+
 ## 压力模型
 
 - `stage-walkers` 是逻辑玩家数量，以区块加载和实体观察为模型，重点还原 Folia 的加载与调度压力。
@@ -37,7 +43,7 @@ mvn -pl championships-bingo-loadtest -am clean package
 
 | 配置 | 作用 |
 | --- | --- |
-| `world` / `view-distance` | 被破坏的目标世界与每个逻辑玩家的区块窗口 |
+| `world` / `view-distance` | 测试目标世界与每个逻辑玩家的区块窗口 |
 | `movement-period-ticks` | 移动和窗口更新周期 |
 | `team-anchor-radius-blocks` | 八个测试锚点相对世界中心的半径；正式 16 队布局使用 16 个锚点 |
 | `stationary-player-separation-blocks` | 同组停留者之间的分散距离 |

@@ -4,7 +4,8 @@ import ink.ziip.championshipscore.api.rank.RankManager;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseMainCommand;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -22,7 +23,11 @@ public class RankMainCommand extends BaseMainCommand {
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+    public boolean onCommand(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args) {
         if (args.length < 1) {
             if (!(sender instanceof Player player)) {
                 sendHelp(sender, false);
@@ -35,11 +40,12 @@ public class RankMainCommand extends BaseMainCommand {
                 int playerRank = rankManager.getPlayerRank(player);
                 double teamPoints = rankManager.getPlayerTeamPoints(player);
                 int teamRank = rankManager.getPlayerTeamRank(player);
-                String message = MessageConfig.RANK_RANK_INFO
-                        .replace("%player_point%", Utils.formatPoints(playerPoints))
-                        .replace("%player_rank%", String.valueOf(playerRank))
-                        .replace("%team_point%", Utils.formatPoints(teamPoints))
-                        .replace("%team_rank%", String.valueOf(teamRank));
+                String message =
+                        MessageConfig.RANK_RANK_INFO
+                                .replace("%player_point%", LegacyText.formatPoints(playerPoints))
+                                .replace("%player_rank%", String.valueOf(playerRank))
+                                .replace("%team_point%", LegacyText.formatPoints(teamPoints))
+                                .replace("%team_rank%", String.valueOf(teamRank));
                 sender.sendMessage(message);
             } else {
                 sender.sendMessage(MessageConfig.RANK_NOT_PLAYER);
@@ -49,7 +55,8 @@ public class RankMainCommand extends BaseMainCommand {
 
         BaseMainCommand subCommand = findSubCommand(args[0]);
         if (subCommand != null) {
-            return subCommand.onCommand(sender, command, label, Arrays.copyOfRange(args, 1, args.length));
+            return subCommand.onCommand(
+                    sender, command, label, Arrays.copyOfRange(args, 1, args.length));
         }
 
         sendHelp(sender, false);

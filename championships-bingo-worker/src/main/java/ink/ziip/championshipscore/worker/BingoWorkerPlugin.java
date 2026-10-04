@@ -6,6 +6,7 @@ import ink.ziip.championshipscore.platform.bukkit.scheduler.PlatformScheduler;
 import ink.ziip.championshipscore.platform.bukkit.scoreboard.NativeTeamService;
 import ink.ziip.championshipscore.redis.RedisMatchConsumer;
 import ink.ziip.championshipscore.redis.RedisMatchTransport;
+
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
 import org.bukkit.entity.Player;
@@ -13,8 +14,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.OptionalLong;
 import java.util.List;
+import java.util.OptionalLong;
 import java.util.logging.Level;
 
 /** Dedicated Folia execution plugin. ChampionshipsCore remains the authoritative control plane. */
@@ -30,6 +31,9 @@ public final class BingoWorkerPlugin extends JavaPlugin {
     private WorkerChampionshipPlaceholder placeholder;
     private WorkerWorldController worlds;
     private WorkerChatService chat;
+    private WorkerVisibilityManager visibility;
+    private ink.ziip.championshipscore.platform.bukkit.player.PlayerPacketPresentation
+            playerPackets;
 
     @Override
     public void onEnable() {
@@ -42,7 +46,10 @@ public final class BingoWorkerPlugin extends JavaPlugin {
             return;
         }
         if (!workerConfig.enabled()) {
-            getLogger().warning("Bingo worker is disabled in config.yml; Redis and match runtime were not started");
+            getLogger()
+                    .warning(
+                            "Bingo worker is disabled in config.yml; Redis and match runtime were"
+                                    + " not started");
             return;
         }
 
@@ -56,6 +63,9 @@ public final class BingoWorkerPlugin extends JavaPlugin {
         if (!isEnabled()) return;
 
         try {
+            playerPackets =
+                    new ink.ziip.championshipscore.platform.bukkit.player.PlayerPacketPresentation(
+                            this);
             worlds = new WorkerWorldController(this, workerConfig);
             if (!loadWorlds()) {
                 throw new IllegalStateException("Unable to load all configured Bingo dimensions");
@@ -65,17 +75,42 @@ public final class BingoWorkerPlugin extends JavaPlugin {
             outbox.initialize();
             router = new PluginMessagePlayerRouter(this, workerConfig.proxyChannel());
             returnRouter = new WorkerReturnRouter(this, router, workerConfig.returnServer());
-            registry = new WorkerMatchRegistry(this, workerConfig, outbox, returnRouter, worlds,
-                    NativeTeamService.mainScoreboard());
+            registry =
+                    new WorkerMatchRegistry(
+                            this,
+                            workerConfig,
+                            outbox,
+                            returnRouter,
+                            worlds,
+                            NativeTeamService.mainScoreboard());
+            visibility = new WorkerVisibilityManager(this, registry);
             chat = new WorkerChatService(this, workerConfig, registry);
-            if (getCommand("cc") != null) getCommand("cc").setExecutor(new WorkerPlayCommand(registry));
+            if (getCommand("cc") != null)
+                getCommand("cc").setExecutor(new WorkerPlayCommand(registry));
             registerPlaceholderApi();
-            getServer().getPluginManager().registerEvents(new WorkerListener(this, registry, chat), this);
-            getServer().getPluginManager().registerEvents(new BingoPortalRouter(workerConfig.overworld(),
-                    workerConfig.nether(), workerConfig.end()), this);
-            consumer = new RedisMatchConsumer(workerConfig.redis(), workerConfig.consumer(),
-                    workerConfig.redis().commandStream(), registry::handle,
-                    error -> getLogger().log(Level.SEVERE, "Redis command consumer failure", error));
+            getServer()
+                    .getPluginManager()
+                    .registerEvents(new WorkerListener(this, registry, chat), this);
+            getServer()
+                    .getPluginManager()
+                    .registerEvents(
+                            new BingoPortalRouter(
+                                    workerConfig.overworld(),
+                                    workerConfig.nether(),
+                                    workerConfig.end()),
+                            this);
+            consumer =
+                    new RedisMatchConsumer(
+                            workerConfig.redis(),
+                            workerConfig.consumer(),
+                            workerConfig.redis().commandStream(),
+                            registry::handle,
+                            error ->
+                                    getLogger()
+                                            .log(
+                                                    Level.SEVERE,
+                                                    "Redis command consumer failure",
+                                                    error));
         } catch (IOException | RuntimeException failure) {
             getLogger().log(Level.SEVERE, "Unable to initialize Bingo worker runtime", failure);
             getServer().getPluginManager().disablePlugin(this);
@@ -83,31 +118,53 @@ public final class BingoWorkerPlugin extends JavaPlugin {
         }
 
         outbox.replay()
-                .thenCompose(replayed -> {
-                    if (replayed > 0) getLogger().info("Replayed durable Bingo events: " + replayed);
-                    return consumer.start();
-                })
-                .thenCompose(ignored -> chat.start().exceptionally(failure -> {
-                    getLogger().log(Level.WARNING,
-                            "Cross-server chat bridge is unavailable; Bingo matches remain enabled", failure);
-                    return null;
-                }))
-                .whenComplete((ignored, failure) -> {
-                    if (failure == null) {
-                        getLogger().info("Bingo worker ready: " + workerConfig.workerId());
-                        scheduler.runGlobalTimer(this::scanOnlinePlayers, 20L, 20L);
-                    } else {
-                        getLogger().log(Level.SEVERE, "Unable to start Redis command consumer", failure);
-                        scheduler.runGlobal(() -> getServer().getPluginManager().disablePlugin(this));
-                    }
-                });
+                .thenCompose(
+                        replayed -> {
+                            if (replayed > 0)
+                                getLogger().info("Replayed durable Bingo events: " + replayed);
+                            return consumer.start();
+                        })
+                .thenCompose(
+                        ignored ->
+                                chat.start()
+                                        .exceptionally(
+                                                failure -> {
+                                                    getLogger()
+                                                            .log(
+                                                                    Level.WARNING,
+                                                                    "Cross-server chat bridge is"
+                                                                        + " unavailable; Bingo"
+                                                                        + " matches remain enabled",
+                                                                    failure);
+                                                    return null;
+                                                }))
+                .whenComplete(
+                        (ignored, failure) -> {
+                            if (failure == null) {
+                                getLogger().info("Bingo worker ready: " + workerConfig.workerId());
+                                for (Player player : getServer().getOnlinePlayers())
+                                    registry.onJoin(player);
+                                scheduler.runGlobalTimer(this::scanOnlinePlayers, 20L, 20L);
+                            } else {
+                                getLogger()
+                                        .log(
+                                                Level.SEVERE,
+                                                "Unable to start Redis command consumer",
+                                                failure);
+                                scheduler.runGlobal(
+                                        () -> getServer().getPluginManager().disablePlugin(this));
+                            }
+                        });
     }
 
     private boolean loadWorlds() {
-        boolean freshWorldRequired = getServer().getWorld(workerConfig.overworld()) == null
-                || getServer().getWorld(workerConfig.nether()) == null
-                || getServer().getWorld(workerConfig.end()) == null;
-        OptionalLong seed = new WorkerSeedFilter(this, workerConfig.seedFilter()).selectSeed(freshWorldRequired);
+        boolean freshWorldRequired =
+                getServer().getWorld(workerConfig.overworld()) == null
+                        || getServer().getWorld(workerConfig.nether()) == null
+                        || getServer().getWorld(workerConfig.end()) == null;
+        OptionalLong seed =
+                new WorkerSeedFilter(this, workerConfig.seedFilter())
+                        .selectSeed(freshWorldRequired);
         return loadWorld(workerConfig.overworld(), World.Environment.NORMAL, seed)
                 && loadWorld(workerConfig.nether(), World.Environment.NETHER, seed)
                 && loadWorld(workerConfig.end(), World.Environment.THE_END, seed);
@@ -125,6 +182,14 @@ public final class BingoWorkerPlugin extends JavaPlugin {
         return true;
     }
 
+    void reconcilePlayerVisibility() {
+        if (visibility != null) visibility.reconcile();
+    }
+
+    void releasePlayerVisibility(java.util.UUID id) {
+        if (visibility != null) visibility.release(id);
+    }
+
     private void scanOnlinePlayers() {
         if (registry == null) return;
         List<Player> players = List.copyOf(getServer().getOnlinePlayers());
@@ -133,7 +198,10 @@ public final class BingoWorkerPlugin extends JavaPlugin {
 
     private void registerPlaceholderApi() {
         if (!getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
-            getLogger().info("PlaceholderAPI is not installed; %cc_*% worker placeholders are disabled");
+            getLogger()
+                    .info(
+                            "PlaceholderAPI is not installed; %cc_*% worker placeholders are"
+                                    + " disabled");
             return;
         }
         placeholder = new WorkerChampionshipPlaceholder(this, registry);
@@ -149,6 +217,26 @@ public final class BingoWorkerPlugin extends JavaPlugin {
         // the global/region threads and abort mutates worlds and players. The Core
         // heartbeat fence treats this worker as unavailable; accepted events have
         // already been persisted by the durable outbox.
+        org.bukkit.plugin.Plugin packetPlugin =
+                getServer().getPluginManager().getPlugin("packetevents");
+        if (packetPlugin != null && packetPlugin.isEnabled()) {
+            PlatformScheduler cleanup = new PlatformScheduler(packetPlugin);
+            if (visibility != null) visibility.close(cleanup);
+            for (Player player : getServer().getOnlinePlayers()) {
+                boolean spectator = registry != null && registry.isSpectator(player.getUniqueId());
+                if (spectator || player.getGameMode() == org.bukkit.GameMode.SPECTATOR)
+                    cleanup.runEntity(
+                            player,
+                            () -> {
+                                ink.ziip.championshipscore.platform.bukkit.player
+                                        .SpectatorStateService.clear(player);
+                                player.setGameMode(org.bukkit.GameMode.ADVENTURE);
+                                player.getInventory().clear();
+                            });
+            }
+        }
+        if (playerPackets != null) playerPackets.close();
+        playerPackets = null;
         if (placeholder != null) placeholder.unregister();
         placeholder = null;
         if (consumer != null) consumer.close();

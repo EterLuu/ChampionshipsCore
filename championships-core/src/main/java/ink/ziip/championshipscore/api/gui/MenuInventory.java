@@ -14,6 +14,7 @@ public interface MenuInventory extends InventoryHolder {
         if (!(top.getHolder() instanceof MenuInventory)) return null;
         event.setCancelled(true);
         return event.getClickedInventory() == top && event.getWhoClicked() instanceof Player player
-                ? player : null;
+                ? player
+                : null;
     }
 }

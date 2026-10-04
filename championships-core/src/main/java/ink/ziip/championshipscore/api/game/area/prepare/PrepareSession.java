@@ -1,19 +1,19 @@
 package ink.ziip.championshipscore.api.game.area.prepare;
 
-import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
-import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.api.game.area.prepare.buildmart.BuildMartBlueprintWorkshop;
+import ink.ziip.championshipscore.api.game.area.prepare.step.CountdownBlockDisappearanceStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.StandAndRunStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.ToggleStep;
-import ink.ziip.championshipscore.api.game.area.prepare.step.CountdownBlockDisappearanceStep;
-import ink.ziip.championshipscore.api.game.area.prepare.buildmart.BuildMartBlueprintWorkshop;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
-import ink.ziip.championshipscore.util.Utils;
-import org.bukkit.Material;
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+import ink.ziip.championshipscore.presentation.text.CoreMessages;
+
 import org.bukkit.GameMode;
+import org.bukkit.Material;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -21,9 +21,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * One player's active prepare-mode session: the game/area being edited, the flow's step list, and the
- * session-only flags (world-confirmed, stamped). The saved inventory snapshot is held by
- * {@link PrepareSessionManager}, not here, so a crash can restore the inventory even though the session
+ * One player's active prepare-mode session: the game/area being edited, the flow's step list, and
+ * the session-only flags (world-confirmed, stamped). The saved inventory snapshot is held by {@link
+ * PrepareSessionManager}, not here, so a crash can restore the inventory even though the session
  * itself does not survive a restart.
  */
 public class PrepareSession {
@@ -45,8 +45,12 @@ public class PrepareSession {
         this.blueprintWorkshop = workshop;
     }
 
-    public PrepareSession(@NotNull ChampionshipsCore plugin, @NotNull GameTypeEnum gameType,
-                          @NotNull String areaName, @NotNull SetupTarget target, @NotNull PrepareFlowDefinition flow) {
+    public PrepareSession(
+            @NotNull ChampionshipsCore plugin,
+            @NotNull GameTypeEnum gameType,
+            @NotNull String areaName,
+            @NotNull SetupTarget target,
+            @NotNull PrepareFlowDefinition flow) {
         this.plugin = plugin;
         this.gameType = gameType;
         this.areaName = areaName;
@@ -61,15 +65,23 @@ public class PrepareSession {
     private void addCommonIntroductionSpawnStep() {
         if (steps.stream().anyMatch(step -> step.key().equals("introduction_spawn"))) return;
 
-        PrepareStep introductionSpawn = new StandAndRunStep(
-                "introduction_spawn",
-                LegacyText.component(GuiConfig.text("map-editor.menus.step-list.items.introduction-spawn.title")),
-                LegacyText.component(GuiConfig.line("map-editor.menus.step-list.items.introduction-spawn.lore", 0)),
-                Material.BOOK,
-                setup -> setup.config().getIntroductionSpawnPoint() != null
-                        || setup.config().getSpectatorSpawnPoint() != null,
-                (setup, location) -> setup.config().setIntroductionSpawnPoint(location),
-                Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_STEP_INTRODUCTION_SPAWN_SET));
+        PrepareStep introductionSpawn =
+                new StandAndRunStep(
+                        "introduction_spawn",
+                        LegacyText.component(
+                                GuiConfig.text(
+                                        "map-editor.menus.step-list.items.introduction-spawn.title")),
+                        LegacyText.component(
+                                GuiConfig.line(
+                                        "map-editor.menus.step-list.items.introduction-spawn.lore",
+                                        0)),
+                        Material.BOOK,
+                        setup ->
+                                setup.config().getIntroductionSpawnPoint() != null
+                                        || setup.config().getSpectatorSpawnPoint() != null,
+                        (setup, location) -> setup.config().setIntroductionSpawnPoint(location),
+                        CoreMessages.formatAdminSuccess(
+                                MessageConfig.MAP_EDITOR_STEP_INTRODUCTION_SPAWN_SET));
 
         int spectatorSpawn = -1;
         int confirmWorld = -1;
@@ -80,22 +92,37 @@ public class PrepareSession {
         int insertionPoint = spectatorSpawn >= 0 ? spectatorSpawn + 1 : confirmWorld + 1;
         steps.add(Math.max(0, Math.min(insertionPoint, steps.size())), introductionSpawn);
 
-        PrepareStep introductionMode = new ToggleStep(
-                "introduction_game_mode",
-                LegacyText.component(GuiConfig.text("map-editor.menus.step-list.items.introduction-mode.title")),
-                LegacyText.component(GuiConfig.line("map-editor.menus.step-list.items.introduction-mode.lore", 0)),
-                Material.RECOVERY_COMPASS,
-                setup -> setup.config().getIntroductionGameMode() == GameMode.SPECTATOR
-                        ? GuiConfig.text("map-editor.menus.step-list.items.introduction-mode.states.spectator.title") : GuiConfig.text("map-editor.menus.step-list.items.introduction-mode.states.adventure.title"),
-                setup -> setup.config().setIntroductionGameMode(
-                        setup.config().getIntroductionGameMode() == GameMode.SPECTATOR
-                                ? GameMode.ADVENTURE : GameMode.SPECTATOR));
+        PrepareStep introductionMode =
+                new ToggleStep(
+                        "introduction_game_mode",
+                        LegacyText.component(
+                                GuiConfig.text(
+                                        "map-editor.menus.step-list.items.introduction-mode.title")),
+                        LegacyText.component(
+                                GuiConfig.line(
+                                        "map-editor.menus.step-list.items.introduction-mode.lore",
+                                        0)),
+                        Material.RECOVERY_COMPASS,
+                        setup ->
+                                setup.config().getIntroductionGameMode() == GameMode.SPECTATOR
+                                        ? GuiConfig.text(
+                                                "map-editor.menus.step-list.items.introduction-mode.states.spectator.title")
+                                        : GuiConfig.text(
+                                                "map-editor.menus.step-list.items.introduction-mode.states.adventure.title"),
+                        setup ->
+                                setup.config()
+                                        .setIntroductionGameMode(
+                                                setup.config().getIntroductionGameMode()
+                                                                == GameMode.SPECTATOR
+                                                        ? GameMode.ADVENTURE
+                                                        : GameMode.SPECTATOR));
         steps.add(Math.max(0, Math.min(insertionPoint + 1, steps.size())), introductionMode);
 
         // The opening countdown removal is a TGTTOS-specific mechanic. Keeping it out of the shared
         // flow prevents unrelated games from exposing or persisting a misleading optional step.
         if (gameType == GameTypeEnum.TGTTOS) {
-            steps.add(Math.max(0, Math.min(insertionPoint + 2, steps.size())),
+            steps.add(
+                    Math.max(0, Math.min(insertionPoint + 2, steps.size())),
                     new CountdownBlockDisappearanceStep());
         }
     }
@@ -166,7 +193,10 @@ public class PrepareSession {
         return n;
     }
 
-    /** Steps excluding the session-only {@link StepCaptureType#CONFIRM_WORLD} (for area-list preview). */
+    /**
+     * Steps excluding the session-only {@link StepCaptureType#CONFIRM_WORLD} (for area-list
+     * preview).
+     */
     public int configTotal() {
         int n = 0;
         for (PrepareStep step : steps) {

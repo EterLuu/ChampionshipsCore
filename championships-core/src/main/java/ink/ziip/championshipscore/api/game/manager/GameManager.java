@@ -1,52 +1,55 @@
 package ink.ziip.championshipscore.api.game.manager;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-import ink.ziip.championshipscore.api.ChampionshipPermissions;
 import ink.ziip.championshipscore.api.BaseManager;
+import ink.ziip.championshipscore.api.ChampionshipPermissions;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
 import ink.ziip.championshipscore.api.event.TeamGameEndEvent;
-import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
-import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameInstance;
-import ink.ziip.championshipscore.api.game.instance.paired.BasePairedGameInstance;
-import ink.ziip.championshipscore.api.game.spectate.SpectateMenu;
-import ink.ziip.championshipscore.api.game.spectate.SpectatorManager;
-import ink.ziip.championshipscore.api.game.battlebox.BattleBoxArea;
+import ink.ziip.championshipscore.api.game.acerace.AceRaceManager;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxManager;
-import ink.ziip.championshipscore.api.game.bingo.BingoArea;
+import ink.ziip.championshipscore.api.game.battlebox.runtime.BattleBoxArea;
 import ink.ziip.championshipscore.api.game.bingo.BingoManager;
-import ink.ziip.championshipscore.api.game.bingo.execution.BingoExecutionRouter;
 import ink.ziip.championshipscore.api.game.bingo.execution.BingoExecutionMode;
+import ink.ziip.championshipscore.api.game.bingo.execution.BingoExecutionRouter;
 import ink.ziip.championshipscore.api.game.bingo.execution.BingoStartRequest;
 import ink.ziip.championshipscore.api.game.bingo.execution.LocalBingoExecutionGateway;
 import ink.ziip.championshipscore.api.game.bingo.execution.RemoteBingoInstance;
+import ink.ziip.championshipscore.api.game.bingo.runtime.BingoArea;
 import ink.ziip.championshipscore.api.game.buildmart.BuildMartManager;
 import ink.ziip.championshipscore.api.game.decarnival.DragonEggCarnivalManager;
 import ink.ziip.championshipscore.api.game.dodgebolt.DodgeboltManager;
-import ink.ziip.championshipscore.api.game.dodgebolt.DodgeboltArea;
-import ink.ziip.championshipscore.api.game.acerace.AceRaceManager;
+import ink.ziip.championshipscore.api.game.dodgebolt.runtime.DodgeboltArea;
+import ink.ziip.championshipscore.api.game.frostbite.FrostbiteManager;
 import ink.ziip.championshipscore.api.game.hotycodydusky.HotyCodyDuskyManager;
-import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagArea;
+import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
+import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameInstance;
+import ink.ziip.championshipscore.api.game.instance.paired.BasePairedGameInstance;
+import ink.ziip.championshipscore.api.game.laserbox.LaserBoxManager;
+import ink.ziip.championshipscore.api.game.laserbox.runtime.LaserBoxArea;
+import ink.ziip.championshipscore.api.game.model.GameRunMode;
+import ink.ziip.championshipscore.api.game.model.GameStageEnum;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagManager;
+import ink.ziip.championshipscore.api.game.parkourtag.runtime.ParkourTagArea;
 import ink.ziip.championshipscore.api.game.parkourwarrior.ParkourWarriorManager;
 import ink.ziip.championshipscore.api.game.riptiderush.RiptideRushManager;
-import ink.ziip.championshipscore.api.game.frostbite.FrostbiteManager;
-import ink.ziip.championshipscore.api.game.laserbox.LaserBoxManager;
-import ink.ziip.championshipscore.api.game.laserbox.LaserBoxArea;
-import ink.ziip.championshipscore.api.game.sulfursoccer.SulfurSoccerManager;
 import ink.ziip.championshipscore.api.game.skywars.SkyWarsManager;
 import ink.ziip.championshipscore.api.game.snowball.SnowballShowdownManager;
+import ink.ziip.championshipscore.api.game.spectate.SpectateMenu;
+import ink.ziip.championshipscore.api.game.spectate.SpectatorManager;
+import ink.ziip.championshipscore.api.game.start.ArenaSelection;
+import ink.ziip.championshipscore.api.game.sulfursoccer.SulfurSoccerManager;
 import ink.ziip.championshipscore.api.game.tgttos.TGTTOSManager;
 import ink.ziip.championshipscore.api.game.tntrun.TNTRunManager;
-import ink.ziip.championshipscore.api.object.game.GameRunMode;
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
-import ink.ziip.championshipscore.api.object.schedule.TwoVTwoVector;
-import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
+import ink.ziip.championshipscore.api.schedule.model.TwoVTwoVector;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.MainCommand;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.logging.LogText;
+
 import lombok.Getter;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -69,69 +72,66 @@ public class GameManager extends BaseManager {
         FAILED
     }
 
-    public record ReloadReport(int reusedInstances, int resetInstances, int failedResets,
-                               int reloadedConfigurations, int failedConfigurations,
-                               int enabledManagers, int disabledManagers,
-                               int remoteMatchesStopped) {
-    }
+    public record ReloadReport(
+            int reusedInstances,
+            int resetInstances,
+            int failedResets,
+            int reloadedConfigurations,
+            int failedConfigurations,
+            int enabledManagers,
+            int disabledManagers,
+            int remoteMatchesStopped) {}
 
     private final Map<UUID, BaseGameInstance> playerSpectatorStatus = new ConcurrentHashMap<>();
     private final Map<ChampionshipTeam, BaseGameInstance> teamStatus = new ConcurrentHashMap<>();
     private final Map<UUID, BaseGameInstance> playerStatus = new ConcurrentHashMap<>();
     private final Map<UUID, RoundTransitionHold> roundTransitionHolds = new ConcurrentHashMap<>();
-    private final Map<UUID, SpectatorTransitionHold> spectatorTransitionHolds = new ConcurrentHashMap<>();
+    private final Map<UUID, SpectatorTransitionHold> spectatorTransitionHolds =
+            new ConcurrentHashMap<>();
     private final Map<UUID, RemoteBingoInstance> remoteBingoInstances = new ConcurrentHashMap<>();
-    private final Map<BaseGameInstance, Set<ChampionshipTeam>> pendingFinaleAudience = new ConcurrentHashMap<>();
+    private final Map<BaseGameInstance, Set<ChampionshipTeam>> pendingFinaleAudience =
+            new ConcurrentHashMap<>();
     private final GameManagerHandler gameManagerHandler;
     private final SpectateMenu spectateMenu;
-    @Getter
-    private final SpectatorManager spectatorManager;
-    @Getter
-    private final BattleBoxManager battleBoxManager;
-    @Getter
-    private final ParkourTagManager parkourTagManager;
-    @Getter
-    private final SkyWarsManager skyWarsManager;
-    @Getter
-    private final TGTTOSManager tgttosManager;
-    @Getter
-    private final TNTRunManager tntRunManager;
-    @Getter
-    private final DragonEggCarnivalManager dragonEggCarnivalManager;
-    @Getter
-    private final SnowballShowdownManager snowballShowdownManager;
-    @Getter
-    private final ParkourWarriorManager parkourWarriorManager;
-    @Getter
-    private final HotyCodyDuskyManager hotyCodyDuskyManager;
-    @Getter
-    private final BingoManager bingoManager;
-    @Getter
-    private final BingoExecutionRouter bingoExecutionRouter;
-    @Getter
-    private final BuildMartManager buildMartManager;
-    @Getter
-    private final DodgeboltManager dodgeboltManager;
-    @Getter
-    private final AceRaceManager aceRaceManager;
-    @Getter
-    private final RiptideRushManager riptideRushManager;
-    @Getter
-    private final FrostbiteManager frostbiteManager;
-    @Getter
-    private final LaserBoxManager laserBoxManager;
-    @Getter
-    private final SulfurSoccerManager sulfurSoccerManager;
+    @Getter private final SpectatorManager spectatorManager;
+    @Getter private final BattleBoxManager battleBoxManager;
+    @Getter private final ParkourTagManager parkourTagManager;
+    @Getter private final SkyWarsManager skyWarsManager;
+    @Getter private final TGTTOSManager tgttosManager;
+    @Getter private final TNTRunManager tntRunManager;
+    @Getter private final DragonEggCarnivalManager dragonEggCarnivalManager;
+    @Getter private final SnowballShowdownManager snowballShowdownManager;
+    @Getter private final ParkourWarriorManager parkourWarriorManager;
+    @Getter private final HotyCodyDuskyManager hotyCodyDuskyManager;
+    @Getter private final BingoManager bingoManager;
+    @Getter private final BingoExecutionRouter bingoExecutionRouter;
+    @Getter private final BuildMartManager buildMartManager;
+    @Getter private final DodgeboltManager dodgeboltManager;
+    @Getter private final AceRaceManager aceRaceManager;
+    @Getter private final RiptideRushManager riptideRushManager;
+    @Getter private final FrostbiteManager frostbiteManager;
+    @Getter private final LaserBoxManager laserBoxManager;
+    @Getter private final SulfurSoccerManager sulfurSoccerManager;
+
     /**
-     * Registry mapping each game type to its area manager. Drives the generic
-     * {@code join*} dispatch so adding a game only requires registering it here.
+     * Registry mapping each game type to its area manager. Drives the generic {@code join*}
+     * dispatch so adding a game only requires registering it here.
      */
-    private final Map<GameTypeEnum, BaseGameInstanceManager<? extends BaseGameInstance>> areaManagers = new EnumMap<>(GameTypeEnum.class);
+    private final Map<GameTypeEnum, BaseGameInstanceManager<? extends BaseGameInstance>>
+            areaManagers = new EnumMap<>(GameTypeEnum.class);
+
     /** Lazily parsed from {@link CCConfig#ENABLED_GAMES}; see {@link #getEnabledGames()}. */
     private Set<GameTypeEnum> enabledGames;
-    /** Representative instance used for automatic audience routing, including gaps between formal rounds. */
+
+    /**
+     * Representative instance used for automatic audience routing, including gaps between formal
+     * rounds.
+     */
     private volatile BaseGameInstance spectatorFocus;
-    /** Managers that have actually been loaded, including disabled games opened through map editing. */
+
+    /**
+     * Managers that have actually been loaded, including disabled games opened through map editing.
+     */
     private final Set<GameTypeEnum> loadedGameManagers = EnumSet.noneOf(GameTypeEnum.class);
 
     public GameManager(ChampionshipsCore championshipsCore) {
@@ -175,20 +175,30 @@ public class GameManager extends BaseManager {
         areaManagers.put(GameTypeEnum.LaserBox, laserBoxManager);
         areaManagers.put(GameTypeEnum.SulfurSoccer, sulfurSoccerManager);
 
-        bingoExecutionRouter = new BingoExecutionRouter(new LocalBingoExecutionGateway(this::startLocalBingo,
-                ignored -> forceEndLocalAreas(GameTypeEnum.Bingo)));
+        bingoExecutionRouter =
+                new BingoExecutionRouter(
+                        new LocalBingoExecutionGateway(
+                                this::startLocalBingo,
+                                ignored -> forceEndLocalAreas(GameTypeEnum.Bingo)));
     }
 
     private boolean startLocalBingo(@NotNull BingoStartRequest request) {
         BingoArea area = bingoManager.getArea(request.area());
         if (area == null) return false;
         area.prepareVariantForNextStart(request.variant());
-        boolean started = request.teams().isEmpty()
-                ? joinSingleTeamAreaForAllTeamsLocal(GameTypeEnum.Bingo, request.area(),
-                        request.showIntroduction(), request.runMode())
-                : joinSingleTeamAreaForTeams(GameTypeEnum.Bingo, request.area(),
-                        request.showIntroduction(), request.runMode(),
-                        request.teams().toArray(ChampionshipTeam[]::new));
+        boolean started =
+                request.teams().isEmpty()
+                        ? joinSingleTeamAreaForAllTeamsLocal(
+                                GameTypeEnum.Bingo,
+                                request.area(),
+                                request.showIntroduction(),
+                                request.runMode())
+                        : joinSingleTeamAreaForTeams(
+                                GameTypeEnum.Bingo,
+                                request.area(),
+                                request.showIntroduction(),
+                                request.runMode(),
+                                request.teams().toArray(ChampionshipTeam[]::new));
         if (!started) area.clearPreparedVariant();
         return started;
     }
@@ -197,7 +207,8 @@ public class GameManager extends BaseManager {
      * @return the area manager registered for {@code gameTypeEnum}, or {@code null} if none.
      */
     @Nullable
-    public BaseGameInstanceManager<? extends BaseGameInstance> getAreaManager(GameTypeEnum gameTypeEnum) {
+    public BaseGameInstanceManager<? extends BaseGameInstance> getAreaManager(
+            GameTypeEnum gameTypeEnum) {
         return areaManagers.get(gameTypeEnum);
     }
 
@@ -209,7 +220,8 @@ public class GameManager extends BaseManager {
     @Nullable
     public Location getMapTeleportLocation(@NotNull String worldName) {
         for (GameTypeEnum gameType : GameTypeEnum.values()) {
-            BaseGameInstanceManager<? extends BaseGameInstance> manager = areaManagers.get(gameType);
+            BaseGameInstanceManager<? extends BaseGameInstance> manager =
+                    areaManagers.get(gameType);
             if (manager == null) continue;
             Location target = manager.getWorldTeleportLocation(worldName);
             if (target != null) return target;
@@ -218,8 +230,8 @@ public class GameManager extends BaseManager {
     }
 
     /**
-     * Loads an otherwise disabled game's manager for map preparation. The operation is idempotent so
-     * reopening its map UI cannot register worlds, listeners, or runtime instances twice.
+     * Loads an otherwise disabled game's manager for map preparation. The operation is idempotent
+     * so reopening its map UI cannot register worlds, listeners, or runtime instances twice.
      *
      * @return true when a load was started; false when the manager was already available or absent.
      */
@@ -228,17 +240,18 @@ public class GameManager extends BaseManager {
     }
 
     private boolean loadGameManager(@NotNull GameTypeEnum gameTypeEnum) {
-        BaseGameInstanceManager<? extends BaseGameInstance> manager = areaManagers.get(gameTypeEnum);
+        BaseGameInstanceManager<? extends BaseGameInstance> manager =
+                areaManagers.get(gameTypeEnum);
         if (manager == null || !loadedGameManagers.add(gameTypeEnum)) return false;
         manager.load();
-        plugin.getLogger().log(Level.INFO, Utils.formatGameLog(gameTypeEnum, "-", "加载", "完成",
-                "地图管理器已加载"));
+        plugin.getLogger()
+                .log(Level.INFO, LogText.formatGameLog(gameTypeEnum, "-", "加载", "完成", "地图管理器已加载"));
         return true;
     }
 
     /**
      * @return true if {@code gameTypeEnum} is listed in the {@code enabled-games} config option.
-     * Only enabled games load their area worlds and can be started or operated.
+     *     Only enabled games load their area worlds and can be started or operated.
      */
     public boolean isGameEnabled(@NotNull GameTypeEnum gameTypeEnum) {
         return getEnabledGames().contains(gameTypeEnum);
@@ -246,8 +259,9 @@ public class GameManager extends BaseManager {
 
     /**
      * @return the games enabled via the {@code enabled-games} config option. Parsed lazily on first
-     * use (the configuration file is loaded after this manager is constructed), case-insensitively;
-     * unknown names are logged once and ignored. An empty list means no game is enabled.
+     *     use (the configuration file is loaded after this manager is constructed),
+     *     case-insensitively; unknown names are logged once and ignored. An empty list means no
+     *     game is enabled.
      */
     public Set<GameTypeEnum> getEnabledGames() {
         if (enabledGames == null) {
@@ -255,8 +269,7 @@ public class GameManager extends BaseManager {
             List<String> configured = CCConfig.ENABLED_GAMES;
             if (configured != null) {
                 for (String name : configured) {
-                    if (name == null)
-                        continue;
+                    if (name == null) continue;
                     String trimmed = name.trim();
                     boolean matched = false;
                     for (GameTypeEnum type : GameTypeEnum.values()) {
@@ -267,14 +280,24 @@ public class GameManager extends BaseManager {
                         }
                     }
                     if (!matched) {
-                        plugin.getLogger().log(Level.WARNING, Utils.formatModuleLog("GameManager", "配置",
-                                "enabled-games 包含未知游戏=" + trimmed + "，已忽略"));
+                        plugin.getLogger()
+                                .log(
+                                        Level.WARNING,
+                                        LogText.formatModuleLog(
+                                                "GameManager",
+                                                "配置",
+                                                "enabled-games 包含未知游戏=" + trimmed + "，已忽略"));
                     }
                 }
             }
             enabledGames = parsed;
-            plugin.getLogger().log(Level.INFO, Utils.formatModuleLog("GameManager", "加载",
-                    "已启用游戏=" + (parsed.isEmpty() ? "无" : parsed)));
+            plugin.getLogger()
+                    .log(
+                            Level.INFO,
+                            LogText.formatModuleLog(
+                                    "GameManager",
+                                    "加载",
+                                    "已启用游戏=" + (parsed.isEmpty() ? "无" : parsed)));
         }
         return enabledGames;
     }
@@ -312,7 +335,8 @@ public class GameManager extends BaseManager {
                 Collections.newSetFromMap(new IdentityHashMap<>());
         for (GameTypeEnum gameType : Set.copyOf(loadedGameManagers)) {
             if (managersToDisable.contains(gameType)) continue;
-            BaseGameInstanceManager<? extends BaseGameInstance> manager = areaManagers.get(gameType);
+            BaseGameInstanceManager<? extends BaseGameInstance> manager =
+                    areaManagers.get(gameType);
             if (manager == null) continue;
             for (BaseGameInstance instance : manager.getRuntimeInstances()) {
                 if (instance.getGameStageEnum() != GameStageEnum.WAITING)
@@ -327,17 +351,18 @@ public class GameManager extends BaseManager {
                 Collections.newSetFromMap(new IdentityHashMap<>());
         List<CompletableFuture<Boolean>> resets = new ArrayList<>();
         for (GameTypeEnum gameType : Set.copyOf(loadedGameManagers)) {
-            BaseGameInstanceManager<? extends BaseGameInstance> manager = areaManagers.get(gameType);
+            BaseGameInstanceManager<? extends BaseGameInstance> manager =
+                    areaManagers.get(gameType);
             if (manager == null) continue;
             boolean disabling = managersToDisable.contains(gameType);
             for (BaseGameInstance instance : manager.getRuntimeInstances()) {
                 if (instance.getGameStageEnum() == GameStageEnum.WAITING) {
-                    if (!disabling && !activeConfigurations.contains(instance.getGameConfig())
+                    if (!disabling
+                            && !activeConfigurations.contains(instance.getGameConfig())
                             && visitedConfigurations.add(instance.getGameConfig())) {
                         if (instance.getGameConfig().reloadConfigurationChecked(plugin.getFolder()))
                             reloadedConfigurations++;
-                        else
-                            failedConfigurations++;
+                        else failedConfigurations++;
                     }
                     if (!disabling) reusedInstances++;
                     continue;
@@ -351,9 +376,12 @@ public class GameManager extends BaseManager {
         for (RemoteBingoInstance instance : remoteBingoInstances.values()) {
             if (instance.getGameStageEnum() != GameStageEnum.WAITING) remoteMatchesStopped++;
         }
-        CompletableFuture<Void> remoteStop = remoteMatchesStopped > 0
-                ? bingoExecutionRouter.forceEnd("configuration-reload").toCompletableFuture()
-                : CompletableFuture.completedFuture(null);
+        CompletableFuture<Void> remoteStop =
+                remoteMatchesStopped > 0
+                        ? bingoExecutionRouter
+                                .forceEnd("configuration-reload")
+                                .toCompletableFuture()
+                        : CompletableFuture.completedFuture(null);
 
         int finalReusedInstances = reusedInstances;
         int finalResetInstances = resetInstances;
@@ -364,53 +392,83 @@ public class GameManager extends BaseManager {
         for (int index = 0; index < resets.size(); index++) operations[index] = resets.get(index);
         operations[operations.length - 1] = remoteStop;
         CompletableFuture<ReloadReport> result = new CompletableFuture<>();
-        CompletableFuture.allOf(operations).whenComplete((ignored, operationFailure) -> {
-            Runnable finish = () -> {
-                try {
-                    int failedResets = (int) resets.stream()
-                            .filter(reset -> reset.isCompletedExceptionally() || !Boolean.TRUE.equals(reset.getNow(false)))
-                            .count();
-                    int disabledManagers = 0;
-                    if (managersToDisable.contains(GameTypeEnum.Bingo)
-                            && plugin.getRemoteBingoManager() != null) {
-                        plugin.getRemoteBingoManager().unload();
-                    }
-                    for (GameTypeEnum gameType : managersToDisable) {
-                        if (!loadedGameManagers.remove(gameType)) continue;
-                        BaseGameInstanceManager<? extends BaseGameInstance> manager = areaManagers.get(gameType);
-                        if (manager != null) manager.unload();
-                        disabledManagers++;
-                    }
-                    int enabledManagers = 0;
-                    for (GameTypeEnum gameType : managersToEnable) {
-                        if (loadGameManager(gameType)) enabledManagers++;
-                    }
-                    if (managersToEnable.contains(GameTypeEnum.Bingo)
-                            && loadedGameManagers.contains(GameTypeEnum.Bingo)
-                            && plugin.getRemoteBingoManager() != null) {
-                        plugin.getRemoteBingoManager().load();
-                    }
-                    if (operationFailure != null) {
-                        result.completeExceptionally(operationFailure);
-                        return;
-                    }
-                    result.complete(new ReloadReport(finalReusedInstances, finalResetInstances, failedResets,
-                            finalReloadedConfigurations, finalFailedConfigurations,
-                            enabledManagers, disabledManagers, finalRemoteMatchesStopped));
-                } catch (Throwable failure) {
-                    result.completeExceptionally(failure);
-                }
-            };
-            if (Bukkit.isPrimaryThread()) finish.run();
-            else {
-                try {
-                    Bukkit.getScheduler().runTask(plugin, finish);
-                } catch (RuntimeException schedulingFailure) {
-                    result.completeExceptionally(schedulingFailure);
-                }
-            }
-        });
+        CompletableFuture.allOf(operations)
+                .whenComplete(
+                        (ignored, operationFailure) -> {
+                            Runnable finish =
+                                    () -> {
+                                        try {
+                                            int failedResets =
+                                                    (int)
+                                                            resets.stream()
+                                                                    .filter(
+                                                                            reset ->
+                                                                                    reset
+                                                                                                    .isCompletedExceptionally()
+                                                                                            || !Boolean
+                                                                                                    .TRUE
+                                                                                                    .equals(
+                                                                                                            reset
+                                                                                                                    .getNow(
+                                                                                                                            false)))
+                                                                    .count();
+                                            int disabledManagers = 0;
+                                            if (managersToDisable.contains(GameTypeEnum.Bingo)
+                                                    && plugin.getRemoteBingoManager() != null) {
+                                                plugin.getRemoteBingoManager().unload();
+                                            }
+                                            for (GameTypeEnum gameType : managersToDisable) {
+                                                if (!loadedGameManagers.remove(gameType)) continue;
+                                                BaseGameInstanceManager<? extends BaseGameInstance>
+                                                        manager = areaManagers.get(gameType);
+                                                if (manager != null) manager.unload();
+                                                disabledManagers++;
+                                            }
+                                            int enabledManagers = 0;
+                                            for (GameTypeEnum gameType : managersToEnable) {
+                                                if (loadGameManager(gameType)) enabledManagers++;
+                                            }
+                                            if (managersToEnable.contains(GameTypeEnum.Bingo)
+                                                    && loadedGameManagers.contains(
+                                                            GameTypeEnum.Bingo)
+                                                    && plugin.getRemoteBingoManager() != null) {
+                                                plugin.getRemoteBingoManager().load();
+                                            }
+                                            if (operationFailure != null) {
+                                                result.completeExceptionally(operationFailure);
+                                                return;
+                                            }
+                                            result.complete(
+                                                    new ReloadReport(
+                                                            finalReusedInstances,
+                                                            finalResetInstances,
+                                                            failedResets,
+                                                            finalReloadedConfigurations,
+                                                            finalFailedConfigurations,
+                                                            enabledManagers,
+                                                            disabledManagers,
+                                                            finalRemoteMatchesStopped));
+                                        } catch (Throwable failure) {
+                                            result.completeExceptionally(failure);
+                                        }
+                                    };
+                            if (Bukkit.isPrimaryThread()) finish.run();
+                            else {
+                                try {
+                                    Bukkit.getScheduler().runTask(plugin, finish);
+                                } catch (RuntimeException schedulingFailure) {
+                                    result.completeExceptionally(schedulingFailure);
+                                }
+                            }
+                        });
         return result;
+    }
+
+    public void initializeOnlinePlayer(@NotNull Player player) {
+        if (spectatorManager.isStandalone(player.getUniqueId())) return;
+        gameManagerHandler.onPlayerJoin(
+                new org.bukkit.event.player.PlayerJoinEvent(
+                        player, net.kyori.adventure.text.Component.empty()));
     }
 
     @Override
@@ -419,8 +477,10 @@ public class GameManager extends BaseManager {
             if (isGameEnabled(gameType)) {
                 loadGameManager(gameType);
             } else {
-                plugin.getLogger().log(Level.INFO, Utils.formatGameLog(gameType, "-", "加载", "跳过",
-                        "游戏未启用，不加载场地与世界"));
+                plugin.getLogger()
+                        .log(
+                                Level.INFO,
+                                LogText.formatGameLog(gameType, "-", "加载", "跳过", "游戏未启用，不加载场地与世界"));
             }
         }
 
@@ -435,7 +495,8 @@ public class GameManager extends BaseManager {
         spectatorManager.unload();
         playerSpectatorStatus.clear();
         for (GameTypeEnum gameType : EnumSet.copyOf(loadedGameManagers)) {
-            BaseGameInstanceManager<? extends BaseGameInstance> manager = areaManagers.get(gameType);
+            BaseGameInstanceManager<? extends BaseGameInstance> manager =
+                    areaManagers.get(gameType);
             if (manager != null) manager.unload();
         }
         loadedGameManagers.clear();
@@ -451,9 +512,10 @@ public class GameManager extends BaseManager {
     }
 
     /**
-     * Force-ends every currently-running area of the given game (any area not in WAITING). Used by the
-     * schedule "delete current game" flow to scrap a broken/in-progress game before clearing its records.
-     * Calls {@link BaseGameInstance#endGameFinally()}, which removes players and resets the instance.
+     * Force-ends every currently-running area of the given game (any area not in WAITING). Used by
+     * the schedule "delete current game" flow to scrap a broken/in-progress game before clearing
+     * its records. Calls {@link BaseGameInstance#endGameFinally()}, which removes players and
+     * resets the instance.
      */
     public void forceEndAreas(@NotNull GameTypeEnum gameTypeEnum) {
         if (gameTypeEnum == GameTypeEnum.Bingo) {
@@ -463,16 +525,27 @@ public class GameManager extends BaseManager {
         forceEndLocalAreas(gameTypeEnum);
     }
 
-    /** Emergency-stops only formal EVENT ownership, leaving concurrent DAILY/GAME copies untouched. */
+    /**
+     * Emergency-stops only formal EVENT ownership, leaving concurrent DAILY/GAME copies untouched.
+     */
     public void forceEndEventAreas(@NotNull GameTypeEnum gameTypeEnum) {
         if (gameTypeEnum == GameTypeEnum.Bingo) {
-            boolean hasEventRun = remoteBingoInstances.values().stream()
-                    .anyMatch(instance -> instance.getRunMode() == GameRunMode.EVENT
-                            && instance.getGameStageEnum() != GameStageEnum.WAITING);
+            boolean hasEventRun =
+                    remoteBingoInstances.values().stream()
+                            .anyMatch(
+                                    instance ->
+                                            instance.getRunMode() == GameRunMode.EVENT
+                                                    && instance.getGameStageEnum()
+                                                            != GameStageEnum.WAITING);
             BaseGameInstanceManager<?> manager = areaManagers.get(gameTypeEnum);
-            if (manager != null) hasEventRun |= manager.getRuntimeInstances().stream()
-                    .anyMatch(instance -> instance.getRunMode() == GameRunMode.EVENT
-                            && instance.getGameStageEnum() != GameStageEnum.WAITING);
+            if (manager != null)
+                hasEventRun |=
+                        manager.getRuntimeInstances().stream()
+                                .anyMatch(
+                                        instance ->
+                                                instance.getRunMode() == GameRunMode.EVENT
+                                                        && instance.getGameStageEnum()
+                                                                != GameStageEnum.WAITING);
             if (hasEventRun) bingoExecutionRouter.forceEnd("formal-event-force-end");
             return;
         }
@@ -490,8 +563,10 @@ public class GameManager extends BaseManager {
         BaseGameInstanceManager<?> manager = areaManagers.get(gameTypeEnum);
         if (manager == null) return false;
         return manager.getRuntimeInstances().stream()
-                .anyMatch(instance -> instance.isEventRun()
-                        && instance.getGameStageEnum() != GameStageEnum.WAITING);
+                .anyMatch(
+                        instance ->
+                                instance.isEventRun()
+                                        && instance.getGameStageEnum() != GameStageEnum.WAITING);
     }
 
     private void forceEndLocalAreas(@NotNull GameTypeEnum gameTypeEnum) {
@@ -510,8 +585,8 @@ public class GameManager extends BaseManager {
      */
     public @NotNull List<BaseGameInstance> getStoppableInstances() {
         List<BaseGameInstance> instances = new ArrayList<>();
-        for (Map.Entry<GameTypeEnum, BaseGameInstanceManager<? extends BaseGameInstance>> entry
-                : areaManagers.entrySet()) {
+        for (Map.Entry<GameTypeEnum, BaseGameInstanceManager<? extends BaseGameInstance>> entry :
+                areaManagers.entrySet()) {
             if (!loadedGameManagers.contains(entry.getKey())) continue;
             entry.getValue().getRuntimeInstances().stream()
                     .filter(instance -> isStoppableStage(instance.getGameStageEnum()))
@@ -520,11 +595,12 @@ public class GameManager extends BaseManager {
         remoteBingoInstances.values().stream()
                 .filter(instance -> isStoppableStage(instance.getGameStageEnum()))
                 .forEach(instances::add);
-        instances.sort(Comparator
-                .comparingInt((BaseGameInstance instance) -> instance.getGameTypeEnum().ordinal())
-                .thenComparing(this::canonicalMapName, String.CASE_INSENSITIVE_ORDER)
-                .thenComparingInt(BaseGameInstance::getCopyIndex)
-                .thenComparing(this::stableInstanceKey));
+        instances.sort(
+                Comparator.comparingInt(
+                                (BaseGameInstance instance) -> instance.getGameTypeEnum().ordinal())
+                        .thenComparing(this::canonicalMapName, String.CASE_INSENSITIVE_ORDER)
+                        .thenComparingInt(BaseGameInstance::getCopyIndex)
+                        .thenComparing(this::stableInstanceKey));
         return List.copyOf(instances);
     }
 
@@ -534,8 +610,9 @@ public class GameManager extends BaseManager {
         return getStoppableInstances().stream()
                 .filter(instance -> instance.getGameTypeEnum() == gameType)
                 .filter(instance -> mapMatches(instance, mapName))
-                .sorted(Comparator.comparingInt(BaseGameInstance::getCopyIndex)
-                        .thenComparing(this::stableInstanceKey))
+                .sorted(
+                        Comparator.comparingInt(BaseGameInstance::getCopyIndex)
+                                .thenComparing(this::stableInstanceKey))
                 .toList();
     }
 
@@ -543,15 +620,20 @@ public class GameManager extends BaseManager {
      * Stops one still-registered target only. A played game uses its ordinary end path so scoring,
      * end events and result presentation remain intact; a pre-start run is aborted without points.
      */
-    public CompletionStage<GameStopResult> stopGameInstance(@NotNull BaseGameInstance target,
-                                                             @NotNull String reason) {
+    public CompletionStage<GameStopResult> stopGameInstance(
+            @NotNull BaseGameInstance target, @NotNull String reason) {
         if (!Bukkit.isPrimaryThread()) {
             CompletableFuture<GameStopResult> result = new CompletableFuture<>();
-            Bukkit.getScheduler().runTask(plugin, () -> stopGameInstance(target, reason)
-                    .whenComplete((value, failure) -> {
-                        if (failure == null) result.complete(value);
-                        else result.completeExceptionally(failure);
-                    }));
+            Bukkit.getScheduler()
+                    .runTask(
+                            plugin,
+                            () ->
+                                    stopGameInstance(target, reason)
+                                            .whenComplete(
+                                                    (value, failure) -> {
+                                                        if (failure == null) result.complete(value);
+                                                        else result.completeExceptionally(failure);
+                                                    }));
             return result;
         }
         if (!isRegisteredRuntimeInstance(target))
@@ -563,34 +645,55 @@ public class GameManager extends BaseManager {
 
         boolean settle = settlesOnAdministrativeStop(stage);
         if (target instanceof RemoteBingoInstance remote) {
-            return plugin.getRemoteBingoManager().stopMatch(remote.matchId(), reason, settle)
-                    .thenApply(stopped -> stopped
-                            ? (settle ? GameStopResult.SETTLEMENT_STARTED : GameStopResult.PRE_START_ABORTED)
-                            : GameStopResult.FAILED);
+            return plugin.getRemoteBingoManager()
+                    .stopMatch(remote.matchId(), reason, settle)
+                    .thenApply(
+                            stopped ->
+                                    stopped
+                                            ? (settle
+                                                    ? GameStopResult.SETTLEMENT_STARTED
+                                                    : GameStopResult.PRE_START_ABORTED)
+                                            : GameStopResult.FAILED);
         }
 
         if (!settle) {
-            return target.abortAndReset().thenApply(reset -> reset
-                    ? GameStopResult.PRE_START_ABORTED : GameStopResult.FAILED);
+            return target.abortAndReset()
+                    .thenApply(
+                            reset ->
+                                    reset
+                                            ? GameStopResult.PRE_START_ABORTED
+                                            : GameStopResult.FAILED);
         }
 
         try {
-            // This is intentionally the normal end entry, not endGameFinally(): the latter suppresses
+            // This is intentionally the normal end entry, not endGameFinally(): the latter
+            // suppresses
             // the visible result phase and is reserved for emergency lifecycle teardown.
             target.endGame();
             return CompletableFuture.completedFuture(
                     isStoppableStage(target.getGameStageEnum())
-                            ? GameStopResult.FAILED : GameStopResult.SETTLEMENT_STARTED);
+                            ? GameStopResult.FAILED
+                            : GameStopResult.SETTLEMENT_STARTED);
         } catch (RuntimeException failure) {
-            plugin.getLogger().log(Level.SEVERE, Utils.formatGameLog(target.getGameTypeEnum(),
-                    canonicalMapName(target), stage.name(), "管理员停止", "正常结算入口异常"), failure);
+            plugin.getLogger()
+                    .log(
+                            Level.SEVERE,
+                            LogText.formatGameLog(
+                                    target.getGameTypeEnum(),
+                                    canonicalMapName(target),
+                                    stage.name(),
+                                    "管理员停止",
+                                    "正常结算入口异常"),
+                            failure);
             return CompletableFuture.completedFuture(GameStopResult.FAILED);
         }
     }
 
     static boolean isStoppableStage(@NotNull GameStageEnum stage) {
-        return stage == GameStageEnum.LOADING || stage == GameStageEnum.PREPARATION
-                || stage == GameStageEnum.COUNTDOWN || stage == GameStageEnum.PROGRESS
+        return stage == GameStageEnum.LOADING
+                || stage == GameStageEnum.PREPARATION
+                || stage == GameStageEnum.COUNTDOWN
+                || stage == GameStageEnum.PROGRESS
                 || stage == GameStageEnum.STOPPING;
     }
 
@@ -601,8 +704,10 @@ public class GameManager extends BaseManager {
     private boolean isRegisteredRuntimeInstance(@NotNull BaseGameInstance target) {
         if (target instanceof RemoteBingoInstance remote)
             return remoteBingoInstances.get(remote.matchId()) == remote;
-        BaseGameInstanceManager<? extends BaseGameInstance> manager = areaManagers.get(target.getGameTypeEnum());
-        return manager != null && manager.getRuntimeInstances().stream().anyMatch(instance -> instance == target);
+        BaseGameInstanceManager<? extends BaseGameInstance> manager =
+                areaManagers.get(target.getGameTypeEnum());
+        return manager != null
+                && manager.getRuntimeInstances().stream().anyMatch(instance -> instance == target);
     }
 
     private @NotNull String canonicalMapName(@NotNull BaseGameInstance instance) {
@@ -612,55 +717,81 @@ public class GameManager extends BaseManager {
         return areaName == null ? "" : areaName;
     }
 
-    public boolean joinTeamArea(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area, @NotNull ChampionshipTeam rightChampionshipTeam, @NotNull ChampionshipTeam leftChampionshipTeam) {
+    public boolean joinTeamArea(
+            @NotNull GameTypeEnum gameTypeEnum,
+            @NotNull String area,
+            @NotNull ChampionshipTeam rightChampionshipTeam,
+            @NotNull ChampionshipTeam leftChampionshipTeam) {
         return joinTeamArea(gameTypeEnum, area, rightChampionshipTeam, leftChampionshipTeam, false);
     }
 
     /** Starts the non-scoring final and records which finalist owns both opening arrows. */
-    public boolean joinDodgeboltArea(@NotNull String area, @NotNull ChampionshipTeam rightTeam,
-                                     @NotNull ChampionshipTeam leftTeam,
-                                     @NotNull ChampionshipTeam higherSeed, boolean showIntroduction) {
+    public boolean joinDodgeboltArea(
+            @NotNull String area,
+            @NotNull ChampionshipTeam rightTeam,
+            @NotNull ChampionshipTeam leftTeam,
+            @NotNull ChampionshipTeam higherSeed,
+            boolean showIntroduction) {
         return joinDodgeboltArea(area, rightTeam, leftTeam, higherSeed, showIntroduction, false);
     }
 
-    /** Forced starts may use an online subset when available; persisted rosters remain valid start input. */
-    public boolean joinDodgeboltArea(@NotNull String area, @NotNull ChampionshipTeam rightTeam,
-                                     @NotNull ChampionshipTeam leftTeam,
-                                     @NotNull ChampionshipTeam higherSeed, boolean showIntroduction,
-                                     boolean forcePartialRoster) {
-        return joinDodgeboltArea(area, rightTeam, leftTeam, higherSeed, showIntroduction,
-                forcePartialRoster, GameRunMode.GAME);
+    /**
+     * Forced starts may use an online subset when available; persisted rosters remain valid start
+     * input.
+     */
+    public boolean joinDodgeboltArea(
+            @NotNull String area,
+            @NotNull ChampionshipTeam rightTeam,
+            @NotNull ChampionshipTeam leftTeam,
+            @NotNull ChampionshipTeam higherSeed,
+            boolean showIntroduction,
+            boolean forcePartialRoster) {
+        return joinDodgeboltArea(
+                area,
+                rightTeam,
+                leftTeam,
+                higherSeed,
+                showIntroduction,
+                forcePartialRoster,
+                GameRunMode.GAME);
     }
 
-    public boolean joinDodgeboltArea(@NotNull String area, @NotNull ChampionshipTeam rightTeam,
-                                     @NotNull ChampionshipTeam leftTeam,
-                                     @NotNull ChampionshipTeam higherSeed, boolean showIntroduction,
-                                     boolean forcePartialRoster, @NotNull GameRunMode runMode) {
+    public boolean joinDodgeboltArea(
+            @NotNull String area,
+            @NotNull ChampionshipTeam rightTeam,
+            @NotNull ChampionshipTeam leftTeam,
+            @NotNull ChampionshipTeam higherSeed,
+            boolean showIntroduction,
+            boolean forcePartialRoster,
+            @NotNull GameRunMode runMode) {
         DodgeboltArea instance = dodgeboltManager.getArea(area);
-        if (instance == null || (!higherSeed.equals(rightTeam) && !higherSeed.equals(leftTeam))) return false;
+        if (instance == null
+                || instance.getGameStageEnum() != GameStageEnum.WAITING
+                || (!higherSeed.equals(rightTeam) && !higherSeed.equals(leftTeam))) return false;
         instance.setFirstRoundArrowTeam(higherSeed);
-        boolean started = joinTeamArea(GameTypeEnum.Dodgebolt, area, rightTeam, leftTeam,
-                showIntroduction, forcePartialRoster, runMode);
+        boolean started =
+                joinTeamArea(
+                        GameTypeEnum.Dodgebolt,
+                        area,
+                        rightTeam,
+                        leftTeam,
+                        showIntroduction,
+                        forcePartialRoster,
+                        runMode);
         if (!started) instance.setFirstRoundArrowTeam(null);
         return started;
     }
 
     /** Moves every online non-finalist into a registered final's spectator set. */
-    public synchronized void spectateFinale(@NotNull BaseGameInstance area,
-                                            @NotNull ChampionshipTeam rightTeam,
-                                            @NotNull ChampionshipTeam leftTeam) {
+    public synchronized void spectateFinale(
+            @NotNull BaseGameInstance area,
+            @NotNull ChampionshipTeam rightTeam,
+            @NotNull ChampionshipTeam leftTeam) {
         if (!area.isEventRun()) return;
         pendingFinaleAudience.put(area, Set.of(rightTeam, leftTeam));
         spectatorFocus = area;
         if (!isRegularSpectatingStage(area.getGameStageEnum())) return;
         activateFinaleAudience(area);
-    }
-
-    /** Compatibility API for integrations using the legacy Dodgebolt-specific name. */
-    public synchronized void spectateDodgeboltFinal(@NotNull DodgeboltArea area,
-                                                     @NotNull ChampionshipTeam rightTeam,
-                                                     @NotNull ChampionshipTeam leftTeam) {
-        spectateFinale(area, rightTeam, leftTeam);
     }
 
     private void activateFinaleAudience(@NotNull BaseGameInstance area) {
@@ -673,76 +804,120 @@ public class GameManager extends BaseManager {
         spectatorFocus = area;
     }
 
-    public boolean joinTeamArea(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
-                                @NotNull ChampionshipTeam rightChampionshipTeam,
-                                @NotNull ChampionshipTeam leftChampionshipTeam, boolean showIntroduction) {
-        return joinTeamArea(gameTypeEnum, area, rightChampionshipTeam, leftChampionshipTeam,
-                showIntroduction, false, GameRunMode.GAME);
+    public boolean joinTeamArea(
+            @NotNull GameTypeEnum gameTypeEnum,
+            @NotNull String area,
+            @NotNull ChampionshipTeam rightChampionshipTeam,
+            @NotNull ChampionshipTeam leftChampionshipTeam,
+            boolean showIntroduction) {
+        return joinTeamArea(
+                gameTypeEnum,
+                area,
+                rightChampionshipTeam,
+                leftChampionshipTeam,
+                showIntroduction,
+                false,
+                GameRunMode.GAME);
     }
 
-    public boolean joinTeamArea(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
-                                @NotNull ChampionshipTeam rightChampionshipTeam,
-                                @NotNull ChampionshipTeam leftChampionshipTeam, boolean showIntroduction,
-                                @NotNull GameRunMode runMode) {
-        return joinTeamArea(gameTypeEnum, area, rightChampionshipTeam, leftChampionshipTeam,
-                showIntroduction, false, runMode);
+    public boolean joinTeamArea(
+            @NotNull GameTypeEnum gameTypeEnum,
+            @NotNull String area,
+            @NotNull ChampionshipTeam rightChampionshipTeam,
+            @NotNull ChampionshipTeam leftChampionshipTeam,
+            boolean showIntroduction,
+            @NotNull GameRunMode runMode) {
+        return joinTeamArea(
+                gameTypeEnum,
+                area,
+                rightChampionshipTeam,
+                leftChampionshipTeam,
+                showIntroduction,
+                false,
+                runMode);
     }
 
-    private boolean joinTeamArea(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
-                                 @NotNull ChampionshipTeam rightChampionshipTeam,
-                                 @NotNull ChampionshipTeam leftChampionshipTeam, boolean showIntroduction,
-                                 boolean forcePartialDodgeboltRoster, @NotNull GameRunMode runMode) {
-        if (!isGameEnabled(gameTypeEnum))
-            return false;
-        if (!plugin.getPrepareSessionManager().canStart(gameTypeEnum, area))
-            return false;
-        boolean usePartialRoster = forcePartialDodgeboltRoster
-                && !rightChampionshipTeam.getOnlinePlayers().isEmpty()
-                && !leftChampionshipTeam.getOnlinePlayers().isEmpty();
-        Collection<UUID> rightParticipants = usePartialRoster
-                ? rightChampionshipTeam.getOnlinePlayers().stream().map(Player::getUniqueId).toList()
-                : rightChampionshipTeam.getMembers();
-        Collection<UUID> leftParticipants = usePartialRoster
-                ? leftChampionshipTeam.getOnlinePlayers().stream().map(Player::getUniqueId).toList()
-                : leftChampionshipTeam.getMembers();
-        if (rightParticipants.isEmpty() || leftParticipants.isEmpty())
-            return false;
+    private synchronized boolean joinTeamArea(
+            @NotNull GameTypeEnum gameTypeEnum,
+            @NotNull String area,
+            @NotNull ChampionshipTeam rightChampionshipTeam,
+            @NotNull ChampionshipTeam leftChampionshipTeam,
+            boolean showIntroduction,
+            boolean forcePartialDodgeboltRoster,
+            @NotNull GameRunMode runMode) {
+        if (!isGameEnabled(gameTypeEnum)) return false;
+        if (!plugin.getPrepareSessionManager().canStart(gameTypeEnum, area)) return false;
+        boolean usePartialRoster =
+                forcePartialDodgeboltRoster
+                        && !rightChampionshipTeam.getOnlinePlayers().isEmpty()
+                        && !leftChampionshipTeam.getOnlinePlayers().isEmpty();
+        Collection<UUID> rightParticipants =
+                usePartialRoster
+                        ? rightChampionshipTeam.getOnlinePlayers().stream()
+                                .map(Player::getUniqueId)
+                                .toList()
+                        : rightChampionshipTeam.getMembers();
+        Collection<UUID> leftParticipants =
+                usePartialRoster
+                        ? leftChampionshipTeam.getOnlinePlayers().stream()
+                                .map(Player::getUniqueId)
+                                .toList()
+                        : leftChampionshipTeam.getMembers();
+        if (rightChampionshipTeam.equals(leftChampionshipTeam)
+                || rightParticipants.isEmpty()
+                || leftParticipants.isEmpty()
+                || !Collections.disjoint(rightParticipants, leftParticipants)
+                || teamStatus.containsKey(rightChampionshipTeam)
+                || teamStatus.containsKey(leftChampionshipTeam)) return false;
         for (UUID uuid : rightParticipants) {
             if (isPlayerUnavailableForStart(uuid, gameTypeEnum, showIntroduction, runMode))
                 return false;
-            if (playerSpectatorStatus.containsKey(uuid))
-                removeSpectator(uuid);
         }
         for (UUID uuid : leftParticipants) {
             if (isPlayerUnavailableForStart(uuid, gameTypeEnum, showIntroduction, runMode))
                 return false;
-            if (playerSpectatorStatus.containsKey(uuid))
-                removeSpectator(uuid);
         }
-        if (teamStatus.containsKey(rightChampionshipTeam))
-            return false;
-        if (teamStatus.containsKey(leftChampionshipTeam))
-            return false;
+        if (teamStatus.containsKey(rightChampionshipTeam)) return false;
+        if (teamStatus.containsKey(leftChampionshipTeam)) return false;
 
-        BaseGameInstanceManager<? extends BaseGameInstance> manager = areaManagers.get(gameTypeEnum);
-        if (manager == null)
-            return false;
+        BaseGameInstanceManager<? extends BaseGameInstance> manager =
+                areaManagers.get(gameTypeEnum);
+        if (manager == null) return false;
         BasePairedGameInstance teamArea;
-        if (gameTypeEnum == GameTypeEnum.LaserBox && manager instanceof LaserBoxManager laserBoxManager) {
-            teamArea = laserBoxManager.getMapInstances(area).stream()
-                    .filter(instance -> instance.getGameStageEnum() == GameStageEnum.WAITING)
-                    .findFirst().orElse(null);
+        if (gameTypeEnum == GameTypeEnum.LaserBox
+                && manager instanceof LaserBoxManager laserBoxManager) {
+            teamArea =
+                    laserBoxManager.getMapInstances(area).stream()
+                            .filter(
+                                    instance ->
+                                            instance.getGameStageEnum() == GameStageEnum.WAITING)
+                            .findFirst()
+                            .orElse(null);
         } else {
-            teamArea = manager.getArea(area) instanceof BasePairedGameInstance paired ? paired : null;
+            teamArea =
+                    manager.getArea(area) instanceof BasePairedGameInstance paired ? paired : null;
         }
-        if (teamArea == null) return false;
+        if (teamArea == null || teamArea.getGameStageEnum() != GameStageEnum.WAITING) return false;
+        for (UUID uuid : rightParticipants) removeSpectator(uuid);
+        for (UUID uuid : leftParticipants) removeSpectator(uuid);
 
         teamArea.prepareRunMode(runMode);
         teamArea.setIntroductionEnabledForNextStart(showIntroduction);
-        boolean started = teamArea instanceof DodgeboltArea dodgeboltArea
-                ? dodgeboltArea.tryStartGame(rightChampionshipTeam, leftChampionshipTeam,
-                        forcePartialDodgeboltRoster)
-                : teamArea.tryStartGame(rightChampionshipTeam, leftChampionshipTeam);
+        boolean started;
+        try {
+            started =
+                    teamArea instanceof DodgeboltArea dodgeboltArea
+                            ? dodgeboltArea.tryStartGame(
+                                    rightChampionshipTeam,
+                                    leftChampionshipTeam,
+                                    forcePartialDodgeboltRoster)
+                            : teamArea.tryStartGame(rightChampionshipTeam, leftChampionshipTeam);
+        } catch (RuntimeException failure) {
+            rollbackPairStart(List.of(teamArea));
+            teamArea.prepareRunMode(GameRunMode.GAME);
+            teamArea.setIntroductionEnabledForNextStart(false);
+            throw failure;
+        }
         if (started) {
             teamStatus.put(rightChampionshipTeam, teamArea);
             teamStatus.put(leftChampionshipTeam, teamArea);
@@ -764,62 +939,91 @@ public class GameManager extends BaseManager {
         return false;
     }
 
-    public synchronized boolean joinSingleTeamAreaForTeams(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area, @NotNull ChampionshipTeam... championshipTeams) {
+    public synchronized boolean joinSingleTeamAreaForTeams(
+            @NotNull GameTypeEnum gameTypeEnum,
+            @NotNull String area,
+            @NotNull ChampionshipTeam... championshipTeams) {
         return joinSingleTeamAreaForTeams(gameTypeEnum, area, false, championshipTeams);
     }
 
-    public synchronized boolean joinSingleTeamAreaForTeams(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
-                                                            boolean showIntroduction,
-                                                            @NotNull ChampionshipTeam... championshipTeams) {
-        return joinSingleTeamAreaForTeams(gameTypeEnum, area, showIntroduction,
-                GameRunMode.GAME, championshipTeams);
+    public synchronized boolean joinSingleTeamAreaForTeams(
+            @NotNull GameTypeEnum gameTypeEnum,
+            @NotNull String area,
+            boolean showIntroduction,
+            @NotNull ChampionshipTeam... championshipTeams) {
+        return joinSingleTeamAreaForTeams(
+                gameTypeEnum, area, showIntroduction, GameRunMode.GAME, championshipTeams);
     }
 
-    public synchronized boolean joinSingleTeamAreaForTeams(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
-                                                            boolean showIntroduction, @NotNull GameRunMode runMode,
-                                                            @NotNull ChampionshipTeam... championshipTeams) {
-        if (!isGameEnabled(gameTypeEnum))
-            return false;
-        if (!plugin.getPrepareSessionManager().canStart(gameTypeEnum, area))
-            return false;
+    public synchronized boolean joinSingleTeamAreaForTeams(
+            @NotNull GameTypeEnum gameTypeEnum,
+            @NotNull String area,
+            boolean showIntroduction,
+            @NotNull GameRunMode runMode,
+            @NotNull ChampionshipTeam... championshipTeams) {
+        if (!isGameEnabled(gameTypeEnum)) return false;
+        if (!plugin.getPrepareSessionManager().canStart(gameTypeEnum, area)) return false;
         for (ChampionshipTeam championshipTeam : championshipTeams) {
-            if (teamStatus.containsKey(championshipTeam))
-                return false;
+            if (teamStatus.containsKey(championshipTeam)) return false;
             for (UUID uuid : championshipTeam.getMembers()) {
                 if (isPlayerUnavailableForStart(uuid, gameTypeEnum, showIntroduction, runMode))
                     return false;
             }
         }
 
-        BaseMultiTeamGameInstance singleTeamArea = findAvailableMultiTeamInstance(gameTypeEnum, area);
+        BaseMultiTeamGameInstance singleTeamArea =
+                findAvailableMultiTeamInstance(gameTypeEnum, area, runMode);
         if (singleTeamArea == null) return false;
 
-        return joinMultiTeamInstanceForTeams(gameTypeEnum, singleTeamArea, showIntroduction,
-                runMode, List.of(championshipTeams));
+        return joinMultiTeamInstanceForTeams(
+                gameTypeEnum,
+                singleTeamArea,
+                showIntroduction,
+                runMode,
+                List.of(championshipTeams));
     }
 
-    /** Starts an explicitly selected runtime slot, used by same-map DAILY replicas such as Ace Race. */
+    /**
+     * Starts an explicitly selected runtime slot, used by same-map DAILY replicas such as Ace Race.
+     */
     public synchronized boolean joinMultiTeamInstanceForTeams(
-            @NotNull GameTypeEnum gameTypeEnum, @NotNull BaseMultiTeamGameInstance singleTeamArea,
-            boolean showIntroduction, @NotNull GameRunMode runMode,
+            @NotNull GameTypeEnum gameTypeEnum,
+            @NotNull BaseMultiTeamGameInstance singleTeamArea,
+            boolean showIntroduction,
+            @NotNull GameRunMode runMode,
             @NotNull List<ChampionshipTeam> championshipTeams) {
-        if (!isGameEnabled(gameTypeEnum) || singleTeamArea.getGameTypeEnum() != gameTypeEnum)
-            return false;
+        if (!isGameEnabled(gameTypeEnum)
+                || singleTeamArea.getGameTypeEnum() != gameTypeEnum
+                || singleTeamArea.getGameStageEnum() != GameStageEnum.WAITING) return false;
         String mapName = singleTeamArea.getGameConfig().getConfigName();
-        if (!plugin.getPrepareSessionManager().canStart(gameTypeEnum, mapName))
+        if (!plugin.getPrepareSessionManager().canStart(gameTypeEnum, mapName)) return false;
+        if (validateStartTeams(gameTypeEnum, championshipTeams, showIntroduction, runMode) != null)
             return false;
-        for (ChampionshipTeam championshipTeam : championshipTeams) {
-            if (teamStatus.containsKey(championshipTeam)) return false;
-            for (UUID uuid : championshipTeam.getMembers()) {
-                if (isPlayerUnavailableForStart(uuid, gameTypeEnum, showIntroduction, runMode)) return false;
-            }
-        }
         for (ChampionshipTeam championshipTeam : championshipTeams)
             for (UUID uuid : championshipTeam.getMembers()) removeSpectator(uuid);
 
+        if (runMode == GameRunMode.EVENT
+                && plugin.getScheduleManager() != null
+                && ink.ziip.championshipscore.api.game.start.GameStartRules.internalArenas(
+                        gameTypeEnum)) {
+            var selection = plugin.getScheduleManager().selectedArenas(gameTypeEnum);
+            selection.resolve(
+                    ink.ziip.championshipscore.api.game.start.SubArenaSupport.count(
+                            singleTeamArea));
+            singleTeamArea.prepareArenaSelection(selection);
+        }
         singleTeamArea.prepareRunMode(runMode);
         singleTeamArea.setIntroductionEnabledForNextStart(showIntroduction);
-        if (singleTeamArea.tryStartGame(championshipTeams)) {
+        boolean started;
+        try {
+            started = singleTeamArea.tryStartGame(championshipTeams);
+        } catch (RuntimeException failure) {
+            rollbackPairStart(List.of(singleTeamArea));
+            singleTeamArea.prepareRunMode(GameRunMode.GAME);
+            singleTeamArea.setIntroductionEnabledForNextStart(false);
+            throw failure;
+        }
+        if (started) {
             for (ChampionshipTeam championshipTeam : championshipTeams) {
                 teamStatus.put(championshipTeam, singleTeamArea);
                 addPlayerStatusByTeam(championshipTeam, singleTeamArea);
@@ -833,48 +1037,79 @@ public class GameManager extends BaseManager {
         return false;
     }
 
-    /** Public-play Bingo entry that carries an explicit transient roster through local or remote execution. */
-    public CompletionStage<Boolean> joinBingoForTeams(@NotNull String area, boolean showIntroduction,
-                                                      @NotNull GameRunMode runMode,
-                                                      @NotNull List<ChampionshipTeam> teams) {
-        if (teams.isEmpty()) return CompletableFuture.completedFuture(false);
-        return bingoExecutionRouter.start(new BingoStartRequest(area, showIntroduction, runMode, teams));
+    private List<ChampionshipTeam> startTeams(GameTypeEnum game, GameRunMode mode) {
+        return mode == GameRunMode.EVENT && plugin.getScheduleManager() != null
+                ? plugin.getScheduleManager().participatingTeams(game)
+                : plugin.getTeamManager().getTeamList();
     }
 
-    public CompletionStage<Boolean> joinBingoForTeams(@NotNull String area, boolean showIntroduction,
-                                                      @NotNull GameRunMode runMode,
-                                                      @NotNull List<ChampionshipTeam> teams,
-                                                      @NotNull ink.ziip.championshipscore.protocol.BingoVariantRules variant) {
+    /**
+     * Public-play Bingo entry that carries an explicit transient roster through local or remote
+     * execution.
+     */
+    public CompletionStage<Boolean> joinBingoForTeams(
+            @NotNull String area,
+            boolean showIntroduction,
+            @NotNull GameRunMode runMode,
+            @NotNull List<ChampionshipTeam> teams) {
         if (teams.isEmpty()) return CompletableFuture.completedFuture(false);
-        return bingoExecutionRouter.start(new BingoStartRequest(area, showIntroduction, runMode, teams, variant));
+        return bingoExecutionRouter.start(
+                new BingoStartRequest(area, showIntroduction, runMode, teams));
     }
 
-    /** Async-safe start surface used by schedules and commands; remote mode waits for its manifest row. */
+    public CompletionStage<Boolean> joinBingoForTeams(
+            @NotNull String area,
+            boolean showIntroduction,
+            @NotNull GameRunMode runMode,
+            @NotNull List<ChampionshipTeam> teams,
+            @NotNull ink.ziip.championshipscore.protocol.BingoVariantRules variant) {
+        if (teams.isEmpty()) return CompletableFuture.completedFuture(false);
+        return bingoExecutionRouter.start(
+                new BingoStartRequest(area, showIntroduction, runMode, teams, variant));
+    }
+
+    /**
+     * Async-safe start surface used by schedules and commands; remote mode waits for its manifest
+     * row.
+     */
     public CompletionStage<Boolean> joinSingleTeamAreaForAllTeamsAsync(
-            @NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
-            boolean showIntroduction, @NotNull GameRunMode runMode) {
+            @NotNull GameTypeEnum gameTypeEnum,
+            @NotNull String area,
+            boolean showIntroduction,
+            @NotNull GameRunMode runMode) {
         if (gameTypeEnum == GameTypeEnum.Bingo)
-            return bingoExecutionRouter.start(new BingoStartRequest(area, showIntroduction, runMode));
-        return CompletableFuture.completedFuture(joinSingleTeamAreaForAllTeamsLocal(
-                gameTypeEnum, area, showIntroduction, runMode));
+            return bingoExecutionRouter.start(
+                    new BingoStartRequest(
+                            area,
+                            showIntroduction,
+                            runMode,
+                            startTeams(GameTypeEnum.Bingo, runMode)));
+        return CompletableFuture.completedFuture(
+                joinSingleTeamAreaForAllTeamsLocal(gameTypeEnum, area, showIntroduction, runMode));
     }
 
-    public synchronized boolean joinSingleTeamAreaForPlayers(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area, List<UUID> players) {
+    public synchronized boolean joinSingleTeamAreaForPlayers(
+            @NotNull GameTypeEnum gameTypeEnum, @NotNull String area, List<UUID> players) {
         return joinSingleTeamAreaForPlayers(gameTypeEnum, area, players, false);
     }
 
-    public synchronized boolean joinSingleTeamAreaForPlayers(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
-                                                              List<UUID> players, boolean showIntroduction) {
-        return joinSingleTeamAreaForPlayers(gameTypeEnum, area, players, showIntroduction, GameRunMode.GAME);
+    public synchronized boolean joinSingleTeamAreaForPlayers(
+            @NotNull GameTypeEnum gameTypeEnum,
+            @NotNull String area,
+            List<UUID> players,
+            boolean showIntroduction) {
+        return joinSingleTeamAreaForPlayers(
+                gameTypeEnum, area, players, showIntroduction, GameRunMode.GAME);
     }
 
-    public synchronized boolean joinSingleTeamAreaForPlayers(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
-                                                              List<UUID> players, boolean showIntroduction,
-                                                              @NotNull GameRunMode runMode) {
-        if (!isGameEnabled(gameTypeEnum))
-            return false;
-        if (!plugin.getPrepareSessionManager().canStart(gameTypeEnum, area))
-            return false;
+    public synchronized boolean joinSingleTeamAreaForPlayers(
+            @NotNull GameTypeEnum gameTypeEnum,
+            @NotNull String area,
+            List<UUID> players,
+            boolean showIntroduction,
+            @NotNull GameRunMode runMode) {
+        if (!isGameEnabled(gameTypeEnum)) return false;
+        if (!plugin.getPrepareSessionManager().canStart(gameTypeEnum, area)) return false;
         for (UUID playerUUID : players) {
             if (isPlayerUnavailableForStart(playerUUID, gameTypeEnum, showIntroduction, runMode))
                 return false;
@@ -883,19 +1118,29 @@ public class GameManager extends BaseManager {
         Set<ChampionshipTeam> championshipTeams = new HashSet<>();
         for (UUID playerUUID : players) {
             ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(playerUUID);
-            if (championshipTeam == null)
-                return false;
+            if (championshipTeam == null) return false;
 
             championshipTeams.add(championshipTeam);
         }
 
-        BaseMultiTeamGameInstance singleTeamArea = findAvailableMultiTeamInstance(gameTypeEnum, area);
+        BaseMultiTeamGameInstance singleTeamArea =
+                findAvailableMultiTeamInstance(gameTypeEnum, area, runMode);
         if (singleTeamArea == null) return false;
 
         for (UUID playerUUID : players) {
             removeSpectator(playerUUID);
         }
 
+        if (runMode == GameRunMode.EVENT
+                && plugin.getScheduleManager() != null
+                && ink.ziip.championshipscore.api.game.start.GameStartRules.internalArenas(
+                        gameTypeEnum)) {
+            var selection = plugin.getScheduleManager().selectedArenas(gameTypeEnum);
+            selection.resolve(
+                    ink.ziip.championshipscore.api.game.start.SubArenaSupport.count(
+                            singleTeamArea));
+            singleTeamArea.prepareArenaSelection(selection);
+        }
         singleTeamArea.prepareRunMode(runMode);
         singleTeamArea.setIntroductionEnabledForNextStart(showIntroduction);
         if (singleTeamArea.tryStartGame(championshipTeams.stream().toList(), players)) {
@@ -913,83 +1158,85 @@ public class GameManager extends BaseManager {
         return false;
     }
 
-    public boolean joinSingleTeamAreaForAllTeams(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area) {
+    public boolean joinSingleTeamAreaForAllTeams(
+            @NotNull GameTypeEnum gameTypeEnum, @NotNull String area) {
         return joinSingleTeamAreaForAllTeams(gameTypeEnum, area, false);
     }
 
-    /** Compatibility overload: explicit identities must already belong to the participating teams. */
-    public synchronized boolean joinSingleTeamAreaForAllTeams(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
-                                                  @NotNull Collection<UUID> additionalPlayers) {
-        Set<UUID> roster = plugin.getTeamManager().getTeamList().stream()
-                .flatMap(team -> team.getMembers().stream()).collect(Collectors.toSet());
+    /**
+     * Compatibility overload: explicit identities must already belong to the participating teams.
+     */
+    public synchronized boolean joinSingleTeamAreaForAllTeams(
+            @NotNull GameTypeEnum gameTypeEnum,
+            @NotNull String area,
+            @NotNull Collection<UUID> additionalPlayers) {
+        Set<UUID> roster =
+                plugin.getTeamManager().getTeamList().stream()
+                        .flatMap(team -> team.getMembers().stream())
+                        .collect(Collectors.toSet());
         if (!roster.containsAll(additionalPlayers)) return false;
         return joinSingleTeamAreaForAllTeams(gameTypeEnum, area);
     }
 
-    public boolean joinSingleTeamAreaForAllTeams(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
-                                                  boolean showIntroduction) {
-        return joinSingleTeamAreaForAllTeams(gameTypeEnum, area, showIntroduction, GameRunMode.GAME);
+    public boolean joinSingleTeamAreaForAllTeams(
+            @NotNull GameTypeEnum gameTypeEnum, @NotNull String area, boolean showIntroduction) {
+        return joinSingleTeamAreaForAllTeams(
+                gameTypeEnum, area, showIntroduction, GameRunMode.GAME);
     }
 
-    public boolean joinSingleTeamAreaForAllTeams(@NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
-                                                  boolean showIntroduction, @NotNull GameRunMode runMode) {
+    public boolean joinSingleTeamAreaForAllTeams(
+            @NotNull GameTypeEnum gameTypeEnum,
+            @NotNull String area,
+            boolean showIntroduction,
+            @NotNull GameRunMode runMode) {
         if (gameTypeEnum == GameTypeEnum.Bingo) {
             return bingoExecutionRouter.mode() == BingoExecutionMode.LOCAL
-                    && bingoExecutionRouter.start(new BingoStartRequest(area, showIntroduction, runMode))
-                    .toCompletableFuture().getNow(false);
+                    && bingoExecutionRouter
+                            .start(
+                                    new BingoStartRequest(
+                                            area,
+                                            showIntroduction,
+                                            runMode,
+                                            startTeams(GameTypeEnum.Bingo, runMode)))
+                            .toCompletableFuture()
+                            .getNow(false);
         }
         return joinSingleTeamAreaForAllTeamsLocal(gameTypeEnum, area, showIntroduction, runMode);
     }
 
     /** Non-mutating execution-plane readiness check used before committing a Bingo event round. */
-    public boolean canStartBingo(@NotNull String area, boolean showIntroduction,
-                                 @NotNull GameRunMode runMode) {
-        return bingoExecutionRouter.canStart(new BingoStartRequest(area, showIntroduction, runMode));
+    public boolean canStartBingo(
+            @NotNull String area, boolean showIntroduction, @NotNull GameRunMode runMode) {
+        return bingoExecutionRouter.canStart(
+                new BingoStartRequest(
+                        area, showIntroduction, runMode, startTeams(GameTypeEnum.Bingo, runMode)));
+    }
+
+    public boolean canStartBingoForTeams(
+            String map, boolean introduction, GameRunMode mode, List<ChampionshipTeam> teams) {
+        return bingoExecutionRouter.canStart(new BingoStartRequest(map, introduction, mode, teams));
     }
 
     private boolean joinSingleTeamAreaForAllTeamsLocal(
-            @NotNull GameTypeEnum gameTypeEnum, @NotNull String area,
-            boolean showIntroduction, @NotNull GameRunMode runMode) {
-        if (!isGameEnabled(gameTypeEnum))
-            return false;
-        if (!plugin.getPrepareSessionManager().canStart(gameTypeEnum, area))
-            return false;
-        for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
-            if (teamStatus.containsKey(championshipTeam))
-                return false;
-            for (UUID uuid : championshipTeam.getMembers()) {
-                if (isPlayerUnavailableForStart(uuid, gameTypeEnum, showIntroduction, runMode))
-                    return false;
-            }
-        }
-
-        BaseMultiTeamGameInstance singleTeamArea = findAvailableMultiTeamInstance(gameTypeEnum, area);
-        if (singleTeamArea == null) return false;
-
-        for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
-            for (UUID uuid : championshipTeam.getMembers()) removeSpectator(uuid);
-        }
-
-        singleTeamArea.prepareRunMode(runMode);
-        singleTeamArea.setIntroductionEnabledForNextStart(showIntroduction);
-        if (singleTeamArea.tryStartGame(plugin.getTeamManager().getTeamList())) {
-            for (ChampionshipTeam championshipTeam : plugin.getTeamManager().getTeamList()) {
-                teamStatus.put(championshipTeam, singleTeamArea);
-                addPlayerStatusByTeam(championshipTeam, singleTeamArea);
-            }
-            focusSpectatorsOn(singleTeamArea);
-            return true;
-        }
-
-        singleTeamArea.prepareRunMode(GameRunMode.GAME);
-        singleTeamArea.setIntroductionEnabledForNextStart(false);
-        return false;
+            @NotNull GameTypeEnum gameTypeEnum,
+            @NotNull String area,
+            boolean showIntroduction,
+            @NotNull GameRunMode runMode) {
+        return joinSingleTeamAreaForTeams(
+                gameTypeEnum,
+                area,
+                showIntroduction,
+                runMode,
+                startTeams(gameTypeEnum, runMode).toArray(ChampionshipTeam[]::new));
     }
 
-    /** Resolves one idle runtime copy for a configured multi-team map, rather than always using copy zero. */
+    /**
+     * Resolves one idle runtime copy for a configured multi-team map, rather than always using copy
+     * zero.
+     */
     @Nullable
     private BaseMultiTeamGameInstance findAvailableMultiTeamInstance(
-            @NotNull GameTypeEnum gameType, @NotNull String mapName) {
+            @NotNull GameTypeEnum gameType, @NotNull String mapName, GameRunMode runMode) {
         BaseGameInstanceManager<? extends BaseGameInstance> manager = areaManagers.get(gameType);
         if (manager == null) return null;
         // A replicated map has one representative in areas and several runtime copies. Do not
@@ -999,26 +1246,47 @@ public class GameManager extends BaseManager {
         if (!(manager.getArea(mapName) instanceof BaseMultiTeamGameInstance)) return null;
         return manager.getRuntimeInstances().stream()
                 .filter(instance -> instance instanceof BaseMultiTeamGameInstance)
-                .filter(instance -> mapName.equalsIgnoreCase(instance.getGameConfig().getConfigName()))
+                .filter(
+                        instance ->
+                                mapName.equalsIgnoreCase(instance.getGameConfig().getConfigName()))
                 .filter(instance -> instance.getGameStageEnum() == GameStageEnum.WAITING)
-                .filter(instance -> plugin.getDailyManager() == null
-                        || plugin.getDailyManager().session(instance) == null)
+                .filter(
+                        instance ->
+                                runMode != GameRunMode.EVENT
+                                        || plugin.getScheduleManager() == null
+                                        || ink.ziip.championshipscore.api.game.start.GameStartRules
+                                                .internalArenas(gameType)
+                                        || plugin.getScheduleManager()
+                                                .selectedArenas(gameType)
+                                                .automatic()
+                                        || plugin.getScheduleManager()
+                                                .selectedArenas(gameType)
+                                                .indices()
+                                                .equals(List.of(instance.getCopyIndex())))
+                .filter(
+                        instance ->
+                                plugin.getDailyManager() == null
+                                        || plugin.getDailyManager().session(instance) == null)
                 .sorted(Comparator.comparingInt(BaseGameInstance::getCopyIndex))
                 .map(instance -> (BaseMultiTeamGameInstance) instance)
-                .findFirst().orElse(null);
+                .findFirst()
+                .orElse(null);
     }
 
     /** Atomically reserves the normal team/player ownership maps for one remote Bingo execution. */
-    public synchronized boolean reserveRemoteBingo(@NotNull RemoteBingoInstance instance,
-                                                   @NotNull GameRunMode runMode,
-                                                   boolean showIntroduction) {
-        return reserveRemoteBingo(instance, runMode, showIntroduction, plugin.getTeamManager().getTeamList());
+    public synchronized boolean reserveRemoteBingo(
+            @NotNull RemoteBingoInstance instance,
+            @NotNull GameRunMode runMode,
+            boolean showIntroduction) {
+        return reserveRemoteBingo(
+                instance, runMode, showIntroduction, plugin.getTeamManager().getTeamList());
     }
 
-    public synchronized boolean reserveRemoteBingo(@NotNull RemoteBingoInstance instance,
-                                                   @NotNull GameRunMode runMode,
-                                                   boolean showIntroduction,
-                                                   @NotNull List<ChampionshipTeam> teams) {
+    public synchronized boolean reserveRemoteBingo(
+            @NotNull RemoteBingoInstance instance,
+            @NotNull GameRunMode runMode,
+            boolean showIntroduction,
+            @NotNull List<ChampionshipTeam> teams) {
         if (!canReserveRemoteBingo(runMode, showIntroduction, teams)) return false;
         if (!instance.reserve(teams, runMode)) return false;
 
@@ -1036,35 +1304,41 @@ public class GameManager extends BaseManager {
         return true;
     }
 
-    /** Checks the same ownership constraints as {@link #reserveRemoteBingo} without changing them. */
-    public synchronized boolean canReserveRemoteBingo(@NotNull GameRunMode runMode,
-                                                       boolean showIntroduction) {
-        return canReserveRemoteBingo(runMode, showIntroduction, plugin.getTeamManager().getTeamList());
+    /**
+     * Checks the same ownership constraints as {@link #reserveRemoteBingo} without changing them.
+     */
+    public synchronized boolean canReserveRemoteBingo(
+            @NotNull GameRunMode runMode, boolean showIntroduction) {
+        return canReserveRemoteBingo(
+                runMode, showIntroduction, plugin.getTeamManager().getTeamList());
     }
 
-    public synchronized boolean canReserveRemoteBingo(@NotNull GameRunMode runMode,
-                                                       boolean showIntroduction,
-                                                       @NotNull List<ChampionshipTeam> teams) {
+    public synchronized boolean canReserveRemoteBingo(
+            @NotNull GameRunMode runMode,
+            boolean showIntroduction,
+            @NotNull List<ChampionshipTeam> teams) {
         if (!isGameEnabled(GameTypeEnum.Bingo)) return false;
         for (ChampionshipTeam team : teams) {
             if (teamStatus.containsKey(team)) return false;
             for (UUID playerId : team.getMembers()) {
-                if (isPlayerUnavailableForStart(playerId, GameTypeEnum.Bingo,
-                        showIntroduction, runMode)) return false;
+                if (isPlayerUnavailableForStart(
+                        playerId, GameTypeEnum.Bingo, showIntroduction, runMode)) return false;
             }
         }
         return true;
     }
 
     /** Unteamed online viewers frozen into the remote manifest and owned until settlement. */
-    public synchronized Set<UUID> reserveRemoteBingoSpectators(@NotNull RemoteBingoInstance instance) {
+    public synchronized Set<UUID> reserveRemoteBingoSpectators(
+            @NotNull RemoteBingoInstance instance) {
         if (!instance.isEventRun()) return Set.of();
         Set<UUID> result = new LinkedHashSet<>();
         for (Player player : org.bukkit.Bukkit.getOnlinePlayers()) {
             if (plugin.getTeamManager().getTeamByPlayer(player) != null) continue;
             UUID playerId = player.getUniqueId();
             BaseGameInstance previous = playerSpectatorStatus.get(playerId);
-            if (previous != null && previous != instance) previous.onlyRemoveSpectatorFromList(playerId);
+            if (previous != null && previous != instance)
+                previous.onlyRemoveSpectatorFromList(playerId);
             playerSpectatorStatus.put(playerId, instance);
             instance.addSpectatorWithoutTeleport(playerId);
             plugin.getVisibilityManager().reconcilePlayer(playerId);
@@ -1076,8 +1350,11 @@ public class GameManager extends BaseManager {
     public synchronized void abortRemoteBingo(@NotNull RemoteBingoInstance instance) {
         boolean interruptedEvent = instance.isEventRun();
         releaseInstanceParticipants(instance);
-        List<UUID> spectatorIds = playerSpectatorStatus.entrySet().stream()
-                .filter(entry -> entry.getValue() == instance).map(Map.Entry::getKey).toList();
+        List<UUID> spectatorIds =
+                playerSpectatorStatus.entrySet().stream()
+                        .filter(entry -> entry.getValue() == instance)
+                        .map(Map.Entry::getKey)
+                        .toList();
         for (UUID spectatorId : spectatorIds) {
             playerSpectatorStatus.remove(spectatorId, instance);
             instance.onlyRemoveSpectatorFromList(spectatorId);
@@ -1088,239 +1365,227 @@ public class GameManager extends BaseManager {
         if (plugin.getDailyManager() != null) plugin.getDailyManager().abort(instance);
         instance.dispose();
         if (interruptedEvent) {
-            plugin.getScheduleManager().abortFormalEvent(GameTypeEnum.Bingo,
-                    "远端执行中止，已释放 Core 侧队伍与玩家占用");
+            plugin.getScheduleManager()
+                    .abortFormalEvent(GameTypeEnum.Bingo, "远端执行中止，已释放 Core 侧队伍与玩家占用");
         }
     }
 
-    public synchronized boolean joinLaserBoxArea(@NotNull String area, @NotNull List<TwoVTwoVector> pairs) {
+    public synchronized boolean joinLaserBoxArea(
+            @NotNull String area, @NotNull List<TwoVTwoVector> pairs) {
         return joinLaserBoxArea(area, pairs, false);
     }
 
-    public synchronized boolean joinLaserBoxArea(@NotNull String area, @NotNull List<TwoVTwoVector> pairs,
-                                                   boolean showIntroduction) {
-        return joinLaserBoxInstances(area, pairs, showIntroduction, GameRunMode.GAME) != null;
-    }
-
-    /** Starts all LaserBox pairings behind one preload gate, retaining the exact instances for settlement. */
-    public synchronized @Nullable List<LaserBoxArea> joinLaserBoxInstances(
-            @NotNull String area, @NotNull List<TwoVTwoVector> pairs, boolean showIntroduction,
-            @NotNull GameRunMode runMode) {
-        GameTypeEnum game = GameTypeEnum.LaserBox;
-        if (!isGameEnabled(game) || !plugin.getPrepareSessionManager().canStart(game, area) || pairs.isEmpty())
-            return null;
+    /** Starts copy-based pairings through one validation, ownership and rollback contract. */
+    public synchronized @Nullable List<BasePairedGameInstance> joinPairedInstances(
+            @NotNull GameTypeEnum game,
+            @NotNull String map,
+            @NotNull List<TwoVTwoVector> pairs,
+            @NotNull ArenaSelection arenaSelection,
+            boolean introduction,
+            @NotNull GameRunMode mode) {
+        if (mode == GameRunMode.EVENT && plugin.getScheduleManager() != null) {
+            arenaSelection = plugin.getScheduleManager().selectedArenas(game);
+        }
+        if (!isGameEnabled(game)
+                || !plugin.getPrepareSessionManager().canStart(game, map)
+                || pairs.isEmpty()) return null;
         Set<ChampionshipTeam> teams = new LinkedHashSet<>();
-        for (TwoVTwoVector pair : pairs) {
-            if (pair == null || pair.getTeamOne() == null || pair.getTeamTwo() == null
-                    || !teams.add(pair.getTeamOne()) || !teams.add(pair.getTeamTwo())) return null;
+        for (var pair : pairs) {
+            if (pair == null
+                    || pair.getTeamOne() == null
+                    || pair.getTeamTwo() == null
+                    || !teams.add(pair.getTeamOne())
+                    || !teams.add(pair.getTeamTwo())) return null;
         }
-        for (ChampionshipTeam team : teams) {
-            if (teamStatus.containsKey(team)) return null;
-            for (UUID uuid : team.getMembers())
-                if (isPlayerUnavailableForStart(uuid, game, showIntroduction, runMode)) return null;
-        }
-        List<LaserBoxArea> selected = laserBoxManager.getMapInstances(area).stream()
-                .filter(instance -> instance.getGameStageEnum() == GameStageEnum.WAITING)
-                .limit(pairs.size())
-                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
-        if (selected.size() < pairs.size()) return null;
+        if (validateStartTeams(game, List.copyOf(teams), introduction, mode) != null) return null;
+        BaseGameInstanceManager<?> manager = areaManagers.get(game);
+        if (manager == null) return null;
+        List<BasePairedGameInstance> pool =
+                manager.getMapInstances(map).stream()
+                        .filter(BasePairedGameInstance.class::isInstance)
+                        .map(BasePairedGameInstance.class::cast)
+                        .sorted(Comparator.comparingInt(BaseGameInstance::getCopyIndex))
+                        .toList();
+        if (pool.isEmpty()) return null;
+        List<BasePairedGameInstance> selected;
         try {
-            for (var instance : selected) instance.getGameConfig().validate();
-        } catch (RuntimeException failure) {
-            plugin.getLogger().warning(Utils.formatGameLog(game, area, "调度", "启动", failure.getMessage()));
+            selected =
+                    ink.ziip.championshipscore.api.game.start.StartTargets.copies(
+                            pool, arenaSelection, pairs.size());
+            for (var instance : selected)
+                if (instance instanceof LaserBoxArea laser) laser.getGameConfig().validate();
+        } catch (IllegalArgumentException failure) {
             return null;
         }
         CompletableFuture<Void> gate = new CompletableFuture<>();
         selected.forEach(instance -> instance.coordinateStartWith(gate));
-        for (ChampionshipTeam team : teams)
-            for (UUID uuid : team.getMembers()) removeSpectator(uuid);
-        List<LaserBoxArea> started = new ArrayList<>();
-        for (int i = 0; i < pairs.size(); i++) {
-            var instance = selected.get(i);
-            var pair = pairs.get(i);
-            instance.prepareRunMode(runMode);
-            instance.setIntroductionEnabledForNextStart(showIntroduction);
-            if (!instance.tryStartGame(pair.getTeamOne(), pair.getTeamTwo())) {
-                started.forEach(BaseGameInstance::abortAndReset);
-                instance.prepareRunMode(GameRunMode.GAME);
-                instance.setIntroductionEnabledForNextStart(false);
-                gate.complete(null);
-                return null;
+        for (var team : teams) for (UUID id : team.getMembers()) removeSpectator(id);
+        List<BasePairedGameInstance> started = new ArrayList<>();
+        try {
+            for (int i = 0; i < pairs.size(); i++) {
+                var instance = selected.get(i);
+                var pair = pairs.get(i);
+                instance.prepareRunMode(mode);
+                instance.setIntroductionEnabledForNextStart(introduction);
+                started.add(instance);
+                if (!instance.tryStartGame(pair.getTeamOne(), pair.getTeamTwo())) {
+                    rollbackPairStart(started);
+                    instance.prepareRunMode(GameRunMode.GAME);
+                    instance.setIntroductionEnabledForNextStart(false);
+                    selected.forEach(slot -> slot.coordinateStartWith(null));
+                    gate.complete(null);
+                    return null;
+                }
+                teamStatus.put(pair.getTeamOne(), instance);
+                teamStatus.put(pair.getTeamTwo(), instance);
+                addPlayerStatusByTeam(pair.getTeamOne(), instance);
+                addPlayerStatusByTeam(pair.getTeamTwo(), instance);
             }
-            started.add(instance);
-            teamStatus.put(pair.getTeamOne(), instance);
-            teamStatus.put(pair.getTeamTwo(), instance);
-            addPlayerStatusByTeam(pair.getTeamOne(), instance);
-            addPlayerStatusByTeam(pair.getTeamTwo(), instance);
+        } catch (RuntimeException failure) {
+            rollbackPairStart(started);
+            selected.forEach(slot -> slot.coordinateStartWith(null));
+            gate.complete(null);
+            throw failure;
         }
-        CompletableFuture.allOf(selected.stream().map(BaseGameInstance::getStartPreloadFuture)
-                        .toArray(CompletableFuture[]::new))
-                .whenComplete((unused, failure) -> plugin.getServer().getScheduler()
-                        .runTask(plugin, () -> gate.complete(null)));
+        CompletableFuture.allOf(
+                        selected.stream()
+                                .map(BaseGameInstance::getStartPreloadFuture)
+                                .toArray(CompletableFuture[]::new))
+                .whenComplete(
+                        (unused, failure) ->
+                                plugin.getServer()
+                                        .getScheduler()
+                                        .runTask(plugin, () -> gate.complete(null)));
         focusSpectatorsOn(selected.getFirst());
-        return List.copyOf(selected);
+        return selected;
+    }
+
+    private void rollbackPairStart(List<? extends BaseGameInstance> started) {
+        for (var instance : started) {
+            teamStatus.entrySet().removeIf(entry -> entry.getValue() == instance);
+            playerStatus.entrySet().removeIf(entry -> entry.getValue() == instance);
+            instance.abortAndReset();
+        }
+    }
+
+    public @Nullable String validateStartTeams(
+            GameTypeEnum game,
+            List<ChampionshipTeam> teams,
+            boolean introduction,
+            GameRunMode mode) {
+        Set<Integer> ids = new HashSet<>();
+        Set<UUID> roster = new HashSet<>();
+        for (var team : teams) {
+            if (team == null || !ids.add(team.getId())) return "参赛队伍为空或重复";
+            if (team.getMembers().isEmpty()) return "队伍没有参赛成员：" + team.getName();
+            if (teamStatus.containsKey(team)) return "队伍已经参加其他比赛：" + team.getName();
+            for (UUID id : team.getMembers()) {
+                if (!roster.add(id)) return "参赛队伍存在重复玩家：" + id;
+                if (isPlayerUnavailableForStart(id, game, introduction, mode))
+                    return "玩家目前不可参加比赛：" + id;
+            }
+        }
+        return teams.isEmpty() ? "没有参赛队伍" : null;
+    }
+
+    public synchronized boolean joinLaserBoxArea(
+            @NotNull String area, @NotNull List<TwoVTwoVector> pairs, boolean showIntroduction) {
+        return joinLaserBoxInstances(area, pairs, showIntroduction, GameRunMode.GAME) != null;
+    }
+
+    /**
+     * Starts all LaserBox pairings behind one preload gate, retaining the exact instances for
+     * settlement.
+     */
+    public synchronized @Nullable List<LaserBoxArea> joinLaserBoxInstances(
+            @NotNull String area,
+            @NotNull List<TwoVTwoVector> pairs,
+            boolean showIntroduction,
+            @NotNull GameRunMode runMode) {
+        var started =
+                joinPairedInstances(
+                        GameTypeEnum.LaserBox,
+                        area,
+                        pairs,
+                        ArenaSelection.all(),
+                        showIntroduction,
+                        runMode);
+        return started == null ? null : started.stream().map(LaserBoxArea.class::cast).toList();
     }
 
     /** Starts one or more independent Battle Box instances from a shared map definition. */
-    public synchronized boolean joinBattleBoxArea(@NotNull String area, @NotNull List<TwoVTwoVector> pairs) {
+    public synchronized boolean joinBattleBoxArea(
+            @NotNull String area, @NotNull List<TwoVTwoVector> pairs) {
         return joinBattleBoxArea(area, pairs, false);
     }
 
-    public synchronized boolean joinBattleBoxArea(@NotNull String area, @NotNull List<TwoVTwoVector> pairs,
-                                                   boolean showIntroduction) {
+    public synchronized boolean joinBattleBoxArea(
+            @NotNull String area, @NotNull List<TwoVTwoVector> pairs, boolean showIntroduction) {
         return joinBattleBoxInstances(area, pairs, showIntroduction) != null;
     }
 
-    /** Returns the exact instances started for round-completion tracking, or {@code null} on failure. */
+    /**
+     * Returns the exact instances started for round-completion tracking, or {@code null} on
+     * failure.
+     */
     public synchronized @Nullable List<BattleBoxArea> joinBattleBoxInstances(
             @NotNull String area, @NotNull List<TwoVTwoVector> pairs, boolean showIntroduction) {
         return joinBattleBoxInstances(area, pairs, showIntroduction, GameRunMode.GAME);
     }
 
     public synchronized @Nullable List<BattleBoxArea> joinBattleBoxInstances(
-            @NotNull String area, @NotNull List<TwoVTwoVector> pairs, boolean showIntroduction,
+            @NotNull String area,
+            @NotNull List<TwoVTwoVector> pairs,
+            boolean showIntroduction,
             @NotNull GameRunMode runMode) {
-        if (!isGameEnabled(GameTypeEnum.BattleBox))
-            return null;
-        if (!plugin.getPrepareSessionManager().canStart(GameTypeEnum.BattleBox, area))
-            return null;
-        if (pairs.isEmpty())
-            return null;
-        Set<ChampionshipTeam> teams = new LinkedHashSet<>();
-        for (TwoVTwoVector pair : pairs) {
-            teams.add(pair.getTeamOne());
-            teams.add(pair.getTeamTwo());
-        }
-        if (teams.size() != pairs.size() * 2)
-            return null;
-        for (ChampionshipTeam team : teams) {
-            if (teamStatus.containsKey(team))
-                return null;
-            for (UUID uuid : team.getMembers()) {
-                if (isPlayerUnavailableForStart(uuid, GameTypeEnum.BattleBox, showIntroduction, runMode))
-                    return null;
-            }
-        }
-        List<BattleBoxArea> pool = battleBoxManager.getMapInstances(area);
-        List<BattleBoxArea> selected = pool.stream()
-                .filter(instance -> instance.getGameStageEnum() == GameStageEnum.WAITING)
-                .limit(pairs.size())
-                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
-        if (selected.size() < pairs.size())
-            return null;
-
-        java.util.concurrent.CompletableFuture<Void> startGate = new java.util.concurrent.CompletableFuture<>();
-        selected.forEach(instance -> instance.coordinateStartWith(startGate));
-
-        for (ChampionshipTeam team : teams) {
-            for (UUID uuid : team.getMembers()) {
-                removeSpectator(uuid);
-            }
-        }
-
-        for (int i = 0; i < pairs.size(); i++) {
-            BattleBoxArea instance = selected.get(i);
-            TwoVTwoVector pair = pairs.get(i);
-            instance.prepareRunMode(runMode);
-            instance.setIntroductionEnabledForNextStart(showIntroduction);
-            if (!instance.tryStartGame(pair.getTeamOne(), pair.getTeamTwo())) {
-                startGate.complete(null);
-                instance.setIntroductionEnabledForNextStart(false);
-                return null;
-            }
-            teamStatus.put(pair.getTeamOne(), instance);
-            teamStatus.put(pair.getTeamTwo(), instance);
-            addPlayerStatusByTeam(pair.getTeamOne(), instance);
-            addPlayerStatusByTeam(pair.getTeamTwo(), instance);
-        }
-        java.util.concurrent.CompletableFuture.allOf(selected.stream()
-                .map(BattleBoxArea::getStartPreloadFuture)
-                .toArray(java.util.concurrent.CompletableFuture[]::new))
-                .whenComplete((unused, error) -> plugin.getServer().getScheduler()
-                        .runTask(plugin, () -> startGate.complete(null)));
-        focusSpectatorsOn(selected.getFirst());
-        return List.copyOf(selected);
+        var started =
+                joinPairedInstances(
+                        GameTypeEnum.BattleBox,
+                        area,
+                        pairs,
+                        ArenaSelection.all(),
+                        showIntroduction,
+                        runMode);
+        return started == null ? null : started.stream().map(BattleBoxArea.class::cast).toList();
     }
 
-    /** Battle-Box-style parallel start for Parkour Tag: each pairing runs in its own stamped arena copy. */
-    public synchronized boolean joinParkourTagArea(@NotNull String area, @NotNull List<TwoVTwoVector> pairs) {
+    /**
+     * Battle-Box-style parallel start for Parkour Tag: each pairing runs in its own stamped arena
+     * copy.
+     */
+    public synchronized boolean joinParkourTagArea(
+            @NotNull String area, @NotNull List<TwoVTwoVector> pairs) {
         return joinParkourTagArea(area, pairs, false);
     }
 
-    public synchronized boolean joinParkourTagArea(@NotNull String area, @NotNull List<TwoVTwoVector> pairs,
-                                                    boolean showIntroduction) {
+    public synchronized boolean joinParkourTagArea(
+            @NotNull String area, @NotNull List<TwoVTwoVector> pairs, boolean showIntroduction) {
         return joinParkourTagInstances(area, pairs, showIntroduction) != null;
     }
 
-    /** Returns the exact instances started for round-completion tracking, or {@code null} on failure. */
+    /**
+     * Returns the exact instances started for round-completion tracking, or {@code null} on
+     * failure.
+     */
     public synchronized @Nullable List<ParkourTagArea> joinParkourTagInstances(
             @NotNull String area, @NotNull List<TwoVTwoVector> pairs, boolean showIntroduction) {
         return joinParkourTagInstances(area, pairs, showIntroduction, GameRunMode.GAME);
     }
 
     public synchronized @Nullable List<ParkourTagArea> joinParkourTagInstances(
-            @NotNull String area, @NotNull List<TwoVTwoVector> pairs, boolean showIntroduction,
+            @NotNull String area,
+            @NotNull List<TwoVTwoVector> pairs,
+            boolean showIntroduction,
             @NotNull GameRunMode runMode) {
-        if (!isGameEnabled(GameTypeEnum.ParkourTag))
-            return null;
-        if (!plugin.getPrepareSessionManager().canStart(GameTypeEnum.ParkourTag, area))
-            return null;
-        if (pairs.isEmpty())
-            return null;
-        Set<ChampionshipTeam> teams = new LinkedHashSet<>();
-        for (TwoVTwoVector pair : pairs) {
-            teams.add(pair.getTeamOne());
-            teams.add(pair.getTeamTwo());
-        }
-        if (teams.size() != pairs.size() * 2)
-            return null;
-        for (ChampionshipTeam team : teams) {
-            if (teamStatus.containsKey(team))
-                return null;
-            for (UUID uuid : team.getMembers()) {
-                if (isPlayerUnavailableForStart(uuid, GameTypeEnum.ParkourTag, showIntroduction, runMode))
-                    return null;
-            }
-        }
-        List<ParkourTagArea> pool = parkourTagManager.getMapInstances(area);
-        List<ParkourTagArea> selected = pool.stream()
-                .filter(instance -> instance.getGameStageEnum() == GameStageEnum.WAITING)
-                .limit(pairs.size())
-                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
-        if (selected.size() < pairs.size())
-            return null;
-
-        java.util.concurrent.CompletableFuture<Void> startGate = new java.util.concurrent.CompletableFuture<>();
-        selected.forEach(instance -> instance.coordinateStartWith(startGate));
-
-        for (ChampionshipTeam team : teams) {
-            for (UUID uuid : team.getMembers()) {
-                removeSpectator(uuid);
-            }
-        }
-
-        for (int i = 0; i < pairs.size(); i++) {
-            ParkourTagArea instance = selected.get(i);
-            TwoVTwoVector pair = pairs.get(i);
-            instance.prepareRunMode(runMode);
-            instance.setIntroductionEnabledForNextStart(showIntroduction);
-            if (!instance.tryStartGame(pair.getTeamOne(), pair.getTeamTwo())) {
-                startGate.complete(null);
-                instance.setIntroductionEnabledForNextStart(false);
-                return null;
-            }
-            teamStatus.put(pair.getTeamOne(), instance);
-            teamStatus.put(pair.getTeamTwo(), instance);
-            addPlayerStatusByTeam(pair.getTeamOne(), instance);
-            addPlayerStatusByTeam(pair.getTeamTwo(), instance);
-        }
-        java.util.concurrent.CompletableFuture.allOf(selected.stream()
-                .map(ParkourTagArea::getStartPreloadFuture)
-                .toArray(java.util.concurrent.CompletableFuture[]::new))
-                .whenComplete((unused, error) -> plugin.getServer().getScheduler()
-                        .runTask(plugin, () -> startGate.complete(null)));
-        focusSpectatorsOn(selected.getFirst());
-        return List.copyOf(selected);
+        var started =
+                joinPairedInstances(
+                        GameTypeEnum.ParkourTag,
+                        area,
+                        pairs,
+                        ArenaSelection.all(),
+                        showIntroduction,
+                        runMode);
+        return started == null ? null : started.stream().map(ParkourTagArea.class::cast).toList();
     }
 
     public BaseGameInstance getTeamCurrenArea(ChampionshipTeam championshipTeam) {
@@ -1333,40 +1598,47 @@ public class GameManager extends BaseManager {
         return null;
     }
 
-    private void addPlayerStatusByTeam(ChampionshipTeam championshipTeam, BaseGameInstance baseArea) {
+    private void addPlayerStatusByTeam(
+            ChampionshipTeam championshipTeam, BaseGameInstance baseArea) {
         for (UUID uuid : championshipTeam.getMembers()) {
             playerStatus.put(uuid, baseArea);
             roundTransitionHolds.remove(uuid);
             plugin.getVisibilityManager().reconcilePlayer(uuid);
             Player player = org.bukkit.Bukkit.getPlayer(uuid);
-            if (player != null && plugin.getSidebarManager() != null) plugin.getSidebarManager().invalidate(player);
+            if (player != null && plugin.getSidebarManager() != null)
+                plugin.getSidebarManager().invalidate(player);
         }
     }
 
-    private boolean isPlayerUnavailableForStart(UUID uuid, GameTypeEnum gameType, boolean showIntroduction,
-                                                GameRunMode requestedMode) {
+    private boolean isPlayerUnavailableForStart(
+            UUID uuid, GameTypeEnum gameType, boolean showIntroduction, GameRunMode requestedMode) {
         if (playerStatus.containsKey(uuid)) return true;
         ChampionshipTeam formalTeam = plugin.getTeamManager().getFormalTeamByPlayer(uuid);
-        if (formalTeam != null && plugin.getTeamManager().isMutationPending(formalTeam)) return true;
+        if (formalTeam != null && plugin.getTeamManager().isMutationPending(formalTeam))
+            return true;
         RoundTransitionHold hold = roundTransitionHolds.get(uuid);
         if (hold == null) return false;
-        return requestedMode != GameRunMode.EVENT || showIntroduction
+        return requestedMode != GameRunMode.EVENT
+                || showIntroduction
                 || hold.mode() != GameRunMode.EVENT
-               || hold.instance().getGameTypeEnum() != gameType;
+                || hold.instance().getGameTypeEnum() != gameType;
     }
 
     /** Marks participants as waiting while leaving them at their round-end locations. */
-    public void holdParticipantsForNextRound(@NotNull BaseGameInstance instance,
-                                             @NotNull Collection<UUID> participants) {
+    public void holdParticipantsForNextRound(
+            @NotNull BaseGameInstance instance, @NotNull Collection<UUID> participants) {
         for (UUID uuid : participants) {
-            roundTransitionHolds.put(uuid, new RoundTransitionHold(instance, instance.getRunMode()));
+            roundTransitionHolds.put(
+                    uuid, new RoundTransitionHold(instance, instance.getRunMode()));
             Player player = org.bukkit.Bukkit.getPlayer(uuid);
             if (player == null) continue;
             instance.sanitizeParticipantForLobby(player, false);
         }
     }
 
-    /** Keeps spectators attached to a completed event instance until the next round can adopt them. */
+    /**
+     * Keeps spectators attached to a completed event instance until the next round can adopt them.
+     */
     public void holdSpectatorsForNextRound(@NotNull BaseGameInstance instance) {
         for (UUID uuid : instance.getSpectatorUniqueIds())
             spectatorTransitionHolds.put(uuid, new SpectatorTransitionHold(instance));
@@ -1408,15 +1680,20 @@ public class GameManager extends BaseManager {
         spectatorManager.onAreaReleased(instance);
         pendingFinaleAudience.remove(instance);
         teamStatus.entrySet().removeIf(entry -> entry.getValue() == instance);
-        List<UUID> released = playerStatus.entrySet().stream()
-                .filter(entry -> entry.getValue() == instance).map(Map.Entry::getKey).toList();
+        List<UUID> released =
+                playerStatus.entrySet().stream()
+                        .filter(entry -> entry.getValue() == instance)
+                        .map(Map.Entry::getKey)
+                        .toList();
         playerStatus.entrySet().removeIf(entry -> entry.getValue() == instance);
         for (UUID playerId : released) plugin.getVisibilityManager().reconcilePlayer(playerId);
     }
 
-    public void releaseInstancePlayers(@NotNull BaseGameInstance instance, @NotNull Set<UUID> players) {
+    public void releaseInstancePlayers(
+            @NotNull BaseGameInstance instance, @NotNull Set<UUID> players) {
         for (UUID player : players) {
-            if (playerStatus.remove(player, instance)) plugin.getVisibilityManager().reconcilePlayer(player);
+            if (playerStatus.remove(player, instance))
+                plugin.getVisibilityManager().reconcilePlayer(player);
         }
     }
 
@@ -1430,7 +1707,8 @@ public class GameManager extends BaseManager {
         return playerSpectatorStatus.get(uuid);
     }
 
-    public synchronized boolean spectateArea(@NotNull Player player, @NotNull BaseGameInstance baseArea) {
+    public synchronized boolean spectateArea(
+            @NotNull Player player, @NotNull BaseGameInstance baseArea) {
         UUID uuid = player.getUniqueId();
         if (!canJoinSpectatorArea(player, baseArea)) {
             return false;
@@ -1460,16 +1738,23 @@ public class GameManager extends BaseManager {
         spectatorManager.openControls(player);
     }
 
-    /** Applies the same roster restriction as the explicit spectate command. Automatic routing bypasses it. */
+    /**
+     * Applies the same roster restriction as the explicit spectate command. Automatic routing
+     * bypasses it.
+     */
     public boolean canManuallySpectate(@NotNull Player player) {
         if (player.hasPermission(MainCommand.ADMIN_PERMISSION)) return true;
-        boolean dailyLobby = plugin.getDailyManager() != null && plugin.getDailyManager().isDailyLobby();
-        if (!shouldEnforceStrictSpectatorRule(Boolean.TRUE.equals(CCConfig.STRICT_SPECTATOR_RULE), dailyLobby))
-            return true;
+        boolean dailyLobby =
+                plugin.getDailyManager() != null && plugin.getDailyManager().isDailyLobby();
+        if (!shouldEnforceStrictSpectatorRule(
+                Boolean.TRUE.equals(CCConfig.STRICT_SPECTATOR_RULE), dailyLobby)) return true;
         ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
-        if (plugin.getRankManager().getRound() != 7 && team != null
+        if (plugin.getRankManager().getRound() != 7
+                && team != null
                 && !player.hasPermission(ChampionshipPermissions.REFEREE)) {
-            player.sendMessage(ink.ziip.championshipscore.configuration.config.message.MessageConfig.SPECTATOR_IS_PLAYER);
+            player.sendMessage(
+                    ink.ziip.championshipscore.configuration.config.message.MessageConfig
+                            .SPECTATOR_IS_PLAYER);
             return false;
         }
         return true;
@@ -1479,33 +1764,52 @@ public class GameManager extends BaseManager {
         return configured && !dailyLobby;
     }
 
-    /** Lifecycle-active instances used by internal maintenance checks such as map rename protection. */
+    /**
+     * Lifecycle-active instances used by internal maintenance checks such as map rename protection.
+     */
     public List<BaseGameInstance> getSpectatableInstances() {
         return getSpectatableInstances(null);
     }
 
     /** Instances this viewer may enter, including pre-game arenas for administrators. */
     public List<BaseGameInstance> getSpectatableInstances(@Nullable Player viewer) {
-        List<BaseGameInstance> instances = new ArrayList<>(areaManagers.entrySet().stream()
-                .filter(entry -> isGameEnabled(entry.getKey()) && loadedGameManagers.contains(entry.getKey()))
-                .flatMap(entry -> entry.getValue().getRuntimeInstances().stream()
-                        .map(instance -> (BaseGameInstance) instance))
-                .filter(instance -> viewer == null
-                        ? isInstanceActivelyRunning(instance)
-                        : canJoinSpectatorArea(viewer, instance))
-                .toList());
+        List<BaseGameInstance> instances =
+                new ArrayList<>(
+                        areaManagers.entrySet().stream()
+                                .filter(
+                                        entry ->
+                                                isGameEnabled(entry.getKey())
+                                                        && loadedGameManagers.contains(
+                                                                entry.getKey()))
+                                .flatMap(
+                                        entry ->
+                                                entry.getValue().getRuntimeInstances().stream()
+                                                        .map(
+                                                                instance ->
+                                                                        (BaseGameInstance)
+                                                                                instance))
+                                .filter(
+                                        instance ->
+                                                viewer == null
+                                                        ? isInstanceActivelyRunning(instance)
+                                                        : canJoinSpectatorArea(viewer, instance))
+                                .toList());
         remoteBingoInstances.values().stream()
                 .filter(instance -> isGameEnabled(instance.getGameTypeEnum()))
-                .filter(instance -> viewer == null
-                        ? isInstanceActivelyRunning(instance)
-                        : canJoinSpectatorArea(viewer, instance))
+                .filter(
+                        instance ->
+                                viewer == null
+                                        ? isInstanceActivelyRunning(instance)
+                                        : canJoinSpectatorArea(viewer, instance))
                 .forEach(instances::add);
-        instances.sort(Comparator
-                .comparingInt((BaseGameInstance instance) -> instance.getGameTypeEnum().ordinal())
-                .thenComparing(instance -> instance.getGameConfig().getAreaName(),
-                        Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))
-                .thenComparingInt(BaseGameInstance::getCopyIndex)
-                .thenComparing(this::stableInstanceKey));
+        instances.sort(
+                Comparator.comparingInt(
+                                (BaseGameInstance instance) -> instance.getGameTypeEnum().ordinal())
+                        .thenComparing(
+                                instance -> instance.getGameConfig().getAreaName(),
+                                Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))
+                        .thenComparingInt(BaseGameInstance::getCopyIndex)
+                        .thenComparing(this::stableInstanceKey));
         return List.copyOf(instances);
     }
 
@@ -1520,14 +1824,17 @@ public class GameManager extends BaseManager {
                 .toList();
     }
 
-    /** Active copies for one configured map, including Core-side handles for remote Bingo matches. */
+    /**
+     * Active copies for one configured map, including Core-side handles for remote Bingo matches.
+     */
     public @NotNull List<BaseGameInstance> getSpectatableMapInstances(
             @NotNull GameTypeEnum gameType, @NotNull String mapName) {
         return getSpectatableInstances().stream()
                 .filter(instance -> instance.getGameTypeEnum() == gameType)
                 .filter(instance -> mapMatches(instance, mapName))
-                .sorted(Comparator.comparingInt(BaseGameInstance::getCopyIndex)
-                        .thenComparing(this::stableInstanceKey))
+                .sorted(
+                        Comparator.comparingInt(BaseGameInstance::getCopyIndex)
+                                .thenComparing(this::stableInstanceKey))
                 .toList();
     }
 
@@ -1537,8 +1844,9 @@ public class GameManager extends BaseManager {
         return getSpectatableInstances(viewer).stream()
                 .filter(instance -> instance.getGameTypeEnum() == gameType)
                 .filter(instance -> mapMatches(instance, mapName))
-                .sorted(Comparator.comparingInt(BaseGameInstance::getCopyIndex)
-                        .thenComparing(this::stableInstanceKey))
+                .sorted(
+                        Comparator.comparingInt(BaseGameInstance::getCopyIndex)
+                                .thenComparing(this::stableInstanceKey))
                 .toList();
     }
 
@@ -1554,14 +1862,17 @@ public class GameManager extends BaseManager {
             return MessageConfig.SPECTATOR_DISPLAY_COPY
                     .replace("%area%", name)
                     .replace("%token%", Integer.toString(instance.getCopyIndex() + 1));
-        if (instance instanceof ink.ziip.championshipscore.api.game.acerace.AceRaceArea)
+        if (instance instanceof ink.ziip.championshipscore.api.game.acerace.runtime.AceRaceArea)
             return MessageConfig.SPECTATOR_DISPLAY_INSTANCE
                     .replace("%area%", name)
                     .replace("%token%", Integer.toString(instance.getCopyIndex() + 1));
         return name;
     }
 
-    /** Command token for selecting one copy. Local replicas use their one-based index; remote runs use match ID. */
+    /**
+     * Command token for selecting one copy. Local replicas use their one-based index; remote runs
+     * use match ID.
+     */
     public @NotNull String getSpectatorInstanceToken(@NotNull BaseGameInstance instance) {
         if (instance instanceof RemoteBingoInstance remote)
             return remote.matchId().toString().substring(0, 8);
@@ -1569,17 +1880,25 @@ public class GameManager extends BaseManager {
     }
 
     /** Selects or switches to one live arena without an intermediate lobby teleport. */
-    public synchronized boolean selectSpectatorArea(@NotNull Player player, @NotNull BaseGameInstance target) {
-        if (!canJoinSpectatorArea(player, target) || playerStatus.containsKey(player.getUniqueId())) return false;
+    public synchronized boolean selectSpectatorArea(
+            @NotNull Player player, @NotNull BaseGameInstance target) {
+        if (!canJoinSpectatorArea(player, target) || playerStatus.containsKey(player.getUniqueId()))
+            return false;
         if (playerSpectatorStatus.get(player.getUniqueId()) == target) return true;
         moveSpectatorTo(player, target);
         return true;
     }
 
-    /** Selects a live arena and teleports directly to a destination inside that same spectator instance. */
-    public synchronized boolean selectSpectatorArea(@NotNull Player player, @NotNull BaseGameInstance target,
-                                                    @NotNull Location destination) {
-        if (!canJoinSpectatorArea(player, target) || playerStatus.containsKey(player.getUniqueId())) return false;
+    /**
+     * Selects a live arena and teleports directly to a destination inside that same spectator
+     * instance.
+     */
+    public synchronized boolean selectSpectatorArea(
+            @NotNull Player player,
+            @NotNull BaseGameInstance target,
+            @NotNull Location destination) {
+        if (!canJoinSpectatorArea(player, target) || playerStatus.containsKey(player.getUniqueId()))
+            return false;
         if (playerSpectatorStatus.get(player.getUniqueId()) == target) {
             target.teleportSpectatorAsync(player, destination);
             return true;
@@ -1601,19 +1920,25 @@ public class GameManager extends BaseManager {
 
     /** Routes an unteamed player joining mid-game to the current spectator focus. */
     public synchronized boolean spectateCurrentGame(@NotNull Player player) {
-        if (plugin.getTeamManager().getTeamByPlayer(player) != null || playerStatus.containsKey(player.getUniqueId()))
-            return false;
+        if (plugin.getTeamManager().getTeamByPlayer(player) != null
+                || playerStatus.containsKey(player.getUniqueId())) return false;
         BaseGameInstance active = getCurrentSpectatorFocus();
         return active != null && spectateArea(player, active);
     }
 
-    /** Releases spectators attached to event-owned instances only; standalone games are untouched. */
+    /**
+     * Releases spectators attached to event-owned instances only; standalone games are untouched.
+     */
     public synchronized void releaseEventSpectatorsForGame(@NotNull GameTypeEnum gameType) {
-        List<Map.Entry<UUID, BaseGameInstance>> entries = playerSpectatorStatus.entrySet().stream()
-                .filter(entry -> entry.getValue().getGameTypeEnum() == gameType
-                        && (entry.getValue().isEventRun()
-                        || isHeldSpectator(entry.getKey(), entry.getValue())))
-                .toList();
+        List<Map.Entry<UUID, BaseGameInstance>> entries =
+                playerSpectatorStatus.entrySet().stream()
+                        .filter(
+                                entry ->
+                                        entry.getValue().getGameTypeEnum() == gameType
+                                                && (entry.getValue().isEventRun()
+                                                        || isHeldSpectator(
+                                                                entry.getKey(), entry.getValue())))
+                        .toList();
         for (Map.Entry<UUID, BaseGameInstance> entry : entries) {
             Player player = org.bukkit.Bukkit.getPlayer(entry.getKey());
             if (player != null) entry.getValue().removeSpectator(player);
@@ -1621,15 +1946,17 @@ public class GameManager extends BaseManager {
             playerSpectatorStatus.remove(entry.getKey(), entry.getValue());
             plugin.getVisibilityManager().reconcilePlayer(entry.getKey());
         }
-        spectatorTransitionHolds.entrySet().removeIf(entry ->
-                entry.getValue().instance().getGameTypeEnum() == gameType);
+        spectatorTransitionHolds
+                .entrySet()
+                .removeIf(entry -> entry.getValue().instance().getGameTypeEnum() == gameType);
     }
 
     public void clearSpectatorStatus(@NotNull UUID uuid, @NotNull BaseGameInstance expected) {
         boolean removed = playerSpectatorStatus.remove(uuid, expected);
-        spectatorTransitionHolds.computeIfPresent(uuid, (ignored, hold) ->
-                hold.instance() == expected ? null : hold);
-        if (spectatorFocus == expected && expected.getOnlineSpectators().isEmpty()
+        spectatorTransitionHolds.computeIfPresent(
+                uuid, (ignored, hold) -> hold.instance() == expected ? null : hold);
+        if (spectatorFocus == expected
+                && expected.getOnlineSpectators().isEmpty()
                 && !isInstanceAvailableForSpectating(expected)) {
             spectatorFocus = null;
         }
@@ -1638,12 +1965,18 @@ public class GameManager extends BaseManager {
             if (online == null) {
                 spectatorManager.forget(uuid);
             } else {
-                // The area normally performs this during removeSpectator. Also cover rejected remote
-                // admission and failed async teleports, while not stealing a fast transfer to a new area.
-                Bukkit.getScheduler().runTask(plugin, () -> {
-                    if (playerSpectatorStatus.get(uuid) == null && spectatorManager.areaOf(uuid) == expected)
-                        spectatorManager.leavePresentation(online);
-                });
+                // The area normally performs this during removeSpectator. Also cover rejected
+                // remote
+                // admission and failed async teleports, while not stealing a fast transfer to a new
+                // area.
+                Bukkit.getScheduler()
+                        .runTask(
+                                plugin,
+                                () -> {
+                                    if (playerSpectatorStatus.get(uuid) == null
+                                            && spectatorManager.areaOf(uuid) == expected)
+                                        spectatorManager.leavePresentation(online);
+                                });
             }
             plugin.getVisibilityManager().reconcilePlayer(uuid);
         }
@@ -1654,8 +1987,12 @@ public class GameManager extends BaseManager {
         spectatorFocus = startedInstance;
         if (!isRegularSpectatingStage(startedInstance.getGameStageEnum())) return;
         BaseGameInstance current = getCurrentSpectatorFocus();
-        BaseGameInstance target = current != null && current.getGameTypeEnum() == startedInstance.getGameTypeEnum()
-                && isRegularSpectatingStage(current.getGameStageEnum()) ? current : startedInstance;
+        BaseGameInstance target =
+                current != null
+                                && current.getGameTypeEnum() == startedInstance.getGameTypeEnum()
+                                && isRegularSpectatingStage(current.getGameStageEnum())
+                        ? current
+                        : startedInstance;
         spectatorFocus = target;
         transferHeldSpectatorsTo(target);
 
@@ -1673,11 +2010,17 @@ public class GameManager extends BaseManager {
         return hold != null && hold.instance() == instance;
     }
 
-    /** Transfers both online and offline spectators without a lobby hop once the next round is live. */
+    /**
+     * Transfers both online and offline spectators without a lobby hop once the next round is live.
+     */
     private void transferHeldSpectatorsTo(@NotNull BaseGameInstance target) {
-        List<Map.Entry<UUID, SpectatorTransitionHold>> holds = spectatorTransitionHolds.entrySet().stream()
-                .filter(entry -> entry.getValue().instance().getGameTypeEnum() == target.getGameTypeEnum())
-                .toList();
+        List<Map.Entry<UUID, SpectatorTransitionHold>> holds =
+                spectatorTransitionHolds.entrySet().stream()
+                        .filter(
+                                entry ->
+                                        entry.getValue().instance().getGameTypeEnum()
+                                                == target.getGameTypeEnum())
+                        .toList();
         for (Map.Entry<UUID, SpectatorTransitionHold> entry : holds) {
             UUID uuid = entry.getKey();
             SpectatorTransitionHold hold = entry.getValue();
@@ -1708,8 +2051,10 @@ public class GameManager extends BaseManager {
         moveSpectatorTo(player, target, target.getSpectatorSpawnLocation());
     }
 
-    private void moveSpectatorTo(@NotNull Player player, @NotNull BaseGameInstance target,
-                                 @NotNull Location destination) {
+    private void moveSpectatorTo(
+            @NotNull Player player,
+            @NotNull BaseGameInstance target,
+            @NotNull Location destination) {
         UUID uuid = player.getUniqueId();
         BaseGameInstance previous = playerSpectatorStatus.get(uuid);
         if (previous == target) {
@@ -1723,9 +2068,9 @@ public class GameManager extends BaseManager {
         spectatorManager.prepareExternal(player);
         target.addSpectator(player, destination);
         plugin.getVisibilityManager().reconcilePlayer(uuid);
-        if (plugin.getDailyManager() != null) plugin.getDailyManager().attachSpectator(target, uuid);
+        if (plugin.getDailyManager() != null)
+            plugin.getDailyManager().attachSpectator(target, uuid);
     }
-
 
     @Nullable
     private BaseGameInstance getCurrentSpectatorFocus() {
@@ -1733,14 +2078,21 @@ public class GameManager extends BaseManager {
         if (focus != null && isRegularSpectatingStage(focus.getGameStageEnum())) return focus;
 
         for (GameTypeEnum gameType : GameTypeEnum.values()) {
-            BaseGameInstanceManager<? extends BaseGameInstance> manager = areaManagers.get(gameType);
+            BaseGameInstanceManager<? extends BaseGameInstance> manager =
+                    areaManagers.get(gameType);
             if (manager == null) continue;
-            BaseGameInstance active = manager.getRuntimeInstances().stream()
-                    .filter(BaseGameInstance::isEventRun)
-                    .filter(instance -> isRegularSpectatingStage(instance.getGameStageEnum()))
-                    .sorted(Comparator.comparing(instance -> instance.getGameConfig().getConfigName(),
-                            String.CASE_INSENSITIVE_ORDER))
-                    .findFirst().orElse(null);
+            BaseGameInstance active =
+                    manager.getRuntimeInstances().stream()
+                            .filter(BaseGameInstance::isEventRun)
+                            .filter(
+                                    instance ->
+                                            isRegularSpectatingStage(instance.getGameStageEnum()))
+                            .sorted(
+                                    Comparator.comparing(
+                                            instance -> instance.getGameConfig().getConfigName(),
+                                            String.CASE_INSENSITIVE_ORDER))
+                            .findFirst()
+                            .orElse(null);
             if (active != null) {
                 spectatorFocus = active;
                 return active;
@@ -1763,14 +2115,17 @@ public class GameManager extends BaseManager {
         };
     }
 
-    /** Called by an instance once rule introduction/preparation is actually available to spectators. */
+    /**
+     * Called by an instance once rule introduction/preparation is actually available to spectators.
+     */
     public void onInstancePreparationStarted(@NotNull BaseGameInstance instance) {
         focusSpectatorsOn(instance);
         activateFinaleAudience(instance);
     }
 
     /** Shared command, menu and area-admission policy. */
-    public boolean canJoinSpectatorArea(@NotNull Player player, @NotNull BaseGameInstance instance) {
+    public boolean canJoinSpectatorArea(
+            @NotNull Player player, @NotNull BaseGameInstance instance) {
         boolean administrator = player.hasPermission(MainCommand.ADMIN_PERMISSION);
         if (!isSpectatingStageAllowed(instance.getGameStageEnum(), administrator)) return false;
         try {
@@ -1836,9 +2191,7 @@ public class GameManager extends BaseManager {
         spectatorTransitionHolds.remove(uuid);
     }
 
-    private record RoundTransitionHold(BaseGameInstance instance, GameRunMode mode) {
-   }
+    private record RoundTransitionHold(BaseGameInstance instance, GameRunMode mode) {}
 
-    private record SpectatorTransitionHold(BaseGameInstance instance) {
-    }
+    private record SpectatorTransitionHold(BaseGameInstance instance) {}
 }

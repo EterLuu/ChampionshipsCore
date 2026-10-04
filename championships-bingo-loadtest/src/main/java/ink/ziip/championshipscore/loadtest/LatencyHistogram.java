@@ -1,7 +1,9 @@
 package ink.ziip.championshipscore.loadtest;
 
 final class LatencyHistogram {
-    private static final long[] UPPER_BOUNDS_MS = {50, 100, 250, 500, 1000, 2000, 5000, 10000, 30000};
+    private static final long[] UPPER_BOUNDS_MS = {
+        50, 100, 250, 500, 1000, 2000, 5000, 10000, 30000
+    };
     private final long[] buckets = new long[UPPER_BOUNDS_MS.length + 1];
     private long samples;
     private long totalMillis;
@@ -18,8 +20,12 @@ final class LatencyHistogram {
     }
 
     Snapshot snapshot() {
-        return new Snapshot(samples, samples == 0 ? 0 : totalMillis / samples,
-                percentile(0.95), percentile(0.99), maximumMillis);
+        return new Snapshot(
+                samples,
+                samples == 0 ? 0 : totalMillis / samples,
+                percentile(0.95),
+                percentile(0.99),
+                maximumMillis);
     }
 
     private long percentile(double percentile) {
@@ -35,6 +41,6 @@ final class LatencyHistogram {
         return maximumMillis;
     }
 
-    record Snapshot(long samples, long averageMillis, long p95Millis, long p99Millis, long maximumMillis) {
-    }
+    record Snapshot(
+            long samples, long averageMillis, long p95Millis, long p99Millis, long maximumMillis) {}
 }

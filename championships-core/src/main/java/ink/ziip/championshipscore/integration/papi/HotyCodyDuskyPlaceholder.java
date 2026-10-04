@@ -1,10 +1,11 @@
 package ink.ziip.championshipscore.integration.papi;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.game.hotycodydusky.HotyCodyDuskyTeamArea;
+import ink.ziip.championshipscore.api.game.hotycodydusky.runtime.HotyCodyDuskyTeamArea;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.presentation.text.CoreMessages;
+
 import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
 
@@ -29,27 +30,35 @@ public class HotyCodyDuskyPlaceholder extends BaseGamePlaceholder<HotyCodyDuskyT
         /* Non-Player required placeholders */
 
         if (params.startsWith("area_survived_players_")) {
-            HotyCodyDuskyTeamArea hotyCodyDuskyTeamArea = resolveArea(params, "area_survived_players_", offlinePlayer);
+            HotyCodyDuskyTeamArea hotyCodyDuskyTeamArea =
+                    resolveArea(params, "area_survived_players_", offlinePlayer);
             if (hotyCodyDuskyTeamArea == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
             return String.valueOf(hotyCodyDuskyTeamArea.getSurvivedPlayerNums());
         }
         if (params.startsWith("area_survived_teams_")) {
-            HotyCodyDuskyTeamArea hotyCodyDuskyTeamArea = resolveArea(params, "area_survived_teams_", offlinePlayer);
+            HotyCodyDuskyTeamArea hotyCodyDuskyTeamArea =
+                    resolveArea(params, "area_survived_teams_", offlinePlayer);
             if (hotyCodyDuskyTeamArea == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
             return String.valueOf(hotyCodyDuskyTeamArea.getSurvivedTeamNums());
         }
         if (params.startsWith("area_cody_holder_")) {
-            HotyCodyDuskyTeamArea hotyCodyDuskyTeamArea = resolveArea(params, "area_cody_holder_", offlinePlayer);
+            HotyCodyDuskyTeamArea hotyCodyDuskyTeamArea =
+                    resolveArea(params, "area_cody_holder_", offlinePlayer);
             if (hotyCodyDuskyTeamArea == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
-            if (hotyCodyDuskyTeamArea.getCodyHolder() == null)
-                return MessageConfig.PLACEHOLDER_NONE;
-            return Utils.formatPlayerName(hotyCodyDuskyTeamArea.getCodyHolder());
+            var holder =
+                    offlinePlayer == null
+                            ? null
+                            : hotyCodyDuskyTeamArea.getCodyHolder(offlinePlayer.getUniqueId());
+            if (holder != null) return CoreMessages.formatPlayerName(holder);
+            return hotyCodyDuskyTeamArea.getCodyHolders().stream()
+                    .map(CoreMessages::formatPlayerName)
+                    .collect(java.util.stream.Collectors.joining("、"));
         }
 
         // Placeholder is unknown by the Expansion

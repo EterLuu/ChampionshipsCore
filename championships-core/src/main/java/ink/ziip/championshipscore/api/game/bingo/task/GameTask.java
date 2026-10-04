@@ -1,11 +1,13 @@
 package ink.ziip.championshipscore.api.game.bingo.task;
 
 import ink.ziip.championshipscore.api.game.bingo.util.MessageService;
+
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -24,14 +26,24 @@ import java.util.UUID;
  */
 public final class GameTask {
     /** Lightweight record of who completed a task, decoupled from the team classes. */
-    public record Completion(UUID playerId, Component playerName, TextColor teamColor, String teamId, long completedAt) {
-    }
+    public record Completion(
+            UUID playerId,
+            Component playerName,
+            TextColor teamColor,
+            String teamId,
+            long completedAt) {}
 
     public TaskData data;
-    /** Completion per team id, in completion order. Empty until at least one team finishes the task. */
-    private final java.util.LinkedHashMap<String, Completion> completions = new java.util.LinkedHashMap<>();
+
+    /**
+     * Completion per team id, in completion order. Empty until at least one team finishes the task.
+     */
+    private final java.util.LinkedHashMap<String, Completion> completions =
+            new java.util.LinkedHashMap<>();
+
     private boolean hidden;
     private boolean locked;
+
     public GameTask(@NotNull TaskData data) {
         this.data = data;
     }
@@ -45,7 +57,7 @@ public final class GameTask {
      * Records a completion for the completing team.
      *
      * @param locked when true, the task locks to the first team — a second team cannot claim it.
-     *               When false, each team may complete it once independently.
+     *     When false, each team may complete it once independently.
      * @return true if this call newly completed the task for {@code by}'s team.
      */
     public boolean complete(@NotNull Completion by, boolean locked) {
@@ -57,10 +69,21 @@ public final class GameTask {
         return true;
     }
 
-    public boolean isHidden() { return hidden; }
-    public void setHidden(boolean hidden) { this.hidden = hidden; }
-    public boolean isLocked() { return locked; }
-    public void setLocked(boolean locked) { this.locked = locked; }
+    public boolean isHidden() {
+        return hidden;
+    }
+
+    public void setHidden(boolean hidden) {
+        this.hidden = hidden;
+    }
+
+    public boolean isLocked() {
+        return locked;
+    }
+
+    public void setLocked(boolean locked) {
+        this.locked = locked;
+    }
 
     public boolean isCompletedByTeam(@NotNull String teamId) {
         return completions.containsKey(teamId);
@@ -102,12 +125,17 @@ public final class GameTask {
         return data.getDisplayMaterial(displayInfo);
     }
 
-    /** Display name from {@code viewerTeamId}'s perspective: struck-through once that team completed it. */
+    /**
+     * Display name from {@code viewerTeamId}'s perspective: struck-through once that team completed
+     * it.
+     */
     public Component getName(@Nullable String viewerTeamId) {
         if (viewerTeamId != null && isCompletedByTeam(viewerTeamId)) {
-            return Component.text().color(NamedTextColor.GRAY)
+            return Component.text()
+                    .color(NamedTextColor.GRAY)
                     .decorate(TextDecoration.STRIKETHROUGH)
-                    .append(data.getName()).build();
+                    .append(data.getName())
+                    .build();
         }
         return data.getName();
     }
@@ -125,10 +153,12 @@ public final class GameTask {
         if (own != null) {
             name = getName(viewerTeamId);
             material = Material.BARRIER;
-            lore.add(Component.text()
-                    .append(msg.component("card.completed_by"))
-                    .append(own.playerName())
-                    .decoration(TextDecoration.ITALIC, false).build());
+            lore.add(
+                    Component.text()
+                            .append(msg.component("card.completed_by"))
+                            .append(own.playerName())
+                            .decoration(TextDecoration.ITALIC, false)
+                            .build());
             lore.add(msg.component("card.completed_at", formatTime(own.completedAt())));
             glow = true;
         } else if (viewerTeamId != null && displayInfo.locksTasks() && isCompleted()) {
@@ -136,13 +166,17 @@ public final class GameTask {
             name = getName(viewerTeamId);
             material = Material.BARRIER;
             Completion claimer = completions.values().iterator().next();
-            lore.add(Component.text()
-                    .append(msg.component("card.occupied_by"))
-                    .decoration(TextDecoration.ITALIC, false).build());
-            lore.add(Component.text()
-                    .append(msg.component("card.completed_by"))
-                    .append(claimer.playerName())
-                    .decoration(TextDecoration.ITALIC, false).build());
+            lore.add(
+                    Component.text()
+                            .append(msg.component("card.occupied_by"))
+                            .decoration(TextDecoration.ITALIC, false)
+                            .build());
+            lore.add(
+                    Component.text()
+                            .append(msg.component("card.completed_by"))
+                            .append(claimer.playerName())
+                            .decoration(TextDecoration.ITALIC, false)
+                            .build());
             glow = true;
         } else {
             name = getName(viewerTeamId);
@@ -153,12 +187,15 @@ public final class GameTask {
             glow = !isCompleted() && !hidden && !locked && data.shouldItemGlow();
         }
 
-        // When any team has finished this cell, list every completor (in claim order) so viewers can read
+        // When any team has finished this cell, list every completor (in claim order) so viewers
+        // can read
         // the race state — most useful in points mode, where claim order is the score.
         if (anyCompleted) {
             lore.add(Component.empty());
-            TextComponent.Builder cl = Component.text()
-                    .append(msg.component("card.completed_by")).decoration(TextDecoration.ITALIC, false);
+            TextComponent.Builder cl =
+                    Component.text()
+                            .append(msg.component("card.completed_by"))
+                            .decoration(TextDecoration.ITALIC, false);
             boolean first = true;
             for (Completion c : completions.values()) {
                 if (!first) cl.append(Component.text(", ", NamedTextColor.GRAY));
@@ -168,7 +205,8 @@ public final class GameTask {
             lore.add(cl.build());
         }
 
-        // Guard against block-only materials reaching the GUI: ItemStack(Material) throws for non-items.
+        // Guard against block-only materials reaching the GUI: ItemStack(Material) throws for
+        // non-items.
         if (!material.isItem()) material = Material.PAPER;
         ItemStack stack = new ItemStack(material);
         // Keep the advancement's own display components when possible - Voluntary Exile's icon is a
@@ -179,7 +217,8 @@ public final class GameTask {
                 stack = iconStack.clone();
             }
         }
-        boolean lockedByOther = viewerTeamId != null && displayInfo.locksTasks() && isCompleted() && own == null;
+        boolean lockedByOther =
+                viewerTeamId != null && displayInfo.locksTasks() && isCompleted() && own == null;
         boolean active = own == null && !lockedByOther;
         boolean statistic = data.getType() == TaskData.TaskType.STATISTIC;
         int required = Math.max(1, data.getRequiredAmount());
@@ -197,18 +236,22 @@ public final class GameTask {
             if (active && statistic && required > 1) {
                 meta.setMaxStackSize(Math.min(required, 99));
             }
-            // Effect potions: stamp the base potion type so the chest-GUI item shows the right liquid colour.
-            if (data instanceof PotionTask potion && meta instanceof org.bukkit.inventory.meta.PotionMeta pm) {
+            // Effect potions: stamp the base potion type so the chest-GUI item shows the right
+            // liquid colour.
+            if (data instanceof PotionTask potion
+                    && meta instanceof org.bukkit.inventory.meta.PotionMeta pm) {
                 org.bukkit.potion.PotionType type = potion.potionType();
                 if (type != null) pm.setBasePotionType(type);
             }
             // Event subjects shown as potions (die by magic -> splash potion of harming).
-            if (data instanceof EventTask event && meta instanceof org.bukkit.inventory.meta.PotionMeta pm) {
+            if (data instanceof EventTask event
+                    && meta instanceof org.bukkit.inventory.meta.PotionMeta pm) {
                 org.bukkit.potion.PotionType type = event.displayPotionType();
                 if (type != null) pm.setBasePotionType(type);
             }
             // Advancement icons shown as potions (Local Brewery -> instant-health potion).
-            if (data instanceof AdvancementTask advancement && meta instanceof org.bukkit.inventory.meta.PotionMeta pm) {
+            if (data instanceof AdvancementTask advancement
+                    && meta instanceof org.bukkit.inventory.meta.PotionMeta pm) {
                 org.bukkit.potion.PotionType type = advancement.displayPotionType();
                 if (type != null) pm.setBasePotionType(type);
             }

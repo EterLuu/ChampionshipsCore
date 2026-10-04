@@ -1,24 +1,24 @@
 package ink.ziip.championshipscore.api.game.area.prepare.gui;
 
-import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
-import ink.ziip.championshipscore.api.gui.MenuInventory;
-import ink.ziip.championshipscore.api.gui.MenuId;
-import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
-import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-
-import ink.ziip.championshipscore.api.game.acerace.AceRaceEquipment;
+import ink.ziip.championshipscore.api.game.acerace.mechanics.AceRaceEquipment;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareModeInventory;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
+import ink.ziip.championshipscore.api.gui.MenuId;
+import ink.ziip.championshipscore.api.gui.MenuInventory;
+import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
@@ -29,8 +29,7 @@ import java.util.function.Consumer;
 public final class AceRaceEquipmentGui {
     private static final String MENU_PATH = MenuId.ACE_RACE_EQUIPMENT.path();
 
-    private AceRaceEquipmentGui() {
-    }
+    private AceRaceEquipmentGui() {}
 
     public static final class Holder implements MenuInventory {
         final PrepareSession session;
@@ -48,22 +47,36 @@ public final class AceRaceEquipmentGui {
         }
     }
 
-    public static void open(@NotNull Player player, @NotNull PrepareSession session,
-                            @NotNull AceRaceEquipment current,
-                            @NotNull Consumer<AceRaceEquipment> callback) {
+    public static void open(
+            @NotNull Player player,
+            @NotNull PrepareSession session,
+            @NotNull AceRaceEquipment current,
+            @NotNull Consumer<AceRaceEquipment> callback) {
         Holder holder = new Holder(session, callback);
-        GuiConfig.MenuSpec menu = GuiConfig.menu(MENU_PATH, 9, GuiConfig.component(MENU_PATH), List.of());
+        GuiConfig.MenuSpec menu =
+                GuiConfig.menu(MENU_PATH, 9, GuiConfig.component(MENU_PATH), List.of());
         holder.inventory = Bukkit.createInventory(holder, menu.size(), menu.title());
-        holder.inventory.setItem(1, option(Material.BARRIER, AceRaceEquipment.NONE, current, "none"));
-        holder.inventory.setItem(3, option(Material.ELYTRA, AceRaceEquipment.ELYTRA, current, "elytra"));
-        holder.inventory.setItem(5, option(Material.TRIDENT, AceRaceEquipment.TRIDENT, current, "trident"));
-        holder.inventory.setItem(7, option(Material.HEART_OF_THE_SEA, AceRaceEquipment.DOLPHINS_GRACE, current, "dolphins"));
+        holder.inventory.setItem(
+                1, option(Material.BARRIER, AceRaceEquipment.NONE, current, "none"));
+        holder.inventory.setItem(
+                3, option(Material.ELYTRA, AceRaceEquipment.ELYTRA, current, "elytra"));
+        holder.inventory.setItem(
+                5, option(Material.TRIDENT, AceRaceEquipment.TRIDENT, current, "trident"));
+        holder.inventory.setItem(
+                7,
+                option(
+                        Material.HEART_OF_THE_SEA,
+                        AceRaceEquipment.DOLPHINS_GRACE,
+                        current,
+                        "dolphins"));
         player.openInventory(holder.inventory);
     }
 
-    public static void handleClick(@NotNull PrepareSessionManager manager,
-                                   @NotNull InventoryClickEvent event, @NotNull Player player,
-                                   @NotNull Holder holder) {
+    public static void handleClick(
+            @NotNull PrepareSessionManager manager,
+            @NotNull InventoryClickEvent event,
+            @NotNull Player player,
+            @NotNull Holder holder) {
         event.setCancelled(true);
         if (event.getClickedInventory() != event.getView().getTopInventory()) return;
         PrepareSession session = manager.getSession(player);
@@ -71,31 +84,52 @@ public final class AceRaceEquipmentGui {
             player.closeInventory();
             return;
         }
-        AceRaceEquipment equipment = switch (event.getRawSlot()) {
-            case 1 -> AceRaceEquipment.NONE;
-            case 3 -> AceRaceEquipment.ELYTRA;
-            case 5 -> AceRaceEquipment.TRIDENT;
-            case 7 -> AceRaceEquipment.DOLPHINS_GRACE;
-            default -> null;
-        };
+        AceRaceEquipment equipment =
+                switch (event.getRawSlot()) {
+                    case 1 -> AceRaceEquipment.NONE;
+                    case 3 -> AceRaceEquipment.ELYTRA;
+                    case 5 -> AceRaceEquipment.TRIDENT;
+                    case 7 -> AceRaceEquipment.DOLPHINS_GRACE;
+                    default -> null;
+                };
         if (equipment == null) return;
         player.closeInventory();
         holder.callback.accept(equipment);
         PrepareModeInventory.refresh(player, session);
     }
 
-    private static @NotNull ItemStack option(@NotNull Material material,
-                                             @NotNull AceRaceEquipment equipment,
-                                             @NotNull AceRaceEquipment current,
-                                             @NotNull String itemKey) {
+    private static @NotNull ItemStack option(
+            @NotNull Material material,
+            @NotNull AceRaceEquipment equipment,
+            @NotNull AceRaceEquipment current,
+            @NotNull String itemKey) {
         ItemStack fallback = new ItemStack(material);
-        fallback.editMeta(meta -> {
-            meta.displayName(Component.text(equipment.displayName()).color(NamedTextColor.AQUA)
-                    .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
-            meta.lore(List.of(LegacyText.component(equipment == current ? GuiConfig.line("map-editor.menus.step-list.items.option.states.selected.lore", 0) : GuiConfig.line("map-editor.menus.step-list.items.option.lore", 0))
-                    .colorIfAbsent(equipment == current ? NamedTextColor.GREEN : NamedTextColor.GRAY)
-                    .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE)));
-        });
-        return ConfiguredGui.item(MENU_PATH + ".items." + itemKey, null, java.util.Map.of(), fallback);
+        fallback.editMeta(
+                meta -> {
+                    meta.displayName(
+                            Component.text(equipment.displayName())
+                                    .color(NamedTextColor.AQUA)
+                                    .decorationIfAbsent(
+                                            TextDecoration.ITALIC, TextDecoration.State.FALSE));
+                    meta.lore(
+                            List.of(
+                                    LegacyText.component(
+                                                    equipment == current
+                                                            ? GuiConfig.line(
+                                                                    "map-editor.menus.step-list.items.option.states.selected.lore",
+                                                                    0)
+                                                            : GuiConfig.line(
+                                                                    "map-editor.menus.step-list.items.option.lore",
+                                                                    0))
+                                            .colorIfAbsent(
+                                                    equipment == current
+                                                            ? NamedTextColor.GREEN
+                                                            : NamedTextColor.GRAY)
+                                            .decorationIfAbsent(
+                                                    TextDecoration.ITALIC,
+                                                    TextDecoration.State.FALSE)));
+                });
+        return ConfiguredGui.item(
+                MENU_PATH + ".items." + itemKey, null, java.util.Map.of(), fallback);
     }
 }

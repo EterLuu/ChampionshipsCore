@@ -1,0 +1,184 @@
+package ink.ziip.championshipscore.api.game.acerace.model;
+
+import org.bukkit.Location;
+import org.bukkit.util.Vector;
+import org.jetbrains.annotations.NotNull;
+
+/**
+ * An axis-aligned WorldEdit line selection. The horizontal axis with the larger span is treated as
+ * the line and the other axis as its normal.
+ */
+public record AceRaceLine(@NotNull Vector pos1, @NotNull Vector pos2) {
+    private static final double EPSILON = 1.0E-6D;
+
+    private int minX() {
+        return Math.min(pos1.getBlockX(), pos2.getBlockX());
+    }
+
+    private int maxX() {
+        return Math.max(pos1.getBlockX(), pos2.getBlockX());
+    }
+
+    private int minY() {
+        return Math.min(pos1.getBlockY(), pos2.getBlockY());
+    }
+
+    private int maxY() {
+        return Math.max(pos1.getBlockY(), pos2.getBlockY());
+    }
+
+    private int minZ() {
+        return Math.min(pos1.getBlockZ(), pos2.getBlockZ());
+    }
+
+    private int maxZ() {
+        return Math.max(pos1.getBlockZ(), pos2.getBlockZ());
+    }
+
+    private boolean runsAlongX() {
+        return maxX() - minX() >= maxZ() - minZ();
+    }
+
+    private double centerX() {
+        return (minX() + maxX() + 1) / 2.0D;
+    }
+
+    private double centerZ() {
+        return (minZ() + maxZ() + 1) / 2.0D;
+    }
+
+    public @NotNull Location center(@NotNull org.bukkit.World world) {
+        return new Location(world, centerX(), (minY() + maxY() + 1) / 2.0D, centerZ());
+    }
+
+    /** Signed horizontal distance from the line's center along its narrow (normal) axis. */
+    double signedNormalDistance(@NotNull Location location) {
+        return runsAlongX() ? location.getZ() - centerZ() : location.getX() - centerX();
+    }
+
+    /** Squared distance from a location to the selected vertical gate volume. */
+    public double distanceSquared(@NotNull Location location) {
+        double x = distanceToRange(location.getX(), minX(), maxX() + 1.0D);
+        double z = distanceToRange(location.getZ(), minZ(), maxZ() + 1.0D);
+        double y = location.getY() < minY() - 3.0D ? minY() - 3.0D - location.getY() : 0.0D;
+        return x * x + y * y + z * z;
+    }
+
+    private static double distanceToRange(double value, double min, double max) {
+        if (value < min) return min - value;
+        if (value > max) return value - max;
+        return 0.0D;
+    }
+
+    /** Returns the side of the line, or zero while inside the selected line thickness. */
+    public int side(@NotNull Location location) {
+        double halfThickness = (runsAlongX() ? maxZ() - minZ() + 1 : maxX() - minX() + 1) / 2.0D;
+        double distance = signedNormalDistance(location);
+        if (Math.abs(distance) <= halfThickness + EPSILON) return 0;
+        return distance < 0D ? -1 : 1;
+    }
+
+    /** Every race gate uses the selected horizontal line as its floor and extends upward. */
+    public boolean crossedAtOrAbove(@NotNull Location from, @NotNull Location to) {
+        return crossedAtOrAbove(from, to, 0);
+    }
+
+    /** Extends the vertical gate down by the requested number of blocks as well as upward. */
+    public boolean crossedAtOrAbove(@NotNull Location from, @NotNull Location to, int blocksBelow) {
+        return crossed(from, to, true, Math.max(0, blocksBelow));
+    }
+
+    private boolean crossed(
+            @NotNull Location from, @NotNull Location to, boolean extendUpward, int blocksBelow) {
+        if (from.getWorld() != to.getWorld()) return false;
+        double fromNormal = signedNormalDistance(from);
+        double normalMovement = signedNormalDistance(to) - fromNormal;
+        if (Math.abs(normalMovement) <= EPSILON) return false;
+
+        double halfThickness = (runsAlongX() ? maxZ() - minZ() + 1 : maxX() - minX() + 1) / 2.0D;
+        return crossesBoundary(
+                        from,
+                        to,
+                        fromNormal,
+                        normalMovement,
+                        -halfThickness,
+                        extendUpward,
+                        blocksBelow)
+                || crossesBoundary(
+                        from,
+                        to,
+                        fromNormal,
+                        normalMovement,
+                        halfThickness,
+                        extendUpward,
+                        blocksBelow);
+    }
+
+    public boolean sameGeometry(@NotNull AceRaceLine other) {
+        return minX() == other.minX()
+                && maxX() == other.maxX()
+                && minY() == other.minY()
+                && maxY() == other.maxY()
+                && minZ() == other.minZ()
+                && maxZ() == other.maxZ();
+    }
+
+    /**
+     * Intersects one of the gate strip's two normal boundaries with the player's movement.
+     * Requiring that intersection to fall along the selected line prevents an endpoint exit from
+     * counting.
+     */
+    private boolean crossesBoundary(
+            @NotNull Location from,
+            @NotNull Location to,
+            double fromNormal,
+            double normalMovement,
+            double boundary,
+            boolean extendUpward,
+            int blocksBelow) {
+        double progress = (boundary - fromNormal) / normalMovement;
+        if (progress < -EPSILON || progress > 1.0D + EPSILON) return false;
+        double crossingY = from.getY() + (to.getY() - from.getY()) * progress;
+        int crossingBlockY = supportingBlockY(crossingY);
+        if (crossingBlockY < minY() - blocksBelow || (!extendUpward && crossingBlockY > maxY()))
+            return false;
+
+        double longitudinal =
+                runsAlongX()
+                        ? from.getX() + (to.getX() - from.getX()) * progress
+                        : from.getZ() + (to.getZ() - from.getZ()) * progress;
+        return runsAlongX()
+                ? longitudinal >= minX() - EPSILON && longitudinal <= maxX() + 1.0D + EPSILON
+                : longitudinal >= minZ() - EPSILON && longitudinal <= maxZ() + 1.0D + EPSILON;
+    }
+
+    /** Matches Bukkit's block lookup at a player's feet, including slabs and stairs. */
+    private static int supportingBlockY(double feetY) {
+        return (int) Math.floor(feetY - EPSILON);
+    }
+
+    /**
+     * Checks that a line was crossed from the side containing the reference point. This rejects a
+     * player walking back through the finish line from the opposite side.
+     */
+    boolean crossedFromReferenceSide(
+            @NotNull Location from, @NotNull Location to, @NotNull Location reference) {
+        if (!crossedAtOrAbove(from, to)) return false;
+        int expectedSide = side(reference);
+        if (expectedSide == 0) return false;
+        int fromSide = side(from);
+        int toSide = side(to);
+        return fromSide == expectedSide || (fromSide == 0 && toSide == -expectedSide);
+    }
+
+    /** Checks that the line was crossed toward the side containing the reference point. */
+    public boolean crossedTowardReferenceSide(
+            @NotNull Location from, @NotNull Location to, @NotNull Location reference) {
+        if (!crossedAtOrAbove(from, to)) return false;
+        int expectedSide = side(reference);
+        if (expectedSide == 0) return false;
+        int fromSide = side(from);
+        int toSide = side(to);
+        return fromSide == -expectedSide || (fromSide == 0 && toSide == expectedSide);
+    }
+}

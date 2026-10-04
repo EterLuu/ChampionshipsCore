@@ -1,21 +1,23 @@
 package ink.ziip.championshipscore.api.daily;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import ink.ziip.championshipscore.api.daily.entry.DailyRecordEntry;
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.configuration.ConfigurationStateExtension;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import java.lang.reflect.Field;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.UUID;
+
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.lang.reflect.Field;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.UUID;
 
 class DailyMetricTest {
     @ExtendWith(ConfigurationStateExtension.class)
@@ -23,8 +25,9 @@ class DailyMetricTest {
     class DailyMetricCases {
         @BeforeAll
         static void loadGuiMetricFormats() throws Exception {
-            YamlConfiguration gui = YamlConfiguration.loadConfiguration(
-                    Path.of("src/main/resources/gui.yml").toFile());
+            YamlConfiguration gui =
+                    YamlConfiguration.loadConfiguration(
+                            Path.of("src/main/resources/gui.yml").toFile());
             Field active = GuiConfig.class.getDeclaredField("active");
             active.setAccessible(true);
             active.set(null, gui);
@@ -64,29 +67,44 @@ class DailyMetricTest {
 
         @Test
         void boardIdsSeparateMapScopesFromTheOverallAggregate() {
-            assertEquals("acerace_fastest_lap_overall", DailyMetric.ACERACE_FASTEST_LAP.boardId(null));
-            assertEquals("acerace_fastest_lap_map_end_plains",
+            assertEquals(
+                    "acerace_fastest_lap_overall", DailyMetric.ACERACE_FASTEST_LAP.boardId(null));
+            assertEquals(
+                    "acerace_fastest_lap_map_end_plains",
                     DailyMetric.ACERACE_FASTEST_LAP.boardId("End Plains"));
-            assertEquals("dragon_first_liberate_rate_map_a", DailyMetric.DRAGON_FIRST_LIBERATE_RATE.boardId("A"));
+            assertEquals(
+                    "dragon_first_liberate_rate_map_a",
+                    DailyMetric.DRAGON_FIRST_LIBERATE_RATE.boardId("A"));
         }
 
         @Test
         void everyGameListsItsMetricsInDisplayOrderAndFormatsValues() {
-            assertEquals(List.of(DailyMetric.BINGO_MAX_TASKS, DailyMetric.BINGO_MAX_LINES,
-                    DailyMetric.BINGO_MAX_FIRSTS), DailyMetric.forGame(GameTypeEnum.Bingo));
-            assertEquals(List.of(DailyMetric.ACERACE_FASTEST_LAP, DailyMetric.ACERACE_FASTEST_THREE_LAPS),
+            assertEquals(
+                    List.of(
+                            DailyMetric.BINGO_MAX_TASKS,
+                            DailyMetric.BINGO_MAX_LINES,
+                            DailyMetric.BINGO_MAX_FIRSTS),
+                    DailyMetric.forGame(GameTypeEnum.Bingo));
+            assertEquals(
+                    List.of(
+                            DailyMetric.ACERACE_FASTEST_LAP,
+                            DailyMetric.ACERACE_FASTEST_THREE_LAPS),
                     DailyMetric.forGame(GameTypeEnum.AceRace));
             assertEquals(4, DailyMetric.forGame(GameTypeEnum.DragonEggCarnival).size());
-            assertEquals(List.of(DailyMetric.PKW_STARS_TIME, DailyMetric.PKW_POINTS_TIME),
+            assertEquals(
+                    List.of(DailyMetric.PKW_STARS_TIME, DailyMetric.PKW_POINTS_TIME),
                     DailyMetric.forGame(GameTypeEnum.ParkourWarrior));
             assertEquals(0, DailyMetric.forGame(GameTypeEnum.TNTRun).size());
 
             assertEquals("1:02.500", DailyMetric.format(DailyMetric.ACERACE_FASTEST_LAP, 62_500));
             assertEquals("324.7", DailyMetric.format(DailyMetric.DRAGON_MAX_DAMAGE, 324.71));
-            assertEquals("66.7%", DailyMetric.format(DailyMetric.DRAGON_FIRST_GATEWAY_RATE, 66.666));
+            assertEquals(
+                    "66.7%", DailyMetric.format(DailyMetric.DRAGON_FIRST_GATEWAY_RATE, 66.666));
             assertEquals("18", DailyMetric.format(DailyMetric.BINGO_MAX_TASKS, 18));
-            assertEquals("24⭐ 00:10:22", DailyMetric.format(DailyMetric.PKW_STARS_TIME, 24, 622_000));
-            assertEquals("123分 00:10:22", DailyMetric.format(DailyMetric.PKW_POINTS_TIME, 123, 622_000));
+            assertEquals(
+                    "24⭐ 00:10:22", DailyMetric.format(DailyMetric.PKW_STARS_TIME, 24, 622_000));
+            assertEquals(
+                    "123分 00:10:22", DailyMetric.format(DailyMetric.PKW_POINTS_TIME, 123, 622_000));
         }
 
         @Test
@@ -108,23 +126,35 @@ class DailyMetricTest {
         @Test
         void personalTimedRecordsKeepThreeBestAttemptsAndAssignRanks() {
             UUID player = UUID.randomUUID();
-            List<DailyRecordEntry> attempts = List.of(
-                    attempt(player, 90_000, UUID.randomUUID()),
-                    attempt(player, 70_000, UUID.randomUUID()),
-                    attempt(player, 80_000, UUID.randomUUID()),
-                    attempt(player, 60_000, UUID.randomUUID()),
-                    attempt(player, 50_000, UUID.randomUUID()));
+            List<DailyRecordEntry> attempts =
+                    List.of(
+                            attempt(player, 90_000, UUID.randomUUID()),
+                            attempt(player, 70_000, UUID.randomUUID()),
+                            attempt(player, 80_000, UUID.randomUUID()),
+                            attempt(player, 60_000, UUID.randomUUID()),
+                            attempt(player, 50_000, UUID.randomUUID()));
 
             List<DailyRecordEntry> top = DailyStatsManager.topRecords(attempts);
 
-            assertEquals(List.of(50_000L, 60_000L, 70_000L), top.stream()
-                    .map(DailyRecordEntry::durationMs).toList());
+            assertEquals(
+                    List.of(50_000L, 60_000L, 70_000L),
+                    top.stream().map(DailyRecordEntry::durationMs).toList());
             assertEquals(List.of(1, 2, 3), top.stream().map(DailyRecordEntry::recordRank).toList());
         }
 
         private static DailyRecordEntry attempt(UUID player, long duration, UUID match) {
-            return new DailyRecordEntry(player, "player", GameTypeEnum.AceRace, "map", "1", "daily-v1",
-                    DailyRecordType.ACERACE_FASTEST_LAP, duration, match, player, duration);
+            return new DailyRecordEntry(
+                    player,
+                    "player",
+                    GameTypeEnum.AceRace,
+                    "map",
+                    "1",
+                    "daily-v1",
+                    DailyRecordType.ACERACE_FASTEST_LAP,
+                    duration,
+                    match,
+                    player,
+                    duration);
         }
     }
 
@@ -156,9 +186,7 @@ class DailyMetricTest {
 
         @Test
         void statsAccumulateProgressAndKeepTheLargestSingleMatchCount() {
-            DailyStatSnapshot snapshot = DailyStatSnapshot.EMPTY
-                    .add(true, 3, 25)
-                    .add(false, 1, 14);
+            DailyStatSnapshot snapshot = DailyStatSnapshot.EMPTY.add(true, 3, 25).add(false, 1, 14);
 
             assertEquals(2, snapshot.gamesPlayed());
             assertEquals(1, snapshot.wins());

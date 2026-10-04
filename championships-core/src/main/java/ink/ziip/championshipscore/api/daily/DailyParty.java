@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.daily;
 
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -21,13 +22,33 @@ public final class DailyParty {
         members.add(creator);
     }
 
-    public UUID id() { return id; }
-    public synchronized UUID leader() { return leader; }
-    public synchronized boolean isLeader(UUID player) { return leader.equals(player); }
-    public synchronized Set<UUID> members() { return Set.copyOf(members); }
-    public synchronized int size() { return members.size(); }
-    public synchronized @Nullable GameTypeEnum selectedGame() { return selectedGame; }
-    public synchronized long revision() { return revision; }
+    public UUID id() {
+        return id;
+    }
+
+    public synchronized UUID leader() {
+        return leader;
+    }
+
+    public synchronized boolean isLeader(UUID player) {
+        return leader.equals(player);
+    }
+
+    public synchronized Set<UUID> members() {
+        return Set.copyOf(members);
+    }
+
+    public synchronized int size() {
+        return members.size();
+    }
+
+    public synchronized @Nullable GameTypeEnum selectedGame() {
+        return selectedGame;
+    }
+
+    public synchronized long revision() {
+        return revision;
+    }
 
     synchronized boolean add(UUID player) {
         boolean changed = members.add(player);

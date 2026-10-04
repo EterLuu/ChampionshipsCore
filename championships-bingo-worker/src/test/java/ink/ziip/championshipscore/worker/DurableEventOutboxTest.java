@@ -1,11 +1,15 @@
 package ink.ziip.championshipscore.worker;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import ink.ziip.championshipscore.protocol.BinaryProtocolCodec;
 import ink.ziip.championshipscore.protocol.MatchEvent;
 import ink.ziip.championshipscore.protocol.MatchEventType;
 import ink.ziip.championshipscore.protocol.MatchMessages;
 import ink.ziip.championshipscore.protocol.transport.DeliveryReceipt;
 import ink.ziip.championshipscore.protocol.transport.MatchEventPublisher;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -21,20 +25,21 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 class DurableEventOutboxTest {
     private static final UUID MATCH_ID = UUID.fromString("40000000-0000-0000-0000-000000000001");
-    private static final Clock CLOCK = Clock.fixed(Instant.ofEpochMilli(1_800_000_000_000L), ZoneOffset.UTC);
+    private static final Clock CLOCK =
+            Clock.fixed(Instant.ofEpochMilli(1_800_000_000_000L), ZoneOffset.UTC);
 
     @Test
-    void laterEventsAreStagedWhileFirstRedisPublicationIsBlocked(@TempDir Path directory) throws Exception {
+    void laterEventsAreStagedWhileFirstRedisPublicationIsBlocked(@TempDir Path directory)
+            throws Exception {
         BlockingPublisher publisher = new BlockingPublisher();
         try (DurableEventOutbox outbox = new DurableEventOutbox(publisher, directory)) {
             outbox.initialize();
-            MatchEvent first = MatchMessages.event(MATCH_ID, 1, 1, MatchEventType.READY, Map.of(), CLOCK);
-            MatchEvent second = MatchMessages.event(MATCH_ID, 1, 2, MatchEventType.STARTED, Map.of(), CLOCK);
+            MatchEvent first =
+                    MatchMessages.event(MATCH_ID, 1, 1, MatchEventType.READY, Map.of(), CLOCK);
+            MatchEvent second =
+                    MatchMessages.event(MATCH_ID, 1, 2, MatchEventType.STARTED, Map.of(), CLOCK);
 
             CompletionStage<DeliveryReceipt> firstResult = outbox.publishEvent(first);
             CompletionStage<DeliveryReceipt> secondResult = outbox.publishEvent(second);
@@ -54,8 +59,11 @@ class DurableEventOutboxTest {
 
     @Test
     void initializationRecoversAtomicMoveTemporaryFile(@TempDir Path directory) throws Exception {
-        MatchEvent event = MatchMessages.event(MATCH_ID, 2, 1, MatchEventType.HEARTBEAT, Map.of(), CLOCK);
-        Files.write(directory.resolve(event.messageId() + ".tmp"), new BinaryProtocolCodec().encodeEvent(event));
+        MatchEvent event =
+                MatchMessages.event(MATCH_ID, 2, 1, MatchEventType.HEARTBEAT, Map.of(), CLOCK);
+        Files.write(
+                directory.resolve(event.messageId() + ".tmp"),
+                new BinaryProtocolCodec().encodeEvent(event));
         ImmediatePublisher publisher = new ImmediatePublisher();
         try (DurableEventOutbox outbox = new DurableEventOutbox(publisher, directory)) {
 
@@ -79,7 +87,8 @@ class DurableEventOutboxTest {
         }
     }
 
-    private static void await(java.util.function.BooleanSupplier condition) throws InterruptedException {
+    private static void await(java.util.function.BooleanSupplier condition)
+            throws InterruptedException {
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
         while (!condition.getAsBoolean() && System.nanoTime() < deadline) Thread.sleep(10L);
         assertTrue(condition.getAsBoolean(), "Timed out waiting for both events to be staged");

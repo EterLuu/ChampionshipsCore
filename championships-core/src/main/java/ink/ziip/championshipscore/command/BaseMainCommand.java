@@ -1,7 +1,9 @@
 package ink.ziip.championshipscore.command;
 
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+
 import lombok.Getter;
+
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
@@ -18,12 +20,9 @@ public class BaseMainCommand extends MainCommand {
 
     private final Map<String, GameTypeEnum> gameSubCommands = new ConcurrentHashMap<>();
 
-    @Getter
-    protected final String commandName;
-    @Getter
-    protected final String description;
-    @Getter
-    protected final String permission;
+    @Getter protected final String commandName;
+    @Getter protected final String description;
+    @Getter protected final String permission;
 
     public BaseMainCommand(String command) {
         this(command, "", "");
@@ -71,7 +70,11 @@ public class BaseMainCommand extends MainCommand {
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+    public boolean onCommand(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args) {
         if (args.length < 1) {
             sendHelp(sender, false);
             return true;
@@ -79,7 +82,8 @@ public class BaseMainCommand extends MainCommand {
 
         BaseMainCommand subCommand = findSubCommand(args[0]);
         if (subCommand != null) {
-            return subCommand.onCommand(sender, command, label, Arrays.copyOfRange(args, 1, args.length));
+            return subCommand.onCommand(
+                    sender, command, label, Arrays.copyOfRange(args, 1, args.length));
         }
 
         sendHelp(sender, false);
@@ -88,7 +92,11 @@ public class BaseMainCommand extends MainCommand {
 
     @Nullable
     @Override
-    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+    public List<String> onTabComplete(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args) {
         if (args.length == 1) {
             List<String> visible = new ArrayList<>();
             for (BaseMainCommand subCommand : subCommandMap.values()) {
@@ -99,7 +107,8 @@ public class BaseMainCommand extends MainCommand {
 
         BaseMainCommand subCommand = findSubCommand(args[0]);
         if (subCommand != null && isTabVisible(subCommand)) {
-            return subCommand.onTabComplete(sender, command, label, Arrays.copyOfRange(args, 1, args.length));
+            return subCommand.onTabComplete(
+                    sender, command, label, Arrays.copyOfRange(args, 1, args.length));
         }
 
         return Collections.emptyList();

@@ -1,7 +1,9 @@
 package ink.ziip.championshipscore.worker;
 
 import ink.ziip.championshipscore.protocol.BingoTaskSpec;
+
 import net.kyori.adventure.key.Key;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -12,10 +14,11 @@ import org.bukkit.entity.EntityType;
 import java.util.Locale;
 import java.util.Map;
 
-/** Resolves the frozen display fields, with compatibility fallbacks for pre-display-field manifests. */
+/**
+ * Resolves the frozen display fields, with compatibility fallbacks for pre-display-field manifests.
+ */
 final class WorkerTaskDisplay {
-    private WorkerTaskDisplay() {
-    }
+    private WorkerTaskDisplay() {}
 
     static Material icon(BingoTaskSpec task) {
         Material frozen = material(task.attributes().get("display.material"), null);
@@ -38,7 +41,9 @@ final class WorkerTaskDisplay {
         String frozen = task.attributes().get("display.amount");
         if (frozen != null) return positiveInt(frozen, 1);
 
-        String raw = task.attributes().getOrDefault("count", task.attributes().getOrDefault("target", "1"));
+        String raw =
+                task.attributes()
+                        .getOrDefault("count", task.attributes().getOrDefault("target", "1"));
         int value = positiveInt(raw, 1);
         Statistic statistic = enumValue(Statistic.class, task.attributes().get("statistic"));
         // Old manifests store travel execution targets in centimetres. Core's card number is the
@@ -87,7 +92,8 @@ final class WorkerTaskDisplay {
     private static Material advancementIcon(String key) {
         Advancement advancement = advancement(key);
         return advancement == null || advancement.getDisplay() == null
-                ? Material.FILLED_MAP : advancement.getDisplay().icon().getType();
+                ? Material.FILLED_MAP
+                : advancement.getDisplay().icon().getType();
     }
 
     private static Material statisticIcon(Map<String, String> attributes) {

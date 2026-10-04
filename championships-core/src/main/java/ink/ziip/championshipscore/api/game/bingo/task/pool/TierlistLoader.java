@@ -1,7 +1,8 @@
 package ink.ziip.championshipscore.api.game.bingo.task.pool;
 
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.logging.LogText;
+
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -19,16 +20,16 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 /**
- * Reads optional tier lists from {@code <dataFolder>/bingo/tierlists/*.yml}. The active list name is
- * supplied by the caller (blank = none). A list re-ranks objectives by id without touching the catalog.
+ * Reads optional tier lists from {@code <dataFolder>/bingo/tierlists/*.yml}. The active list name
+ * is supplied by the caller (blank = none). A list re-ranks objectives by id without touching the
+ * catalog.
  */
 public final class TierlistLoader {
     private static final String DIR = "bingo/tierlists";
     private static final String RESOURCE_DIR = "bingo/tierlists";
     private static final String[] BUNDLED = {"default"};
 
-    private TierlistLoader() {
-    }
+    private TierlistLoader() {}
 
     /** Loads the named tier list, or {@link Tierlist#EMPTY} when blank/missing. */
     public static Tierlist load(JavaPlugin plugin, String selected) {
@@ -45,13 +46,27 @@ public final class TierlistLoader {
             return Tierlist.EMPTY;
         }
         try {
-            Tierlist tierlist = parse(YamlConfiguration.loadConfiguration(file), plugin.getLogger(), name + ".yml");
+            Tierlist tierlist =
+                    parse(
+                            YamlConfiguration.loadConfiguration(file),
+                            plugin.getLogger(),
+                            name + ".yml");
             TierlistSource.set(tierlist, name);
-            plugin.getLogger().info(gameLog("难度", "已加载 bingo/tierlists/" + name + ".yml"
-                    + (tierlist.isEmpty() ? "，无有效规则" : "")));
+            plugin.getLogger()
+                    .info(
+                            gameLog(
+                                    "难度",
+                                    "已加载 bingo/tierlists/"
+                                            + name
+                                            + ".yml"
+                                            + (tierlist.isEmpty() ? "，无有效规则" : "")));
             return tierlist;
         } catch (Exception e) {
-            plugin.getLogger().warning(gameLog("难度", "解析 bingo/tierlists/" + name + ".yml 失败 | " + e.getMessage()));
+            plugin.getLogger()
+                    .warning(
+                            gameLog(
+                                    "难度",
+                                    "解析 bingo/tierlists/" + name + ".yml 失败 | " + e.getMessage()));
             TierlistSource.set(Tierlist.EMPTY, "");
             return Tierlist.EMPTY;
         }
@@ -90,7 +105,14 @@ public final class TierlistLoader {
                 Files.copy(in, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
                 plugin.getLogger().info(gameLog("难度", "已生成 bingo/tierlists/" + name + ".yml"));
             } catch (IOException e) {
-                plugin.getLogger().warning(gameLog("难度", "无法写出 bingo/tierlists/" + name + ".yml | " + e.getMessage()));
+                plugin.getLogger()
+                        .warning(
+                                gameLog(
+                                        "难度",
+                                        "无法写出 bingo/tierlists/"
+                                                + name
+                                                + ".yml | "
+                                                + e.getMessage()));
             }
         }
     }
@@ -108,6 +130,6 @@ public final class TierlistLoader {
     }
 
     private static String gameLog(String event, String message) {
-        return Utils.formatGameLog(GameTypeEnum.Bingo, "-", "加载", event, message);
+        return LogText.formatGameLog(GameTypeEnum.Bingo, "-", "加载", event, message);
     }
 }

@@ -11,8 +11,8 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
- * The active tag layer: maps {@linkplain TaskData#objectiveId() objective ids} to free-form tags and
- * carries the filter rules built from those tags. Every objective additionally gets an implicit
+ * The active tag layer: maps {@linkplain TaskData#objectiveId() objective ids} to free-form tags
+ * and carries the filter rules built from those tags. Every objective additionally gets an implicit
  * {@code dim:<dimension>} tag so dimensions can be capped or excluded without authoring a tag file.
  */
 public final class TagFilters {
@@ -20,8 +20,7 @@ public final class TagFilters {
 
     private static volatile TagFilters active = EMPTY;
 
-    private record Rule(String tag, Pattern pattern) {
-    }
+    private record Rule(String tag, Pattern pattern) {}
 
     private final List<Rule> rules;
     private final Set<String> excluded;
@@ -42,9 +41,9 @@ public final class TagFilters {
     }
 
     /**
-     * Returns a copy of this filter with extra excludes/caps folded in — used per round to merge the
-     * dynamic, world-driven dimension rules on top of the static config. For a tag capped by both, the
-     * more restrictive (smaller) limit wins.
+     * Returns a copy of this filter with extra excludes/caps folded in — used per round to merge
+     * the dynamic, world-driven dimension rules on top of the static config. For a tag capped by
+     * both, the more restrictive (smaller) limit wins.
      */
     public TagFilters merged(Set<String> extraExcluded, Map<String, Integer> extraCaps) {
         boolean noEx = extraExcluded == null || extraExcluded.isEmpty();
@@ -55,14 +54,19 @@ public final class TagFilters {
         Map<String, Integer> mergedCaps = new java.util.HashMap<>(caps);
         if (!noCaps) {
             for (Map.Entry<String, Integer> e : extraCaps.entrySet()) {
-                mergedCaps.merge(e.getKey().toLowerCase(java.util.Locale.ROOT), e.getValue(), Math::min);
+                mergedCaps.merge(
+                        e.getKey().toLowerCase(java.util.Locale.ROOT), e.getValue(), Math::min);
             }
         }
         return new TagFilters(rules, ex, mergedCaps);
     }
 
-    /** Builds a rule list from a {@code tag -> id-globs} mapping plus the exclude/caps filter config. */
-    static TagFilters build(Map<String, List<String>> tagToIds, Set<String> excluded, Map<String, Integer> caps) {
+    /**
+     * Builds a rule list from a {@code tag -> id-globs} mapping plus the exclude/caps filter
+     * config.
+     */
+    static TagFilters build(
+            Map<String, List<String>> tagToIds, Set<String> excluded, Map<String, Integer> caps) {
         List<Rule> rules = new ArrayList<>();
         if (tagToIds != null) {
             for (Map.Entry<String, List<String>> e : tagToIds.entrySet()) {
@@ -74,11 +78,15 @@ public final class TagFilters {
             }
         }
         Set<String> ex = new HashSet<>();
-        if (excluded != null) for (String s : excluded) ex.add(s.toLowerCase(java.util.Locale.ROOT));
+        if (excluded != null)
+            for (String s : excluded) ex.add(s.toLowerCase(java.util.Locale.ROOT));
         return new TagFilters(rules, ex, caps == null ? Map.of() : caps);
     }
 
-    /** All tags on an objective: its matching rule tags plus the implicit {@code dim:<dimension>} tag. */
+    /**
+     * All tags on an objective: its matching rule tags plus the implicit {@code dim:<dimension>}
+     * tag.
+     */
     public Set<String> tagsOf(TaskData task) {
         Set<String> out = new HashSet<>();
         out.add("dim:" + task.dimension().key());
@@ -119,7 +127,8 @@ public final class TagFilters {
             }
         }
         regex.append('$');
-        return Pattern.compile(regex.toString(), Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE
-                | Pattern.UNICODE_CHARACTER_CLASS);
+        return Pattern.compile(
+                regex.toString(),
+                Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE | Pattern.UNICODE_CHARACTER_CLASS);
     }
 }

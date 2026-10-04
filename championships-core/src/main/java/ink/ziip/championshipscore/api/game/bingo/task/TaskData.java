@@ -1,17 +1,26 @@
 package ink.ziip.championshipscore.api.game.bingo.task;
 
 import ink.ziip.championshipscore.api.game.bingo.task.pool.Dimension;
+
 import net.kyori.adventure.text.Component;
+
 import org.bukkit.Material;
 
 import java.util.Set;
 
 /**
- * Immutable description of a single bingo objective. Concrete kinds: {@link ItemTask},
- * {@link AdvancementTask}, {@link StatisticTask}, {@link OneOfTask}, {@link PotionTask},
- * {@link AllOfTask}, {@link EventTask}. Completion state lives on {@link GameTask}, not here.
+ * Immutable description of a single bingo objective. Concrete kinds: {@link ItemTask}, {@link
+ * AdvancementTask}, {@link StatisticTask}, {@link OneOfTask}, {@link PotionTask}, {@link
+ * AllOfTask}, {@link EventTask}. Completion state lives on {@link GameTask}, not here.
  */
-public sealed interface TaskData permits ItemTask, AdvancementTask, StatisticTask, OneOfTask, PotionTask, AllOfTask, EventTask {
+public sealed interface TaskData
+        permits ItemTask,
+                AdvancementTask,
+                StatisticTask,
+                OneOfTask,
+                PotionTask,
+                AllOfTask,
+                EventTask {
     enum TaskType {
         ITEM("item"),
         STATISTIC("statistic"),
@@ -29,10 +38,11 @@ public sealed interface TaskData permits ItemTask, AdvancementTask, StatisticTas
     TaskType getType();
 
     /**
-     * Stable identifier matching {@link ink.ziip.championshipscore.api.game.bingo.task.pool.PoolEntrySpec#objectiveId()},
-     * used by tier lists and tag rules to target this objective. Items use the bare material name;
-     * other kinds carry a prefix ({@code mine:}, {@code craft:}, {@code kill:}, {@code stat:},
-     * {@code advancement:}, {@code set:}).
+     * Stable identifier matching {@link
+     * ink.ziip.championshipscore.api.game.bingo.task.pool.PoolEntrySpec#objectiveId()}, used by
+     * tier lists and tag rules to target this objective. Items use the bare material name; other
+     * kinds carry a prefix ({@code mine:}, {@code craft:}, {@code kill:}, {@code stat:}, {@code
+     * advancement:}, {@code set:}).
      */
     String objectiveId();
 
@@ -56,7 +66,9 @@ public sealed interface TaskData permits ItemTask, AdvancementTask, StatisticTas
 
     int getRequiredAmount();
 
-    /** @return a copy with the new required amount. */
+    /**
+     * @return a copy with the new required amount.
+     */
     TaskData setRequiredAmount(int newAmount);
 
     /** True when this task's dimension is in the disabled set. */

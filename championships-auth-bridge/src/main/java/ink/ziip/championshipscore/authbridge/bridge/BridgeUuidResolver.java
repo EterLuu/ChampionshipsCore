@@ -1,8 +1,9 @@
 package ink.ziip.championshipscore.authbridge.bridge;
 
-import ink.ziip.championshipscore.auth.AuthIdentity;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import ink.ziip.championshipscore.auth.AuthIdentity;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,13 +11,13 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.UUID;
 
 /** Resolves the UUID source explicitly declared by cc-web for a Bridge payload. */
 public final class BridgeUuidResolver {
-    private static final String MOJANG_PROFILE_URL = "https://api.mojang.com/users/profiles/minecraft/";
+    private static final String MOJANG_PROFILE_URL =
+            "https://api.mojang.com/users/profiles/minecraft/";
     private static final int MAX_RESPONSE_BYTES = 16 * 1024;
 
     private final HttpClient client;
@@ -28,18 +29,22 @@ public final class BridgeUuidResolver {
         this(connectTimeout, requestTimeout, MOJANG_PROFILE_URL);
     }
 
-    BridgeUuidResolver(Duration connectTimeout, Duration requestTimeout, String mojangProfileBaseUrl) {
+    BridgeUuidResolver(
+            Duration connectTimeout, Duration requestTimeout, String mojangProfileBaseUrl) {
         this.client = HttpClient.newBuilder().connectTimeout(connectTimeout).build();
         this.requestTimeout = requestTimeout;
-        this.mojangProfileBaseUrl = mojangProfileBaseUrl.endsWith("/")
-                ? mojangProfileBaseUrl : mojangProfileBaseUrl + "/";
+        this.mojangProfileBaseUrl =
+                mojangProfileBaseUrl.endsWith("/")
+                        ? mojangProfileBaseUrl
+                        : mojangProfileBaseUrl + "/";
         this.mapper = new ObjectMapper();
     }
 
     public UUID resolve(String username, String source, String suppliedUuid) {
         requireUsername(username);
         if (source == null || source.isBlank()) {
-            throw new IllegalArgumentException("Bridge response omitted uuidSource for " + username);
+            throw new IllegalArgumentException(
+                    "Bridge response omitted uuidSource for " + username);
         }
         return switch (source.trim().toUpperCase(java.util.Locale.ROOT)) {
             case "UUID" -> parseUuid(suppliedUuid, "minecraftUuid");
@@ -60,11 +65,12 @@ public final class BridgeUuidResolver {
     private UUID resolveMojang(String username) {
         final HttpResponse<InputStream> response;
         try {
-            HttpRequest request = HttpRequest.newBuilder(URI.create(mojangProfileBaseUrl + username))
-                    .timeout(requestTimeout)
-                    .header("Accept", "application/json")
-                    .GET()
-                    .build();
+            HttpRequest request =
+                    HttpRequest.newBuilder(URI.create(mojangProfileBaseUrl + username))
+                            .timeout(requestTimeout)
+                            .header("Accept", "application/json")
+                            .GET()
+                            .build();
             response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
@@ -78,7 +84,8 @@ public final class BridgeUuidResolver {
         }
         if (response.statusCode() < 200 || response.statusCode() >= 300) {
             closeQuietly(response.body());
-            throw new IllegalStateException("Mojang profile returned HTTP " + response.statusCode());
+            throw new IllegalStateException(
+                    "Mojang profile returned HTTP " + response.statusCode());
         }
         final byte[] body;
         try (InputStream input = response.body()) {
@@ -86,12 +93,14 @@ public final class BridgeUuidResolver {
         } catch (IOException exception) {
             throw new IllegalStateException("Unable to read Mojang profile response", exception);
         }
-        if (body.length > MAX_RESPONSE_BYTES) throw new IllegalArgumentException("Mojang profile response is too large");
+        if (body.length > MAX_RESPONSE_BYTES)
+            throw new IllegalArgumentException("Mojang profile response is too large");
         try {
             JsonNode profile = mapper.readTree(body);
             String name = profile.path("name").asText("");
             String id = profile.path("id").asText("");
-            if (!username.equalsIgnoreCase(name)) throw new IllegalArgumentException("Mojang returned a different player name");
+            if (!username.equalsIgnoreCase(name))
+                throw new IllegalArgumentException("Mojang returned a different player name");
             return parseUuid(id, "Mojang profile id");
         } catch (IOException | RuntimeException exception) {
             if (exception instanceof IllegalArgumentException illegal) throw illegal;

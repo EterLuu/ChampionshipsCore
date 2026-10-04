@@ -3,13 +3,16 @@ package ink.ziip.championshipscore.configuration.config.message;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.configuration.ConfigOption;
 import ink.ziip.championshipscore.configuration.config.BaseConfigurationFile;
+
 import lombok.Getter;
+
 import java.util.List;
 
 @Getter
 public class ScheduleMessageConfig extends BaseConfigurationFile {
     private final String fileName = "schedule-message.yml";
     private final String resourceName = "schedule-message.yml";
+
     public ScheduleMessageConfig(ChampionshipsCore plugin) {
         super(plugin);
     }
@@ -102,10 +105,13 @@ public class ScheduleMessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "riptide-rush")
     public static List<String> RIPTIDE_RUSH;
-    @ConfigOption(path = "frostbite") public static List<String> FROSTBITE;
-    @ConfigOption(path = "frostbite-points") public static List<String> FROSTBITE_POINTS;
+
+    @ConfigOption(path = "frostbite")
+    public static List<String> FROSTBITE;
+
+    @ConfigOption(path = "frostbite-points")
+    public static List<String> FROSTBITE_POINTS;
 
     @ConfigOption(path = "riptide-rush-points")
     public static List<String> RIPTIDE_RUSH_POINTS;
-
 }

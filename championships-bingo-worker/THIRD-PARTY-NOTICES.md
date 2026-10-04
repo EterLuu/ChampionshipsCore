@@ -1,11 +1,10 @@
-# Third-party notices
+# 第三方声明
 
 ## mc-worldgen-seed-lab
 
-The embedded `SeedLab26_2` predictor and its climate/biome data are derived from
-[mc-worldgen-seed-lab](https://github.com/AlexMelanFromRingo/mc-worldgen-seed-lab),
-used under the MIT License. The predictor is bundled in the Worker JAR so seed
-screening does not require an external executable or network access.
+Worker 内嵌的 `SeedLab26_2` 预测器及气候/群系数据派生自 [mc-worldgen-seed-lab](https://github.com/AlexMelanFromRingo/mc-worldgen-seed-lab)，按 MIT License 使用。预测器随 Worker JAR 发布，筛选 seed 不需要外部程序或网络访问。
+
+以下为原始许可文本，保留英文原文。
 
 MIT License
 

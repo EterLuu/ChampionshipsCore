@@ -1,10 +1,13 @@
 package ink.ziip.championshipscore.platform.bukkit.bingo;
 
+import ink.ziip.championshipscore.protocol.BingoRemix;
+
 import io.papermc.paper.registry.RegistryAccess;
 import io.papermc.paper.registry.RegistryKey;
 import io.papermc.paper.registry.keys.EnchantmentKeys;
+
 import net.kyori.adventure.text.Component;
-import ink.ziip.championshipscore.protocol.BingoRemix;
+
 import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.Registry;
@@ -25,27 +28,40 @@ import java.util.Set;
 public final class BingoStarterKitService {
     private static final Registry<Enchantment> ENCHANTMENTS =
             RegistryAccess.registryAccess().getRegistry(RegistryKey.ENCHANTMENT);
-    private static final List<ItemStack> KIT_ITEMS = List.of(
-            tool(Material.STONE_PICKAXE), tool(Material.STONE_AXE), tool(Material.STONE_SHOVEL),
-            ironSword(), new ItemStack(Material.BREAD, 32));
+    private static final List<ItemStack> KIT_ITEMS =
+            List.of(
+                    tool(Material.STONE_PICKAXE),
+                    tool(Material.STONE_AXE),
+                    tool(Material.STONE_SHOVEL),
+                    ironSword(),
+                    new ItemStack(Material.BREAD, 32));
     private static final Map<Material, Integer> PROVIDED = buildProvided();
-    private static final Set<String> CONFLICTING_ADVANCEMENTS = gearAdvancementConflicts(PROVIDED.keySet());
+    private static final Set<String> CONFLICTING_ADVANCEMENTS =
+            gearAdvancementConflicts(PROVIDED.keySet());
 
-    private BingoStarterKitService() {
-    }
+    private BingoStarterKitService() {}
 
-    public static void give(Player player, Color teamColor, Component compassName,
-                            List<Component> compassLore) {
+    public static void give(
+            Player player, Color teamColor, Component compassName, List<Component> compassLore) {
         give(player, teamColor, compassName, compassLore, BingoRemix.NONE, false);
     }
 
-    public static void give(Player player, Color teamColor, Component compassName,
-                            List<Component> compassLore, BingoRemix remix) {
+    public static void give(
+            Player player,
+            Color teamColor,
+            Component compassName,
+            List<Component> compassLore,
+            BingoRemix remix) {
         give(player, teamColor, compassName, compassLore, remix, false);
     }
 
-    public static void give(Player player, Color teamColor, Component compassName,
-                            List<Component> compassLore, BingoRemix remix, boolean daily) {
+    public static void give(
+            Player player,
+            Color teamColor,
+            Component compassName,
+            List<Component> compassLore,
+            BingoRemix remix,
+            boolean daily) {
         if (player == null) return;
         Color color = teamColor == null ? Color.WHITE : teamColor;
         PlayerInventory inventory = player.getInventory();
@@ -55,26 +71,42 @@ public final class BingoStarterKitService {
             inventory.setLeggings(unbreakable(new ItemStack(Material.NETHERITE_LEGGINGS)));
             inventory.setBoots(unbreakable(new ItemStack(Material.NETHERITE_BOOTS)));
             inventory.setChestplate(unbreakable(new ItemStack(Material.ELYTRA)));
-            kit = List.of(tool(Material.NETHERITE_PICKAXE, daily), tool(Material.NETHERITE_AXE, daily),
-                    tool(Material.NETHERITE_SHOVEL, daily), unbreakable(new ItemStack(Material.NETHERITE_SWORD)),
-                    new ItemStack(Material.FIREWORK_ROCKET, 16), new ItemStack(Material.BREAD, 32));
+            kit =
+                    List.of(
+                            tool(Material.NETHERITE_PICKAXE, daily),
+                            tool(Material.NETHERITE_AXE, daily),
+                            tool(Material.NETHERITE_SHOVEL, daily),
+                            unbreakable(new ItemStack(Material.NETHERITE_SWORD)),
+                            new ItemStack(Material.FIREWORK_ROCKET, 16),
+                            new ItemStack(Material.BREAD, 32));
         } else if (remix == BingoRemix.SPEEDRUN) {
             inventory.setHelmet(protective(leather(Material.LEATHER_HELMET, color)));
             inventory.setLeggings(unbreakable(new ItemStack(Material.GOLDEN_LEGGINGS)));
             inventory.setBoots(protectiveBoots(leather(Material.LEATHER_BOOTS, color)));
             inventory.setChestplate(unbreakable(new ItemStack(Material.NETHERITE_CHESTPLATE)));
-            kit = List.of(tool(Material.DIAMOND_PICKAXE, daily), tool(Material.DIAMOND_AXE, daily),
-                    tool(Material.DIAMOND_SHOVEL, daily), unbreakable(new ItemStack(Material.DIAMOND_SWORD)),
-                    new ItemStack(Material.WATER_BUCKET), new ItemStack(Material.FLINT_AND_STEEL),
-                    new ItemStack(Material.OBSIDIAN, 12), new ItemStack(Material.BREAD, 16));
+            kit =
+                    List.of(
+                            tool(Material.DIAMOND_PICKAXE, daily),
+                            tool(Material.DIAMOND_AXE, daily),
+                            tool(Material.DIAMOND_SHOVEL, daily),
+                            unbreakable(new ItemStack(Material.DIAMOND_SWORD)),
+                            new ItemStack(Material.WATER_BUCKET),
+                            new ItemStack(Material.FLINT_AND_STEEL),
+                            new ItemStack(Material.OBSIDIAN, 12),
+                            new ItemStack(Material.BREAD, 16));
         } else {
             inventory.setHelmet(protective(leather(Material.LEATHER_HELMET, color)));
             inventory.setLeggings(protective(leather(Material.LEATHER_LEGGINGS, color)));
             inventory.setBoots(protectiveBoots(leather(Material.LEATHER_BOOTS, color)));
             inventory.setChestplate(unbreakable(new ItemStack(Material.ELYTRA)));
             if (daily) {
-                kit = List.of(tool(Material.STONE_PICKAXE, true), tool(Material.STONE_AXE, true),
-                        tool(Material.STONE_SHOVEL, true), ironSword(), new ItemStack(Material.BREAD, 32));
+                kit =
+                        List.of(
+                                tool(Material.STONE_PICKAXE, true),
+                                tool(Material.STONE_AXE, true),
+                                tool(Material.STONE_SHOVEL, true),
+                                ironSword(),
+                                new ItemStack(Material.BREAD, 32));
             }
         }
         for (ItemStack item : kit) {
@@ -107,7 +139,8 @@ public final class BingoStarterKitService {
 
     private static Map<Material, Integer> buildProvided() {
         Map<Material, Integer> provided = new EnumMap<>(Material.class);
-        for (ItemStack item : KIT_ITEMS) provided.merge(item.getType(), item.getAmount(), Integer::sum);
+        for (ItemStack item : KIT_ITEMS)
+            provided.merge(item.getType(), item.getAmount(), Integer::sum);
         provided.put(Material.COMPASS, 1);
         provided.put(Material.LEATHER_HELMET, 1);
         provided.put(Material.LEATHER_LEGGINGS, 1);
@@ -198,21 +231,26 @@ public final class BingoStarterKitService {
         Set<String> keys = new HashSet<>();
         for (Material material : materials) {
             String name = material.name();
-            if (name.endsWith("_PICKAXE") && !name.startsWith("WOODEN_") && !name.startsWith("GOLDEN_")) {
+            if (name.endsWith("_PICKAXE")
+                    && !name.startsWith("WOODEN_")
+                    && !name.startsWith("GOLDEN_")) {
                 keys.add("story/upgrade_tools");
             }
             if (name.equals("IRON_PICKAXE")) keys.add("story/iron_tools");
             if (name.equals("ELYTRA")) keys.add("end/elytra");
             if (isArmor(name)) {
                 keys.add("story/obtain_armor");
-                if (name.startsWith("DIAMOND_") || name.startsWith("NETHERITE_")) keys.add("story/shiny_gear");
+                if (name.startsWith("DIAMOND_") || name.startsWith("NETHERITE_"))
+                    keys.add("story/shiny_gear");
             }
         }
         return Set.copyOf(keys);
     }
 
     private static boolean isArmor(String name) {
-        return name.endsWith("_HELMET") || name.endsWith("_CHESTPLATE")
-                || name.endsWith("_LEGGINGS") || name.endsWith("_BOOTS");
+        return name.endsWith("_HELMET")
+                || name.endsWith("_CHESTPLATE")
+                || name.endsWith("_LEGGINGS")
+                || name.endsWith("_BOOTS");
     }
 }

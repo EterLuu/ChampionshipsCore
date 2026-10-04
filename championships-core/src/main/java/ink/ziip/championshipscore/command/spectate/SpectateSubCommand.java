@@ -2,10 +2,11 @@ package ink.ziip.championshipscore.command.spectate;
 
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.presentation.text.CoreMessages;
+
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -21,14 +22,21 @@ import java.util.Set;
 
 public class SpectateSubCommand extends BaseSubCommand {
     public SpectateSubCommand() {
-        super("spectate", "打开观战菜单或直接选择场地实例",
-                "/cc spectate [leave | <游戏> <场地> [实例]]", PLAYER_PERMISSION);
+        super(
+                "spectate",
+                "打开观战菜单或直接选择场地实例",
+                "/cc spectate [leave | <游戏> <场地> [实例]]",
+                PLAYER_PERMISSION);
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+    public boolean onCommand(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args) {
         if (!(sender instanceof Player player)) {
-            Utils.sendAdminError(sender, MessageConfig.COMMAND_PLAYER_ONLY);
+            CoreMessages.sendAdminError(sender, MessageConfig.COMMAND_PLAYER_ONLY);
             return true;
         }
         if (args.length > 3) {
@@ -37,7 +45,9 @@ public class SpectateSubCommand extends BaseSubCommand {
         }
         if (args.length == 0) {
             if (plugin.getGameManager().canManuallySpectate(player)) {
-                if (plugin.getGameManager().getSpectatorManager().isSpectatorLike(player.getUniqueId()))
+                if (plugin.getGameManager()
+                        .getSpectatorManager()
+                        .isSpectatorLike(player.getUniqueId()))
                     plugin.getGameManager().openSpectatorControls(player);
                 else plugin.getGameManager().openSpectateMenu(player);
             }
@@ -65,21 +75,30 @@ public class SpectateSubCommand extends BaseSubCommand {
                 return true;
             }
             if (!plugin.getGameManager().isGameEnabled(gameTypeEnum)) {
-                Utils.sendAdminError(sender, MessageConfig.SPECTATOR_GAME_DISABLED);
+                CoreMessages.sendAdminError(sender, MessageConfig.SPECTATOR_GAME_DISABLED);
                 return true;
             }
-            List<BaseGameInstance> candidates = plugin.getGameManager()
-                    .getSpectatableMapInstances(player, gameTypeEnum, args[1]);
-            BaseGameInstance baseArea = args.length == 2
-                    ? candidates.stream().findFirst().orElse(null)
-                    : candidates.stream()
-                    .filter(instance -> plugin.getGameManager().getSpectatorInstanceToken(instance)
-                            .equalsIgnoreCase(args[2]))
-                    .findFirst().orElse(null);
+            List<BaseGameInstance> candidates =
+                    plugin.getGameManager()
+                            .getSpectatableMapInstances(player, gameTypeEnum, args[1]);
+            BaseGameInstance baseArea =
+                    args.length == 2
+                            ? candidates.stream().findFirst().orElse(null)
+                            : candidates.stream()
+                                    .filter(
+                                            instance ->
+                                                    plugin.getGameManager()
+                                                            .getSpectatorInstanceToken(instance)
+                                                            .equalsIgnoreCase(args[2]))
+                                    .findFirst()
+                                    .orElse(null);
             if (baseArea == null) {
-                Utils.sendAdminError(sender, args.length == 3
-                        ? MessageConfig.SPECTATOR_INSTANCE_MISSING.replace("%instance%", args[2])
-                        : MessageConfig.SPECTATOR_AREA_UNAVAILABLE);
+                CoreMessages.sendAdminError(
+                        sender,
+                        args.length == 3
+                                ? MessageConfig.SPECTATOR_INSTANCE_MISSING.replace(
+                                        "%instance%", args[2])
+                                : MessageConfig.SPECTATOR_AREA_UNAVAILABLE);
                 return true;
             }
             join(player, baseArea);
@@ -88,7 +107,11 @@ public class SpectateSubCommand extends BaseSubCommand {
     }
 
     @Override
-    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+    public @Nullable List<String> onTabComplete(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args) {
         if (args.length == 1) {
             // Game-name completion must not depend on live instances. In particular, remote Bingo
             // may have no synchronized match yet and must still appear as an enabled game option.
@@ -98,14 +121,16 @@ public class SpectateSubCommand extends BaseSubCommand {
         if (args.length == 2) {
             GameTypeEnum gameTypeEnum = GameTypeEnum.fromCommand(args[0]);
             if (gameTypeEnum != null && plugin.getGameManager().isGameEnabled(gameTypeEnum)) {
-                BaseGameInstanceManager<? extends BaseGameInstance> manager = plugin.getGameManager().getAreaManager(gameTypeEnum);
+                BaseGameInstanceManager<? extends BaseGameInstance> manager =
+                        plugin.getGameManager().getAreaManager(gameTypeEnum);
                 if (manager != null) {
-                    List<String> returnList = plugin.getGameManager().getSpectatableInstances(player).stream()
-                            .filter(instance -> instance.getGameTypeEnum() == gameTypeEnum)
-                            .map(instance -> instance.getGameConfig().getAreaName())
-                            .filter(java.util.Objects::nonNull)
-                            .distinct()
-                            .toList();
+                    List<String> returnList =
+                            plugin.getGameManager().getSpectatableInstances(player).stream()
+                                    .filter(instance -> instance.getGameTypeEnum() == gameTypeEnum)
+                                    .map(instance -> instance.getGameConfig().getAreaName())
+                                    .filter(java.util.Objects::nonNull)
+                                    .distinct()
+                                    .toList();
                     return filterStartsWith(returnList, args[1]);
                 }
             }
@@ -114,15 +139,21 @@ public class SpectateSubCommand extends BaseSubCommand {
             GameTypeEnum gameTypeEnum = GameTypeEnum.fromCommand(args[0]);
             if (gameTypeEnum == null || !plugin.getGameManager().isGameEnabled(gameTypeEnum))
                 return Collections.emptyList();
-            List<String> instances = plugin.getGameManager().getSpectatableMapInstances(player, gameTypeEnum, args[1])
-                    .stream().map(plugin.getGameManager()::getSpectatorInstanceToken).distinct().toList();
+            List<String> instances =
+                    plugin
+                            .getGameManager()
+                            .getSpectatableMapInstances(player, gameTypeEnum, args[1])
+                            .stream()
+                            .map(plugin.getGameManager()::getSpectatorInstanceToken)
+                            .distinct()
+                            .toList();
             return filterStartsWith(instances, args[2]);
         }
         return Collections.emptyList();
     }
 
-    static @NotNull List<String> firstArgumentCompletions(@NotNull Set<GameTypeEnum> enabledGames,
-                                                           @NotNull String prefix) {
+    static @NotNull List<String> firstArgumentCompletions(
+            @NotNull Set<GameTypeEnum> enabledGames, @NotNull String prefix) {
         String normalizedPrefix = prefix.toLowerCase(Locale.ROOT);
         List<String> candidates = new ArrayList<>();
         if ("leave".startsWith(normalizedPrefix)) candidates.add("leave");
@@ -137,9 +168,12 @@ public class SpectateSubCommand extends BaseSubCommand {
 
     private void join(@NotNull Player player, @NotNull BaseGameInstance target) {
         if (plugin.getGameManager().selectSpectatorArea(player, target)) {
-            player.sendMessage(MessageConfig.SPECTATOR_JOIN_AREA
-                    .replace("%game%", target.getGameTypeEnum().toString())
-                    .replace("%area%", plugin.getGameManager().getSpectatorDisplayName(target)));
+            player.sendMessage(
+                    MessageConfig.SPECTATOR_JOIN_AREA
+                            .replace("%game%", target.getGameTypeEnum().toString())
+                            .replace(
+                                    "%area%",
+                                    plugin.getGameManager().getSpectatorDisplayName(target)));
         } else {
             player.sendMessage(MessageConfig.SPECTATOR_CANT_JOIN_AREA);
         }

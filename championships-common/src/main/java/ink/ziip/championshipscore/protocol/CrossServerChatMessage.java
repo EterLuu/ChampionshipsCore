@@ -16,13 +16,28 @@ public record CrossServerChatMessage(
         boolean activePlayer,
         String messageJson,
         long createdAt,
-        boolean daily
-) {
-    public CrossServerChatMessage(UUID messageId, String sourceInstance, UUID senderId, String senderName,
-                                  String label, String teamColorCode, boolean activePlayer,
-                                  String messageJson, long createdAt) {
-        this(messageId, sourceInstance, senderId, senderName, label, teamColorCode, activePlayer,
-                messageJson, createdAt, false);
+        boolean daily) {
+    public CrossServerChatMessage(
+            UUID messageId,
+            String sourceInstance,
+            UUID senderId,
+            String senderName,
+            String label,
+            String teamColorCode,
+            boolean activePlayer,
+            String messageJson,
+            long createdAt) {
+        this(
+                messageId,
+                sourceInstance,
+                senderId,
+                senderName,
+                label,
+                teamColorCode,
+                activePlayer,
+                messageJson,
+                createdAt,
+                false);
     }
 
     public CrossServerChatMessage {
@@ -71,12 +86,14 @@ public record CrossServerChatMessage(
                 color == null || color.isBlank() ? null : color,
                 Boolean.parseBoolean(active),
                 required(fields, "messageJson"),
-                Long.parseLong(required(fields, "createdAt")), Boolean.parseBoolean(daily));
+                Long.parseLong(required(fields, "createdAt")),
+                Boolean.parseBoolean(daily));
     }
 
     private static String required(Map<String, String> fields, String key) {
         String value = fields.get(key);
-        if (value == null || value.isBlank()) throw new IllegalArgumentException("Missing field " + key);
+        if (value == null || value.isBlank())
+            throw new IllegalArgumentException("Missing field " + key);
         return value;
     }
 

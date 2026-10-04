@@ -1,5 +1,8 @@
 package ink.ziip.championshipscore.authbridge.bridge;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -7,9 +10,6 @@ import java.nio.file.Files;
 import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 class LocalAccessStateTest {
     @Test
@@ -43,8 +43,9 @@ class LocalAccessStateTest {
             LocalAccessState state = new LocalAccessState(file);
             state.ban("BlockedPlayer", "rule violation", "2030-01-01T00:00:00Z");
 
-            LocalAccessState.Ban restored = new LocalAccessState(file)
-                    .activeBan("blockedplayer", Instant.parse("2029-01-01T00:00:00Z"));
+            LocalAccessState.Ban restored =
+                    new LocalAccessState(file)
+                            .activeBan("blockedplayer", Instant.parse("2029-01-01T00:00:00Z"));
 
             assertEquals("rule violation", restored.reason());
             assertEquals("2030-01-01T00:00:00Z", restored.expiresAt());

@@ -2,7 +2,8 @@ package ink.ziip.championshipscore.command.event;
 
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.presentation.text.CoreMessages;
+
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
@@ -17,20 +18,26 @@ public final class EventResetSubCommand extends BaseSubCommand {
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label,
-                             @NotNull String[] args) {
+    public boolean onCommand(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args) {
         if (args.length != 1 || !args[0].equalsIgnoreCase("--confirm")) {
             sendUsage(sender);
             return true;
         }
         plugin.getScheduleManager().resetRound();
-        Utils.sendAdminSuccess(sender, MessageConfig.EVENT_RESET_DONE);
+        CoreMessages.sendAdminSuccess(sender, MessageConfig.EVENT_RESET_DONE);
         return true;
     }
 
     @Override
-    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
-                                                 @NotNull String label, @NotNull String[] args) {
+    public @Nullable List<String> onTabComplete(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args) {
         if (args.length == 1) return complete(List.of("--confirm"), args[0]);
         return Collections.emptyList();
     }

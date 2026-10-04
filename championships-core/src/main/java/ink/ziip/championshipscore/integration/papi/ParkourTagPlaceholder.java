@@ -2,11 +2,12 @@ package ink.ziip.championshipscore.integration.papi;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
-import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagArea;
-import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagMatch;
+import ink.ziip.championshipscore.api.game.parkourtag.runtime.ParkourTagArea;
+import ink.ziip.championshipscore.api.game.parkourtag.runtime.ParkourTagMatch;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.presentation.text.CoreMessages;
+
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -34,7 +35,8 @@ public class ParkourTagPlaceholder extends BaseGamePlaceholder<ParkourTagArea> {
 
         if (params.startsWith("area_team_") || params.startsWith("area_rival_")) {
             boolean rival = params.startsWith("area_rival_");
-            ParkourTagArea parkourTagArea = resolveArea(params, rival ? "area_rival_" : "area_team_", offlinePlayer);
+            ParkourTagArea parkourTagArea =
+                    resolveArea(params, rival ? "area_rival_" : "area_team_", offlinePlayer);
             Player matchPlayer = offlinePlayer.getPlayer();
             if (parkourTagArea == null || matchPlayer == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
@@ -46,8 +48,10 @@ public class ParkourTagPlaceholder extends BaseGamePlaceholder<ParkourTagArea> {
             }
             ChampionshipTeam result;
             if (rival) {
-                result = team.equals(match.getRight()) ? match.getLeft()
-                        : team.equals(match.getLeft()) ? match.getRight() : null;
+                result =
+                        team.equals(match.getRight())
+                                ? match.getLeft()
+                                : team.equals(match.getLeft()) ? match.getRight() : null;
             } else {
                 result = team;
             }
@@ -60,8 +64,7 @@ public class ParkourTagPlaceholder extends BaseGamePlaceholder<ParkourTagArea> {
         /* Player required placeholders */
 
         Player player = offlinePlayer.getPlayer();
-        if (player == null)
-            return MessageConfig.PLACEHOLDER_NONE;
+        if (player == null) return MessageConfig.PLACEHOLDER_NONE;
         Location location = player.getLocation();
 
         if (params.startsWith("area_chaser_")) {
@@ -70,10 +73,9 @@ public class ParkourTagPlaceholder extends BaseGamePlaceholder<ParkourTagArea> {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
             ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
-            if (championshipTeam == null)
-                return MessageConfig.PLACEHOLDER_NONE;
+            if (championshipTeam == null) return MessageConfig.PLACEHOLDER_NONE;
 
-            return Utils.formatPlayerName(player);
+            return CoreMessages.formatPlayerName(player);
         }
 
         if (params.startsWith("area_escapees_")) {
@@ -86,7 +88,8 @@ public class ParkourTagPlaceholder extends BaseGamePlaceholder<ParkourTagArea> {
         }
 
         if (params.startsWith("area_survived_players_")) {
-            ParkourTagArea parkourTagArea = resolveArea(params, "area_survived_players_", offlinePlayer);
+            ParkourTagArea parkourTagArea =
+                    resolveArea(params, "area_survived_players_", offlinePlayer);
             if (parkourTagArea == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
@@ -104,8 +107,7 @@ public class ParkourTagPlaceholder extends BaseGamePlaceholder<ParkourTagArea> {
 
             if (parkourTagArea.isChaser(player))
                 return MessageConfig.PLACEHOLDER_PARKOUR_TAG_CHASER;
-            else
-                return MessageConfig.PLACEHOLDER_PARKOUR_TAG_ESCAPEE;
+            else return MessageConfig.PLACEHOLDER_PARKOUR_TAG_ESCAPEE;
         }
 
         // Placeholder is unknown by the Expansion

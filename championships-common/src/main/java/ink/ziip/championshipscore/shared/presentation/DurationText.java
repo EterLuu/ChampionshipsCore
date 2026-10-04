@@ -4,8 +4,7 @@ import java.util.Locale;
 
 /** Pure duration formatting shared by Core and remote game workers. */
 public final class DurationText {
-    private DurationText() {
-    }
+    private DurationText() {}
 
     /** Formats a non-negative number of seconds as a two-digit minutes/seconds clock. */
     public static String minutesSeconds(long totalSeconds) {

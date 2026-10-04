@@ -1,14 +1,13 @@
 package ink.ziip.championshipscore.api.game.bingo.card;
 
 import ink.ziip.championshipscore.api.game.bingo.task.GameTask;
+
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * A square grid of {@link GameTask}s for one team, with line/row/column/diagonal win detection.
- */
+/** A square grid of {@link GameTask}s for one team, with line/row/column/diagonal win detection. */
 public final class BingoCard {
     public final CardSize size;
     private final List<GameTask> tasks;
@@ -31,10 +30,10 @@ public final class BingoCard {
     }
 
     /**
-     * @return grid indices of every fully-completed row/column/diagonal for the team. Each element is
-     *         an array of {@link CardSize#size} cell indices forming one line; the returned list is
-     *         empty when no line is complete. Order: rows top-to-bottom, columns left-to-right,
-     *         main diagonal, anti-diagonal.
+     * @return grid indices of every fully-completed row/column/diagonal for the team. Each element
+     *     is an array of {@link CardSize#size} cell indices forming one line; the returned list is
+     *     empty when no line is complete. Order: rows top-to-bottom, columns left-to-right, main
+     *     diagonal, anti-diagonal.
      */
     public List<int[]> completedLines(@NotNull String teamId) {
         List<int[]> lines = new ArrayList<>();
@@ -94,7 +93,9 @@ public final class BingoCard {
         return out;
     }
 
-    /** @return number of fully-completed rows + columns + diagonals for the team. */
+    /**
+     * @return number of fully-completed rows + columns + diagonals for the team.
+     */
     public int countCompletedLines(@NotNull String teamId) {
         int lines = 0;
 

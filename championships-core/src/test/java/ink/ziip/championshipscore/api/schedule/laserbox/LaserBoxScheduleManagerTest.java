@@ -1,18 +1,20 @@
 package ink.ziip.championshipscore.api.schedule.laserbox;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.game.laserbox.LaserBoxArea;
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.game.laserbox.runtime.LaserBoxArea;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.schedule.ScheduleManager;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+
 import org.junit.jupiter.api.Test;
 
 import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 class LaserBoxScheduleManagerTest {
-    @Test void roundRobinPairsEveryTeamOncePerRoundWithoutRepeatingOpponents() {
+    @Test
+    void roundRobinPairsEveryTeamOncePerRoundWithoutRepeatingOpponents() {
         for (int count = 2; count <= 16; count += 2) {
             List<ChampionshipTeam> teams = new ArrayList<>();
             for (int id = 0; id < count; id++) teams.add(new TestTeam(id));
@@ -32,15 +34,19 @@ class LaserBoxScheduleManagerTest {
         }
     }
 
-    @Test void invalidTeamCountsAndRepeatedTeamsCannotCreateASchedule() {
+    @Test
+    void invalidTeamCountsAndRepeatedTeamsCannotCreateASchedule() {
         var team = new TestTeam(1);
         assertTrue(LaserBoxScheduleManager.roundPairs(List.of()).isEmpty());
         assertTrue(LaserBoxScheduleManager.roundPairs(List.of(team)).isEmpty());
         assertTrue(LaserBoxScheduleManager.roundPairs(List.of(team, team)).isEmpty());
-        assertTrue(LaserBoxScheduleManager.roundPairs(List.of(team, new TestTeam(2), new TestTeam(3))).isEmpty());
+        assertTrue(
+                LaserBoxScheduleManager.roundPairs(List.of(team, new TestTeam(2), new TestTeam(3)))
+                        .isEmpty());
     }
 
-    @Test void waitsForAllCopiesAndIgnoresDuplicateEndEventsBeforeSettling() throws Exception {
+    @Test
+    void waitsForAllCopiesAndIgnoresDuplicateEndEventsBeforeSettling() throws Exception {
         for (int currentRound : List.of(1, 2)) {
             var plugin = allocate(ChampionshipsCore.class);
             var schedule = allocate(TestSchedule.class);
@@ -70,21 +76,35 @@ class LaserBoxScheduleManagerTest {
     private static final class TestSchedule extends ScheduleManager {
         int settlements;
         boolean hasNext;
-        private TestSchedule() { super(null); }
-        @Override public void settleEventRound(GameTypeEnum game, boolean next, Runnable after) {
+
+        private TestSchedule() {
+            super(null);
+        }
+
+        @Override
+        public void settleEventRound(GameTypeEnum game, boolean next, Runnable after) {
             assertEquals(GameTypeEnum.LaserBox, game);
             settlements++;
             hasNext = next;
         }
     }
+
     private static final class TestTeam extends ChampionshipTeam {
-        TestTeam(int id) { super(id, "team-" + id, "red", "#FFFFFF", null); }
+        TestTeam(int id) {
+            super(id, "team-" + id, "red", "#FFFFFF", null);
+        }
     }
+
     private static <T> T allocate(Class<T> type) throws Exception {
-        var field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe"); field.setAccessible(true);
+        var field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
+        field.setAccessible(true);
         return type.cast(((sun.misc.Unsafe) field.get(null)).allocateInstance(type));
     }
-    private static void set(Class<?> type, Object target, String name, Object value) throws Exception {
-        var field = type.getDeclaredField(name); field.setAccessible(true); field.set(target, value);
+
+    private static void set(Class<?> type, Object target, String name, Object value)
+            throws Exception {
+        var field = type.getDeclaredField(name);
+        field.setAccessible(true);
+        field.set(target, value);
     }
 }

@@ -1,14 +1,14 @@
 package ink.ziip.championshipscore.api.game.area.prepare.step;
 
-import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.presentation.text.CoreMessages;
+
 import net.kyori.adventure.text.Component;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -23,8 +23,13 @@ public class SelectedBlockStep extends PrepareStep {
     private final Predicate<SetupTarget> setPredicate;
     private final BiConsumer<SetupTarget, Location> setter;
 
-    public SelectedBlockStep(String key, Component name, Component description, Material icon,
-                             Predicate<SetupTarget> setPredicate, BiConsumer<SetupTarget, Location> setter) {
+    public SelectedBlockStep(
+            String key,
+            Component name,
+            Component description,
+            Material icon,
+            Predicate<SetupTarget> setPredicate,
+            BiConsumer<SetupTarget, Location> setter) {
         super(key, name, description, icon, StepCaptureType.WE_SELECTION);
         this.setPredicate = setPredicate;
         this.setter = setter;
@@ -41,16 +46,21 @@ public class SelectedBlockStep extends PrepareStep {
         try {
             selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, true);
         } catch (Exception e) {
-            return Utils.formatAdminError(MessageConfig.MAP_EDITOR_STEP_SELECT_ONE_BLOCK_FIRST);
+            return CoreMessages.formatAdminError(
+                    MessageConfig.MAP_EDITOR_STEP_SELECT_ONE_BLOCK_FIRST);
         }
         Vector min = Vector.getMinimum(selection[0], selection[1]);
         Vector max = Vector.getMaximum(selection[0], selection[1]);
-        if (min.getBlockX() != max.getBlockX() || min.getBlockY() != max.getBlockY()
+        if (min.getBlockX() != max.getBlockX()
+                || min.getBlockY() != max.getBlockY()
                 || min.getBlockZ() != max.getBlockZ())
-            return Utils.formatAdminError(MessageConfig.MAP_EDITOR_STEP_SELECTION_MUST_BE_ONE_BLOCK);
-        setter.accept(session.getTarget(), new Location(player.getWorld(),
-                min.getBlockX(), min.getBlockY(), min.getBlockZ()));
+            return CoreMessages.formatAdminError(
+                    MessageConfig.MAP_EDITOR_STEP_SELECTION_MUST_BE_ONE_BLOCK);
+        setter.accept(
+                session.getTarget(),
+                new Location(player.getWorld(), min.getBlockX(), min.getBlockY(), min.getBlockZ()));
         session.markDirty();
-        return Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_STEP_SELECTED_BLOCK_RECORDED);
+        return CoreMessages.formatAdminSuccess(
+                MessageConfig.MAP_EDITOR_STEP_SELECTED_BLOCK_RECORDED);
     }
 }

@@ -1,11 +1,13 @@
 package ink.ziip.championshipscore.api.daily;
 
-import ink.ziip.championshipscore.configuration.ConfigurationStateExtension;
-import org.junit.jupiter.api.extension.ExtendWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ink.ziip.championshipscore.configuration.ConfigurationStateExtension;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -14,16 +16,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 @ExtendWith(ConfigurationStateExtension.class)
 class DailyTeamAllocationTest {
     @org.junit.jupiter.api.BeforeAll
     static void configureTeamNames() {
-        MessageConfig.DAILY_TEAM_NAMES = java.util.List.of(
-                "红", "绿", "蓝", "黄", "青", "紫", "橙", "白",
-                "黄绿", "粉红", "淡蓝", "品红", "灰", "黑", "棕", "浅灰");
+        MessageConfig.DAILY_TEAM_NAMES =
+                java.util.List.of(
+                        "红", "绿", "蓝", "黄", "青", "紫", "橙", "白", "黄绿", "粉红", "淡蓝", "品红", "灰", "黑",
+                        "棕", "浅灰");
         MessageConfig.DAILY_TEAM_SUFFIX = "队";
     }
 
@@ -59,22 +59,37 @@ class DailyTeamAllocationTest {
 
         List<Set<UUID>> teams = DailyManager.allocate(groups, RULES);
         assertEquals(List.of(3, 3), sizes(teams));
-        assertTrue(teams.stream().anyMatch(team -> team.size() == 3
-                && groups.get(0).players().stream().allMatch(team::contains)));
-        assertTrue(teams.stream().anyMatch(team -> team.size() == 3
-                && groups.get(1).players().stream().allMatch(team::contains)));
+        assertTrue(
+                teams.stream()
+                        .anyMatch(
+                                team ->
+                                        team.size() == 3
+                                                && groups.get(0).players().stream()
+                                                        .allMatch(team::contains)));
+        assertTrue(
+                teams.stream()
+                        .anyMatch(
+                                team ->
+                                        team.size() == 3
+                                                && groups.get(1).players().stream()
+                                                        .allMatch(team::contains)));
     }
 
     @Test
     void refusesToCreateAWinBearingMatchFromOnlyOneQueueGroup() {
-        assertTrue(DailyManager.allocate(List.of(group(Set.of(UUID.randomUUID(), UUID.randomUUID()))), RULES)
-                .isEmpty());
+        assertTrue(
+                DailyManager.allocate(
+                                List.of(group(Set.of(UUID.randomUUID(), UUID.randomUUID()))), RULES)
+                        .isEmpty());
     }
 
     @Test
     void allowsSinglePlayerAllocationWhenRulesPermitSoloMatches() {
-        assertEquals(List.of(1), sizes(DailyManager.allocate(
-                List.of(group(Set.of(UUID.randomUUID()))), SOLO_RULES)));
+        assertEquals(
+                List.of(1),
+                sizes(
+                        DailyManager.allocate(
+                                List.of(group(Set.of(UUID.randomUUID()))), SOLO_RULES)));
     }
 
     @Test

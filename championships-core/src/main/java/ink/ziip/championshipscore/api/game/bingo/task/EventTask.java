@@ -1,13 +1,15 @@
 package ink.ziip.championshipscore.api.game.bingo.task;
 
-import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.api.game.bingo.task.pool.Dimension;
 import ink.ziip.championshipscore.api.game.bingo.util.BingoComponents;
 import ink.ziip.championshipscore.api.game.bingo.util.Materials;
 import ink.ziip.championshipscore.api.game.bingo.util.MessageService;
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+
 import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
 import org.jetbrains.annotations.Nullable;
@@ -26,50 +28,89 @@ import java.util.Set;
  * breed / leash / spy a specific entity, hold a status effect, reach a level or location, collect N
  * unique / collect-all of a family, and so on.
  *
- * <p>Completion is driven two ways (see {@link ink.ziip.championshipscore.api.game.bingo.game.BingoRound}):
+ * <p>Completion is driven two ways (see {@link
+ * ink.ziip.championshipscore.api.game.bingo.game.BingoRound}):
+ *
  * <ul>
  *   <li><b>Instant signal</b> - a Bukkit event listener calls {@code tryCompleteEventSignal} for
- *       triggers like {@code eat}/{@code die}/{@code tame}/{@code breed}/{@code spy} (count 1).</li>
- *   <li><b>Pollable scan</b> - {@code tryCompletePollableEvents} reads the player's current state each
- *       tick for triggers like {@code wear}/{@code effect}/{@code reach}/{@code unique_collect}/
- *       {@code hunger_empty}. Counting triggers ({@code craft_unique}/{@code eat_unique}/…) read a
- *       per-player distinct-set tracker.</li>
+ *       triggers like {@code eat}/{@code die}/{@code tame}/{@code breed}/{@code spy} (count 1).
+ *   <li><b>Pollable scan</b> - {@code tryCompletePollableEvents} reads the player's current state
+ *       each tick for triggers like {@code wear}/{@code effect}/{@code reach}/{@code
+ *       unique_collect}/ {@code hunger_empty}. Counting triggers ({@code craft_unique}/{@code
+ *       eat_unique}/…) read a per-player distinct-set tracker.
  * </ul>
  *
  * <p>{@link #objectiveId()} is {@code event:<trigger>:<param>} with {@code :<count>} appended when
  * count &gt; 1, so the tier list can rank e.g. "craft 20" vs "craft 100" unique items separately.
  * Set-based triggers ({@code unique_collect}/{@code all_collect}) use the display icon name as
- * {@code param} (a stable, wildcard-free token) and carry the expanded member set in {@link #members}.
+ * {@code param} (a stable, wildcard-free token) and carry the expanded member set in {@link
+ * #members}.
  */
-public record EventTask(String trigger, String param, int count, Dimension dimension,
-                        Set<Material> members, @Nullable Material iconOverride,
-                        Set<EventSubject> subjects) implements TaskData {
+public record EventTask(
+        String trigger,
+        String param,
+        int count,
+        Dimension dimension,
+        Set<Material> members,
+        @Nullable Material iconOverride,
+        Set<EventSubject> subjects)
+        implements TaskData {
 
     /** Armour family -> one representative chestplate, for the {@code wear} icon. */
-    private static final Map<String, Material> WEAR_ICON = Map.of(
-            "LEATHER", Material.LEATHER_CHESTPLATE, "IRON", Material.IRON_CHESTPLATE,
-            "GOLDEN", Material.GOLDEN_CHESTPLATE, "DIAMOND", Material.DIAMOND_CHESTPLATE,
-            "COPPER", Material.COPPER_CHESTPLATE, "CHAIN", Material.CHAINMAIL_CHESTPLATE);
+    private static final Map<String, Material> WEAR_ICON =
+            Map.of(
+                    "LEATHER",
+                    Material.LEATHER_CHESTPLATE,
+                    "IRON",
+                    Material.IRON_CHESTPLATE,
+                    "GOLDEN",
+                    Material.GOLDEN_CHESTPLATE,
+                    "DIAMOND",
+                    Material.DIAMOND_CHESTPLATE,
+                    "COPPER",
+                    Material.COPPER_CHESTPLATE,
+                    "CHAIN",
+                    Material.CHAINMAIL_CHESTPLATE);
 
     /** Status effect -> representative icon, for the {@code effect} trigger. */
-    private static final Map<String, Material> EFFECT_ICON = Map.of(
-            "LEVITATION", Material.SHULKER_SHELL, "GLOWING", Material.SPECTRAL_ARROW,
-            "POISON", Material.SPIDER_EYE, "WEAKNESS", Material.FERMENTED_SPIDER_EYE,
-            "ABSORPTION", Material.GOLDEN_APPLE, "JUMP_BOOST", Material.RABBIT_FOOT,
-            "NAUSEA", Material.PUFFERFISH, "MINING_FATIGUE", Material.DIAMOND_PICKAXE,
-            "BAD_OMEN", Material.OMINOUS_BOTTLE);
+    private static final Map<String, Material> EFFECT_ICON =
+            Map.of(
+                    "LEVITATION",
+                    Material.SHULKER_SHELL,
+                    "GLOWING",
+                    Material.SPECTRAL_ARROW,
+                    "POISON",
+                    Material.SPIDER_EYE,
+                    "WEAKNESS",
+                    Material.FERMENTED_SPIDER_EYE,
+                    "ABSORPTION",
+                    Material.GOLDEN_APPLE,
+                    "JUMP_BOOST",
+                    Material.RABBIT_FOOT,
+                    "NAUSEA",
+                    Material.PUFFERFISH,
+                    "MINING_FATIGUE",
+                    Material.DIAMOND_PICKAXE,
+                    "BAD_OMEN",
+                    Material.OMINOUS_BOTTLE);
 
     /**
-     * Every trigger the framework understands, grouped and validated by {@link EventTrigger}. Used at
-     * pool load to reject (with a warning) event tasks whose trigger is misspelled or unimplemented,
-     * which would otherwise silently never complete.
+     * Every trigger the framework understands, grouped and validated by {@link EventTrigger}. Used
+     * at pool load to reject (with a warning) event tasks whose trigger is misspelled or
+     * unimplemented, which would otherwise silently never complete.
      */
     public static final Set<String> KNOWN_TRIGGERS = EventTrigger.keys();
 
     public EventTask {
         if (dimension == null) dimension = Dimension.OVERWORLD;
-        members = members == null ? Set.of() : Collections.unmodifiableSet(new LinkedHashSet<>(members));
-        subjects = subjects == null ? Set.of() : Collections.unmodifiableSet(new LinkedHashSet<>(subjects));
+        members =
+                members == null
+                        ? Set.of()
+                        : Collections.unmodifiableSet(new LinkedHashSet<>(members));
+        subjects =
+                subjects == null
+                        ? Set.of()
+                        : Collections.unmodifiableSet(new LinkedHashSet<>(subjects));
         count = Math.clamp(count, 1, 64);
         trigger = trigger == null ? "" : trigger.toLowerCase(Locale.ROOT);
         param = param == null ? "" : param;
@@ -91,15 +132,16 @@ public record EventTask(String trigger, String param, int count, Dimension dimen
     }
 
     /** Triggers whose {@code param} names an {@link EntityType}, for entity-atlas map icons. */
-    private static final Set<String> ENTITY_ICON_TRIGGERS = Set.of(
-            "tame", "breed", "spy", "leash", "enrage");
+    private static final Set<String> ENTITY_ICON_TRIGGERS =
+            Set.of("tame", "breed", "spy", "leash", "enrage");
 
     /** Death-cause params with an entity sprite in the atlas (mob-caused deaths). */
-    private static final Set<String> DIE_ENTITY_ICONS = Set.of(
-            "BEE", "IRON_GOLEM", "POLAR_BEAR", "WARDEN");
+    private static final Set<String> DIE_ENTITY_ICONS =
+            Set.of("BEE", "IRON_GOLEM", "POLAR_BEAR", "WARDEN");
 
     /** Death causes whose map subject needs a non-Material sprite (splash harming potion). */
-    private static final Key HARMING_SPLASH_POTION_ICON = Key.key("minecraft", "harming_splash_potion");
+    private static final Key HARMING_SPLASH_POTION_ICON =
+            Key.key("minecraft", "harming_splash_potion");
 
     /**
      * Override sprite key for event subjects that can't be represented by a single {@link Material}
@@ -112,10 +154,13 @@ public record EventTask(String trigger, String param, int count, Dimension dimen
         return null;
     }
 
-    /** Potion type for event subjects shown as potions in the chest GUI (die by magic = harming). */
+    /**
+     * Potion type for event subjects shown as potions in the chest GUI (die by magic = harming).
+     */
     public @Nullable org.bukkit.potion.PotionType displayPotionType() {
         return "die".equals(trigger) && "MAGIC".equalsIgnoreCase(param)
-                ? org.bukkit.potion.PotionType.HARMING : null;
+                ? org.bukkit.potion.PotionType.HARMING
+                : null;
     }
 
     /**
@@ -124,7 +169,8 @@ public record EventTask(String trigger, String param, int count, Dimension dimen
      */
     public @Nullable Key entityIconKey() {
         if (ENTITY_ICON_TRIGGERS.contains(trigger)
-                || ("die".equals(trigger) && DIE_ENTITY_ICONS.contains(param.toUpperCase(Locale.ROOT)))) {
+                || ("die".equals(trigger)
+                        && DIE_ENTITY_ICONS.contains(param.toUpperCase(Locale.ROOT)))) {
             try {
                 return EntityType.valueOf(param).key();
             } catch (IllegalArgumentException e) {
@@ -144,13 +190,19 @@ public record EventTask(String trigger, String param, int count, Dimension dimen
 
     /** Bottom-left badge sprite for food-eating tasks: the wiki's half-hunger icon. */
     private static final Key HALF_HUNGER_BADGE = Key.key("minecraft", "half_hunger");
+
     /** Bottom-left badge sprite for the empty-hunger task: the wiki's empty-hunger icon. */
     private static final Key EMPTY_HUNGER_BADGE = Key.key("minecraft", "empty_hunger");
+
     /** Bottom-left badge for use/interact tasks: the Bedrock mouse-right-click control icon. */
     private static final Key RIGHT_CLICK_BADGE = Key.key("minecraft", "right_click");
+
     /** Bottom-left badge for angering a zombified piglin: the wiki half-heart icon. */
     private static final Key HALF_HEART_BADGE = Key.key("minecraft", "half_heart");
-    /** Bottom-left badge for item-breaking tasks: the vanilla statistics-screen item-broken icon. */
+
+    /**
+     * Bottom-left badge for item-breaking tasks: the vanilla statistics-screen item-broken icon.
+     */
     private static final Key ITEM_BROKEN_BADGE = Key.key("minecraft", "item_broken");
 
     /**
@@ -168,67 +220,82 @@ public record EventTask(String trigger, String param, int count, Dimension dimen
         if ("use".equals(trigger)) return RIGHT_CLICK_BADGE;
         if ("enrage".equals(trigger)) return HALF_HEART_BADGE;
         if ("break_item".equals(trigger) && !usesAnyTemplate()) return ITEM_BROKEN_BADGE;
-        if ("reach".equals(trigger) && ("BEDROCK".equalsIgnoreCase(param)
-                || "NETHER_ROOF".equalsIgnoreCase(param))) {
+        if ("reach".equals(trigger)
+                && ("BEDROCK".equalsIgnoreCase(param) || "NETHER_ROOF".equalsIgnoreCase(param))) {
             return Material.BEDROCK.key();
         }
-        Material icon = switch (trigger) {
-            case "wear", "wear_full_enchanted", "wear_dyed", "wear_duration" -> Material.ARMOR_STAND;
-            case "effect" -> Material.BREWING_STAND;
-            case "eat_all" -> Material.COOKIE;
-            case "drink" -> Material.GLASS_BOTTLE;
-            case "die" -> Material.SKELETON_SKULL;
-            case "tame" -> Material.BONE;
-            case "breed" -> Material.WHEAT;
-            case "spy" -> Material.SPYGLASS;
-            case "leash" -> Material.LEAD;
-            case "place" -> Material.OAK_SIGN;
-            case "name" -> Material.NAME_TAG;
-            case "all_collect" -> Material.CHEST;
-            case "toot_goat_horn" -> Material.NOTE_BLOCK;
-            case "remove_effect_milk" -> Material.GLISTERING_MELON_SLICE;
-            case "shield_disabled" -> Material.IRON_INGOT;
-            case "shoot_firework_crossbow" -> Material.ARROW;
-            case "use_brush" -> Material.BRUSH;
-            case "use_golden_dandelion" -> Material.WHEAT;
-            case "fill_campfire" -> Material.COOKED_BEEF;
-            case "construct_copper_golem" -> Material.CARVED_PUMPKIN;
-            case "explode_end_crystal" -> Material.TNT;
-            default -> null;
-        };
+        Material icon =
+                switch (trigger) {
+                    case "wear", "wear_full_enchanted", "wear_dyed", "wear_duration" ->
+                            Material.ARMOR_STAND;
+                    case "effect" -> Material.BREWING_STAND;
+                    case "eat_all" -> Material.COOKIE;
+                    case "drink" -> Material.GLASS_BOTTLE;
+                    case "die" -> Material.SKELETON_SKULL;
+                    case "tame" -> Material.BONE;
+                    case "breed" -> Material.WHEAT;
+                    case "spy" -> Material.SPYGLASS;
+                    case "leash" -> Material.LEAD;
+                    case "place" -> Material.OAK_SIGN;
+                    case "name" -> Material.NAME_TAG;
+                    case "all_collect" -> Material.CHEST;
+                    case "toot_goat_horn" -> Material.NOTE_BLOCK;
+                    case "remove_effect_milk" -> Material.GLISTERING_MELON_SLICE;
+                    case "shield_disabled" -> Material.IRON_INGOT;
+                    case "shoot_firework_crossbow" -> Material.ARROW;
+                    case "use_brush" -> Material.BRUSH;
+                    case "use_golden_dandelion" -> Material.WHEAT;
+                    case "fill_campfire" -> Material.COOKED_BEEF;
+                    case "construct_copper_golem" -> Material.CARVED_PUMPKIN;
+                    case "explode_end_crystal" -> Material.TNT;
+                    default -> null;
+                };
         return icon == null ? null : icon.key();
     }
 
     /**
-     * True for "attain" triggers (reach a level, reach a place, earn N advancements). These cells use
-     * one shared green-check corner badge on the map instead of a per-trigger item icon, so every
-     * "达到/获得" objective reads with the same unmistakable symbol. The two bedrock-boundary reaches
-     * (nether roof, overworld bottom) are exceptions: they carry the bedrock sprite badge instead.
+     * True for "attain" triggers (reach a level, reach a place, earn N advancements). These cells
+     * use one shared green-check corner badge on the map instead of a per-trigger item icon, so
+     * every "达到/获得" objective reads with the same unmistakable symbol. The two bedrock-boundary
+     * reaches (nether roof, overworld bottom) are exceptions: they carry the bedrock sprite badge
+     * instead.
      */
     public boolean usesGreenCheckBadge() {
         return switch (trigger) {
             case "reach_level", "advancement_count" -> true;
-            case "reach" -> switch (param.toUpperCase(Locale.ROOT)) {
-                case "BEDROCK", "NETHER_ROOF" -> false;
-                default -> true;
-            };
+            case "reach" ->
+                    switch (param.toUpperCase(Locale.ROOT)) {
+                        case "BEDROCK", "NETHER_ROOF" -> false;
+                        default -> true;
+                    };
             default -> false;
         };
     }
 
     /**
-     * Open-ended "any N" triggers - the player chooses arbitrary targets (craft any N items, observe
-     * any N mobs, kill any N family members, leash any N species, visit any N biomes, …). These use the
-     * one_of "ANY" card template: a yellow ANY corner stamp, the subject icon centred, and no
-     * bottom-left action badge.
+     * Open-ended "any N" triggers - the player chooses arbitrary targets (craft any N items,
+     * observe any N mobs, kill any N family members, leash any N species, visit any N biomes, …).
+     * These use the one_of "ANY" card template: a yellow ANY corner stamp, the subject icon
+     * centred, and no bottom-left action badge.
      */
     /** Family params of the open-ended break_item tasks; single-item params use badge cells. */
     private static final Set<String> BREAK_ANY_PARAMS = Set.of("TOOL", "ARMOR");
 
-    private static final Set<String> ANY_TEMPLATE_TRIGGERS = Set.of(
-            "effect_at_once", "craft_unique", "eat_unique", "breed_unique",
-            "leash_unique", "spy_unique", "compost_unique", "kill_family", "kill_unique",
-            "visit_biomes", "unique_collect", "stack_of_64", "fill_inventory_unique");
+    private static final Set<String> ANY_TEMPLATE_TRIGGERS =
+            Set.of(
+                    "effect_at_once",
+                    "craft_unique",
+                    "eat_unique",
+                    "breed_unique",
+                    "leash_unique",
+                    "spy_unique",
+                    "compost_unique",
+                    "kill_family",
+                    "kill_unique",
+                    "visit_biomes",
+                    "unique_collect",
+                    "stack_of_64",
+                    "fill_inventory_unique");
 
     public boolean usesAnyTemplate() {
         if ("break_item".equals(trigger)) {
@@ -237,23 +304,43 @@ public record EventTask(String trigger, String param, int count, Dimension dimen
         return ANY_TEMPLATE_TRIGGERS.contains(trigger);
     }
 
-    /** Triggers whose name label embeds the count (e.g. "Craft N Unique Items"); others append param. */
-    private static final Set<String> COUNT_LABEL_TRIGGERS = Set.of(
-            "effect_at_once", "craft_unique", "eat_unique", "eat_all", "breed_unique", "leash_unique",
-            "spy_unique", "compost_unique", "advancement_count", "unique_collect", "kill_unique",
-            "kill_family", "visit_biomes", "wear_duration", "wear_dyed", "fill_inventory_unique");
+    /**
+     * Triggers whose name label embeds the count (e.g. "Craft N Unique Items"); others append
+     * param.
+     */
+    private static final Set<String> COUNT_LABEL_TRIGGERS =
+            Set.of(
+                    "effect_at_once",
+                    "craft_unique",
+                    "eat_unique",
+                    "eat_all",
+                    "breed_unique",
+                    "leash_unique",
+                    "spy_unique",
+                    "compost_unique",
+                    "advancement_count",
+                    "unique_collect",
+                    "kill_unique",
+                    "kill_family",
+                    "visit_biomes",
+                    "wear_duration",
+                    "wear_dyed",
+                    "fill_inventory_unique");
 
     @Override
     public Component getName() {
         MessageService msg = MessageService.global();
         // All event tasks keep the *…* + LIGHT_PURPLE statistic-style title in the chest GUI. Only
-        // OneOfTask/AllOfTask item-set cells get the yellow name; the ANY card template for stat/event
+        // OneOfTask/AllOfTask item-set cells get the yellow name; the ANY card template for
+        // stat/event
         // tasks is a map-cell presentation and doesn't change the GUI name colour.
         var b = Component.text().color(NamedTextColor.LIGHT_PURPLE);
         b.append(Component.text("*")); // same *…* wrapper as StatisticTask
         String prefixKey = "task.event." + trigger;
-        // Same trigger, different mechanic -> different wording: CHAIN is "wear any piece", the other
-        // armour families are "wear the full set"; count-4 dyed leather is "full set, four colours".
+        // Same trigger, different mechanic -> different wording: CHAIN is "wear any piece", the
+        // other
+        // armour families are "wear the full set"; count-4 dyed leather is "full set, four
+        // colours".
         if ("wear".equals(trigger) && "CHAIN".equalsIgnoreCase(param)) {
             prefixKey = "task.event.wear_any";
         } else if ("wear_dyed".equals(trigger) && count >= 4) {
@@ -262,9 +349,10 @@ public record EventTask(String trigger, String param, int count, Dimension dimen
             prefixKey = "task.event.break_single";
         }
         if (msg.has(prefixKey)) {
-            b.append(COUNT_LABEL_TRIGGERS.contains(trigger)
-                    ? msg.component(prefixKey, count)
-                    : msg.component(prefixKey));
+            b.append(
+                    COUNT_LABEL_TRIGGERS.contains(trigger)
+                            ? msg.component(prefixKey, count)
+                            : msg.component(prefixKey));
         }
         Component paramPart = paramComponent(msg);
         if (paramPart != null) b.append(paramPart);
@@ -275,8 +363,14 @@ public record EventTask(String trigger, String param, int count, Dimension dimen
     private @Nullable Component paramComponent(MessageService msg) {
         return switch (trigger) {
             case "wear" -> LegacyText.component(wearLabel(param));
-            case "wear_dyed", "wear_duration", "kill_family", "kill_unique",
-                    "visit_biomes", "eat_all", "name" -> LegacyText.component(specialLabelOr(param));
+            case "wear_dyed",
+                    "wear_duration",
+                    "kill_family",
+                    "kill_unique",
+                    "visit_biomes",
+                    "eat_all",
+                    "name" ->
+                    LegacyText.component(specialLabelOr(param));
             case "break_item" -> {
                 String special = specialLabel(param);
                 yield special != null ? LegacyText.component(special) : materialComponent(param);
@@ -297,7 +391,8 @@ public record EventTask(String trigger, String param, int count, Dimension dimen
                 String special = specialLabel(param);
                 yield special != null ? LegacyText.component(special) : materialComponent(param);
             }
-            // Standalone triggers (wear_full_enchanted / hunger_empty / effect_at_once / …) have no param.
+            // Standalone triggers (wear_full_enchanted / hunger_empty / effect_at_once / …) have no
+            // param.
             default -> null;
         };
     }
@@ -333,7 +428,10 @@ public record EventTask(String trigger, String param, int count, Dimension dimen
         }
     }
 
-    /** Eat/drink param: prefer the item name, fall back to a label (e.g. WATER_BOTTLE isn't a material). */
+    /**
+     * Eat/drink param: prefer the item name, fall back to a label (e.g. WATER_BOTTLE isn't a
+     * material).
+     */
     private static Component consumeLabel(String param) {
         String special = specialLabel(param);
         return special != null ? LegacyText.component(special) : materialComponent(param);
@@ -346,7 +444,10 @@ public record EventTask(String trigger, String param, int count, Dimension dimen
         return msg.has(key) ? msg.tr(key) : param.toLowerCase(Locale.ROOT).replace('_', ' ');
     }
 
-    /** Optional localized label for params that aren't a material/entity, keyed task.event.label.<param>. */
+    /**
+     * Optional localized label for params that aren't a material/entity, keyed
+     * task.event.label.<param>.
+     */
     private static @Nullable String specialLabel(String param) {
         String key = "task.event.label." + param.toLowerCase(Locale.ROOT);
         MessageService msg = MessageService.global();
@@ -363,7 +464,7 @@ public record EventTask(String trigger, String param, int count, Dimension dimen
 
     @Override
     public Component[] getItemDescription() {
-        return new Component[]{MessageService.global().component("task.event_goal")};
+        return new Component[] {MessageService.global().component("task.event_goal")};
     }
 
     @Override
@@ -380,39 +481,48 @@ public record EventTask(String trigger, String param, int count, Dimension dimen
     public Material getDisplayMaterial(CardDisplayInfo context) {
         if (iconOverride != null) return iconOverride;
         return switch (trigger) {
-            case "wear" -> WEAR_ICON.getOrDefault(param.toUpperCase(Locale.ROOT), Material.LEATHER_CHESTPLATE);
+            case "wear" ->
+                    WEAR_ICON.getOrDefault(
+                            param.toUpperCase(Locale.ROOT), Material.LEATHER_CHESTPLATE);
             case "wear_full_enchanted" -> Material.DIAMOND_CHESTPLATE;
             case "wear_dyed", "wear_duration" -> Material.LEATHER_CHESTPLATE;
-            case "effect" -> EFFECT_ICON.getOrDefault(param.toUpperCase(Locale.ROOT), Material.POTION);
+            case "effect" ->
+                    EFFECT_ICON.getOrDefault(param.toUpperCase(Locale.ROOT), Material.POTION);
             case "effect_at_once" -> Material.MILK_BUCKET;
             case "reach_level" -> Material.EXPERIENCE_BOTTLE;
-            case "reach" -> switch (param.toUpperCase(Locale.ROOT)) {
-                case "BEDROCK" -> Material.DEEPSLATE;
-                case "HEIGHT_LIMIT" -> Material.SCAFFOLDING;
-                case "NETHER_ROOF" -> Material.NETHERRACK;
-                default -> Material.PAPER;
-            };
+            case "reach" ->
+                    switch (param.toUpperCase(Locale.ROOT)) {
+                        case "BEDROCK" -> Material.DEEPSLATE;
+                        case "HEIGHT_LIMIT" -> Material.SCAFFOLDING;
+                        case "NETHER_ROOF" -> Material.NETHERRACK;
+                        default -> Material.PAPER;
+                    };
             case "hunger_empty" -> Material.ROTTEN_FLESH;
             case "eat", "drink" -> materialOr(param, Material.APPLE);
             case "eat_all" -> Material.MUSHROOM_STEW;
-            case "die" -> switch (param.toUpperCase(Locale.ROOT)) {
-                case "DROWNING" -> Material.WATER_BUCKET;
-                case "VOID" -> Material.BEDROCK;
-                case "FREEZE" -> Material.POWDER_SNOW_BUCKET;
-                case "MAGIC" -> Material.SPLASH_POTION; // map icon uses the harming splash sprite
-                case "FIREWORK" -> Material.FIREWORK_ROCKET;
-                case "FALLING_STALACTITE" -> Material.POINTED_DRIPSTONE;
-                case "BERRY_BUSH" -> Material.SWEET_BERRIES;
-                default -> materialOr(param, Material.SKELETON_SKULL);
-            };
+            case "die" ->
+                    switch (param.toUpperCase(Locale.ROOT)) {
+                        case "DROWNING" -> Material.WATER_BUCKET;
+                        case "VOID" -> Material.BEDROCK;
+                        case "FREEZE" -> Material.POWDER_SNOW_BUCKET;
+                        case "MAGIC" ->
+                                Material.SPLASH_POTION; // map icon uses the harming splash sprite
+                        case "FIREWORK" -> Material.FIREWORK_ROCKET;
+                        case "FALLING_STALACTITE" -> Material.POINTED_DRIPSTONE;
+                        case "BERRY_BUSH" -> Material.SWEET_BERRIES;
+                        default -> materialOr(param, Material.SKELETON_SKULL);
+                    };
             case "tame", "breed", "spy", "leash", "enrage" -> spawnEggOr(param);
-            case "break_item" -> switch (param.toUpperCase(Locale.ROOT)) {
-                case "ARMOR" -> Material.IRON_CHESTPLATE;
-                case "TOOL" -> Material.STONE_PICKAXE;
-                default -> materialOr(param, Material.STONE_PICKAXE);
-            };
-            case "place" -> "HANGING_SIGN".equalsIgnoreCase(param)
-                    ? Material.OAK_HANGING_SIGN : materialOr(param, Material.PAINTING);
+            case "break_item" ->
+                    switch (param.toUpperCase(Locale.ROOT)) {
+                        case "ARMOR" -> Material.IRON_CHESTPLATE;
+                        case "TOOL" -> Material.STONE_PICKAXE;
+                        default -> materialOr(param, Material.STONE_PICKAXE);
+                    };
+            case "place" ->
+                    "HANGING_SIGN".equalsIgnoreCase(param)
+                            ? Material.OAK_HANGING_SIGN
+                            : materialOr(param, Material.PAINTING);
             case "use" -> materialOr(param, Material.COMPOSTER);
             case "name" -> Material.NAME_TAG;
             case "toot_goat_horn" -> Material.GOAT_HORN;
@@ -434,8 +544,10 @@ public record EventTask(String trigger, String param, int count, Dimension dimen
             case "compost_unique" -> Material.COMPOSTER;
             case "advancement_count" -> Material.KNOWLEDGE_BOOK;
             case "visit_biomes" -> Material.NETHERRACK;
-            case "kill_family", "kill_unique" -> "ARTHROPOD".equalsIgnoreCase(param)
-                    ? Material.SPIDER_EYE : Material.ZOMBIE_HEAD;
+            case "kill_family", "kill_unique" ->
+                    "ARTHROPOD".equalsIgnoreCase(param)
+                            ? Material.SPIDER_EYE
+                            : Material.ZOMBIE_HEAD;
             case "unique_collect", "all_collect" ->
                     members.isEmpty() ? Material.PAPER : members.iterator().next();
             default -> Material.PAPER;
@@ -452,7 +564,11 @@ public record EventTask(String trigger, String param, int count, Dimension dimen
 
     private static Material spawnEggOr(String entityType) {
         try {
-            Material egg = Materials.fromKey("minecraft:" + EntityType.valueOf(entityType).key().value() + "_spawn_egg");
+            Material egg =
+                    Materials.fromKey(
+                            "minecraft:"
+                                    + EntityType.valueOf(entityType).key().value()
+                                    + "_spawn_egg");
             return egg.isItem() ? egg : Material.PAPER;
         } catch (IllegalArgumentException e) {
             return Material.PAPER;
@@ -471,8 +587,11 @@ public record EventTask(String trigger, String param, int count, Dimension dimen
 
     @Override
     public boolean isTaskEqual(TaskData other) {
-        return other instanceof EventTask e && trigger.equals(e.trigger) && param.equals(e.param)
-                && count == e.count && subjects.equals(e.subjects);
+        return other instanceof EventTask e
+                && trigger.equals(e.trigger)
+                && param.equals(e.param)
+                && count == e.count
+                && subjects.equals(e.subjects);
     }
 
     @Override
@@ -480,7 +599,9 @@ public record EventTask(String trigger, String param, int count, Dimension dimen
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         EventTask e = (EventTask) o;
-        return count == e.count && trigger.equals(e.trigger) && param.equals(e.param)
+        return count == e.count
+                && trigger.equals(e.trigger)
+                && param.equals(e.param)
                 && subjects.equals(e.subjects);
     }
 

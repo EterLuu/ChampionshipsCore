@@ -3,9 +3,10 @@ package ink.ziip.championshipscore.command.finale;
 import ink.ziip.championshipscore.api.finale.FinaleGameDefinition;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseSubCommand;
-import ink.ziip.championshipscore.util.Utils;
-import org.bukkit.command.Command;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.presentation.text.CoreMessages;
+
+import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -18,15 +19,22 @@ final class FinaleDirectStartSubCommand extends BaseSubCommand {
     private final FinaleGameDefinition definition;
 
     FinaleDirectStartSubCommand(FinaleGameDefinition definition) {
-        super("start-direct", "在指定场地直接开始决赛单局",
-                "/cc finale " + definition.commandName() + " start-direct <场地> <队伍1> <队伍2>"
+        super(
+                "start-direct",
+                "在指定场地直接开始决赛单局",
+                "/cc finale "
+                        + definition.commandName()
+                        + " start-direct <场地> <队伍1> <队伍2>"
                         + (definition.supportsPartialRoster() ? " [--force]" : ""));
         this.definition = definition;
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
-                             @NotNull String label, @NotNull String[] args) {
+    public boolean onCommand(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args) {
         boolean force = args.length == 4 && args[3].equalsIgnoreCase("--force");
         if ((args.length != 3 && args.length != 4)
                 || (args.length == 4 && (!force || !definition.supportsPartialRoster()))) {
@@ -36,44 +44,58 @@ final class FinaleDirectStartSubCommand extends BaseSubCommand {
         ChampionshipTeam right = plugin.getTeamManager().getTeam(args[1]);
         ChampionshipTeam left = plugin.getTeamManager().getTeam(args[2]);
         if (right == null || left == null || right.equals(left)) {
-            Utils.sendAdminError(sender, MessageConfig.FINALE_DIRECT_START_INVALID);
+            CoreMessages.sendAdminError(sender, MessageConfig.FINALE_DIRECT_START_INVALID);
             return true;
         }
 
         boolean started;
-        if (definition.gameType() == ink.ziip.championshipscore.api.object.game.GameTypeEnum.Dodgebolt) {
+        if (definition.gameType()
+                == ink.ziip.championshipscore.api.game.model.GameTypeEnum.Dodgebolt) {
             if (plugin.getGameManager().getDodgeboltManager().getArea(args[0]) == null) {
-                Utils.sendAdminError(sender, MessageConfig.FINALE_DIRECT_START_INVALID);
+                CoreMessages.sendAdminError(sender, MessageConfig.FINALE_DIRECT_START_INVALID);
                 return true;
             }
-            ChampionshipTeam higher = plugin.getRankManager().getCachedTeamPoints(right)
-                    >= plugin.getRankManager().getCachedTeamPoints(left) ? right : left;
-            started = plugin.getGameManager().joinDodgeboltArea(
-                    args[0], right, left, higher, false, force);
+            ChampionshipTeam higher =
+                    plugin.getRankManager().getCachedTeamPoints(right)
+                                    >= plugin.getRankManager().getCachedTeamPoints(left)
+                            ? right
+                            : left;
+            started =
+                    plugin.getGameManager()
+                            .joinDodgeboltArea(args[0], right, left, higher, false, force);
         } else {
-            started = plugin.getGameManager().joinTeamArea(
-                    definition.gameType(), args[0], right, left);
+            started =
+                    plugin.getGameManager()
+                            .joinTeamArea(definition.gameType(), args[0], right, left);
         }
 
         if (started) {
-            Utils.sendAdminSuccess(sender, (force
-                    ? MessageConfig.FINALE_DIRECT_START_STARTED_FORCED
-                    : MessageConfig.FINALE_DIRECT_START_STARTED)
-                    .replace("%game%", definition.gameType().toString()));
+            CoreMessages.sendAdminSuccess(
+                    sender,
+                    (force
+                                    ? MessageConfig.FINALE_DIRECT_START_STARTED_FORCED
+                                    : MessageConfig.FINALE_DIRECT_START_STARTED)
+                            .replace("%game%", definition.gameType().toString()));
         } else {
-            Utils.sendAdminError(sender, force
-                    ? MessageConfig.FINALE_DIRECT_START_FORCED_FAILED
-                    : MessageConfig.FINALE_DIRECT_START_FAILED);
+            CoreMessages.sendAdminError(
+                    sender,
+                    force
+                            ? MessageConfig.FINALE_DIRECT_START_FORCED_FAILED
+                            : MessageConfig.FINALE_DIRECT_START_FAILED);
         }
         return true;
     }
 
     @Override
-    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
-                                                 @NotNull String label, @NotNull String[] args) {
+    public @Nullable List<String> onTabComplete(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args) {
         if (args.length == 1) {
             var manager = plugin.getGameManager().getAreaManager(definition.gameType());
-            return manager == null ? Collections.emptyList()
+            return manager == null
+                    ? Collections.emptyList()
                     : filterStartsWith(manager.getAreaNameList(), args[0]);
         }
         if (args.length == 2)

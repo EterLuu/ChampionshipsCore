@@ -1,56 +1,57 @@
 package ink.ziip.championshipscore;
 
-import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
+import ink.ziip.championshipscore.api.BaseManager;
+import ink.ziip.championshipscore.api.chat.PublicChatMuteManager;
 import ink.ziip.championshipscore.api.daily.DailyManager;
 import ink.ziip.championshipscore.api.daily.DailyStatsManager;
 import ink.ziip.championshipscore.api.daily.WebLeaderboardManager;
-import ink.ziip.championshipscore.api.BaseManager;
-import ink.ziip.championshipscore.api.chat.PublicChatMuteManager;
-import ink.ziip.championshipscore.api.game.manager.GameManager;
+import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
 import ink.ziip.championshipscore.api.game.bingo.execution.RemoteBingoManager;
+import ink.ziip.championshipscore.api.game.manager.GameManager;
 import ink.ziip.championshipscore.api.player.PlayerManager;
+import ink.ziip.championshipscore.api.player.event.PlayerIdentityMigrationEvent;
 import ink.ziip.championshipscore.api.player.event.PlayerNameChangeEvent;
 import ink.ziip.championshipscore.api.player.event.PlayerUnknownRemovalEvent;
-import ink.ziip.championshipscore.api.player.event.PlayerIdentityMigrationEvent;
 import ink.ziip.championshipscore.api.rank.RankManager;
 import ink.ziip.championshipscore.api.schedule.ScheduleManager;
 import ink.ziip.championshipscore.api.team.TeamManager;
-import ink.ziip.championshipscore.api.vote.VoteManager;
 import ink.ziip.championshipscore.api.visibility.PlayerVisibilityManager;
+import ink.ziip.championshipscore.api.vote.VoteManager;
+import ink.ziip.championshipscore.command.CommandManager;
+import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.configuration.manager.ConfigurationManager;
+import ink.ziip.championshipscore.database.DatabaseManager;
 import ink.ziip.championshipscore.integration.papi.PlaceholderManager;
-import ink.ziip.championshipscore.util.glow.GlowingEntities;
-import ink.ziip.championshipscore.util.Utils;
-import ink.ziip.championshipscore.util.world.WorldManager;
 import ink.ziip.championshipscore.integration.worldedit.WorldEditManager;
 import ink.ziip.championshipscore.listener.ListenerManager;
 import ink.ziip.championshipscore.logging.CCLogManager;
+import ink.ziip.championshipscore.logging.LogText;
 import ink.ziip.championshipscore.presentation.sidebar.CoreSidebarManager;
-import ink.ziip.championshipscore.command.CommandManager;
-import ink.ziip.championshipscore.configuration.manager.ConfigurationManager;
-import ink.ziip.championshipscore.configuration.config.CCConfig;
-import ink.ziip.championshipscore.database.DatabaseManager;
 import ink.ziip.championshipscore.redis.RedisManager;
+import ink.ziip.championshipscore.util.glow.GlowingEntities;
+import ink.ziip.championshipscore.util.world.WorldManager;
+
 import lombok.AccessLevel;
 import lombok.Getter;
+
 import org.bukkit.Bukkit;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.IdentityHashMap;
-import java.util.Set;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 
 @Getter
 public final class ChampionshipsCore extends JavaPlugin {
-    @Getter
-    private static ChampionshipsCore instance;
+    @Getter private static ChampionshipsCore instance;
     private boolean loaded;
     private TeamManager teamManager;
     private PlayerManager playerManager;
@@ -63,6 +64,8 @@ public final class ChampionshipsCore extends JavaPlugin {
     private WorldEditManager worldEditManager;
     private GameManager gameManager;
     private PlayerVisibilityManager visibilityManager;
+    private ink.ziip.championshipscore.platform.bukkit.player.PlayerPacketPresentation
+            playerPackets;
     private RemoteBingoManager remoteBingoManager;
     private RankManager rankManager;
     private WorldManager worldManager;
@@ -76,8 +79,11 @@ public final class ChampionshipsCore extends JavaPlugin {
     private DailyStatsManager dailyStatsManager;
     private WebLeaderboardManager webLeaderboardManager;
     private CCLogManager logManager;
+
     @Getter(AccessLevel.NONE)
-    private final Set<BaseManager> startedManagers = Collections.newSetFromMap(new IdentityHashMap<>());
+    private final Set<BaseManager> startedManagers =
+            Collections.newSetFromMap(new IdentityHashMap<>());
+
     private long bootstrapGeneration;
     private boolean bootstrapReady;
     private final List<PlayerNameChangeEvent> pendingNameChanges = new CopyOnWriteArrayList<>();
@@ -89,32 +95,41 @@ public final class ChampionshipsCore extends JavaPlugin {
         loaded = true;
         bootstrapReady = false;
         pendingNameChanges.clear();
-        Bukkit.getPluginManager().registerEvents(new Listener() {
-            @EventHandler
-            public void onPlayerNameChange(PlayerNameChangeEvent event) {
-                handlePlayerNameChange(event);
-            }
+        Bukkit.getPluginManager()
+                .registerEvents(
+                        new Listener() {
+                            @EventHandler
+                            public void onPlayerNameChange(PlayerNameChangeEvent event) {
+                                handlePlayerNameChange(event);
+                            }
 
-            @EventHandler
-            public void onPlayerIdentityMigration(PlayerIdentityMigrationEvent event) {
-                handlePlayerIdentityMigration(event);
-            }
+                            @EventHandler
+                            public void onPlayerIdentityMigration(
+                                    PlayerIdentityMigrationEvent event) {
+                                handlePlayerIdentityMigration(event);
+                            }
 
-            @EventHandler
-            public void onPlayerUnknownRemoval(PlayerUnknownRemovalEvent event) {
-                handlePlayerUnknownRemoval(event);
-            }
-        }, this);
+                            @EventHandler
+                            public void onPlayerUnknownRemoval(PlayerUnknownRemovalEvent event) {
+                                handlePlayerUnknownRemoval(event);
+                            }
+                        },
+                        this);
         logManager = CCLogManager.install(this);
 
-        java.util.List<String> missingDependencies = java.util.stream.Stream.of(
-                        "PlaceholderAPI", "ProtocolLib", "FastAsyncWorldEdit")
-                .filter(name -> Bukkit.getPluginManager().getPlugin(name) == null)
-                .toList();
+        java.util.List<String> missingDependencies =
+                java.util.stream.Stream.of("PlaceholderAPI", "ProtocolLib", "FastAsyncWorldEdit")
+                        .filter(name -> Bukkit.getPluginManager().getPlugin(name) == null)
+                        .toList();
         if (!missingDependencies.isEmpty()) {
             loaded = false;
-            String message = Utils.formatModuleLog("Bootstrap", "依赖",
-                    "缺少必要插件=" + String.join(", ", missingDependencies) + "，ChampionshipsCore 已关闭");
+            String message =
+                    LogText.formatModuleLog(
+                            "Bootstrap",
+                            "依赖",
+                            "缺少必要插件="
+                                    + String.join(", ", missingDependencies)
+                                    + "，ChampionshipsCore 已关闭");
             if (logManager != null) logManager.important(message);
             else getLogger().severe(message);
             Bukkit.getPluginManager().disablePlugin(this);
@@ -149,24 +164,35 @@ public final class ChampionshipsCore extends JavaPlugin {
         webLeaderboardManager = new WebLeaderboardManager(this, dailyManager, dailyStatsManager);
 
         // Database connection and schema migration may take seconds and must not freeze the server.
-        // The remaining managers are activated on the server thread only after this prerequisite succeeds.
+        // The remaining managers are activated on the server thread only after this prerequisite
+        // succeeds.
         startedManagers.add(databaseManager);
-        databaseManager.loadAsync().whenComplete((ignored, failure) -> {
-            try {
-                getServer().getScheduler().runTask(this,
-                        () -> finishBootstrap(generation, failure));
-            } catch (RuntimeException schedulingFailure) {
-                getLogger().log(Level.SEVERE, "Unable to finish ChampionshipsCore bootstrap", schedulingFailure);
-            }
-        });
+        databaseManager
+                .loadAsync()
+                .whenComplete(
+                        (ignored, failure) -> {
+                            try {
+                                getServer()
+                                        .getScheduler()
+                                        .runTask(this, () -> finishBootstrap(generation, failure));
+                            } catch (RuntimeException schedulingFailure) {
+                                getLogger()
+                                        .log(
+                                                Level.SEVERE,
+                                                "Unable to finish ChampionshipsCore bootstrap",
+                                                schedulingFailure);
+                            }
+                        });
     }
 
     private void finishBootstrap(long generation, Throwable failure) {
         if (generation != bootstrapGeneration || !loaded || !isEnabled()) return;
         if (failure != null) {
             loaded = false;
-            if (logManager != null) logManager.important(Utils.formatModuleLog("Bootstrap", "数据库",
-                    "数据库初始化或迁移失败，ChampionshipsCore 已关闭"));
+            if (logManager != null)
+                logManager.important(
+                        LogText.formatModuleLog(
+                                "Bootstrap", "数据库", "数据库初始化或迁移失败，ChampionshipsCore 已关闭"));
             getLogger().log(Level.SEVERE, "Database bootstrap failed", failure);
             Bukkit.getPluginManager().disablePlugin(this);
             return;
@@ -175,7 +201,11 @@ public final class ChampionshipsCore extends JavaPlugin {
             finishManagerBootstrap();
         } catch (RuntimeException bootstrapFailure) {
             loaded = false;
-            getLogger().log(Level.SEVERE, "Manager bootstrap failed; disabling ChampionshipsCore", bootstrapFailure);
+            getLogger()
+                    .log(
+                            Level.SEVERE,
+                            "Manager bootstrap failed; disabling ChampionshipsCore",
+                            bootstrapFailure);
             Bukkit.getPluginManager().disablePlugin(this);
         }
     }
@@ -193,6 +223,9 @@ public final class ChampionshipsCore extends JavaPlugin {
 
         loadManager(worldEditManager);
 
+        playerPackets =
+                new ink.ziip.championshipscore.platform.bukkit.player.PlayerPacketPresentation(
+                        this);
         loadManager(gameManager);
         loadManager(visibilityManager);
         loadManager(remoteBingoManager);
@@ -209,15 +242,22 @@ public final class ChampionshipsCore extends JavaPlugin {
         loadManager(sidebarManager);
 
         if (!getServer().getOnlineMode()) {
-            getLogger().warning(Utils.formatModuleLog("Security", "OfflineMode",
-                    "服务器处于 offline-mode；必须仅允许可信代理访问后端端口，并由代理或认证层完成可信身份校验"));
+            getLogger()
+                    .warning(
+                            LogText.formatModuleLog(
+                                    "Security",
+                                    "OfflineMode",
+                                    "服务器处于 offline-mode；必须仅允许可信代理访问后端端口，并由代理或认证层完成可信身份校验"));
         }
 
+        for (org.bukkit.entity.Player player : getServer().getOnlinePlayers())
+            gameManager.initializeOnlinePlayer(player);
         bootstrapReady = true;
         List<PlayerNameChangeEvent> queuedNameChanges = List.copyOf(pendingNameChanges);
         pendingNameChanges.clear();
         queuedNameChanges.forEach(this::handlePlayerNameChange);
-        String readyMessage = Utils.formatModuleLog("Bootstrap", "启动", "加载完成 | 模式=" + CCConfig.MODE);
+        String readyMessage =
+                LogText.formatModuleLog("Bootstrap", "启动", "加载完成 | 模式=" + CCConfig.MODE);
         if (logManager != null) logManager.important(readyMessage);
         else getLogger().log(Level.INFO, readyMessage);
     }
@@ -236,6 +276,8 @@ public final class ChampionshipsCore extends JavaPlugin {
         unloadManager(remoteBingoManager);
         unloadManager(redisManager);
         unloadManager(gameManager);
+        if (playerPackets != null) playerPackets.close();
+        playerPackets = null;
         unloadManager(visibilityManager);
         unloadManager(prepareSessionManager);
         unloadManager(rankManager);
@@ -257,7 +299,7 @@ public final class ChampionshipsCore extends JavaPlugin {
         if (glowingEntities != null) glowingEntities.disable();
 
         if (logManager != null) {
-            logManager.important(Utils.formatModuleLog("Bootstrap", "停止", "插件已安全卸载"));
+            logManager.important(LogText.formatModuleLog("Bootstrap", "停止", "插件已安全卸载"));
             logManager.close();
             logManager = null;
         }
@@ -268,45 +310,69 @@ public final class ChampionshipsCore extends JavaPlugin {
             pendingNameChanges.add(event);
             return;
         }
-        playerManager.migrateApprovedName(event.getOldName(), event.getNewName(), event.getReplacementUuid())
-                .whenComplete((migration, failure) -> {
-                    if (failure != null) {
-                        event.completion().complete(false);
-                        getLogger().log(Level.WARNING, "Approved player name migration failed: "
-                                + event.getOldName() + " -> " + event.getNewName(), failure);
-                    } else if (!migration.successful()) {
-                        event.completion().complete(false);
-                        getLogger().warning("Approved player name migration failed: "
-                                + event.getOldName() + " -> " + event.getNewName()
-                                + " | " + migration.failureReason());
-                    } else {
-                        event.completion().complete(true);
-                    }
-                });
+        playerManager
+                .migrateApprovedName(
+                        event.getOldName(), event.getNewName(), event.getReplacementUuid())
+                .whenComplete(
+                        (migration, failure) -> {
+                            if (failure != null) {
+                                event.completion().complete(false);
+                                getLogger()
+                                        .log(
+                                                Level.WARNING,
+                                                "Approved player name migration failed: "
+                                                        + event.getOldName()
+                                                        + " -> "
+                                                        + event.getNewName(),
+                                                failure);
+                            } else if (!migration.successful()) {
+                                event.completion().complete(false);
+                                getLogger()
+                                        .warning(
+                                                "Approved player name migration failed: "
+                                                        + event.getOldName()
+                                                        + " -> "
+                                                        + event.getNewName()
+                                                        + " | "
+                                                        + migration.failureReason());
+                            } else {
+                                event.completion().complete(true);
+                            }
+                        });
     }
 
     private void handlePlayerUnknownRemoval(PlayerUnknownRemovalEvent event) {
         if (!bootstrapReady || playerManager == null) {
-            event.completion().completeExceptionally(
-                    new IllegalStateException("ChampionshipsCore is not ready for player data cleanup"));
+            event.completion()
+                    .completeExceptionally(
+                            new IllegalStateException(
+                                    "ChampionshipsCore is not ready for player data cleanup"));
             return;
         }
-        playerManager.removeUnknown(event.getAllowedUuids()).whenComplete((result, failure) -> {
-            if (failure != null) event.completion().completeExceptionally(failure);
-            else event.completion().complete(result);
-        });
+        playerManager
+                .removeUnknown(event.getAllowedUuids())
+                .whenComplete(
+                        (result, failure) -> {
+                            if (failure != null) event.completion().completeExceptionally(failure);
+                            else event.completion().complete(result);
+                        });
     }
 
     private void handlePlayerIdentityMigration(PlayerIdentityMigrationEvent event) {
         if (!bootstrapReady || playerManager == null) {
-            event.completion().completeExceptionally(
-                    new IllegalStateException("ChampionshipsCore is not ready for identity maintenance"));
+            event.completion()
+                    .completeExceptionally(
+                            new IllegalStateException(
+                                    "ChampionshipsCore is not ready for identity maintenance"));
             return;
         }
-        playerManager.migrateIdentities(event.getPlayers()).whenComplete((changed, failure) -> {
-            if (failure != null) event.completion().completeExceptionally(failure);
-            else event.completion().complete(changed);
-        });
+        playerManager
+                .migrateIdentities(event.getPlayers())
+                .whenComplete(
+                        (changed, failure) -> {
+                            if (failure != null) event.completion().completeExceptionally(failure);
+                            else event.completion().complete(changed);
+                        });
     }
 
     private void loadManager(@NotNull BaseManager manager) {

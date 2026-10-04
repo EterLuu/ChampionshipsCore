@@ -1,13 +1,19 @@
 package ink.ziip.championshipscore.api.game.bingo.gui;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import ink.ziip.championshipscore.api.game.bingo.card.BingoCard;
 import ink.ziip.championshipscore.api.game.bingo.card.CardSize;
 import ink.ziip.championshipscore.api.game.bingo.task.GameTask;
 import ink.ziip.championshipscore.api.game.bingo.task.ItemTask;
 import ink.ziip.championshipscore.platform.bukkit.bingo.map.MapColorMatcher;
+
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
+
 import org.bukkit.Material;
 import org.bukkit.map.MapCanvas;
 import org.junit.jupiter.api.Test;
@@ -18,17 +24,14 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 class BingoCardMapRendererTest {
     @Test
     void completionRefreshesToFullOwnBorderEvenAfterFourOtherTeams() {
-        for (int tiers : new int[]{0, 2, 4, 6}) {
+        for (int tiers : new int[] {0, 2, 4, 6}) {
             BingoCard card = card();
             GameTask task = card.getTasks().getFirst();
-            BingoCardMapRenderer renderer = new BingoCardMapRenderer(card, "own", NamedTextColor.GREEN, tiers);
+            BingoCardMapRenderer renderer =
+                    new BingoCardMapRenderer(card, "own", NamedTextColor.GREEN, tiers);
             Pixels pixels = new Pixels();
             renderer.render(null, pixels.canvas, null);
 
@@ -58,20 +61,29 @@ class BingoCardMapRendererTest {
         complete(card.getTasks().getFirst(), "blue", NamedTextColor.BLUE);
         Pixels pixels = new Pixels();
         new BingoCardMapRenderer(card, null, null).render(null, pixels.canvas, null);
-        assertEquals(Set.of(palette(NamedTextColor.RED), palette(NamedTextColor.BLUE)), pixels.firstBorder());
+        assertEquals(
+                Set.of(palette(NamedTextColor.RED), palette(NamedTextColor.BLUE)),
+                pixels.firstBorder());
     }
 
     @Test
     void playerAndSpectatorBordersShowAtMostSixTeams() {
-        for (String viewer : new String[]{"own", null}) {
+        for (String viewer : new String[] {"own", null}) {
             BingoCard card = card();
             GameTask task = card.getTasks().getFirst();
-            BingoCardMapRenderer renderer = new BingoCardMapRenderer(card, viewer,
-                    viewer == null ? null : NamedTextColor.GREEN);
+            BingoCardMapRenderer renderer =
+                    new BingoCardMapRenderer(
+                            card, viewer, viewer == null ? null : NamedTextColor.GREEN);
             Pixels pixels = new Pixels();
             Set<Color> expected = new HashSet<>();
-            TextColor[] colors = {NamedTextColor.RED, NamedTextColor.BLUE, NamedTextColor.YELLOW,
-                    NamedTextColor.WHITE, NamedTextColor.AQUA, NamedTextColor.GOLD};
+            TextColor[] colors = {
+                NamedTextColor.RED,
+                NamedTextColor.BLUE,
+                NamedTextColor.YELLOW,
+                NamedTextColor.WHITE,
+                NamedTextColor.AQUA,
+                NamedTextColor.GOLD
+            };
             for (int index = 0; index < colors.length; index++) {
                 complete(task, "other-" + index, colors[index]);
                 expected.add(palette(colors[index]));
@@ -84,7 +96,9 @@ class BingoCardMapRendererTest {
             assertEquals(expected, pixels.firstBorder());
             complete(task, "own", NamedTextColor.GREEN);
             renderer.render(null, pixels.canvas, null);
-            assertEquals(viewer == null ? expected : Set.of(palette(NamedTextColor.GREEN)), pixels.firstBorder());
+            assertEquals(
+                    viewer == null ? expected : Set.of(palette(NamedTextColor.GREEN)),
+                    pixels.firstBorder());
         }
     }
 
@@ -94,9 +108,11 @@ class BingoCardMapRendererTest {
         int[][] gaps = {{51, 40}, {40, 51}, {52, 52}, {76, 52}};
         for (int index = 0; index < lines.length; index++) {
             BingoCard card = card();
-            BingoCardMapRenderer renderer = new BingoCardMapRenderer(card, "own", NamedTextColor.GREEN);
+            BingoCardMapRenderer renderer =
+                    new BingoCardMapRenderer(card, "own", NamedTextColor.GREEN);
             Pixels pixels = new Pixels();
-            for (int cell : lines[index]) complete(card.getTasks().get(cell), "other", NamedTextColor.RED);
+            for (int cell : lines[index])
+                complete(card.getTasks().get(cell), "other", NamedTextColor.RED);
             complete(card.getTasks().get(lines[index][0]), "own", NamedTextColor.GREEN);
             complete(card.getTasks().get(lines[index][1]), "own", NamedTextColor.GREEN);
             renderer.render(null, pixels.canvas, null);
@@ -116,23 +132,30 @@ class BingoCardMapRendererTest {
     }
 
     private static void complete(GameTask task, String team, TextColor color) {
-        assertTrue(task.complete(new GameTask.Completion(null, Component.empty(), color, team, 1L), false));
+        assertTrue(
+                task.complete(
+                        new GameTask.Completion(null, Component.empty(), color, team, 1L), false));
     }
 
     private static Color palette(TextColor color) {
-        return MapColorMatcher.color(MapColorMatcher.matchColor(color.red(), color.green(), color.blue()));
+        return MapColorMatcher.color(
+                MapColorMatcher.matchColor(color.red(), color.green(), color.blue()));
     }
 
     private static final class Pixels {
         final Color[][] colors = new Color[128][128];
-        final MapCanvas canvas = (MapCanvas) Proxy.newProxyInstance(MapCanvas.class.getClassLoader(),
-                new Class<?>[]{MapCanvas.class}, (proxy, method, args) -> {
-                    if (method.getName().equals("setPixelColor")) {
-                        colors[(int) args[1]][(int) args[0]] = (Color) args[2];
-                        return null;
-                    }
-                    throw new UnsupportedOperationException(method.getName());
-                });
+        final MapCanvas canvas =
+                (MapCanvas)
+                        Proxy.newProxyInstance(
+                                MapCanvas.class.getClassLoader(),
+                                new Class<?>[] {MapCanvas.class},
+                                (proxy, method, args) -> {
+                                    if (method.getName().equals("setPixelColor")) {
+                                        colors[(int) args[1]][(int) args[0]] = (Color) args[2];
+                                        return null;
+                                    }
+                                    throw new UnsupportedOperationException(method.getName());
+                                });
 
         Set<Color> firstBorder() {
             Set<Color> result = new HashSet<>();

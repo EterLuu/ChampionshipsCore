@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.finale;
 
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -17,20 +18,25 @@ public final class FinaleGameRegistry {
 
     static {
         EnumMap<GameTypeEnum, FinaleGameDefinition> definitions = new EnumMap<>(GameTypeEnum.class);
-        register(definitions, new FinaleGameDefinition(
-                GameTypeEnum.Dodgebolt, "dodgebolt", "dodgebolt", true));
-        register(definitions, new FinaleGameDefinition(
-                GameTypeEnum.DragonEggCarnival, "dragoneggcarnival", "area1", false));
-        register(definitions, new FinaleGameDefinition(
-                GameTypeEnum.SulfurSoccer, "sulfursoccer", "sulfursoccer", false));
+        register(
+                definitions,
+                new FinaleGameDefinition(GameTypeEnum.Dodgebolt, "dodgebolt", "dodgebolt", true));
+        register(
+                definitions,
+                new FinaleGameDefinition(
+                        GameTypeEnum.DragonEggCarnival, "dragoneggcarnival", "area1", false));
+        register(
+                definitions,
+                new FinaleGameDefinition(
+                        GameTypeEnum.SulfurSoccer, "sulfursoccer", "sulfursoccer", false));
         DEFINITIONS = Collections.unmodifiableMap(definitions);
     }
 
-    private FinaleGameRegistry() {
-    }
+    private FinaleGameRegistry() {}
 
-    private static void register(@NotNull Map<GameTypeEnum, FinaleGameDefinition> definitions,
-                                 @NotNull FinaleGameDefinition definition) {
+    private static void register(
+            @NotNull Map<GameTypeEnum, FinaleGameDefinition> definitions,
+            @NotNull FinaleGameDefinition definition) {
         if (definitions.putIfAbsent(definition.gameType(), definition) != null)
             throw new IllegalStateException("Duplicate finale game: " + definition.gameType());
     }

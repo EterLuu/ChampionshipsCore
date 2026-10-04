@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.platform.bukkit.text;
 
 import ink.ziip.championshipscore.protocol.CrossServerChatMessage;
+
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 
@@ -11,22 +12,37 @@ import java.util.UUID;
 public final class CrossServerChatText {
     private static final GsonComponentSerializer SERIALIZER = GsonComponentSerializer.gson();
 
-    private CrossServerChatText() {
-    }
+    private CrossServerChatText() {}
 
-    public static CrossServerChatMessage message(String sourceInstance, UUID senderId, String senderName,
-                                                  PlayerPresentation presentation, Component content,
-                                                  long createdAt) {
+    public static CrossServerChatMessage message(
+            String sourceInstance,
+            UUID senderId,
+            String senderName,
+            PlayerPresentation presentation,
+            Component content,
+            long createdAt) {
         Objects.requireNonNull(presentation, "presentation");
-        return new CrossServerChatMessage(UUID.randomUUID(), sourceInstance, senderId, senderName,
-                presentation.label(), presentation.teamColorCode(), presentation.activePlayer(),
-                SERIALIZER.serialize(Objects.requireNonNull(content, "content")), createdAt, presentation.daily());
+        return new CrossServerChatMessage(
+                UUID.randomUUID(),
+                sourceInstance,
+                senderId,
+                senderName,
+                presentation.label(),
+                presentation.teamColorCode(),
+                presentation.activePlayer(),
+                SERIALIZER.serialize(Objects.requireNonNull(content, "content")),
+                createdAt,
+                presentation.daily());
     }
 
     public static Component render(CrossServerChatMessage message) {
         Objects.requireNonNull(message, "message");
         Component content = SERIALIZER.deserialize(message.messageJson());
-        return new PlayerPresentation(message.label(), message.teamColorCode(), message.activePlayer(), message.daily())
+        return new PlayerPresentation(
+                        message.label(),
+                        message.teamColorCode(),
+                        message.activePlayer(),
+                        message.daily())
                 .chatLine(message.senderName(), content);
     }
 }

@@ -1,16 +1,17 @@
 package ink.ziip.championshipscore.api.game.arena;
 
-import org.bukkit.util.Vector;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import org.bukkit.util.Vector;
+import org.junit.jupiter.api.Test;
 
 class SourceAnchoredRowArenaGridTest {
     @Test
     void keepsSourceAtZeroAndStartsGeneratedRowAtOne() {
-        ArenaGrid grid = new SourceAnchoredRowArenaGrid(
-                new Vector(10, 64, 20), new Vector(1024, 64, 20), new Vector(432, 0, 0));
+        ArenaGrid grid =
+                new SourceAnchoredRowArenaGrid(
+                        new Vector(10, 64, 20), new Vector(1024, 64, 20), new Vector(432, 0, 0));
 
         assertEquals(new Vector(10, 64, 20), grid.origin(0));
         assertEquals(new Vector(1024, 64, 20), grid.origin(1));
@@ -20,8 +21,9 @@ class SourceAnchoredRowArenaGridTest {
 
     @Test
     void rejectsNegativeCopyIndexes() {
-        ArenaGrid grid = new SourceAnchoredRowArenaGrid(
-                new Vector(), new Vector(100, 0, 0), new Vector(16, 0, 0));
+        ArenaGrid grid =
+                new SourceAnchoredRowArenaGrid(
+                        new Vector(), new Vector(100, 0, 0), new Vector(16, 0, 0));
         assertThrows(IllegalArgumentException.class, () -> grid.origin(-1));
     }
 }

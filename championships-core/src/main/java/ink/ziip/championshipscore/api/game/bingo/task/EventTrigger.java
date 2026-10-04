@@ -11,21 +11,24 @@ import java.util.Set;
  * Central catalogue of every {@link EventTask} trigger, grouped by completion model.
  *
  * <p>This is the architectural backbone behind the {@code events:} card-pool section:
+ *
  * <ul>
  *   <li>{@link Mode#SIGNAL} - a discrete Bukkit event observed by {@code BingoHandler} and routed
- *       through {@code BingoRound#tryCompleteEventSignal}.</li>
+ *       through {@code BingoRound#tryCompleteEventSignal}.
  *   <li>{@link Mode#STATE} - a property of the player/world that can be queried on the tracker pass
- *       (armour, effects, inventory sets, current biome, …).</li>
+ *       (armour, effects, inventory sets, current biome, …).
  *   <li>{@link Mode#TRACKED} - session-long accumulation over a per-player bucket (distinct sets,
- *       counters, elapsed time) fed by listeners and resolved on the tracker pass.</li>
+ *       counters, elapsed time) fed by listeners and resolved on the tracker pass.
  * </ul>
  *
- * <p>All access to the trigger name stays string-based in {@link EventTask} so the YAML objective ids
- * remain stable; this enum is the single source of truth for validity and for poll-vs-signal routing.
+ * <p>All access to the trigger name stays string-based in {@link EventTask} so the YAML objective
+ * ids remain stable; this enum is the single source of truth for validity and for poll-vs-signal
+ * routing.
  */
 public enum EventTrigger {
 
-    // ── STATE: queryable on each tracker pass ──────────────────────────────────────────────────────
+    // ── STATE: queryable on each tracker pass
+    // ──────────────────────────────────────────────────────
     WEAR("wear", Mode.STATE),
     WEAR_FULL_ENCHANTED("wear_full_enchanted", Mode.STATE),
     WEAR_DYED("wear_dyed", Mode.STATE),
@@ -40,7 +43,8 @@ public enum EventTrigger {
     STACK_OF_64("stack_of_64", Mode.STATE),
     FILL_INVENTORY_UNIQUE("fill_inventory_unique", Mode.STATE),
 
-    // ── SIGNAL: one-shot events observed by listeners ─────────────────────────────────────────────
+    // ── SIGNAL: one-shot events observed by listeners
+    // ─────────────────────────────────────────────
     EAT("eat", Mode.SIGNAL),
     DRINK("drink", Mode.SIGNAL),
     DIE("die", Mode.SIGNAL),
@@ -62,12 +66,14 @@ public enum EventTrigger {
     ENRAGE("enrage", Mode.SIGNAL),
     EXPLODE_END_CRYSTAL("explode_end_crystal", Mode.SIGNAL),
 
-    // ── TRACKED: per-player distinct-set / counter / elapsed-time accumulation ────────────────────
+    // ── TRACKED: per-player distinct-set / counter / elapsed-time accumulation
+    // ────────────────────
     CRAFT_UNIQUE("craft_unique", Mode.TRACKED),
     EAT_UNIQUE("eat_unique", Mode.TRACKED),
     EAT_ALL("eat_all", Mode.TRACKED),
     BREED_UNIQUE("breed_unique", Mode.TRACKED),
-    LEASH_UNIQUE("leash_unique", Mode.STATE), // resolved from the mobs currently leashed to the player
+    LEASH_UNIQUE(
+            "leash_unique", Mode.STATE), // resolved from the mobs currently leashed to the player
     SPY_UNIQUE("spy_unique", Mode.TRACKED),
     COMPOST_UNIQUE("compost_unique", Mode.TRACKED),
     ADVANCEMENT_COUNT("advancement_count", Mode.TRACKED),

@@ -5,10 +5,12 @@ import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
 import ink.ziip.championshipscore.api.event.TeamGameEndEvent;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
+import ink.ziip.championshipscore.api.game.spatial.TeleportPositions;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.logging.LogText;
 import ink.ziip.championshipscore.platform.bukkit.player.PlayerStateService;
-import ink.ziip.championshipscore.util.Utils;
+
 import org.bukkit.GameMode;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -39,22 +41,33 @@ public class GameManagerHandler extends BaseListener {
     private void warnLobbyUnavailable() {
         if (lobbyBrokenWarned) return;
         lobbyBrokenWarned = true;
-        plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("GameManager", "大厅",
-                "大厅世界不可用，请检查 config.yml 的 lobby.location.world_key/world；修复并重载前将跳过大厅传送"));
+        plugin.getLogger()
+                .log(
+                        Level.SEVERE,
+                        LogText.formatModuleLog(
+                                "GameManager",
+                                "大厅",
+                                "大厅世界不可用，请检查 config.yml 的"
+                                        + " lobby.location.world_key/world；修复并重载前将跳过大厅传送"));
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerDeath(PlayerDeathEvent event) {
         Player player = event.getEntity();
         UUID uuid = player.getUniqueId();
+        if (plugin.getGameManager().getSpectatorManager().isSpectatorLike(uuid)) return;
         if (plugin.getGameManager().isWaitingForNextRound(uuid)) {
             event.setKeepInventory(true);
             event.getDrops().clear();
             event.setDroppedExp(0);
-            plugin.getServer().getScheduler().runTask(plugin, () -> {
-                player.spigot().respawn();
-                plugin.getGameManager().restoreNextRoundHold(player);
-            });
+            plugin.getServer()
+                    .getScheduler()
+                    .runTask(
+                            plugin,
+                            () -> {
+                                player.spigot().respawn();
+                                plugin.getGameManager().restoreNextRoundHold(player);
+                            });
             return;
         }
         BaseGameInstance baseArea = plugin.getGameManager().getBasePlayerArea(uuid);
@@ -65,10 +78,14 @@ public class GameManagerHandler extends BaseListener {
                 event.setDroppedExp(0);
                 event.getDrops().clear();
                 BaseGameInstance preGameArea = baseArea;
-                plugin.getServer().getScheduler().runTask(plugin, () -> {
-                    player.spigot().respawn();
-                    preGameArea.restoreSharedPreGameParticipant(player);
-                });
+                plugin.getServer()
+                        .getScheduler()
+                        .runTask(
+                                plugin,
+                                () -> {
+                                    player.spigot().respawn();
+                                    preGameArea.restoreSharedPreGameParticipant(player);
+                                });
                 return;
             }
             baseArea.handlePlayerDeath(event);
@@ -80,19 +97,29 @@ public class GameManagerHandler extends BaseListener {
             return;
         }
 
-        plugin.getServer().getScheduler().runTask(plugin, () -> {
-            event.getEntity().spigot().respawn();
-            if (!lobbyAvailable()) {
-                warnLobbyUnavailable();
-                return;
-            }
-            player.teleport(Utils.getScatteredLobbyLocation(CCConfig.LOBBY_LOCATION, player));
-            ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-            championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
-                player.setGameMode(GameMode.ADVENTURE);
-            });
-
-        });
+        plugin.getServer()
+                .getScheduler()
+                .runTask(
+                        plugin,
+                        () -> {
+                            event.getEntity().spigot().respawn();
+                            if (!lobbyAvailable()) {
+                                warnLobbyUnavailable();
+                                return;
+                            }
+                            player.teleport(
+                                    TeleportPositions.getScatteredLobbyLocation(
+                                            CCConfig.LOBBY_LOCATION, player));
+                            ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
+                            championshipsCore
+                                    .getServer()
+                                    .getScheduler()
+                                    .runTask(
+                                            championshipsCore,
+                                            () -> {
+                                                player.setGameMode(GameMode.ADVENTURE);
+                                            });
+                        });
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -102,12 +129,19 @@ public class GameManagerHandler extends BaseListener {
         if (plugin.getGameManager().restoreNextRoundHold(player)) {
             return;
         }
+        BaseGameInstance external = plugin.getGameManager().getPlayerSpectatorStatus(uuid);
+        if (external != null) {
+            plugin.getGameManager().getSpectatorManager().prepareExternal(player);
+            external.handleSpectatorJoin(event);
+            return;
+        }
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
         BaseGameInstance baseArea = plugin.getGameManager().getBasePlayerArea(uuid);
         if (baseArea != null) {
-            if (baseArea.restoreSharedPreGameParticipant(player))
-                return;
-            if (baseArea.getGameStageEnum() == ink.ziip.championshipscore.api.object.stage.GameStageEnum.END
+            plugin.getGameManager().getSpectatorManager().beforeParticipantJoin(player, baseArea);
+            if (baseArea.restoreSharedPreGameParticipant(player)) return;
+            if (baseArea.getGameStageEnum()
+                            == ink.ziip.championshipscore.api.game.model.GameStageEnum.END
                     && baseArea.isPostGamePending()) {
                 // A reconnect during the result window must not revive game inventory or mode.
                 baseArea.sanitizeParticipantForLobby(player, true);
@@ -122,36 +156,59 @@ public class GameManagerHandler extends BaseListener {
             return;
         }
 
-        boolean dailyLobby = plugin.getDailyManager() != null && plugin.getDailyManager().isDailyLobby();
-        if (!dailyLobby && championshipTeam == null && plugin.getGameManager().spectateCurrentGame(player)) {
+        boolean dailyLobby =
+                plugin.getDailyManager() != null && plugin.getDailyManager().isDailyLobby();
+        if (!dailyLobby
+                && championshipTeam == null
+                && plugin.getGameManager().spectateCurrentGame(player)) {
             return;
         }
 
-        // Fallback lobby clear: this player is neither a participant nor a spectator in any game, so no
-        // area is managing their inventory or effects. Strip both once on join so stale items/effects
-        // carried over from a previous/crashed game don't follow them into the lobby. Participants and
-        // spectators are dispatched above and never reach here, so active game state is never touched.
+        // Fallback lobby clear: this player is neither a participant nor a spectator in any game,
+        // so no
+        // area is managing their inventory or effects. Strip both once on join so stale
+        // items/effects
+        // carried over from a previous/crashed game don't follow them into the lobby. Participants
+        // and
+        // spectators are dispatched above and never reach here, so active game state is never
+        // touched.
         player.getInventory().clear();
         PlayerStateService.clearEffects(player);
         // A Bingo worker may have routed the player before its entity-scheduled spectator cleanup
         // ran.  The lobby is the authoritative fallback, so never carry flight permission across
         // a server transfer even when the remote side lost that race.
         PlayerStateService.disableFlight(player);
+        player.setInvulnerable(false);
+        player.setCollidable(true);
+        player.setNoPhysics(false);
+        player.setAffectsSpawning(true);
+        player.setCanPickupItems(true);
+        player.setSleepingIgnored(false);
 
         World world = player.getWorld();
         if (!lobbyAvailable()) {
             warnLobbyUnavailable();
         } else if (!world.equals(CCConfig.LOBBY_LOCATION.getWorld())) {
             ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-            championshipsCore.getServer().getScheduler().runTask(championshipsCore, () -> {
-                player.teleport(Utils.getScatteredLobbyLocation(CCConfig.LOBBY_LOCATION, player));
-            });
+            championshipsCore
+                    .getServer()
+                    .getScheduler()
+                    .runTask(
+                            championshipsCore,
+                            () -> {
+                                player.teleport(
+                                        TeleportPositions.getScatteredLobbyLocation(
+                                                CCConfig.LOBBY_LOCATION, player));
+                            });
         }
         // The lobby is always adventure, including reconnects that already spawned in its world.
         player.setGameMode(GameMode.ADVENTURE);
     }
 
-    /** Returns untracked lobby players before the void can kill them. Game instances own their own fall handling. */
+    /**
+     * Returns untracked lobby players before the void can kill them. Game instances own their own
+     * fall handling.
+     */
     @EventHandler(priority = EventPriority.LOWEST)
     public void onLobbyFall(PlayerMoveEvent event) {
         if (!positionChanged(event)) return;
@@ -170,7 +227,8 @@ public class GameManagerHandler extends BaseListener {
 
         player.setFallDistance(0F);
         player.setVelocity(new org.bukkit.util.Vector());
-        player.teleport(Utils.getScatteredLobbyLocation(CCConfig.LOBBY_LOCATION, player));
+        player.teleport(
+                TeleportPositions.getScatteredLobbyLocation(CCConfig.LOBBY_LOCATION, player));
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -189,8 +247,10 @@ public class GameManagerHandler extends BaseListener {
 
     private BaseGameInstance routedArea(PlayerMoveEvent event) {
         UUID uuid = event.getPlayer().getUniqueId();
-        BaseGameInstance area = plugin.getGameManager().getBasePlayerArea(uuid);
-        return area != null ? area : plugin.getGameManager().getSpectatorManager().areaOf(uuid);
+        var spectators = plugin.getGameManager().getSpectatorManager();
+        if (spectators.isSpectatorLike(uuid) && spectators.areaOf(uuid) != null)
+            return spectators.areaOf(uuid);
+        return plugin.getGameManager().getBasePlayerArea(uuid);
     }
 
     private static boolean positionChanged(PlayerMoveEvent event) {
@@ -214,14 +274,14 @@ public class GameManagerHandler extends BaseListener {
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
         BaseGameInstance baseArea = plugin.getGameManager().getBasePlayerArea(uuid);
-        if (baseArea != null)
-            baseArea.handlePlayerQuit(event);
+        if (baseArea != null) baseArea.handlePlayerQuit(event);
         baseArea = plugin.getGameManager().getPlayerSpectatorStatus(uuid);
         if (baseArea != null) {
             if (!baseArea.keepSpectatorAcrossReconnect()) {
                 plugin.getGameManager().leaveSpectating(player);
             }
-            // else: keep tracking so handleSpectatorJoin restores the spectator on reconnect; the area
+            // else: keep tracking so handleSpectatorJoin restores the spectator on reconnect; the
+            // area
             // releases them itself when its game ends (releaseAllSpectators).
         }
     }

@@ -2,9 +2,10 @@ package ink.ziip.championshipscore.integration.papi;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
-import ink.ziip.championshipscore.api.game.tntrun.TNTRunTeamArea;
-import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
+import ink.ziip.championshipscore.api.game.model.GameStageEnum;
+import ink.ziip.championshipscore.api.game.tntrun.runtime.TNTRunTeamArea;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+
 import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
 
@@ -29,7 +30,8 @@ public class TNTRunPlaceholder extends BaseGamePlaceholder<TNTRunTeamArea> {
         /* Non-Player required placeholders */
 
         if (params.startsWith("area_tnt_rain_countdown_")) {
-            TNTRunTeamArea tntRunTeamArea = resolveArea(params, "area_tnt_rain_countdown_", offlinePlayer);
+            TNTRunTeamArea tntRunTeamArea =
+                    resolveArea(params, "area_tnt_rain_countdown_", offlinePlayer);
             if (tntRunTeamArea == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }
@@ -38,17 +40,15 @@ public class TNTRunPlaceholder extends BaseGamePlaceholder<TNTRunTeamArea> {
             }
 
             int timer = tntRunTeamArea.getTimer();
-            if (timer >= 120)
-                return String.valueOf(timer - 120);
-            if (timer >= 60)
-                return String.valueOf(timer - 60);
-            if (timer >= 20)
-                return String.valueOf(timer - 20);
+            if (timer >= 120) return String.valueOf(timer - 120);
+            if (timer >= 60) return String.valueOf(timer - 60);
+            if (timer >= 20) return String.valueOf(timer - 20);
 
             return String.valueOf(0);
         }
         if (params.startsWith("area_survived_players_")) {
-            TNTRunTeamArea tntRunTeamArea = resolveArea(params, "area_survived_players_", offlinePlayer);
+            TNTRunTeamArea tntRunTeamArea =
+                    resolveArea(params, "area_survived_players_", offlinePlayer);
             if (tntRunTeamArea == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
             }

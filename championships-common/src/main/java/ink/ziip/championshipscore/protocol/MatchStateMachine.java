@@ -4,7 +4,9 @@ import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Map;
 
-/** Shared lifecycle validator; stale workers cannot invent backwards or post-terminal transitions. */
+/**
+ * Shared lifecycle validator; stale workers cannot invent backwards or post-terminal transitions.
+ */
 public final class MatchStateMachine {
     private static final Map<MatchState, EnumSet<MatchState>> ALLOWED = allowedTransitions();
 
@@ -49,17 +51,23 @@ public final class MatchStateMachine {
     private static Map<MatchState, EnumSet<MatchState>> allowedTransitions() {
         EnumMap<MatchState, EnumSet<MatchState>> transitions = new EnumMap<>(MatchState.class);
         transitions.put(MatchState.CREATED, EnumSet.of(MatchState.PREPARING, MatchState.ABORTED));
-        transitions.put(MatchState.PREPARING,
+        transitions.put(
+                MatchState.PREPARING,
                 EnumSet.of(MatchState.READY, MatchState.SUSPENDED, MatchState.ABORTED));
-        transitions.put(MatchState.READY,
+        transitions.put(
+                MatchState.READY,
                 EnumSet.of(MatchState.ROUTING, MatchState.SUSPENDED, MatchState.ABORTED));
-        transitions.put(MatchState.ROUTING,
+        transitions.put(
+                MatchState.ROUTING,
                 EnumSet.of(MatchState.COUNTDOWN, MatchState.SUSPENDED, MatchState.ABORTED));
-        transitions.put(MatchState.COUNTDOWN,
+        transitions.put(
+                MatchState.COUNTDOWN,
                 EnumSet.of(MatchState.RUNNING, MatchState.SUSPENDED, MatchState.ABORTED));
-        transitions.put(MatchState.RUNNING,
+        transitions.put(
+                MatchState.RUNNING,
                 EnumSet.of(MatchState.SETTLING, MatchState.SUSPENDED, MatchState.ABORTED));
-        transitions.put(MatchState.SETTLING,
+        transitions.put(
+                MatchState.SETTLING,
                 EnumSet.of(MatchState.FINISHED, MatchState.SUSPENDED, MatchState.ABORTED));
         transitions.put(MatchState.SUSPENDED, EnumSet.of(MatchState.ABORTED));
         transitions.put(MatchState.FINISHED, EnumSet.noneOf(MatchState.class));
@@ -67,6 +75,5 @@ public final class MatchStateMachine {
         return Map.copyOf(transitions);
     }
 
-    public record Transition(MatchState from, MatchState to, long revision) {
-    }
+    public record Transition(MatchState from, MatchState to, long revision) {}
 }

@@ -5,16 +5,12 @@ import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.database.sync.DatabaseSyncDomain;
 import ink.ziip.championshipscore.database.sync.DatabaseSyncEvent;
+import ink.ziip.championshipscore.logging.LogText;
 import ink.ziip.championshipscore.protocol.CrossServerChatMessage;
 import ink.ziip.championshipscore.protocol.transport.DeliveryDisposition;
 import ink.ziip.championshipscore.protocol.transport.DeliveryHandler;
 import ink.ziip.championshipscore.protocol.transport.MatchInboundMessage;
-import ink.ziip.championshipscore.redis.RedisConsumerConfig;
-import ink.ziip.championshipscore.redis.RedisGroupNames;
-import ink.ziip.championshipscore.redis.RedisMatchConsumer;
-import ink.ziip.championshipscore.redis.RedisMatchTransport;
-import ink.ziip.championshipscore.redis.RedisTransportConfig;
-import ink.ziip.championshipscore.util.Utils;
+
 import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
 
@@ -28,27 +24,30 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
 import java.util.function.Consumer;
+import java.util.logging.Level;
 
 /** One Core-owned Redis lifecycle for database invalidation and remote-game transports. */
 public final class RedisManager extends BaseManager {
     private static final int DEDUPLICATION_LIMIT = 4096;
     private static final int PENDING_PUBLICATION_LIMIT = 10_000;
-    private final Map<UUID, Boolean> processedEvents = java.util.Collections.synchronizedMap(
-            new LinkedHashMap<>(DEDUPLICATION_LIMIT, .75F, true) {
-                @Override protected boolean removeEldestEntry(Map.Entry<UUID, Boolean> eldest) {
-                    return size() > DEDUPLICATION_LIMIT;
-                }
-            });
-    private final BlockingQueue<DatabaseSyncEvent> pendingPublications = new ArrayBlockingQueue<>(PENDING_PUBLICATION_LIMIT);
+    private final Map<UUID, Boolean> processedEvents =
+            java.util.Collections.synchronizedMap(
+                    new LinkedHashMap<>(DEDUPLICATION_LIMIT, .75F, true) {
+                        @Override
+                        protected boolean removeEldestEntry(Map.Entry<UUID, Boolean> eldest) {
+                            return size() > DEDUPLICATION_LIMIT;
+                        }
+                    });
+    private final BlockingQueue<DatabaseSyncEvent> pendingPublications =
+            new ArrayBlockingQueue<>(PENDING_PUBLICATION_LIMIT);
     private final Map<String, RedisMatchTransport> matchTransports = new ConcurrentHashMap<>();
     private final Set<RedisMatchConsumer> matchConsumers = ConcurrentHashMap.newKeySet();
     private final AtomicBoolean ready = new AtomicBoolean();
@@ -60,7 +59,7 @@ public final class RedisManager extends BaseManager {
     private RedisStreamPublisher publisher;
     private RedisStreamConsumer syncConsumer;
     private RedisChatTransport chatTransport;
-    private volatile Consumer<CrossServerChatMessage> chatReceiver = ignored -> { };
+    private volatile Consumer<CrossServerChatMessage> chatReceiver = ignored -> {};
     private BukkitTask reconciliationTask;
     private BukkitTask connectionRetryTask;
     private String instanceId;
@@ -89,20 +88,30 @@ public final class RedisManager extends BaseManager {
         configuredMaxDeliveries = CCConfig.REDIS_MAX_DELIVERIES;
         if (!configuredEnabled) {
             readyFuture.completeExceptionally(new IllegalStateException("Redis is disabled"));
-            plugin.getLogger().info(Utils.formatModuleLog("Redis", "启动", "统一Redis管理器未启用"));
+            plugin.getLogger().info(LogText.formatModuleLog("Redis", "启动", "统一Redis管理器未启用"));
             return;
         }
         try {
             instanceId = resolveInstanceId();
-            connectionConfig = new RedisConnectionConfig(configuredUri, configuredNamespace,
-                    instanceId, configuredStreamMaxLength, Duration.ofSeconds(5));
+            connectionConfig =
+                    new RedisConnectionConfig(
+                            configuredUri,
+                            configuredNamespace,
+                            instanceId,
+                            configuredStreamMaxLength,
+                            Duration.ofSeconds(5));
             long interval = Math.max(5L, CCConfig.REDIS_RECONCILIATION_SECONDS) * 20L;
-            reconciliationTask = plugin.getServer().getScheduler().runTaskTimer(plugin,
-                    this::reconcileDatabaseCaches, interval, interval);
+            reconciliationTask =
+                    plugin.getServer()
+                            .getScheduler()
+                            .runTaskTimer(
+                                    plugin, this::reconcileDatabaseCaches, interval, interval);
             // Initial connection attempts run off the server thread. A Redis outage at boot leaves
             // database reconciliation active and is retried without requiring a Core restart.
-            connectionRetryTask = plugin.getServer().getScheduler().runTaskTimerAsynchronously(plugin,
-                    this::ensureConnected, 0L, 200L);
+            connectionRetryTask =
+                    plugin.getServer()
+                            .getScheduler()
+                            .runTaskTimerAsynchronously(plugin, this::ensureConnected, 0L, 200L);
         } catch (RuntimeException failure) {
             readyFuture.completeExceptionally(failure);
             plugin.getLogger().log(Level.SEVERE, "Unified Redis initialization failed", failure);
@@ -117,31 +126,62 @@ public final class RedisManager extends BaseManager {
         RedisChatTransport candidateChat = null;
         try {
             candidatePublisher = new RedisStreamPublisher(connectionConfig);
-            RedisConsumerConfig consumerConfig = new RedisConsumerConfig(
-                    syncGroup(), instanceId, 64,
-                    Duration.ofMillis(configuredBlockTimeoutMillis),
-                    Duration.ofMillis(configuredReclaimIdleMillis),
-                    configuredMaxDeliveries);
+            RedisConsumerConfig consumerConfig =
+                    new RedisConsumerConfig(
+                            syncGroup(),
+                            instanceId,
+                            64,
+                            Duration.ofMillis(configuredBlockTimeoutMillis),
+                            Duration.ofMillis(configuredReclaimIdleMillis),
+                            configuredMaxDeliveries);
             // A brand-new Core has already loaded the authoritative DB snapshot, so its new group
             // starts at the current tail. Existing stable groups still resume their pending cursor.
-            candidateConsumer = new RedisStreamConsumer(connectionConfig, consumerConfig,
-                    dataSyncStream(), "$", this::consumeDatabaseSync,
-                    failure -> plugin.getLogger().log(Level.SEVERE,
-                            "Redis database-sync consumer failure", failure));
-            RedisConsumerConfig chatConsumerConfig = new RedisConsumerConfig(
-                    RedisGroupNames.chat(configuredGroupPrefix, instanceId), instanceId, 64,
-                    Duration.ofMillis(configuredBlockTimeoutMillis),
-                    Duration.ofMillis(configuredReclaimIdleMillis), configuredMaxDeliveries);
-            candidateChat = new RedisChatTransport(connectionConfig, chatConsumerConfig,
-                    this::receiveChat, failure -> plugin.getLogger().log(Level.WARNING,
-                    "Redis cross-server chat consumer failure", failure));
+            candidateConsumer =
+                    new RedisStreamConsumer(
+                            connectionConfig,
+                            consumerConfig,
+                            dataSyncStream(),
+                            "$",
+                            this::consumeDatabaseSync,
+                            failure ->
+                                    plugin.getLogger()
+                                            .log(
+                                                    Level.SEVERE,
+                                                    "Redis database-sync consumer failure",
+                                                    failure));
+            RedisConsumerConfig chatConsumerConfig =
+                    new RedisConsumerConfig(
+                            RedisGroupNames.chat(configuredGroupPrefix, instanceId),
+                            instanceId,
+                            64,
+                            Duration.ofMillis(configuredBlockTimeoutMillis),
+                            Duration.ofMillis(configuredReclaimIdleMillis),
+                            configuredMaxDeliveries);
+            candidateChat =
+                    new RedisChatTransport(
+                            connectionConfig,
+                            chatConsumerConfig,
+                            this::receiveChat,
+                            failure ->
+                                    plugin.getLogger()
+                                            .log(
+                                                    Level.WARNING,
+                                                    "Redis cross-server chat consumer failure",
+                                                    failure));
             RedisStreamPublisher connectedPublisher = candidatePublisher;
             RedisStreamConsumer connectedConsumer = candidateConsumer;
             RedisChatTransport connectedChat = candidateChat;
-            candidatePublisher.ping().thenCompose(ignored -> connectedConsumer.start())
+            candidatePublisher
+                    .ping()
+                    .thenCompose(ignored -> connectedConsumer.start())
                     .thenCompose(ignored -> connectedChat.start())
-                    .whenComplete((ignored, failure) -> finishConnectionAttempt(
-                            connectedPublisher, connectedConsumer, connectedChat, failure));
+                    .whenComplete(
+                            (ignored, failure) ->
+                                    finishConnectionAttempt(
+                                            connectedPublisher,
+                                            connectedConsumer,
+                                            connectedChat,
+                                            failure));
         } catch (RuntimeException failure) {
             close(candidateChat);
             close(candidateConsumer);
@@ -151,9 +191,11 @@ public final class RedisManager extends BaseManager {
         }
     }
 
-    private synchronized void finishConnectionAttempt(RedisStreamPublisher connectedPublisher,
-                                                       RedisStreamConsumer connectedConsumer,
-                                                       RedisChatTransport connectedChat, Throwable failure) {
+    private synchronized void finishConnectionAttempt(
+            RedisStreamPublisher connectedPublisher,
+            RedisStreamConsumer connectedConsumer,
+            RedisChatTransport connectedChat,
+            Throwable failure) {
         if (failure != null || stopping.get()) {
             close(connectedChat);
             close(connectedConsumer);
@@ -171,16 +213,29 @@ public final class RedisManager extends BaseManager {
         readyFuture.complete(null);
         if (connectionRetryTask != null) connectionRetryTask.cancel();
         flushPendingPublications();
-        plugin.getLogger().info(Utils.formatModuleLog("Redis", "启动",
-                "实例=" + instanceId + " 数据同步流=" + dataSyncStream()
-                        + " 聊天流=" + RedisChatTransport.stream(connectionConfig)));
+        plugin.getLogger()
+                .info(
+                        LogText.formatModuleLog(
+                                "Redis",
+                                "启动",
+                                "实例="
+                                        + instanceId
+                                        + " 数据同步流="
+                                        + dataSyncStream()
+                                        + " 聊天流="
+                                        + RedisChatTransport.stream(connectionConfig)));
     }
 
     private void connectionAttemptFailed(Throwable failure) {
         int attempts = connectionFailures.incrementAndGet();
         if (attempts == 1 || attempts % 6 == 0) {
-            plugin.getLogger().log(Level.WARNING,
-                    "Unified Redis connection unavailable; retrying (attempt " + attempts + ")", failure);
+            plugin.getLogger()
+                    .log(
+                            Level.WARNING,
+                            "Unified Redis connection unavailable; retrying (attempt "
+                                    + attempts
+                                    + ")",
+                            failure);
         }
     }
 
@@ -197,28 +252,41 @@ public final class RedisManager extends BaseManager {
     }
 
     public void setChatReceiver(Consumer<CrossServerChatMessage> receiver) {
-        chatReceiver = receiver == null ? ignored -> { } : receiver;
+        chatReceiver = receiver == null ? ignored -> {} : receiver;
     }
 
     public void publishChat(CrossServerChatMessage message) {
         RedisChatTransport current = chatTransport;
         if (!ready.get() || current == null) return;
-        current.publish(message).exceptionally(failure -> {
-            plugin.getLogger().log(Level.WARNING,
-                    "Unable to publish cross-server chat message " + message.messageId(), failure);
-            return null;
-        });
+        current.publish(message)
+                .exceptionally(
+                        failure -> {
+                            plugin.getLogger()
+                                    .log(
+                                            Level.WARNING,
+                                            "Unable to publish cross-server chat message "
+                                                    + message.messageId(),
+                                            failure);
+                            return null;
+                        });
     }
 
     private void receiveChat(CrossServerChatMessage message) {
         chatReceiver.accept(message);
     }
 
-    public void publishDatabaseChange(@NotNull String reason, @NotNull DatabaseSyncDomain first,
-                                      DatabaseSyncDomain... additional) {
+    public void publishDatabaseChange(
+            @NotNull String reason,
+            @NotNull DatabaseSyncDomain first,
+            DatabaseSyncDomain... additional) {
         EnumSet<DatabaseSyncDomain> domains = EnumSet.of(first, additional);
-        DatabaseSyncEvent event = new DatabaseSyncEvent(UUID.randomUUID(),
-                instanceId == null ? "starting" : instanceId, System.currentTimeMillis(), domains, reason);
+        DatabaseSyncEvent event =
+                new DatabaseSyncEvent(
+                        UUID.randomUUID(),
+                        instanceId == null ? "starting" : instanceId,
+                        System.currentTimeMillis(),
+                        domains,
+                        reason);
         if (!ready.get() || publisher == null) {
             if (configuredEnabled) enqueuePendingPublication(event);
             return;
@@ -228,21 +296,31 @@ public final class RedisManager extends BaseManager {
 
     public synchronized RedisMatchTransport matchTransport(@NotNull String workerId) {
         requireReady();
-        return matchTransports.computeIfAbsent(workerId,
-                id -> new RedisMatchTransport(matchTransportConfig(id)));
+        return matchTransports.computeIfAbsent(
+                workerId, id -> new RedisMatchTransport(matchTransportConfig(id)));
     }
 
-    public RedisMatchConsumer createMatchEventConsumer(@NotNull String workerId,
-                                                        @NotNull DeliveryHandler<MatchInboundMessage> handler,
-                                                        @NotNull java.util.function.Consumer<Throwable> errors) {
+    public RedisMatchConsumer createMatchEventConsumer(
+            @NotNull String workerId,
+            @NotNull DeliveryHandler<MatchInboundMessage> handler,
+            @NotNull java.util.function.Consumer<Throwable> errors) {
         requireReady();
         RedisTransportConfig transportConfig = matchTransportConfig(workerId);
-        RedisConsumerConfig consumerConfig = new RedisConsumerConfig(
-                RedisGroupNames.bingoEvents(configuredGroupPrefix, instanceId),
-                instanceId, 64, Duration.ofMillis(configuredBlockTimeoutMillis),
-                Duration.ofMillis(configuredReclaimIdleMillis), configuredMaxDeliveries);
-        RedisMatchConsumer consumer = new RedisMatchConsumer(transportConfig, consumerConfig,
-                transportConfig.eventStream(), handler, errors);
+        RedisConsumerConfig consumerConfig =
+                new RedisConsumerConfig(
+                        RedisGroupNames.bingoEvents(configuredGroupPrefix, instanceId),
+                        instanceId,
+                        64,
+                        Duration.ofMillis(configuredBlockTimeoutMillis),
+                        Duration.ofMillis(configuredReclaimIdleMillis),
+                        configuredMaxDeliveries);
+        RedisMatchConsumer consumer =
+                new RedisMatchConsumer(
+                        transportConfig,
+                        consumerConfig,
+                        transportConfig.eventStream(),
+                        handler,
+                        errors);
         matchConsumers.add(consumer);
         return consumer;
     }
@@ -252,16 +330,20 @@ public final class RedisManager extends BaseManager {
     }
 
     private CompletionStage<DeliveryDisposition> consumeDatabaseSync(
-            ink.ziip.championshipscore.protocol.transport.InboundDelivery<Map<String, String>> delivery) {
+            ink.ziip.championshipscore.protocol.transport.InboundDelivery<Map<String, String>>
+                    delivery) {
         DatabaseSyncEvent event;
         try {
             event = DatabaseSyncEvent.parse(delivery.payload());
         } catch (RuntimeException malformed) {
-            plugin.getLogger().warning(Utils.formatModuleLog("Redis", "同步",
-                    "拒绝无效数据库同步事件=" + malformed.getMessage()));
+            plugin.getLogger()
+                    .warning(
+                            LogText.formatModuleLog(
+                                    "Redis", "同步", "拒绝无效数据库同步事件=" + malformed.getMessage()));
             return CompletableFuture.completedFuture(DeliveryDisposition.DEAD_LETTER);
         }
-        if (event.sourceInstance().equals(instanceId) || processedEvents.containsKey(event.eventId()))
+        if (event.sourceInstance().equals(instanceId)
+                || processedEvents.containsKey(event.eventId()))
             return CompletableFuture.completedFuture(DeliveryDisposition.ACK);
 
         CompletionStage<Void> refresh = CompletableFuture.completedFuture(null);
@@ -284,44 +366,68 @@ public final class RedisManager extends BaseManager {
         CompletionStage<Void> teamAndRankRefresh = refresh;
         return dailyRefresh
                 .thenCompose(ignored -> teamAndRankRefresh)
-                .handle((ignored, failure) -> {
-            if (failure != null) {
-                plugin.getLogger().log(Level.WARNING, "Database cache refresh failed for Redis event "
-                        + event.eventId(), failure);
-                return DeliveryDisposition.RETRY;
-            }
-            processedEvents.put(event.eventId(), Boolean.TRUE);
-            return DeliveryDisposition.ACK;
-        });
+                .handle(
+                        (ignored, failure) -> {
+                            if (failure != null) {
+                                plugin.getLogger()
+                                        .log(
+                                                Level.WARNING,
+                                                "Database cache refresh failed for Redis event "
+                                                        + event.eventId(),
+                                                failure);
+                                return DeliveryDisposition.RETRY;
+                            }
+                            processedEvents.put(event.eventId(), Boolean.TRUE);
+                            return DeliveryDisposition.ACK;
+                        });
     }
 
     private void reconcileDatabaseCaches() {
         flushPendingPublications();
-        plugin.getTeamManager().refreshFormalTeamsFromDatabase()
+        plugin.getTeamManager()
+                .refreshFormalTeamsFromDatabase()
                 .thenCompose(ignored -> plugin.getRankManager().refreshFromDatabase())
-                .exceptionally(failure -> {
-                    plugin.getLogger().log(Level.WARNING, "Periodic cross-server database reconciliation failed", failure);
-                    return null;
-                });
+                .exceptionally(
+                        failure -> {
+                            plugin.getLogger()
+                                    .log(
+                                            Level.WARNING,
+                                            "Periodic cross-server database reconciliation failed",
+                                            failure);
+                            return null;
+                        });
     }
 
     private void flushPendingPublications() {
         DatabaseSyncEvent event;
         while ((event = pendingPublications.poll()) != null) {
             if ("starting".equals(event.sourceInstance())) {
-                event = new DatabaseSyncEvent(event.eventId(), instanceId, event.createdAt(),
-                        event.domains(), event.reason());
+                event =
+                        new DatabaseSyncEvent(
+                                event.eventId(),
+                                instanceId,
+                                event.createdAt(),
+                                event.domains(),
+                                event.reason());
             }
             publish(event);
         }
     }
 
     private void publish(DatabaseSyncEvent event) {
-        publisher.append(dataSyncStream(), event.fields()).exceptionally(failure -> {
-            enqueuePendingPublication(event);
-            plugin.getLogger().log(Level.WARNING, "Unable to publish database sync event " + event.eventId(), failure);
-            return null;
-        });
+        publisher
+                .append(dataSyncStream(), event.fields())
+                .exceptionally(
+                        failure -> {
+                            enqueuePendingPublication(event);
+                            plugin.getLogger()
+                                    .log(
+                                            Level.WARNING,
+                                            "Unable to publish database sync event "
+                                                    + event.eventId(),
+                                            failure);
+                            return null;
+                        });
     }
 
     private void enqueuePendingPublication(DatabaseSyncEvent event) {
@@ -330,19 +436,28 @@ public final class RedisManager extends BaseManager {
         pendingPublications.offer(event);
     }
 
-    private String dataSyncStream() { return connectionConfig.key("core:data-sync"); }
+    private String dataSyncStream() {
+        return connectionConfig.key("core:data-sync");
+    }
+
     private String syncGroup() {
         return RedisGroupNames.databaseSync(configuredGroupPrefix, instanceId);
     }
 
     private RedisTransportConfig matchTransportConfig(String workerId) {
-        return new RedisTransportConfig(configuredUri, configuredNamespace, workerId,
-                configuredStreamMaxLength, Duration.ofSeconds(5));
+        return new RedisTransportConfig(
+                configuredUri,
+                configuredNamespace,
+                workerId,
+                configuredStreamMaxLength,
+                Duration.ofSeconds(5));
     }
 
     private String resolveInstanceId() {
-        String configured = CCConfig.REDIS_INSTANCE_ID == null ? "auto" : CCConfig.REDIS_INSTANCE_ID.trim();
-        if (!configured.isEmpty() && !configured.equalsIgnoreCase("auto")) return sanitize(configured);
+        String configured =
+                CCConfig.REDIS_INSTANCE_ID == null ? "auto" : CCConfig.REDIS_INSTANCE_ID.trim();
+        if (!configured.isEmpty() && !configured.equalsIgnoreCase("auto"))
+            return sanitize(configured);
         Path file = plugin.getDataFolder().toPath().resolve("redis-instance-id");
         try {
             if (Files.isRegularFile(file)) {
@@ -354,7 +469,8 @@ public final class RedisManager extends BaseManager {
             Files.writeString(file, generated, StandardCharsets.UTF_8);
             return generated;
         } catch (IOException failure) {
-            throw new IllegalStateException("Unable to persist automatic Redis instance id", failure);
+            throw new IllegalStateException(
+                    "Unable to persist automatic Redis instance id", failure);
         }
     }
 

@@ -1,18 +1,18 @@
 package ink.ziip.championshipscore.api.game.area.prepare.parkourtag;
 
-import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
-import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
-import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagConfig;
+import ink.ziip.championshipscore.api.game.parkourtag.config.ParkourTagConfig;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+import ink.ziip.championshipscore.presentation.text.CoreMessages;
+
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+
 import org.bukkit.Bukkit;
 import org.bukkit.DyeColor;
 import org.bukkit.Location;
@@ -41,11 +41,18 @@ final class ParkourTagChaserButtonStep extends PrepareStep {
     private final Function<SetupTarget, Location> getter;
     private final BiConsumer<SetupTarget, Location> setter;
 
-    ParkourTagChaserButtonStep(@NotNull String key, @NotNull Component name,
-                               @NotNull Component description,
-                               @NotNull Function<SetupTarget, Location> getter,
-                               @NotNull BiConsumer<SetupTarget, Location> setter) {
-        super(key, name, description, Material.POLISHED_BLACKSTONE_BUTTON, StepCaptureType.STAND_AND_RUN);
+    ParkourTagChaserButtonStep(
+            @NotNull String key,
+            @NotNull Component name,
+            @NotNull Component description,
+            @NotNull Function<SetupTarget, Location> getter,
+            @NotNull BiConsumer<SetupTarget, Location> setter) {
+        super(
+                key,
+                name,
+                description,
+                Material.POLISHED_BLACKSTONE_BUTTON,
+                StepCaptureType.STAND_AND_RUN);
         this.getter = getter;
         this.setter = setter;
     }
@@ -56,37 +63,46 @@ final class ParkourTagChaserButtonStep extends PrepareStep {
         Location configured = getter.apply(session.getTarget());
         if (configured == null || configured.getWorld() == null) return false;
         ParkourTagConfig config = (ParkourTagConfig) session.getTarget().config();
-        return resolveCopies(config, configured).stream().allMatch(ParkourTagChaserButtonStep::isCompleteButton);
+        return resolveCopies(config, configured).stream()
+                .allMatch(ParkourTagChaserButtonStep::isCompleteButton);
     }
 
     @Override
     public String capture(@NotNull PrepareSession session, @NotNull Player player) {
         Block source = player.getTargetBlockExact(TARGET_DISTANCE);
         if (source == null || !isWallButton(source)) {
-            return Utils.formatAdminError(MessageConfig.MAP_EDITOR_TAG_CHASER_AIM);
+            return CoreMessages.formatAdminError(MessageConfig.MAP_EDITOR_TAG_CHASER_AIM);
         }
 
         ParkourTagConfig config = (ParkourTagConfig) session.getTarget().config();
         Location sourceLocation = source.getLocation();
         List<Block> buttons = resolveCopies(config, sourceLocation);
         if (buttons.size() != Math.max(1, config.getCopyCount())) {
-            return Utils.formatAdminError(MessageConfig.MAP_EDITOR_TAG_WORLD_NOT_LOADED);
+            return CoreMessages.formatAdminError(MessageConfig.MAP_EDITOR_TAG_WORLD_NOT_LOADED);
         }
         for (int index = 0; index < buttons.size(); index++) {
             Block button = buttons.get(index);
             if (index > 0 && !canReplaceWithButton(button)) {
-                return Utils.formatAdminError(MessageConfig.MAP_EDITOR_TAG_INVALID_POSITION.replace("%index%", String.valueOf(index)));
+                return CoreMessages.formatAdminError(
+                        MessageConfig.MAP_EDITOR_TAG_INVALID_POSITION.replace(
+                                "%index%", String.valueOf(index)));
             }
             BlockFace facing = ((Switch) source.getBlockData()).getFacing();
             if (!button.getRelative(facing.getOppositeFace()).getType().isSolid()) {
-                return Utils.formatAdminError(MessageConfig.MAP_EDITOR_TAG_MISSING_WALL.replace("%index%", String.valueOf(index)));
+                return CoreMessages.formatAdminError(
+                        MessageConfig.MAP_EDITOR_TAG_MISSING_WALL.replace(
+                                "%index%", String.valueOf(index)));
             }
             Block label = button.getRelative(BlockFace.DOWN);
             if (!label.getType().isAir() && label.getType() != Material.BIRCH_WALL_SIGN) {
-                return Utils.formatAdminError(MessageConfig.MAP_EDITOR_TAG_MISSING_SPACE.replace("%index%", String.valueOf(index)));
+                return CoreMessages.formatAdminError(
+                        MessageConfig.MAP_EDITOR_TAG_MISSING_SPACE.replace(
+                                "%index%", String.valueOf(index)));
             }
             if (!label.getRelative(facing.getOppositeFace()).getType().isSolid()) {
-                return Utils.formatAdminError(MessageConfig.MAP_EDITOR_TAG_MISSING_SIGN_WALL.replace("%index%", String.valueOf(index)));
+                return CoreMessages.formatAdminError(
+                        MessageConfig.MAP_EDITOR_TAG_MISSING_SIGN_WALL.replace(
+                                "%index%", String.valueOf(index)));
             }
         }
 
@@ -97,11 +113,13 @@ final class ParkourTagChaserButtonStep extends PrepareStep {
         }
         setter.accept(session.getTarget(), sourceLocation);
         session.markDirty();
-        return Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_TAG_CHASER_BUTTONS_SET.replace("%count%", String.valueOf(buttons.size())));
+        return CoreMessages.formatAdminSuccess(
+                MessageConfig.MAP_EDITOR_TAG_CHASER_BUTTONS_SET.replace(
+                        "%count%", String.valueOf(buttons.size())));
     }
 
-    private static @NotNull List<Block> resolveCopies(@NotNull ParkourTagConfig config,
-                                                       @NotNull Location source) {
+    private static @NotNull List<Block> resolveCopies(
+            @NotNull ParkourTagConfig config, @NotNull Location source) {
         List<Block> blocks = new ArrayList<>();
         World world = source.getWorld();
         if (world == null) world = Bukkit.getWorld(config.getWorldName());
@@ -133,7 +151,8 @@ final class ParkourTagChaserButtonStep extends PrepareStep {
     }
 
     private static boolean canReplaceWithButton(@NotNull Block block) {
-        return block.getType().isAir() || Tag.BUTTONS.isTagged(block.getType())
+        return block.getType().isAir()
+                || Tag.BUTTONS.isTagged(block.getType())
                 || block.getType().name().endsWith("_WALL_SIGN");
     }
 
@@ -148,10 +167,16 @@ final class ParkourTagChaserButtonStep extends PrepareStep {
         Sign sign = (Sign) label.getState();
         var front = sign.getSide(Side.FRONT);
         front.line(0, Component.empty());
-        front.line(1, LegacyText.component(MessageConfig.MAP_EDITOR_TAG_SIGN_CLICK, NamedTextColor.YELLOW)
-                .decorate(TextDecoration.BOLD));
-        front.line(2, LegacyText.component(MessageConfig.MAP_EDITOR_TAG_SIGN_BECOME, NamedTextColor.LIGHT_PURPLE)
-                .decorate(TextDecoration.BOLD));
+        front.line(
+                1,
+                LegacyText.component(MessageConfig.MAP_EDITOR_TAG_SIGN_CLICK, NamedTextColor.YELLOW)
+                        .decorate(TextDecoration.BOLD));
+        front.line(
+                2,
+                LegacyText.component(
+                                MessageConfig.MAP_EDITOR_TAG_SIGN_BECOME,
+                                NamedTextColor.LIGHT_PURPLE)
+                        .decorate(TextDecoration.BOLD));
         front.line(3, Component.empty());
         front.setColor(DyeColor.PURPLE);
         front.setGlowingText(true);

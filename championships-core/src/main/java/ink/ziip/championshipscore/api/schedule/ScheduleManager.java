@@ -2,24 +2,29 @@ package ink.ziip.championshipscore.api.schedule;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
-import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.finale.FinaleGameDefinition;
 import ink.ziip.championshipscore.api.finale.FinaleGameRegistry;
-import ink.ziip.championshipscore.api.game.decarnival.DragonEggCarnivalArea;
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
-import ink.ziip.championshipscore.api.object.game.GameRunMode;
+import ink.ziip.championshipscore.api.game.decarnival.runtime.DragonEggCarnivalArea;
+import ink.ziip.championshipscore.api.game.dodgebolt.runtime.DodgeboltArea;
+import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
+import ink.ziip.championshipscore.api.game.model.GameRunMode;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.api.schedule.acerace.AceRaceScheduleHandler;
+import ink.ziip.championshipscore.api.schedule.acerace.AceRaceScheduleManager;
 import ink.ziip.championshipscore.api.schedule.battlebox.BattleBoxScheduleManager;
-import ink.ziip.championshipscore.api.schedule.laserbox.LaserBoxScheduleManager;
 import ink.ziip.championshipscore.api.schedule.bingo.BingoScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.bingo.BingoScheduleManager;
 import ink.ziip.championshipscore.api.schedule.buildmart.BuildMartScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.buildmart.BuildMartScheduleManager;
+import ink.ziip.championshipscore.api.schedule.frostbite.*;
+import ink.ziip.championshipscore.api.schedule.frostbite.FrostbiteScheduleHandler;
+import ink.ziip.championshipscore.api.schedule.frostbite.FrostbiteScheduleManager;
 import ink.ziip.championshipscore.api.schedule.hotycodydusky.HotyCodyDuskyScheduleManager;
+import ink.ziip.championshipscore.api.schedule.laserbox.LaserBoxScheduleManager;
 import ink.ziip.championshipscore.api.schedule.parkourtag.ParkourTagScheduleManager;
 import ink.ziip.championshipscore.api.schedule.parkourwarrior.ParkourWarriorScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.parkourwarrior.ParkourWarriorScheduleManager;
 import ink.ziip.championshipscore.api.schedule.riptiderush.RiptideRushScheduleHandler;
-import ink.ziip.championshipscore.api.schedule.frostbite.*;
 import ink.ziip.championshipscore.api.schedule.riptiderush.RiptideRushScheduleManager;
 import ink.ziip.championshipscore.api.schedule.skywars.SkyWarsScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.skywars.SkyWarsScheduleManager;
@@ -29,32 +34,107 @@ import ink.ziip.championshipscore.api.schedule.tgttos.TGTTOSScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.tgttos.TGTTOSScheduleManager;
 import ink.ziip.championshipscore.api.schedule.tntrun.TNTRunScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.tntrun.TNTRunScheduleManager;
-import ink.ziip.championshipscore.api.schedule.acerace.AceRaceScheduleHandler;
-import ink.ziip.championshipscore.api.schedule.acerace.AceRaceScheduleManager;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageConfig;
+import ink.ziip.championshipscore.logging.LogText;
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+import ink.ziip.championshipscore.presentation.text.CoreMessages;
+
 import lombok.Getter;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scheduler.BukkitTask;
-import org.bukkit.command.CommandSender;
-import ink.ziip.championshipscore.api.game.dodgebolt.DodgeboltArea;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
 public class ScheduleManager extends BaseManager {
+    private final java.util.Map<
+                    GameTypeEnum, ink.ziip.championshipscore.api.game.start.EventStartSelection>
+            startSelections = new java.util.EnumMap<>(GameTypeEnum.class);
+
+    public java.util.List<ChampionshipTeam> participatingTeams(GameTypeEnum game) {
+        var selected = startSelections == null ? null : startSelections.get(game);
+        return selected == null
+                ? java.util.List.copyOf(plugin.getTeamManager().getTeamList())
+                : selected.teams();
+    }
+
+    public ink.ziip.championshipscore.api.game.start.ArenaSelection selectedArenas(
+            GameTypeEnum game) {
+        var selected = startSelections == null ? null : startSelections.get(game);
+        return selected == null
+                ? ink.ziip.championshipscore.api.game.start.ArenaSelection.all()
+                : selected.arenas();
+    }
+
+    public @Nullable String selectedMap(GameTypeEnum game) {
+        var selected = startSelections == null ? null : startSelections.get(game);
+        return selected == null ? null : selected.map();
+    }
+
+    public void clearStartSelection(GameTypeEnum game) {
+        if (startSelections != null) startSelections.remove(game);
+    }
+
+    public EventAction startOrStopFormalEvent(
+            ink.ziip.championshipscore.api.game.start.GameStartArguments arguments) {
+        GameTypeEnum game = arguments.game();
+        if (!supportsFormalEvent(game) || FinaleGameRegistry.isRegistered(game))
+            return EventAction.UNSUPPORTED;
+        if (isFormalEventRunning(game)) return startOrStopFormalEvent(game);
+        var teams =
+                new ink.ziip.championshipscore.api.game.start.GameStartService(plugin)
+                        .resolveTeams(arguments, true, GameRunMode.EVENT);
+        String map = arguments.map();
+        if (map != null) {
+            var manager = plugin.getGameManager().getAreaManager(game);
+            map =
+                    manager.getAreaNameList().stream()
+                            .filter(name -> name.equalsIgnoreCase(arguments.map()))
+                            .findFirst()
+                            .orElseThrow(
+                                    () ->
+                                            new IllegalArgumentException(
+                                                    "找不到正式比赛地图：" + arguments.map()));
+            if (!plugin.getPrepareSessionManager().canStart(game, map))
+                throw new IllegalArgumentException("地图未发布或当前不可启动：" + map);
+        }
+        startSelections.put(
+                game,
+                new ink.ziip.championshipscore.api.game.start.EventStartSelection(
+                        map, teams, arguments.arenas()));
+        EventAction action;
+        try {
+            var service = new ink.ziip.championshipscore.api.game.start.GameStartService(plugin);
+            var maps = FormalEventMapResolver.maps(plugin, game);
+            if (maps.isEmpty()) throw new IllegalArgumentException("没有正式比赛地图");
+            for (String selected : new java.util.LinkedHashSet<>(maps))
+                service.validateMap(game, selected, teams, arguments.arenas());
+            action = startOrStopFormalEvent(game);
+            if (action == EventAction.STARTED && !isFormalEventRunning(game))
+                action = EventAction.UNAVAILABLE;
+        } catch (RuntimeException failure) {
+            clearStartSelection(game);
+            throw failure;
+        }
+        if (action != EventAction.STARTED) clearStartSelection(game);
+        return action;
+    }
+
     private static final long RESULT_DISPLAY_TICKS = 200L;
     private static final int FIRST_ROUND_PREPARATION_SECONDS = 10;
     private static final int ROUND_TRANSITION_SECONDS = 10;
+
     public enum EventAction {
         STARTED,
         STOPPED,
@@ -63,30 +143,18 @@ public class ScheduleManager extends BaseManager {
     }
 
     private final BukkitScheduler scheduler;
-    @Getter
-    private SnowballScheduleManager snowballScheduleManager;
-    @Getter
-    private SkyWarsScheduleManager skyWarsScheduleManager;
-    @Getter
-    private TNTRunScheduleManager tntRunScheduleManager;
-    @Getter
-    private TGTTOSScheduleManager tgttosScheduleManager;
-    @Getter
-    private BattleBoxScheduleManager battleBoxScheduleManager;
-    @Getter
-    private ParkourTagScheduleManager parkourTagScheduleManager;
-    @Getter
-    private ParkourWarriorScheduleManager parkourWarriorScheduleManager;
-    @Getter
-    private HotyCodyDuskyScheduleManager hotyCodyDuskyScheduleManager;
-    @Getter
-    private BingoScheduleManager bingoScheduleManager;
-    @Getter
-    private AceRaceScheduleManager aceRaceScheduleManager;
-    @Getter
-    private BuildMartScheduleManager buildMartScheduleManager;
-    @Getter
-    private RiptideRushScheduleManager riptideRushScheduleManager;
+    @Getter private SnowballScheduleManager snowballScheduleManager;
+    @Getter private SkyWarsScheduleManager skyWarsScheduleManager;
+    @Getter private TNTRunScheduleManager tntRunScheduleManager;
+    @Getter private TGTTOSScheduleManager tgttosScheduleManager;
+    @Getter private BattleBoxScheduleManager battleBoxScheduleManager;
+    @Getter private ParkourTagScheduleManager parkourTagScheduleManager;
+    @Getter private ParkourWarriorScheduleManager parkourWarriorScheduleManager;
+    @Getter private HotyCodyDuskyScheduleManager hotyCodyDuskyScheduleManager;
+    @Getter private BingoScheduleManager bingoScheduleManager;
+    @Getter private AceRaceScheduleManager aceRaceScheduleManager;
+    @Getter private BuildMartScheduleManager buildMartScheduleManager;
+    @Getter private RiptideRushScheduleManager riptideRushScheduleManager;
     @Getter private FrostbiteScheduleManager frostbiteScheduleManager;
     @Getter private LaserBoxScheduleManager laserBoxScheduleManager;
     private BukkitTask dodgeboltTransitionTask;
@@ -105,19 +173,29 @@ public class ScheduleManager extends BaseManager {
 
     @Override
     public void load() {
-        snowballScheduleManager = new SnowballScheduleManager(plugin, new SnowballScheduleHandler(plugin));
-        skyWarsScheduleManager = new SkyWarsScheduleManager(plugin, new SkyWarsScheduleHandler(plugin));
-        tntRunScheduleManager = new TNTRunScheduleManager(plugin, new TNTRunScheduleHandler(plugin));
-        tgttosScheduleManager = new TGTTOSScheduleManager(plugin, new TGTTOSScheduleHandler(plugin));
+        snowballScheduleManager =
+                new SnowballScheduleManager(plugin, new SnowballScheduleHandler(plugin));
+        skyWarsScheduleManager =
+                new SkyWarsScheduleManager(plugin, new SkyWarsScheduleHandler(plugin));
+        tntRunScheduleManager =
+                new TNTRunScheduleManager(plugin, new TNTRunScheduleHandler(plugin));
+        tgttosScheduleManager =
+                new TGTTOSScheduleManager(plugin, new TGTTOSScheduleHandler(plugin));
         battleBoxScheduleManager = new BattleBoxScheduleManager(plugin);
         parkourTagScheduleManager = new ParkourTagScheduleManager(plugin);
-        parkourWarriorScheduleManager = new ParkourWarriorScheduleManager(plugin, new ParkourWarriorScheduleHandler(plugin));
+        parkourWarriorScheduleManager =
+                new ParkourWarriorScheduleManager(
+                        plugin, new ParkourWarriorScheduleHandler(plugin));
         hotyCodyDuskyScheduleManager = new HotyCodyDuskyScheduleManager(plugin);
         bingoScheduleManager = new BingoScheduleManager(plugin, new BingoScheduleHandler(plugin));
-        aceRaceScheduleManager = new AceRaceScheduleManager(plugin, new AceRaceScheduleHandler(plugin));
-        buildMartScheduleManager = new BuildMartScheduleManager(plugin, new BuildMartScheduleHandler(plugin));
-        riptideRushScheduleManager = new RiptideRushScheduleManager(plugin, new RiptideRushScheduleHandler(plugin));
-        frostbiteScheduleManager = new FrostbiteScheduleManager(plugin, new FrostbiteScheduleHandler(plugin));
+        aceRaceScheduleManager =
+                new AceRaceScheduleManager(plugin, new AceRaceScheduleHandler(plugin));
+        buildMartScheduleManager =
+                new BuildMartScheduleManager(plugin, new BuildMartScheduleHandler(plugin));
+        riptideRushScheduleManager =
+                new RiptideRushScheduleManager(plugin, new RiptideRushScheduleHandler(plugin));
+        frostbiteScheduleManager =
+                new FrostbiteScheduleManager(plugin, new FrostbiteScheduleHandler(plugin));
         laserBoxScheduleManager = new LaserBoxScheduleManager(plugin);
 
         snowballScheduleManager.load();
@@ -145,6 +223,7 @@ public class ScheduleManager extends BaseManager {
         dodgeboltTransitionTask = null;
         dragonEggCarnivalTransitionTask = null;
         pendingFinaleRequest = null;
+        startSelections.clear();
         finaleRequestGeneration++;
         clearRoundPreparationCountdown();
         snowballScheduleManager.unload();
@@ -171,20 +250,39 @@ public class ScheduleManager extends BaseManager {
         plugin.getRankManager().resetGameOrder();
     }
 
-    /** @return whether this game has an implementation for the formal-event command surface. */
+    /**
+     * @return whether this game has an implementation for the formal-event command surface.
+     */
     public boolean supportsFormalEvent(@NotNull GameTypeEnum gameTypeEnum) {
         return switch (gameTypeEnum) {
-            case SnowballShowdown, SkyWars, TNTRun, TGTTOS, ParkourWarrior, BattleBox,
-                    ParkourTag, HotyCodyDusky, Bingo, DragonEggCarnival, Dodgebolt, AceRace, BuildMart,
-                    RiptideRush, FrostbiteFrenzy, LaserBox, SulfurSoccer -> true;
+            case SnowballShowdown,
+                    SkyWars,
+                    TNTRun,
+                    TGTTOS,
+                    ParkourWarrior,
+                    BattleBox,
+                    ParkourTag,
+                    HotyCodyDusky,
+                    Bingo,
+                    DragonEggCarnival,
+                    Dodgebolt,
+                    AceRace,
+                    BuildMart,
+                    RiptideRush,
+                    FrostbiteFrenzy,
+                    LaserBox,
+                    SulfurSoccer ->
+                    true;
             default -> false;
         };
     }
 
-    /** Starts an ordinary formal event or stops it when it is already running, for emergency operation. */
+    /**
+     * Starts an ordinary formal event or stops it when it is already running, for emergency
+     * operation.
+     */
     public EventAction startOrStopFormalEvent(@NotNull GameTypeEnum gameTypeEnum) {
-        if (!supportsFormalEvent(gameTypeEnum)
-                || FinaleGameRegistry.isRegistered(gameTypeEnum))
+        if (!supportsFormalEvent(gameTypeEnum) || FinaleGameRegistry.isRegistered(gameTypeEnum))
             return EventAction.UNSUPPORTED;
         if (isFormalEventRunning(gameTypeEnum)) {
             // A repeated start is the emergency-stop form of this command.  Stop the
@@ -195,7 +293,8 @@ public class ScheduleManager extends BaseManager {
         }
         if (gameTypeEnum == GameTypeEnum.Bingo) {
             String bingoMap = FormalEventMapResolver.map(plugin, GameTypeEnum.Bingo, 1);
-            if (bingoMap == null || !plugin.getGameManager().canStartBingo(bingoMap, true, GameRunMode.EVENT)) {
+            if (bingoMap == null
+                    || !plugin.getGameManager().canStartBingo(bingoMap, true, GameRunMode.EVENT)) {
                 return EventAction.UNAVAILABLE;
             }
         }
@@ -226,7 +325,8 @@ public class ScheduleManager extends BaseManager {
     /** Returns the concrete preflight rejection when a game exposes one. */
     public @Nullable String getFormalEventStartFailure(GameTypeEnum game) {
         return game == GameTypeEnum.LaserBox && laserBoxScheduleManager != null
-                ? laserBoxScheduleManager.getLastStartFailureReason() : null;
+                ? laserBoxScheduleManager.getLastStartFailureReason()
+                : null;
     }
 
     /** Stops the formal schedule and force-ends any actively running game instance. */
@@ -238,11 +338,13 @@ public class ScheduleManager extends BaseManager {
         return true;
     }
 
-    /** Closes a formal schedule when its external execution plane aborts before producing a result. */
+    /**
+     * Closes a formal schedule when its external execution plane aborts before producing a result.
+     */
     public boolean abortFormalEvent(@NotNull GameTypeEnum gameTypeEnum, @NotNull String reason) {
         if (!supportsFormalEvent(gameTypeEnum) || !isFormalEventRunning(gameTypeEnum)) return false;
         endGameSchedule(gameTypeEnum);
-        plugin.getLogger().warning(Utils.formatGameLog(gameTypeEnum, "-", "调度", "中止", reason));
+        plugin.getLogger().warning(LogText.formatGameLog(gameTypeEnum, "-", "调度", "中止", reason));
         return true;
     }
 
@@ -280,12 +382,13 @@ public class ScheduleManager extends BaseManager {
     public synchronized boolean isFinaleRunning(@NotNull GameTypeEnum gameType) {
         if (!FinaleGameRegistry.isRegistered(gameType)) return false;
         if (pendingFinaleRequest == gameType) return true;
-        boolean transitioning = switch (gameType) {
-            case Dodgebolt -> dodgeboltTransitionTask != null;
-            case DragonEggCarnival -> dragonEggCarnivalTransitionTask != null;
-            case SulfurSoccer -> sulfurSoccerTransitionTask != null;
-            default -> false;
-        };
+        boolean transitioning =
+                switch (gameType) {
+                    case Dodgebolt -> dodgeboltTransitionTask != null;
+                    case DragonEggCarnival -> dragonEggCarnivalTransitionTask != null;
+                    case SulfurSoccer -> sulfurSoccerTransitionTask != null;
+                    default -> false;
+                };
         return transitioning || plugin.getGameManager().hasActiveEventAreas(gameType);
     }
 
@@ -329,13 +432,20 @@ public class ScheduleManager extends BaseManager {
         };
     }
 
-    /** Registers an EVENT instance before its synchronous end event reaches the schedule handler. */
+    /**
+     * Registers an EVENT instance before its synchronous end event reaches the schedule handler.
+     */
     public synchronized void registerPendingEventInstance(@NotNull BaseGameInstance instance) {
-        pendingEventInstances.computeIfAbsent(instance.getGameTypeEnum(), ignored ->
-                Collections.newSetFromMap(new IdentityHashMap<>())).add(instance);
+        pendingEventInstances
+                .computeIfAbsent(
+                        instance.getGameTypeEnum(),
+                        ignored -> Collections.newSetFromMap(new IdentityHashMap<>()))
+                .add(instance);
     }
 
-    /** Removes an instance from the settlement queue when it is finalized directly by a force-stop. */
+    /**
+     * Removes an instance from the settlement queue when it is finalized directly by a force-stop.
+     */
     public synchronized void unregisterPendingEventInstance(@NotNull BaseGameInstance instance) {
         Set<BaseGameInstance> pending = pendingEventInstances.get(instance.getGameTypeEnum());
         if (pending == null || !pending.remove(instance)) return;
@@ -345,26 +455,27 @@ public class ScheduleManager extends BaseManager {
     /** Special one-off events have no per-game schedule handler to close their settlement phase. */
     public void onEventInstanceReady(@NotNull BaseGameInstance instance) {
         GameTypeEnum gameType = instance.getGameTypeEnum();
-        if (FinaleGameRegistry.isRegistered(gameType)
-                || !isFormalEventRunning(gameType)) {
-            settleEventRound(gameType, false, () -> { });
+        if (FinaleGameRegistry.isRegistered(gameType) || !isFormalEventRunning(gameType)) {
+            settleEventRound(gameType, false, () -> {});
         }
     }
 
     /**
-     * Keeps every completed instance in its arena until the local round result, and for a final round
-     * the queued event leaderboard, has been displayed.
+     * Keeps every completed instance in its arena until the local round result, and for a final
+     * round the queued event leaderboard, has been displayed.
      */
-    public void settleEventRound(@NotNull GameTypeEnum gameType, boolean hasNextRound,
-                                 @NotNull Runnable afterSettlement) {
+    public void settleEventRound(
+            @NotNull GameTypeEnum gameType,
+            boolean hasNextRound,
+            @NotNull Runnable afterSettlement) {
         List<BaseGameInstance> instances;
         synchronized (this) {
             Set<BaseGameInstance> pending = pendingEventInstances.remove(gameType);
             instances = pending == null ? List.of() : List.copyOf(pending);
         }
         if (instances.isEmpty()) {
-            plugin.getLogger().warning(Utils.formatGameLog(gameType, "-", "调度", "结算",
-                    "未找到等待释放的 EVENT 实例"));
+            plugin.getLogger()
+                    .warning(LogText.formatGameLog(gameType, "-", "调度", "结算", "未找到等待释放的 EVENT 实例"));
             afterSettlement.run();
             return;
         }
@@ -373,21 +484,29 @@ public class ScheduleManager extends BaseManager {
         // leaderboard may be slow, but leaving participantStatus owned by an END instance would
         // reject every subsequent game start. Reserve the result-display window immediately;
         // ranking output is scheduled independently below.
-        Runnable release = () -> scheduler.runTaskLater(plugin, () -> {
-            for (BaseGameInstance instance : instances)
-                instance.completePostGame(hasNextRound && isFormalEventRunning(gameType));
-            afterSettlement.run();
-        }, RESULT_DISPLAY_TICKS);
+        Runnable release =
+                () ->
+                        scheduler.runTaskLater(
+                                plugin,
+                                () -> {
+                                    for (BaseGameInstance instance : instances)
+                                        instance.completePostGame(
+                                                hasNextRound && isFormalEventRunning(gameType));
+                                    afterSettlement.run();
+                                },
+                                RESULT_DISPLAY_TICKS);
 
         if (hasNextRound) {
             release.run();
             return;
         }
 
-        Utils.playSoundToAllPlayers(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1F);
-        Utils.sendTitleToAllPlayers(MessageConfig.GAME_ROUND_END_TITLE.replace("%game%", gameType.toString()),
-                MessageConfig.GAME_ROUND_END_SUBTITLE, 60);
-        plugin.getRankManager().broadcastFinalRankings(gameType, () -> { });
+        CoreMessages.playSoundToAllPlayers(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1F);
+        CoreMessages.sendTitleToAllPlayers(
+                MessageConfig.GAME_ROUND_END_TITLE.replace("%game%", gameType.toString()),
+                MessageConfig.GAME_ROUND_END_SUBTITLE,
+                60);
+        plugin.getRankManager().broadcastFinalRankings(gameType, () -> {});
         release.run();
     }
 
@@ -399,10 +518,12 @@ public class ScheduleManager extends BaseManager {
         }
         String roundValue = String.valueOf(Math.max(1, round));
         String secondsValue = String.valueOf(seconds);
-        String title = Utils.translateColorCodes(MessageConfig.GAME_ROUND_PREPARATION_ACTION_BAR
-                .replace("%game%", gameType.toString())
-                .replace("%round%", roundValue)
-                .replace("%time%", secondsValue));
+        String title =
+                LegacyText.translateColorCodes(
+                        MessageConfig.GAME_ROUND_PREPARATION_ACTION_BAR
+                                .replace("%game%", gameType.toString())
+                                .replace("%round%", roundValue)
+                                .replace("%time%", secondsValue));
         if (roundPreparationBar == null)
             roundPreparationBar = Bukkit.createBossBar(title, BarColor.YELLOW, BarStyle.SOLID);
         roundPreparationBar.setTitle(title);
@@ -410,41 +531,69 @@ public class ScheduleManager extends BaseManager {
         roundPreparationBar.setProgress(Math.max(0D, Math.min(1D, seconds / (double) duration)));
         Set<Player> online = new HashSet<>(Bukkit.getOnlinePlayers());
         for (Player current : new ArrayList<>(roundPreparationBar.getPlayers())) {
-            if (!online.contains(current))
-                roundPreparationBar.removePlayer(current);
+            if (!online.contains(current)) roundPreparationBar.removePlayer(current);
         }
-        for (Player player : online)
-            roundPreparationBar.addPlayer(player);
+        for (Player player : online) roundPreparationBar.addPlayer(player);
     }
 
     public void clearRoundPreparationCountdown() {
-        if (roundPreparationBar == null)
-            return;
+        if (roundPreparationBar == null) return;
         roundPreparationBar.removeAll();
         roundPreparationBar = null;
     }
 
     /**
-     * Ends the schedule manager of the given game (cancels its countdown/round tasks and unregisters its
-     * handler). Called before force-ending the area so the SingleGameEndEvent fired by endGame doesn't
-     * advance the schedule via nextRound().
+     * Ends the schedule manager of the given game (cancels its countdown/round tasks and
+     * unregisters its handler). Called before force-ending the area so the SingleGameEndEvent fired
+     * by endGame doesn't advance the schedule via nextRound().
      */
     public void endGameSchedule(GameTypeEnum gameTypeEnum) {
         switch (gameTypeEnum) {
-            case SnowballShowdown -> { if (snowballScheduleManager.isEnabled()) snowballScheduleManager.endSchedule(); }
-            case SkyWars -> { if (skyWarsScheduleManager.isEnabled()) skyWarsScheduleManager.endSchedule(); }
-            case TNTRun -> { if (tntRunScheduleManager.isEnabled()) tntRunScheduleManager.endSchedule(); }
-            case TGTTOS -> { if (tgttosScheduleManager.isEnabled()) tgttosScheduleManager.endSchedule(); }
-            case ParkourWarrior -> { if (parkourWarriorScheduleManager.isEnabled()) parkourWarriorScheduleManager.endSchedule(); }
-            case BattleBox -> { if (battleBoxScheduleManager.isEnabled()) battleBoxScheduleManager.endSchedule(); }
-            case ParkourTag -> { if (parkourTagScheduleManager.isEnabled()) parkourTagScheduleManager.endSchedule(); }
-            case HotyCodyDusky -> { if (hotyCodyDuskyScheduleManager.isEnabled()) hotyCodyDuskyScheduleManager.endSchedule(); }
-            case Bingo -> { if (bingoScheduleManager.isEnabled()) bingoScheduleManager.endSchedule(); }
-            case AceRace -> { if (aceRaceScheduleManager.isEnabled()) aceRaceScheduleManager.endSchedule(); }
-            case BuildMart -> { if (buildMartScheduleManager.isEnabled()) buildMartScheduleManager.endSchedule(); }
-            case RiptideRush -> { if (riptideRushScheduleManager.isEnabled()) riptideRushScheduleManager.endSchedule(); }
-            case FrostbiteFrenzy -> { if (frostbiteScheduleManager.isEnabled()) frostbiteScheduleManager.endSchedule(); }
-            case LaserBox -> { if (laserBoxScheduleManager.isEnabled()) laserBoxScheduleManager.endSchedule(); }
+            case SnowballShowdown -> {
+                if (snowballScheduleManager.isEnabled()) snowballScheduleManager.endSchedule();
+            }
+            case SkyWars -> {
+                if (skyWarsScheduleManager.isEnabled()) skyWarsScheduleManager.endSchedule();
+            }
+            case TNTRun -> {
+                if (tntRunScheduleManager.isEnabled()) tntRunScheduleManager.endSchedule();
+            }
+            case TGTTOS -> {
+                if (tgttosScheduleManager.isEnabled()) tgttosScheduleManager.endSchedule();
+            }
+            case ParkourWarrior -> {
+                if (parkourWarriorScheduleManager.isEnabled())
+                    parkourWarriorScheduleManager.endSchedule();
+            }
+            case BattleBox -> {
+                if (battleBoxScheduleManager.isEnabled()) battleBoxScheduleManager.endSchedule();
+            }
+            case ParkourTag -> {
+                if (parkourTagScheduleManager.isEnabled()) parkourTagScheduleManager.endSchedule();
+            }
+            case HotyCodyDusky -> {
+                if (hotyCodyDuskyScheduleManager.isEnabled())
+                    hotyCodyDuskyScheduleManager.endSchedule();
+            }
+            case Bingo -> {
+                if (bingoScheduleManager.isEnabled()) bingoScheduleManager.endSchedule();
+            }
+            case AceRace -> {
+                if (aceRaceScheduleManager.isEnabled()) aceRaceScheduleManager.endSchedule();
+            }
+            case BuildMart -> {
+                if (buildMartScheduleManager.isEnabled()) buildMartScheduleManager.endSchedule();
+            }
+            case RiptideRush -> {
+                if (riptideRushScheduleManager.isEnabled())
+                    riptideRushScheduleManager.endSchedule();
+            }
+            case FrostbiteFrenzy -> {
+                if (frostbiteScheduleManager.isEnabled()) frostbiteScheduleManager.endSchedule();
+            }
+            case LaserBox -> {
+                if (laserBoxScheduleManager.isEnabled()) laserBoxScheduleManager.endSchedule();
+            }
             case Dodgebolt -> {
                 if (dodgeboltTransitionTask != null) dodgeboltTransitionTask.cancel();
                 dodgeboltTransitionTask = null;
@@ -454,17 +603,20 @@ public class ScheduleManager extends BaseManager {
                 sulfurSoccerTransitionTask = null;
             }
             case DragonEggCarnival -> {
-                if (dragonEggCarnivalTransitionTask != null) dragonEggCarnivalTransitionTask.cancel();
+                if (dragonEggCarnivalTransitionTask != null)
+                    dragonEggCarnivalTransitionTask.cancel();
                 dragonEggCarnivalTransitionTask = null;
             }
-            default -> { }
+            default -> {}
         }
         clearRoundPreparationCountdown();
     }
 
     /**
-     * Undo the most recently started game: stop its schedule, force-end its running areas, then (after a
-     * short delay so the area's async score recording lands first) clear its status entry + point records.
+     * Undo the most recently started game: stop its schedule, force-end its running areas, then
+     * (after a short delay so the area's async score recording lands first) clear its status entry
+     * + point records.
+     *
      * @return the game that was undone, or null if no round exists.
      */
     public GameTypeEnum deleteLatestGame() {
@@ -472,96 +624,167 @@ public class ScheduleManager extends BaseManager {
         if (latest == null) return null;
         endGameSchedule(latest);
         plugin.getGameManager().forceEndAreas(latest);
-        // force-end -> endGame -> addPlayerPoints (async). Delay the soft-delete so those INSERTs land
+        // force-end -> endGame -> addPlayerPoints (async). Delay the soft-delete so those INSERTs
+        // land
         // before UPDATE ... SET valid=0, otherwise late inserts survive with valid=1.
-        scheduler.runTaskLaterAsynchronously(plugin, () -> plugin.getRankManager().deleteGameRecords(latest), 60L);
+        scheduler.runTaskLaterAsynchronously(
+                plugin, () -> plugin.getRankManager().deleteGameRecords(latest), 60L);
         return latest;
     }
 
-    /** Selects finalists from a fresh leaderboard and dispatches to the registered finale implementation. */
-    public synchronized void requestFinale(@NotNull GameTypeEnum gameType, String requestedArea,
-                                           ChampionshipTeam requestedRight, ChampionshipTeam requestedLeft,
-                                           @NotNull CommandSender requester, boolean forcePartialRoster) {
+    /**
+     * Selects finalists from a fresh leaderboard and dispatches to the registered finale
+     * implementation.
+     */
+    public synchronized void requestFinale(
+            @NotNull GameTypeEnum gameType,
+            String requestedArea,
+            ChampionshipTeam requestedRight,
+            ChampionshipTeam requestedLeft,
+            @NotNull CommandSender requester,
+            boolean forcePartialRoster) {
         FinaleGameDefinition definition = FinaleGameRegistry.definition(gameType);
         if (definition == null) {
-            Utils.sendAdminError(requester, MessageConfig.SCHEDULE_FINALE_GAME_NOT_REGISTERED);
+            CoreMessages.sendAdminError(
+                    requester, MessageConfig.SCHEDULE_FINALE_GAME_NOT_REGISTERED);
             return;
         }
         if (!plugin.getGameManager().isGameEnabled(gameType)) {
-            Utils.sendAdminError(requester, MessageConfig.SCHEDULE_FINALE_GAME_DISABLED.replace("%game%", gameType.name()));
+            CoreMessages.sendAdminError(
+                    requester,
+                    MessageConfig.SCHEDULE_FINALE_GAME_DISABLED.replace("%game%", gameType.name()));
             return;
         }
         if (forcePartialRoster && !definition.supportsPartialRoster()) {
-            Utils.sendAdminError(requester, MessageConfig.SCHEDULE_FINALE_PARTIAL_ROSTER_UNSUPPORTED);
+            CoreMessages.sendAdminError(
+                    requester, MessageConfig.SCHEDULE_FINALE_PARTIAL_ROSTER_UNSUPPORTED);
             return;
         }
         if (isFinaleRunning(gameType)) {
             stopFinale(gameType);
-            Utils.sendAdminInfo(requester, MessageConfig.SCHEDULE_FINALE_EMERGENCY_STOPPED.replace("%game%", gameType.name()));
+            CoreMessages.sendAdminInfo(
+                    requester,
+                    MessageConfig.SCHEDULE_FINALE_EMERGENCY_STOPPED.replace(
+                            "%game%", gameType.name()));
             return;
         }
         if (isAnyFinaleRunning()) {
-            Utils.sendAdminError(requester, MessageConfig.SCHEDULE_FINALE_OTHER_RUNNING);
+            CoreMessages.sendAdminError(requester, MessageConfig.SCHEDULE_FINALE_OTHER_RUNNING);
             return;
         }
 
         long requestId = ++finaleRequestGeneration;
         pendingFinaleRequest = gameType;
-        plugin.getRankManager().withFreshTeamLeaderboard(leaderboard -> {
-            synchronized (ScheduleManager.this) {
-                if (requestId != finaleRequestGeneration || pendingFinaleRequest != gameType) return;
-                pendingFinaleRequest = null;
-            }
+        plugin.getRankManager()
+                .withFreshTeamLeaderboard(
+                        leaderboard -> {
+                            synchronized (ScheduleManager.this) {
+                                if (requestId != finaleRequestGeneration
+                                        || pendingFinaleRequest != gameType) return;
+                                pendingFinaleRequest = null;
+                            }
 
-            String configuredArea = FormalEventMapResolver.map(plugin, gameType, 1);
-            String area = requestedArea == null || requestedArea.isBlank()
-                    ? (configuredArea == null ? definition.defaultArea() : configuredArea) : requestedArea;
-            BaseGameInstance instance = finaleArea(gameType, area);
-            if (instance == null || !plugin.getPrepareSessionManager().canStart(gameType, area)) {
-                Utils.sendAdminError(requester, MessageConfig.SCHEDULE_FINALE_MAP_UNAVAILABLE
-                        .replace("%game%", gameType.name()).replace("%map%", area));
-                return;
-            }
+                            String configuredArea = FormalEventMapResolver.map(plugin, gameType, 1);
+                            String area =
+                                    requestedArea == null || requestedArea.isBlank()
+                                            ? (configuredArea == null
+                                                    ? definition.defaultArea()
+                                                    : configuredArea)
+                                            : requestedArea;
+                            BaseGameInstance instance = finaleArea(gameType, area);
+                            if (instance == null
+                                    || !plugin.getPrepareSessionManager()
+                                            .canStart(gameType, area)) {
+                                CoreMessages.sendAdminError(
+                                        requester,
+                                        MessageConfig.SCHEDULE_FINALE_MAP_UNAVAILABLE
+                                                .replace("%game%", gameType.name())
+                                                .replace("%map%", area));
+                                return;
+                            }
 
-            Finalists finalists = resolveFinalists(
-                    leaderboard, requestedRight, requestedLeft, requester);
-            if (finalists == null) return;
+                            Finalists finalists =
+                                    resolveFinalists(
+                                            leaderboard, requestedRight, requestedLeft, requester);
+                            if (finalists == null) return;
 
-            switch (gameType) {
-                case Dodgebolt -> {
-                    double rightPoints = pointsOf(leaderboard, finalists.right());
-                    double leftPoints = pointsOf(leaderboard, finalists.left());
-                    ChampionshipTeam higherSeed = rightPoints >= leftPoints
-                            ? finalists.right() : finalists.left();
-                    if (Double.compare(rightPoints, leftPoints) == 0) {
-                        Utils.sendAdminInfo(requester, MessageConfig.SCHEDULE_FINALE_DODGEBOLT_TIE_SEED);
-                    }
-                    startDodgeboltTransition(area, (DodgeboltArea) instance,
-                            finalists.right(), finalists.left(), higherSeed, requester, forcePartialRoster);
-                }
-                case SulfurSoccer -> startSulfurSoccerTransition(area, instance,
-                        finalists.right(), finalists.left(), requester);
-                case DragonEggCarnival -> startDragonEggCarnivalTransition(
-                        area, (DragonEggCarnivalArea) instance,
-                        finalists.right(), finalists.left(), requester);
-                default -> Utils.sendAdminError(requester, MessageConfig.SCHEDULE_FINALE_START_NOT_IMPLEMENTED);
-            }
-        });
+                            switch (gameType) {
+                                case Dodgebolt -> {
+                                    double rightPoints = pointsOf(leaderboard, finalists.right());
+                                    double leftPoints = pointsOf(leaderboard, finalists.left());
+                                    ChampionshipTeam higherSeed =
+                                            rightPoints >= leftPoints
+                                                    ? finalists.right()
+                                                    : finalists.left();
+                                    if (Double.compare(rightPoints, leftPoints) == 0) {
+                                        CoreMessages.sendAdminInfo(
+                                                requester,
+                                                MessageConfig.SCHEDULE_FINALE_DODGEBOLT_TIE_SEED);
+                                    }
+                                    startDodgeboltTransition(
+                                            area,
+                                            (DodgeboltArea) instance,
+                                            finalists.right(),
+                                            finalists.left(),
+                                            higherSeed,
+                                            requester,
+                                            forcePartialRoster);
+                                }
+                                case SulfurSoccer ->
+                                        startSulfurSoccerTransition(
+                                                area,
+                                                instance,
+                                                finalists.right(),
+                                                finalists.left(),
+                                                requester);
+                                case DragonEggCarnival ->
+                                        startDragonEggCarnivalTransition(
+                                                area,
+                                                (DragonEggCarnivalArea) instance,
+                                                finalists.right(),
+                                                finalists.left(),
+                                                requester);
+                                default ->
+                                        CoreMessages.sendAdminError(
+                                                requester,
+                                                MessageConfig
+                                                        .SCHEDULE_FINALE_START_NOT_IMPLEMENTED);
+                            }
+                        });
     }
 
-    /** Compatibility API for integrations; the canonical entry point is the /cc finale dodgebolt start command. */
-    public void requestDodgeboltFinal(String requestedArea, ChampionshipTeam requestedRight,
-                                      ChampionshipTeam requestedLeft, CommandSender requester) {
-        requestFinale(GameTypeEnum.Dodgebolt, requestedArea,
-                requestedRight, requestedLeft, requester, false);
+    /**
+     * Compatibility API for integrations; the canonical entry point is the /cc finale dodgebolt
+     * start command.
+     */
+    public void requestDodgeboltFinal(
+            String requestedArea,
+            ChampionshipTeam requestedRight,
+            ChampionshipTeam requestedLeft,
+            CommandSender requester) {
+        requestFinale(
+                GameTypeEnum.Dodgebolt,
+                requestedArea,
+                requestedRight,
+                requestedLeft,
+                requester,
+                false);
     }
 
     /** Compatibility API for integrations; supports Dodgebolt's optional online-subset start. */
-    public void requestDodgeboltFinal(String requestedArea, ChampionshipTeam requestedRight,
-                                      ChampionshipTeam requestedLeft, CommandSender requester,
-                                      boolean forcePartialRoster) {
-        requestFinale(GameTypeEnum.Dodgebolt, requestedArea,
-                requestedRight, requestedLeft, requester, forcePartialRoster);
+    public void requestDodgeboltFinal(
+            String requestedArea,
+            ChampionshipTeam requestedRight,
+            ChampionshipTeam requestedLeft,
+            CommandSender requester,
+            boolean forcePartialRoster) {
+        requestFinale(
+                GameTypeEnum.Dodgebolt,
+                requestedArea,
+                requestedRight,
+                requestedLeft,
+                requester,
+                forcePartialRoster);
     }
 
     @Nullable
@@ -571,184 +794,257 @@ public class ScheduleManager extends BaseManager {
     }
 
     @Nullable
-    private Finalists resolveFinalists(@NotNull List<Map.Entry<ChampionshipTeam, Double>> leaderboard,
-                                       ChampionshipTeam requestedRight, ChampionshipTeam requestedLeft,
-                                       @NotNull CommandSender requester) {
+    private Finalists resolveFinalists(
+            @NotNull List<Map.Entry<ChampionshipTeam, Double>> leaderboard,
+            ChampionshipTeam requestedRight,
+            ChampionshipTeam requestedLeft,
+            @NotNull CommandSender requester) {
         ChampionshipTeam right = requestedRight;
         ChampionshipTeam left = requestedLeft;
         if (right == null || left == null) {
             if (leaderboard.size() < 2) {
-                Utils.sendAdminError(requester, MessageConfig.SCHEDULE_FINALE_AUTO_FINALISTS_UNAVAILABLE);
+                CoreMessages.sendAdminError(
+                        requester, MessageConfig.SCHEDULE_FINALE_AUTO_FINALISTS_UNAVAILABLE);
                 return null;
             }
             if (leaderboard.size() > 2
-                    && Double.compare(leaderboard.get(1).getValue(), leaderboard.get(2).getValue()) == 0) {
-                Utils.sendAdminError(requester, MessageConfig.SCHEDULE_FINALE_TIE_BREAK_REQUIRED);
+                    && Double.compare(leaderboard.get(1).getValue(), leaderboard.get(2).getValue())
+                            == 0) {
+                CoreMessages.sendAdminError(
+                        requester, MessageConfig.SCHEDULE_FINALE_TIE_BREAK_REQUIRED);
                 return null;
             }
             right = leaderboard.get(0).getKey();
             left = leaderboard.get(1).getKey();
         }
         if (right.equals(left)) {
-            Utils.sendAdminError(requester, MessageConfig.SCHEDULE_FINALE_TEAMS_MUST_DIFFER);
+            CoreMessages.sendAdminError(requester, MessageConfig.SCHEDULE_FINALE_TEAMS_MUST_DIFFER);
             return null;
         }
         return new Finalists(right, left);
     }
 
-    private void startDragonEggCarnivalTransition(@NotNull String area,
-                                                   @NotNull DragonEggCarnivalArea instance,
-                                                   @NotNull ChampionshipTeam right,
-                                                   @NotNull ChampionshipTeam left,
-                                                   @NotNull CommandSender requester) {
+    private void startDragonEggCarnivalTransition(
+            @NotNull String area,
+            @NotNull DragonEggCarnivalArea instance,
+            @NotNull ChampionshipTeam right,
+            @NotNull ChampionshipTeam left,
+            @NotNull CommandSender requester) {
         final int[] remaining = {10};
-        Utils.sendAdminSuccess(requester, MessageConfig.SCHEDULE_FINALE_DRAGON_EGG_SCHEDULED
-                .replace("%right%", right.getColoredName())
-                .replace("%left%", left.getColoredName())
-                .replace("%map%", area));
-        dragonEggCarnivalTransitionTask = scheduler.runTaskTimer(plugin, () -> {
-            showRoundPreparationCountdown(GameTypeEnum.DragonEggCarnival, 1, remaining[0]);
-            if (remaining[0] == 10) {
-                Utils.sendMessageToAllPlayers(Utils.getMessage(ScheduleMessageConfig.DRAGON_EGG_CARNIVAL)
-                        .replace("%team%", right.getColoredName())
-                        .replace("%rival%", left.getColoredName()));
-            }
-            if (remaining[0] == 5)
-                Utils.sendMessageToAllPlayers(Utils.getMessage(ScheduleMessageConfig.DRAGON_EGG_CARNIVAL_POINTS));
-            if (remaining[0] == 0) {
-                dragonEggCarnivalTransitionTask.cancel();
-                dragonEggCarnivalTransitionTask = null;
-                if (plugin.getGameManager().joinTeamArea(GameTypeEnum.DragonEggCarnival, area,
-                        right, left, true, GameRunMode.EVENT)) {
-                    plugin.getGameManager().spectateFinale(instance, right, left);
-                } else {
-                    Utils.sendAdminError(requester, MessageConfig.SCHEDULE_FINALE_DRAGON_EGG_START_FAILED);
-                }
-                return;
-            }
-            remaining[0]--;
-        }, 0L, 20L);
+        CoreMessages.sendAdminSuccess(
+                requester,
+                MessageConfig.SCHEDULE_FINALE_DRAGON_EGG_SCHEDULED
+                        .replace("%right%", right.getColoredName())
+                        .replace("%left%", left.getColoredName())
+                        .replace("%map%", area));
+        dragonEggCarnivalTransitionTask =
+                scheduler.runTaskTimer(
+                        plugin,
+                        () -> {
+                            showRoundPreparationCountdown(
+                                    GameTypeEnum.DragonEggCarnival, 1, remaining[0]);
+                            if (remaining[0] == 10) {
+                                CoreMessages.sendMessageToAllPlayers(
+                                        CoreMessages.getMessage(
+                                                        ScheduleMessageConfig.DRAGON_EGG_CARNIVAL)
+                                                .replace("%team%", right.getColoredName())
+                                                .replace("%rival%", left.getColoredName()));
+                            }
+                            if (remaining[0] == 5)
+                                CoreMessages.sendMessageToAllPlayers(
+                                        CoreMessages.getMessage(
+                                                ScheduleMessageConfig.DRAGON_EGG_CARNIVAL_POINTS));
+                            if (remaining[0] == 0) {
+                                dragonEggCarnivalTransitionTask.cancel();
+                                dragonEggCarnivalTransitionTask = null;
+                                if (plugin.getGameManager()
+                                        .joinTeamArea(
+                                                GameTypeEnum.DragonEggCarnival,
+                                                area,
+                                                right,
+                                                left,
+                                                true,
+                                                GameRunMode.EVENT)) {
+                                    plugin.getGameManager().spectateFinale(instance, right, left);
+                                } else {
+                                    CoreMessages.sendAdminError(
+                                            requester,
+                                            MessageConfig.SCHEDULE_FINALE_DRAGON_EGG_START_FAILED);
+                                }
+                                return;
+                            }
+                            remaining[0]--;
+                        },
+                        0L,
+                        20L);
     }
 
-    private void startDodgeboltTransition(String area, DodgeboltArea instance,
-                                          ChampionshipTeam right, ChampionshipTeam left,
-                                          ChampionshipTeam higherSeed, CommandSender requester,
-                                          boolean forcePartialRoster) {
+    private void startDodgeboltTransition(
+            String area,
+            DodgeboltArea instance,
+            ChampionshipTeam right,
+            ChampionshipTeam left,
+            ChampionshipTeam higherSeed,
+            CommandSender requester,
+            boolean forcePartialRoster) {
         final int[] remaining = {10};
-        Utils.sendAdminSuccess(requester, (forcePartialRoster
-                ? MessageConfig.SCHEDULE_FINALE_DODGEBOLT_SCHEDULED_FORCED
-                : MessageConfig.SCHEDULE_FINALE_DODGEBOLT_SCHEDULED)
-                .replace("%right%", right.getColoredName())
-                .replace("%left%", left.getColoredName())
-                .replace("%map%", area));
-        Utils.sendMessageToAllPlayers(MessageConfig.SCHEDULE_FINALE_DODGEBOLT_ANNOUNCEMENT
-                .replace("%right%", right.getColoredName())
-                .replace("%left%", left.getColoredName())
-                .replace("%first%", higherSeed.getColoredName()));
-        dodgeboltTransitionTask = scheduler.runTaskTimer(plugin, () -> {
-            showRoundPreparationCountdown(GameTypeEnum.Dodgebolt, 1, remaining[0]);
-            if (remaining[0] == 0) {
-                dodgeboltTransitionTask.cancel();
-                dodgeboltTransitionTask = null;
-                if (plugin.getGameManager().joinDodgeboltArea(area, right, left, higherSeed,
-                        true, forcePartialRoster, GameRunMode.EVENT)) {
-                    plugin.getGameManager().spectateFinale(instance, right, left);
-                } else {
-                    Utils.sendAdminError(requester, forcePartialRoster
-                            ? MessageConfig.SCHEDULE_FINALE_DODGEBOLT_FORCED_START_FAILED
-                            : MessageConfig.SCHEDULE_FINALE_DODGEBOLT_START_FAILED);
-                }
-                return;
-            }
-            remaining[0]--;
-        }, 0L, 20L);
+        CoreMessages.sendAdminSuccess(
+                requester,
+                (forcePartialRoster
+                                ? MessageConfig.SCHEDULE_FINALE_DODGEBOLT_SCHEDULED_FORCED
+                                : MessageConfig.SCHEDULE_FINALE_DODGEBOLT_SCHEDULED)
+                        .replace("%right%", right.getColoredName())
+                        .replace("%left%", left.getColoredName())
+                        .replace("%map%", area));
+        CoreMessages.sendMessageToAllPlayers(
+                MessageConfig.SCHEDULE_FINALE_DODGEBOLT_ANNOUNCEMENT
+                        .replace("%right%", right.getColoredName())
+                        .replace("%left%", left.getColoredName())
+                        .replace("%first%", higherSeed.getColoredName()));
+        dodgeboltTransitionTask =
+                scheduler.runTaskTimer(
+                        plugin,
+                        () -> {
+                            showRoundPreparationCountdown(GameTypeEnum.Dodgebolt, 1, remaining[0]);
+                            if (remaining[0] == 0) {
+                                dodgeboltTransitionTask.cancel();
+                                dodgeboltTransitionTask = null;
+                                if (plugin.getGameManager()
+                                        .joinDodgeboltArea(
+                                                area,
+                                                right,
+                                                left,
+                                                higherSeed,
+                                                true,
+                                                forcePartialRoster,
+                                                GameRunMode.EVENT)) {
+                                    plugin.getGameManager().spectateFinale(instance, right, left);
+                                } else {
+                                    CoreMessages.sendAdminError(
+                                            requester,
+                                            forcePartialRoster
+                                                    ? MessageConfig
+                                                            .SCHEDULE_FINALE_DODGEBOLT_FORCED_START_FAILED
+                                                    : MessageConfig
+                                                            .SCHEDULE_FINALE_DODGEBOLT_START_FAILED);
+                                }
+                                return;
+                            }
+                            remaining[0]--;
+                        },
+                        0L,
+                        20L);
     }
 
-    private void startSulfurSoccerTransition(String area, BaseGameInstance instance,
-                                            ChampionshipTeam right, ChampionshipTeam left,
-                                            CommandSender requester) {
+    private void startSulfurSoccerTransition(
+            String area,
+            BaseGameInstance instance,
+            ChampionshipTeam right,
+            ChampionshipTeam left,
+            CommandSender requester) {
         final int[] remaining = {10};
-        Utils.sendAdminSuccess(requester, MessageConfig.SULFUR_SOCCER_SCHEDULED
-                .replace("%right%", right.getColoredName()).replace("%left%", left.getColoredName())
-                .replace("%map%", area));
-        Utils.sendMessageToAllPlayers(MessageConfig.SULFUR_SOCCER_FINALISTS
-                .replace("%right%", right.getColoredName()).replace("%left%", left.getColoredName()));
-        sulfurSoccerTransitionTask = scheduler.runTaskTimer(plugin, () -> {
-            showRoundPreparationCountdown(GameTypeEnum.SulfurSoccer, 1, remaining[0]);
-            if (remaining[0] == 0) {
-                sulfurSoccerTransitionTask.cancel();
-                sulfurSoccerTransitionTask = null;
-                if (plugin.getGameManager().joinTeamArea(GameTypeEnum.SulfurSoccer, area,
-                        right, left, true, GameRunMode.EVENT)) {
-                    plugin.getGameManager().spectateFinale(instance, right, left);
-                } else {
-                    clearRoundPreparationCountdown();
-                    Utils.sendAdminError(requester, MessageConfig.SULFUR_SOCCER_START_FAILED);
-                }
-                return;
-            }
-            remaining[0]--;
-        }, 0L, 20L);
+        CoreMessages.sendAdminSuccess(
+                requester,
+                MessageConfig.SULFUR_SOCCER_SCHEDULED
+                        .replace("%right%", right.getColoredName())
+                        .replace("%left%", left.getColoredName())
+                        .replace("%map%", area));
+        CoreMessages.sendMessageToAllPlayers(
+                MessageConfig.SULFUR_SOCCER_FINALISTS
+                        .replace("%right%", right.getColoredName())
+                        .replace("%left%", left.getColoredName()));
+        sulfurSoccerTransitionTask =
+                scheduler.runTaskTimer(
+                        plugin,
+                        () -> {
+                            showRoundPreparationCountdown(
+                                    GameTypeEnum.SulfurSoccer, 1, remaining[0]);
+                            if (remaining[0] == 0) {
+                                sulfurSoccerTransitionTask.cancel();
+                                sulfurSoccerTransitionTask = null;
+                                if (plugin.getGameManager()
+                                        .joinTeamArea(
+                                                GameTypeEnum.SulfurSoccer,
+                                                area,
+                                                right,
+                                                left,
+                                                true,
+                                                GameRunMode.EVENT)) {
+                                    plugin.getGameManager().spectateFinale(instance, right, left);
+                                } else {
+                                    clearRoundPreparationCountdown();
+                                    CoreMessages.sendAdminError(
+                                            requester, MessageConfig.SULFUR_SOCCER_START_FAILED);
+                                }
+                                return;
+                            }
+                            remaining[0]--;
+                        },
+                        0L,
+                        20L);
     }
 
-    private static double pointsOf(List<Map.Entry<ChampionshipTeam, Double>> leaderboard,
-                                   ChampionshipTeam team) {
+    private static double pointsOf(
+            List<Map.Entry<ChampionshipTeam, Double>> leaderboard, ChampionshipTeam team) {
         for (Map.Entry<ChampionshipTeam, Double> entry : leaderboard) {
             if (entry.getKey().equals(team)) return entry.getValue();
         }
         return 0D;
     }
 
-    private record Finalists(@NotNull ChampionshipTeam right, @NotNull ChampionshipTeam left) {
-    }
+    private record Finalists(@NotNull ChampionshipTeam right, @NotNull ChampionshipTeam left) {}
 
     public String getScheduleStrings(GameTypeEnum gameTypeEnum) {
         if (gameTypeEnum == GameTypeEnum.TNTRun)
-            return Utils.getMessage(ScheduleMessageConfig.TNT_RUN);
+            return CoreMessages.getMessage(ScheduleMessageConfig.TNT_RUN);
         if (gameTypeEnum == GameTypeEnum.TGTTOS)
-            return Utils.getMessage(ScheduleMessageConfig.TGTTOS);
+            return CoreMessages.getMessage(ScheduleMessageConfig.TGTTOS);
         if (gameTypeEnum == GameTypeEnum.SnowballShowdown)
-            return Utils.getMessage(ScheduleMessageConfig.SNOWBALL);
+            return CoreMessages.getMessage(ScheduleMessageConfig.SNOWBALL);
         if (gameTypeEnum == GameTypeEnum.SkyWars)
-            return Utils.getMessage(ScheduleMessageConfig.SKY_WARS);
+            return CoreMessages.getMessage(ScheduleMessageConfig.SKY_WARS);
         if (gameTypeEnum == GameTypeEnum.ParkourWarrior)
-            return Utils.getMessage(ScheduleMessageConfig.PARKOUR_WARRIOR);
+            return CoreMessages.getMessage(ScheduleMessageConfig.PARKOUR_WARRIOR);
         if (gameTypeEnum == GameTypeEnum.Bingo)
-            return Utils.getMessage(ScheduleMessageConfig.BINGO);
+            return CoreMessages.getMessage(ScheduleMessageConfig.BINGO);
         if (gameTypeEnum == GameTypeEnum.AceRace)
-            return Utils.getMessage(ScheduleMessageConfig.ACE_RACE);
+            return CoreMessages.getMessage(ScheduleMessageConfig.ACE_RACE);
         if (gameTypeEnum == GameTypeEnum.BuildMart)
-            return Utils.getMessage(ScheduleMessageConfig.BUILD_MART);
+            return CoreMessages.getMessage(ScheduleMessageConfig.BUILD_MART);
         if (gameTypeEnum == GameTypeEnum.RiptideRush)
-            return Utils.getMessage(ScheduleMessageConfig.RIPTIDE_RUSH);
+            return CoreMessages.getMessage(ScheduleMessageConfig.RIPTIDE_RUSH);
 
-        if (gameTypeEnum == GameTypeEnum.FrostbiteFrenzy) return Utils.getMessage(ScheduleMessageConfig.FROSTBITE);
-        if (gameTypeEnum == GameTypeEnum.LaserBox) return Utils.getMessage(ScheduleMessageConfig.LASER_BOX);
+        if (gameTypeEnum == GameTypeEnum.FrostbiteFrenzy)
+            return CoreMessages.getMessage(ScheduleMessageConfig.FROSTBITE);
+        if (gameTypeEnum == GameTypeEnum.LaserBox)
+            return CoreMessages.getMessage(ScheduleMessageConfig.LASER_BOX);
         return "";
     }
 
     public String getSchedulePointsStrings(GameTypeEnum gameTypeEnum) {
         if (gameTypeEnum == GameTypeEnum.TNTRun)
-            return Utils.getMessage(ScheduleMessageConfig.TNT_RUN_POINTS);
+            return CoreMessages.getMessage(ScheduleMessageConfig.TNT_RUN_POINTS);
         if (gameTypeEnum == GameTypeEnum.TGTTOS)
-            return Utils.getMessage(ScheduleMessageConfig.TGTTOS_POINTS);
+            return CoreMessages.getMessage(ScheduleMessageConfig.TGTTOS_POINTS);
         if (gameTypeEnum == GameTypeEnum.SnowballShowdown)
-            return Utils.getMessage(ScheduleMessageConfig.SNOWBALL_POINTS);
+            return CoreMessages.getMessage(ScheduleMessageConfig.SNOWBALL_POINTS);
         if (gameTypeEnum == GameTypeEnum.SkyWars)
-            return Utils.getMessage(ScheduleMessageConfig.SKY_WARS_POINTS);
+            return CoreMessages.getMessage(ScheduleMessageConfig.SKY_WARS_POINTS);
         if (gameTypeEnum == GameTypeEnum.ParkourWarrior)
-            return Utils.getMessage(ScheduleMessageConfig.PARKOUR_WARRIOR_POINTS);
+            return CoreMessages.getMessage(ScheduleMessageConfig.PARKOUR_WARRIOR_POINTS);
         if (gameTypeEnum == GameTypeEnum.Bingo)
-            return Utils.getMessage(ScheduleMessageConfig.BINGO_POINTS);
+            return CoreMessages.getMessage(ScheduleMessageConfig.BINGO_POINTS);
         if (gameTypeEnum == GameTypeEnum.AceRace)
-            return Utils.getMessage(ScheduleMessageConfig.ACE_RACE_POINTS);
+            return CoreMessages.getMessage(ScheduleMessageConfig.ACE_RACE_POINTS);
         if (gameTypeEnum == GameTypeEnum.BuildMart)
-            return Utils.getMessage(ScheduleMessageConfig.BUILD_MART_POINTS);
+            return CoreMessages.getMessage(ScheduleMessageConfig.BUILD_MART_POINTS);
         if (gameTypeEnum == GameTypeEnum.RiptideRush)
-            return Utils.getMessage(ScheduleMessageConfig.RIPTIDE_RUSH_POINTS);
+            return CoreMessages.getMessage(ScheduleMessageConfig.RIPTIDE_RUSH_POINTS);
 
-        if (gameTypeEnum == GameTypeEnum.FrostbiteFrenzy) return Utils.getMessage(ScheduleMessageConfig.FROSTBITE_POINTS);
-        if (gameTypeEnum == GameTypeEnum.LaserBox) return Utils.getMessage(ScheduleMessageConfig.LASER_BOX_POINTS);
+        if (gameTypeEnum == GameTypeEnum.FrostbiteFrenzy)
+            return CoreMessages.getMessage(ScheduleMessageConfig.FROSTBITE_POINTS);
+        if (gameTypeEnum == GameTypeEnum.LaserBox)
+            return CoreMessages.getMessage(ScheduleMessageConfig.LASER_BOX_POINTS);
         return "";
     }
 }

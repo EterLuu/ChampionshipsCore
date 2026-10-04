@@ -1,16 +1,17 @@
 package ink.ziip.championshipscore.platform.bukkit.bingo;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 
 class BingoObjectiveProgressTrackerTest {
     @Test
@@ -56,23 +57,26 @@ class BingoObjectiveProgressTrackerTest {
     @Test
     void objectiveRulesValidateAndDefensivelyCopyCollections() {
         Set<Material> members = new HashSet<>(Set.of(Material.FURNACE));
-        BingoEventObjectiveRule rule = new BingoEventObjectiveRule(
-                "all_collect", null, 1, members, null);
+        BingoEventObjectiveRule rule =
+                new BingoEventObjectiveRule("all_collect", null, 1, members, null);
         members.add(Material.SMOKER);
 
         assertEquals("", rule.param());
         assertEquals(Set.of(Material.FURNACE), rule.members());
         assertEquals(Set.of(), rule.biomeKeys());
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(
+                IllegalArgumentException.class,
                 () -> new BingoEventObjectiveRule(" ", "", 1, Set.of(), Set.of()));
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(
+                IllegalArgumentException.class,
                 () -> new BingoEventObjectiveRule("wear", "", 0, Set.of(), Set.of()));
     }
 
     @Test
     void recognizesSupportedSpecialNamesCaseInsensitively() {
         assertEquals("SHEEP_JEB", BingoNameTagObjective.match(EntityType.SHEEP, "jeb_"));
-        assertEquals("IRON_GOLEM_DINNERBONE",
+        assertEquals(
+                "IRON_GOLEM_DINNERBONE",
                 BingoNameTagObjective.match(EntityType.IRON_GOLEM, "Dinnerbone"));
         assertEquals("GHAST_DINNERBONE", BingoNameTagObjective.match(EntityType.GHAST, "GRUMM"));
     }

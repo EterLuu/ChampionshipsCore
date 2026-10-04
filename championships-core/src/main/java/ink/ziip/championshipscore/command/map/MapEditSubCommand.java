@@ -1,10 +1,11 @@
 package ink.ziip.championshipscore.command.map;
 
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.presentation.text.CoreMessages;
+
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -22,26 +23,33 @@ public final class MapEditSubCommand extends BaseSubCommand {
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label,
-                             @NotNull String[] args) {
+    public boolean onCommand(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args) {
         if (!(sender instanceof Player player) || args.length != 1) {
             sendUsage(sender);
             return true;
         }
         GameTypeEnum game = parseGame(args[0]);
         if (game == null) {
-            Utils.sendAdminError(sender, MessageConfig.MAP_EDITOR_COMMAND_UNKNOWN_GAME
-                    .replace("%games%", supportedNames()));
+            CoreMessages.sendAdminError(
+                    sender,
+                    MessageConfig.MAP_EDITOR_COMMAND_UNKNOWN_GAME.replace(
+                            "%games%", supportedNames()));
             return true;
         }
         if (!plugin.getPrepareSessionManager().supports(game)) {
-            Utils.sendAdminError(sender, MessageConfig.MAP_EDITOR_COMMAND_UNSUPPORTED_GAME
-                    .replace("%games%", supportedNames()));
+            CoreMessages.sendAdminError(
+                    sender,
+                    MessageConfig.MAP_EDITOR_COMMAND_UNSUPPORTED_GAME.replace(
+                            "%games%", supportedNames()));
             return true;
         }
         BaseGameInstanceManager<?> manager = plugin.getGameManager().getAreaManager(game);
         if (manager == null) {
-            Utils.sendAdminError(sender, MessageConfig.MAP_EDITOR_COMMAND_NO_MANAGER);
+            CoreMessages.sendAdminError(sender, MessageConfig.MAP_EDITOR_COMMAND_NO_MANAGER);
             return true;
         }
         if (plugin.getGameManager().isGameManagerLoaded(game)) {
@@ -49,19 +57,27 @@ public final class MapEditSubCommand extends BaseSubCommand {
             return true;
         }
 
-        Utils.sendAdminInfo(player, MessageConfig.MAP_EDITOR_COMMAND_LOADING_DISABLED);
+        CoreMessages.sendAdminInfo(player, MessageConfig.MAP_EDITOR_COMMAND_LOADING_DISABLED);
         if (!plugin.getGameManager().loadGameForEditing(game)) {
-            Utils.sendAdminError(sender, MessageConfig.MAP_EDITOR_COMMAND_MANAGER_LOAD_FAILED);
+            CoreMessages.sendAdminError(
+                    sender, MessageConfig.MAP_EDITOR_COMMAND_MANAGER_LOAD_FAILED);
             return true;
         }
-        plugin.getServer().getScheduler().runTaskLater(plugin,
-                () -> plugin.getPrepareSessionManager().openAreaListGui(player, game), 2L);
+        plugin.getServer()
+                .getScheduler()
+                .runTaskLater(
+                        plugin,
+                        () -> plugin.getPrepareSessionManager().openAreaListGui(player, game),
+                        2L);
         return true;
     }
 
     @Override
-    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
-                                                 @NotNull String label, @NotNull String[] args) {
+    public @Nullable List<String> onTabComplete(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args) {
         if (args.length == 1) return filterStartsWith(supportedGames(true), args[0]);
         return Collections.emptyList();
     }
@@ -70,7 +86,8 @@ public final class MapEditSubCommand extends BaseSubCommand {
         List<String> names = new ArrayList<>();
         for (GameTypeEnum game : GameTypeEnum.values()) {
             if ((!enabledOnly || plugin.getGameManager().isGameEnabled(game))
-                    && plugin.getPrepareSessionManager().supports(game)) names.add(game.commandName());
+                    && plugin.getPrepareSessionManager().supports(game))
+                names.add(game.commandName());
         }
         return names;
     }

@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.bingo.world;
 
 import ink.ziip.championshipscore.platform.bukkit.world.SafeScatterService;
+
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -20,8 +21,13 @@ public final class SpawnScatterManager {
         delegate.performScatterAsync(world, players, radius, maxTries, onComplete);
     }
 
-    public void performScatterAsync(World world, List<Player> players, int radius, int jitter,
-                                    int maxTries, Runnable onComplete) {
+    public void performScatterAsync(
+            World world,
+            List<Player> players,
+            int radius,
+            int jitter,
+            int maxTries,
+            Runnable onComplete) {
         delegate.performScatterAsync(world, players, radius, jitter, maxTries, onComplete);
     }
 }

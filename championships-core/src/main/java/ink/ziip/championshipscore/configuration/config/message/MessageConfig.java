@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.configuration.config.message;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.configuration.ConfigOption;
 import ink.ziip.championshipscore.configuration.config.BaseConfigurationFile;
+
 import lombok.Getter;
 
 @Getter
@@ -41,27 +42,38 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "command.daily-stats")
     public static String COMMAND_DAILY_STATS;
 
-    // Public chat moderation. Optional keys keep existing message.yml files compatible with defaults.
+    // Public chat moderation. Optional keys keep existing message.yml files compatible with
+    // defaults.
     @ConfigOption(path = "admin.mute.default-reason", nullable = true)
     public static String MUTE_DEFAULT_REASON;
+
     @ConfigOption(path = "admin.mute.set", nullable = true)
     public static String ADMIN_MUTE_SET;
+
     @ConfigOption(path = "admin.mute.temporary-set", nullable = true)
     public static String ADMIN_TEMP_MUTE_SET;
+
     @ConfigOption(path = "admin.mute.unmuted", nullable = true)
     public static String ADMIN_UNMUTE_SET;
+
     @ConfigOption(path = "admin.mute.not-muted", nullable = true)
     public static String ADMIN_MUTE_NOT_MUTED;
+
     @ConfigOption(path = "admin.mute.invalid-duration", nullable = true)
     public static String ADMIN_MUTE_INVALID_DURATION;
+
     @ConfigOption(path = "admin.mute.lookup-failed", nullable = true)
     public static String ADMIN_MUTE_LOOKUP_FAILED;
+
     @ConfigOption(path = "admin.mute.save-failed", nullable = true)
     public static String ADMIN_MUTE_SAVE_FAILED;
+
     @ConfigOption(path = "chat.muted-permanent", nullable = true)
     public static String CHAT_MUTED_PERMANENT;
+
     @ConfigOption(path = "chat.muted-temporary", nullable = true)
     public static String CHAT_MUTED_TEMPORARY;
+
     @ConfigOption(path = "chat.unmuted", nullable = true)
     public static String CHAT_UNMUTED;
 
@@ -231,15 +243,6 @@ public class MessageConfig extends BaseConfigurationFile {
     // Spectator feedback
     @ConfigOption(path = "map-editor-spectator.unavailable")
     public static String SPECTATOR_UNAVAILABLE;
-
-    @ConfigOption(path = "map-editor-spectator.visibility-all")
-    public static String SPECTATOR_VISIBILITY_ALL;
-
-    @ConfigOption(path = "map-editor-spectator.visibility-player")
-    public static String SPECTATOR_VISIBILITY_PLAYER;
-
-    @ConfigOption(path = "map-editor-spectator.visibility-team")
-    public static String SPECTATOR_VISIBILITY_TEAM;
 
     @ConfigOption(path = "map-editor-spectator.left")
     public static String SPECTATOR_LEFT;
@@ -460,8 +463,10 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "map-editor-step.checkpoint-added-current")
     public static String MAP_EDITOR_STEP_CHECKPOINT_ADDED_CURRENT;
+
     @ConfigOption(path = "map-editor-step.checkpoint-updated")
     public static String MAP_EDITOR_STEP_CHECKPOINT_UPDATED;
+
     @ConfigOption(path = "map-editor-step.checkpoint-deleted")
     public static String MAP_EDITOR_STEP_CHECKPOINT_DELETED;
 
@@ -521,8 +526,10 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "map-editor-step.arena-instance-running")
     public static String MAP_EDITOR_STEP_ARENA_INSTANCE_RUNNING;
+
     @ConfigOption(path = "map-editor-area.delete-confirmation")
     public static String MAP_EDITOR_AREA_DELETE_CONFIRMATION;
+
     @ConfigOption(path = "map-editor-input.invalid-number")
     public static String MAP_EDITOR_INPUT_INVALID_NUMBER;
 
@@ -546,281 +553,412 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "map-editor-session.game-unavailable")
     public static String MAP_EDITOR_SESSION_GAME_UNAVAILABLE;
+
     @ConfigOption(path = "map-editor-session.create-conflict")
     public static String MAP_EDITOR_SESSION_CREATE_CONFLICT;
+
     @ConfigOption(path = "map-editor-session.delete-unavailable")
     public static String MAP_EDITOR_SESSION_DELETE_UNAVAILABLE;
+
     @ConfigOption(path = "map-editor-session.delete-failed")
     public static String MAP_EDITOR_SESSION_DELETE_FAILED;
+
     @ConfigOption(path = "map-editor-session.deleted")
     public static String MAP_EDITOR_SESSION_DELETED;
+
     @ConfigOption(path = "map-editor-session.unsupported-game")
     public static String MAP_EDITOR_SESSION_UNSUPPORTED_GAME;
+
     @ConfigOption(path = "map-editor-session.map-missing")
     public static String MAP_EDITOR_SESSION_MAP_MISSING;
+
     @ConfigOption(path = "map-editor-session.locked-by-editor")
     public static String MAP_EDITOR_SESSION_LOCKED_BY_EDITOR;
+
     @ConfigOption(path = "map-editor-session.entered")
     public static String MAP_EDITOR_SESSION_ENTERED;
+
     @ConfigOption(path = "map-editor-session.usage-hint")
     public static String MAP_EDITOR_SESSION_USAGE_HINT;
+
     @ConfigOption(path = "map-editor-session.exited")
     public static String MAP_EDITOR_SESSION_EXITED;
+
     @ConfigOption(path = "map-editor-session.go-to-world")
     public static String MAP_EDITOR_SESSION_GO_TO_WORLD;
+
     @ConfigOption(path = "map-editor-session.publish-instance-running")
     public static String MAP_EDITOR_SESSION_PUBLISH_INSTANCE_RUNNING;
+
     @ConfigOption(path = "map-editor-session.publish-started")
     public static String MAP_EDITOR_SESSION_PUBLISH_STARTED;
+
     @ConfigOption(path = "map-editor-session.save-instance-running")
     public static String MAP_EDITOR_SESSION_SAVE_INSTANCE_RUNNING;
+
     @ConfigOption(path = "map-editor-session.save-started")
     public static String MAP_EDITOR_SESSION_SAVE_STARTED;
+
     @ConfigOption(path = "map-editor-session.save-failed")
     public static String MAP_EDITOR_SESSION_SAVE_FAILED;
+
     @ConfigOption(path = "map-editor-session.saved")
     public static String MAP_EDITOR_SESSION_SAVED;
+
     @ConfigOption(path = "map-editor-session.publish-failed")
     public static String MAP_EDITOR_SESSION_PUBLISH_FAILED;
+
     @ConfigOption(path = "map-editor-session.published")
     public static String MAP_EDITOR_SESSION_PUBLISHED;
+
     @ConfigOption(path = "map-editor-session.validation-passed-publish")
     public static String MAP_EDITOR_SESSION_VALIDATION_PASSED_PUBLISH;
+
     @ConfigOption(path = "map-editor-session.validation-passed")
     public static String MAP_EDITOR_SESSION_VALIDATION_PASSED;
+
     @ConfigOption(path = "map-editor-session.validation-failed")
     public static String MAP_EDITOR_SESSION_VALIDATION_FAILED;
+
     @ConfigOption(path = "map-editor-session.validation-error")
     public static String MAP_EDITOR_SESSION_VALIDATION_ERROR;
+
     @ConfigOption(path = "map-editor-session.world-not-bound")
     public static String MAP_EDITOR_SESSION_WORLD_NOT_BOUND;
+
     @ConfigOption(path = "map-editor-session.world-not-loaded")
     public static String MAP_EDITOR_SESSION_WORLD_NOT_LOADED;
+
     @ConfigOption(path = "map-editor-session.location-missing")
     public static String MAP_EDITOR_SESSION_LOCATION_MISSING;
+
     @ConfigOption(path = "map-editor-session.teleport-failed")
     public static String MAP_EDITOR_SESSION_TELEPORT_FAILED;
+
     @ConfigOption(path = "map-editor-session.teleported")
     public static String MAP_EDITOR_SESSION_TELEPORTED;
+
     @ConfigOption(path = "map-editor-session.snapshot-restored")
     public static String MAP_EDITOR_SESSION_SNAPSHOT_RESTORED;
 
     @ConfigOption(path = "map-editor-rename.already-running")
     public static String MAP_EDITOR_RENAME_ALREADY_RUNNING;
+
     @ConfigOption(path = "map-editor-rename.no-manager")
     public static String MAP_EDITOR_RENAME_NO_MANAGER;
+
     @ConfigOption(path = "map-editor-rename.source-missing")
     public static String MAP_EDITOR_RENAME_SOURCE_MISSING;
+
     @ConfigOption(path = "map-editor-rename.source-not-loaded")
     public static String MAP_EDITOR_RENAME_SOURCE_NOT_LOADED;
+
     @ConfigOption(path = "map-editor-rename.invalid-name")
     public static String MAP_EDITOR_RENAME_INVALID_NAME;
+
     @ConfigOption(path = "map-editor-rename.invalid-relative")
     public static String MAP_EDITOR_RENAME_INVALID_RELATIVE;
+
     @ConfigOption(path = "map-editor-rename.same-name")
     public static String MAP_EDITOR_RENAME_SAME_NAME;
+
     @ConfigOption(path = "map-editor-rename.target-exists")
     public static String MAP_EDITOR_RENAME_TARGET_EXISTS;
+
     @ConfigOption(path = "map-editor-rename.prepare-active")
     public static String MAP_EDITOR_RENAME_PREPARE_ACTIVE;
+
     @ConfigOption(path = "map-editor-rename.event-running")
     public static String MAP_EDITOR_RENAME_EVENT_RUNNING;
+
     @ConfigOption(path = "map-editor-rename.area-running")
     public static String MAP_EDITOR_RENAME_AREA_RUNNING;
+
     @ConfigOption(path = "map-editor-rename.target-config-exists")
     public static String MAP_EDITOR_RENAME_TARGET_CONFIG_EXISTS;
+
     @ConfigOption(path = "map-editor-rename.detach-failed")
     public static String MAP_EDITOR_RENAME_DETACH_FAILED;
+
     @ConfigOption(path = "map-editor-rename.detach-waiting")
     public static String MAP_EDITOR_RENAME_DETACH_WAITING;
+
     @ConfigOption(path = "map-editor-rename.pending-sync-failed")
     public static String MAP_EDITOR_RENAME_PENDING_SYNC_FAILED;
+
     @ConfigOption(path = "map-editor-rename.new-area-load-failed")
     public static String MAP_EDITOR_RENAME_NEW_AREA_LOAD_FAILED;
+
     @ConfigOption(path = "map-editor-rename.completed")
     public static String MAP_EDITOR_RENAME_COMPLETED;
+
     @ConfigOption(path = "map-editor-rename.failed-restored")
     public static String MAP_EDITOR_RENAME_FAILED_RESTORED;
 
     @ConfigOption(path = "finale.direct-start-invalid")
     public static String FINALE_DIRECT_START_INVALID;
+
     @ConfigOption(path = "finale.direct-start-started")
     public static String FINALE_DIRECT_START_STARTED;
+
     @ConfigOption(path = "finale.direct-start-started-forced")
     public static String FINALE_DIRECT_START_STARTED_FORCED;
+
     @ConfigOption(path = "finale.direct-start-failed")
     public static String FINALE_DIRECT_START_FAILED;
+
     @ConfigOption(path = "finale.direct-start-forced-failed")
     public static String FINALE_DIRECT_START_FORCED_FAILED;
+
     @ConfigOption(path = "finale.start-team-required")
     public static String FINALE_START_TEAM_REQUIRED;
+
     @ConfigOption(path = "finale.cancelled")
     public static String FINALE_CANCELLED;
+
     @ConfigOption(path = "finale.not-running")
     public static String FINALE_NOT_RUNNING;
+
     @ConfigOption(path = "finale.dodgebolt.area-missing")
     public static String FINALE_DODGEBOLT_AREA_MISSING;
+
     @ConfigOption(path = "finale.dodgebolt.control-executed")
     public static String FINALE_DODGEBOLT_CONTROL_EXECUTED;
+
     @ConfigOption(path = "finale.dodgebolt.control-state-denied")
     public static String FINALE_DODGEBOLT_CONTROL_STATE_DENIED;
+
     @ConfigOption(path = "finale.dodgebolt.elimination-invalid")
     public static String FINALE_DODGEBOLT_ELIMINATION_INVALID;
+
     @ConfigOption(path = "finale.dodgebolt.eliminated")
     public static String FINALE_DODGEBOLT_ELIMINATED;
+
     @ConfigOption(path = "finale.dodgebolt.force-win-invalid")
     public static String FINALE_DODGEBOLT_FORCE_WIN_INVALID;
+
     @ConfigOption(path = "finale.dodgebolt.force-win-set")
     public static String FINALE_DODGEBOLT_FORCE_WIN_SET;
 
     @ConfigOption(path = "game.stop.instance")
     public static String GAME_STOP_INSTANCE;
+
     @ConfigOption(path = "game.stop.unknown-game")
     public static String GAME_STOP_UNKNOWN_GAME;
+
     @ConfigOption(path = "game.stop.instance-missing")
     public static String GAME_STOP_INSTANCE_MISSING;
+
     @ConfigOption(path = "game.stop.instance-ambiguous")
     public static String GAME_STOP_INSTANCE_AMBIGUOUS;
+
     @ConfigOption(path = "game.stop.exception")
     public static String GAME_STOP_EXCEPTION;
+
     @ConfigOption(path = "game.stop.settled")
     public static String GAME_STOP_SETTLED;
+
     @ConfigOption(path = "game.stop.aborted")
     public static String GAME_STOP_ABORTED;
+
     @ConfigOption(path = "game.stop.not-active")
     public static String GAME_STOP_NOT_ACTIVE;
+
     @ConfigOption(path = "game.stop.replaced")
     public static String GAME_STOP_REPLACED;
+
     @ConfigOption(path = "game.stop.failed")
     public static String GAME_STOP_FAILED;
 
     @ConfigOption(path = "schedule-finale.game-not-registered")
     public static String SCHEDULE_FINALE_GAME_NOT_REGISTERED;
+
     @ConfigOption(path = "schedule-finale.game-disabled")
     public static String SCHEDULE_FINALE_GAME_DISABLED;
+
     @ConfigOption(path = "schedule-finale.partial-roster-unsupported")
     public static String SCHEDULE_FINALE_PARTIAL_ROSTER_UNSUPPORTED;
+
     @ConfigOption(path = "schedule-finale.emergency-stopped")
     public static String SCHEDULE_FINALE_EMERGENCY_STOPPED;
+
     @ConfigOption(path = "schedule-finale.other-running")
     public static String SCHEDULE_FINALE_OTHER_RUNNING;
+
     @ConfigOption(path = "schedule-finale.map-unavailable")
     public static String SCHEDULE_FINALE_MAP_UNAVAILABLE;
+
     @ConfigOption(path = "schedule-finale.start-not-implemented")
     public static String SCHEDULE_FINALE_START_NOT_IMPLEMENTED;
+
     @ConfigOption(path = "schedule-finale.auto-finalists-unavailable")
     public static String SCHEDULE_FINALE_AUTO_FINALISTS_UNAVAILABLE;
+
     @ConfigOption(path = "schedule-finale.tie-break-required")
     public static String SCHEDULE_FINALE_TIE_BREAK_REQUIRED;
+
     @ConfigOption(path = "schedule-finale.teams-must-differ")
     public static String SCHEDULE_FINALE_TEAMS_MUST_DIFFER;
+
     @ConfigOption(path = "schedule-finale.dragon-egg.scheduled")
     public static String SCHEDULE_FINALE_DRAGON_EGG_SCHEDULED;
+
     @ConfigOption(path = "schedule-finale.dragon-egg.start-failed")
     public static String SCHEDULE_FINALE_DRAGON_EGG_START_FAILED;
+
     @ConfigOption(path = "schedule-finale.dodgebolt.tie-seed")
     public static String SCHEDULE_FINALE_DODGEBOLT_TIE_SEED;
+
     @ConfigOption(path = "schedule-finale.dodgebolt.scheduled")
     public static String SCHEDULE_FINALE_DODGEBOLT_SCHEDULED;
+
     @ConfigOption(path = "schedule-finale.dodgebolt.scheduled-forced")
     public static String SCHEDULE_FINALE_DODGEBOLT_SCHEDULED_FORCED;
+
     @ConfigOption(path = "schedule-finale.dodgebolt.announcement")
     public static String SCHEDULE_FINALE_DODGEBOLT_ANNOUNCEMENT;
+
     @ConfigOption(path = "schedule-finale.dodgebolt.start-failed")
     public static String SCHEDULE_FINALE_DODGEBOLT_START_FAILED;
+
     @ConfigOption(path = "schedule-finale.dodgebolt.forced-start-failed")
     public static String SCHEDULE_FINALE_DODGEBOLT_FORCED_START_FAILED;
 
     @ConfigOption(path = "map-editor-command.unknown-game")
     public static String MAP_EDITOR_COMMAND_UNKNOWN_GAME;
+
     @ConfigOption(path = "map-editor-command.unsupported-game")
     public static String MAP_EDITOR_COMMAND_UNSUPPORTED_GAME;
+
     @ConfigOption(path = "map-editor-command.no-manager")
     public static String MAP_EDITOR_COMMAND_NO_MANAGER;
+
     @ConfigOption(path = "map-editor-command.loading-disabled")
     public static String MAP_EDITOR_COMMAND_LOADING_DISABLED;
+
     @ConfigOption(path = "map-editor-command.loading-for-rename")
     public static String MAP_EDITOR_COMMAND_LOADING_FOR_RENAME;
+
     @ConfigOption(path = "map-editor-command.manager-load-failed")
     public static String MAP_EDITOR_COMMAND_MANAGER_LOAD_FAILED;
+
     @ConfigOption(path = "buildmart-blueprint.stars-range")
     public static String BUILD_MART_BLUEPRINT_STARS_RANGE;
+
     @ConfigOption(path = "buildmart-blueprint.selection-read-failed")
     public static String BUILD_MART_BLUEPRINT_SELECTION_READ_FAILED;
+
     @ConfigOption(path = "buildmart-blueprint.height-limit")
     public static String BUILD_MART_BLUEPRINT_HEIGHT_LIMIT;
+
     @ConfigOption(path = "buildmart-blueprint.footprint-limit")
     public static String BUILD_MART_BLUEPRINT_FOOTPRINT_LIMIT;
+
     @ConfigOption(path = "buildmart-blueprint.block-limit")
     public static String BUILD_MART_BLUEPRINT_BLOCK_LIMIT;
+
     @ConfigOption(path = "buildmart-blueprint.empty-selection")
     public static String BUILD_MART_BLUEPRINT_EMPTY_SELECTION;
+
     @ConfigOption(path = "buildmart-blueprint.save-failed")
     public static String BUILD_MART_BLUEPRINT_SAVE_FAILED;
+
     @ConfigOption(path = "buildmart-blueprint.exported-auto")
     public static String BUILD_MART_BLUEPRINT_EXPORTED_AUTO;
+
     @ConfigOption(path = "buildmart-blueprint.exported-manual")
     public static String BUILD_MART_BLUEPRINT_EXPORTED_MANUAL;
+
     @ConfigOption(path = "buildmart-blueprint.override-not-suggested")
     public static String BUILD_MART_BLUEPRINT_OVERRIDE_NOT_SUGGESTED;
+
     @ConfigOption(path = "buildmart-blueprint.map-missing")
     public static String BUILD_MART_BLUEPRINT_MAP_MISSING;
+
     @ConfigOption(path = "buildmart-blueprint.missing")
     public static String BUILD_MART_BLUEPRINT_MISSING;
+
     @ConfigOption(path = "buildmart-blueprint.page-out-of-range")
     public static String BUILD_MART_BLUEPRINT_PAGE_OUT_OF_RANGE;
+
     @ConfigOption(path = "buildmart-blueprint.stars-same")
     public static String BUILD_MART_BLUEPRINT_STARS_SAME;
+
     @ConfigOption(path = "buildmart-blueprint.stars-changed")
     public static String BUILD_MART_BLUEPRINT_STARS_CHANGED;
+
     @ConfigOption(path = "buildmart-blueprint.audit-header")
     public static String BUILD_MART_BLUEPRINT_AUDIT_HEADER;
+
     @ConfigOption(path = "buildmart-blueprint.audit-summary")
     public static String BUILD_MART_BLUEPRINT_AUDIT_SUMMARY;
+
     @ConfigOption(path = "buildmart-blueprint.audit-row")
     public static String BUILD_MART_BLUEPRINT_AUDIT_ROW;
+
     @ConfigOption(path = "buildmart-blueprint.audit-title")
     public static String BUILD_MART_BLUEPRINT_AUDIT_TITLE;
+
     @ConfigOption(path = "buildmart-blueprint.audit-structure")
     public static String BUILD_MART_BLUEPRINT_AUDIT_STRUCTURE;
+
     @ConfigOption(path = "buildmart-blueprint.audit-state")
     public static String BUILD_MART_BLUEPRINT_AUDIT_STATE;
+
     @ConfigOption(path = "buildmart-blueprint.coverage-no-map")
     public static String BUILD_MART_BLUEPRINT_COVERAGE_NO_MAP;
+
     @ConfigOption(path = "buildmart-blueprint.coverage-no-zones")
     public static String BUILD_MART_BLUEPRINT_COVERAGE_NO_ZONES;
+
     @ConfigOption(path = "buildmart-blueprint.audit-materials")
     public static String BUILD_MART_BLUEPRINT_AUDIT_MATERIALS;
+
     @ConfigOption(path = "buildmart-blueprint.coverage-full")
     public static String BUILD_MART_BLUEPRINT_COVERAGE_FULL;
+
     @ConfigOption(path = "buildmart-blueprint.coverage-uncovered")
     public static String BUILD_MART_BLUEPRINT_COVERAGE_UNCOVERED;
+
     @ConfigOption(path = "buildmart-blueprint.audit-warning")
     public static String BUILD_MART_BLUEPRINT_AUDIT_WARNING;
+
     @ConfigOption(path = "buildmart-blueprint-editor.invalid-name")
     public static String BUILD_MART_EDITOR_INVALID_NAME;
+
     @ConfigOption(path = "buildmart-blueprint-editor.finish-first")
     public static String BUILD_MART_EDITOR_FINISH_FIRST;
+
     @ConfigOption(path = "buildmart-blueprint-editor.setup-missing")
     public static String BUILD_MART_EDITOR_SETUP_MISSING;
+
     @ConfigOption(path = "buildmart-blueprint-editor.conflict")
     public static String BUILD_MART_EDITOR_CONFLICT;
+
     @ConfigOption(path = "buildmart-blueprint-editor.started")
     public static String BUILD_MART_EDITOR_STARTED;
+
     @ConfigOption(path = "buildmart-blueprint-editor.busy")
     public static String BUILD_MART_EDITOR_BUSY;
+
     @ConfigOption(path = "buildmart-blueprint-editor.unsupported")
     public static String BUILD_MART_EDITOR_UNSUPPORTED;
+
     @ConfigOption(path = "buildmart-blueprint-editor.reviewing")
     public static String BUILD_MART_EDITOR_REVIEWING;
+
     @ConfigOption(path = "buildmart-blueprint-editor.manifest-missing")
     public static String BUILD_MART_EDITOR_MANIFEST_MISSING;
+
     @ConfigOption(path = "buildmart-blueprint-editor.materials-rejected")
     public static String BUILD_MART_EDITOR_MATERIALS_REJECTED;
+
     @ConfigOption(path = "buildmart-blueprint-editor.invisible-warning")
     public static String BUILD_MART_EDITOR_INVISIBLE_WARNING;
+
     @ConfigOption(path = "buildmart-blueprint-editor.saved")
     public static String BUILD_MART_EDITOR_SAVED;
+
     @ConfigOption(path = "buildmart-blueprint-editor.cancelled")
     public static String BUILD_MART_EDITOR_CANCELLED;
 
@@ -881,14 +1019,18 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "team-gui.team-teleported")
     public static String TEAM_GUI_TEAM_TELEPORTED;
+
     @ConfigOption(path = "team-gui.team-name-already-exists")
     public static String TEAM_GUI_TEAM_NAME_ALREADY_EXISTS;
 
     @ConfigOption(path = "team-gui.team-name-cannot-be-empty")
     public static String TEAM_GUI_TEAM_NAME_CANNOT_BE_EMPTY;
 
-    @ConfigOption(path = "team-gui.team-names-cannot-exceed-64-characters-and-cannot-contain-control-characters")
-    public static String TEAM_GUI_TEAM_NAMES_CANNOT_EXCEED_64_CHARACTERS_AND_CANNOT_CONTAIN_CONTROL_CHARACTERS;
+    @ConfigOption(
+            path =
+                    "team-gui.team-names-cannot-exceed-64-characters-and-cannot-contain-control-characters")
+    public static String
+            TEAM_GUI_TEAM_NAMES_CANNOT_EXCEED_64_CHARACTERS_AND_CANNOT_CONTAIN_CONTROL_CHARACTERS;
 
     @ConfigOption(path = "team-gui.team-not-found-feedback")
     public static String TEAM_GUI_TEAM_NOT_FOUND_FEEDBACK;
@@ -902,8 +1044,11 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "team-gui.the-player-is-already-on-the-team")
     public static String TEAM_GUI_THE_PLAYER_IS_ALREADY_ON_THE_TEAM;
 
-    @ConfigOption(path = "team-gui.the-player-s-current-team-or-target-team-is-currently-in-the-game-cannot-change-teams")
-    public static String TEAM_GUI_THE_PLAYER_S_CURRENT_TEAM_OR_TARGET_TEAM_IS_CURRENTLY_IN_THE_GAME_CANNOT_CHANGE_TEAMS;
+    @ConfigOption(
+            path =
+                    "team-gui.the-player-s-current-team-or-target-team-is-currently-in-the-game-cannot-change-teams")
+    public static String
+            TEAM_GUI_THE_PLAYER_S_CURRENT_TEAM_OR_TARGET_TEAM_IS_CURRENTLY_IN_THE_GAME_CANNOT_CHANGE_TEAMS;
 
     @ConfigOption(path = "team-gui.the-target-team-is-full")
     public static String TEAM_GUI_THE_TARGET_TEAM_IS_FULL;
@@ -914,8 +1059,10 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "team-gui.the-team-no-longer-exists")
     public static String TEAM_GUI_THE_TEAM_NO_LONGER_EXISTS;
 
-    @ConfigOption(path = "team-gui.this-color-has-just-been-taken-by-another-team-please-choose-again")
-    public static String TEAM_GUI_THIS_COLOR_HAS_JUST_BEEN_TAKEN_BY_ANOTHER_TEAM_PLEASE_CHOOSE_AGAIN;
+    @ConfigOption(
+            path = "team-gui.this-color-has-just-been-taken-by-another-team-please-choose-again")
+    public static String
+            TEAM_GUI_THIS_COLOR_HAS_JUST_BEEN_TAKEN_BY_ANOTHER_TEAM_PLEASE_CHOOSE_AGAIN;
 
     @ConfigOption(path = "team-gui.unable-to-delete-team-team-may-be-in-game")
     public static String TEAM_GUI_UNABLE_TO_DELETE_TEAM_TEAM_MAY_BE_IN_GAME;
@@ -923,8 +1070,10 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "team-gui.unable-to-read-player-history")
     public static String TEAM_GUI_UNABLE_TO_READ_PLAYER_HISTORY;
 
-    @ConfigOption(path = "team-gui.you-no-longer-have-permission-to-use-the-team-management-interface")
-    public static String TEAM_GUI_YOU_NO_LONGER_HAVE_PERMISSION_TO_USE_THE_TEAM_MANAGEMENT_INTERFACE;
+    @ConfigOption(
+            path = "team-gui.you-no-longer-have-permission-to-use-the-team-management-interface")
+    public static String
+            TEAM_GUI_YOU_NO_LONGER_HAVE_PERMISSION_TO_USE_THE_TEAM_MANAGEMENT_INTERFACE;
 
     // Command help / usage
     @ConfigOption(path = "command.help-header")
@@ -962,46 +1111,122 @@ public class MessageConfig extends BaseConfigurationFile {
     public static String CHAT_TEAM_UNAVAILABLE;
 
     // Free play
-    @ConfigOption(path = "daily.prefix") public static String DAILY_PREFIX;
+    @ConfigOption(path = "daily.prefix")
+    public static String DAILY_PREFIX;
+
     @ConfigOption(path = "daily.prefixed")
     public static String DAILY_PREFIXED;
-    @ConfigOption(path = "daily.mode.championship") public static String DAILY_MODE_CHAMPIONSHIP;
-    @ConfigOption(path = "daily.mode.free-play") public static String DAILY_MODE_FREE_PLAY;
-    @ConfigOption(path = "daily.state.idle") public static String DAILY_STATE_IDLE;
-    @ConfigOption(path = "daily.state.selected") public static String DAILY_STATE_SELECTED;
-    @ConfigOption(path = "daily.state.waiting-member") public static String DAILY_STATE_WAITING_MEMBER;
-    @ConfigOption(path = "daily.state.queued") public static String DAILY_STATE_QUEUED;
-    @ConfigOption(path = "daily.state.playing") public static String DAILY_STATE_PLAYING;
-    @ConfigOption(path = "daily.team-name") public static String DAILY_TEAM_NAME;
-    @ConfigOption(path = "daily.unavailable") public static String DAILY_UNAVAILABLE;
-    @ConfigOption(path = "daily.already-playing") public static String DAILY_ALREADY_PLAYING;
-    @ConfigOption(path = "daily.game-unavailable") public static String DAILY_GAME_UNAVAILABLE;
-    @ConfigOption(path = "daily.team-names") public static java.util.List<String> DAILY_TEAM_NAMES;
-    @ConfigOption(path = "daily.team-suffix") public static String DAILY_TEAM_SUFFIX;
-    @ConfigOption(path = "daily.party-too-large") public static String DAILY_PARTY_TOO_LARGE;
-    @ConfigOption(path = "daily.party-member-unavailable") public static String DAILY_PARTY_MEMBER_UNAVAILABLE;
-    @ConfigOption(path = "daily.already-queued") public static String DAILY_ALREADY_QUEUED;
-    @ConfigOption(path = "daily.queue-unavailable") public static String DAILY_QUEUE_UNAVAILABLE;
-    @ConfigOption(path = "daily.queue-migration-failed") public static String DAILY_QUEUE_MIGRATION_FAILED;
-    @ConfigOption(path = "daily.queue-selected") public static String DAILY_QUEUE_SELECTED;
-    @ConfigOption(path = "daily.queue-left") public static String DAILY_QUEUE_LEFT;
-    @ConfigOption(path = "daily.not-in-play") public static String DAILY_NOT_IN_PLAY;
-    @ConfigOption(path = "daily.play-left") public static String DAILY_PLAY_LEFT;
-    @ConfigOption(path = "daily.queue-ready") public static String DAILY_QUEUE_READY;
-    @ConfigOption(path = "daily.queue-countdown") public static String DAILY_QUEUE_COUNTDOWN;
-    @ConfigOption(path = "daily.queue-composition-failed") public static String DAILY_QUEUE_COMPOSITION_FAILED;
-    @ConfigOption(path = "daily.queue-no-arena") public static String DAILY_QUEUE_NO_ARENA;
-    @ConfigOption(path = "daily.match-assigned") public static String DAILY_MATCH_ASSIGNED;
-    @ConfigOption(path = "daily.match-aborted") public static String DAILY_MATCH_ABORTED;
-    @ConfigOption(path = "daily.bossbar.waiting") public static String DAILY_BOSSBAR_WAITING;
-    @ConfigOption(path = "daily.bossbar.countdown") public static String DAILY_BOSSBAR_COUNTDOWN;
-    @ConfigOption(path = "daily.bossbar.needs-group") public static String DAILY_BOSSBAR_NEEDS_GROUP;
-    @ConfigOption(path = "daily.queue-clear.championship") public static String DAILY_QUEUE_CLEAR_CHAMPIONSHIP;
-    @ConfigOption(path = "daily.queue-clear.reload") public static String DAILY_QUEUE_CLEAR_RELOAD;
-    @ConfigOption(path = "daily.queue-paused-member") public static String DAILY_QUEUE_PAUSED_MEMBER;
-    @ConfigOption(path = "daily.leaderboard.row-count") public static String DAILY_LEADERBOARD_ROW_COUNT;
-    @ConfigOption(path = "daily.leaderboard.row-time") public static String DAILY_LEADERBOARD_ROW_TIME;
-    @ConfigOption(path = "daily.leaderboard.empty") public static String DAILY_LEADERBOARD_EMPTY;
+
+    @ConfigOption(path = "daily.mode.championship")
+    public static String DAILY_MODE_CHAMPIONSHIP;
+
+    @ConfigOption(path = "daily.mode.free-play")
+    public static String DAILY_MODE_FREE_PLAY;
+
+    @ConfigOption(path = "daily.state.idle")
+    public static String DAILY_STATE_IDLE;
+
+    @ConfigOption(path = "daily.state.selected")
+    public static String DAILY_STATE_SELECTED;
+
+    @ConfigOption(path = "daily.state.waiting-member")
+    public static String DAILY_STATE_WAITING_MEMBER;
+
+    @ConfigOption(path = "daily.state.queued")
+    public static String DAILY_STATE_QUEUED;
+
+    @ConfigOption(path = "daily.state.playing")
+    public static String DAILY_STATE_PLAYING;
+
+    @ConfigOption(path = "daily.team-name")
+    public static String DAILY_TEAM_NAME;
+
+    @ConfigOption(path = "daily.unavailable")
+    public static String DAILY_UNAVAILABLE;
+
+    @ConfigOption(path = "daily.already-playing")
+    public static String DAILY_ALREADY_PLAYING;
+
+    @ConfigOption(path = "daily.game-unavailable")
+    public static String DAILY_GAME_UNAVAILABLE;
+
+    @ConfigOption(path = "daily.team-names")
+    public static java.util.List<String> DAILY_TEAM_NAMES;
+
+    @ConfigOption(path = "daily.team-suffix")
+    public static String DAILY_TEAM_SUFFIX;
+
+    @ConfigOption(path = "daily.party-too-large")
+    public static String DAILY_PARTY_TOO_LARGE;
+
+    @ConfigOption(path = "daily.party-member-unavailable")
+    public static String DAILY_PARTY_MEMBER_UNAVAILABLE;
+
+    @ConfigOption(path = "daily.already-queued")
+    public static String DAILY_ALREADY_QUEUED;
+
+    @ConfigOption(path = "daily.queue-unavailable")
+    public static String DAILY_QUEUE_UNAVAILABLE;
+
+    @ConfigOption(path = "daily.queue-migration-failed")
+    public static String DAILY_QUEUE_MIGRATION_FAILED;
+
+    @ConfigOption(path = "daily.queue-selected")
+    public static String DAILY_QUEUE_SELECTED;
+
+    @ConfigOption(path = "daily.queue-left")
+    public static String DAILY_QUEUE_LEFT;
+
+    @ConfigOption(path = "daily.not-in-play")
+    public static String DAILY_NOT_IN_PLAY;
+
+    @ConfigOption(path = "daily.play-left")
+    public static String DAILY_PLAY_LEFT;
+
+    @ConfigOption(path = "daily.queue-ready")
+    public static String DAILY_QUEUE_READY;
+
+    @ConfigOption(path = "daily.queue-countdown")
+    public static String DAILY_QUEUE_COUNTDOWN;
+
+    @ConfigOption(path = "daily.queue-composition-failed")
+    public static String DAILY_QUEUE_COMPOSITION_FAILED;
+
+    @ConfigOption(path = "daily.queue-no-arena")
+    public static String DAILY_QUEUE_NO_ARENA;
+
+    @ConfigOption(path = "daily.match-assigned")
+    public static String DAILY_MATCH_ASSIGNED;
+
+    @ConfigOption(path = "daily.match-aborted")
+    public static String DAILY_MATCH_ABORTED;
+
+    @ConfigOption(path = "daily.bossbar.waiting")
+    public static String DAILY_BOSSBAR_WAITING;
+
+    @ConfigOption(path = "daily.bossbar.countdown")
+    public static String DAILY_BOSSBAR_COUNTDOWN;
+
+    @ConfigOption(path = "daily.bossbar.needs-group")
+    public static String DAILY_BOSSBAR_NEEDS_GROUP;
+
+    @ConfigOption(path = "daily.queue-clear.championship")
+    public static String DAILY_QUEUE_CLEAR_CHAMPIONSHIP;
+
+    @ConfigOption(path = "daily.queue-clear.reload")
+    public static String DAILY_QUEUE_CLEAR_RELOAD;
+
+    @ConfigOption(path = "daily.queue-paused-member")
+    public static String DAILY_QUEUE_PAUSED_MEMBER;
+
+    @ConfigOption(path = "daily.leaderboard.row-count")
+    public static String DAILY_LEADERBOARD_ROW_COUNT;
+
+    @ConfigOption(path = "daily.leaderboard.row-time")
+    public static String DAILY_LEADERBOARD_ROW_TIME;
+
+    @ConfigOption(path = "daily.leaderboard.empty")
+    public static String DAILY_LEADERBOARD_EMPTY;
 
     // Team
     @ConfigOption(path = "team.no-teams")
@@ -1223,108 +1448,305 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "game.riptiderush")
     public static String GAME_RIPTIDE_RUSH;
 
-    @ConfigOption(path = "game.frostbite") public static String GAME_FROSTBITE;
+    @ConfigOption(path = "game.frostbite")
+    public static String GAME_FROSTBITE;
 
-    @ConfigOption(path = "game.laserbox") public static String GAME_LASER_BOX;
-    @ConfigOption(path = "game.sulfursoccer") public static String GAME_SULFUR_SOCCER;
-    @ConfigOption(path = "laserbox.start-preparation") public static String LASER_BOX_START_PREPARATION;
-    @ConfigOption(path = "laserbox.start-preparation-title") public static String LASER_BOX_START_PREPARATION_TITLE;
-    @ConfigOption(path = "laserbox.start-preparation-subtitle") public static String LASER_BOX_START_PREPARATION_SUBTITLE;
-    @ConfigOption(path = "laserbox.game-start-title") public static String LASER_BOX_GAME_START_TITLE;
-    @ConfigOption(path = "laserbox.game-start-subtitle") public static String LASER_BOX_GAME_START_SUBTITLE;
-    @ConfigOption(path = "laserbox.boss-bar") public static String LASER_BOX_BOSS_BAR;
-    @ConfigOption(path = "laserbox.hit") public static String LASER_BOX_HIT;
-    @ConfigOption(path = "laserbox.respawn-title") public static String LASER_BOX_RESPAWN_TITLE;
-    @ConfigOption(path = "laserbox.respawn-subtitle") public static String LASER_BOX_RESPAWN_SUBTITLE;
-    @ConfigOption(path = "laserbox.winner") public static String LASER_BOX_WINNER;
-    @ConfigOption(path = "laserbox.draw") public static String LASER_BOX_DRAW;
-    @ConfigOption(path = "laserbox.end-title") public static String LASER_BOX_END_TITLE;
-    @ConfigOption(path = "laserbox.end-subtitle") public static String LASER_BOX_END_SUBTITLE;
-    @ConfigOption(path = "laserbox.item-shield") public static String LASER_BOX_ITEM_SHIELD;
-    @ConfigOption(path = "laserbox.item-grenade") public static String LASER_BOX_ITEM_GRENADE;
-    @ConfigOption(path = "laserbox.item-strike") public static String LASER_BOX_ITEM_STRIKE;
-    @ConfigOption(path = "laserbox.item-reveal") public static String LASER_BOX_ITEM_REVEAL;
-    @ConfigOption(path = "frostbite.start-preparation") public static String FROSTBITE_START_PREPARATION;
-    @ConfigOption(path = "frostbite.start-preparation-title") public static String FROSTBITE_START_PREPARATION_TITLE;
-    @ConfigOption(path = "frostbite.start-preparation-subtitle") public static String FROSTBITE_START_PREPARATION_SUBTITLE;
-    @ConfigOption(path = "frostbite.game-start-title") public static String FROSTBITE_GAME_START_TITLE;
-    @ConfigOption(path = "frostbite.game-start-subtitle") public static String FROSTBITE_GAME_START_SUBTITLE;
-    @ConfigOption(path = "frostbite.arena") public static String FROSTBITE_ARENA;
-    @ConfigOption(path = "frostbite.frozen-actionbar") public static String FROSTBITE_FROZEN_ACTIONBAR;
-    @ConfigOption(path = "frostbite.status-actionbar") public static String FROSTBITE_STATUS_ACTIONBAR;
-    @ConfigOption(path = "frostbite.kill") public static String FROSTBITE_KILL;
-    @ConfigOption(path = "frostbite.respawn-title") public static String FROSTBITE_RESPAWN_TITLE;
-    @ConfigOption(path = "frostbite.respawn-subtitle") public static String FROSTBITE_RESPAWN_SUBTITLE;
-    @ConfigOption(path = "frostbite.boss-bar") public static String FROSTBITE_BOSS_BAR;
-    @ConfigOption(path = "frostbite.end-title") public static String FROSTBITE_END_TITLE;
-    @ConfigOption(path = "frostbite.end-subtitle") public static String FROSTBITE_END_SUBTITLE;
-    @ConfigOption(path = "frostbite.phoenix-consumed") public static String FROSTBITE_PHOENIX_CONSUMED;
-    @ConfigOption(path = "frostbite.campfire-returned") public static String FROSTBITE_CAMPFIRE_RETURNED;
-    @ConfigOption(path = "frostbite.freeze-success") public static String FROSTBITE_FREEZE_SUCCESS;
-    @ConfigOption(path = "frostbite.freeze") public static String FROSTBITE_FREEZE;
-    @ConfigOption(path = "frostbite.frozen") public static String FROSTBITE_FROZEN;
-    @ConfigOption(path = "frostbite.item.avalanche.title") public static String FROSTBITE_ITEM_AVALANCHE_TITLE;
-    @ConfigOption(path = "frostbite.item.avalanche.description") public static String FROSTBITE_ITEM_AVALANCHE_DESCRIPTION;
-    @ConfigOption(path = "frostbite.item.axe.title") public static String FROSTBITE_ITEM_AXE_TITLE;
-    @ConfigOption(path = "frostbite.item.axe.description") public static String FROSTBITE_ITEM_AXE_DESCRIPTION;
-    @ConfigOption(path = "frostbite.item.blaze.title") public static String FROSTBITE_ITEM_BLAZE_TITLE;
-    @ConfigOption(path = "frostbite.item.blaze.description") public static String FROSTBITE_ITEM_BLAZE_DESCRIPTION;
-    @ConfigOption(path = "frostbite.item.bow.title") public static String FROSTBITE_ITEM_BOW_TITLE;
-    @ConfigOption(path = "frostbite.item.bow.description") public static String FROSTBITE_ITEM_BOW_DESCRIPTION;
-    @ConfigOption(path = "frostbite.item.beacon.title") public static String FROSTBITE_ITEM_BEACON_TITLE;
-    @ConfigOption(path = "frostbite.item.beacon.description") public static String FROSTBITE_ITEM_BEACON_DESCRIPTION;
-    @ConfigOption(path = "frostbite.item.explosion.title") public static String FROSTBITE_ITEM_EXPLOSION_TITLE;
-    @ConfigOption(path = "frostbite.item.explosion.description") public static String FROSTBITE_ITEM_EXPLOSION_DESCRIPTION;
-    @ConfigOption(path = "frostbite.item.glow.title") public static String FROSTBITE_ITEM_GLOW_TITLE;
-    @ConfigOption(path = "frostbite.item.glow.description") public static String FROSTBITE_ITEM_GLOW_DESCRIPTION;
-    @ConfigOption(path = "frostbite.item.hot_rod.title") public static String FROSTBITE_ITEM_HOT_ROD_TITLE;
-    @ConfigOption(path = "frostbite.item.hot_rod.description") public static String FROSTBITE_ITEM_HOT_ROD_DESCRIPTION;
-    @ConfigOption(path = "frostbite.item.icicle.title") public static String FROSTBITE_ITEM_ICICLE_TITLE;
-    @ConfigOption(path = "frostbite.item.icicle.description") public static String FROSTBITE_ITEM_ICICLE_DESCRIPTION;
-    @ConfigOption(path = "frostbite.item.invis.title") public static String FROSTBITE_ITEM_INVIS_TITLE;
-    @ConfigOption(path = "frostbite.item.invis.description") public static String FROSTBITE_ITEM_INVIS_DESCRIPTION;
-    @ConfigOption(path = "frostbite.item.mystery.title") public static String FROSTBITE_ITEM_MYSTERY_TITLE;
-    @ConfigOption(path = "frostbite.item.mystery.description") public static String FROSTBITE_ITEM_MYSTERY_DESCRIPTION;
-    @ConfigOption(path = "frostbite.item.phoenix.title") public static String FROSTBITE_ITEM_PHOENIX_TITLE;
-    @ConfigOption(path = "frostbite.item.phoenix.description") public static String FROSTBITE_ITEM_PHOENIX_DESCRIPTION;
-    @ConfigOption(path = "frostbite.item.speed.title") public static String FROSTBITE_ITEM_SPEED_TITLE;
-    @ConfigOption(path = "frostbite.item.speed.description") public static String FROSTBITE_ITEM_SPEED_DESCRIPTION;
-    @ConfigOption(path = "frostbite.item.frost_trap.title") public static String FROSTBITE_ITEM_FROST_TRAP_TITLE;
-    @ConfigOption(path = "frostbite.item.frost_trap.description") public static String FROSTBITE_ITEM_FROST_TRAP_DESCRIPTION;
-    @ConfigOption(path = "frostbite.item.whoaball.title") public static String FROSTBITE_ITEM_WHOABALL_TITLE;
-    @ConfigOption(path = "frostbite.item.whoaball.description") public static String FROSTBITE_ITEM_WHOABALL_DESCRIPTION;
-    @ConfigOption(path = "sulfursoccer.score") public static String SULFUR_SOCCER_SCORE;
-    @ConfigOption(path = "sulfursoccer.goal") public static String SULFUR_SOCCER_GOAL;
-    @ConfigOption(path = "sulfursoccer.goal-title") public static String SULFUR_SOCCER_GOAL_TITLE;
-    @ConfigOption(path = "sulfursoccer.goal-subtitle") public static String SULFUR_SOCCER_GOAL_SUBTITLE;
-    @ConfigOption(path = "sulfursoccer.upcoming-title", nullable = true) public static String SULFUR_SOCCER_UPCOMING_TITLE;
-    @ConfigOption(path = "sulfursoccer.opening-title", nullable = true) public static String SULFUR_SOCCER_OPENING_TITLE;
-    @ConfigOption(path = "sulfursoccer.restart-title", nullable = true) public static String SULFUR_SOCCER_RESTART_TITLE;
-    @ConfigOption(path = "sulfursoccer.warmup-start", nullable = true) public static String SULFUR_SOCCER_WARMUP_START;
-    @ConfigOption(path = "sulfursoccer.warmup-time", nullable = true) public static String SULFUR_SOCCER_WARMUP_TIME;
-    @ConfigOption(path = "sulfursoccer.time-up", nullable = true) public static String SULFUR_SOCCER_TIME_UP;
-    @ConfigOption(path = "sulfursoccer.shootout-start", nullable = true) public static String SULFUR_SOCCER_SHOOTOUT_START;
-    @ConfigOption(path = "sulfursoccer.penalty-turn", nullable = true) public static String SULFUR_SOCCER_PENALTY_TURN;
-    @ConfigOption(path = "sulfursoccer.penalty-goal", nullable = true) public static String SULFUR_SOCCER_PENALTY_GOAL;
-    @ConfigOption(path = "sulfursoccer.penalty-miss", nullable = true) public static String SULFUR_SOCCER_PENALTY_MISS;
-    @ConfigOption(path = "sulfursoccer.penalty-score", nullable = true) public static String SULFUR_SOCCER_PENALTY_SCORE;
-    @ConfigOption(path = "sulfursoccer.state-end") public static String SULFUR_SOCCER_STATE_END;
-    @ConfigOption(path = "sulfursoccer.state-paused") public static String SULFUR_SOCCER_STATE_PAUSED;
-    @ConfigOption(path = "sulfursoccer.state-warmup") public static String SULFUR_SOCCER_STATE_WARMUP;
-    @ConfigOption(path = "sulfursoccer.state-shootout") public static String SULFUR_SOCCER_STATE_SHOOTOUT;
-    @ConfigOption(path = "sulfursoccer.state-regulation") public static String SULFUR_SOCCER_STATE_REGULATION;
-    @ConfigOption(path = "sulfursoccer.pearl-rejected", nullable = true) public static String SULFUR_SOCCER_PEARL_REJECTED;
-    @ConfigOption(path = "sulfursoccer.ball-reset") public static String SULFUR_SOCCER_BALL_RESET;
-    @ConfigOption(path = "sulfursoccer.paused") public static String SULFUR_SOCCER_PAUSED;
-    @ConfigOption(path = "sulfursoccer.resumed") public static String SULFUR_SOCCER_RESUMED;
-    @ConfigOption(path = "sulfursoccer.champion") public static String SULFUR_SOCCER_CHAMPION;
-    @ConfigOption(path = "sulfursoccer.champion-subtitle") public static String SULFUR_SOCCER_CHAMPION_SUBTITLE;
-    @ConfigOption(path = "sulfursoccer.stopped") public static String SULFUR_SOCCER_STOPPED;
-    @ConfigOption(path = "sulfursoccer.end-title") public static String SULFUR_SOCCER_END_TITLE;
-    @ConfigOption(path = "sulfursoccer.scheduled") public static String SULFUR_SOCCER_SCHEDULED;
-    @ConfigOption(path = "sulfursoccer.finalists") public static String SULFUR_SOCCER_FINALISTS;
-    @ConfigOption(path = "sulfursoccer.start-failed") public static String SULFUR_SOCCER_START_FAILED;
+    @ConfigOption(path = "game.laserbox")
+    public static String GAME_LASER_BOX;
 
+    @ConfigOption(path = "game.sulfursoccer")
+    public static String GAME_SULFUR_SOCCER;
+
+    @ConfigOption(path = "laserbox.start-preparation")
+    public static String LASER_BOX_START_PREPARATION;
+
+    @ConfigOption(path = "laserbox.start-preparation-title")
+    public static String LASER_BOX_START_PREPARATION_TITLE;
+
+    @ConfigOption(path = "laserbox.start-preparation-subtitle")
+    public static String LASER_BOX_START_PREPARATION_SUBTITLE;
+
+    @ConfigOption(path = "laserbox.game-start-title")
+    public static String LASER_BOX_GAME_START_TITLE;
+
+    @ConfigOption(path = "laserbox.game-start-subtitle")
+    public static String LASER_BOX_GAME_START_SUBTITLE;
+
+    @ConfigOption(path = "laserbox.boss-bar")
+    public static String LASER_BOX_BOSS_BAR;
+
+    @ConfigOption(path = "laserbox.hit")
+    public static String LASER_BOX_HIT;
+
+    @ConfigOption(path = "laserbox.respawn-title")
+    public static String LASER_BOX_RESPAWN_TITLE;
+
+    @ConfigOption(path = "laserbox.respawn-subtitle")
+    public static String LASER_BOX_RESPAWN_SUBTITLE;
+
+    @ConfigOption(path = "laserbox.winner")
+    public static String LASER_BOX_WINNER;
+
+    @ConfigOption(path = "laserbox.draw")
+    public static String LASER_BOX_DRAW;
+
+    @ConfigOption(path = "laserbox.end-title")
+    public static String LASER_BOX_END_TITLE;
+
+    @ConfigOption(path = "laserbox.end-subtitle")
+    public static String LASER_BOX_END_SUBTITLE;
+
+    @ConfigOption(path = "laserbox.item-shield")
+    public static String LASER_BOX_ITEM_SHIELD;
+
+    @ConfigOption(path = "laserbox.item-grenade")
+    public static String LASER_BOX_ITEM_GRENADE;
+
+    @ConfigOption(path = "laserbox.item-strike")
+    public static String LASER_BOX_ITEM_STRIKE;
+
+    @ConfigOption(path = "laserbox.item-reveal")
+    public static String LASER_BOX_ITEM_REVEAL;
+
+    @ConfigOption(path = "frostbite.start-preparation")
+    public static String FROSTBITE_START_PREPARATION;
+
+    @ConfigOption(path = "frostbite.start-preparation-title")
+    public static String FROSTBITE_START_PREPARATION_TITLE;
+
+    @ConfigOption(path = "frostbite.start-preparation-subtitle")
+    public static String FROSTBITE_START_PREPARATION_SUBTITLE;
+
+    @ConfigOption(path = "frostbite.game-start-title")
+    public static String FROSTBITE_GAME_START_TITLE;
+
+    @ConfigOption(path = "frostbite.game-start-subtitle")
+    public static String FROSTBITE_GAME_START_SUBTITLE;
+
+    @ConfigOption(path = "frostbite.arena")
+    public static String FROSTBITE_ARENA;
+
+    @ConfigOption(path = "frostbite.frozen-actionbar")
+    public static String FROSTBITE_FROZEN_ACTIONBAR;
+
+    @ConfigOption(path = "frostbite.status-actionbar")
+    public static String FROSTBITE_STATUS_ACTIONBAR;
+
+    @ConfigOption(path = "frostbite.kill")
+    public static String FROSTBITE_KILL;
+
+    @ConfigOption(path = "frostbite.respawn-title")
+    public static String FROSTBITE_RESPAWN_TITLE;
+
+    @ConfigOption(path = "frostbite.respawn-subtitle")
+    public static String FROSTBITE_RESPAWN_SUBTITLE;
+
+    @ConfigOption(path = "frostbite.boss-bar")
+    public static String FROSTBITE_BOSS_BAR;
+
+    @ConfigOption(path = "frostbite.end-title")
+    public static String FROSTBITE_END_TITLE;
+
+    @ConfigOption(path = "frostbite.end-subtitle")
+    public static String FROSTBITE_END_SUBTITLE;
+
+    @ConfigOption(path = "frostbite.phoenix-consumed")
+    public static String FROSTBITE_PHOENIX_CONSUMED;
+
+    @ConfigOption(path = "frostbite.campfire-returned")
+    public static String FROSTBITE_CAMPFIRE_RETURNED;
+
+    @ConfigOption(path = "frostbite.freeze-success")
+    public static String FROSTBITE_FREEZE_SUCCESS;
+
+    @ConfigOption(path = "frostbite.freeze")
+    public static String FROSTBITE_FREEZE;
+
+    @ConfigOption(path = "frostbite.frozen")
+    public static String FROSTBITE_FROZEN;
+
+    @ConfigOption(path = "frostbite.item.avalanche.title")
+    public static String FROSTBITE_ITEM_AVALANCHE_TITLE;
+
+    @ConfigOption(path = "frostbite.item.avalanche.description")
+    public static String FROSTBITE_ITEM_AVALANCHE_DESCRIPTION;
+
+    @ConfigOption(path = "frostbite.item.axe.title")
+    public static String FROSTBITE_ITEM_AXE_TITLE;
+
+    @ConfigOption(path = "frostbite.item.axe.description")
+    public static String FROSTBITE_ITEM_AXE_DESCRIPTION;
+
+    @ConfigOption(path = "frostbite.item.blaze.title")
+    public static String FROSTBITE_ITEM_BLAZE_TITLE;
+
+    @ConfigOption(path = "frostbite.item.blaze.description")
+    public static String FROSTBITE_ITEM_BLAZE_DESCRIPTION;
+
+    @ConfigOption(path = "frostbite.item.bow.title")
+    public static String FROSTBITE_ITEM_BOW_TITLE;
+
+    @ConfigOption(path = "frostbite.item.bow.description")
+    public static String FROSTBITE_ITEM_BOW_DESCRIPTION;
+
+    @ConfigOption(path = "frostbite.item.beacon.title")
+    public static String FROSTBITE_ITEM_BEACON_TITLE;
+
+    @ConfigOption(path = "frostbite.item.beacon.description")
+    public static String FROSTBITE_ITEM_BEACON_DESCRIPTION;
+
+    @ConfigOption(path = "frostbite.item.explosion.title")
+    public static String FROSTBITE_ITEM_EXPLOSION_TITLE;
+
+    @ConfigOption(path = "frostbite.item.explosion.description")
+    public static String FROSTBITE_ITEM_EXPLOSION_DESCRIPTION;
+
+    @ConfigOption(path = "frostbite.item.glow.title")
+    public static String FROSTBITE_ITEM_GLOW_TITLE;
+
+    @ConfigOption(path = "frostbite.item.glow.description")
+    public static String FROSTBITE_ITEM_GLOW_DESCRIPTION;
+
+    @ConfigOption(path = "frostbite.item.hot_rod.title")
+    public static String FROSTBITE_ITEM_HOT_ROD_TITLE;
+
+    @ConfigOption(path = "frostbite.item.hot_rod.description")
+    public static String FROSTBITE_ITEM_HOT_ROD_DESCRIPTION;
+
+    @ConfigOption(path = "frostbite.item.icicle.title")
+    public static String FROSTBITE_ITEM_ICICLE_TITLE;
+
+    @ConfigOption(path = "frostbite.item.icicle.description")
+    public static String FROSTBITE_ITEM_ICICLE_DESCRIPTION;
+
+    @ConfigOption(path = "frostbite.item.invis.title")
+    public static String FROSTBITE_ITEM_INVIS_TITLE;
+
+    @ConfigOption(path = "frostbite.item.invis.description")
+    public static String FROSTBITE_ITEM_INVIS_DESCRIPTION;
+
+    @ConfigOption(path = "frostbite.item.mystery.title")
+    public static String FROSTBITE_ITEM_MYSTERY_TITLE;
+
+    @ConfigOption(path = "frostbite.item.mystery.description")
+    public static String FROSTBITE_ITEM_MYSTERY_DESCRIPTION;
+
+    @ConfigOption(path = "frostbite.item.phoenix.title")
+    public static String FROSTBITE_ITEM_PHOENIX_TITLE;
+
+    @ConfigOption(path = "frostbite.item.phoenix.description")
+    public static String FROSTBITE_ITEM_PHOENIX_DESCRIPTION;
+
+    @ConfigOption(path = "frostbite.item.speed.title")
+    public static String FROSTBITE_ITEM_SPEED_TITLE;
+
+    @ConfigOption(path = "frostbite.item.speed.description")
+    public static String FROSTBITE_ITEM_SPEED_DESCRIPTION;
+
+    @ConfigOption(path = "frostbite.item.frost_trap.title")
+    public static String FROSTBITE_ITEM_FROST_TRAP_TITLE;
+
+    @ConfigOption(path = "frostbite.item.frost_trap.description")
+    public static String FROSTBITE_ITEM_FROST_TRAP_DESCRIPTION;
+
+    @ConfigOption(path = "frostbite.item.whoaball.title")
+    public static String FROSTBITE_ITEM_WHOABALL_TITLE;
+
+    @ConfigOption(path = "frostbite.item.whoaball.description")
+    public static String FROSTBITE_ITEM_WHOABALL_DESCRIPTION;
+
+    @ConfigOption(path = "sulfursoccer.score")
+    public static String SULFUR_SOCCER_SCORE;
+
+    @ConfigOption(path = "sulfursoccer.goal")
+    public static String SULFUR_SOCCER_GOAL;
+
+    @ConfigOption(path = "sulfursoccer.goal-title")
+    public static String SULFUR_SOCCER_GOAL_TITLE;
+
+    @ConfigOption(path = "sulfursoccer.goal-subtitle")
+    public static String SULFUR_SOCCER_GOAL_SUBTITLE;
+
+    @ConfigOption(path = "sulfursoccer.upcoming-title", nullable = true)
+    public static String SULFUR_SOCCER_UPCOMING_TITLE;
+
+    @ConfigOption(path = "sulfursoccer.opening-title", nullable = true)
+    public static String SULFUR_SOCCER_OPENING_TITLE;
+
+    @ConfigOption(path = "sulfursoccer.restart-title", nullable = true)
+    public static String SULFUR_SOCCER_RESTART_TITLE;
+
+    @ConfigOption(path = "sulfursoccer.warmup-start", nullable = true)
+    public static String SULFUR_SOCCER_WARMUP_START;
+
+    @ConfigOption(path = "sulfursoccer.warmup-time", nullable = true)
+    public static String SULFUR_SOCCER_WARMUP_TIME;
+
+    @ConfigOption(path = "sulfursoccer.time-up", nullable = true)
+    public static String SULFUR_SOCCER_TIME_UP;
+
+    @ConfigOption(path = "sulfursoccer.shootout-start", nullable = true)
+    public static String SULFUR_SOCCER_SHOOTOUT_START;
+
+    @ConfigOption(path = "sulfursoccer.penalty-turn", nullable = true)
+    public static String SULFUR_SOCCER_PENALTY_TURN;
+
+    @ConfigOption(path = "sulfursoccer.penalty-goal", nullable = true)
+    public static String SULFUR_SOCCER_PENALTY_GOAL;
+
+    @ConfigOption(path = "sulfursoccer.penalty-miss", nullable = true)
+    public static String SULFUR_SOCCER_PENALTY_MISS;
+
+    @ConfigOption(path = "sulfursoccer.penalty-score", nullable = true)
+    public static String SULFUR_SOCCER_PENALTY_SCORE;
+
+    @ConfigOption(path = "sulfursoccer.state-end")
+    public static String SULFUR_SOCCER_STATE_END;
+
+    @ConfigOption(path = "sulfursoccer.state-paused")
+    public static String SULFUR_SOCCER_STATE_PAUSED;
+
+    @ConfigOption(path = "sulfursoccer.state-warmup")
+    public static String SULFUR_SOCCER_STATE_WARMUP;
+
+    @ConfigOption(path = "sulfursoccer.state-shootout")
+    public static String SULFUR_SOCCER_STATE_SHOOTOUT;
+
+    @ConfigOption(path = "sulfursoccer.state-regulation")
+    public static String SULFUR_SOCCER_STATE_REGULATION;
+
+    @ConfigOption(path = "sulfursoccer.pearl-rejected", nullable = true)
+    public static String SULFUR_SOCCER_PEARL_REJECTED;
+
+    @ConfigOption(path = "sulfursoccer.ball-reset")
+    public static String SULFUR_SOCCER_BALL_RESET;
+
+    @ConfigOption(path = "sulfursoccer.paused")
+    public static String SULFUR_SOCCER_PAUSED;
+
+    @ConfigOption(path = "sulfursoccer.resumed")
+    public static String SULFUR_SOCCER_RESUMED;
+
+    @ConfigOption(path = "sulfursoccer.champion")
+    public static String SULFUR_SOCCER_CHAMPION;
+
+    @ConfigOption(path = "sulfursoccer.champion-subtitle")
+    public static String SULFUR_SOCCER_CHAMPION_SUBTITLE;
+
+    @ConfigOption(path = "sulfursoccer.stopped")
+    public static String SULFUR_SOCCER_STOPPED;
+
+    @ConfigOption(path = "sulfursoccer.end-title")
+    public static String SULFUR_SOCCER_END_TITLE;
+
+    @ConfigOption(path = "sulfursoccer.scheduled")
+    public static String SULFUR_SOCCER_SCHEDULED;
+
+    @ConfigOption(path = "sulfursoccer.finalists")
+    public static String SULFUR_SOCCER_FINALISTS;
+
+    @ConfigOption(path = "sulfursoccer.start-failed")
+    public static String SULFUR_SOCCER_START_FAILED;
 
     @ConfigOption(path = "game.preparation-count-down")
     public static String GAME_PREPARATION_COUNT_DOWN;
@@ -1541,10 +1963,13 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "skywars.boss-bar-shrink-drain")
     public static String SKY_WARS_BOSS_BAR_SHRINK_DRAIN;
+
     @ConfigOption(path = "skywars.boss-bar-drain")
     public static String SKY_WARS_BOSS_BAR_DRAIN;
+
     @ConfigOption(path = "skywars.boss-bar-shrink")
     public static String SKY_WARS_BOSS_BAR_SHRINK;
+
     @ConfigOption(path = "skywars.boss-bar")
     public static String SKY_WARS_BOSS_BAR;
 
@@ -1556,7 +1981,6 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "skywars.board-shrink-count-down")
     public static String SKY_WARS_BOARD_SHRINK_COUNT_DOWN;
-
 
     @ConfigOption(path = "skywars.stop-board-shrink")
     public static String SKY_WARS_STOP_BOARD_SHRINK;
@@ -1575,7 +1999,6 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "skywars.health-drain-count-down")
     public static String SKY_WARS_HEALTH_DRAIN_COUNT_DOWN;
-
 
     @ConfigOption(path = "skywars.out-of-border")
     public static String SKY_WARS_OUT_OF_BORDER;
@@ -1800,66 +2223,97 @@ public class MessageConfig extends BaseConfigurationFile {
     // Dodgebolt
     @ConfigOption(path = "dodgebolt.start-preparation", nullable = true)
     public static String DODGEBOLT_START_PREPARATION;
+
     @ConfigOption(path = "dodgebolt.start-preparation-title", nullable = true)
     public static String DODGEBOLT_START_PREPARATION_TITLE;
+
     @ConfigOption(path = "dodgebolt.start-preparation-subtitle", nullable = true)
     public static String DODGEBOLT_START_PREPARATION_SUBTITLE;
+
     @ConfigOption(path = "dodgebolt.game-start-soon-title", nullable = true)
     public static String DODGEBOLT_GAME_START_SOON_TITLE;
+
     @ConfigOption(path = "dodgebolt.game-start-title", nullable = true)
     public static String DODGEBOLT_GAME_START_TITLE;
+
     @ConfigOption(path = "dodgebolt.game-start-subtitle", nullable = true)
     public static String DODGEBOLT_GAME_START_SUBTITLE;
+
     @ConfigOption(path = "dodgebolt.game-end-title", nullable = true)
     public static String DODGEBOLT_GAME_END_TITLE;
+
     @ConfigOption(path = "dodgebolt.game-end-subtitle", nullable = true)
     public static String DODGEBOLT_GAME_END_SUBTITLE;
+
     @ConfigOption(path = "dodgebolt.hit", nullable = true)
     public static String DODGEBOLT_HIT;
+
     @ConfigOption(path = "dodgebolt.eliminated", nullable = true)
     public static String DODGEBOLT_ELIMINATED;
+
     @ConfigOption(path = "dodgebolt.shrink", nullable = true)
     public static String DODGEBOLT_SHRINK;
+
     @ConfigOption(path = "dodgebolt.shrink-warning", nullable = true)
     public static String DODGEBOLT_SHRINK_WARNING;
+
     @ConfigOption(path = "dodgebolt.round-win", nullable = true)
     public static String DODGEBOLT_ROUND_WIN;
+
     @ConfigOption(path = "dodgebolt.round-win-title", nullable = true)
     public static String DODGEBOLT_ROUND_WIN_TITLE;
+
     @ConfigOption(path = "dodgebolt.round-win-subtitle", nullable = true)
     public static String DODGEBOLT_ROUND_WIN_SUBTITLE;
+
     @ConfigOption(path = "dodgebolt.next-round", nullable = true)
     public static String DODGEBOLT_NEXT_ROUND;
+
     @ConfigOption(path = "dodgebolt.score-bar", nullable = true)
     public static String DODGEBOLT_SCORE_BAR;
+
     @ConfigOption(path = "dodgebolt.state-live", nullable = true)
     public static String DODGEBOLT_STATE_LIVE;
+
     @ConfigOption(path = "dodgebolt.state-paused", nullable = true)
     public static String DODGEBOLT_STATE_PAUSED;
+
     @ConfigOption(path = "dodgebolt.paused", nullable = true)
     public static String DODGEBOLT_PAUSED;
+
     @ConfigOption(path = "dodgebolt.paused-title", nullable = true)
     public static String DODGEBOLT_PAUSED_TITLE;
+
     @ConfigOption(path = "dodgebolt.paused-subtitle", nullable = true)
     public static String DODGEBOLT_PAUSED_SUBTITLE;
+
     @ConfigOption(path = "dodgebolt.resumed", nullable = true)
     public static String DODGEBOLT_RESUMED;
+
     @ConfigOption(path = "dodgebolt.resumed-title", nullable = true)
     public static String DODGEBOLT_RESUMED_TITLE;
+
     @ConfigOption(path = "dodgebolt.resumed-subtitle", nullable = true)
     public static String DODGEBOLT_RESUMED_SUBTITLE;
+
     @ConfigOption(path = "dodgebolt.round-restarted", nullable = true)
     public static String DODGEBOLT_ROUND_RESTARTED;
+
     @ConfigOption(path = "dodgebolt.champion", nullable = true)
     public static String DODGEBOLT_CHAMPION;
+
     @ConfigOption(path = "dodgebolt.champion-title", nullable = true)
     public static String DODGEBOLT_CHAMPION_TITLE;
+
     @ConfigOption(path = "dodgebolt.champion-subtitle", nullable = true)
     public static String DODGEBOLT_CHAMPION_SUBTITLE;
+
     @ConfigOption(path = "dodgebolt.stopped", nullable = true)
     public static String DODGEBOLT_STOPPED;
+
     @ConfigOption(path = "dodgebolt.cant-shoot", nullable = true)
     public static String DODGEBOLT_CANT_SHOOT;
+
     @ConfigOption(path = "dodgebolt.cant-cross", nullable = true)
     public static String DODGEBOLT_CANT_CROSS;
 
@@ -1881,6 +2335,7 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "tntrun.boss-bar-tnt-rain")
     public static String TNT_RUN_BOSS_BAR_TNT_RAIN;
+
     @ConfigOption(path = "tntrun.boss-bar")
     public static String TNT_RUN_BOSS_BAR;
 
@@ -1898,7 +2353,6 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "tntrun.tnt-rain-count-down")
     public static String TNT_RUN_TNT_RAIN_COUNT_DOWN;
-
 
     // Dragon Egg Carnival
     @ConfigOption(path = "dragoneggcarnival.start-preparation")
@@ -2225,179 +2679,516 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "daily.party-info")
     public static String DAILY_PARTY_INFO;
 
-    @ConfigOption(path = "event.unknown-error") public static String EVENT_UNKNOWN_ERROR;
-    @ConfigOption(path = "event.import.incomplete") public static String EVENT_IMPORT_INCOMPLETE;
-    @ConfigOption(path = "event.import.not-ready") public static String EVENT_IMPORT_NOT_READY;
-    @ConfigOption(path = "event.import.games-empty") public static String EVENT_IMPORT_GAMES_EMPTY;
-    @ConfigOption(path = "event.import.game-invalid") public static String EVENT_IMPORT_GAME_INVALID;
-    @ConfigOption(path = "event.import.variant-invalid") public static String EVENT_IMPORT_VARIANT_INVALID;
-    @ConfigOption(path = "event.import.multiplier-count-invalid") public static String EVENT_IMPORT_MULTIPLIER_COUNT_INVALID;
-    @ConfigOption(path = "event.import.multiplier-invalid") public static String EVENT_IMPORT_MULTIPLIER_INVALID;
-    @ConfigOption(path = "event.import.team-count-invalid") public static String EVENT_IMPORT_TEAM_COUNT_INVALID;
-    @ConfigOption(path = "event.import.team-name-invalid") public static String EVENT_IMPORT_TEAM_NAME_INVALID;
-    @ConfigOption(path = "event.import.team-name-duplicate") public static String EVENT_IMPORT_TEAM_NAME_DUPLICATE;
-    @ConfigOption(path = "event.import.team-color-duplicate") public static String EVENT_IMPORT_TEAM_COLOR_DUPLICATE;
-    @ConfigOption(path = "event.import.team-color-fixed") public static String EVENT_IMPORT_TEAM_COLOR_FIXED;
-    @ConfigOption(path = "event.import.team-size-invalid") public static String EVENT_IMPORT_TEAM_SIZE_INVALID;
-    @ConfigOption(path = "event.import.username-invalid") public static String EVENT_IMPORT_USERNAME_INVALID;
-    @ConfigOption(path = "event.import.uuid-invalid") public static String EVENT_IMPORT_UUID_INVALID;
-    @ConfigOption(path = "event.import.player-duplicate") public static String EVENT_IMPORT_PLAYER_DUPLICATE;
-    @ConfigOption(path = "event.import.running") public static String EVENT_IMPORT_RUNNING;
-    @ConfigOption(path = "event.import.validating") public static String EVENT_IMPORT_VALIDATING;
-    @ConfigOption(path = "event.import.database-failed") public static String EVENT_IMPORT_DATABASE_FAILED;
-    @ConfigOption(path = "event.import.state-save-failed") public static String EVENT_IMPORT_STATE_SAVE_FAILED;
-    @ConfigOption(path = "event.import.completed") public static String EVENT_IMPORT_COMPLETED;
-    @ConfigOption(path = "event.import.failed") public static String EVENT_IMPORT_FAILED;
-    @ConfigOption(path = "event.start.game-invalid") public static String EVENT_START_GAME_INVALID;
-    @ConfigOption(path = "event.start.no-event") public static String EVENT_START_NO_EVENT;
-    @ConfigOption(path = "event.start.archived") public static String EVENT_START_ARCHIVED;
-    @ConfigOption(path = "event.start.game-not-in-event") public static String EVENT_START_GAME_NOT_IN_EVENT;
-    @ConfigOption(path = "event.start.started") public static String EVENT_START_STARTED;
-    @ConfigOption(path = "event.start.emergency-stopped") public static String EVENT_START_EMERGENCY_STOPPED;
-    @ConfigOption(path = "event.start.unavailable") public static String EVENT_START_UNAVAILABLE;
-    @ConfigOption(path = "event.start.no-schedule") public static String EVENT_START_NO_SCHEDULE;
-    @ConfigOption(path = "event.export.no-event") public static String EVENT_EXPORT_NO_EVENT;
-    @ConfigOption(path = "event.export.still-running") public static String EVENT_EXPORT_STILL_RUNNING;
-    @ConfigOption(path = "event.export.no-points") public static String EVENT_EXPORT_NO_POINTS;
-    @ConfigOption(path = "event.export.summarizing") public static String EVENT_EXPORT_SUMMARIZING;
-    @ConfigOption(path = "event.export.completed") public static String EVENT_EXPORT_COMPLETED;
-    @ConfigOption(path = "event.export.failed") public static String EVENT_EXPORT_FAILED;
-    @ConfigOption(path = "event.reset.done") public static String EVENT_RESET_DONE;
-    @ConfigOption(path = "event.stop.unavailable") public static String EVENT_STOP_UNAVAILABLE;
-    @ConfigOption(path = "event.stopped") public static String EVENT_STOPPED;
-    @ConfigOption(path = "event.not-running") public static String EVENT_NOT_RUNNING;
-    @ConfigOption(path = "event.undo.unavailable") public static String EVENT_UNDO_UNAVAILABLE;
-    @ConfigOption(path = "event.undo.started") public static String EVENT_UNDO_STARTED;
+    @ConfigOption(path = "event.unknown-error")
+    public static String EVENT_UNKNOWN_ERROR;
 
-    @ConfigOption(path = "admin.team-missing") public static String ADMIN_TEAM_MISSING;
-    @ConfigOption(path = "admin.teleported-players") public static String ADMIN_TELEPORTED_PLAYERS;
-    @ConfigOption(path = "admin.max-players-positive-integer") public static String ADMIN_MAX_PLAYERS_POSITIVE_INTEGER;
-    @ConfigOption(path = "admin.max-players-greater-than-zero") public static String ADMIN_MAX_PLAYERS_GREATER_THAN_ZERO;
-    @ConfigOption(path = "admin.max-players-set") public static String ADMIN_MAX_PLAYERS_SET;
-    @ConfigOption(path = "admin.player-offline") public static String ADMIN_PLAYER_OFFLINE;
-    @ConfigOption(path = "admin.visibility-header") public static String ADMIN_VISIBILITY_HEADER;
-    @ConfigOption(path = "admin.visibility-line") public static String ADMIN_VISIBILITY_LINE;
-    @ConfigOption(path = "admin.reload.prepare-active") public static String ADMIN_RELOAD_PREPARE_ACTIVE;
-    @ConfigOption(path = "admin.reload.already-running") public static String ADMIN_RELOAD_ALREADY_RUNNING;
-    @ConfigOption(path = "admin.reload.config-failed") public static String ADMIN_RELOAD_CONFIG_FAILED;
-    @ConfigOption(path = "admin.reload.read-done") public static String ADMIN_RELOAD_READ_DONE;
-    @ConfigOption(path = "admin.reload.reset-failed") public static String ADMIN_RELOAD_RESET_FAILED;
-    @ConfigOption(path = "admin.reload.restart-required") public static String ADMIN_RELOAD_RESTART_REQUIRED;
-    @ConfigOption(path = "admin.reload.reset-failures") public static String ADMIN_RELOAD_RESET_FAILURES;
-    @ConfigOption(path = "admin.reload.bingo-failure") public static String ADMIN_RELOAD_BINGO_FAILURE;
-    @ConfigOption(path = "admin.reload.config-failures") public static String ADMIN_RELOAD_CONFIG_FAILURES;
-    @ConfigOption(path = "admin.reload.remote-stopped") public static String ADMIN_RELOAD_REMOTE_STOPPED;
-    @ConfigOption(path = "admin.reload.completed") public static String ADMIN_RELOAD_COMPLETED;
-    @ConfigOption(path = "admin.sudo-all") public static String ADMIN_SUDO_ALL;
-    @ConfigOption(path = "admin.sudo-team") public static String ADMIN_SUDO_TEAM;
+    @ConfigOption(path = "event.import.incomplete")
+    public static String EVENT_IMPORT_INCOMPLETE;
 
-    @ConfigOption(path = "admin.world.invalid-name") public static String ADMIN_WORLD_INVALID_NAME;
-    @ConfigOption(path = "admin.world.same-name") public static String ADMIN_WORLD_SAME_NAME;
-    @ConfigOption(path = "admin.world.target-exists") public static String ADMIN_WORLD_TARGET_EXISTS;
-    @ConfigOption(path = "admin.world.missing") public static String ADMIN_WORLD_MISSING;
-    @ConfigOption(path = "admin.world.main-protected-delete") public static String ADMIN_WORLD_MAIN_PROTECTED_DELETE;
-    @ConfigOption(path = "admin.world.main-protected-rename") public static String ADMIN_WORLD_MAIN_PROTECTED_RENAME;
-    @ConfigOption(path = "admin.world.main-protected-unload") public static String ADMIN_WORLD_MAIN_PROTECTED_UNLOAD;
-    @ConfigOption(path = "admin.world.bingo-protected-delete") public static String ADMIN_WORLD_BINGO_PROTECTED_DELETE;
-    @ConfigOption(path = "admin.world.bingo-protected-rename") public static String ADMIN_WORLD_BINGO_PROTECTED_RENAME;
-    @ConfigOption(path = "admin.world.map-owner-protected") public static String ADMIN_WORLD_MAP_OWNER_PROTECTED;
-    @ConfigOption(path = "admin.world.delete-confirm") public static String ADMIN_WORLD_DELETE_CONFIRM;
-    @ConfigOption(path = "admin.world.unload-failed") public static String ADMIN_WORLD_UNLOAD_FAILED;
-    @ConfigOption(path = "admin.world.delete-failed") public static String ADMIN_WORLD_DELETE_FAILED;
-    @ConfigOption(path = "admin.world.deleted") public static String ADMIN_WORLD_DELETED;
-    @ConfigOption(path = "admin.world.moved-players") public static String ADMIN_WORLD_MOVED_PLAYERS;
-    @ConfigOption(path = "admin.world.already-loaded") public static String ADMIN_WORLD_ALREADY_LOADED;
-    @ConfigOption(path = "admin.world.bingo-environment-required") public static String ADMIN_WORLD_BINGO_ENVIRONMENT_REQUIRED;
-    @ConfigOption(path = "admin.world.load-failed") public static String ADMIN_WORLD_LOAD_FAILED;
-    @ConfigOption(path = "admin.world.load-failed-simple") public static String ADMIN_WORLD_LOAD_FAILED_SIMPLE;
-    @ConfigOption(path = "admin.world.action-loaded") public static String ADMIN_WORLD_ACTION_LOADED;
-    @ConfigOption(path = "admin.world.action-created") public static String ADMIN_WORLD_ACTION_CREATED;
-    @ConfigOption(path = "admin.world.created") public static String ADMIN_WORLD_CREATED;
-    @ConfigOption(path = "admin.world.prepare-active-rename") public static String ADMIN_WORLD_PREPARE_ACTIVE_RENAME;
-    @ConfigOption(path = "admin.world.environment-required") public static String ADMIN_WORLD_ENVIRONMENT_REQUIRED;
-    @ConfigOption(path = "admin.world.environment-mismatch") public static String ADMIN_WORLD_ENVIRONMENT_MISMATCH;
-    @ConfigOption(path = "admin.world.template-exists") public static String ADMIN_WORLD_TEMPLATE_EXISTS;
-    @ConfigOption(path = "admin.world.directory-rename-failed") public static String ADMIN_WORLD_DIRECTORY_RENAME_FAILED;
-    @ConfigOption(path = "admin.world.rename-failed") public static String ADMIN_WORLD_RENAME_FAILED;
-    @ConfigOption(path = "admin.world.config-migration-failed") public static String ADMIN_WORLD_CONFIG_MIGRATION_FAILED;
-    @ConfigOption(path = "admin.world.renamed") public static String ADMIN_WORLD_RENAMED;
-    @ConfigOption(path = "admin.world.game-in-use") public static String ADMIN_WORLD_GAME_IN_USE;
-    @ConfigOption(path = "admin.world.name-derived") public static String ADMIN_WORLD_NAME_DERIVED;
-    @ConfigOption(path = "admin.world.not-loaded") public static String ADMIN_WORLD_NOT_LOADED;
-    @ConfigOption(path = "admin.world.not-loaded-create") public static String ADMIN_WORLD_NOT_LOADED_CREATE;
-    @ConfigOption(path = "admin.world.teleport-failed") public static String ADMIN_WORLD_TELEPORT_FAILED;
-    @ConfigOption(path = "admin.world.teleported") public static String ADMIN_WORLD_TELEPORTED;
-    @ConfigOption(path = "admin.world.unloaded") public static String ADMIN_WORLD_UNLOADED;
-    @ConfigOption(path = "admin.world.list-loaded") public static String ADMIN_WORLD_LIST_LOADED;
-    @ConfigOption(path = "admin.world.main-suffix") public static String ADMIN_WORLD_MAIN_SUFFIX;
-    @ConfigOption(path = "admin.world.row") public static String ADMIN_WORLD_ROW;
-    @ConfigOption(path = "admin.world.list-unloaded") public static String ADMIN_WORLD_LIST_UNLOADED;
-    @ConfigOption(path = "admin.world.none") public static String ADMIN_WORLD_NONE;
-    @ConfigOption(path = "admin.world.unloaded-names") public static String ADMIN_WORLD_UNLOADED_NAMES;
+    @ConfigOption(path = "event.import.not-ready")
+    public static String EVENT_IMPORT_NOT_READY;
 
-    @ConfigOption(path = "riptiderush.start-preparation") public static String RIPTIDE_RUSH_START_PREPARATION;
-    @ConfigOption(path = "riptiderush.start-preparation-title") public static String RIPTIDE_RUSH_START_PREPARATION_TITLE;
-    @ConfigOption(path = "riptiderush.start-preparation-subtitle") public static String RIPTIDE_RUSH_START_PREPARATION_SUBTITLE;
-    @ConfigOption(path = "riptiderush.game-start-title") public static String RIPTIDE_RUSH_GAME_START_TITLE;
-    @ConfigOption(path = "riptiderush.game-start-subtitle") public static String RIPTIDE_RUSH_GAME_START_SUBTITLE;
-    @ConfigOption(path = "riptiderush.game-end-title") public static String RIPTIDE_RUSH_GAME_END_TITLE;
-    @ConfigOption(path = "riptiderush.game-end-subtitle") public static String RIPTIDE_RUSH_GAME_END_SUBTITLE;
-    @ConfigOption(path = "riptiderush.eliminated") public static String RIPTIDE_RUSH_ELIMINATED;
-    @ConfigOption(path = "riptiderush.eliminated-fall") public static String RIPTIDE_RUSH_ELIMINATED_FALL;
-    @ConfigOption(path = "riptiderush.eliminated-floor") public static String RIPTIDE_RUSH_ELIMINATED_FLOOR;
-    @ConfigOption(path = "riptiderush.eliminated-math") public static String RIPTIDE_RUSH_ELIMINATED_MATH;
-    @ConfigOption(path = "riptiderush.eliminated-disconnected") public static String RIPTIDE_RUSH_ELIMINATED_DISCONNECTED;
-    @ConfigOption(path = "riptiderush.winner") public static String RIPTIDE_RUSH_WINNER;
-    @ConfigOption(path = "riptiderush.speed-shield-break") public static String RIPTIDE_RUSH_SPEED_SHIELD_BREAK;
-    @ConfigOption(path = "riptiderush.shield-broken") public static String RIPTIDE_RUSH_SHIELD_BROKEN;
-    @ConfigOption(path = "riptiderush.speed-boost-title") public static String RIPTIDE_RUSH_SPEED_BOOST_TITLE;
-    @ConfigOption(path = "riptiderush.speed-boost-subtitle") public static String RIPTIDE_RUSH_SPEED_BOOST_SUBTITLE;
-    @ConfigOption(path = "riptiderush.final-sprint-title") public static String RIPTIDE_RUSH_FINAL_SPRINT_TITLE;
-    @ConfigOption(path = "riptiderush.final-sprint-subtitle") public static String RIPTIDE_RUSH_FINAL_SPRINT_SUBTITLE;
-    @ConfigOption(path = "riptiderush.boss-bar") public static String RIPTIDE_RUSH_BOSS_BAR;
-    @ConfigOption(path = "riptiderush.question-title") public static String RIPTIDE_RUSH_QUESTION_TITLE;
-    @ConfigOption(path = "riptiderush.question-subtitle") public static String RIPTIDE_RUSH_QUESTION_SUBTITLE;
-    @ConfigOption(path = "riptiderush.math-correct") public static String RIPTIDE_RUSH_MATH_CORRECT;
-    @ConfigOption(path = "riptiderush.floor-title") public static String RIPTIDE_RUSH_FLOOR_TITLE;
-    @ConfigOption(path = "riptiderush.floor-intro-title") public static String RIPTIDE_RUSH_FLOOR_INTRO_TITLE;
-    @ConfigOption(path = "riptiderush.floor-actionbar") public static String RIPTIDE_RUSH_FLOOR_ACTIONBAR;
-    @ConfigOption(path = "riptiderush.dodge-title") public static String RIPTIDE_RUSH_DODGE_TITLE;
-    @ConfigOption(path = "riptiderush.dodge-actionbar") public static String RIPTIDE_RUSH_DODGE_ACTIONBAR;
-    @ConfigOption(path = "riptiderush.reason.wrong-floor") public static String RIPTIDE_RUSH_REASON_WRONG_FLOOR;
-    @ConfigOption(path = "riptiderush.reason.disconnected") public static String RIPTIDE_RUSH_REASON_DISCONNECTED;
-    @ConfigOption(path = "riptiderush.reason.wrong-answer") public static String RIPTIDE_RUSH_REASON_WRONG_ANSWER;
-    @ConfigOption(path = "riptiderush.reason.missed-gate") public static String RIPTIDE_RUSH_REASON_MISSED_GATE;
-    @ConfigOption(path = "riptiderush.reason.left-behind") public static String RIPTIDE_RUSH_REASON_LEFT_BEHIND;
-    @ConfigOption(path = "riptiderush.trial-start") public static String RIPTIDE_RUSH_TRIAL_START;
-    @ConfigOption(path = "riptiderush.trial-exit") public static String RIPTIDE_RUSH_TRIAL_EXIT;
-    @ConfigOption(path = "riptiderush.trial-finished") public static String RIPTIDE_RUSH_TRIAL_FINISHED;
-    @ConfigOption(path = "riptiderush.trial-fall") public static String RIPTIDE_RUSH_TRIAL_FALL;
-    @ConfigOption(path = "riptiderush.trial-wrong-answer") public static String RIPTIDE_RUSH_TRIAL_WRONG_ANSWER;
-    @ConfigOption(path = "riptiderush.trial-missed-gate") public static String RIPTIDE_RUSH_TRIAL_MISSED_GATE;
-    @ConfigOption(path = "riptiderush.trial-wrong-floor") public static String RIPTIDE_RUSH_TRIAL_WRONG_FLOOR;
-    @ConfigOption(path = "riptiderush.trial-side-answer") public static String RIPTIDE_RUSH_TRIAL_SIDE_ANSWER;
-    @ConfigOption(path = "riptiderush.trial-dodge") public static String RIPTIDE_RUSH_TRIAL_DODGE;
-    @ConfigOption(path = "riptiderush.trial-timeout") public static String RIPTIDE_RUSH_TRIAL_TIMEOUT;
-    @ConfigOption(path = "riptiderush.trial-countdown") public static String RIPTIDE_RUSH_TRIAL_COUNTDOWN;
-    @ConfigOption(path = "riptiderush.trial-completed") public static String RIPTIDE_RUSH_TRIAL_COMPLETED;
-    @ConfigOption(path = "riptiderush.trial-aborted") public static String RIPTIDE_RUSH_TRIAL_ABORTED;
-    @ConfigOption(path = "riptiderush.departure-actionbar") public static String RIPTIDE_RUSH_DEPARTURE_ACTIONBAR;
-    @ConfigOption(path = "riptiderush.sweep-title") public static String RIPTIDE_RUSH_SWEEP_TITLE;
-    @ConfigOption(path = "riptiderush.reason.fell") public static String RIPTIDE_RUSH_REASON_FELL;
-    @ConfigOption(path = "riptiderush.reason.dodge") public static String RIPTIDE_RUSH_REASON_DODGE;
+    @ConfigOption(path = "event.import.games-empty")
+    public static String EVENT_IMPORT_GAMES_EMPTY;
 
-    @ConfigOption(path = "server-mode-switched") public static String SERVER_MODE_SWITCHED;
-    @ConfigOption(path = "spectator.display.remote") public static String SPECTATOR_DISPLAY_REMOTE;
-    @ConfigOption(path = "spectator.display.copy") public static String SPECTATOR_DISPLAY_COPY;
-    @ConfigOption(path = "spectator.display.instance") public static String SPECTATOR_DISPLAY_INSTANCE;
-    @ConfigOption(path = "presentation.daily-lobby") public static String PRESENTATION_DAILY_LOBBY;
-    @ConfigOption(path = "presentation.daily-game") public static String PRESENTATION_DAILY_GAME;
-    @ConfigOption(path = "presentation.tab.team-footer") public static String PRESENTATION_TAB_TEAM_FOOTER;
-    @ConfigOption(path = "presentation.tab.daily-team-footer") public static String PRESENTATION_TAB_DAILY_TEAM_FOOTER;
-    @ConfigOption(path = "presentation.tab.current-game-footer") public static String PRESENTATION_TAB_CURRENT_GAME_FOOTER;
-    @ConfigOption(path = "spectator.game-disabled") public static String SPECTATOR_GAME_DISABLED;
-    @ConfigOption(path = "spectator.instance-missing") public static String SPECTATOR_INSTANCE_MISSING;
-    @ConfigOption(path = "spectator.area-unavailable") public static String SPECTATOR_AREA_UNAVAILABLE;
-    @ConfigOption(path = "admin.world.delete-command") public static String ADMIN_WORLD_DELETE_COMMAND;
-    @ConfigOption(path = "admin.world.list-separator") public static String ADMIN_WORLD_LIST_SEPARATOR;
+    @ConfigOption(path = "event.import.game-invalid")
+    public static String EVENT_IMPORT_GAME_INVALID;
+
+    @ConfigOption(path = "event.import.variant-invalid")
+    public static String EVENT_IMPORT_VARIANT_INVALID;
+
+    @ConfigOption(path = "event.import.multiplier-count-invalid")
+    public static String EVENT_IMPORT_MULTIPLIER_COUNT_INVALID;
+
+    @ConfigOption(path = "event.import.multiplier-invalid")
+    public static String EVENT_IMPORT_MULTIPLIER_INVALID;
+
+    @ConfigOption(path = "event.import.team-count-invalid")
+    public static String EVENT_IMPORT_TEAM_COUNT_INVALID;
+
+    @ConfigOption(path = "event.import.team-name-invalid")
+    public static String EVENT_IMPORT_TEAM_NAME_INVALID;
+
+    @ConfigOption(path = "event.import.team-name-duplicate")
+    public static String EVENT_IMPORT_TEAM_NAME_DUPLICATE;
+
+    @ConfigOption(path = "event.import.team-color-duplicate")
+    public static String EVENT_IMPORT_TEAM_COLOR_DUPLICATE;
+
+    @ConfigOption(path = "event.import.team-color-fixed")
+    public static String EVENT_IMPORT_TEAM_COLOR_FIXED;
+
+    @ConfigOption(path = "event.import.team-size-invalid")
+    public static String EVENT_IMPORT_TEAM_SIZE_INVALID;
+
+    @ConfigOption(path = "event.import.username-invalid")
+    public static String EVENT_IMPORT_USERNAME_INVALID;
+
+    @ConfigOption(path = "event.import.uuid-invalid")
+    public static String EVENT_IMPORT_UUID_INVALID;
+
+    @ConfigOption(path = "event.import.player-duplicate")
+    public static String EVENT_IMPORT_PLAYER_DUPLICATE;
+
+    @ConfigOption(path = "event.import.running")
+    public static String EVENT_IMPORT_RUNNING;
+
+    @ConfigOption(path = "event.import.validating")
+    public static String EVENT_IMPORT_VALIDATING;
+
+    @ConfigOption(path = "event.import.database-failed")
+    public static String EVENT_IMPORT_DATABASE_FAILED;
+
+    @ConfigOption(path = "event.import.state-save-failed")
+    public static String EVENT_IMPORT_STATE_SAVE_FAILED;
+
+    @ConfigOption(path = "event.import.completed")
+    public static String EVENT_IMPORT_COMPLETED;
+
+    @ConfigOption(path = "event.import.failed")
+    public static String EVENT_IMPORT_FAILED;
+
+    @ConfigOption(path = "event.start.game-invalid")
+    public static String EVENT_START_GAME_INVALID;
+
+    @ConfigOption(path = "event.start.no-event")
+    public static String EVENT_START_NO_EVENT;
+
+    @ConfigOption(path = "event.start.archived")
+    public static String EVENT_START_ARCHIVED;
+
+    @ConfigOption(path = "event.start.game-not-in-event")
+    public static String EVENT_START_GAME_NOT_IN_EVENT;
+
+    @ConfigOption(path = "event.start.started")
+    public static String EVENT_START_STARTED;
+
+    @ConfigOption(path = "event.start.emergency-stopped")
+    public static String EVENT_START_EMERGENCY_STOPPED;
+
+    @ConfigOption(path = "event.start.unavailable")
+    public static String EVENT_START_UNAVAILABLE;
+
+    @ConfigOption(path = "event.start.no-schedule")
+    public static String EVENT_START_NO_SCHEDULE;
+
+    @ConfigOption(path = "event.export.no-event")
+    public static String EVENT_EXPORT_NO_EVENT;
+
+    @ConfigOption(path = "event.export.still-running")
+    public static String EVENT_EXPORT_STILL_RUNNING;
+
+    @ConfigOption(path = "event.export.no-points")
+    public static String EVENT_EXPORT_NO_POINTS;
+
+    @ConfigOption(path = "event.export.summarizing")
+    public static String EVENT_EXPORT_SUMMARIZING;
+
+    @ConfigOption(path = "event.export.completed")
+    public static String EVENT_EXPORT_COMPLETED;
+
+    @ConfigOption(path = "event.export.failed")
+    public static String EVENT_EXPORT_FAILED;
+
+    @ConfigOption(path = "event.reset.done")
+    public static String EVENT_RESET_DONE;
+
+    @ConfigOption(path = "event.stop.unavailable")
+    public static String EVENT_STOP_UNAVAILABLE;
+
+    @ConfigOption(path = "event.stopped")
+    public static String EVENT_STOPPED;
+
+    @ConfigOption(path = "event.not-running")
+    public static String EVENT_NOT_RUNNING;
+
+    @ConfigOption(path = "event.undo.unavailable")
+    public static String EVENT_UNDO_UNAVAILABLE;
+
+    @ConfigOption(path = "event.undo.started")
+    public static String EVENT_UNDO_STARTED;
+
+    @ConfigOption(path = "admin.team-missing")
+    public static String ADMIN_TEAM_MISSING;
+
+    @ConfigOption(path = "admin.teleported-players")
+    public static String ADMIN_TELEPORTED_PLAYERS;
+
+    @ConfigOption(path = "admin.max-players-positive-integer")
+    public static String ADMIN_MAX_PLAYERS_POSITIVE_INTEGER;
+
+    @ConfigOption(path = "admin.max-players-greater-than-zero")
+    public static String ADMIN_MAX_PLAYERS_GREATER_THAN_ZERO;
+
+    @ConfigOption(path = "admin.max-players-set")
+    public static String ADMIN_MAX_PLAYERS_SET;
+
+    @ConfigOption(path = "admin.player-offline")
+    public static String ADMIN_PLAYER_OFFLINE;
+
+    @ConfigOption(path = "admin.visibility-header")
+    public static String ADMIN_VISIBILITY_HEADER;
+
+    @ConfigOption(path = "admin.visibility-line")
+    public static String ADMIN_VISIBILITY_LINE;
+
+    @ConfigOption(path = "admin.reload.prepare-active")
+    public static String ADMIN_RELOAD_PREPARE_ACTIVE;
+
+    @ConfigOption(path = "admin.reload.already-running")
+    public static String ADMIN_RELOAD_ALREADY_RUNNING;
+
+    @ConfigOption(path = "admin.reload.config-failed")
+    public static String ADMIN_RELOAD_CONFIG_FAILED;
+
+    @ConfigOption(path = "admin.reload.read-done")
+    public static String ADMIN_RELOAD_READ_DONE;
+
+    @ConfigOption(path = "admin.reload.reset-failed")
+    public static String ADMIN_RELOAD_RESET_FAILED;
+
+    @ConfigOption(path = "admin.reload.restart-required")
+    public static String ADMIN_RELOAD_RESTART_REQUIRED;
+
+    @ConfigOption(path = "admin.reload.reset-failures")
+    public static String ADMIN_RELOAD_RESET_FAILURES;
+
+    @ConfigOption(path = "admin.reload.bingo-failure")
+    public static String ADMIN_RELOAD_BINGO_FAILURE;
+
+    @ConfigOption(path = "admin.reload.config-failures")
+    public static String ADMIN_RELOAD_CONFIG_FAILURES;
+
+    @ConfigOption(path = "admin.reload.remote-stopped")
+    public static String ADMIN_RELOAD_REMOTE_STOPPED;
+
+    @ConfigOption(path = "admin.reload.completed")
+    public static String ADMIN_RELOAD_COMPLETED;
+
+    @ConfigOption(path = "admin.sudo-all")
+    public static String ADMIN_SUDO_ALL;
+
+    @ConfigOption(path = "admin.sudo-team")
+    public static String ADMIN_SUDO_TEAM;
+
+    @ConfigOption(path = "admin.world.invalid-name")
+    public static String ADMIN_WORLD_INVALID_NAME;
+
+    @ConfigOption(path = "admin.world.same-name")
+    public static String ADMIN_WORLD_SAME_NAME;
+
+    @ConfigOption(path = "admin.world.target-exists")
+    public static String ADMIN_WORLD_TARGET_EXISTS;
+
+    @ConfigOption(path = "admin.world.missing")
+    public static String ADMIN_WORLD_MISSING;
+
+    @ConfigOption(path = "admin.world.main-protected-delete")
+    public static String ADMIN_WORLD_MAIN_PROTECTED_DELETE;
+
+    @ConfigOption(path = "admin.world.main-protected-rename")
+    public static String ADMIN_WORLD_MAIN_PROTECTED_RENAME;
+
+    @ConfigOption(path = "admin.world.main-protected-unload")
+    public static String ADMIN_WORLD_MAIN_PROTECTED_UNLOAD;
+
+    @ConfigOption(path = "admin.world.bingo-protected-delete")
+    public static String ADMIN_WORLD_BINGO_PROTECTED_DELETE;
+
+    @ConfigOption(path = "admin.world.bingo-protected-rename")
+    public static String ADMIN_WORLD_BINGO_PROTECTED_RENAME;
+
+    @ConfigOption(path = "admin.world.map-owner-protected")
+    public static String ADMIN_WORLD_MAP_OWNER_PROTECTED;
+
+    @ConfigOption(path = "admin.world.delete-confirm")
+    public static String ADMIN_WORLD_DELETE_CONFIRM;
+
+    @ConfigOption(path = "admin.world.unload-failed")
+    public static String ADMIN_WORLD_UNLOAD_FAILED;
+
+    @ConfigOption(path = "admin.world.delete-failed")
+    public static String ADMIN_WORLD_DELETE_FAILED;
+
+    @ConfigOption(path = "admin.world.deleted")
+    public static String ADMIN_WORLD_DELETED;
+
+    @ConfigOption(path = "admin.world.moved-players")
+    public static String ADMIN_WORLD_MOVED_PLAYERS;
+
+    @ConfigOption(path = "admin.world.already-loaded")
+    public static String ADMIN_WORLD_ALREADY_LOADED;
+
+    @ConfigOption(path = "admin.world.bingo-environment-required")
+    public static String ADMIN_WORLD_BINGO_ENVIRONMENT_REQUIRED;
+
+    @ConfigOption(path = "admin.world.load-failed")
+    public static String ADMIN_WORLD_LOAD_FAILED;
+
+    @ConfigOption(path = "admin.world.load-failed-simple")
+    public static String ADMIN_WORLD_LOAD_FAILED_SIMPLE;
+
+    @ConfigOption(path = "admin.world.action-loaded")
+    public static String ADMIN_WORLD_ACTION_LOADED;
+
+    @ConfigOption(path = "admin.world.action-created")
+    public static String ADMIN_WORLD_ACTION_CREATED;
+
+    @ConfigOption(path = "admin.world.created")
+    public static String ADMIN_WORLD_CREATED;
+
+    @ConfigOption(path = "admin.world.prepare-active-rename")
+    public static String ADMIN_WORLD_PREPARE_ACTIVE_RENAME;
+
+    @ConfigOption(path = "admin.world.environment-required")
+    public static String ADMIN_WORLD_ENVIRONMENT_REQUIRED;
+
+    @ConfigOption(path = "admin.world.environment-mismatch")
+    public static String ADMIN_WORLD_ENVIRONMENT_MISMATCH;
+
+    @ConfigOption(path = "admin.world.template-exists")
+    public static String ADMIN_WORLD_TEMPLATE_EXISTS;
+
+    @ConfigOption(path = "admin.world.directory-rename-failed")
+    public static String ADMIN_WORLD_DIRECTORY_RENAME_FAILED;
+
+    @ConfigOption(path = "admin.world.rename-failed")
+    public static String ADMIN_WORLD_RENAME_FAILED;
+
+    @ConfigOption(path = "admin.world.config-migration-failed")
+    public static String ADMIN_WORLD_CONFIG_MIGRATION_FAILED;
+
+    @ConfigOption(path = "admin.world.renamed")
+    public static String ADMIN_WORLD_RENAMED;
+
+    @ConfigOption(path = "admin.world.game-in-use")
+    public static String ADMIN_WORLD_GAME_IN_USE;
+
+    @ConfigOption(path = "admin.world.name-derived")
+    public static String ADMIN_WORLD_NAME_DERIVED;
+
+    @ConfigOption(path = "admin.world.not-loaded")
+    public static String ADMIN_WORLD_NOT_LOADED;
+
+    @ConfigOption(path = "admin.world.not-loaded-create")
+    public static String ADMIN_WORLD_NOT_LOADED_CREATE;
+
+    @ConfigOption(path = "admin.world.teleport-failed")
+    public static String ADMIN_WORLD_TELEPORT_FAILED;
+
+    @ConfigOption(path = "admin.world.teleported")
+    public static String ADMIN_WORLD_TELEPORTED;
+
+    @ConfigOption(path = "admin.world.unloaded")
+    public static String ADMIN_WORLD_UNLOADED;
+
+    @ConfigOption(path = "admin.world.list-loaded")
+    public static String ADMIN_WORLD_LIST_LOADED;
+
+    @ConfigOption(path = "admin.world.main-suffix")
+    public static String ADMIN_WORLD_MAIN_SUFFIX;
+
+    @ConfigOption(path = "admin.world.row")
+    public static String ADMIN_WORLD_ROW;
+
+    @ConfigOption(path = "admin.world.list-unloaded")
+    public static String ADMIN_WORLD_LIST_UNLOADED;
+
+    @ConfigOption(path = "admin.world.none")
+    public static String ADMIN_WORLD_NONE;
+
+    @ConfigOption(path = "admin.world.unloaded-names")
+    public static String ADMIN_WORLD_UNLOADED_NAMES;
+
+    @ConfigOption(path = "riptiderush.start-preparation")
+    public static String RIPTIDE_RUSH_START_PREPARATION;
+
+    @ConfigOption(path = "riptiderush.start-preparation-title")
+    public static String RIPTIDE_RUSH_START_PREPARATION_TITLE;
+
+    @ConfigOption(path = "riptiderush.start-preparation-subtitle")
+    public static String RIPTIDE_RUSH_START_PREPARATION_SUBTITLE;
+
+    @ConfigOption(path = "riptiderush.game-start-title")
+    public static String RIPTIDE_RUSH_GAME_START_TITLE;
+
+    @ConfigOption(path = "riptiderush.game-start-subtitle")
+    public static String RIPTIDE_RUSH_GAME_START_SUBTITLE;
+
+    @ConfigOption(path = "riptiderush.game-end-title")
+    public static String RIPTIDE_RUSH_GAME_END_TITLE;
+
+    @ConfigOption(path = "riptiderush.game-end-subtitle")
+    public static String RIPTIDE_RUSH_GAME_END_SUBTITLE;
+
+    @ConfigOption(path = "riptiderush.eliminated")
+    public static String RIPTIDE_RUSH_ELIMINATED;
+
+    @ConfigOption(path = "riptiderush.eliminated-fall")
+    public static String RIPTIDE_RUSH_ELIMINATED_FALL;
+
+    @ConfigOption(path = "riptiderush.eliminated-floor")
+    public static String RIPTIDE_RUSH_ELIMINATED_FLOOR;
+
+    @ConfigOption(path = "riptiderush.eliminated-math")
+    public static String RIPTIDE_RUSH_ELIMINATED_MATH;
+
+    @ConfigOption(path = "riptiderush.eliminated-disconnected")
+    public static String RIPTIDE_RUSH_ELIMINATED_DISCONNECTED;
+
+    @ConfigOption(path = "riptiderush.winner")
+    public static String RIPTIDE_RUSH_WINNER;
+
+    @ConfigOption(path = "riptiderush.speed-shield-break")
+    public static String RIPTIDE_RUSH_SPEED_SHIELD_BREAK;
+
+    @ConfigOption(path = "riptiderush.shield-broken")
+    public static String RIPTIDE_RUSH_SHIELD_BROKEN;
+
+    @ConfigOption(path = "riptiderush.speed-boost-title")
+    public static String RIPTIDE_RUSH_SPEED_BOOST_TITLE;
+
+    @ConfigOption(path = "riptiderush.speed-boost-subtitle")
+    public static String RIPTIDE_RUSH_SPEED_BOOST_SUBTITLE;
+
+    @ConfigOption(path = "riptiderush.final-sprint-title")
+    public static String RIPTIDE_RUSH_FINAL_SPRINT_TITLE;
+
+    @ConfigOption(path = "riptiderush.final-sprint-subtitle")
+    public static String RIPTIDE_RUSH_FINAL_SPRINT_SUBTITLE;
+
+    @ConfigOption(path = "riptiderush.boss-bar")
+    public static String RIPTIDE_RUSH_BOSS_BAR;
+
+    @ConfigOption(path = "riptiderush.question-title")
+    public static String RIPTIDE_RUSH_QUESTION_TITLE;
+
+    @ConfigOption(path = "riptiderush.question-subtitle")
+    public static String RIPTIDE_RUSH_QUESTION_SUBTITLE;
+
+    @ConfigOption(path = "riptiderush.math-correct")
+    public static String RIPTIDE_RUSH_MATH_CORRECT;
+
+    @ConfigOption(path = "riptiderush.floor-title")
+    public static String RIPTIDE_RUSH_FLOOR_TITLE;
+
+    @ConfigOption(path = "riptiderush.floor-intro-title")
+    public static String RIPTIDE_RUSH_FLOOR_INTRO_TITLE;
+
+    @ConfigOption(path = "riptiderush.floor-actionbar")
+    public static String RIPTIDE_RUSH_FLOOR_ACTIONBAR;
+
+    @ConfigOption(path = "riptiderush.dodge-title")
+    public static String RIPTIDE_RUSH_DODGE_TITLE;
+
+    @ConfigOption(path = "riptiderush.dodge-actionbar")
+    public static String RIPTIDE_RUSH_DODGE_ACTIONBAR;
+
+    @ConfigOption(path = "riptiderush.reason.wrong-floor")
+    public static String RIPTIDE_RUSH_REASON_WRONG_FLOOR;
+
+    @ConfigOption(path = "riptiderush.reason.disconnected")
+    public static String RIPTIDE_RUSH_REASON_DISCONNECTED;
+
+    @ConfigOption(path = "riptiderush.reason.wrong-answer")
+    public static String RIPTIDE_RUSH_REASON_WRONG_ANSWER;
+
+    @ConfigOption(path = "riptiderush.reason.missed-gate")
+    public static String RIPTIDE_RUSH_REASON_MISSED_GATE;
+
+    @ConfigOption(path = "riptiderush.reason.left-behind")
+    public static String RIPTIDE_RUSH_REASON_LEFT_BEHIND;
+
+    @ConfigOption(path = "riptiderush.trial-start")
+    public static String RIPTIDE_RUSH_TRIAL_START;
+
+    @ConfigOption(path = "riptiderush.trial-exit")
+    public static String RIPTIDE_RUSH_TRIAL_EXIT;
+
+    @ConfigOption(path = "riptiderush.trial-finished")
+    public static String RIPTIDE_RUSH_TRIAL_FINISHED;
+
+    @ConfigOption(path = "riptiderush.trial-fall")
+    public static String RIPTIDE_RUSH_TRIAL_FALL;
+
+    @ConfigOption(path = "riptiderush.trial-wrong-answer")
+    public static String RIPTIDE_RUSH_TRIAL_WRONG_ANSWER;
+
+    @ConfigOption(path = "riptiderush.trial-missed-gate")
+    public static String RIPTIDE_RUSH_TRIAL_MISSED_GATE;
+
+    @ConfigOption(path = "riptiderush.trial-wrong-floor")
+    public static String RIPTIDE_RUSH_TRIAL_WRONG_FLOOR;
+
+    @ConfigOption(path = "riptiderush.trial-side-answer")
+    public static String RIPTIDE_RUSH_TRIAL_SIDE_ANSWER;
+
+    @ConfigOption(path = "riptiderush.trial-dodge")
+    public static String RIPTIDE_RUSH_TRIAL_DODGE;
+
+    @ConfigOption(path = "riptiderush.trial-timeout")
+    public static String RIPTIDE_RUSH_TRIAL_TIMEOUT;
+
+    @ConfigOption(path = "riptiderush.trial-countdown")
+    public static String RIPTIDE_RUSH_TRIAL_COUNTDOWN;
+
+    @ConfigOption(path = "riptiderush.trial-completed")
+    public static String RIPTIDE_RUSH_TRIAL_COMPLETED;
+
+    @ConfigOption(path = "riptiderush.trial-aborted")
+    public static String RIPTIDE_RUSH_TRIAL_ABORTED;
+
+    @ConfigOption(path = "riptiderush.departure-actionbar")
+    public static String RIPTIDE_RUSH_DEPARTURE_ACTIONBAR;
+
+    @ConfigOption(path = "riptiderush.sweep-title")
+    public static String RIPTIDE_RUSH_SWEEP_TITLE;
+
+    @ConfigOption(path = "riptiderush.reason.fell")
+    public static String RIPTIDE_RUSH_REASON_FELL;
+
+    @ConfigOption(path = "riptiderush.reason.dodge")
+    public static String RIPTIDE_RUSH_REASON_DODGE;
+
+    @ConfigOption(path = "server-mode-switched")
+    public static String SERVER_MODE_SWITCHED;
+
+    @ConfigOption(path = "spectator.display.remote")
+    public static String SPECTATOR_DISPLAY_REMOTE;
+
+    @ConfigOption(path = "spectator.display.copy")
+    public static String SPECTATOR_DISPLAY_COPY;
+
+    @ConfigOption(path = "spectator.display.instance")
+    public static String SPECTATOR_DISPLAY_INSTANCE;
+
+    @ConfigOption(path = "presentation.daily-lobby")
+    public static String PRESENTATION_DAILY_LOBBY;
+
+    @ConfigOption(path = "presentation.daily-game")
+    public static String PRESENTATION_DAILY_GAME;
+
+    @ConfigOption(path = "presentation.tab.team-footer")
+    public static String PRESENTATION_TAB_TEAM_FOOTER;
+
+    @ConfigOption(path = "presentation.tab.daily-team-footer")
+    public static String PRESENTATION_TAB_DAILY_TEAM_FOOTER;
+
+    @ConfigOption(path = "presentation.tab.current-game-footer")
+    public static String PRESENTATION_TAB_CURRENT_GAME_FOOTER;
+
+    @ConfigOption(path = "spectator.game-disabled")
+    public static String SPECTATOR_GAME_DISABLED;
+
+    @ConfigOption(path = "spectator.instance-missing")
+    public static String SPECTATOR_INSTANCE_MISSING;
+
+    @ConfigOption(path = "spectator.area-unavailable")
+    public static String SPECTATOR_AREA_UNAVAILABLE;
+
+    @ConfigOption(path = "admin.world.delete-command")
+    public static String ADMIN_WORLD_DELETE_COMMAND;
+
+    @ConfigOption(path = "admin.world.list-separator")
+    public static String ADMIN_WORLD_LIST_SEPARATOR;
 }

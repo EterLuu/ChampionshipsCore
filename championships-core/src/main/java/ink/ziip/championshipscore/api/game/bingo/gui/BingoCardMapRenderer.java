@@ -3,19 +3,21 @@ package ink.ziip.championshipscore.api.game.bingo.gui;
 import ink.ziip.championshipscore.api.game.bingo.card.BingoCard;
 import ink.ziip.championshipscore.api.game.bingo.game.BingoRound;
 import ink.ziip.championshipscore.api.game.bingo.game.RoundOutcome;
-import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.api.game.bingo.task.AdvancementTask;
 import ink.ziip.championshipscore.api.game.bingo.task.AllOfTask;
 import ink.ziip.championshipscore.api.game.bingo.task.CardDisplayInfo;
-import ink.ziip.championshipscore.api.game.bingo.task.GameTask;
 import ink.ziip.championshipscore.api.game.bingo.task.EventTask;
+import ink.ziip.championshipscore.api.game.bingo.task.GameTask;
 import ink.ziip.championshipscore.api.game.bingo.task.OneOfTask;
 import ink.ziip.championshipscore.api.game.bingo.task.PotionTask;
 import ink.ziip.championshipscore.api.game.bingo.task.StatisticTask;
-import ink.ziip.championshipscore.platform.bukkit.bingo.map.TaskImageAtlas;
+import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.platform.bukkit.bingo.map.MapColorMatcher;
+import ink.ziip.championshipscore.platform.bukkit.bingo.map.TaskImageAtlas;
+
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.format.TextColor;
+
 import org.bukkit.entity.Player;
 import org.bukkit.map.MapCanvas;
 import org.bukkit.map.MapRenderer;
@@ -39,10 +41,15 @@ public final class BingoCardMapRenderer extends MapRenderer {
     private final BingoCard card;
     private final @Nullable String teamId;
     private final @Nullable TextColor teamColor;
+
     /** Fixed number of border segments (0 = dynamic, one per completing team). */
     private final int tierSegments;
-    /** Set when the round ends so this renderer paints the win-state overlay. Null while running. */
+
+    /**
+     * Set when the round ends so this renderer paints the win-state overlay. Null while running.
+     */
     private final @Nullable BingoRound round;
+
     private final @Nullable ChampionshipTeam viewerTeam;
     private String lastState;
 
@@ -50,16 +57,27 @@ public final class BingoCardMapRenderer extends MapRenderer {
         this(card, teamId, teamColor, 0, null, null);
     }
 
-    public BingoCardMapRenderer(BingoCard card, String teamId, TextColor teamColor, int tierSegments) {
+    public BingoCardMapRenderer(
+            BingoCard card, String teamId, TextColor teamColor, int tierSegments) {
         this(card, teamId, teamColor, tierSegments, null, null);
     }
 
-    public BingoCardMapRenderer(BingoCard card, String teamId, TextColor teamColor, int tierSegments, @Nullable BingoRound round) {
+    public BingoCardMapRenderer(
+            BingoCard card,
+            String teamId,
+            TextColor teamColor,
+            int tierSegments,
+            @Nullable BingoRound round) {
         this(card, teamId, teamColor, tierSegments, round, null);
     }
 
-    public BingoCardMapRenderer(BingoCard card, String teamId, TextColor teamColor, int tierSegments,
-                                @Nullable BingoRound round, @Nullable ChampionshipTeam viewerTeam) {
+    public BingoCardMapRenderer(
+            BingoCard card,
+            String teamId,
+            TextColor teamColor,
+            int tierSegments,
+            @Nullable BingoRound round,
+            @Nullable ChampionshipTeam viewerTeam) {
         super(false);
         this.card = card;
         this.teamId = teamId;
@@ -80,7 +98,8 @@ public final class BingoCardMapRenderer extends MapRenderer {
         int n = card.size.size;
         int offset = (5 - n) / 2; // centre smaller cards on the 5x5 map layout
         var tasks = card.getTasks();
-        int[] displayOrder = round == null || viewerTeam == null ? null : round.parallaxDisplayOrder(viewerTeam);
+        int[] displayOrder =
+                round == null || viewerTeam == null ? null : round.parallaxDisplayOrder(viewerTeam);
         for (int y = 0; y < n; y++) {
             for (int x = 0; x < n; x++) {
                 int displaySlot = y * n + x;
@@ -91,12 +110,15 @@ public final class BingoCardMapRenderer extends MapRenderer {
 
         RoundOutcome outcome = round != null ? round.outcome() : null;
         if (outcome != null && outcome.winnerId() != null) {
-            // Post-game: paint the winner's lines/highlights on every card (losers see how the winner won).
+            // Post-game: paint the winner's lines/highlights on every card (losers see how the
+            // winner won).
             drawWinOverlay(canvas, outcome, offset, n);
         } else if (teamId != null && teamColor != null) {
             // Live: scribble a stroke through each line this team has already completed, so line
             // progress shows on the card during the round - not only on the post-game win overlay.
-            byte palette = MapColorMatcher.matchColor(teamColor.red(), teamColor.green(), teamColor.blue());
+            byte palette =
+                    MapColorMatcher.matchColor(
+                            teamColor.red(), teamColor.green(), teamColor.blue());
             drawWinningLines(canvas, teamId, palette, offset, n);
         }
 
@@ -110,9 +132,11 @@ public final class BingoCardMapRenderer extends MapRenderer {
             return;
         }
         Key key;
-        if (task.data instanceof AdvancementTask advancement && advancement.usesOminousBannerIcon()) {
+        if (task.data instanceof AdvancementTask advancement
+                && advancement.usesOminousBannerIcon()) {
             key = OMINOUS_BANNER_ICON_KEY;
-        } else if (task.data instanceof AdvancementTask advancement && advancement.usesHealingPotionIcon()) {
+        } else if (task.data instanceof AdvancementTask advancement
+                && advancement.usesHealingPotionIcon()) {
             key = HEALING_POTION_ICON_KEY;
         } else {
             key = task.data.getDisplayMaterial(CardDisplayInfo.DEFAULT).key();
@@ -136,7 +160,9 @@ public final class BingoCardMapRenderer extends MapRenderer {
                 drawImage(canvas, x, y, cell, null);
                 drawSetBadge(canvas, x, y);
             } else {
-                BufferedImage cell = TaskImageAtlas.statisticCell(cellKey, statisticTask.statistic().statisticType());
+                BufferedImage cell =
+                        TaskImageAtlas.statisticCell(
+                                cellKey, statisticTask.statistic().statisticType());
                 drawImage(canvas, x, y, cell, null);
             }
         } else if (task.data instanceof EventTask event) {
@@ -149,7 +175,8 @@ public final class BingoCardMapRenderer extends MapRenderer {
                 drawImage(canvas, x, y, cell, null);
                 drawSetBadge(canvas, x, y);
             } else {
-                BufferedImage badge = event.usesGreenCheckBadge() ? TaskImageAtlas.checkBadge() : null;
+                BufferedImage badge =
+                        event.usesGreenCheckBadge() ? TaskImageAtlas.checkBadge() : null;
                 if (badge == null && event.eventBadgeKey() != null) {
                     badge = TaskImageAtlas.eventBadgeImage(event.eventBadgeKey());
                 }
@@ -157,7 +184,8 @@ public final class BingoCardMapRenderer extends MapRenderer {
                 drawImage(canvas, x, y, cell, null);
             }
         } else if (task.data instanceof OneOfTask) {
-            // one_of: the representative item plus a small top-right "stack" badge marking the cell as
+            // one_of: the representative item plus a small top-right "stack" badge marking the cell
+            // as
             // "any one of a set" — far clearer than the old four-member quadrant collage.
             BufferedImage image = TaskImageAtlas.imageFor(key);
             if (image != null) {
@@ -171,7 +199,8 @@ public final class BingoCardMapRenderer extends MapRenderer {
         } else if (task.data instanceof PotionTask potion) {
             // Effect-specific potion: its own per-effect coloured sprite (falls back to the plain
             // potion-material icon if that effect isn't bundled).
-            BufferedImage image = TaskImageAtlas.potionImageFor(potion.form().infix, potion.effect());
+            BufferedImage image =
+                    TaskImageAtlas.potionImageFor(potion.form().infix, potion.effect());
             if (image == null) image = TaskImageAtlas.imageFor(key);
             if (image != null) {
                 drawImage(canvas, x + 1, y + 1, image, null);
@@ -189,21 +218,25 @@ public final class BingoCardMapRenderer extends MapRenderer {
         }
 
         int amount = task.data.getRequiredAmount();
-        if (amount > 1 || isStatistic) drawAmount(canvas, gridX, gridY, amount, isStatistic || isEvent);
+        if (amount > 1 || isStatistic)
+            drawAmount(canvas, gridX, gridY, amount, isStatistic || isEvent);
 
         boolean ownCompletion = teamId != null && task.isCompletedByTeam(teamId);
-        drawCompletionBorder(canvas, gridX, gridY, completionColors(task), ownCompletion ? 1 : tierSegments);
+        drawCompletionBorder(
+                canvas, gridX, gridY, completionColors(task), ownCompletion ? 1 : tierSegments);
     }
 
     private List<TextColor> completionColors(GameTask task) {
         if (teamId != null && task.isCompletedByTeam(teamId)) {
             TextColor color = teamColor;
             if (color == null) {
-                color = task.allCompletions().stream()
-                        .filter(completion -> teamId.equals(completion.teamId()))
-                        .map(GameTask.Completion::teamColor)
-                        .filter(java.util.Objects::nonNull)
-                        .findFirst().orElse(null);
+                color =
+                        task.allCompletions().stream()
+                                .filter(completion -> teamId.equals(completion.teamId()))
+                                .map(GameTask.Completion::teamColor)
+                                .filter(java.util.Objects::nonNull)
+                                .findFirst()
+                                .orElse(null);
             }
             return color == null ? List.of() : List.of(color);
         }
@@ -216,8 +249,8 @@ public final class BingoCardMapRenderer extends MapRenderer {
         return colors;
     }
 
-    private static void drawCompletionBorder(MapCanvas canvas, int gridX, int gridY,
-                                             List<TextColor> teams, int forceSegments) {
+    private static void drawCompletionBorder(
+            MapCanvas canvas, int gridX, int gridY, List<TextColor> teams, int forceSegments) {
         int filled = Math.min(teams.size(), MAX_COMPLETION_TEAMS);
         int segments = forceSegments > 0 ? forceSegments : Math.max(filled, 1);
         if (filled == 0) return;
@@ -232,8 +265,11 @@ public final class BingoCardMapRenderer extends MapRenderer {
         double cx = ox + size / 2.0 - 0.5, cy = oy + size / 2.0 - 0.5;
         for (int dy = lo; dy < hi; dy++) {
             for (int dx = lo; dx < hi; dx++) {
-                boolean onRing = dx < lo + thickness || dx >= hi - thickness
-                        || dy < lo + thickness || dy >= hi - thickness;
+                boolean onRing =
+                        dx < lo + thickness
+                                || dx >= hi - thickness
+                                || dy < lo + thickness
+                                || dy >= hi - thickness;
                 if (!onRing) continue;
                 if (segments == 1) {
                     setPixel(canvas, ox + dx, oy + dy, idx[0]);
@@ -248,38 +284,50 @@ public final class BingoCardMapRenderer extends MapRenderer {
         }
     }
 
-    private void drawAmount(MapCanvas canvas, int gridX, int gridY, int amount, boolean shiftUpLeft) {
+    private void drawAmount(
+            MapCanvas canvas, int gridX, int gridY, int amount, boolean shiftUpLeft) {
         String text = Integer.toString(amount);
         int xStart = text.length() == 1 ? 6 : 0;
         int d = shiftUpLeft ? -1 : 0;
-        canvas.drawText(gridX * 24 + 17 + xStart + d, gridY * 24 + 21 + d, MinecraftFont.Font, "§47;" + amount);
-        canvas.drawText(gridX * 24 + 16 + xStart + d, gridY * 24 + 20 + d, MinecraftFont.Font, "§58;" + amount);
+        canvas.drawText(
+                gridX * 24 + 17 + xStart + d,
+                gridY * 24 + 21 + d,
+                MinecraftFont.Font,
+                "§47;" + amount);
+        canvas.drawText(
+                gridX * 24 + 16 + xStart + d,
+                gridY * 24 + 20 + d,
+                MinecraftFont.Font,
+                "§58;" + amount);
     }
 
     /** Glyph width/height of the tiny built-in "ANY" font, and the 1px gap between letters. */
     private static final int GLYPH_W = 4;
+
     private static final int GLYPH_H = 5;
     private static final int GLYPH_GAP = 1;
+
     /**
-     * A short 4×5 pixel font spelling the word the cell badge needs ("ANY"). Each letter is five rows;
-     * each row's low {@value #GLYPH_W} bits are its columns, most-significant bit leftmost.
+     * A short 4×5 pixel font spelling the word the cell badge needs ("ANY"). Each letter is five
+     * rows; each row's low {@value #GLYPH_W} bits are its columns, most-significant bit leftmost.
      */
     private static final int[][] ANY_GLYPHS = {
-            {0b0110, 0b1001, 0b1111, 0b1001, 0b1001}, // A
-            {0b1001, 0b1101, 0b1011, 0b1001, 0b1001}, // N
-            {0b1001, 0b1001, 0b0110, 0b0010, 0b0010}, // Y
+        {0b0110, 0b1001, 0b1111, 0b1001, 0b1001}, // A
+        {0b1001, 0b1101, 0b1011, 0b1001, 0b1001}, // N
+        {0b1001, 0b1001, 0b0110, 0b0010, 0b0010}, // Y
     };
+
     private static final int[][] ALL_GLYPHS = {
-            {0b0110, 0b1001, 0b1111, 0b1001, 0b1001},
-            {0b1000, 0b1000, 0b1000, 0b1000, 0b1111},
-            {0b1000, 0b1000, 0b1000, 0b1000, 0b1111},
+        {0b0110, 0b1001, 0b1111, 0b1001, 0b1001},
+        {0b1000, 0b1000, 0b1000, 0b1000, 0b1111},
+        {0b1000, 0b1000, 0b1000, 0b1000, 0b1111},
     };
 
     /**
-     * Stamps a small yellow "ANY" label across the top of a {@code one_of} cell, marking it as "collect
-     * any one of a set". Kept along the top edge (clear of the bottom-right amount and bottom-left
-     * statistic badge) and drawn with a 1px dark drop-shadow so the word stays legible on any item
-     * beneath. {@code (x,y)} is the cell's slot origin (top-left of the 24px slot).
+     * Stamps a small yellow "ANY" label across the top of a {@code one_of} cell, marking it as
+     * "collect any one of a set". Kept along the top edge (clear of the bottom-right amount and
+     * bottom-left statistic badge) and drawn with a 1px dark drop-shadow so the word stays legible
+     * on any item beneath. {@code (x,y)} is the cell's slot origin (top-left of the 24px slot).
      */
     private static void drawSetBadge(MapCanvas canvas, int x, int y) {
         drawWordBadge(canvas, x, y, ANY_GLYPHS);
@@ -290,12 +338,13 @@ public final class BingoCardMapRenderer extends MapRenderer {
     }
 
     private static void drawWordBadge(MapCanvas canvas, int x, int y, int[][] glyphs) {
-        byte fg = MapColorMatcher.matchColor(255, 221, 85);  // yellow, matching the task name colour
+        byte fg = MapColorMatcher.matchColor(255, 221, 85); // yellow, matching the task name colour
         byte shadow = MapColorMatcher.matchColor(28, 28, 30);
         int total = glyphs.length * GLYPH_W + (glyphs.length - 1) * GLYPH_GAP;
         int startX = x + (24 - total) / 2; // centred on the slot
         int startY = y + 2;
-        // Two passes (all shadow, then all foreground) so adjacent letters' fill never eats a shadow.
+        // Two passes (all shadow, then all foreground) so adjacent letters' fill never eats a
+        // shadow.
         for (int pass = 0; pass < 2; pass++) {
             byte colour = pass == 0 ? shadow : fg;
             int dx = pass == 0 ? 1 : 0, dy = pass == 0 ? 1 : 0;
@@ -306,14 +355,16 @@ public final class BingoCardMapRenderer extends MapRenderer {
                     for (int col = 0; col < GLYPH_W; col++) {
                         if ((glyph[row] & (1 << (GLYPH_W - 1 - col))) == 0) continue;
                         int px = gx + col + dx, py = startY + row + dy;
-                        if (px >= 0 && px < 128 && py >= 0 && py < 128) setPixel(canvas, px, py, colour);
+                        if (px >= 0 && px < 128 && py >= 0 && py < 128)
+                            setPixel(canvas, px, py, colour);
                     }
                 }
             }
         }
     }
 
-    private static void drawImage(MapCanvas canvas, int x, int y, BufferedImage image, @Nullable TextColor modulate) {
+    private static void drawImage(
+            MapCanvas canvas, int x, int y, BufferedImage image, @Nullable TextColor modulate) {
         int w = image.getWidth(), h = image.getHeight();
         byte[] indices = MapColorMatcher.indices(image, modulate);
         for (int iy = 0; iy < h; iy++) {
@@ -325,8 +376,15 @@ public final class BingoCardMapRenderer extends MapRenderer {
         }
     }
 
-    private static void drawImageClipped(MapCanvas canvas, int x, int y, BufferedImage image,
-                                         int clipX, int clipY, int clipW, int clipH) {
+    private static void drawImageClipped(
+            MapCanvas canvas,
+            int x,
+            int y,
+            BufferedImage image,
+            int clipX,
+            int clipY,
+            int clipW,
+            int clipH) {
         int w = image.getWidth(), h = image.getHeight();
         byte[] indices = MapColorMatcher.indices(image, null);
         for (int iy = 0; iy < h; iy++) {
@@ -347,23 +405,32 @@ public final class BingoCardMapRenderer extends MapRenderer {
     private void drawWinOverlay(MapCanvas canvas, RoundOutcome outcome, int offset, int n) {
         if (outcome.winnerId() == null) return;
         // Paint on EVERY team's card (winners and losers alike), using the winner's id for the
-        // completion lookup. The board is shared across teams, so a losing team's card shows how the
+        // completion lookup. The board is shared across teams, so a losing team's card shows how
+        // the
         // winner won (their lines / completed cells) rather than their own progress — the intended
         // "you lost; here's how" read.
         String winnerId = outcome.winnerId();
 
-        TextColor color = outcome.winnerColor() != null ? outcome.winnerColor()
-                : teamColor != null ? teamColor : net.kyori.adventure.text.format.NamedTextColor.WHITE;
+        TextColor color =
+                outcome.winnerColor() != null
+                        ? outcome.winnerColor()
+                        : teamColor != null
+                                ? teamColor
+                                : net.kyori.adventure.text.format.NamedTextColor.WHITE;
         byte palette = MapColorMatcher.matchColor(color.red(), color.green(), color.blue());
 
         switch (outcome.type()) {
             case LINES -> drawWinningLines(canvas, winnerId, palette, offset, n);
-            case FULL_CARD, MOST_COMPLETED, TOP_SCORE -> drawWinningCellHighlights(canvas, winnerId, palette, offset, n);
-            case DRAW -> { /* no overlay on a draw */ }
+            case FULL_CARD, MOST_COMPLETED, TOP_SCORE ->
+                    drawWinningCellHighlights(canvas, winnerId, palette, offset, n);
+            case DRAW -> {
+                /* no overlay on a draw */
+            }
         }
     }
 
-    private void drawWinningLines(MapCanvas canvas, String winnerId, byte palette, int offset, int n) {
+    private void drawWinningLines(
+            MapCanvas canvas, String winnerId, byte palette, int offset, int n) {
         List<int[]> lines = card.completedLines(winnerId);
         for (int[] line : lines) {
             int firstIdx = line[0];
@@ -385,8 +452,8 @@ public final class BingoCardMapRenderer extends MapRenderer {
         }
     }
 
-    private static void drawScribbleLine(MapCanvas canvas, int x1, int y1, int x2, int y2,
-                                         byte palette, int radius, long seed) {
+    private static void drawScribbleLine(
+            MapCanvas canvas, int x1, int y1, int x2, int y2, byte palette, int radius, long seed) {
         double dx = x2 - x1, dy = y2 - y1;
         double len = Math.hypot(dx, dy);
         if (len < 1) return;
@@ -418,7 +485,8 @@ public final class BingoCardMapRenderer extends MapRenderer {
         }
     }
 
-    private void drawWinningCellHighlights(MapCanvas canvas, String winnerId, byte palette, int offset, int n) {
+    private void drawWinningCellHighlights(
+            MapCanvas canvas, String winnerId, byte palette, int offset, int n) {
         int[] indices = card.completedIndices(winnerId);
         for (int idx : indices) {
             int gridX = idx % n + offset;
@@ -432,8 +500,11 @@ public final class BingoCardMapRenderer extends MapRenderer {
         final int halo = 2;
         for (int dy = 1; dy < size - 1; dy++) {
             for (int dx = 1; dx < size - 1; dx++) {
-                boolean onRing = dx < 1 + halo || dx >= size - 1 - halo
-                        || dy < 1 + halo || dy >= size - 1 - halo;
+                boolean onRing =
+                        dx < 1 + halo
+                                || dx >= size - 1 - halo
+                                || dy < 1 + halo
+                                || dy >= size - 1 - halo;
                 if (!onRing) continue;
                 setPixel(canvas, ox + dx, oy + dy, palette);
             }
@@ -449,7 +520,9 @@ public final class BingoCardMapRenderer extends MapRenderer {
     private String stateSignature() {
         StringBuilder sb = new StringBuilder(card.getTasks().size() * 2 + 16);
         for (GameTask task : card.getTasks()) {
-            sb.append(task.data.toString()).append(task.isHidden() ? 'h' : '-').append(task.isLocked() ? 'l' : '-');
+            sb.append(task.data.toString())
+                    .append(task.isHidden() ? 'h' : '-')
+                    .append(task.isLocked() ? 'l' : '-');
             sb.append(teamId != null && task.isCompletedByTeam(teamId) ? 'x' : '.');
             int n = task.allCompletions().size();
             sb.append((char) ('0' + Math.min(n, 9)));

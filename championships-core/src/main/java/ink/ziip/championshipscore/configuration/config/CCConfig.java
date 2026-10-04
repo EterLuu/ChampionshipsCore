@@ -1,19 +1,16 @@
 package ink.ziip.championshipscore.configuration.config;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.player.identity.PlayerUuidSource;
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
 import ink.ziip.championshipscore.configuration.ConfigOption;
+
 import lombok.Getter;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.YamlConfiguration;
+
 import org.bukkit.Location;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.Map;
 import java.util.List;
 
 @Getter
@@ -30,75 +27,46 @@ public class CCConfig extends BaseConfigurationFile {
         return 25;
     }
 
-    private static final Map<GameTypeEnum, List<String>> DEFAULT_FORMAL_EVENT_MAPS;
-    static final List<Double> DEFAULT_ROUND_MULTIPLIERS =
-            List.of(1D, 1.2D, 1.2D, 1.5D, 1.5D, 1.8D);
-
-    static {
-        EnumMap<GameTypeEnum, List<String>> defaults = new EnumMap<>(GameTypeEnum.class);
-        defaults.put(GameTypeEnum.Bingo, List.of("bingo"));
-        defaults.put(GameTypeEnum.ParkourTag, List.of("towny"));
-        defaults.put(GameTypeEnum.BattleBox, List.of("area"));
-        defaults.put(GameTypeEnum.TNTRun, List.of("astra"));
-        defaults.put(GameTypeEnum.SnowballShowdown, List.of("area1"));
-        defaults.put(GameTypeEnum.SkyWars, List.of("area2"));
-        defaults.put(GameTypeEnum.TGTTOS, List.of("cod"));
-        defaults.put(GameTypeEnum.DragonEggCarnival, List.of("area1"));
-        defaults.put(GameTypeEnum.ParkourWarrior, List.of("TRI"));
-        defaults.put(GameTypeEnum.HotyCodyDusky, List.of("area"));
-        defaults.put(GameTypeEnum.BuildMart, List.of("area"));
-        defaults.put(GameTypeEnum.Dodgebolt, List.of("dodgebolt"));
-        defaults.put(GameTypeEnum.AceRace, List.of("clouds2"));
-        defaults.put(GameTypeEnum.RiptideRush, List.of("default"));
-        defaults.put(GameTypeEnum.FrostbiteFrenzy, List.of("area"));
-        defaults.put(GameTypeEnum.LaserBox, List.of("area"));
-        defaults.put(GameTypeEnum.SulfurSoccer, List.of("area"));
-        DEFAULT_FORMAL_EVENT_MAPS = Collections.unmodifiableMap(defaults);
-    }
-
-
-
+    static final List<Double> DEFAULT_ROUND_MULTIPLIERS = List.of(1D, 1.2D, 1.2D, 1.5D, 1.5D, 1.8D);
 
     /** Returns the configured registration names used by the formal event schedulers. */
     public @NotNull List<String> formalEventMaps(@NotNull GameTypeEnum game) {
         return formalEventMaps(configuration, game);
     }
 
-    static @NotNull List<String> formalEventMaps(@org.jetbrains.annotations.Nullable YamlConfiguration source,
-                                                  @NotNull GameTypeEnum game) {
+    static @NotNull List<String> formalEventMaps(
+            @org.jetbrains.annotations.Nullable YamlConfiguration source,
+            @NotNull GameTypeEnum game) {
         String path = "formal-events." + game.name() + ".maps";
         if (source != null && source.contains(path)) {
-            List<String> configured = source.getStringList(path).stream()
-                    .map(String::trim).filter(name -> !name.isEmpty()).toList();
+            List<String> configured =
+                    source.getStringList(path).stream()
+                            .map(String::trim)
+                            .filter(name -> !name.isEmpty())
+                            .toList();
             if (!configured.isEmpty()) return configured;
         }
-        return DEFAULT_FORMAL_EVENT_MAPS.getOrDefault(game, List.of());
+        return List.of();
     }
-
-    /** Returns one configured formal-event map using a one-based round number. */
-    public String formalEventMap(@NotNull GameTypeEnum game, int round) {
-        List<String> maps = formalEventMaps(game);
-        return round < 1 || round > maps.size() ? null : maps.get(round - 1);
-    }
-
-
-
 
     @Override
     protected void loadCustomFileOptions() {
         PlayerUuidSource source = PlayerUuidSource.parse(IDENTITY_MODE);
         source.validateConfiguration(IDENTITY_PROFILE_API_BASE_URL);
-        WEIGHTED_SCORE_ROUND_MULTIPLIERS = validateRoundMultipliers(WEIGHTED_SCORE_ROUND_MULTIPLIERS);
+        WEIGHTED_SCORE_ROUND_MULTIPLIERS =
+                validateRoundMultipliers(WEIGHTED_SCORE_ROUND_MULTIPLIERS);
     }
 
     static @NotNull List<Double> validateRoundMultipliers(List<Double> configured) {
         if (configured == null || configured.isEmpty()) {
-            throw new IllegalArgumentException("weighted-score.round-multipliers must not be empty");
+            throw new IllegalArgumentException(
+                    "weighted-score.round-multipliers must not be empty");
         }
         for (int index = 0; index < configured.size(); index++) {
             Double multiplier = configured.get(index);
             if (multiplier == null || !Double.isFinite(multiplier) || multiplier < 0D) {
-                throw new IllegalArgumentException("Invalid weighted-score multiplier for round " + (index + 1));
+                throw new IllegalArgumentException(
+                        "Invalid weighted-score multiplier for round " + (index + 1));
             }
         }
         return List.copyOf(configured);
@@ -215,7 +183,8 @@ public class CCConfig extends BaseConfigurationFile {
     public static List<String> WHITELIST;
 
     // OFFLINE derives OfflinePlayer UUIDs. PROFILE_UUID queries the authoritative
-    // Mojang-compatible name-profile API which must return the UUID forwarded by the proxy at login.
+    // Mojang-compatible name-profile API which must return the UUID forwarded by the proxy at
+    // login.
     @ConfigOption(path = "identity.mode")
     public static String IDENTITY_MODE;
 
@@ -235,7 +204,7 @@ public class CCConfig extends BaseConfigurationFile {
     @ConfigOption(path = "weighted-score.round-multipliers")
     public static List<Double> WEIGHTED_SCORE_ROUND_MULTIPLIERS;
 
-    //Spectator
+    // Spectator
     @ConfigOption(path = "strict-spectator-rule")
     public static Boolean STRICT_SPECTATOR_RULE;
 
@@ -271,7 +240,8 @@ public class CCConfig extends BaseConfigurationFile {
     @ConfigOption(path = "database.password")
     public static String DATABASE_PASSWORD;
 
-    // Shared Redis infrastructure. Remote Bingo and cross-server database invalidation use one owner.
+    // Shared Redis infrastructure. Remote Bingo and cross-server database invalidation use one
+    // owner.
     @ConfigOption(path = "redis.enabled")
     public static Boolean REDIS_ENABLED;
 
@@ -335,5 +305,4 @@ public class CCConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "bingo.heartbeat-timeout-seconds")
     public static int BINGO_HEARTBEAT_TIMEOUT_SECONDS;
-
 }

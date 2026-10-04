@@ -3,9 +3,6 @@ package ink.ziip.championshipscore.api.daily;
 import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
@@ -16,10 +13,13 @@ import org.bukkit.persistence.PersistentDataType;
 
 import java.util.List;
 
-/** The only item used to enter the public-play lobby. It is never identified by its display name. */
+/**
+ * The only item used to enter the public-play lobby. It is never identified by its display name.
+ */
 final class DailyLobbyItem {
     private static final String ITEM_PATH = "daily.hotbar.lobby";
-    static final NamespacedKey MARKER = NamespacedKey.fromString("championshipscore:daily_lobby_menu");
+    static final NamespacedKey MARKER =
+            NamespacedKey.fromString("championshipscore:daily_lobby_menu");
 
     private DailyLobbyItem() {}
 
@@ -39,7 +39,8 @@ final class DailyLobbyItem {
     static boolean is(ItemStack item) {
         if (item == null || item.getType().isAir()) return false;
         ItemMeta meta = item.getItemMeta();
-        return meta != null && meta.getPersistentDataContainer().has(MARKER, PersistentDataType.BYTE);
+        return meta != null
+                && meta.getPersistentDataContainer().has(MARKER, PersistentDataType.BYTE);
     }
 
     /** Keeps exactly one marked item, and never overwrites a player's existing item. */

@@ -5,19 +5,16 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Single source of truth for every GUI screen defined under gui.yml.
  *
- * <p>Each constant owns the absolute configuration prefix of its menu. Derived paths such as
- * {@code <menu>.items.<item>} are built through helper methods so
- * callers never concatenate raw strings by hand.</p>
+ * <p>Each constant owns the absolute configuration prefix of its menu. Derived paths such as {@code
+ * <menu>.items.<item>} are built through helper methods so callers never concatenate raw strings by
+ * hand.
  */
 public enum MenuId {
     // Spectator
     SPECTATOR_VENUE_SELECTOR("spectator.menus.venue-selector"),
     SPECTATOR_SUB_ARENA_SELECTOR("spectator.menus.sub-arena-selector"),
     SPECTATOR_BUILD_MART_SELECTOR("spectator.menus.build-mart-selector"),
-    SPECTATOR_VISIBILITY("spectator.menus.visibility"),
     SPECTATOR_PLAYER_TELEPORT("spectator.menus.player-teleport-selector"),
-    SPECTATOR_PLAYER_VISIBILITY("spectator.menus.player-visibility-selector"),
-    SPECTATOR_TEAM_VISIBILITY("spectator.menus.team-visibility-selector"),
 
     // Team management
     TEAMS_OVERVIEW("teams.menus.overview"),

@@ -12,6 +12,13 @@
     <name>Championships Paper and Folia Platform</name>
     <dependencies>
         <dependency>
+            <groupId>com.github.retrooper</groupId>
+            <artifactId>packetevents-api</artifactId>
+            <version>2.13.0</version>
+            <scope>provided</scope>
+            <exclusions><exclusion><groupId>*</groupId><artifactId>*</artifactId></exclusion></exclusions>
+        </dependency>
+        <dependency>
             <groupId>ink.ziip</groupId>
             <artifactId>championships-common</artifactId>
         </dependency>

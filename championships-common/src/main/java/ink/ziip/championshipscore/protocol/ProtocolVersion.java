@@ -4,13 +4,15 @@ package ink.ziip.championshipscore.protocol;
 public final class ProtocolVersion {
     public static final int CURRENT = 8;
 
-    private ProtocolVersion() {
-    }
+    private ProtocolVersion() {}
 
     public static void requireSupported(int version) {
         if (version != CURRENT) {
             throw new IllegalArgumentException(
-                    "Unsupported championships protocol version " + version + ", expected " + CURRENT);
+                    "Unsupported championships protocol version "
+                            + version
+                            + ", expected "
+                            + CURRENT);
         }
     }
 }

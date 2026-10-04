@@ -1,10 +1,11 @@
 package ink.ziip.championshipscore.worker;
 
-import ink.ziip.championshipscore.platform.bukkit.bingo.BingoRidingTravel;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoEventObjectiveEvaluator;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoEventObjectiveRule;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoObjectiveProgressTracker;
+import ink.ziip.championshipscore.platform.bukkit.bingo.BingoRidingTravel;
 import ink.ziip.championshipscore.protocol.BingoTaskSpec;
+
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Statistic;
@@ -28,11 +29,28 @@ import java.util.function.IntPredicate;
 
 /** Manifest task compiler and Folia-safe per-player objective observer. */
 final class WorkerObjectives {
-    private static final Set<String> SIGNAL_TRIGGERS = Set.of(
-            "eat", "drink", "die", "tame", "breed", "leash", "break_item", "place", "use",
-            "name", "toot_goat_horn", "remove_effect_milk", "shield_disabled",
-            "shoot_firework_crossbow", "use_brush", "use_golden_dandelion", "fill_campfire",
-            "construct_copper_golem", "enrage", "explode_end_crystal");
+    private static final Set<String> SIGNAL_TRIGGERS =
+            Set.of(
+                    "eat",
+                    "drink",
+                    "die",
+                    "tame",
+                    "breed",
+                    "leash",
+                    "break_item",
+                    "place",
+                    "use",
+                    "name",
+                    "toot_goat_horn",
+                    "remove_effect_milk",
+                    "shield_disabled",
+                    "shoot_firework_crossbow",
+                    "use_brush",
+                    "use_golden_dandelion",
+                    "fill_campfire",
+                    "construct_copper_golem",
+                    "enrage",
+                    "explode_end_crystal");
     private volatile List<Objective> objectives;
     private volatile List<Objective> pollingObjectives;
     private volatile Map<String, List<Integer>> advancementCells;
@@ -48,14 +66,19 @@ final class WorkerObjectives {
         List<Objective> parsed = new ArrayList<>(specs.size());
         for (BingoTaskSpec spec : specs) parsed.add(parse(spec));
         this.objectives = List.copyOf(parsed);
-        this.pollingObjectives = parsed.stream()
-                .filter(objective -> !(objective instanceof AdvancementObjective)
-                        && (!(objective instanceof EventObjective event) || event.pollable()))
-                .toList();
+        this.pollingObjectives =
+                parsed.stream()
+                        .filter(
+                                objective ->
+                                        !(objective instanceof AdvancementObjective)
+                                                && (!(objective instanceof EventObjective event)
+                                                        || event.pollable()))
+                        .toList();
         Map<String, List<Integer>> cellsByAdvancement = new HashMap<>();
         for (Objective objective : parsed) {
             if (objective instanceof AdvancementObjective advancement) {
-                cellsByAdvancement.computeIfAbsent(advancement.key(), ignored -> new ArrayList<>())
+                cellsByAdvancement
+                        .computeIfAbsent(advancement.key(), ignored -> new ArrayList<>())
                         .add(advancement.cellIndex());
             }
         }
@@ -78,7 +101,8 @@ final class WorkerObjectives {
     void prepareParticipant(Player player) {
         for (Objective objective : objectives) {
             if (!(objective instanceof AdvancementObjective advancementObjective)) continue;
-            AdvancementProgress progress = player.getAdvancementProgress(advancementObjective.advancement());
+            AdvancementProgress progress =
+                    player.getAdvancementProgress(advancementObjective.advancement());
             for (String criterion : new ArrayList<>(progress.getAwardedCriteria())) {
                 progress.revokeCriteria(criterion);
             }
@@ -87,15 +111,20 @@ final class WorkerObjectives {
     }
 
     List<Integer> matching(Player player, IntPredicate eligibleCell) {
-        Map<Integer, Integer> baselines = statisticBaselines.getOrDefault(player.getUniqueId(), Map.of());
+        Map<Integer, Integer> baselines =
+                statisticBaselines.getOrDefault(player.getUniqueId(), Map.of());
         List<Integer> matches = new ArrayList<>();
         for (Objective objective : pollingObjectives) {
             if (!eligibleCell.test(objective.cellIndex())) continue;
             int baseline = baselines.getOrDefault(objective.cellIndex(), 0);
             boolean matched = objective.matches(player, baseline);
             if (objective instanceof StatisticObjective statistic) {
-                matched = ridingTravel.delta(player.getUniqueId(), statistic.statistic(),
-                        statistic.read(player) - baseline) >= statistic.target();
+                matched =
+                        ridingTravel.delta(
+                                        player.getUniqueId(),
+                                        statistic.statistic(),
+                                        statistic.read(player) - baseline)
+                                >= statistic.target();
             }
             if (matched) {
                 matches.add(objective.cellIndex());
@@ -112,10 +141,13 @@ final class WorkerObjectives {
         return matchingAdvancement(advancement).stream().filter(eligibleCell::test).toList();
     }
 
-    List<Integer> matchingEventSignal(Player player, String trigger, String param, IntPredicate eligibleCell) {
+    List<Integer> matchingEventSignal(
+            Player player, String trigger, String param, IntPredicate eligibleCell) {
         List<Integer> matches = new ArrayList<>();
         for (Objective objective : objectives) {
-            if (!(objective instanceof EventObjective event) || event.count != 1 || event.pollable()) continue;
+            if (!(objective instanceof EventObjective event)
+                    || event.count != 1
+                    || event.pollable()) continue;
             if (!eligibleCell.test(event.cellIndex)) continue;
             if (event.trigger.equalsIgnoreCase(trigger) && event.param.equalsIgnoreCase(param)) {
                 matches.add(event.cellIndex);
@@ -132,7 +164,11 @@ final class WorkerObjectives {
         eventProgress.increment(player.getUniqueId(), bucket);
     }
 
-    void recordRidingMovement(Player player, org.bukkit.Statistic statistic, double centimeters, BingoRidingTravel.Source source) {
+    void recordRidingMovement(
+            Player player,
+            org.bukkit.Statistic statistic,
+            double centimeters,
+            BingoRidingTravel.Source source) {
         if (player == null || !Double.isFinite(centimeters) || centimeters <= 0.0D) return;
         ridingTravel.record(player.getUniqueId(), statistic, centimeters, source);
     }
@@ -140,20 +176,43 @@ final class WorkerObjectives {
     private Objective parse(BingoTaskSpec spec) {
         Map<String, String> attributes = spec.attributes();
         return switch (spec.taskType().toLowerCase(Locale.ROOT)) {
-            case "item" -> new ItemObjective(spec.cellIndex(),
-                    Set.of(material(attributes, "material")), integer(attributes, "count", 1), null, MatchMode.TOTAL);
-            case "potion" -> new ItemObjective(spec.cellIndex(),
-                    Set.of(material(attributes, "material")), integer(attributes, "count", 1),
-                    required(attributes, "effect").toLowerCase(Locale.ROOT), MatchMode.TOTAL);
-            case "item_set" -> new ItemObjective(spec.cellIndex(), materials(attributes),
-                    integer(attributes, "count", 1), null, MatchMode.SINGLE);
-            case "all_of" -> new ItemObjective(spec.cellIndex(), materials(attributes),
-                    integer(attributes, "count", 1), null, MatchMode.ALL);
+            case "item" ->
+                    new ItemObjective(
+                            spec.cellIndex(),
+                            Set.of(material(attributes, "material")),
+                            integer(attributes, "count", 1),
+                            null,
+                            MatchMode.TOTAL);
+            case "potion" ->
+                    new ItemObjective(
+                            spec.cellIndex(),
+                            Set.of(material(attributes, "material")),
+                            integer(attributes, "count", 1),
+                            required(attributes, "effect").toLowerCase(Locale.ROOT),
+                            MatchMode.TOTAL);
+            case "item_set" ->
+                    new ItemObjective(
+                            spec.cellIndex(),
+                            materials(attributes),
+                            integer(attributes, "count", 1),
+                            null,
+                            MatchMode.SINGLE);
+            case "all_of" ->
+                    new ItemObjective(
+                            spec.cellIndex(),
+                            materials(attributes),
+                            integer(attributes, "count", 1),
+                            null,
+                            MatchMode.ALL);
             case "event" -> event(spec);
             case "advancement" -> advancement(spec.cellIndex(), required(attributes, "key"));
             case "statistic" -> statistic(spec);
-            default -> throw new IllegalArgumentException(
-                    "Unsupported Bingo task type " + spec.taskType() + " at cell " + spec.cellIndex());
+            default ->
+                    throw new IllegalArgumentException(
+                            "Unsupported Bingo task type "
+                                    + spec.taskType()
+                                    + " at cell "
+                                    + spec.cellIndex());
         };
     }
 
@@ -170,7 +229,8 @@ final class WorkerObjectives {
                 if (!subject.isBlank()) subjects.add(subject.trim());
             }
         }
-        return new EventObjective(spec.cellIndex(), trigger, param, count, members, Set.copyOf(subjects));
+        return new EventObjective(
+                spec.cellIndex(), trigger, param, count, members, Set.copyOf(subjects));
     }
 
     private static StatisticObjective statistic(BingoTaskSpec spec) {
@@ -179,7 +239,8 @@ final class WorkerObjectives {
         try {
             statistic = Statistic.valueOf(required(attributes, "statistic"));
         } catch (IllegalArgumentException invalid) {
-            throw new IllegalArgumentException("Unknown statistic at cell " + spec.cellIndex(), invalid);
+            throw new IllegalArgumentException(
+                    "Unknown statistic at cell " + spec.cellIndex(), invalid);
         }
         Material material = optionalMaterial(attributes.get("material"));
         EntityType entity = null;
@@ -188,10 +249,15 @@ final class WorkerObjectives {
             try {
                 entity = EntityType.valueOf(entityName);
             } catch (IllegalArgumentException invalid) {
-                throw new IllegalArgumentException("Unknown statistic entity " + entityName, invalid);
+                throw new IllegalArgumentException(
+                        "Unknown statistic entity " + entityName, invalid);
             }
         }
-        return new StatisticObjective(spec.cellIndex(), statistic, material, entity,
+        return new StatisticObjective(
+                spec.cellIndex(),
+                statistic,
+                material,
+                entity,
                 integer(attributes, "target", integer(attributes, "count", 1)));
     }
 
@@ -199,7 +265,8 @@ final class WorkerObjectives {
         NamespacedKey key = NamespacedKey.fromString(rawKey);
         Advancement advancement = key == null ? null : org.bukkit.Bukkit.getAdvancement(key);
         if (advancement == null) {
-            throw new IllegalArgumentException("Unknown advancement " + rawKey + " at cell " + cellIndex);
+            throw new IllegalArgumentException(
+                    "Unknown advancement " + rawKey + " at cell " + cellIndex);
         }
         return new AdvancementObjective(cellIndex, advancement.key().asString(), advancement);
     }
@@ -208,7 +275,8 @@ final class WorkerObjectives {
         String raw = required(attributes, "materials");
         EnumSet<Material> materials = EnumSet.noneOf(Material.class);
         for (String name : raw.split(",")) materials.add(parseMaterial(name.trim()));
-        if (materials.isEmpty()) throw new IllegalArgumentException("item_set materials must not be empty");
+        if (materials.isEmpty())
+            throw new IllegalArgumentException("item_set materials must not be empty");
         return Set.copyOf(materials);
     }
 
@@ -248,43 +316,56 @@ final class WorkerObjectives {
 
     private static String required(Map<String, String> attributes, String key) {
         String value = attributes.get(key);
-        if (value == null || value.isBlank()) throw new IllegalArgumentException("Missing task attribute " + key);
+        if (value == null || value.isBlank())
+            throw new IllegalArgumentException("Missing task attribute " + key);
         return value;
     }
 
-    private sealed interface Objective permits ItemObjective, AdvancementObjective, StatisticObjective, EventObjective {
+    private sealed interface Objective
+            permits ItemObjective, AdvancementObjective, StatisticObjective, EventObjective {
         int cellIndex();
 
         boolean matches(Player player, int baseline);
     }
 
-    private enum MatchMode { TOTAL, SINGLE, ALL }
+    private enum MatchMode {
+        TOTAL,
+        SINGLE,
+        ALL
+    }
 
-    private record ItemObjective(int cellIndex, Set<Material> materials, int count, String potionEffect,
-                                 MatchMode mode)
+    private record ItemObjective(
+            int cellIndex, Set<Material> materials, int count, String potionEffect, MatchMode mode)
             implements Objective {
         @Override
         public boolean matches(Player player, int ignored) {
-            Map<Material, Integer> heldByMaterial = mode == MatchMode.TOTAL ? null : new HashMap<>();
+            Map<Material, Integer> heldByMaterial =
+                    mode == MatchMode.TOTAL ? null : new HashMap<>();
             int held = 0;
             for (ItemStack stack : player.getInventory().getContents()) {
                 if (stack == null || !materials.contains(stack.getType())) continue;
                 if (potionEffect != null && !potionEffect.equals(basePotionEffect(stack))) continue;
                 if (mode != MatchMode.TOTAL) {
-                    int materialTotal = heldByMaterial.merge(stack.getType(), stack.getAmount(), Integer::sum);
+                    int materialTotal =
+                            heldByMaterial.merge(stack.getType(), stack.getAmount(), Integer::sum);
                     if (mode == MatchMode.SINGLE && materialTotal >= count) return true;
                     continue;
                 }
                 held += stack.getAmount();
                 if (held >= count) return true;
             }
-            return mode == MatchMode.ALL && materials.stream()
-                    .allMatch(material -> heldByMaterial.getOrDefault(material, 0) >= count);
+            return mode == MatchMode.ALL
+                    && materials.stream()
+                            .allMatch(
+                                    material -> heldByMaterial.getOrDefault(material, 0) >= count);
         }
 
         private static String basePotionEffect(ItemStack stack) {
-            if (!(stack.getItemMeta() instanceof PotionMeta meta) || meta.getBasePotionType() == null) return null;
-            return meta.getBasePotionType().name().toLowerCase(Locale.ROOT)
+            if (!(stack.getItemMeta() instanceof PotionMeta meta)
+                    || meta.getBasePotionType() == null) return null;
+            return meta.getBasePotionType()
+                    .name()
+                    .toLowerCase(Locale.ROOT)
                     .replaceFirst("^(strong|long)_", "");
         }
     }
@@ -298,18 +379,24 @@ final class WorkerObjectives {
         private final Set<String> subjects;
         private final BingoEventObjectiveRule rule;
 
-        private EventObjective(int cellIndex, String trigger, String param, int count,
-                               Set<Material> members, Set<String> subjects) {
+        private EventObjective(
+                int cellIndex,
+                String trigger,
+                String param,
+                int count,
+                Set<Material> members,
+                Set<String> subjects) {
             this.cellIndex = cellIndex;
             this.trigger = trigger;
             this.param = param;
             this.count = count;
             this.members = members;
             this.subjects = subjects;
-            Set<String> biomeKeys = subjects.stream()
-                    .filter(subject -> subject.startsWith("BIOME="))
-                    .map(subject -> subject.substring("BIOME=".length()))
-                    .collect(java.util.stream.Collectors.toUnmodifiableSet());
+            Set<String> biomeKeys =
+                    subjects.stream()
+                            .filter(subject -> subject.startsWith("BIOME="))
+                            .map(subject -> subject.substring("BIOME=".length()))
+                            .collect(java.util.stream.Collectors.toUnmodifiableSet());
             this.rule = new BingoEventObjectiveRule(trigger, param, count, members, biomeKeys);
         }
 
@@ -328,15 +415,17 @@ final class WorkerObjectives {
         }
     }
 
-    private record AdvancementObjective(int cellIndex, String key, Advancement advancement) implements Objective {
+    private record AdvancementObjective(int cellIndex, String key, Advancement advancement)
+            implements Objective {
         @Override
         public boolean matches(Player player, int ignored) {
             return false;
         }
     }
 
-    private record StatisticObjective(int cellIndex, Statistic statistic, Material material,
-                                      EntityType entity, int target) implements Objective {
+    private record StatisticObjective(
+            int cellIndex, Statistic statistic, Material material, EntityType entity, int target)
+            implements Objective {
         @Override
         public boolean matches(Player player, int baseline) {
             return read(player) - baseline >= target;
@@ -346,8 +435,11 @@ final class WorkerObjectives {
             try {
                 if (material != null) {
                     int value = player.getStatistic(statistic, material);
-                    Material variant = statistic == Statistic.MINE_BLOCK ? oreVariant(material) : null;
-                    return variant == null ? value : value + player.getStatistic(statistic, variant);
+                    Material variant =
+                            statistic == Statistic.MINE_BLOCK ? oreVariant(material) : null;
+                    return variant == null
+                            ? value
+                            : value + player.getStatistic(statistic, variant);
                 }
                 if (entity != null) return player.getStatistic(statistic, entity);
                 return player.getStatistic(statistic);
@@ -378,5 +470,4 @@ final class WorkerObjectives {
             };
         }
     }
-
 }

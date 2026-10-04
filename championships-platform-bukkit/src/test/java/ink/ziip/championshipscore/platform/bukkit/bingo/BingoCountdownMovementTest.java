@@ -1,8 +1,9 @@
 package ink.ziip.championshipscore.platform.bukkit.bingo;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.bukkit.Location;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class BingoCountdownMovementTest {
     @Test
@@ -21,7 +22,8 @@ class BingoCountdownMovementTest {
     @Test
     void preventsJumpingOrWalkingBeforeStart() {
         Location from = new Location(null, 10.5, 80, -4.5);
-        Location result = BingoCountdownMovement.destination(from, new Location(null, 11, 80.42, -4));
+        Location result =
+                BingoCountdownMovement.destination(from, new Location(null, 11, 80.42, -4));
         assertEquals(from.getX(), result.getX());
         assertEquals(from.getY(), result.getY());
         assertEquals(from.getZ(), result.getZ());

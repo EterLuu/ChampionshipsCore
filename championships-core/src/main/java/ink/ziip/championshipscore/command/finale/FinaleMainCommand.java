@@ -9,12 +9,16 @@ public final class FinaleMainCommand extends BaseMainCommand {
     public FinaleMainCommand() {
         super("finale", "决赛启动与现场控制", ADMIN_PERMISSION);
         for (FinaleGameDefinition definition : FinaleGameRegistry.definitions()) {
-            addGameSubCommand(definition.gameType(), switch (definition.gameType()) {
-                case Dodgebolt -> new FinaleDodgeboltMainCommand(definition);
-                case DragonEggCarnival -> new FinaleDragonEggCarnivalMainCommand(definition);
-                case SulfurSoccer -> new FinaleSulfurSoccerMainCommand(definition);
-                default -> throw new IllegalStateException("未实现决赛命令：" + definition.gameType());
-            });
+            addGameSubCommand(
+                    definition.gameType(),
+                    switch (definition.gameType()) {
+                        case Dodgebolt -> new FinaleDodgeboltMainCommand(definition);
+                        case DragonEggCarnival ->
+                                new FinaleDragonEggCarnivalMainCommand(definition);
+                        case SulfurSoccer -> new FinaleSulfurSoccerMainCommand(definition);
+                        default ->
+                                throw new IllegalStateException("未实现决赛命令：" + definition.gameType());
+                    });
         }
     }
 }

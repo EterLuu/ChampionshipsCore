@@ -3,7 +3,8 @@ package ink.ziip.championshipscore.api.daily;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.logging.LogText;
+
 import org.bukkit.Bukkit;
 import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
@@ -22,9 +23,10 @@ public final class WebLeaderboardManager extends BaseManager {
     private int consecutiveFailures;
     private long lastUnavailableLogAt;
 
-    public WebLeaderboardManager(@NotNull ChampionshipsCore plugin,
-                                 @NotNull DailyManager dailyManager,
-                                 @NotNull DailyStatsManager statsManager) {
+    public WebLeaderboardManager(
+            @NotNull ChampionshipsCore plugin,
+            @NotNull DailyManager dailyManager,
+            @NotNull DailyStatsManager statsManager) {
         super(plugin);
         this.dailyManager = dailyManager;
         this.statsManager = statsManager;
@@ -34,21 +36,30 @@ public final class WebLeaderboardManager extends BaseManager {
     public void load() {
         if (!Boolean.TRUE.equals(CCConfig.WEB_LEADERBOARD_SYNC_ENABLED)) return;
         try {
-            long interval = Math.max(MIN_UPLOAD_INTERVAL_SECONDS,
-                    CCConfig.WEB_LEADERBOARD_SYNC_INTERVAL_SECONDS);
-            client = new WebLeaderboardApiClient(
-                    CCConfig.WEB_LEADERBOARD_SYNC_BASE_URL,
-                    CCConfig.WEB_LEADERBOARD_SYNC_KEY_ID,
-                    CCConfig.WEB_LEADERBOARD_SYNC_HMAC_SECRET,
-                    Boolean.TRUE.equals(CCConfig.WEB_LEADERBOARD_SYNC_ALLOW_INSECURE_PRIVATE_HTTP),
-                    CCConfig.WEB_LEADERBOARD_SYNC_CONNECT_TIMEOUT_SECONDS,
-                    CCConfig.WEB_LEADERBOARD_SYNC_REQUEST_TIMEOUT_SECONDS);
+            long interval =
+                    Math.max(
+                            MIN_UPLOAD_INTERVAL_SECONDS,
+                            CCConfig.WEB_LEADERBOARD_SYNC_INTERVAL_SECONDS);
+            client =
+                    new WebLeaderboardApiClient(
+                            CCConfig.WEB_LEADERBOARD_SYNC_BASE_URL,
+                            CCConfig.WEB_LEADERBOARD_SYNC_KEY_ID,
+                            CCConfig.WEB_LEADERBOARD_SYNC_HMAC_SECRET,
+                            Boolean.TRUE.equals(
+                                    CCConfig.WEB_LEADERBOARD_SYNC_ALLOW_INSECURE_PRIVATE_HTTP),
+                            CCConfig.WEB_LEADERBOARD_SYNC_CONNECT_TIMEOUT_SECONDS,
+                            CCConfig.WEB_LEADERBOARD_SYNC_REQUEST_TIMEOUT_SECONDS);
             task = Bukkit.getScheduler().runTaskTimer(plugin, this::publish, 600L, interval * 20L);
-            plugin.getLogger().info(Utils.formatModuleLog("WebLeaderboard", "同步",
-                    "已启用 | 周期=" + interval + "秒"));
+            plugin.getLogger()
+                    .info(
+                            LogText.formatModuleLog(
+                                    "WebLeaderboard", "同步", "已启用 | 周期=" + interval + "秒"));
         } catch (Exception exception) {
-            plugin.getLogger().log(Level.SEVERE, Utils.formatModuleLog("WebLeaderboard", "配置",
-                    "排行榜同步配置无效，同步未启用"), exception);
+            plugin.getLogger()
+                    .log(
+                            Level.SEVERE,
+                            LogText.formatModuleLog("WebLeaderboard", "配置", "排行榜同步配置无效，同步未启用"),
+                            exception);
         }
     }
 
@@ -72,8 +83,8 @@ public final class WebLeaderboardManager extends BaseManager {
         try {
             client.submit(snapshot);
             if (consecutiveFailures != 0) {
-                plugin.getLogger().info(Utils.formatModuleLog("WebLeaderboard", "恢复",
-                        "排行榜同步已恢复"));
+                plugin.getLogger()
+                        .info(LogText.formatModuleLog("WebLeaderboard", "恢复", "排行榜同步已恢复"));
             }
             consecutiveFailures = 0;
         } catch (Exception exception) {
@@ -86,23 +97,33 @@ public final class WebLeaderboardManager extends BaseManager {
     private void logFailure(@NotNull Exception failure) {
         consecutiveFailures++;
         if (!isUnavailable(failure)) {
-            plugin.getLogger().log(Level.WARNING, Utils.formatModuleLog("WebLeaderboard", "同步",
-                    "排行榜同步失败 | 次数=" + consecutiveFailures), failure);
+            plugin.getLogger()
+                    .log(
+                            Level.WARNING,
+                            LogText.formatModuleLog(
+                                    "WebLeaderboard", "同步", "排行榜同步失败 | 次数=" + consecutiveFailures),
+                            failure);
             return;
         }
         long now = System.currentTimeMillis();
         if (consecutiveFailures == 1 || now - lastUnavailableLogAt >= 60_000L) {
             lastUnavailableLogAt = now;
-            plugin.getLogger().warning(Utils.formatModuleLog("WebLeaderboard", "同步",
-                    "cc-web 暂时不可用，稍后重试 | 次数=" + consecutiveFailures));
+            plugin.getLogger()
+                    .warning(
+                            LogText.formatModuleLog(
+                                    "WebLeaderboard",
+                                    "同步",
+                                    "cc-web 暂时不可用，稍后重试 | 次数=" + consecutiveFailures));
         }
     }
 
     private static boolean isUnavailable(@NotNull Throwable failure) {
         Throwable current = failure;
         while (current != null) {
-            if (current instanceof java.io.IOException || current instanceof RuntimeException runtime
-                    && runtime.getMessage() != null && runtime.getMessage().startsWith("Leaderboard API returned HTTP 5")) {
+            if (current instanceof java.io.IOException
+                    || current instanceof RuntimeException runtime
+                            && runtime.getMessage() != null
+                            && runtime.getMessage().startsWith("Leaderboard API returned HTTP 5")) {
                 return true;
             }
             current = current.getCause();

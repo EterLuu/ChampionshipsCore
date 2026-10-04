@@ -5,6 +5,8 @@ api-version: '26.2'
 folia-supported: true
 authors: [ Eter Lu, LettuceIce ]
 description: Dedicated Folia execution worker for ChampionshipsCore Bingo matches.
+depend:
+  - packetevents
 softdepend:
   - PlaceholderAPI
 commands:

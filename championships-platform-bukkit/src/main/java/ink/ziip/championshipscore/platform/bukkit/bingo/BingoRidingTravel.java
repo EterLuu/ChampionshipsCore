@@ -12,8 +12,13 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /** Round-scoped riding distance. Independent observation streams must never be added together. */
 public final class BingoRidingTravel {
-    public enum Source { PLAYER, VEHICLE }
+    public enum Source {
+        PLAYER,
+        VEHICLE
+    }
+
     private record Key(UUID player, Statistic statistic, Source source) {}
+
     private final Map<Key, Double> centimeters = new ConcurrentHashMap<>();
 
     /** Matches ServerPlayer.checkRidingStatistics, including all horse and nautilus variants. */
@@ -29,7 +34,8 @@ public final class BingoRidingTravel {
     }
 
     public static double distance(PlayerMoveEvent event) {
-        if (event.isCancelled() || event instanceof PlayerTeleportEvent
+        if (event.isCancelled()
+                || event instanceof PlayerTeleportEvent
                 || statistic(event.getPlayer().getVehicle()) == null) return 0;
         return distance(event.getFrom(), event.getTo());
     }
@@ -49,8 +55,10 @@ public final class BingoRidingTravel {
     }
 
     public int delta(UUID player, Statistic statistic, int vanillaDelta) {
-        double tracked = Math.max(centimeters.getOrDefault(new Key(player, statistic, Source.PLAYER), 0.0),
-                centimeters.getOrDefault(new Key(player, statistic, Source.VEHICLE), 0.0));
+        double tracked =
+                Math.max(
+                        centimeters.getOrDefault(new Key(player, statistic, Source.PLAYER), 0.0),
+                        centimeters.getOrDefault(new Key(player, statistic, Source.VEHICLE), 0.0));
         return Math.max(vanillaDelta, (int) Math.min(Integer.MAX_VALUE, Math.floor(tracked)));
     }
 

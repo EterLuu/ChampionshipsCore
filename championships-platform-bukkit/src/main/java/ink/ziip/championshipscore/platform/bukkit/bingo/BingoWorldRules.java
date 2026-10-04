@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.platform.bukkit.bingo;
 
 import ink.ziip.championshipscore.protocol.BingoRemix;
 import ink.ziip.championshipscore.protocol.BingoVariantRules;
+
 import org.bukkit.Difficulty;
 import org.bukkit.GameRules;
 import org.bukkit.World;
@@ -15,8 +16,7 @@ public final class BingoWorldRules {
     public static final long START_TIME = 9000L;
     public static final int NORMAL_RANDOM_TICK_SPEED = 3;
 
-    private BingoWorldRules() {
-    }
+    private BingoWorldRules() {}
 
     public static void configure(World world) {
         Objects.requireNonNull(world, "world");
@@ -83,7 +83,8 @@ public final class BingoWorldRules {
 
     private static void disableWanderingTraders(World world) {
         world.setGameRule(GameRules.SPAWN_WANDERING_TRADERS, false);
-        for (WanderingTrader trader : world.getEntitiesByClass(WanderingTrader.class)) trader.remove();
+        for (WanderingTrader trader : world.getEntitiesByClass(WanderingTrader.class))
+            trader.remove();
     }
 
     public enum Phase {

@@ -4,8 +4,9 @@ import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Runtime execution selector. It deliberately starts in LOCAL mode; installing a remote gateway is a
- * separate bootstrap operation once Redis, proxy routing and worker readiness have all been verified.
+ * Runtime execution selector. It deliberately starts in LOCAL mode; installing a remote gateway is
+ * a separate bootstrap operation once Redis, proxy routing and worker readiness have all been
+ * verified.
  */
 public final class BingoExecutionRouter implements BingoExecutionGateway {
     private final BingoExecutionGateway local;
@@ -52,5 +53,4 @@ public final class BingoExecutionRouter implements BingoExecutionGateway {
         }
         return gateway;
     }
-
 }

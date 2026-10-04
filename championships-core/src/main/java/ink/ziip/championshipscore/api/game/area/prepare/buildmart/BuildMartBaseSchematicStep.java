@@ -1,11 +1,11 @@
 package ink.ziip.championshipscore.api.game.area.prepare.buildmart;
 
-import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
-import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.step.SchematicStep;
-import ink.ziip.championshipscore.api.game.buildmart.BuildMartConfig;
+import ink.ziip.championshipscore.api.game.buildmart.config.BuildMartConfig;
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
@@ -17,22 +17,31 @@ final class BuildMartBaseSchematicStep extends SchematicStep {
     private final File schematic;
 
     BuildMartBaseSchematicStep(@NotNull File schematic) {
-        super("base_schematic", plugin -> schematic, LegacyText.component(GuiConfig.text("map-editor.menus.step-list.games.build-mart.items.base-schematic.title")),
-                LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.build-mart.items.base-schematic.lore", 0)));
+        super(
+                "base_schematic",
+                plugin -> schematic,
+                LegacyText.component(
+                        GuiConfig.text(
+                                "map-editor.menus.step-list.games.build-mart.items.base-schematic.title")),
+                LegacyText.component(
+                        GuiConfig.line(
+                                "map-editor.menus.step-list.games.build-mart.items.base-schematic.lore",
+                                0)));
         this.schematic = schematic;
     }
 
     @Override
     public boolean isSet(PrepareSession session) {
-        return session != null && schematic.isFile()
+        return session != null
+                && schematic.isFile()
                 && config(session).getBaseSourceOrigin() != null;
     }
 
     @Override
-    protected void onSchematicSaved(@NotNull PrepareSession session, @NotNull Player player,
-                                    @NotNull File file) {
-        Vector selectionMinimum = session.getPlugin().getWorldEditManager()
-                .getPlayerSelection(player, true)[0];
+    protected void onSchematicSaved(
+            @NotNull PrepareSession session, @NotNull Player player, @NotNull File file) {
+        Vector selectionMinimum =
+                session.getPlugin().getWorldEditManager().getPlayerSelection(player, true)[0];
         config(session).recordBaseTemplateOrigin(selectionMinimum);
         session.setStamped(false);
     }

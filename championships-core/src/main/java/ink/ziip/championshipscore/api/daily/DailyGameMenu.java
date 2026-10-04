@@ -1,19 +1,19 @@
 package ink.ziip.championshipscore.api.daily;
 
-import ink.ziip.championshipscore.api.gui.MenuInventory;
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.gui.MenuId;
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
+import ink.ziip.championshipscore.api.gui.MenuInventory;
 import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 
 import net.kyori.adventure.text.Component;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.NotNull;
@@ -66,14 +66,42 @@ public final class DailyGameMenu {
             player.closeInventory();
             return;
         }
-        if (slot == slot("close", CLOSE_SLOT)) { player.closeInventory(); return; }
-        if (slot == slot("refresh", REFRESH_SLOT)) { refresh(holder); clickSound(player, 1.1F); return; }
-        if (slot == slot("party", PARTY_SLOT)) { daily.openPartyMenu(player); clickSound(player, 1.1F); return; }
-        if (slot == slot("statistics", STATS_SLOT)) { daily.openStatsMenu(player); clickSound(player, 1.15F); return; }
-        if (slot == slot("back", BACK_SLOT)) { daily.openMenu(player); clickSound(player, 1F); return; }
-        if (slot == slot("leaderboard", LEADERBOARD_SLOT)) { daily.openLeaderboard(player); clickSound(player, 1.2F); return; }
-        if (slot == slot("leave", LEAVE_SLOT) && (daily.isQueued(player.getUniqueId()) || daily.session(player.getUniqueId()) != null)) {
-            daily.leavePlay(player.getUniqueId()); refresh(holder); clickSound(player, 0.8F); return;
+        if (slot == slot("close", CLOSE_SLOT)) {
+            player.closeInventory();
+            return;
+        }
+        if (slot == slot("refresh", REFRESH_SLOT)) {
+            refresh(holder);
+            clickSound(player, 1.1F);
+            return;
+        }
+        if (slot == slot("party", PARTY_SLOT)) {
+            daily.openPartyMenu(player);
+            clickSound(player, 1.1F);
+            return;
+        }
+        if (slot == slot("statistics", STATS_SLOT)) {
+            daily.openStatsMenu(player);
+            clickSound(player, 1.15F);
+            return;
+        }
+        if (slot == slot("back", BACK_SLOT)) {
+            daily.openMenu(player);
+            clickSound(player, 1F);
+            return;
+        }
+        if (slot == slot("leaderboard", LEADERBOARD_SLOT)) {
+            daily.openLeaderboard(player);
+            clickSound(player, 1.2F);
+            return;
+        }
+        if (slot == slot("leave", LEAVE_SLOT)
+                && (daily.isQueued(player.getUniqueId())
+                        || daily.session(player.getUniqueId()) != null)) {
+            daily.leavePlay(player.getUniqueId());
+            refresh(holder);
+            clickSound(player, 0.8F);
+            return;
         }
         GameTypeEnum game = holder.gamesBySlot.get(slot);
         if (game != null && daily.selectGame(player, game)) clickSound(player, 1.2F);
@@ -88,21 +116,39 @@ public final class DailyGameMenu {
         inventory.clear();
         holder.gamesBySlot.clear();
         ItemStack border = configured("border", null, Map.of(), Material.BLACK_STAINED_GLASS_PANE);
-        for (int slot : GuiConfig.slots(MENU_PATH + ".layout.border",
-                List.of(0, 1, 2, 3, 5, 6, 8, 45, 46, 48, 50, 52)))
+        for (int slot :
+                GuiConfig.slots(
+                        MENU_PATH + ".layout.border",
+                        List.of(0, 1, 2, 3, 5, 6, 8, 45, 46, 48, 50, 52)))
             if (slot >= 0 && slot < inventory.getSize()) inventory.setItem(slot, border);
 
         DailyPlayerSnapshot snapshot = daily.snapshot(holder.viewer);
-        List<GameTypeEnum> games = daily.enabledGames().stream().sorted(java.util.Comparator.comparingInt(Enum::ordinal)).toList();
+        List<GameTypeEnum> games =
+                daily.enabledGames().stream()
+                        .sorted(java.util.Comparator.comparingInt(Enum::ordinal))
+                        .toList();
         int totalQueued = games.stream().mapToInt(daily::queueSize).sum();
         int activeGames = (int) games.stream().filter(daily::isGameRunning).count();
         inventory.setItem(slot("party", PARTY_SLOT), partyItem(holder.viewer, snapshot));
-        inventory.setItem(slot("overview", OVERVIEW_SLOT), configured("overview", null,
-                Map.of("games", games.size(), "queued", totalQueued, "active", activeGames), Material.NETHER_STAR));
-        inventory.setItem(slot("statistics", STATS_SLOT), configured("statistics", null,
-                Map.of("games", daily.statsManager().stat(holder.viewer, null).gamesPlayed()), Material.WRITABLE_BOOK));
+        inventory.setItem(
+                slot("overview", OVERVIEW_SLOT),
+                configured(
+                        "overview",
+                        null,
+                        Map.of("games", games.size(), "queued", totalQueued, "active", activeGames),
+                        Material.NETHER_STAR));
+        inventory.setItem(
+                slot("statistics", STATS_SLOT),
+                configured(
+                        "statistics",
+                        null,
+                        Map.of(
+                                "games",
+                                daily.statsManager().stat(holder.viewer, null).gamesPlayed()),
+                        Material.WRITABLE_BOOK));
 
-        List<Integer> slots = GuiConfig.slots(MENU_PATH + ".layout.content", candidateSlots(games.size()));
+        List<Integer> slots =
+                GuiConfig.slots(MENU_PATH + ".layout.content", candidateSlots(games.size()));
         for (int index = 0; index < games.size() && index < slots.size(); index++) {
             GameTypeEnum game = games.get(index);
             DailyRules rules = daily.rules(game);
@@ -111,26 +157,47 @@ public final class DailyGameMenu {
             inventory.setItem(slot, gameItem(holder.viewer, game, rules));
             holder.gamesBySlot.put(slot, game);
         }
-        if (games.isEmpty()) inventory.setItem(slot("empty", 22), configured("empty", null, Map.of(), Material.GRAY_DYE));
+        if (games.isEmpty())
+            inventory.setItem(
+                    slot("empty", 22), configured("empty", null, Map.of(), Material.GRAY_DYE));
 
-        boolean participating = daily.isQueued(holder.viewer) || daily.session(holder.viewer) != null;
-        inventory.setItem(slot("leave", LEAVE_SLOT), configured("leave", participating ? "active" : "inactive", Map.of(), participating ? Material.REDSTONE_TORCH : Material.GRAY_DYE));
-        inventory.setItem(slot("leaderboard", LEADERBOARD_SLOT), configured("leaderboard", null, Map.of(), Material.GOLD_INGOT));
-        inventory.setItem(slot("refresh", REFRESH_SLOT), configured("refresh", null, Map.of(), Material.CLOCK));
-        inventory.setItem(slot("back", BACK_SLOT), configured("back", null, Map.of(), Material.ARROW));
-        inventory.setItem(slot("close", CLOSE_SLOT), configured("close", null, Map.of(), Material.BARRIER));
+        boolean participating =
+                daily.isQueued(holder.viewer) || daily.session(holder.viewer) != null;
+        inventory.setItem(
+                slot("leave", LEAVE_SLOT),
+                configured(
+                        "leave",
+                        participating ? "active" : "inactive",
+                        Map.of(),
+                        participating ? Material.REDSTONE_TORCH : Material.GRAY_DYE));
+        inventory.setItem(
+                slot("leaderboard", LEADERBOARD_SLOT),
+                configured("leaderboard", null, Map.of(), Material.GOLD_INGOT));
+        inventory.setItem(
+                slot("refresh", REFRESH_SLOT),
+                configured("refresh", null, Map.of(), Material.CLOCK));
+        inventory.setItem(
+                slot("back", BACK_SLOT), configured("back", null, Map.of(), Material.ARROW));
+        inventory.setItem(
+                slot("close", CLOSE_SLOT), configured("close", null, Map.of(), Material.BARRIER));
     }
 
     private ItemStack partyItem(UUID viewer, DailyPlayerSnapshot snapshot) {
         DailyParty party = daily.partyManager().getParty(viewer);
-        ItemStack item = configured("party", party == null ? "solo" : "party",
-                Map.of("leader", snapshot.partyLeader(), "size", snapshot.partySize()), Material.PLAYER_HEAD);
+        ItemStack item =
+                configured(
+                        "party",
+                        party == null ? "solo" : "party",
+                        Map.of("leader", snapshot.partyLeader(), "size", snapshot.partySize()),
+                        Material.PLAYER_HEAD);
         if (party == null) return item;
         List<Component> members = new ArrayList<>();
         for (UUID member : party.members()) {
             String name = Bukkit.getOfflinePlayer(member).getName();
-            members.add(Component.text((member.equals(party.leader()) ? "★ " : "• ")
-                    + (name == null ? member.toString().substring(0, 8) : name)));
+            members.add(
+                    Component.text(
+                            (member.equals(party.leader()) ? "★ " : "• ")
+                                    + (name == null ? member.toString().substring(0, 8) : name)));
         }
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
@@ -147,12 +214,15 @@ public final class DailyGameMenu {
         int queued = daily.queueSize(game);
         int availableSlots = daily.availableSlotCount(game);
         boolean selected = daily.isSelected(viewer, game);
-        String state = selected ? (availableSlots > 0 ? "selected" : "selected-waiting")
-                : (availableSlots > 0 ? "available" : "waiting");
+        String state =
+                selected
+                        ? (availableSlots > 0 ? "selected" : "selected-waiting")
+                        : (availableSlots > 0 ? "available" : "waiting");
         DailyStatSnapshot stat = daily.statsManager().stat(viewer, game);
         List<String> maps = mapNames(game);
         Map<String, Object> placeholders = new HashMap<>();
-        placeholders.put("stage", active == null ? "-" : active.instance().getGameStageEnum().toString());
+        placeholders.put(
+                "stage", active == null ? "-" : active.instance().getGameStageEnum().toString());
         placeholders.put("active_sessions", active == null ? 0 : daily.activeSessionCount(game));
         placeholders.put("slots", availableSlots);
         placeholders.put("queued", queued);
@@ -167,14 +237,20 @@ public final class DailyGameMenu {
     }
 
     private List<String> mapNames(GameTypeEnum game) {
-        List<String> maps = game == GameTypeEnum.Bingo
-                ? plugin.getGameManager().getBingoManager().getAreaNameList()
-                : game == GameTypeEnum.AceRace
-                ? plugin.getGameManager().getAceRaceManager().getAreaNameList()
-                : game == GameTypeEnum.DragonEggCarnival
-                ? plugin.getGameManager().getDragonEggCarnivalManager().getAreaNameList()
-                : game == GameTypeEnum.ParkourWarrior
-                ? plugin.getGameManager().getParkourWarriorManager().getAreaNameList() : List.of();
+        List<String> maps =
+                game == GameTypeEnum.Bingo
+                        ? plugin.getGameManager().getBingoManager().getAreaNameList()
+                        : game == GameTypeEnum.AceRace
+                                ? plugin.getGameManager().getAceRaceManager().getAreaNameList()
+                                : game == GameTypeEnum.DragonEggCarnival
+                                        ? plugin.getGameManager()
+                                                .getDragonEggCarnivalManager()
+                                                .getAreaNameList()
+                                        : game == GameTypeEnum.ParkourWarrior
+                                                ? plugin.getGameManager()
+                                                        .getParkourWarriorManager()
+                                                        .getAreaNameList()
+                                                : List.of();
         return maps.stream().sorted(String.CASE_INSENSITIVE_ORDER).limit(3).toList();
     }
 
@@ -198,9 +274,16 @@ public final class DailyGameMenu {
         };
     }
 
-    private static ItemStack configured(String item, String state, Map<String, ?> placeholders, Material material) {
-        return ConfiguredGui.item(MENU_PATH + ".items." + item, state, placeholders, material,
-                Component.empty(), List.of(), false);
+    private static ItemStack configured(
+            String item, String state, Map<String, ?> placeholders, Material material) {
+        return ConfiguredGui.item(
+                MENU_PATH + ".items." + item,
+                state,
+                placeholders,
+                material,
+                Component.empty(),
+                List.of(),
+                false);
     }
 
     private static int slot(String item, int fallback) {

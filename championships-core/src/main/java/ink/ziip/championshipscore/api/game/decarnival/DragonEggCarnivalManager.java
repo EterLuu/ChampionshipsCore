@@ -1,15 +1,16 @@
 package ink.ziip.championshipscore.api.game.decarnival;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.api.game.decarnival.config.DragonEggCarnivalConfig;
+import ink.ziip.championshipscore.api.game.decarnival.runtime.DragonEggCarnivalArea;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
-import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
-import org.bukkit.World;
+import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 
-import java.util.concurrent.CompletableFuture;
-import org.bukkit.scheduler.BukkitScheduler;
+import org.bukkit.World;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import org.jetbrains.annotations.NotNull;
+import java.util.concurrent.CompletableFuture;
 
 public class DragonEggCarnivalManager extends BaseGameInstanceManager<DragonEggCarnivalArea> {
 
@@ -19,31 +20,21 @@ public class DragonEggCarnivalManager extends BaseGameInstanceManager<DragonEggC
 
     @Override
     public void load() {
-        BukkitScheduler scheduler = plugin.getServer().getScheduler();
-        File areasFolder = new File(plugin.getDataFolder() + File.separator + "decarnival");
-        areasFolder.mkdirs();
-
-        scheduler.runTask(plugin, task -> {
-            String[] areaList = areasFolder.list((d, n) -> n.toLowerCase().endsWith(".yml"));
-            if (areaList != null) {
-                for (String file : areaList) {
-                    String name = file.substring(0, file.length() - 4);
-                    DragonEggCarnivalArea area = new DragonEggCarnivalArea(plugin, new DragonEggCarnivalConfig(plugin, name), false, name);
-                    areas.put(name, area);
-                    area.preloadMap();
-                }
-            }
-        });
-    }
-
-    @Override
-    public void unload() {
-        for (DragonEggCarnivalArea area : areas.values()) {
-            if (area.getGameStageEnum() != GameStageEnum.WAITING) {
-                area.abortAndReset();
-            }
-        }
-        clearAreas();
+        deferMapLoad(
+                () -> {
+                    loadMapDefinitions(
+                            new File(plugin.getDataFolder(), "decarnival"),
+                            (name, file) -> {
+                                DragonEggCarnivalArea area =
+                                        new DragonEggCarnivalArea(
+                                                plugin,
+                                                new DragonEggCarnivalConfig(plugin, name),
+                                                false,
+                                                name);
+                                areas.put(name, area);
+                                area.preloadMap();
+                            });
+                });
     }
 
     @Override
@@ -60,14 +51,16 @@ public class DragonEggCarnivalManager extends BaseGameInstanceManager<DragonEggC
         dragonEggCarnivalConfig.bindConfiguredWorld("");
         dragonEggCarnivalConfig.saveOptions();
 
-        DragonEggCarnivalArea dragonEggCarnivalArea = new DragonEggCarnivalArea(plugin, dragonEggCarnivalConfig, true, name);
+        DragonEggCarnivalArea dragonEggCarnivalArea =
+                new DragonEggCarnivalArea(plugin, dragonEggCarnivalConfig, true, name);
         areas.put(name, dragonEggCarnivalArea);
 
         return true;
     }
 
     @Override
-    public synchronized boolean loadAreaAfterRename(@NotNull String name, @NotNull String worldName) {
+    public synchronized boolean loadAreaAfterRename(
+            @NotNull String name, @NotNull String worldName) {
         if (areas.containsKey(name)) return false;
         DragonEggCarnivalConfig config = new DragonEggCarnivalConfig(plugin, name);
         config.initializeConfiguration(plugin.getFolder());
@@ -79,8 +72,7 @@ public class DragonEggCarnivalManager extends BaseGameInstanceManager<DragonEggC
 
     public CompletableFuture<Boolean> saveArea(String name) {
         DragonEggCarnivalArea dragonEggCarnivalArea = areas.get(name);
-        if (dragonEggCarnivalArea == null)
-            return CompletableFuture.completedFuture(false);
+        if (dragonEggCarnivalArea == null) return CompletableFuture.completedFuture(false);
 
         if (dragonEggCarnivalArea.getGameStageEnum() != GameStageEnum.WAITING) {
             return CompletableFuture.completedFuture(false);

@@ -8,8 +8,10 @@ import java.util.Objects;
 import java.util.UUID;
 
 /** Strongly typed payload carried by a match command or event stream. */
-public sealed interface MatchInboundMessage permits MatchInboundMessage.Manifest,
-        MatchInboundMessage.Command, MatchInboundMessage.Event {
+public sealed interface MatchInboundMessage
+        permits MatchInboundMessage.Manifest,
+                MatchInboundMessage.Command,
+                MatchInboundMessage.Event {
     UUID messageId();
 
     UUID matchId();

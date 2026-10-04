@@ -51,9 +51,13 @@ public class BingoPortalRouter implements Listener {
     }
 
     private boolean shouldIntercept(World from, TeleportCause cause) {
-        if (from == null || (!from.getName().equals(overworldName) && !from.getName().equals(netherName)
-                && !from.getName().equals(endName))) return false;
-        return cause == null || cause == TeleportCause.NETHER_PORTAL || cause == TeleportCause.END_PORTAL
+        if (from == null
+                || (!from.getName().equals(overworldName)
+                        && !from.getName().equals(netherName)
+                        && !from.getName().equals(endName))) return false;
+        return cause == null
+                || cause == TeleportCause.NETHER_PORTAL
+                || cause == TeleportCause.END_PORTAL
                 || cause == TeleportCause.END_GATEWAY;
     }
 
@@ -64,16 +68,30 @@ public class BingoPortalRouter implements Listener {
         return switch (from.getWorld().getEnvironment()) {
             case NORMAL -> {
                 if (cause == TeleportCause.NETHER_PORTAL && nether != null) {
-                    yield new Target(scaled(nether, from.getX() / 8.0, from.getY(), from.getZ() / 8.0), 16, 16);
+                    yield new Target(
+                            scaled(nether, from.getX() / 8.0, from.getY(), from.getZ() / 8.0),
+                            16,
+                            16);
                 }
-                if ((cause == TeleportCause.END_PORTAL || cause == TeleportCause.END_GATEWAY) && end != null) {
+                if ((cause == TeleportCause.END_PORTAL || cause == TeleportCause.END_GATEWAY)
+                        && end != null) {
                     yield new Target(new Location(end, 100.5, 49.0, 0.5, 90f, 0f), 0, 0);
                 }
                 yield null;
             }
-            case NETHER -> overworld == null ? null : new Target(
-                    scaled(overworld, from.getX() * 8.0, from.getY(), from.getZ() * 8.0), 128, 16);
-            case THE_END -> overworld == null ? null : new Target(overworld.getSpawnLocation(), 0, 0);
+            case NETHER ->
+                    overworld == null
+                            ? null
+                            : new Target(
+                                    scaled(
+                                            overworld,
+                                            from.getX() * 8.0,
+                                            from.getY(),
+                                            from.getZ() * 8.0),
+                                    128,
+                                    16);
+            case THE_END ->
+                    overworld == null ? null : new Target(overworld.getSpawnLocation(), 0, 0);
             default -> null;
         };
     }
@@ -83,6 +101,5 @@ public class BingoPortalRouter implements Listener {
         return new Location(world, x, Math.max(5.0, Math.min(maxY, y)), z);
     }
 
-    private record Target(Location location, int searchRadius, int creationRadius) {
-    }
+    private record Target(Location location, int searchRadius, int creationRadius) {}
 }

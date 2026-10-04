@@ -1,23 +1,24 @@
 package ink.ziip.championshipscore.api.game.bingo.util;
 
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Adapts CC's dynamic {@link ChampionshipTeam} to the two values the bingo mechanics need from
- * a team: a stable string id (used to key per-team completions on a {@code GameTask}) and an Adventure
- * {@link TextColor} (used to tint the card map and chest GUI).
+ * Adapts CC's dynamic {@link ChampionshipTeam} to the two values the bingo mechanics need from a
+ * team: a stable string id (used to key per-team completions on a {@code GameTask}) and an
+ * Adventure {@link TextColor} (used to tint the card map and chest GUI).
  *
- * <p>CC teams are created at runtime from the database, so both values are derived on the fly.
- * The id is the team name (CC's {@link ChampionshipTeam} equals/hashCode are keyed on the name, so it
+ * <p>CC teams are created at runtime from the database, so both values are derived on the fly. The
+ * id is the team name (CC's {@link ChampionshipTeam} equals/hashCode are keyed on the name, so it
  * is unique and stable); the colour is parsed from the team's raw {@code #RRGGBB} colour value.
  */
 public final class BingoTeamAdapter {
-    private BingoTeamAdapter() {
-    }
+    private BingoTeamAdapter() {}
 
     /** Stable per-team id used to key completions. */
     public static String id(@NotNull ChampionshipTeam team) {

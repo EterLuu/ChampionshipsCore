@@ -4,15 +4,16 @@ import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.protocol.BingoPresentation;
 import ink.ziip.championshipscore.protocol.MatchState;
 import ink.ziip.championshipscore.shared.presentation.RuleIntroductionTimeline;
+
 import net.kyori.adventure.text.Component;
+
 import org.bukkit.entity.Player;
 
 import java.util.List;
 
 /** Manifest-driven rule presentation with the same 10-second first-section timing as Core. */
 final class WorkerPresentationService {
-    private WorkerPresentationService() {
-    }
+    private WorkerPresentationService() {}
 
     static int sectionAt(int elapsedSeconds, int durationSeconds, int sectionCount) {
         return RuleIntroductionTimeline.sectionAt(elapsedSeconds, durationSeconds, sectionCount);
@@ -42,7 +43,10 @@ final class WorkerPresentationService {
                 .replace("{viewer.tasks}", Integer.toString(viewerTasks));
     }
 
-    /** Bingo's time is already visible in the BossBar, so the sidebar mirrors Core-owned game stages. */
+    /**
+     * Bingo's time is already visible in the BossBar, so the sidebar mirrors Core-owned game
+     * stages.
+     */
     static String sidebarStatus(BingoPresentation presentation, MatchState state) {
         return switch (state) {
             case PREPARING, READY, ROUTING -> status(presentation, "preparation");

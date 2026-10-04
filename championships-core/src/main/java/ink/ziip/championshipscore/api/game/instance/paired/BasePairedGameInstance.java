@@ -4,13 +4,15 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
-import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
+import ink.ziip.championshipscore.api.game.model.GameStageEnum;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.api.game.spatial.TeleportPositions;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import ink.ziip.championshipscore.util.Utils;
+
 import lombok.Getter;
-import org.bukkit.Instrument;
+
 import org.bukkit.GameMode;
+import org.bukkit.Instrument;
 import org.bukkit.Location;
 import org.bukkit.Note;
 import org.bukkit.Sound;
@@ -22,13 +24,14 @@ import java.util.*;
 
 @Getter
 public abstract class BasePairedGameInstance extends BaseGameInstance {
-    @Nullable
-    protected ChampionshipTeam rightChampionshipTeam;
-    @Nullable
-    protected ChampionshipTeam leftChampionshipTeam;
+    @Nullable protected ChampionshipTeam rightChampionshipTeam;
+    @Nullable protected ChampionshipTeam leftChampionshipTeam;
 
-    public BasePairedGameInstance(ChampionshipsCore plugin, GameTypeEnum gameTypeEnum,
-                                  BaseListener gameHandler, BaseGameConfig gameConfig) {
+    public BasePairedGameInstance(
+            ChampionshipsCore plugin,
+            GameTypeEnum gameTypeEnum,
+            BaseListener gameHandler,
+            BaseGameConfig gameConfig) {
         super(plugin, gameTypeEnum, gameHandler, gameConfig);
     }
 
@@ -40,12 +43,16 @@ public abstract class BasePairedGameInstance extends BaseGameInstance {
         leftChampionshipTeam = null;
     }
 
-    public boolean tryStartGame(ChampionshipTeam rightChampionshipTeam, ChampionshipTeam leftChampionshipTeam) {
+    public boolean tryStartGame(
+            ChampionshipTeam rightChampionshipTeam, ChampionshipTeam leftChampionshipTeam) {
         if (getGameStageEnum() != GameStageEnum.WAITING
-                || rightChampionshipTeam == null || leftChampionshipTeam == null
+                || rightChampionshipTeam == null
+                || leftChampionshipTeam == null
                 || rightChampionshipTeam.equals(leftChampionshipTeam)
-                || rightChampionshipTeam.getMembers().isEmpty() || leftChampionshipTeam.getMembers().isEmpty()
-                || !Collections.disjoint(rightChampionshipTeam.getMembers(), leftChampionshipTeam.getMembers()))
+                || rightChampionshipTeam.getMembers().isEmpty()
+                || leftChampionshipTeam.getMembers().isEmpty()
+                || !Collections.disjoint(
+                        rightChampionshipTeam.getMembers(), leftChampionshipTeam.getMembers()))
             return false;
         cancelPostGameRoutingBeforeStart();
         setGameStageEnum(GameStageEnum.LOADING);
@@ -59,22 +66,37 @@ public abstract class BasePairedGameInstance extends BaseGameInstance {
     @Override
     public void addPlayerPointsToDatabase() {
         if (!isEventRun()) return;
-        // The base implementation owns the abort/settlement guard and the ordinary single-team path.
+        // The base implementation owns the abort/settlement guard and the ordinary single-team
+        // path.
         // Paired games build rival-aware rows below, so expose the same guard through this helper.
         if (!isSettlementAllowed()) return;
-        List<ink.ziip.championshipscore.api.rank.RankManager.PointSubmission> submissions = new ArrayList<>();
+        List<ink.ziip.championshipscore.api.rank.RankManager.PointSubmission> submissions =
+                new ArrayList<>();
         for (Map.Entry<UUID, Double> playerPointEntry : playerPoints.entrySet()) {
             if (playerPointEntry.getValue() != 0) {
-                ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(playerPointEntry.getKey());
+                ChampionshipTeam championshipTeam =
+                        plugin.getTeamManager().getTeamByPlayer(playerPointEntry.getKey());
                 if (championshipTeam != null) {
                     if (championshipTeam.equals(rightChampionshipTeam))
-                        submissions.add(new ink.ziip.championshipscore.api.rank.RankManager.PointSubmission(
-                                UUID.randomUUID(), playerPointEntry.getKey(), leftChampionshipTeam,
-                                gameTypeEnum, gameConfig.getAreaName(), "scc", playerPointEntry.getValue()));
+                        submissions.add(
+                                new ink.ziip.championshipscore.api.rank.RankManager.PointSubmission(
+                                        UUID.randomUUID(),
+                                        playerPointEntry.getKey(),
+                                        leftChampionshipTeam,
+                                        gameTypeEnum,
+                                        gameConfig.getAreaName(),
+                                        "scc",
+                                        playerPointEntry.getValue()));
                     if (championshipTeam.equals(leftChampionshipTeam))
-                        submissions.add(new ink.ziip.championshipscore.api.rank.RankManager.PointSubmission(
-                                UUID.randomUUID(), playerPointEntry.getKey(), rightChampionshipTeam,
-                                gameTypeEnum, gameConfig.getAreaName(), "scc", playerPointEntry.getValue()));
+                        submissions.add(
+                                new ink.ziip.championshipscore.api.rank.RankManager.PointSubmission(
+                                        UUID.randomUUID(),
+                                        playerPointEntry.getKey(),
+                                        rightChampionshipTeam,
+                                        gameTypeEnum,
+                                        gameConfig.getAreaName(),
+                                        "scc",
+                                        playerPointEntry.getValue()));
                 }
             }
         }
@@ -84,19 +106,15 @@ public abstract class BasePairedGameInstance extends BaseGameInstance {
 
     @Override
     public void sendMessageToAllGamePlayers(String message) {
-        if (rightChampionshipTeam != null)
-            rightChampionshipTeam.sendMessageToAll(message);
-        if (leftChampionshipTeam != null)
-            leftChampionshipTeam.sendMessageToAll(message);
+        if (rightChampionshipTeam != null) rightChampionshipTeam.sendMessageToAll(message);
+        if (leftChampionshipTeam != null) leftChampionshipTeam.sendMessageToAll(message);
         sendMessageToAllSpectators(message);
     }
 
     @Override
     public void sendActionBarToAllGamePlayers(String message) {
-        if (rightChampionshipTeam != null)
-            rightChampionshipTeam.sendActionBarToAll(message);
-        if (leftChampionshipTeam != null)
-            leftChampionshipTeam.sendActionBarToAll(message);
+        if (rightChampionshipTeam != null) rightChampionshipTeam.sendActionBarToAll(message);
+        if (leftChampionshipTeam != null) leftChampionshipTeam.sendActionBarToAll(message);
         sendActionBarToAllSpectators(message);
     }
 
@@ -105,55 +123,43 @@ public abstract class BasePairedGameInstance extends BaseGameInstance {
         Set<Player> players = new LinkedHashSet<>();
         if (rightChampionshipTeam != null)
             for (Player player : rightChampionshipTeam.getOnlinePlayers())
-                if (isManagedSpectator(player))
-                    players.add(player);
+                if (isManagedSpectator(player)) players.add(player);
         if (leftChampionshipTeam != null)
             for (Player player : leftChampionshipTeam.getOnlinePlayers())
-                if (isManagedSpectator(player))
-                    players.add(player);
+                if (isManagedSpectator(player)) players.add(player);
         return players;
     }
 
     @Override
     public void sendTitleToAllGamePlayers(String title, String subTitle) {
-        if (rightChampionshipTeam != null)
-            rightChampionshipTeam.sendTitleToAll(title, subTitle);
-        if (leftChampionshipTeam != null)
-            leftChampionshipTeam.sendTitleToAll(title, subTitle);
+        if (rightChampionshipTeam != null) rightChampionshipTeam.sendTitleToAll(title, subTitle);
+        if (leftChampionshipTeam != null) leftChampionshipTeam.sendTitleToAll(title, subTitle);
         sendTitleToAllSpectators(title, subTitle);
     }
 
     @Override
     public void changeLevelForAllGamePlayers(int level) {
-        if (rightChampionshipTeam != null)
-            rightChampionshipTeam.changeLevelForAll(Math.abs(level));
-        if (leftChampionshipTeam != null)
-            leftChampionshipTeam.changeLevelForAll(Math.abs(level));
+        if (rightChampionshipTeam != null) rightChampionshipTeam.changeLevelForAll(Math.abs(level));
+        if (leftChampionshipTeam != null) leftChampionshipTeam.changeLevelForAll(Math.abs(level));
         changeLevelToAllSpectators(level);
     }
 
     @Override
     public void changeGameModelForAllGamePlayers(GameMode gameMode) {
-        if (rightChampionshipTeam != null)
-            rightChampionshipTeam.setGameModeForAllPlayers(gameMode);
-        if (leftChampionshipTeam != null)
-            leftChampionshipTeam.setGameModeForAllPlayers(gameMode);
+        if (rightChampionshipTeam != null) rightChampionshipTeam.setGameModeForAllPlayers(gameMode);
+        if (leftChampionshipTeam != null) leftChampionshipTeam.setGameModeForAllPlayers(gameMode);
     }
 
     @Override
     public void setHealthForAllGamePlayers(double health) {
-        if (rightChampionshipTeam != null)
-            rightChampionshipTeam.setHealthForAllPlayers(health);
-        if (leftChampionshipTeam != null)
-            leftChampionshipTeam.setHealthForAllPlayers(health);
+        if (rightChampionshipTeam != null) rightChampionshipTeam.setHealthForAllPlayers(health);
+        if (leftChampionshipTeam != null) leftChampionshipTeam.setHealthForAllPlayers(health);
     }
 
     @Override
     public void setFoodLevelForAllGamePlayers(int level) {
-        if (rightChampionshipTeam != null)
-            rightChampionshipTeam.setFoodLevelForAllPlayers(level);
-        if (leftChampionshipTeam != null)
-            leftChampionshipTeam.setFoodLevelForAllPlayers(level);
+        if (rightChampionshipTeam != null) rightChampionshipTeam.setFoodLevelForAllPlayers(level);
+        if (leftChampionshipTeam != null) leftChampionshipTeam.setFoodLevelForAllPlayers(level);
     }
 
     @Override
@@ -161,28 +167,26 @@ public abstract class BasePairedGameInstance extends BaseGameInstance {
         int index = 0;
         if (rightChampionshipTeam != null) {
             for (Player player : rightChampionshipTeam.getOnlinePlayers())
-                player.teleport(Utils.getCollisionSafeTeleportLocation(location, index++));
+                player.teleport(
+                        TeleportPositions.getCollisionSafeTeleportLocation(location, index++));
         }
         if (leftChampionshipTeam != null) {
             for (Player player : leftChampionshipTeam.getOnlinePlayers())
-                player.teleport(Utils.getCollisionSafeTeleportLocation(location, index++));
+                player.teleport(
+                        TeleportPositions.getCollisionSafeTeleportLocation(location, index++));
         }
     }
 
     @Override
     public void clearEffectsForAllGamePlayers() {
-        if (rightChampionshipTeam != null)
-            rightChampionshipTeam.clearEffectsForAllPlayers();
-        if (leftChampionshipTeam != null)
-            leftChampionshipTeam.clearEffectsForAllPlayers();
+        if (rightChampionshipTeam != null) rightChampionshipTeam.clearEffectsForAllPlayers();
+        if (leftChampionshipTeam != null) leftChampionshipTeam.clearEffectsForAllPlayers();
     }
 
     @Override
     public void cleanInventoryForAllGamePlayers() {
-        if (rightChampionshipTeam != null)
-            rightChampionshipTeam.cleanInventoryForAllPlayers();
-        if (leftChampionshipTeam != null)
-            leftChampionshipTeam.cleanInventoryForAllPlayers();
+        if (rightChampionshipTeam != null) rightChampionshipTeam.cleanInventoryForAllPlayers();
+        if (leftChampionshipTeam != null) leftChampionshipTeam.cleanInventoryForAllPlayers();
     }
 
     @Override
@@ -196,10 +200,12 @@ public abstract class BasePairedGameInstance extends BaseGameInstance {
     @Override
     public void playNoteToAllGamePlayers(Instrument instrument, Note note) {
         if (rightChampionshipTeam != null)
-            rightChampionshipTeam.getOnlinePlayers()
+            rightChampionshipTeam
+                    .getOnlinePlayers()
                     .forEach(player -> player.playNote(player.getLocation(), instrument, note));
         if (leftChampionshipTeam != null)
-            leftChampionshipTeam.getOnlinePlayers()
+            leftChampionshipTeam
+                    .getOnlinePlayers()
                     .forEach(player -> player.playNote(player.getLocation(), instrument, note));
     }
 
@@ -208,14 +214,12 @@ public abstract class BasePairedGameInstance extends BaseGameInstance {
         UUID playerUUID = player.getUniqueId();
         if (rightChampionshipTeam != null) {
             for (UUID uuid : rightChampionshipTeam.getMembers()) {
-                if (playerUUID.equals(uuid))
-                    return false;
+                if (playerUUID.equals(uuid)) return false;
             }
         }
         if (leftChampionshipTeam != null) {
             for (UUID uuid : leftChampionshipTeam.getMembers()) {
-                if (playerUUID.equals(uuid))
-                    return false;
+                if (playerUUID.equals(uuid)) return false;
             }
         }
         return true;

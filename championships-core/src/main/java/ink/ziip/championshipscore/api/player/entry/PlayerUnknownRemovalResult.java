@@ -11,22 +11,21 @@ import java.util.UUID;
 public record PlayerUnknownRemovalResult(
         int examinedUuids,
         @NotNull Set<UUID> removedUuids,
-        @NotNull Map<String, Integer> removedRowsByTable
-) {
+        @NotNull Map<String, Integer> removedRowsByTable) {
     public PlayerUnknownRemovalResult {
         examinedUuids = Math.max(0, examinedUuids);
         removedUuids = Set.copyOf(removedUuids);
         Map<String, Integer> defensive = new LinkedHashMap<>();
-        removedRowsByTable.forEach((table, rows) -> {
-            if (table == null || table.isBlank()) throw new IllegalArgumentException("Table name is required");
-            defensive.put(table, Math.max(0, rows));
-        });
+        removedRowsByTable.forEach(
+                (table, rows) -> {
+                    if (table == null || table.isBlank())
+                        throw new IllegalArgumentException("Table name is required");
+                    defensive.put(table, Math.max(0, rows));
+                });
         removedRowsByTable = Map.copyOf(defensive);
     }
 
     public int removedRows() {
-        return removedRowsByTable.values().stream()
-                .mapToInt(Integer::intValue)
-                .sum();
+        return removedRowsByTable.values().stream().mapToInt(Integer::intValue).sum();
     }
 }

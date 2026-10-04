@@ -1,19 +1,20 @@
 package ink.ziip.championshipscore.api.game.config;
 
-import ink.ziip.championshipscore.api.game.acerace.AceRaceConfig;
-import ink.ziip.championshipscore.api.game.battlebox.BattleBoxConfig;
-import ink.ziip.championshipscore.api.game.buildmart.BuildMartConfig;
-import ink.ziip.championshipscore.api.game.decarnival.DragonEggCarnivalConfig;
-import ink.ziip.championshipscore.api.game.dodgebolt.DodgeboltConfig;
-import ink.ziip.championshipscore.api.game.hotycodydusky.HotyCodyDuskyConfig;
-import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagConfig;
-import ink.ziip.championshipscore.api.game.parkourwarrior.ParkourWarriorConfig;
-import ink.ziip.championshipscore.api.game.riptiderush.RiptideRushConfig;
-import ink.ziip.championshipscore.api.game.skywars.SkyWarsConfig;
-import ink.ziip.championshipscore.api.game.snowball.SnowballShowdownConfig;
-import ink.ziip.championshipscore.api.game.tgttos.TGTTOSConfig;
-import ink.ziip.championshipscore.api.game.tntrun.TNTRunConfig;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.api.game.acerace.config.AceRaceConfig;
+import ink.ziip.championshipscore.api.game.battlebox.config.BattleBoxConfig;
+import ink.ziip.championshipscore.api.game.buildmart.config.BuildMartConfig;
+import ink.ziip.championshipscore.api.game.decarnival.config.DragonEggCarnivalConfig;
+import ink.ziip.championshipscore.api.game.dodgebolt.config.DodgeboltConfig;
+import ink.ziip.championshipscore.api.game.hotycodydusky.config.HotyCodyDuskyConfig;
+import ink.ziip.championshipscore.api.game.parkourtag.config.ParkourTagConfig;
+import ink.ziip.championshipscore.api.game.parkourwarrior.config.ParkourWarriorConfig;
+import ink.ziip.championshipscore.api.game.riptiderush.config.RiptideRushConfig;
+import ink.ziip.championshipscore.api.game.skywars.config.SkyWarsConfig;
+import ink.ziip.championshipscore.api.game.snowball.config.SnowballShowdownConfig;
+import ink.ziip.championshipscore.api.game.tgttos.config.TGTTOSConfig;
+import ink.ziip.championshipscore.api.game.tntrun.config.TNTRunConfig;
+import ink.ziip.championshipscore.configuration.location.LocationConfig;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -26,34 +27,44 @@ import java.util.List;
 
 /** Resolves the first configured player-facing game spawn for admin/editing teleports. */
 public final class GameSpawnResolver {
-    private GameSpawnResolver() {
-    }
+    private GameSpawnResolver() {}
 
     @Nullable
     public static Location resolve(@NotNull BaseGameConfig config) {
-        Location location = switch (config) {
-            case BattleBoxConfig c -> first(c.getRightSpawnPoint(), c.getLeftSpawnPoint());
-            case ParkourTagConfig c -> first(c.getRightAreaChaserSpawnPoint(), c.getLeftAreaChaserSpawnPoint(),
-                    firstString(c.getRightAreaEscapeeSpawnPoints()), firstString(c.getLeftAreaEscapeeSpawnPoints()));
-            case SkyWarsConfig c -> firstString(c.getTeamSpawnPoints());
-            case TGTTOSConfig c -> tgttosSpawn(c);
-            case TNTRunConfig c -> firstString(c.getPlayerSpawnPoints());
-            case BuildMartConfig c -> {
-                var base = c.getBaseTemplate();
-                yield first(c.getSpectatorSpawnPoint(),
-                        base == null ? null : base.getPortalPoint(), c.getHubPortalPoint());
-            }
-            case ParkourWarriorConfig c -> c.getPlayerSpawnPoint();
-            case HotyCodyDuskyConfig c -> c.getPlayerSpawnPoint();
-            case AceRaceConfig c -> c.getStartSpawnPoint();
-            case RiptideRushConfig c -> c.getStartPoint();
-            case ink.ziip.championshipscore.api.game.laserbox.LaserBoxConfig c -> first(c.getRightSpawnPoint(), c.getLeftSpawnPoint());
-            case SnowballShowdownConfig c -> firstSectionLocation(c.getPlayerSpawnPoints());
-            case DragonEggCarnivalConfig c -> dragonEggCarnivalSpawn(c);
-            case DodgeboltConfig c -> firstString(c.getRightSpawnPoints(), c.getLeftSpawnPoints());
-            case ink.ziip.championshipscore.api.game.sulfursoccer.SulfurSoccerConfig c -> firstString(c.getRightSpawnPoints(), c.getLeftSpawnPoints());
-            default -> null;
-    };
+        Location location =
+                switch (config) {
+                    case BattleBoxConfig c -> first(c.getRightSpawnPoint(), c.getLeftSpawnPoint());
+                    case ParkourTagConfig c ->
+                            first(
+                                    c.getRightAreaChaserSpawnPoint(),
+                                    c.getLeftAreaChaserSpawnPoint(),
+                                    firstString(c.getRightAreaEscapeeSpawnPoints()),
+                                    firstString(c.getLeftAreaEscapeeSpawnPoints()));
+                    case SkyWarsConfig c -> firstString(c.getTeamSpawnPoints());
+                    case TGTTOSConfig c -> tgttosSpawn(c);
+                    case TNTRunConfig c -> firstString(c.getPlayerSpawnPoints());
+                    case BuildMartConfig c -> {
+                        var base = c.getBaseTemplate();
+                        yield first(
+                                c.getSpectatorSpawnPoint(),
+                                base == null ? null : base.getPortalPoint(),
+                                c.getHubPortalPoint());
+                    }
+                    case ParkourWarriorConfig c -> c.getPlayerSpawnPoint();
+                    case HotyCodyDuskyConfig c -> c.getPlayerSpawnPoint();
+                    case AceRaceConfig c -> c.getStartSpawnPoint();
+                    case RiptideRushConfig c -> c.getStartPoint();
+                    case ink.ziip.championshipscore.api.game.laserbox.config.LaserBoxConfig c ->
+                            first(c.getRightSpawnPoint(), c.getLeftSpawnPoint());
+                    case SnowballShowdownConfig c -> firstSectionLocation(c.getPlayerSpawnPoints());
+                    case DragonEggCarnivalConfig c -> dragonEggCarnivalSpawn(c);
+                    case DodgeboltConfig c ->
+                            firstString(c.getRightSpawnPoints(), c.getLeftSpawnPoints());
+                    case ink.ziip.championshipscore.api.game.sulfursoccer.config.SulfurSoccerConfig
+                                    c ->
+                            firstString(c.getRightSpawnPoints(), c.getLeftSpawnPoints());
+                    default -> null;
+                };
         Location fallback = location != null ? location : spectator(config);
         if (fallback != null && fallback.getWorld() == null) {
             World world = world(config);
@@ -75,10 +86,20 @@ public final class GameSpawnResolver {
         if (first == null || second == null) return null;
         World world = world(config);
         if (world == null) return null;
-        double x = (Math.min(first.getX(), second.getX()) + Math.max(first.getX(), second.getX())) / 2.0 + 0.5;
+        double x =
+                (Math.min(first.getX(), second.getX()) + Math.max(first.getX(), second.getX()))
+                                / 2.0
+                        + 0.5;
         double y = Math.max(first.getY(), second.getY()) + 1.0;
-        double z = (Math.min(first.getZ(), second.getZ()) + Math.max(first.getZ(), second.getZ())) / 2.0 + 0.5;
-        return new Location(world, x, y, z,
+        double z =
+                (Math.min(first.getZ(), second.getZ()) + Math.max(first.getZ(), second.getZ()))
+                                / 2.0
+                        + 0.5;
+        return new Location(
+                world,
+                x,
+                y,
+                z,
                 config.getPlayerSpawnYaw() == null ? 0f : config.getPlayerSpawnYaw(),
                 config.getPlayerSpawnPitch() == null ? 0f : config.getPlayerSpawnPitch());
     }
@@ -123,7 +144,7 @@ public final class GameSpawnResolver {
     private static Location parse(@Nullable String value) {
         if (value == null || value.isBlank()) return null;
         try {
-            return Utils.getLocation(value);
+            return LocationConfig.readLocation(value);
         } catch (RuntimeException ignored) {
             return null;
         }
@@ -137,11 +158,6 @@ public final class GameSpawnResolver {
 
     @Nullable
     private static Location spectator(@NotNull BaseGameConfig config) {
-        try {
-            Object value = config.getClass().getMethod("getSpectatorSpawnPoint").invoke(config);
-            return value instanceof Location location ? location : null;
-        } catch (ReflectiveOperationException ignored) {
-            return null;
-        }
+        return config.getSpectatorSpawnPoint();
     }
 }

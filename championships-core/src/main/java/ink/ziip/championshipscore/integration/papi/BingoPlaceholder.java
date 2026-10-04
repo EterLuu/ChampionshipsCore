@@ -1,11 +1,12 @@
 package ink.ziip.championshipscore.integration.papi;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.game.bingo.BingoArea;
 import ink.ziip.championshipscore.api.game.bingo.game.BingoRound;
+import ink.ziip.championshipscore.api.game.bingo.runtime.BingoArea;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -15,15 +16,18 @@ import java.util.List;
 /**
  * PlaceholderAPI expansion for the Bingo game (identifier {@code bingo}).
  *
- * <p>Exposes the shared {@code area_status_}/{@code area_timer_} placeholders inherited from
- * {@link BaseGamePlaceholder}, plus the bingo-specific placeholders used by the scoreboard:
+ * <p>Exposes the shared {@code area_status_}/{@code area_timer_} placeholders inherited from {@link
+ * BaseGamePlaceholder}, plus the bingo-specific placeholders used by the scoreboard:
+ *
  * <ul>
- *   <li>{@code %bingo_current_time%} / {@code %bingo_current_time_[areaName]%} - remaining countdown.</li>
+ *   <li>{@code %bingo_current_time%} / {@code %bingo_current_time_[areaName]%} - remaining
+ *       countdown.
  *   <li>{@code %bingo_current_tasks_team%} / {@code %bingo_current_tasks_team_[areaName]%} - the
- *       requesting player's team completed-task count.</li>
+ *       requesting player's team completed-task count.
  *   <li>{@code %bingo_area_rank_1_[areaName]%} .. {@code %bingo_area_rank_4_[areaName]%} - the top
- *       four teams by score, one per line, formatted {@code "name: score"}.</li>
+ *       four teams by score, one per line, formatted {@code "name: score"}.
  * </ul>
+ *
  * The {@code current_*} placeholders omit the area name and resolve to the requesting player's
  * current area; the {@code area_*} placeholders take an explicit area name with the same fallback.
  */
@@ -48,7 +52,8 @@ public class BingoPlaceholder extends BaseGamePlaceholder<BingoArea> {
 
         /* Countdown timer: %bingo_current_time% or %bingo_current_time_[areaName]% */
         if (params.equals("current_time") || params.startsWith("current_time_")) {
-            String areaName = params.equals("current_time") ? "" : params.substring("current_time_".length());
+            String areaName =
+                    params.equals("current_time") ? "" : params.substring("current_time_".length());
             BingoArea area = resolveAreaByName(areaName, offlinePlayer);
             if (area == null) {
                 return MessageConfig.PLACEHOLDER_NONE;
@@ -58,7 +63,10 @@ public class BingoPlaceholder extends BaseGamePlaceholder<BingoArea> {
 
         /* Requesting player's team completed-task count */
         if (params.equals("current_tasks_team") || params.startsWith("current_tasks_team_")) {
-            String areaName = params.equals("current_tasks_team") ? "" : params.substring("current_tasks_team_".length());
+            String areaName =
+                    params.equals("current_tasks_team")
+                            ? ""
+                            : params.substring("current_tasks_team_".length());
             BingoArea area = resolveAreaByName(areaName, offlinePlayer);
             Player player = offlinePlayer == null ? null : offlinePlayer.getPlayer();
             if (area == null || player == null) {

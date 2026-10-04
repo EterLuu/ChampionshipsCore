@@ -1,6 +1,8 @@
 # AuthBridge 与 AuthProxy 同步协议
 
-ChampionshipsCore 以 Minecraft 赛事服务端为主体独立运行。AuthBridge 和 AuthProxy 是可选连接器，用于接入外部身份平台并同步密码、准入、身份迁移与 DAILY 排行榜。本文定义双方使用的契约：AuthBridge 使用显式 `uuidSource` 执行身份操作，AuthProxy 在 Bungee 上固定为 `PROXY` 准入所有者，负责预登录准入与 UUID 转发。
+ChampionshipsCore 以 Minecraft 赛事服务端为主体独立运行。AuthBridge 和 AuthProxy 是可选连接器，用于接入外部身份平台并同步密码、准入、身份迁移与 DAILY 排行榜。身份平台的服务端实现不在本仓库中，本文描述连接器要求的兼容接口；服务端鉴权、角色和全局游标规则属于对接方需满足的协议要求。安装与配置见 [认证部署指南](auth-deployment.md)。
+
+本文定义双方使用的契约：AuthBridge 使用显式 `uuidSource` 执行身份操作，AuthProxy 在 Bungee 上固定为 `PROXY` 准入所有者，负责预登录准入与 UUID 转发。
 
 ## 1. 客户端鉴权与角色
 
@@ -16,21 +18,15 @@ SHA256_BODY
 
 请求必须携带 `X-CC-Key-Id`、`X-CC-Timestamp`、`X-CC-Request-Id` 和 `X-CC-Signature`。时间戳误差不超过 60 秒；请求 ID 在重放窗口内不得重复。PATH 只包含不含 query 的路由路径，query 参数由具体接口定义。
 
-身份平台通过 `BRIDGE_CLIENT_KEYS` 支持多个并发客户端：
+连接器配置 `api.key-id` 与 `api.hmac-secret`。时间戳使用 Unix 毫秒，正文以 UTF-8 计算 SHA-256；空请求体也计算其哈希。签名为上述五行字符串的 HMAC-SHA256 十六进制值，不在最后追加换行。
 
-```json
-[
-  {"keyId":"core-a","secret":"...","role":"AUTHBRIDGE_WRITER"},
-  {"keyId":"core-b","secret":"...","role":"AUTHBRIDGE_WRITER"},
-  {"keyId":"proxy-a","secret":"...","role":"AUTH_PROXY_READER"}
-]
-```
+对接服务需将独立 keyId 映射为最小权限角色：
 
-- `AUTHBRIDGE_WRITER`：Paper/AuthBridge 写入端，可访问 `/changes`、`/snapshot`、`/ack` 与控制任务。
-- `AUTH_PROXY_READER`：Bungee/AuthProxy 读取端，可访问 `/login-profile`、`/proxy-ban-snapshot` 与 `/proxy-changes`。
-- `LEGACY_FULL`：未配置 `BRIDGE_CLIENT_KEYS` 时由旧 `BRIDGE_KEY_ID` + `BRIDGE_HMAC_SECRET` 兜底，保留两类权限。
+- `AUTHBRIDGE_WRITER`：AuthBridge 写入端，访问账户变化、快照、ACK 和控制任务。
+- `AUTH_PROXY_READER`：AuthProxy 读取端，访问登录档案、准入快照和增量；不读取密码或提交 writer ACK。
+- `LEGACY_FULL`：兼容服务使用的全权限角色，不建议作为新部署的共享密钥。
 
-每个 `keyId` 必须唯一，secret 至少 32 字节。客户端从配置移除后，服务端记录只停用不删除。`BRIDGE_HMAC_SECRET` 除旧兼容模式外，仍是身份平台其他敏感配置使用的根密钥，不能因启用多客户端而删除。
+密钥至少 32 字节。角色注册与服务端密钥存储由外部平台管理，不是 Core 的环境变量。
 
 ## 2. 普通账户事件
 
@@ -93,7 +89,7 @@ AuthProxy 没有 `access.admission-owner` 配置；只要插件启用，它就�
 
 ## 6.1 AuthBridge 准入模式
 
-AuthBridge 的配置项如下，默认保持与 Bungee 部署兼容：
+AuthBridge 的配置项如下，默认由 Bungee/AuthProxy 决定准入：
 
 ```yaml
 access:

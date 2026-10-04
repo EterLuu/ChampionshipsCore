@@ -1,17 +1,18 @@
 package ink.ziip.championshipscore.api.game.area.prepare.buildmart;
 
-import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
-import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
-import ink.ziip.championshipscore.api.game.buildmart.BuildMartConfig;
-import ink.ziip.championshipscore.api.game.buildmart.BuildMartConfig.JumpPadZone;
+import ink.ziip.championshipscore.api.game.buildmart.config.BuildMartConfig;
+import ink.ziip.championshipscore.api.game.buildmart.config.BuildMartConfig.JumpPadZone;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+import ink.ziip.championshipscore.presentation.text.CoreMessages;
+
 import net.kyori.adventure.text.Component;
+
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
@@ -23,9 +24,17 @@ import java.util.List;
 /** List editor for the WorldEdit selections that act as Build Mart jump pads. */
 public final class BuildMartJumpPadListStep extends PrepareStep {
     public BuildMartJumpPadListStep() {
-        super("jump_pads", LegacyText.component(GuiConfig.text("map-editor.menus.step-list.games.build-mart.items.jump-pads.title")),
-                LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.build-mart.items.jump-pads.lore", 0)),
-                Material.ORANGE_WOOL, StepCaptureType.LIST);
+        super(
+                "jump_pads",
+                LegacyText.component(
+                        GuiConfig.text(
+                                "map-editor.menus.step-list.games.build-mart.items.jump-pads.title")),
+                LegacyText.component(
+                        GuiConfig.line(
+                                "map-editor.menus.step-list.games.build-mart.items.jump-pads.lore",
+                                0)),
+                Material.ORANGE_WOOL,
+                StepCaptureType.LIST);
     }
 
     private static BuildMartConfig cfg(SetupTarget target) {
@@ -45,20 +54,24 @@ public final class BuildMartJumpPadListStep extends PrepareStep {
     @Override
     public String listAdd(@NotNull PrepareSession session, @NotNull Player player) {
         JumpPadZone zone = selection(session, player);
-        if (zone == null) return Utils.formatAdminError(MessageConfig.MAP_EDITOR_BUILD_JUMP_PAD_SELECT_FIRST);
+        if (zone == null)
+            return CoreMessages.formatAdminError(
+                    MessageConfig.MAP_EDITOR_BUILD_JUMP_PAD_SELECT_FIRST);
         BuildMartConfig config = cfg(session.getTarget());
         List<JumpPadZone> zones = new ArrayList<>(config.getJumpPads());
         zones.add(zone);
         config.setJumpPads(zones);
         session.markDirty();
-        return Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_BUILD_JUMP_PAD_ADDED.replace("%count%", String.valueOf(zones.size())));
+        return CoreMessages.formatAdminSuccess(
+                MessageConfig.MAP_EDITOR_BUILD_JUMP_PAD_ADDED.replace(
+                        "%count%", String.valueOf(zones.size())));
     }
 
     @Override
     public String listClear(@NotNull PrepareSession session, @NotNull Player player) {
         cfg(session.getTarget()).setJumpPads(List.of());
         session.markDirty();
-        return Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_BUILD_JUMP_PAD_CLEARED);
+        return CoreMessages.formatAdminSuccess(MessageConfig.MAP_EDITOR_BUILD_JUMP_PAD_CLEARED);
     }
 
     @Override
@@ -74,13 +87,26 @@ public final class BuildMartJumpPadListStep extends PrepareStep {
             JumpPadZone zone = zones.get(i);
             Vector min = Vector.getMinimum(zone.pos1(), zone.pos2());
             Vector max = Vector.getMaximum(zone.pos1(), zone.pos2());
-            entries.add(new ListEntry(GuiConfig.text(
-                    "map-editor.menus.step-list.games.build-mart.items.jump-pad-entry.title",
-                    java.util.Map.of("number", i + 1)), List.of(
-                    GuiConfig.line("map-editor.menus.step-list.games.build-mart.items.jump-pad-entry.lore", 0,
-                            java.util.Map.of("range", String.format(java.util.Locale.ROOT, "%s → %s", format(min), format(max)))),
-                    GuiConfig.line("map-editor.menus.step-list.games.build-mart.items.jump-pad-entry.lore", 1,
-                            java.util.Map.of("top", formatY(max.getY() + 1))))));
+            entries.add(
+                    new ListEntry(
+                            GuiConfig.text(
+                                    "map-editor.menus.step-list.games.build-mart.items.jump-pad-entry.title",
+                                    java.util.Map.of("number", i + 1)),
+                            List.of(
+                                    GuiConfig.line(
+                                            "map-editor.menus.step-list.games.build-mart.items.jump-pad-entry.lore",
+                                            0,
+                                            java.util.Map.of(
+                                                    "range",
+                                                    String.format(
+                                                            java.util.Locale.ROOT,
+                                                            "%s → %s",
+                                                            format(min),
+                                                            format(max)))),
+                                    GuiConfig.line(
+                                            "map-editor.menus.step-list.games.build-mart.items.jump-pad-entry.lore",
+                                            1,
+                                            java.util.Map.of("top", formatY(max.getY() + 1))))));
         }
         return entries;
     }
@@ -88,26 +114,34 @@ public final class BuildMartJumpPadListStep extends PrepareStep {
     @Override
     public String listEdit(@NotNull PrepareSession session, @NotNull Player player, int index) {
         JumpPadZone zone = selection(session, player);
-        if (zone == null) return Utils.formatAdminError(MessageConfig.MAP_EDITOR_BUILD_JUMP_PAD_SELECT_FIRST);
+        if (zone == null)
+            return CoreMessages.formatAdminError(
+                    MessageConfig.MAP_EDITOR_BUILD_JUMP_PAD_SELECT_FIRST);
         List<JumpPadZone> zones = new ArrayList<>(cfg(session.getTarget()).getJumpPads());
         if (index < 0 || index >= zones.size()) return null;
         zones.set(index, zone);
         cfg(session.getTarget()).setJumpPads(zones);
         session.markDirty();
-        return Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_BUILD_JUMP_PAD_UPDATED.replace("%index%", String.valueOf(index + 1)));
+        return CoreMessages.formatAdminSuccess(
+                MessageConfig.MAP_EDITOR_BUILD_JUMP_PAD_UPDATED.replace(
+                        "%index%", String.valueOf(index + 1)));
     }
 
     @Override
-    public String listSetOrder(@NotNull PrepareSession session, @NotNull Player player,
-                               int index, int newOrder) {
+    public String listSetOrder(
+            @NotNull PrepareSession session, @NotNull Player player, int index, int newOrder) {
         List<JumpPadZone> zones = new ArrayList<>(cfg(session.getTarget()).getJumpPads());
         if (index < 0 || index >= zones.size() || newOrder < 1 || newOrder > zones.size())
-            return Utils.formatAdminError(MessageConfig.MAP_EDITOR_STEP_SERIAL_NUMBER_BETWEEN.replace("%max%", String.valueOf(zones.size())));
+            return CoreMessages.formatAdminError(
+                    MessageConfig.MAP_EDITOR_STEP_SERIAL_NUMBER_BETWEEN.replace(
+                            "%max%", String.valueOf(zones.size())));
         JumpPadZone moved = zones.remove(index);
         zones.add(newOrder - 1, moved);
         cfg(session.getTarget()).setJumpPads(zones);
         session.markDirty();
-        return Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_BUILD_JUMP_PAD_ADJUSTED.replace("%order%", String.valueOf(newOrder)));
+        return CoreMessages.formatAdminSuccess(
+                MessageConfig.MAP_EDITOR_BUILD_JUMP_PAD_ADJUSTED.replace(
+                        "%order%", String.valueOf(newOrder)));
     }
 
     @Override
@@ -117,22 +151,29 @@ public final class BuildMartJumpPadListStep extends PrepareStep {
         zones.remove(index);
         cfg(session.getTarget()).setJumpPads(zones);
         session.markDirty();
-        return Utils.formatAdminSuccess(MessageConfig.MAP_EDITOR_BUILD_JUMP_PAD_ADJUSTED.replace("%order%", String.valueOf(index + 1)));
+        return CoreMessages.formatAdminSuccess(
+                MessageConfig.MAP_EDITOR_BUILD_JUMP_PAD_ADJUSTED.replace(
+                        "%order%", String.valueOf(index + 1)));
     }
 
     @Override
     public @NotNull Component listAddLabel() {
-        return LegacyText.component(GuiConfig.text("map-editor.menus.step-list.games.build-mart.items.jump-pad-add.title"));
+        return LegacyText.component(
+                GuiConfig.text(
+                        "map-editor.menus.step-list.games.build-mart.items.jump-pad-add.title"));
     }
 
     @Override
     public @NotNull Component listAddHint() {
-        return LegacyText.component(GuiConfig.line("map-editor.menus.step-list.games.build-mart.items.jump-pad-add.lore", 0));
+        return LegacyText.component(
+                GuiConfig.line(
+                        "map-editor.menus.step-list.games.build-mart.items.jump-pad-add.lore", 0));
     }
 
     private static JumpPadZone selection(@NotNull PrepareSession session, @NotNull Player player) {
         try {
-            Vector[] selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, true);
+            Vector[] selection =
+                    session.getPlugin().getWorldEditManager().getPlayerSelection(player, true);
             return new JumpPadZone(selection[0], selection[1]);
         } catch (Exception ignored) {
             return null;

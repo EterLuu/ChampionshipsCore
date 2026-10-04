@@ -1,13 +1,15 @@
 package ink.ziip.championshipscore.api.game.frostbite;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.api.game.frostbite.config.FrostbiteConfig;
+import ink.ziip.championshipscore.api.game.frostbite.runtime.FrostbiteArea;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
-import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
+import ink.ziip.championshipscore.api.game.model.GameStageEnum;
+
 import org.bukkit.World;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.util.Arrays;
 
 public final class FrostbiteManager extends BaseGameInstanceManager<FrostbiteArea> {
     public FrostbiteManager(ChampionshipsCore plugin) {
@@ -16,29 +18,18 @@ public final class FrostbiteManager extends BaseGameInstanceManager<FrostbiteAre
 
     @Override
     public void load() {
-        File folder = new File(plugin.getDataFolder(), "frostbite");
-        folder.mkdirs();
-        plugin.getServer().getScheduler().runTask(plugin, ignored -> {
-            String[] files = folder.list((directory, name) -> name.toLowerCase().endsWith(".yml"));
-            if (files == null) return;
-            Arrays.sort(files);
-            for (String file : files) {
-                String name = file.substring(0, file.length() - 4);
-                FrostbiteConfig config = new FrostbiteConfig(plugin, name);
-                config.initializeConfiguration(plugin.getFolder());
-                FrostbiteArea area = new FrostbiteArea(plugin, config, false, name);
-                areas.put(name, area);
-                area.preloadMap();
-            }
-        });
-    }
-
-    @Override
-    public void unload() {
-        for (FrostbiteArea area : areas.values()) {
-            if (area.getGameStageEnum() != GameStageEnum.WAITING) area.abortAndReset();
-        }
-        clearAreas();
+        deferMapLoad(
+                () -> {
+                    loadMapDefinitions(
+                            new File(plugin.getDataFolder(), "frostbite"),
+                            (name, file) -> {
+                                FrostbiteConfig config = new FrostbiteConfig(plugin, name);
+                                config.initializeConfiguration(plugin.getFolder());
+                                FrostbiteArea area = new FrostbiteArea(plugin, config, false, name);
+                                areas.put(name, area);
+                                area.preloadMap();
+                            });
+                });
     }
 
     @Override
@@ -59,7 +50,8 @@ public final class FrostbiteManager extends BaseGameInstanceManager<FrostbiteAre
     }
 
     @Override
-    public synchronized boolean loadAreaAfterRename(@NotNull String name, @NotNull String worldName) {
+    public synchronized boolean loadAreaAfterRename(
+            @NotNull String name, @NotNull String worldName) {
         if (areas.containsKey(name)) return false;
         FrostbiteConfig config = new FrostbiteConfig(plugin, name);
         config.initializeConfiguration(plugin.getFolder());

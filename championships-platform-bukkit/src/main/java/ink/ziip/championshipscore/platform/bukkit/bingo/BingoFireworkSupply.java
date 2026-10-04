@@ -20,7 +20,9 @@ public final class BingoFireworkSupply {
     }
 
     public static void give(Player player) {
-        if (player == null || !player.isOnline() || player.isDead()
+        if (player == null
+                || !player.isOnline()
+                || player.isDead()
                 || player.getGameMode() == GameMode.SPECTATOR) return;
         ItemStack rocket = new ItemStack(Material.FIREWORK_ROCKET, 1);
         FireworkMeta meta = (FireworkMeta) rocket.getItemMeta();

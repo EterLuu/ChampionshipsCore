@@ -1,16 +1,18 @@
 package ink.ziip.championshipscore.api.player.entry;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import ink.ziip.championshipscore.api.player.event.PlayerUnknownRemovalEvent;
+
+import org.junit.jupiter.api.Test;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
-import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class PlayerUnknownRemovalTest {
     @Test
@@ -39,7 +41,8 @@ class PlayerUnknownRemovalTest {
         assertEquals(Set.of(removed), result.removedUuids());
         assertEquals(4, result.removedRows());
         assertEquals(1, result.removedRowsByTable().get("players"));
-        assertThrows(UnsupportedOperationException.class,
+        assertThrows(
+                UnsupportedOperationException.class,
                 () -> result.removedRowsByTable().put("teams", 1));
     }
 
@@ -47,7 +50,8 @@ class PlayerUnknownRemovalTest {
     void rejectsInvalidTableNames() {
         Map<String, Integer> rows = new LinkedHashMap<>();
         rows.put(null, 1);
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(
+                IllegalArgumentException.class,
                 () -> new PlayerUnknownRemovalResult(1, Set.of(), rows));
     }
 }

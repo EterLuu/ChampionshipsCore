@@ -1,11 +1,10 @@
 package ink.ziip.championshipscore.authproxy;
 
-import ink.ziip.championshipscore.auth.AuthIdentity;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
+import ink.ziip.championshipscore.auth.AuthIdentity;
+
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -17,6 +16,9 @@ import java.util.HexFormat;
 import java.util.Set;
 import java.util.UUID;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+
 final class ProxyIdentityClient {
     private static final String LOGIN_PROFILE_PREFIX = "/api/internal/bridge/login-profile/";
     private static final String PROXY_CHANGES_PATH = "/api/internal/bridge/proxy-changes";
@@ -27,18 +29,30 @@ final class ProxyIdentityClient {
     private final byte[] secret;
     private final Duration requestTimeout;
     private final HttpClient client;
-    private final ObjectMapper mapper = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    private final ObjectMapper mapper =
+            new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-    ProxyIdentityClient(String baseUrl, String keyId, String secret, boolean allowInsecurePrivateHttp,
-                        Duration connectTimeout, Duration requestTimeout) {
-        this.baseUri = URI.create(baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl);
+    ProxyIdentityClient(
+            String baseUrl,
+            String keyId,
+            String secret,
+            boolean allowInsecurePrivateHttp,
+            Duration connectTimeout,
+            Duration requestTimeout) {
+        this.baseUri =
+                URI.create(
+                        baseUrl.endsWith("/")
+                                ? baseUrl.substring(0, baseUrl.length() - 1)
+                                : baseUrl);
         String scheme = baseUri.getScheme();
         if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
             throw new IllegalArgumentException("Bridge API URL must use HTTP or HTTPS");
         }
-        if ("http".equalsIgnoreCase(scheme) && !isLoopback(baseUri.getHost()) && !allowInsecurePrivateHttp) {
-            throw new IllegalArgumentException("Non-loopback HTTP requires api.allow-insecure-private-http=true");
+        if ("http".equalsIgnoreCase(scheme)
+                && !isLoopback(baseUri.getHost())
+                && !allowInsecurePrivateHttp) {
+            throw new IllegalArgumentException(
+                    "Non-loopback HTTP requires api.allow-insecure-private-http=true");
         }
         if (secret == null || secret.getBytes(StandardCharsets.UTF_8).length < 32) {
             throw new IllegalArgumentException("Bridge HMAC secret must contain at least 32 bytes");
@@ -60,27 +74,36 @@ final class ProxyIdentityClient {
     }
 
     ProxyChangeBatch changesAfter(String cursor) throws Exception {
-        if (cursor == null || !cursor.matches("^\\d{1,19}$")) throw new IllegalArgumentException("Invalid bridge cursor");
-        return signedGet(PROXY_CHANGES_PATH + "?after=" + cursor + "&limit=100", PROXY_CHANGES_PATH, ProxyChangeBatch.class);
+        if (cursor == null || !cursor.matches("^\\d{1,19}$"))
+            throw new IllegalArgumentException("Invalid bridge cursor");
+        return signedGet(
+                PROXY_CHANGES_PATH + "?after=" + cursor + "&limit=100",
+                PROXY_CHANGES_PATH,
+                ProxyChangeBatch.class);
     }
 
     private <T> T signedGet(String path, Class<T> responseType) throws Exception {
         return signedGet(path, path, responseType);
     }
 
-    private <T> T signedGet(String requestPath, String signaturePath, Class<T> responseType) throws Exception {
+    private <T> T signedGet(String requestPath, String signaturePath, Class<T> responseType)
+            throws Exception {
         String timestamp = Long.toString(System.currentTimeMillis());
         String requestId = UUID.randomUUID().toString();
-        HttpRequest request = HttpRequest.newBuilder(baseUri.resolve(requestPath))
-                .timeout(requestTimeout)
-                .header("Accept", "application/json")
-                .header("X-CC-Key-Id", keyId)
-                .header("X-CC-Timestamp", timestamp)
-                .header("X-CC-Request-Id", requestId)
-                .header("X-CC-Signature", sign("GET", signaturePath, timestamp, requestId, ""))
-                .GET()
-                .build();
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        HttpRequest request =
+                HttpRequest.newBuilder(baseUri.resolve(requestPath))
+                        .timeout(requestTimeout)
+                        .header("Accept", "application/json")
+                        .header("X-CC-Key-Id", keyId)
+                        .header("X-CC-Timestamp", timestamp)
+                        .header("X-CC-Request-Id", requestId)
+                        .header(
+                                "X-CC-Signature",
+                                sign("GET", signaturePath, timestamp, requestId, ""))
+                        .GET()
+                        .build();
+        HttpResponse<String> response =
+                client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         if (response.statusCode() != 200) throw new BridgeHttpException(response.statusCode());
         T profile = mapper.readValue(response.body(), responseType);
         if (profile instanceof LoginProfile loginProfile) validateLoginProfile(loginProfile);
@@ -88,12 +111,15 @@ final class ProxyIdentityClient {
     }
 
     private static void validateLoginProfile(LoginProfile profile) {
-        if (profile.status == null) throw new IllegalStateException("Bridge login profile omitted status");
-        if (!Set.of("ALLOWED", "UNBOUND", "BANNED", "REVOKED", "MAINTENANCE").contains(profile.status)) {
+        if (profile.status == null)
+            throw new IllegalStateException("Bridge login profile omitted status");
+        if (!Set.of("ALLOWED", "UNBOUND", "BANNED", "REVOKED", "MAINTENANCE")
+                .contains(profile.status)) {
             throw new IllegalStateException("Bridge login profile returned unsupported status");
         }
         if ("ALLOWED".equals(profile.status)) {
-            if (profile.uuid == null) throw new IllegalStateException("Allowed login profile omitted UUID");
+            if (profile.uuid == null)
+                throw new IllegalStateException("Allowed login profile omitted UUID");
             AuthIdentity.parseUuid(profile.uuid, "login profile UUID");
         }
     }
@@ -109,15 +135,28 @@ final class ProxyIdentityClient {
         return false;
     }
 
-    private String sign(String method, String path, String timestamp, String requestId, String body) throws Exception {
-        String bodyHash = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(body.getBytes(StandardCharsets.UTF_8)));
+    private String sign(String method, String path, String timestamp, String requestId, String body)
+            throws Exception {
+        String bodyHash =
+                HexFormat.of()
+                        .formatHex(
+                                MessageDigest.getInstance("SHA-256")
+                                        .digest(body.getBytes(StandardCharsets.UTF_8)));
         Mac mac = Mac.getInstance("HmacSHA256");
         mac.init(new SecretKeySpec(secret, "HmacSHA256"));
-        return HexFormat.of().formatHex(mac.doFinal((method + "\n" + path + "\n" + timestamp + "\n" + requestId + "\n" + bodyHash).getBytes(StandardCharsets.UTF_8)));
+        return HexFormat.of()
+                .formatHex(
+                        mac.doFinal(
+                                (method + "\n" + path + "\n" + timestamp + "\n" + requestId + "\n"
+                                                + bodyHash)
+                                        .getBytes(StandardCharsets.UTF_8)));
     }
 
     private static boolean isLoopback(String host) {
-        return "localhost".equalsIgnoreCase(host) || "127.0.0.1".equals(host) || "::1".equals(host) || "[::1]".equals(host);
+        return "localhost".equalsIgnoreCase(host)
+                || "127.0.0.1".equals(host)
+                || "::1".equals(host)
+                || "[::1]".equals(host);
     }
 
     static final class LoginProfile {

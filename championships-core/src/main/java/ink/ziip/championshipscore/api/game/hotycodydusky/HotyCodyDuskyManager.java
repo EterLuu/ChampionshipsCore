@@ -1,60 +1,67 @@
 package ink.ziip.championshipscore.api.game.hotycodydusky;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.api.game.hotycodydusky.config.HotyCodyDuskyConfig;
+import ink.ziip.championshipscore.api.game.hotycodydusky.runtime.HotyCodyDuskyTeamArea;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
-import ink.ziip.championshipscore.api.object.stage.GameStageEnum;
-import org.bukkit.scheduler.BukkitScheduler;
 
 import java.io.File;
+import java.util.HashSet;
 
+/** A map registers one round owner, independently of its physical copy count. */
 public class HotyCodyDuskyManager extends BaseGameInstanceManager<HotyCodyDuskyTeamArea> {
-
-    public HotyCodyDuskyManager(ChampionshipsCore championshipsCore) {
-        super(championshipsCore);
+    public HotyCodyDuskyManager(ChampionshipsCore plugin) {
+        super(plugin);
     }
 
     @Override
     public void load() {
-        if (!loadArenaWorld("hotycodydusky"))
-            return;
-
-        BukkitScheduler scheduler = plugin.getServer().getScheduler();
-        File areasFolder = new File(plugin.getDataFolder() + File.separator + "hotycodydusky");
-        areasFolder.mkdirs();
-
-        scheduler.runTask(plugin, task -> {
-            String[] areaList = areasFolder.list((d, n) -> n.toLowerCase().endsWith(".yml"));
-            if (areaList != null) {
-                for (String file : areaList) {
-                    String name = file.substring(0, file.length() - 4);
-                    areas.put(name, new HotyCodyDuskyTeamArea(plugin, new HotyCodyDuskyConfig(plugin, name)));
-                }
-            }
-        });
-    }
-
-    @Override
-    public void unload() {
-        for (HotyCodyDuskyTeamArea area : areas.values()) {
-            if (area.getGameStageEnum() != GameStageEnum.WAITING) {
-                area.abortAndReset();
-            }
-        }
-        clearAreas();
+        deferMapLoad(
+                () -> {
+                    var loadedWorlds = new HashSet<String>();
+                    loadMapDefinitions(
+                            new File(plugin.getDataFolder(), "hotycodydusky"),
+                            (name, file) -> {
+                                var config = new HotyCodyDuskyConfig(plugin, name);
+                                config.initializeConfiguration(plugin.getFolder());
+                                String world = config.getConfiguredWorld();
+                                if (!world.isBlank()
+                                        && loadedWorlds.add(world)
+                                        && !loadArenaWorld(world)) return;
+                                config.loadFileOptions();
+                                areas.put(name, new HotyCodyDuskyTeamArea(plugin, config));
+                            });
+                });
     }
 
     @Override
     public boolean addArea(String name) {
-        if (areas.containsKey(name))
-            return false;
+        return addArea(name, "");
+    }
 
-        HotyCodyDuskyConfig hotyCodyDuskyConfig = new HotyCodyDuskyConfig(plugin, name);
-        hotyCodyDuskyConfig.initializeConfiguration(plugin.getFolder());
-        hotyCodyDuskyConfig.setAreaName(name);
-        hotyCodyDuskyConfig.saveOptions();
+    @Override
+    public boolean addArea(String name, String world) {
+        if (areas.containsKey(name)) return false;
+        var config = new HotyCodyDuskyConfig(plugin, name);
+        config.initializeConfiguration(plugin.getFolder());
+        config.setAreaName(name);
+        config.bindConfiguredWorld("");
+        config.beginPrepareDraft();
+        areas.put(name, new HotyCodyDuskyTeamArea(plugin, config));
+        return true;
+    }
 
-        HotyCodyDuskyTeamArea hotyCodyDuskyTeamArea = areas.putIfAbsent(name, new HotyCodyDuskyTeamArea(plugin, hotyCodyDuskyConfig));
+    @Override
+    public synchronized boolean loadAreaAfterRename(String name, String world) {
+        if (areas.containsKey(name)) return false;
+        var config = new HotyCodyDuskyConfig(plugin, name);
+        config.initializeConfiguration(plugin.getFolder());
+        areas.put(name, new HotyCodyDuskyTeamArea(plugin, config));
+        return true;
+    }
 
-        return hotyCodyDuskyTeamArea == null;
+    @Override
+    protected boolean allowsSharedMapWorlds() {
+        return true;
     }
 }

@@ -1,5 +1,9 @@
 package ink.ziip.championshipscore.worker;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.junit.jupiter.api.Test;
 
 import java.util.HashSet;
@@ -9,10 +13,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class WorkerScatterPlanTest {
     @Test
@@ -37,14 +37,23 @@ class WorkerScatterPlanTest {
     void expandedSearchAreasKeepTeamsInSeparateTerritories() {
         for (int count : List.of(2, 3, 4, 8, 16, 17, 64)) {
             var plan = WorkerScatterPlan.create(teamIds(count), new Random(count));
-            var expanded = plan.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
-                    entry -> WorkerScatterPlan.expand(entry.getValue(), count)));
+            var expanded =
+                    plan.entrySet().stream()
+                            .collect(
+                                    Collectors.toMap(
+                                            Map.Entry::getKey,
+                                            entry ->
+                                                    WorkerScatterPlan.expand(
+                                                            entry.getValue(), count)));
             assertBufferedAndSeparated(expanded, count == 64 ? 650 : 1_024);
-            plan.forEach((team, preferred) -> {
-                var area = expanded.get(team);
-                assertTrue(area.minX() <= preferred.minX() && area.maxX() >= preferred.maxX());
-                assertTrue(area.minZ() <= preferred.minZ() && area.maxZ() >= preferred.maxZ());
-            });
+            plan.forEach(
+                    (team, preferred) -> {
+                        var area = expanded.get(team);
+                        assertTrue(
+                                area.minX() <= preferred.minX() && area.maxX() >= preferred.maxX());
+                        assertTrue(
+                                area.minZ() <= preferred.minZ() && area.maxZ() >= preferred.maxZ());
+                    });
         }
     }
 
@@ -65,16 +74,20 @@ class WorkerScatterPlanTest {
 
     @Test
     void randomizesTeamAssignmentsAndHandlesEmptySoloAndDuplicateTeams() {
-        assertNotEquals(WorkerScatterPlan.create(teamIds(16), new Random(1)),
+        assertNotEquals(
+                WorkerScatterPlan.create(teamIds(16), new Random(1)),
                 WorkerScatterPlan.create(teamIds(16), new Random(2)));
         assertEquals(Map.of(), WorkerScatterPlan.create(List.of(), new Random(0)));
-        assertEquals(Map.of(42, new WorkerScatterPlan.SearchArea(-5_000, 4_999, -5_000, 4_999)),
+        assertEquals(
+                Map.of(42, new WorkerScatterPlan.SearchArea(-5_000, 4_999, -5_000, 4_999)),
                 WorkerScatterPlan.create(List.of(42, 42), new Random(0)));
-        assertEquals(Set.of(-1, 42, 100),
+        assertEquals(
+                Set.of(-1, 42, 100),
                 WorkerScatterPlan.create(List.of(42, -1, 100, 42), new Random(0)).keySet());
     }
 
-    private static void assertBufferedAndSeparated(Map<Integer, WorkerScatterPlan.SearchArea> plan, int distance) {
+    private static void assertBufferedAndSeparated(
+            Map<Integer, WorkerScatterPlan.SearchArea> plan, int distance) {
         Set<WorkerScatterPlan.SearchArea> unique = new HashSet<>(plan.values());
         assertEquals(plan.size(), unique.size());
         List<WorkerScatterPlan.SearchArea> areas = List.copyOf(plan.values());
@@ -84,15 +97,21 @@ class WorkerScatterPlanTest {
             assertTrue(area.minZ() >= -5_000 && area.maxZ() < 5_000);
             for (int other = index + 1; other < areas.size(); other++) {
                 assertTrue(minimumDistance(area, areas.get(other)) >= distance);
-                assertTrue(Math.floorDiv(area.maxX(), 512) < Math.floorDiv(areas.get(other).minX(), 512)
-                        || Math.floorDiv(areas.get(other).maxX(), 512) < Math.floorDiv(area.minX(), 512)
-                        || Math.floorDiv(area.maxZ(), 512) < Math.floorDiv(areas.get(other).minZ(), 512)
-                        || Math.floorDiv(areas.get(other).maxZ(), 512) < Math.floorDiv(area.minZ(), 512));
+                assertTrue(
+                        Math.floorDiv(area.maxX(), 512)
+                                        < Math.floorDiv(areas.get(other).minX(), 512)
+                                || Math.floorDiv(areas.get(other).maxX(), 512)
+                                        < Math.floorDiv(area.minX(), 512)
+                                || Math.floorDiv(area.maxZ(), 512)
+                                        < Math.floorDiv(areas.get(other).minZ(), 512)
+                                || Math.floorDiv(areas.get(other).maxZ(), 512)
+                                        < Math.floorDiv(area.minZ(), 512));
             }
         }
     }
 
-    private static double minimumDistance(WorkerScatterPlan.SearchArea first, WorkerScatterPlan.SearchArea second) {
+    private static double minimumDistance(
+            WorkerScatterPlan.SearchArea first, WorkerScatterPlan.SearchArea second) {
         int dx = Math.max(0, Math.max(first.minX() - second.maxX(), second.minX() - first.maxX()));
         int dz = Math.max(0, Math.max(first.minZ() - second.maxZ(), second.minZ() - first.maxZ()));
         return Math.hypot(dx, dz);

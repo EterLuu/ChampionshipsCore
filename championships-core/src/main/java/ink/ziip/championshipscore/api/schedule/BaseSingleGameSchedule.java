@@ -3,12 +3,14 @@ package ink.ziip.championshipscore.api.schedule;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.BaseManager;
-import ink.ziip.championshipscore.api.object.game.GameTypeEnum;
-import ink.ziip.championshipscore.api.object.game.GameRunMode;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.api.game.model.GameRunMode;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageConfig;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.logging.LogText;
+import ink.ziip.championshipscore.presentation.text.CoreMessages;
+
 import lombok.Getter;
+
 import org.bukkit.Sound;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scheduler.BukkitTask;
@@ -19,15 +21,15 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
     protected final BaseListener handler;
     protected final GameTypeEnum gameTypeEnum;
     protected final ScheduleManager scheduleManager;
-    @Getter
-    protected int subRound;
+    @Getter protected int subRound;
     protected int timer;
-    @Getter
-    protected boolean enabled;
+    @Getter protected boolean enabled;
     protected BukkitTask firstStartTask;
     protected BukkitTask startTask;
+    private long scheduleGeneration;
 
-    public BaseSingleGameSchedule(ChampionshipsCore championshipsCore, BaseListener handler, GameTypeEnum gameTypeEnum) {
+    public BaseSingleGameSchedule(
+            ChampionshipsCore championshipsCore, BaseListener handler, GameTypeEnum gameTypeEnum) {
         super(championshipsCore);
         scheduleManager = plugin.getScheduleManager();
         scheduler = plugin.getServer().getScheduler();
@@ -37,9 +39,7 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
     }
 
     @Override
-    public void load() {
-
-    }
+    public void load() {}
 
     @Override
     public void unload() {
@@ -55,34 +55,39 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
         }
 
         plugin.getScheduleManager().addRound(gameTypeEnum);
+        scheduleGeneration++;
         enabled = true;
         timer = 10;
         subRound = 0;
-        firstStartTask = scheduler.runTaskTimer(plugin, () -> {
+        firstStartTask =
+                scheduler.runTaskTimer(
+                        plugin,
+                        () -> {
+                            scheduleManager.showRoundPreparationCountdown(gameTypeEnum, 1, timer);
 
-            scheduleManager.showRoundPreparationCountdown(gameTypeEnum, 1, timer);
+                            if (timer == 10) {
+                                CoreMessages.sendMessageToAllPlayers(
+                                        scheduleManager.getScheduleStrings(gameTypeEnum));
+                            }
 
-            if (timer == 10) {
-                Utils.sendMessageToAllPlayers(scheduleManager.getScheduleStrings(gameTypeEnum));
-            }
+                            if (timer == 5) {
+                                CoreMessages.sendMessageToAllPlayers(
+                                        scheduleManager.getSchedulePointsStrings(gameTypeEnum));
+                            }
 
-            if (timer == 5) {
-                Utils.sendMessageToAllPlayers(scheduleManager.getSchedulePointsStrings(gameTypeEnum));
-            }
-
-            if (timer == 0) {
-                subRound = 0;
-                startRound();
-                if (firstStartTask != null)
-                    firstStartTask.cancel();
-            }
-            timer--;
-        }, 0, 20L);
+                            if (timer == 0) {
+                                subRound = 0;
+                                startRound();
+                                if (firstStartTask != null) firstStartTask.cancel();
+                            }
+                            timer--;
+                        },
+                        0,
+                        20L);
     }
 
     public void startRound() {
-        if (!enabled)
-            return;
+        if (!enabled) return;
 
         subRound++;
         if (subRound > getTotalRounds()) {
@@ -90,16 +95,23 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
         }
 
         handler.register();
-        plugin.getGameManager().joinSingleTeamAreaForAllTeamsAsync(
-                gameTypeEnum, getArea(), true, GameRunMode.EVENT)
-                .thenAccept(started -> handleStartResult(started, "首轮启动失败，执行端未就绪或参赛者不可用"));
+        long generation = scheduleGeneration;
+        plugin.getGameManager()
+                .joinSingleTeamAreaForAllTeamsAsync(
+                        gameTypeEnum, getArea(), true, GameRunMode.EVENT)
+                .whenComplete(
+                        (started, failure) ->
+                                handleStartResult(
+                                        generation,
+                                        failure == null && Boolean.TRUE.equals(started),
+                                        "首轮启动失败，执行端未就绪或参赛者不可用"));
     }
 
     public void endSchedule() {
-        if (firstStartTask != null)
-            firstStartTask.cancel();
-        if (startTask != null)
-            startTask.cancel();
+        scheduleGeneration++;
+        plugin.getScheduleManager().clearStartSelection(gameTypeEnum);
+        if (firstStartTask != null) firstStartTask.cancel();
+        if (startTask != null) startTask.cancel();
 
         enabled = false;
 
@@ -110,62 +122,75 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
     }
 
     public void nextRound() {
-        if (!enabled)
-            return;
+        if (!enabled) return;
 
         boolean hasNextRound = subRound < getTotalRounds();
-        scheduleManager.settleEventRound(gameTypeEnum, hasNextRound, () -> {
-            if (!enabled)
-                return;
-            if (!hasNextRound) {
-                endSchedule();
-                return;
-            }
-            startNextRoundCountdown();
-        });
+        scheduleManager.settleEventRound(
+                gameTypeEnum,
+                hasNextRound,
+                () -> {
+                    if (!enabled) return;
+                    if (!hasNextRound) {
+                        endSchedule();
+                        return;
+                    }
+                    startNextRoundCountdown();
+                });
     }
 
     private void startNextRoundCountdown() {
+        long generation = scheduleGeneration;
         subRound++;
-        Utils.playSoundToAllPlayers(Sound.ENTITY_PLAYER_LEVELUP, 1, 1F);
+        CoreMessages.playSoundToAllPlayers(Sound.ENTITY_PLAYER_LEVELUP, 1, 1F);
 
         timer = ROUND_TRANSITION_SECONDS;
-        startTask = scheduler.runTaskTimer(plugin, () -> {
+        startTask =
+                scheduler.runTaskTimer(
+                        plugin,
+                        () -> {
+                            scheduleManager.showRoundPreparationCountdown(
+                                    gameTypeEnum, subRound, timer);
 
-            scheduleManager.showRoundPreparationCountdown(gameTypeEnum, subRound, timer);
+                            if (timer == ROUND_TRANSITION_SECONDS) {
+                                CoreMessages.sendMessageToAllPlayers(
+                                        CoreMessages.getMessage(
+                                                ScheduleMessageConfig.NEXT_ROUND_SOON));
+                            }
 
-            if (timer == ROUND_TRANSITION_SECONDS) {
-                Utils.sendMessageToAllPlayers(Utils.getMessage(ScheduleMessageConfig.NEXT_ROUND_SOON));
-            }
-
-            if (timer == 0) {
-                if (startTask != null)
-                    startTask.cancel();
-                plugin.getGameManager().joinSingleTeamAreaForAllTeamsAsync(
-                                gameTypeEnum, getArea(), false, GameRunMode.EVENT)
-                        .thenAccept(started -> handleStartResult(started, "下一轮启动失败，已释放轮间玩家"));
-            }
-            timer--;
-        }, 0, 20L);
+                            if (timer == 0) {
+                                if (startTask != null) startTask.cancel();
+                                plugin.getGameManager()
+                                        .joinSingleTeamAreaForAllTeamsAsync(
+                                                gameTypeEnum, getArea(), false, GameRunMode.EVENT)
+                                        .whenComplete(
+                                                (started, failure) ->
+                                                        handleStartResult(
+                                                                generation,
+                                                                failure == null
+                                                                        && Boolean.TRUE.equals(
+                                                                                started),
+                                                                "下一轮启动失败，已释放轮间玩家"));
+                            }
+                            timer--;
+                        },
+                        0,
+                        20L);
     }
 
     public boolean hasNextRound() {
         return enabled && subRound < getTotalRounds();
     }
 
-    private void handleStartResult(boolean started, String failureMessage) {
-        if (!enabled) {
-            if (started) plugin.getGameManager().forceEndAreas(gameTypeEnum);
-            return;
-        }
+    private void handleStartResult(long generation, boolean started, String failureMessage) {
+        if (!enabled || generation != scheduleGeneration) return;
         if (started) return;
-        plugin.getLogger().warning(Utils.formatGameLog(gameTypeEnum, getArea(),
-                "调度", "中止", failureMessage));
+        plugin.getLogger()
+                .warning(
+                        LogText.formatGameLog(gameTypeEnum, getArea(), "调度", "中止", failureMessage));
         endSchedule();
     }
 
     public abstract String getArea();
 
     public abstract int getTotalRounds();
-
 }

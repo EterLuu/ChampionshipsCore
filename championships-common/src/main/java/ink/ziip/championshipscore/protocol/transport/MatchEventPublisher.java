@@ -9,6 +9,5 @@ public interface MatchEventPublisher extends AutoCloseable {
     CompletionStage<DeliveryReceipt> publishEvent(MatchEvent event);
 
     @Override
-    default void close() {
-    }
+    default void close() {}
 }

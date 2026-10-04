@@ -17,13 +17,17 @@ public final class LegacyText {
     private static final String COLOR_CODE_CHARS = "0123456789AaBbCcDdEeFfKkLlMmNnOoRrXx";
     private static final char SECTION = '§';
     private static final LegacyComponentSerializer SECTION_SERIALIZER =
-            LegacyComponentSerializer.builder().character(SECTION).hexColors()
-                    .useUnusualXRepeatedCharacterHexFormat().build();
+            LegacyComponentSerializer.builder()
+                    .character(SECTION)
+                    .hexColors()
+                    .useUnusualXRepeatedCharacterHexFormat()
+                    .build();
 
-    private LegacyText() {
-    }
+    private LegacyText() {}
 
-    /** Translates preferred {@code &#RRGGBB}, legacy {@code #RRGGBB}, and ordinary ampersand codes. */
+    /**
+     * Translates preferred {@code &#RRGGBB}, legacy {@code #RRGGBB}, and ordinary ampersand codes.
+     */
     public static String translateColorCodes(String message) {
         message = expandHexColors(message, EXPLICIT_HEX_COLOR);
         message = expandHexColors(message, LEGACY_HEX_COLOR);

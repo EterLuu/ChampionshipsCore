@@ -3,7 +3,8 @@ package ink.ziip.championshipscore.command.team;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.presentation.text.CoreMessages;
+
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -19,7 +20,11 @@ public class TeamTeleportationSubCommand extends BaseSubCommand {
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+    public boolean onCommand(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args) {
         if (args.length != 1 || !(sender instanceof Player player)) {
             sendUsage(sender);
             return true;
@@ -36,7 +41,8 @@ public class TeamTeleportationSubCommand extends BaseSubCommand {
 
         ChampionshipTeam team = plugin.getTeamManager().getTeam(args[0]);
         if (team == null) {
-            Utils.sendAdminError(sender, MessageConfig.ADMIN_TEAM_MISSING.replace("%team%", args[0]));
+            CoreMessages.sendAdminError(
+                    sender, MessageConfig.ADMIN_TEAM_MISSING.replace("%team%", args[0]));
             return true;
         }
         for (Player teamPlayer : team.getOnlinePlayers()) {
@@ -47,10 +53,14 @@ public class TeamTeleportationSubCommand extends BaseSubCommand {
     }
 
     @Override
-    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        if (args.length < 1)
-            return java.util.Collections.emptyList();
-        List<String> candidates = new java.util.ArrayList<>(plugin.getTeamManager().getTeamNameList());
+    public @Nullable List<String> onTabComplete(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args) {
+        if (args.length < 1) return java.util.Collections.emptyList();
+        List<String> candidates =
+                new java.util.ArrayList<>(plugin.getTeamManager().getTeamNameList());
         candidates.add("all");
         return filterStartsWith(candidates, args[args.length - 1]);
     }

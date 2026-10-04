@@ -4,12 +4,7 @@ import java.util.Objects;
 
 /** Transport-neutral metadata supplied to a durable message handler. */
 public record InboundDelivery<T>(
-        String stream,
-        String streamEntryId,
-        long deliveryCount,
-        boolean reclaimed,
-        T payload
-) {
+        String stream, String streamEntryId, long deliveryCount, boolean reclaimed, T payload) {
     public InboundDelivery {
         Objects.requireNonNull(stream, "stream");
         Objects.requireNonNull(streamEntryId, "streamEntryId");

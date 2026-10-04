@@ -2,7 +2,9 @@ package ink.ziip.championshipscore.command.admin.world;
 
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-import ink.ziip.championshipscore.util.Utils;
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+import ink.ziip.championshipscore.presentation.text.CoreMessages;
+
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.command.Command;
@@ -22,8 +24,11 @@ public class WorldListSubCommand extends BaseSubCommand {
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
-                             @NotNull String label, @NotNull String[] args) {
+    public boolean onCommand(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args) {
         if (args.length != 0) {
             sendUsage(sender);
             return true;
@@ -31,35 +36,52 @@ public class WorldListSubCommand extends BaseSubCommand {
 
         List<World> loaded = new ArrayList<>(Bukkit.getWorlds());
         loaded.sort((left, right) -> left.getName().compareToIgnoreCase(right.getName()));
-        Utils.sendAdminInfo(sender, MessageConfig.ADMIN_WORLD_LIST_LOADED
-                    .replace("%count%", String.valueOf(loaded.size())));
+        CoreMessages.sendAdminInfo(
+                sender,
+                MessageConfig.ADMIN_WORLD_LIST_LOADED.replace(
+                        "%count%", String.valueOf(loaded.size())));
         Set<String> loadedNames = new HashSet<>();
         for (World world : loaded) {
             loadedNames.add(world.getName());
-            String main = plugin.getWorldManager().isMainWorld(world)
-                    ? MessageConfig.ADMIN_WORLD_MAIN_SUFFIX : "";
-            sender.sendMessage(Utils.translateColorCodes(MessageConfig.ADMIN_WORLD_ROW
-                    .replace("%world%", world.getName())
-                    .replace("%main%", main)
-                    .replace("%environment%", world.getEnvironment().name().toLowerCase())
-                    .replace("%count%", String.valueOf(world.getPlayerCount()))));
+            String main =
+                    plugin.getWorldManager().isMainWorld(world)
+                            ? MessageConfig.ADMIN_WORLD_MAIN_SUFFIX
+                            : "";
+            sender.sendMessage(
+                    LegacyText.translateColorCodes(
+                            MessageConfig.ADMIN_WORLD_ROW
+                                    .replace("%world%", world.getName())
+                                    .replace("%main%", main)
+                                    .replace(
+                                            "%environment%",
+                                            world.getEnvironment().name().toLowerCase())
+                                    .replace("%count%", String.valueOf(world.getPlayerCount()))));
         }
 
         List<String> unloaded = plugin.getWorldManager().getStoredWorldNames();
         unloaded.removeIf(loadedNames::contains);
-        Utils.sendAdminInfo(sender, MessageConfig.ADMIN_WORLD_LIST_UNLOADED
-                    .replace("%count%", String.valueOf(unloaded.size())));
+        CoreMessages.sendAdminInfo(
+                sender,
+                MessageConfig.ADMIN_WORLD_LIST_UNLOADED.replace(
+                        "%count%", String.valueOf(unloaded.size())));
         if (unloaded.isEmpty())
-            sender.sendMessage(Utils.translateColorCodes(MessageConfig.ADMIN_WORLD_NONE));
+            sender.sendMessage(LegacyText.translateColorCodes(MessageConfig.ADMIN_WORLD_NONE));
         else
-            sender.sendMessage(Utils.translateColorCodes(MessageConfig.ADMIN_WORLD_UNLOADED_NAMES
-                    .replace("%worlds%", String.join(MessageConfig.ADMIN_WORLD_LIST_SEPARATOR, unloaded))));
+            sender.sendMessage(
+                    LegacyText.translateColorCodes(
+                            MessageConfig.ADMIN_WORLD_UNLOADED_NAMES.replace(
+                                    "%worlds%",
+                                    String.join(
+                                            MessageConfig.ADMIN_WORLD_LIST_SEPARATOR, unloaded))));
         return true;
     }
 
     @Override
-    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
-                                                @NotNull String label, @NotNull String[] args) {
+    public @Nullable List<String> onTabComplete(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args) {
         return Collections.emptyList();
     }
 }

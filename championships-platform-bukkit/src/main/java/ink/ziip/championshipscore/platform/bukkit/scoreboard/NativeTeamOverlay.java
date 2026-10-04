@@ -17,7 +17,7 @@ import java.util.UUID;
  *
  * <p>An overlay remembers the team which owned each entry before assignment. On release it restores
  * that team only while the entry is still assigned to a team owned by this overlay. A later
- * assignment by another plugin is therefore left untouched.</p>
+ * assignment by another plugin is therefore left untouched.
  */
 public final class NativeTeamOverlay implements AutoCloseable {
     private final NativeTeamService nativeTeams;
@@ -36,16 +36,30 @@ public final class NativeTeamOverlay implements AutoCloseable {
         assign(playerId, entry, target, null, false);
     }
 
-    /** Assigns an entry while explicitly defining the team restored when this overlay is released. */
+    /**
+     * Assigns an entry while explicitly defining the team restored when this overlay is released.
+     */
     public void assign(UUID playerId, String entry, Team target, Optional<String> originalTeam) {
-        assign(playerId, entry, target, Objects.requireNonNull(originalTeam, "originalTeam").orElse(null), true);
+        assign(
+                playerId,
+                entry,
+                target,
+                Objects.requireNonNull(originalTeam, "originalTeam").orElse(null),
+                true);
     }
 
-    private void assign(UUID playerId, String entry, Team target, String explicitOriginal, boolean hasExplicitOriginal) {
+    private void assign(
+            UUID playerId,
+            String entry,
+            Team target,
+            String explicitOriginal,
+            boolean hasExplicitOriginal) {
         Objects.requireNonNull(playerId, "playerId");
-        if (entry == null || entry.isBlank()) throw new IllegalArgumentException("Native team entry must not be blank");
+        if (entry == null || entry.isBlank())
+            throw new IllegalArgumentException("Native team entry must not be blank");
         Objects.requireNonNull(target, "target");
-        if (!ownedTeams.contains(target)) throw new IllegalArgumentException("Target team is not owned by this overlay");
+        if (!ownedTeams.contains(target))
+            throw new IllegalArgumentException("Target team is not owned by this overlay");
 
         Assignment existing = assignments.get(playerId);
         if (existing != null && !existing.entry().equals(entry)) {
@@ -76,7 +90,9 @@ public final class NativeTeamOverlay implements AutoCloseable {
 
     public Optional<String> originalTeam(UUID playerId) {
         Assignment assignment = assignments.get(playerId);
-        return assignment == null ? Optional.empty() : Optional.ofNullable(assignment.originalTeam());
+        return assignment == null
+                ? Optional.empty()
+                : Optional.ofNullable(assignment.originalTeam());
     }
 
     public void release(UUID playerId) {
@@ -128,6 +144,5 @@ public final class NativeTeamOverlay implements AutoCloseable {
         if (current != null && ownedTeams.contains(current)) current.removeEntry(entry);
     }
 
-    private record Assignment(String entry, Team target, String originalTeam) {
-    }
+    private record Assignment(String entry, Team target, String originalTeam) {}
 }

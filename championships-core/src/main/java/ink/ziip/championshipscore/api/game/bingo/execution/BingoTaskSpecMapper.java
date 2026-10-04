@@ -3,9 +3,9 @@ package ink.ziip.championshipscore.api.game.bingo.execution;
 import ink.ziip.championshipscore.api.game.bingo.task.AdvancementTask;
 import ink.ziip.championshipscore.api.game.bingo.task.AllOfTask;
 import ink.ziip.championshipscore.api.game.bingo.task.CardDisplayInfo;
-import ink.ziip.championshipscore.api.game.bingo.task.GameTask;
 import ink.ziip.championshipscore.api.game.bingo.task.EventSubject;
 import ink.ziip.championshipscore.api.game.bingo.task.EventTask;
+import ink.ziip.championshipscore.api.game.bingo.task.GameTask;
 import ink.ziip.championshipscore.api.game.bingo.task.ItemTask;
 import ink.ziip.championshipscore.api.game.bingo.task.OneOfTask;
 import ink.ziip.championshipscore.api.game.bingo.task.PotionTask;
@@ -14,6 +14,7 @@ import ink.ziip.championshipscore.api.game.bingo.task.StatisticCategory;
 import ink.ziip.championshipscore.api.game.bingo.task.StatisticHandle;
 import ink.ziip.championshipscore.api.game.bingo.task.StatisticTask;
 import ink.ziip.championshipscore.protocol.BingoTaskSpec;
+
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 
 import java.util.LinkedHashMap;
@@ -23,8 +24,7 @@ import java.util.stream.Collectors;
 
 /** Converts the Bukkit task model into the stable, registry-name-only wire model. */
 public final class BingoTaskSpecMapper {
-    private BingoTaskSpecMapper() {
-    }
+    private BingoTaskSpecMapper() {}
 
     public static List<BingoTaskSpec> toSpecs(List<GameTask> tasks) {
         java.util.ArrayList<BingoTaskSpec> result = new java.util.ArrayList<>(tasks.size());
@@ -46,13 +46,15 @@ public final class BingoTaskSpecMapper {
             attributes.put("count", Integer.toString(item.count()));
         } else if (task.data instanceof OneOfTask set) {
             type = "item_set";
-            attributes.put("materials", set.items().stream().map(Enum::name).sorted()
-                    .collect(Collectors.joining(",")));
+            attributes.put(
+                    "materials",
+                    set.items().stream().map(Enum::name).sorted().collect(Collectors.joining(",")));
             attributes.put("count", Integer.toString(set.count()));
         } else if (task.data instanceof AllOfTask set) {
             type = "all_of";
-            attributes.put("materials", set.items().stream().map(Enum::name).sorted()
-                    .collect(Collectors.joining(",")));
+            attributes.put(
+                    "materials",
+                    set.items().stream().map(Enum::name).sorted().collect(Collectors.joining(",")));
             attributes.put("count", Integer.toString(set.count()));
         } else if (task.data instanceof EventTask event) {
             type = "event";
@@ -61,15 +63,24 @@ public final class BingoTaskSpecMapper {
             attributes.put("count", Integer.toString(event.count()));
             attributes.put("dimension", event.dimension().name());
             if (!event.members().isEmpty()) {
-                attributes.put("members", event.members().stream().map(Enum::name).sorted()
-                        .collect(Collectors.joining(",")));
+                attributes.put(
+                        "members",
+                        event.members().stream()
+                                .map(Enum::name)
+                                .sorted()
+                                .collect(Collectors.joining(",")));
             }
             if (!event.subjects().isEmpty()) {
-                attributes.put("subjects", event.subjects().stream()
-                        .sorted(java.util.Comparator.comparing((EventSubject subject) -> subject.kind().name())
-                                .thenComparing(EventSubject::key))
-                        .map(subject -> subject.kind().name() + "=" + subject.key())
-                        .collect(Collectors.joining(",")));
+                attributes.put(
+                        "subjects",
+                        event.subjects().stream()
+                                .sorted(
+                                        java.util.Comparator.comparing(
+                                                        (EventSubject subject) ->
+                                                                subject.kind().name())
+                                                .thenComparing(EventSubject::key))
+                                .map(subject -> subject.kind().name() + "=" + subject.key())
+                                .collect(Collectors.joining(",")));
             }
             if (event.entityIconKey() != null) {
                 attributes.put("display.entity", event.entityIconKey().asString());
@@ -87,7 +98,8 @@ public final class BingoTaskSpecMapper {
             attributes.put("display.green-check", Boolean.toString(event.usesGreenCheckBadge()));
         } else if (task.data instanceof AdvancementTask advancement) {
             if (advancement.advancement() == null) {
-                throw new IllegalArgumentException("Card contains an unresolved advancement at cell " + cell);
+                throw new IllegalArgumentException(
+                        "Card contains an unresolved advancement at cell " + cell);
             }
             type = "advancement";
             attributes.put("key", advancement.advancement().key().asString());
@@ -105,8 +117,10 @@ public final class BingoTaskSpecMapper {
             attributes.put("statistic", handle.statisticType().name());
             if (handle.itemType() != null) attributes.put("material", handle.itemType().name());
             if (handle.entityType() != null) attributes.put("entity", handle.entityType().name());
-            int target = StatisticCategories.of(handle.statisticType()) == StatisticCategory.TRAVEL
-                    ? Math.multiplyExact(statistic.count(), 1000) : statistic.count();
+            int target =
+                    StatisticCategories.of(handle.statisticType()) == StatisticCategory.TRAVEL
+                            ? Math.multiplyExact(statistic.count(), 1000)
+                            : statistic.count();
             attributes.put("target", Integer.toString(target));
             if (handle.usesOminousBannerIcon()) {
                 attributes.put("display.icon-key", "minecraft:ominous_banner");
@@ -115,7 +129,8 @@ public final class BingoTaskSpecMapper {
             }
             attributes.put("display.any-template", Boolean.toString(statistic.usesAnyTemplate()));
         } else {
-            throw new IllegalArgumentException("Unsupported Bingo task model " + task.data.getClass().getName());
+            throw new IllegalArgumentException(
+                    "Unsupported Bingo task model " + task.data.getClass().getName());
         }
         appendPresentation(task, attributes);
         return new BingoTaskSpec(cell, cell + ":" + task.data.objectiveId(), type, attributes);
@@ -125,8 +140,10 @@ public final class BingoTaskSpecMapper {
         // These are presentation decisions owned by Core's task model, not values the Worker should
         // try to reconstruct from an objective's execution attributes. In particular, generic
         // statistics have no material qualifier at all while still having a specific card icon.
-        attributes.put("display.material", task.data.getDisplayMaterial(CardDisplayInfo.DEFAULT).name());
-        attributes.put("display.amount", Integer.toString(Math.max(1, task.data.getRequiredAmount())));
+        attributes.put(
+                "display.material", task.data.getDisplayMaterial(CardDisplayInfo.DEFAULT).name());
+        attributes.put(
+                "display.amount", Integer.toString(Math.max(1, task.data.getRequiredAmount())));
         try {
             GsonComponentSerializer serializer = GsonComponentSerializer.gson();
             attributes.put("display.name", serializer.serialize(task.data.getName()));
@@ -136,7 +153,8 @@ public final class BingoTaskSpecMapper {
                 attributes.put("display.lore." + index, serializer.serialize(description[index]));
             }
         } catch (RuntimeException | LinkageError unavailableRegistry) {
-            // Headless mapper tests have no Paper RegistryAccess. The Worker retains a registry-name
+            // Headless mapper tests have no Paper RegistryAccess. The Worker retains a
+            // registry-name
             // fallback, while production Core always supplies these rich display fields.
         }
     }
