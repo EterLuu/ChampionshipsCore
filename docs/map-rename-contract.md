@@ -10,7 +10,7 @@
 
 1. 分离运行时注册，并等待队列中的 DAILY 与积分写入完成。
 2. 在同一个 SQL 事务中迁移所有第一方数据库地图标识：`player_points.area`、`daily_match_results.map`、`daily_player_records.map`、`daily_map_player_stats.map`，跑路战士还包括 `daily_pkw_records.map`。
-3. 移动地图 YAML 并更新 `name` 字段。地图拥有的生成资产随注册名迁移。匹配赛建通常移动 `material-manifests/<地图>.yml`（重写 `map` 字段）和 `schematics/<地图>/`（包括 `base.schem` 与 `material-zones/`）。旧版匹配赛建地图的 YAML `name` 可能与注册名/文件名不同：`base.schem` 跟随注册名，材料清单与材料区快照跟随 YAML 名；迁移会同时移动并规范化这两类旧位置。斗战方框、跑酷追击和 TNT 飞跃移动 `schematics/<地图>/`（包括 `arena.schem`）。
+3. 移动地图 YAML 并更新 `name` 字段。地图拥有的生成资产随注册名迁移。匹配赛建移动 `material-manifests/<地图>.yml`（重写 `map` 字段）和 `schematics/<地图>/`（包括 `base.schem` 与 `material-zones/`）。当 YAML `name` 与注册名/文件名不同时，基地主模板按注册名查找，材料清单与材料区快照按 YAML 名查找，重命名将它们统一到新名称。斗战方框、跑酷追击、激光方盒和 TNT 飞跃移动 `schematics/<地图>/`（包括 `arena.schem`）。
 4. 若匹配赛建地图独占 `buildmart_<旧名>`，卸载并移动该世界及全部命名伴随数据：Core 地图模板（`ChampionshipsCore/maps/<世界>`）、WorldGuard 状态（`WorldGuard/worlds/<世界>`）和 FAWE 历史（`FastAsyncWorldEdit/history/<世界>`）。地图 YAML 的 `world-name`、序列化位置中的世界前缀、`world_key` 值以及材料清单的 `world` 会在运行时地图重建前更新为新的专用世界。共享或自定义匹配赛建世界保持原位，其引用不变。目标世界和所有目标伴随路径必须不存在；目标路径必须为空，保证操作不覆盖既有状态。
 5. 更新 `formal-events.<游戏>.maps` 中的对应项，按新名称重建运行时地图注册，然后刷新 DAILY 记录、按地图统计、跑路战士纪录、排行榜和打开中的地图列表菜单。
 

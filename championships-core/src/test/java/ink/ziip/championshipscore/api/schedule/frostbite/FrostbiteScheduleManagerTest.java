@@ -8,7 +8,7 @@ import java.util.List;
 
 class FrostbiteScheduleManagerTest {
     @Test
-    void frostbiteUsesThreeRoundsLikeSnowballShowdown() {
+    void frostbiteUsesThreeRoundsLikeLaserShowdown() {
         assertEquals(
                 List.of("glacial_keep", "frosty_fjord", "glacial_keep"),
                 FrostbiteScheduleManager.roundMaps(List.of("glacial_keep", "frosty_fjord")));

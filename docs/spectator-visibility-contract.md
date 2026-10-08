@@ -1,6 +1,6 @@
 # 旁观、实体显隐与 Tab 契约
 
-本契约适用于 ChampionshipsCore 全部游戏、正式赛与日常局、Core 本地 Bingo 和独立 Bingo Worker。新增游戏以及修改监听器、定时任务、GUI、管理命令、占位符、发包或生命周期时，都必须检查这些规则。逐游戏审查方法见 [显隐验证指南](../tools/spectator-visibility-audit-2026-10-03.md)；本文件定义后续开发必须保持的行为。
+本契约适用于 ChampionshipsCore 全部游戏、正式赛与日常局、Core 本地 Bingo 和独立 Bingo Worker。新增游戏以及修改监听器、定时任务、GUI、管理命令、占位符、发包或生命周期时，都必须检查这些规则。逐游戏审查方法见 [显隐验证指南](spectator-visibility-validation.md)；本文件定义后续开发必须保持的行为。
 
 ## 玩家可见性
 

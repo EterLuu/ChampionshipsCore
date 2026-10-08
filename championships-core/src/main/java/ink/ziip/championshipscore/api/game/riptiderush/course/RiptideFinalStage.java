@@ -53,6 +53,81 @@ final class RiptideFinalStage {
             RiptideCourseGeometry g,
             List<RiptideCoursePlan.Level> input,
             Random random) {
+        var candidate = input;
+        while (candidate != null) {
+            var result = pack(c, g, candidate, random);
+            if (result != null) return result;
+            candidate = makeRoom(c, g, candidate);
+        }
+        return null;
+    }
+
+    /** Borrow unused space in the preceding band rather than compress departure approaches. */
+    private static List<RiptideCoursePlan.Level> makeRoom(
+            RiptideRushConfig c, RiptideCourseGeometry g, List<RiptideCoursePlan.Level> input) {
+        int boundary = (int) Math.ceil(g.totalSteps() * .8);
+        int index = 0;
+        while (index < input.size() && input.get(index).step() < boundary) index++;
+        if (index == 0 || index >= input.size() - 1) return null;
+        var first = input.get(index);
+        // A final side-math slot may contain an otherwise unsafe forward double.
+        if (first.variant().equals("DOUBLE")) return null;
+        var candidate = new ArrayList<>(input);
+        candidate.set(index, move(first, boundary - first.extent() - 1));
+        if (RiptideDifficulty.stage(candidate.get(index).step(), g.totalSteps()) != 3) return null;
+        for (int i = index - 1; i >= 0; i--) {
+            var original = input.get(i);
+            var placed = original;
+            while (!RiptideCoursePlanner.safeTransition(c, g, placed, candidate.get(i + 1))) {
+                placed = move(placed, placed.step() - 1);
+                if (RiptideDifficulty.stage(placed.step(), g.totalSteps())
+                        != RiptideDifficulty.stage(original.step(), g.totalSteps())) return null;
+            }
+            candidate.set(i, placed);
+        }
+        for (int i = 0; i <= index; i++) {
+            var level = candidate.get(i);
+            if (level.type() == RiptideLevelType.PASS
+                    && !RiptideDifficulty.allowsPass(
+                            level.template().difficulty(), level.step(), g.totalSteps()))
+                return null;
+            if (level.type() == RiptideLevelType.MATH
+                    && !RiptideDifficulty.allowsMath(level.variant(), level.step(), g.totalSteps()))
+                return null;
+            if (level.isSideSweep()
+                    && level.sideWalls().stream()
+                            .anyMatch(
+                                    w ->
+                                            !RiptideDifficulty.allowsSide(
+                                                    w.template().difficulty(),
+                                                    g.stoppedStep(level.step()),
+                                                    g.totalSteps()))) return null;
+        }
+        if (g.occupiedStart(candidate.getFirst()) <= g.halfLength() + 2) return null;
+        return List.copyOf(candidate);
+    }
+
+    private static RiptideCoursePlan.Level move(RiptideCoursePlan.Level level, int step) {
+        return new RiptideCoursePlan.Level(
+                level.number(),
+                step,
+                level.template(),
+                level.variant(),
+                level.opening(),
+                level.mirrored(),
+                level.contentSeed(),
+                level.wallGroup(),
+                level.beat(),
+                level.rhythm(),
+                level.sweep(),
+                level.sideWalls());
+    }
+
+    private static List<RiptideCoursePlan.Level> pack(
+            RiptideRushConfig c,
+            RiptideCourseGeometry g,
+            List<RiptideCoursePlan.Level> input,
+            Random random) {
         var out = new ArrayList<RiptideCoursePlan.Level>();
         var uses = new HashMap<String, Integer>();
         for (var l : input) {

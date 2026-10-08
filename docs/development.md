@@ -14,7 +14,7 @@
 | 地图、赛程、队伍、DAILY 和其他游戏 | `championships-core` |
 | 登录准入和 UUID 资料同步 | `championships-auth-proxy`、`championships-auth-bridge` |
 
-Core 每个游戏以 `api/game/<game>/` 为功能边界。根目录的 Manager 注册地图和创建实例；`config/` 读取地图选项，`runtime/` 管理场地、回合、事件和清理，`model/` 保存模型，`geometry/` 处理空间算法，`mechanics/` 实现游戏机制。按需要创建子包，无需为空的职责建目录。Riptide 另有 `course/` 负责关卡池与生成，`editor/` 负责建筑草稿和试玩。游戏模型放在所属游戏内，共享的游戏类型、运行模式和阶段位于 `api/game/model/`，对局配对模型位于 `api/schedule/model/`。模型按所属领域组织，不再使用 `api/object/`。
+Core 每个游戏以 `api/game/<game>/` 为功能边界。根目录的 Manager 注册地图和创建实例；`config/` 读取地图选项，`runtime/` 管理场地、回合、事件和清理，`model/` 保存模型，`geometry/` 处理空间算法，`mechanics/` 实现游戏机制。按需要创建子包，无需为空的职责建目录。Riptide 另有 `course/` 负责关卡池与生成，`editor/` 负责建筑草稿和试玩。游戏模型放在所属游戏内，共享的游戏类型、运行模式和阶段位于 `api/game/model/`，对局配对模型位于 `api/schedule/model/`。模型按所属领域组织，禁止放入通用的 `api/object/` 包。
 
 新增玩法接入 `GameTypeEnum`、`GameManager`、对应地图 Manager 和 prepare 流程。启动参数统一通过 `GameStartArguments` / `GameStartService`，正式赛保存 `EventStartSelection`；不得为单个游戏再写一套 all/队伍解析器。复制双队比赛共用批量占用、预热和回滚入口，单实例多分区用 `ArenaSelection` / `StartAllocation`，选择不得修改共享地图配置或拆成多份计分实例。场地生命周期使用 `BaseGameInstance`；双队比赛使用已有 paired 抽象，复制地图使用现有 arena/spatial 工具。不要在命令或 GUI 内再维护一套场地注册、游戏状态或复制坐标算法。地图文件使用小写 `.yml` 后缀；目录扫描和首次 tick 初始化调用 `BaseGameInstanceManager` 的 `loadMapDefinitions` / `deferMapLoad`。公共清理会使旧加载请求失效并通过 `onAreaDetached` 移除副本索引。复制场地通过 `registerMapInstances` 发布实例，查询和删除沿用基类，不另存副本注册表；子类只处理游戏特有的取消操作，不复制通用卸载循环。
 
@@ -72,16 +72,27 @@ Core 生产 Java 源码不包含中文，包括注释。玩家提示、命令说
 Java 使用 UTF-8、LF、四空格缩进，以 Google Java Format 1.33.0 的 AOSP 样式为准。仓库根目录执行：
 
 ```bash
-tools/format-java.sh
-tools/format-java.sh --check
-python3 tools/check-source-layout.py
+scripts/format-java.sh
+scripts/format-java.sh --check
+python3 scripts/check-source-layout.py
 mvn -B -ntp -pl championships-core,championships-bingo-worker -am clean package
 ```
 
-Java 格式脚本只处理 Maven 模块的生产和测试源码；首次执行会下载固定版本的格式工具到系统临时目录。Python 工具使用 Python 3.11 或更高版本。先创建虚拟环境并安装 `tools/requirements.txt`，再运行 `ruff format tools` 或 `ruff format --check tools`；配置由根目录 `pyproject.toml` 管理。生产源码放 `src/main/java`，JUnit 和测试夹具放 `src/test/java`。测试与被测类同包；多个包共用的夹具放测试源码的 support 包。
+Java 格式脚本只处理 Maven 模块的生产和测试源码；首次执行会下载固定版本的格式工具到系统临时目录。维护脚本及用法见 [脚本指南](../scripts/README.md)。Python 脚本使用 Python 3.11 或更高版本和标准库；格式检查使用 Ruff 0.11.13，执行 `ruff format --check scripts`，配置由根目录 `pyproject.toml` 管理。生产源码放 `src/main/java`，JUnit 和测试夹具放 `src/test/java`。测试与被测类同包；多个包共用的夹具放测试源码的 support 包。
+
+测试按独立行为和失败路径组织，公共算法由所属模块验证，调用模块覆盖接入、角色与生命周期。用例设计、昂贵规划的复用和隔离规则见 [测试指南](testing.md)。
 
 按改动范围选择 reactor 模块并带上 `-am`。共享行为须同时检查 Core 与 Worker 的实现、资源、运行配置和测试。包移动需要 clean build，以免旧包的 class 残留在交付 JAR。涉及原生发包、反射或 Folia 线程的行为另按对应契约做原生验证。
 
-成功打包后直接替换受影响的运行 JAR，不创建 JAR 备份。重启对应服务器才能加载新类；仅替换文件不会切换当前已加载代码。开发文档描述当前接入方法，工具文档提供可复现的审查方法，不把开发指南写成变更流水账。
+成功打包后直接替换受影响的运行 JAR，不创建 JAR 备份。重启对应服务器才能加载新类；仅替换文件不会切换当前已加载代码。仅修改文档不打包、部署或重启。
 
-文档使用仓库相对路径或服务端标准相对目录。示例服务名、数据库凭据、地图和玩家名称应明确为示例；不提交个人工作目录、私有服务地址或单次部署日志。
+`scripts/` 只保存持续维护的开发检查和只读审查脚本，`docs/` 保存玩法与验证指南。一次性导入、旧资源迁移、地图预置制作、离线模拟及其报告、预览和缓存放在 `/tmp`；任务完成后清理，不重新建立历史工具目录。插件运行只依赖各模块的生产代码和资源，不依赖这些开发脚本。
+
+## 文档维护
+
+- 使用指南说明当前行为、适用范围、操作步骤和配置含义；开发契约说明职责与不变量；验证指南说明输入、方法、期望结果和证据范围。
+- 直接描述最终状态。具体问题、前后对比、提交记录和单次验收结果写入 PR 或临时报告；长期文档不保留更新流水账。
+- 同一规则选择一处完整说明，其他文档通过链接引用。版本、命令与数值核对实现和默认资源，并明确区分默认值、可配置值与固定约束。
+- 仍受支持的兼容格式和迁移步骤属于当前行为，保留其触发条件、边界与操作要求；删除说明前确认代码及实际配置已不依赖它。
+- 使用仓库相对路径或服务端标准目录。示例服务名、数据库凭据、地图和玩家名称明确为示例；不提交个人工作目录或私有服务地址。
+- 移动、合并或删除文档时同步索引、模块 README 和章节链接，检查本地目标与标题锚点。文档检查无需运行 Maven 或替换 JAR。

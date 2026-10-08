@@ -25,13 +25,9 @@ class BridgeApiClientTransportTest {
     private static final Duration TIMEOUT = Duration.ofSeconds(1);
 
     @Test
-    void requiresExplicitOptInForNonLoopbackHttp() {
+    void transportConfigurationAllowsTlsAndLoopbackAndRequiresOptInForRemoteHttp() {
         assertThrows(IllegalArgumentException.class, () -> client("http://cc-web:3000", false));
         assertDoesNotThrow(() -> client("http://cc-web:3000", true));
-    }
-
-    @Test
-    void permitsLoopbackHttpAndRemoteHttpsWithoutOptIn() {
         assertDoesNotThrow(() -> client("http://127.0.0.1:3000", false));
         assertDoesNotThrow(() -> client("https://accounts.example.test", false));
     }

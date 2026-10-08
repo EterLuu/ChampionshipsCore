@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
 import ink.ziip.championshipscore.api.event.TeamGameEndEvent;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
+import ink.ziip.championshipscore.api.game.spatial.LobbyReturnLocations;
 import ink.ziip.championshipscore.api.game.spatial.TeleportPositions;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
@@ -22,6 +23,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 
 import java.util.UUID;
 import java.util.logging.Level;
@@ -198,9 +200,16 @@ public class GameManagerHandler extends BaseListener {
                     .runTask(
                             championshipsCore,
                             () -> {
+                                if (plugin.getServer().getPlayer(uuid) != player
+                                        || !player.isOnline()
+                                        || plugin.getGameManager().getBasePlayerArea(uuid) != null
+                                        || plugin.getGameManager().getPlayerSpectatorStatus(uuid)
+                                                != null
+                                        || plugin.getGameManager().isWaitingForNextRound(uuid))
+                                    return;
                                 player.teleport(
-                                        TeleportPositions.getScatteredLobbyLocation(
-                                                CCConfig.LOBBY_LOCATION, player));
+                                        LobbyReturnLocations.resolve(
+                                                player, CCConfig.LOBBY_LOCATION));
                             });
         }
         // The lobby is always adventure, including reconnects that already spawned in its world.
@@ -274,6 +283,9 @@ public class GameManagerHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
+        // A proxy transfer has no world teleport event on Core. Capture before spectator cleanup
+        // can move the departing player, and let the server persist the record with player data.
+        LobbyReturnLocations.remember(player, player.getLocation(), CCConfig.LOBBY_LOCATION);
         UUID uuid = player.getUniqueId();
         BaseGameInstance baseArea = plugin.getGameManager().getBasePlayerArea(uuid);
         if (baseArea != null) baseArea.handlePlayerQuit(event);
@@ -286,6 +298,12 @@ public class GameManagerHandler extends BaseListener {
             // area
             // releases them itself when its game ends (releaseAllSpectators).
         }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onLobbyDeparture(PlayerTeleportEvent event) {
+        if (event.getTo() == null || event.getFrom().getWorld() == event.getTo().getWorld()) return;
+        LobbyReturnLocations.remember(event.getPlayer(), event.getFrom(), CCConfig.LOBBY_LOCATION);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

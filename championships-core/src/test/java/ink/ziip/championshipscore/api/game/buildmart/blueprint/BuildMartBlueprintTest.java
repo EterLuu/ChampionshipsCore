@@ -269,23 +269,15 @@ class BuildMartBlueprintTest {
         }
 
         @Test
-        void ageableBlocksIgnoreGrowthAge() {
+        void ageableBlocksIgnoreOnlyGrowthAge() {
             assertTrue(
                     BuildMartBlueprint.blockMatches(
                             ageable(Material.CACTUS, 15, "same-state"),
                             ageable(Material.CACTUS, 0, "same-state")));
-        }
-
-        @Test
-        void ageableBlocksStillRequireEveryOtherStateToMatch() {
             assertFalse(
                     BuildMartBlueprint.blockMatches(
                             ageable(Material.CACTUS, 15, "reference-state"),
                             ageable(Material.CACTUS, 0, "placed-state")));
-        }
-
-        @Test
-        void ageableBlocksStillRequireTheSameMaterial() {
             assertFalse(
                     BuildMartBlueprint.blockMatches(
                             ageable(Material.CACTUS, 15, "same-state"),

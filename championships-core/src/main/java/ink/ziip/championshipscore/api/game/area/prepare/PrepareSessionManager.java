@@ -107,7 +107,7 @@ public class PrepareSessionManager extends BaseManager {
         flows.put(GameTypeEnum.SkyWars, new SkyWarsPrepareFlow());
         flows.put(GameTypeEnum.TGTTOS, new TGTTOSPrepareFlow());
         flows.put(GameTypeEnum.DragonEggCarnival, new DragonEggCarnivalPrepareFlow());
-        flows.put(GameTypeEnum.SnowballShowdown, new SnowballShowdownPrepareFlow());
+        flows.put(GameTypeEnum.LaserShowdown, new LaserShowdownPrepareFlow());
         flows.put(GameTypeEnum.ParkourWarrior, new ParkourWarriorPrepareFlow());
         flows.put(GameTypeEnum.HotyCodyDusky, new HotyCodyDuskyPrepareFlow());
         flows.put(GameTypeEnum.Dodgebolt, new DodgeboltPrepareFlow());

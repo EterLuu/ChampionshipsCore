@@ -20,7 +20,7 @@ import ink.ziip.championshipscore.api.game.parkourtag.runtime.ParkourTagArea;
 import ink.ziip.championshipscore.api.game.parkourtag.runtime.ParkourTagMatch;
 import ink.ziip.championshipscore.api.game.parkourwarrior.runtime.ParkourWarriorTeamArea;
 import ink.ziip.championshipscore.api.game.riptiderush.runtime.RiptideRushArea;
-import ink.ziip.championshipscore.api.game.snowball.runtime.SnowballShowdownTeamArea;
+import ink.ziip.championshipscore.api.game.lasershowdown.runtime.LaserShowdownTeamArea;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
@@ -276,8 +276,8 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
                 lines.addAll(renderLocalBingoRanking(config, bingo, game, viewerTeam));
                 continue;
             }
-            if ("{ranking}".equals(raw) && instance instanceof SnowballShowdownTeamArea snowball) {
-                lines.addAll(renderLocalSnowballRanking(config, player, snowball, game));
+            if ("{ranking}".equals(raw) && instance instanceof LaserShowdownTeamArea lasershowdown) {
+                lines.addAll(renderLocalLaserShowdownRanking(config, player, lasershowdown, game));
                 continue;
             }
             String line = raw;
@@ -394,12 +394,12 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         return result;
     }
 
-    private List<String> renderLocalSnowballRanking(
+    private List<String> renderLocalLaserShowdownRanking(
             SidebarConfiguration config,
             Player player,
-            SnowballShowdownTeamArea snowball,
+            LaserShowdownTeamArea lasershowdown,
             SidebarConfiguration.GameTemplate template) {
-        List<ChampionshipTeam> ranked = snowball.getRankedTeams();
+        List<ChampionshipTeam> ranked = lasershowdown.getRankedTeams();
         if (ranked.isEmpty())
             return List.of(
                     config.value(
@@ -417,7 +417,7 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
                             .replace("{rank.position}", Integer.toString(position))
                             .replace("{rank.team}", team.getName())
                             .replace(
-                                    "{rank.score}", Integer.toString(snowball.getTeamScore(team))));
+                                    "{rank.score}", Integer.toString(lasershowdown.getTeamScore(team))));
         }
         return result;
     }

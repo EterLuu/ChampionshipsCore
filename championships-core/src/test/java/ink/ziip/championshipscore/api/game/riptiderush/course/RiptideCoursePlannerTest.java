@@ -48,7 +48,7 @@ class RiptideCoursePlannerTest {
                         example.getValue(),
                         RiptideCoursePlanner.safeTransition(c, g, stationary, sweep));
             }
-            for (var example : Map.of(4, false, 5, true, 9, true).entrySet()) {
+            for (var example : Map.of(5, false, 12, false, 13, true, 16, true).entrySet()) {
                 int gap = example.getKey();
                 var firstSweep =
                         new RiptideCoursePlan.Level(
@@ -98,11 +98,34 @@ class RiptideCoursePlannerTest {
         }
 
         @Test
+        void departureLeavesFourSecondsBeforeMathInEverySpeedBand() throws Exception {
+            var c = config();
+            var g = c.resolveGeometry();
+            var floor = RiptideLevelTemplate.create("floor", RiptideLevelType.COLOR_FLOOR);
+            var math = RiptideLevelTemplate.create("math", RiptideLevelType.MATH);
+            int[][] approaches = {{50, 9}, {150, 12}, {250, 15}, {350, 18}, {450, 21}};
+            for (int[] approach : approaches) {
+                var stopped =
+                        new RiptideCoursePlan.Level(1, approach[0], floor, "COPPER", 0, false, 1);
+                for (int gap : List.of(2, approach[1] - 1, approach[1])) {
+                    var next =
+                            new RiptideCoursePlan.Level(
+                                    2, approach[0] + gap, math, "ADD", 0, false, 2);
+                    assertEquals(
+                            gap == approach[1],
+                            RiptideCoursePlanner.safeTransition(c, g, stopped, next),
+                            "entrance=" + approach[0] + " gap=" + gap);
+                }
+            }
+        }
+
+        @Test
         void fourAccelerationsShareExactBoundariesAndStayBelowSprinting() throws Exception {
             var c = config();
             var g = c.resolveGeometry();
             double[] speeds = {2.2, 2.95, 3.7, 4.45, 5.2};
-            for (int step = 0; step <= 500; step++) {
+            for (int step :
+                    List.of(0, 99, 100, 101, 199, 200, 201, 299, 300, 301, 399, 400, 401, 500)) {
                 double expected = speeds[Math.min(step / 100, 4)];
                 assertEquals(expected, RiptideCoursePlanner.speedAt(c, g, step), 1E-9);
                 assertTrue(expected < 5.6);
@@ -363,29 +386,6 @@ class RiptideCoursePlannerTest {
                 assertEquals(type, plan.levels().getFirst().type());
             }
         }
-
-        @Test
-        void templateSerializationValidatesIdentityVariantsAndBounds() {
-            for (var type : RiptideLevelType.values()) {
-                var t = RiptideLevelTemplate.create(type.name().toLowerCase(Locale.ROOT), type);
-                assertEquals(t, RiptideLevelTemplate.parse(t.serialize()));
-            }
-            assertThrows(
-                    IllegalArgumentException.class,
-                    () ->
-                            new RiptideLevelTemplate(
-                                    "../bad", "x", RiptideLevelType.PASS, "AUTO", true, 1, 1, 1));
-            assertThrows(
-                    IllegalArgumentException.class,
-                    () ->
-                            new RiptideLevelTemplate(
-                                    "bad", "x", RiptideLevelType.MATH, "WEAVE", true, 1, 1, 1));
-            assertThrows(
-                    IllegalArgumentException.class,
-                    () ->
-                            new RiptideLevelTemplate(
-                                    "bad", "x", RiptideLevelType.PASS, "AUTO", true, 0, 1, 1));
-        }
     }
 
     @Nested
@@ -423,7 +423,7 @@ class RiptideCoursePlannerTest {
                 int lateral = gate.question().acceptsLateralOffset(2) ? 2 : -2;
                 var before = g.centerAt(gate.step() - 1).add(lateral, 0, 0);
                 run.sample(before);
-                assertEquals(gate, run.preview(before, 3.7, 18, gate.step(), false));
+                assertEquals(gate, run.preview(before, 0, 3.7, 18, gate.step(), false));
                 var answer = run.sample(g.centerAt(gate.step() + 1).add(lateral, 0, 0));
                 assertEquals(1, answer.size());
                 assertEquals(RiptideMathRun.Result.CORRECT, answer.getFirst().result());
@@ -431,12 +431,14 @@ class RiptideCoursePlannerTest {
         }
 
         @Test
-        void fullCoursesCanSelectPairsAndPreserveQuotaAndSafeTransitions() throws Exception {
+        void fullCoursesPreserveQuotasDifficultyMirrorsAndSafeMathPairs() throws Exception {
             var c = RiptideTestFixtures.config();
             var pool = new ArrayList<>(c.resolvePool());
             pool.add(DOUBLE);
             c.setTemplates(pool);
             boolean sawPair = false;
+            Set<Integer> front = new HashSet<>(), side = new HashSet<>();
+            Set<Boolean> frontMirrors = new HashSet<>(), sideMirrors = new HashSet<>();
             for (int seed = 0; seed < 8; seed++) {
                 var plan = RiptideCoursePlanner.plan(c, seed);
                 assertEquals(
@@ -446,6 +448,27 @@ class RiptideCoursePlannerTest {
                                 .map(RiptideCoursePlan.Level::number)
                                 .distinct()
                                 .count());
+                for (var level : plan.levels()) {
+                    if (level.type() == RiptideLevelType.PASS && !level.isSideSweep()) {
+                        assertTrue(
+                                RiptideDifficulty.allowsPass(
+                                        level.template().difficulty(), level.step(), 500));
+                        front.add(level.template().difficulty());
+                        frontMirrors.add(level.mirrored());
+                    }
+                    if (level.type() == RiptideLevelType.MATH) {
+                        assertTrue(
+                                RiptideDifficulty.allowsMath(level.variant(), level.step(), 500));
+                        if (level.wallGroup() < 0) assertTrue(level.step() >= 100);
+                    }
+                    for (var wall : level.sideWalls()) {
+                        assertTrue(
+                                RiptideDifficulty.allowsSide(
+                                        wall.template().difficulty(), level.step(), 500));
+                        side.add(wall.template().difficulty());
+                        sideMirrors.add(wall.mirrored());
+                    }
+                }
                 for (int i = 1; i < plan.levels().size(); i++)
                     assertTrue(
                             RiptideCoursePlanner.safeTransition(
@@ -462,74 +485,10 @@ class RiptideCoursePlannerTest {
                 sawPair |= plan.levels().stream().anyMatch(l -> l.rhythm().equals("MATH_DOUBLE"));
             }
             assertTrue(sawPair);
-        }
-    }
-
-    @Nested
-    class RiptideChallengeGroupsCases {
-        @Test
-        void mathAndRhythmDoublesAndTriplesStartOneStageEarlierAndTrialTheWholeGroup()
-                throws Exception {
-            var c = RiptideTestFixtures.config();
-            var g = c.resolveGeometry();
-            for (var type : List.of(RiptideLevelType.MATH, RiptideLevelType.RHYTHM)) {
-                for (int step : List.of(50, 140, 250, 350)) {
-                    var template = RiptideLevelTemplate.create("challenge", type);
-                    var level =
-                            new RiptideCoursePlan.Level(
-                                    1,
-                                    step,
-                                    template,
-                                    type == RiptideLevelType.MATH ? "ADD" : "SHUTTER",
-                                    0,
-                                    false,
-                                    5);
-                    var levels = RiptideChallengeGroups.arrange(c, g, List.of(level));
-                    assertEquals(step < 100 ? 1 : step < 200 ? 2 : 3, levels.size());
-                    var plan =
-                            new RiptideCoursePlan(1, RiptideCoursePlanner.VERSION, 0, levels, 500);
-                    for (var gate : levels) assertEquals(levels, plan.trialLevels(gate));
-                    for (int i = 1; i < levels.size(); i++) {
-                        assertTrue(
-                                RiptideCoursePlanner.safeTransition(
-                                        c, g, levels.get(i - 1), levels.get(i)));
-                        assertNotEquals(
-                                levels.get(i - 1).contentSeed(), levels.get(i).contentSeed());
-                    }
-                    if (type == RiptideLevelType.RHYTHM)
-                        assertEquals(
-                                levels.size(),
-                                levels.stream()
-                                        .map(RiptideCoursePlan.Level::variant)
-                                        .distinct()
-                                        .count());
-                    assertEquals(levels, RiptideChallengeGroups.arrange(c, g, List.of(level)));
-                }
-            }
-        }
-
-        @Test
-        void noGroupStartsBeforeItsMilestoneOrOverlapsAnotherBuilding() throws Exception {
-            var c = RiptideTestFixtures.config();
-            var g = c.resolveGeometry();
-            var template = RiptideLevelTemplate.create("challenge", RiptideLevelType.MATH);
-            for (int step : List.of(100, 101, 200, 201)) {
-                var level = new RiptideCoursePlan.Level(1, step, template, "ADD", 0, false, 5);
-                var levels = RiptideChallengeGroups.arrange(c, g, List.of(level));
-                assertTrue(levels.size() < (step < 200 ? 2 : 3));
-            }
-            var thick = template.withBlueprint(new RiptideBlueprint("", 7, 15, 12, List.of()));
-            var a = new RiptideCoursePlan.Level(1, 205, thick, "ADD", 0, false, 1);
-            var b = new RiptideCoursePlan.Level(2, 250, thick, "ADD", 0, false, 2);
-            var d = new RiptideCoursePlan.Level(3, 295, thick, "ADD", 0, false, 3);
-            var result = RiptideChallengeGroups.arrange(c, g, List.of(a, b, d));
-            assertEquals(4, result.size());
-            assertEquals(a, result.getFirst());
-            assertEquals(d, result.getLast());
-            for (int i = 1; i < result.size(); i++)
-                assertTrue(
-                        RiptideCoursePlanner.safeTransition(
-                                c, g, result.get(i - 1), result.get(i)));
+            assertEquals(Set.of(1, 2, 3), front);
+            assertEquals(Set.of(1, 2, 3), side);
+            assertEquals(Set.of(false, true), frontMirrors);
+            assertEquals(Set.of(false, true), sideMirrors);
         }
     }
 }

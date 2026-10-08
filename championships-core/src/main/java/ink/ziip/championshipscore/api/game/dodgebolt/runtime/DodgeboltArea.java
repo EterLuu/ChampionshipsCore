@@ -10,7 +10,6 @@ import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.game.spatial.TeleportPositions;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.location.LocationConfig;
 import ink.ziip.championshipscore.platform.bukkit.scoreboard.TeamColors;
@@ -1271,7 +1270,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
             return;
         }
         player.getInventory().clear();
-        player.teleport(CCConfig.LOBBY_LOCATION);
+        teleportToLobby(player);
         player.setGameMode(GameMode.ADVENTURE);
     }
 

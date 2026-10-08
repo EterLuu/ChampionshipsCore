@@ -6,6 +6,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.game.manager.GameManager;
 import ink.ziip.championshipscore.api.game.model.*;
+import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageConfig;
 
 import org.bukkit.*;
 import org.bukkit.scheduler.*;
@@ -17,6 +18,68 @@ import java.util.concurrent.*;
 import java.util.logging.Logger;
 
 class BaseSingleGameScheduleTest {
+    @Test
+    void readyCourseStillWaitsForTheFullTenSecondClock() throws Exception {
+        try (var fixture = new PreparationFixture()) {
+            fixture.schedule.nextRound();
+            fixture.schedule.prepared.complete(true);
+            fixture.tick(10);
+            assertTrue(fixture.game.starts.isEmpty());
+            fixture.tick(1);
+            assertEquals(1, fixture.game.starts.size());
+            assertEquals(2, fixture.schedule.getSubRound());
+        }
+    }
+
+    @Test
+    void expiredClockWaitsForCourseReadinessAndStartsOnlyOnce() throws Exception {
+        try (var fixture = new PreparationFixture()) {
+            fixture.schedule.nextRound();
+            fixture.tick(11);
+            assertTrue(fixture.game.starts.isEmpty());
+            fixture.schedule.prepared.complete(true);
+            assertEquals(1, fixture.game.starts.size());
+            assertFalse(fixture.schedule.prepared.complete(true));
+            assertEquals(1, fixture.game.starts.size());
+        }
+    }
+
+    @Test
+    void stoppedScheduleIgnoresItsOldPreparationAfterANewGenerationBegins() throws Exception {
+        try (var fixture = new PreparationFixture()) {
+            fixture.schedule.nextRound();
+            fixture.tick(11);
+            fixture.schedule.endSchedule();
+            fixture.schedule.enabled = true;
+            fixture.schedule.scheduleGeneration++;
+            fixture.schedule.prepared.complete(true);
+            assertTrue(fixture.game.starts.isEmpty());
+            assertTrue(fixture.schedule.isEnabled());
+        }
+    }
+
+    @Test
+    void failedPreparationEndsTheScheduleAndDoesNotStartAnUnbuiltCourse() throws Exception {
+        try (var fixture = new PreparationFixture()) {
+            fixture.schedule.nextRound();
+            fixture.schedule.prepared.completeExceptionally(
+                    new IllegalStateException("build failed"));
+            fixture.tick(11);
+            assertFalse(fixture.schedule.isEnabled());
+            assertTrue(fixture.game.starts.isEmpty());
+        }
+    }
+
+    @Test
+    void synchronousPreparationFailureAlsoReleasesTheSchedule() throws Exception {
+        try (var fixture = new PreparationFixture()) {
+            fixture.schedule.failSynchronously = true;
+            assertDoesNotThrow(fixture.schedule::nextRound);
+            assertFalse(fixture.schedule.isEnabled());
+            assertTrue(fixture.game.starts.isEmpty());
+        }
+    }
+
     @Test
     void anOldExecutionResultCannotStopTheNewScheduleAndCurrentFailureEndsIt() throws Exception {
         Field sf = field(Bukkit.class, "server");
@@ -94,6 +157,93 @@ class BaseSingleGameScheduleTest {
 
         @Override
         public void clearRoundPreparationCountdown() {}
+
+        @Override
+        public void showRoundPreparationCountdown(GameTypeEnum g, int round, int seconds) {}
+
+        @Override
+        public void settleEventRound(GameTypeEnum g, boolean next, Runnable after, long ticks) {
+            after.run();
+        }
+    }
+
+    private static final class Preparing extends BaseSingleGameSchedule {
+        final CompletableFuture<Boolean> prepared = new CompletableFuture<>();
+        boolean failSynchronously;
+
+        Preparing(ChampionshipsCore plugin) {
+            super(plugin, new NoEvents(plugin), GameTypeEnum.RiptideRush);
+            enabled = true;
+            subRound = 1;
+        }
+
+        @Override
+        protected CompletionStage<Boolean> prepareNextRound() {
+            if (failSynchronously) throw new IllegalStateException("preparation refused");
+            return prepared;
+        }
+
+        @Override
+        protected void playNextRoundSound() {}
+
+        @Override
+        public String getArea() {
+            return "Chosen";
+        }
+
+        @Override
+        public int getTotalRounds() {
+            return 3;
+        }
+    }
+
+    private static final class PreparationFixture implements AutoCloseable {
+        final Field serverField = field(Bukkit.class, "server");
+        final Object previousServer = serverField.get(null);
+        final List<String> previousMessage = ScheduleMessageConfig.NEXT_ROUND_SOON;
+        final AsyncGame game;
+        final Preparing schedule;
+        Runnable clock;
+
+        PreparationFixture() throws Exception {
+            var plugin = allocate(ChampionshipsCore.class);
+            set(plugin, "logger", Logger.getAnonymousLogger());
+            BukkitTask task = proxy(BukkitTask.class, (p, m, a) -> null);
+            BukkitScheduler scheduler =
+                    proxy(
+                            BukkitScheduler.class,
+                            (p, m, a) -> {
+                                if (m.getName().equals("runTaskTimer")) clock = (Runnable) a[1];
+                                return task;
+                            });
+            Server server =
+                    proxy(
+                            Server.class,
+                            (p, m, a) ->
+                                    switch (m.getName()) {
+                                        case "getScheduler" -> scheduler;
+                                        case "getOnlinePlayers" -> List.of();
+                                        default -> null;
+                                    });
+            serverField.set(null, server);
+            set(plugin, "server", server);
+            game = allocate(AsyncGame.class);
+            game.starts = new ArrayList<>();
+            set(plugin, "gameManager", game);
+            set(plugin, "scheduleManager", new Owner(plugin));
+            ScheduleMessageConfig.NEXT_ROUND_SOON = List.of("Next round");
+            schedule = new Preparing(plugin);
+        }
+
+        void tick(int seconds) {
+            for (int i = 0; i < seconds; i++) clock.run();
+        }
+
+        @Override
+        public void close() throws Exception {
+            ScheduleMessageConfig.NEXT_ROUND_SOON = previousMessage;
+            serverField.set(null, previousServer);
+        }
     }
 
     private static final class NoEvents extends BaseListener {

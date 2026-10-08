@@ -22,43 +22,33 @@ import java.util.*;
 @ExtendWith(ConfigurationStateExtension.class)
 class RiptideFinalStageTest {
     @Test
-    void everyFinalPassIsTripleAndEveryFinalMathIsThreeSideQuestions() throws Exception {
+    void finaleBorrowsPreviousBandInsteadOfCompressingDepartureAndMovingApproaches()
+            throws Exception {
         var c = RiptideTestFixtures.config();
-        for (int seed = 0; seed < 8; seed++) {
-            var plan = RiptideCoursePlanner.plan(c, seed);
-            assertEquals(
-                    32,
-                    plan.levels().stream().map(RiptideCoursePlan.Level::number).distinct().count());
-            for (var l : plan.levels())
-                if (l.step() >= 400) {
-                    if (l.type() == RiptideLevelType.MATH || l.isSideSweep()) {
-                        assertTrue(l.sideMath());
-                        assertEquals(3, l.sideWalls().size());
-                        for (int beat = 1; beat <= 3; beat++)
-                            assertNotNull(RiptideSideMath.question(l, beat, 10, 99));
-                    } else if (l.type() == RiptideLevelType.PASS) {
-                        assertEquals("FINAL_TRIPLE", l.rhythm());
-                        assertEquals(3, plan.trialLevels(l).size());
-                        var group = plan.trialLevels(l);
-                        for (int i = 1; i < group.size(); i++)
-                            assertNotEquals(
-                                    group.get(i - 1)
-                                            .template()
-                                            .designKey(group.get(i - 1).variant()),
-                                    group.get(i).template().designKey(group.get(i).variant()));
-                    } else if (l.type() == RiptideLevelType.RHYTHM) {
-                        var group = plan.trialLevels(l);
-                        assertEquals(3, group.size());
-                        assertEquals(
-                                3,
-                                group.stream()
-                                        .map(RiptideCoursePlan.Level::variant)
-                                        .distinct()
-                                        .count());
-                    }
-                }
-            assertTrue(plan.estimatedTicks() < c.getTimer() * 20);
+        var g = c.resolveGeometry();
+        var dodge = RiptideLevelTemplate.create("dodge", RiptideLevelType.DODGE);
+        var rhythm = RiptideLevelTemplate.create("rhythm", RiptideLevelType.RHYTHM);
+        var input =
+                List.of(
+                        new RiptideCoursePlan.Level(1, 360, dodge, "ZOMBIE", 0, false, 1),
+                        new RiptideCoursePlan.Level(2, 410, rhythm, "SHUTTER", 0, false, 2),
+                        new RiptideCoursePlan.Level(3, 450, rhythm, "SHUTTER", 0, false, 3),
+                        new RiptideCoursePlan.Level(4, 480, rhythm, "SHUTTER", 0, false, 4));
+        var output = RiptideFinalStage.arrange(c, g, input, new Random(1));
+        assertNotNull(output);
+        assertEquals(output, RiptideFinalStage.arrange(c, g, input, new Random(1)));
+        assertEquals(input.getFirst(), output.getFirst());
+        assertTrue(output.get(1).step() < 400);
+        assertEquals(4, output.stream().map(RiptideCoursePlan.Level::number).distinct().count());
+        assertEquals(7, output.stream().filter(l -> l.type() == RiptideLevelType.RHYTHM).count());
+        assertEquals(410, input.get(1).step());
+        for (int i = 1; i < output.size(); i++) {
+            var previous = output.get(i - 1);
+            var next = output.get(i);
+            assertTrue(RiptideCoursePlanner.safeTransition(c, g, previous, next));
+            if (next.step() >= 400) assertEquals("RHYTHM_TRIPLE", next.rhythm());
         }
+        assertTrue(output.getLast().step() < 496);
     }
 
     @Test
@@ -196,7 +186,7 @@ class RiptideFinalStageTest {
         c.setMaximumOperand(yaml.getInt("math.maximum-operand"));
         String before = yaml.getConfigurationSection("prepare").getValues(true).toString();
         String poolBefore = c.getPool().toString();
-        var groups = new HashSet<String>();
+        var challengeGroups = new HashSet<String>();
         for (int seed = 0; seed < 8; seed++) {
             var plan = RiptideCoursePlanner.plan(c, seed);
             assertTrue(plan.estimatedTicks() < c.getTimer() * 20, "seed=" + seed);
@@ -224,6 +214,26 @@ class RiptideFinalStageTest {
             var designs = new HashSet<String>();
             var ids = new HashSet<String>();
             for (var level : plan.levels()) {
+                if (level.step() >= 400) {
+                    if (level.type() == RiptideLevelType.MATH || level.isSideSweep()) {
+                        assertTrue(level.sideMath());
+                        assertEquals(3, level.sideWalls().size());
+                        for (int beat = 1; beat <= 3; beat++)
+                            assertNotNull(RiptideSideMath.question(level, beat, 10, 99));
+                    } else if (level.type() == RiptideLevelType.PASS) {
+                        assertEquals("FINAL_TRIPLE", level.rhythm());
+                        assertEquals(3, plan.trialLevels(level).size());
+                    } else if (level.type() == RiptideLevelType.RHYTHM) {
+                        var group = plan.trialLevels(level);
+                        assertEquals(3, group.size());
+                        assertEquals(
+                                3,
+                                group.stream()
+                                        .map(RiptideCoursePlan.Level::variant)
+                                        .distinct()
+                                        .count());
+                    }
+                }
                 if (!level.isSideSweep() && level.type() == RiptideLevelType.PASS) {
                     assertTrue(
                             ids.add(level.template().id()),
@@ -272,13 +282,18 @@ class RiptideFinalStageTest {
                     int first = group.getFirst().step();
                     int count = group.size();
                     assertTrue(first >= (count == 3 ? 200 : 100));
-                    if (first < (count == 3 ? 300 : 200)) groups.add(l.type() + "_" + count);
+                    if (l.type() != RiptideLevelType.PASS && first < (count == 3 ? 300 : 200))
+                        challengeGroups.add(l.type() + "_" + count);
                 }
         }
         assertEquals(before, yaml.getConfigurationSection("prepare").getValues(true).toString());
         assertEquals(poolBefore, c.getPool().toString());
-        assertTrue(groups.containsAll(Set.of("PASS_2", "MATH_2", "MATH_3")), groups.toString());
+        assertTrue(
+                challengeGroups.containsAll(Set.of("MATH_2", "MATH_3")),
+                challengeGroups.toString());
         if (c.getRhythmCount() > 0)
-            assertTrue(groups.containsAll(Set.of("RHYTHM_2", "RHYTHM_3")), groups.toString());
+            assertTrue(
+                    challengeGroups.containsAll(Set.of("RHYTHM_2", "RHYTHM_3")),
+                    challengeGroups.toString());
     }
 }

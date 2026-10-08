@@ -10,7 +10,6 @@ import ink.ziip.championshipscore.api.rank.entry.PlayerPointEntry;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-import ink.ziip.championshipscore.database.player.PlayerDaoImpl;
 import ink.ziip.championshipscore.database.rank.RankDaoImpl;
 import ink.ziip.championshipscore.database.sync.DatabaseSyncDomain;
 import ink.ziip.championshipscore.logging.LogText;
@@ -82,7 +81,6 @@ public class RankManager extends BaseManager {
     private final Map<GameTypeEnum, BigDecimal> gameWeight = new ConcurrentHashMap<>();
     private final Map<GameTypeEnum, Double> gameTotalPoints = new ConcurrentHashMap<>();
     private final RankDaoImpl rankDao = new RankDaoImpl();
-    private final PlayerDaoImpl playerDao = new PlayerDaoImpl();
     private final BukkitScheduler scheduler = Bukkit.getScheduler();
     private final Queue<Runnable> rankTaskQueue = new ConcurrentLinkedQueue<>();
     private final AtomicBoolean rankTaskRunning = new AtomicBoolean();

@@ -24,7 +24,7 @@ public final class GameStartRules {
 
     public static boolean internalArenas(GameTypeEnum game) {
         return switch (game) {
-            case TNTRun, HotyCodyDusky, FrostbiteFrenzy, SnowballShowdown -> true;
+            case TNTRun, HotyCodyDusky, FrostbiteFrenzy, LaserShowdown -> true;
             default -> false;
         };
     }

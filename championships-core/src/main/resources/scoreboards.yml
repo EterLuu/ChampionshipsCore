@@ -220,15 +220,15 @@ boards:
         - ''
         - '{style.footer}'
 
-    SnowballShowdown:
+    LaserShowdown:
       title: '{style.title}'
       ranking-line: '{rank.team-color}{rank.position}. {rank.team} &f{rank.score}'
       own-ranking-line: '{rank.team-color}&l▶ {rank.position}. {rank.team} &f&l{rank.score}'
       lines:
-        - '#ff0808当前游戏：#ff7373雪球大战'
-        - '#dfff2b轮次：#f6ffa8%schedule_round_snowball%/3'
+        - '#ff0808当前游戏：#ff7373激光乱斗'
+        - '#dfff2b轮次：#f6ffa8%schedule_round_lasershowdown%/3'
         - '#1da4ad场地状态：#f6ffa8{game.status}'
-        - '&f个人击杀：#ff6e26%snowball_player_individual_kills_[areaName]%'
+        - '&f个人击杀：#ff6e26%lasershowdown_player_individual_kills_[areaName]%'
         - '#4287f5乱斗总榜'
         - '{ranking}'
         - '{style.footer}'

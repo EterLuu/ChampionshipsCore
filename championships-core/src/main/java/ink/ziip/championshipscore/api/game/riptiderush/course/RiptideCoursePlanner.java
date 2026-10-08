@@ -18,7 +18,7 @@ import java.util.Random;
 
 /** Bounded, deterministic planning. No world mutation or player state is consulted. */
 public final class RiptideCoursePlanner {
-    public static final int VERSION = 28;
+    public static final int VERSION = 29;
 
     private RiptideCoursePlanner() {}
 
@@ -524,8 +524,17 @@ public final class RiptideCoursePlanner {
                 && first.template()
                         .designKey(first.variant())
                         .equals(second.template().designKey(second.variant()))) return false;
-        // Every stopped child reserves its deck plus entrance and gives its own instructions.
-        if (first.stopsRaft() || second.stopsRaft()) return gap >= 2;
+        // Incoming stopped stages give instructions while stationary. After departure, the
+        // next moving challenge still needs its full approach time; the pause is not travel.
+        if (second.stopsRaft()) return gap >= 2;
+        if (first.stopsRaft()) {
+            double seconds = gap / speedAt(c, g, second.step() + second.extent());
+            return gap > g.halfLength() + 2
+                    && seconds
+                            >= Math.max(
+                                    second.type() == RiptideLevelType.MATH ? 4D : 1.5D,
+                                    (g.raftWidth() - 1) / 3D + .5D);
+        }
         if (first.rhythm().equals("FINAL_TRIPLE") && second.rhythm().equals("FINAL_TRIPLE"))
             return gap >= 2
                     && gap / speedAt(c, g, second.step())

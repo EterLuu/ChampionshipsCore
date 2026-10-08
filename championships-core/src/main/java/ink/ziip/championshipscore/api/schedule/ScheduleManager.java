@@ -29,8 +29,8 @@ import ink.ziip.championshipscore.api.schedule.riptiderush.RiptideRushScheduleHa
 import ink.ziip.championshipscore.api.schedule.riptiderush.RiptideRushScheduleManager;
 import ink.ziip.championshipscore.api.schedule.skywars.SkyWarsScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.skywars.SkyWarsScheduleManager;
-import ink.ziip.championshipscore.api.schedule.snowball.SnowballScheduleHandler;
-import ink.ziip.championshipscore.api.schedule.snowball.SnowballScheduleManager;
+import ink.ziip.championshipscore.api.schedule.lasershowdown.LaserShowdownScheduleHandler;
+import ink.ziip.championshipscore.api.schedule.lasershowdown.LaserShowdownScheduleManager;
 import ink.ziip.championshipscore.api.schedule.tgttos.TGTTOSScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.tgttos.TGTTOSScheduleManager;
 import ink.ziip.championshipscore.api.schedule.tntrun.TNTRunScheduleHandler;
@@ -172,7 +172,7 @@ public class ScheduleManager extends BaseManager {
     }
 
     private final BukkitScheduler scheduler;
-    @Getter private SnowballScheduleManager snowballScheduleManager;
+    @Getter private LaserShowdownScheduleManager laserShowdownScheduleManager;
     @Getter private SkyWarsScheduleManager skyWarsScheduleManager;
     @Getter private TNTRunScheduleManager tntRunScheduleManager;
     @Getter private TGTTOSScheduleManager tgttosScheduleManager;
@@ -202,8 +202,8 @@ public class ScheduleManager extends BaseManager {
 
     @Override
     public void load() {
-        snowballScheduleManager =
-                new SnowballScheduleManager(plugin, new SnowballScheduleHandler(plugin));
+        laserShowdownScheduleManager =
+                new LaserShowdownScheduleManager(plugin, new LaserShowdownScheduleHandler(plugin));
         skyWarsScheduleManager =
                 new SkyWarsScheduleManager(plugin, new SkyWarsScheduleHandler(plugin));
         tntRunScheduleManager =
@@ -227,7 +227,7 @@ public class ScheduleManager extends BaseManager {
                 new FrostbiteScheduleManager(plugin, new FrostbiteScheduleHandler(plugin));
         laserBoxScheduleManager = new LaserBoxScheduleManager(plugin);
 
-        snowballScheduleManager.load();
+        laserShowdownScheduleManager.load();
         skyWarsScheduleManager.load();
         tntRunScheduleManager.load();
         tgttosScheduleManager.load();
@@ -255,7 +255,7 @@ public class ScheduleManager extends BaseManager {
         startSelections.clear();
         finaleRequestGeneration++;
         clearRoundPreparationCountdown();
-        snowballScheduleManager.unload();
+        laserShowdownScheduleManager.unload();
         skyWarsScheduleManager.unload();
         tntRunScheduleManager.unload();
         tgttosScheduleManager.unload();
@@ -284,7 +284,7 @@ public class ScheduleManager extends BaseManager {
      */
     public boolean supportsFormalEvent(@NotNull GameTypeEnum gameTypeEnum) {
         return switch (gameTypeEnum) {
-            case SnowballShowdown,
+            case LaserShowdown,
                     SkyWars,
                     TNTRun,
                     TGTTOS,
@@ -328,7 +328,7 @@ public class ScheduleManager extends BaseManager {
             }
         }
         switch (gameTypeEnum) {
-            case SnowballShowdown -> snowballScheduleManager.startGame();
+            case LaserShowdown -> laserShowdownScheduleManager.startGame();
             case SkyWars -> skyWarsScheduleManager.startGame();
             case TNTRun -> tntRunScheduleManager.startGame();
             case TGTTOS -> tgttosScheduleManager.startGame();
@@ -387,7 +387,7 @@ public class ScheduleManager extends BaseManager {
     public boolean isFormalEventRunning(@NotNull GameTypeEnum gameTypeEnum) {
         if (FinaleGameRegistry.isRegistered(gameTypeEnum)) return isFinaleRunning(gameTypeEnum);
         return switch (gameTypeEnum) {
-            case SnowballShowdown -> snowballScheduleManager.isEnabled();
+            case LaserShowdown -> laserShowdownScheduleManager.isEnabled();
             case SkyWars -> skyWarsScheduleManager.isEnabled();
             case TNTRun -> tntRunScheduleManager.isEnabled();
             case TGTTOS -> tgttosScheduleManager.isEnabled();
@@ -454,7 +454,7 @@ public class ScheduleManager extends BaseManager {
     /** Whether a completed instance belongs to a formal schedule that will assign another round. */
     public boolean hasNextRound(@NotNull GameTypeEnum gameTypeEnum) {
         return switch (gameTypeEnum) {
-            case SnowballShowdown -> snowballScheduleManager.hasNextRound();
+            case LaserShowdown -> laserShowdownScheduleManager.hasNextRound();
             case TNTRun -> tntRunScheduleManager.hasNextRound();
             case TGTTOS -> tgttosScheduleManager.hasNextRound();
             case BattleBox -> battleBoxScheduleManager.hasNextRound();
@@ -504,6 +504,14 @@ public class ScheduleManager extends BaseManager {
             @NotNull GameTypeEnum gameType,
             boolean hasNextRound,
             @NotNull Runnable afterSettlement) {
+        settleEventRound(gameType, hasNextRound, afterSettlement, RESULT_DISPLAY_TICKS);
+    }
+
+    public void settleEventRound(
+            @NotNull GameTypeEnum gameType,
+            boolean hasNextRound,
+            @NotNull Runnable afterSettlement,
+            long resultDisplayTicks) {
         List<BaseGameInstance> instances;
         synchronized (this) {
             Set<BaseGameInstance> pending = pendingEventInstances.remove(gameType);
@@ -537,7 +545,7 @@ public class ScheduleManager extends BaseManager {
                                                 hasNextRound && isFormalEventRunning(gameType));
                                     afterSettlement.run();
                                 },
-                                RESULT_DISPLAY_TICKS);
+                                Math.max(0L, resultDisplayTicks));
 
         if (hasNextRound) {
             release.run();
@@ -592,8 +600,8 @@ public class ScheduleManager extends BaseManager {
      */
     public void endGameSchedule(GameTypeEnum gameTypeEnum) {
         switch (gameTypeEnum) {
-            case SnowballShowdown -> {
-                if (snowballScheduleManager.isEnabled()) snowballScheduleManager.endSchedule();
+            case LaserShowdown -> {
+                if (laserShowdownScheduleManager.isEnabled()) laserShowdownScheduleManager.endSchedule();
             }
             case SkyWars -> {
                 if (skyWarsScheduleManager.isEnabled()) skyWarsScheduleManager.endSchedule();
@@ -1042,8 +1050,8 @@ public class ScheduleManager extends BaseManager {
             return CoreMessages.getMessage(ScheduleMessageConfig.TNT_RUN);
         if (gameTypeEnum == GameTypeEnum.TGTTOS)
             return CoreMessages.getMessage(ScheduleMessageConfig.TGTTOS);
-        if (gameTypeEnum == GameTypeEnum.SnowballShowdown)
-            return CoreMessages.getMessage(ScheduleMessageConfig.SNOWBALL);
+        if (gameTypeEnum == GameTypeEnum.LaserShowdown)
+            return CoreMessages.getMessage(ScheduleMessageConfig.LASER_SHOWDOWN);
         if (gameTypeEnum == GameTypeEnum.SkyWars)
             return CoreMessages.getMessage(ScheduleMessageConfig.SKY_WARS);
         if (gameTypeEnum == GameTypeEnum.ParkourWarrior)
@@ -1069,8 +1077,8 @@ public class ScheduleManager extends BaseManager {
             return CoreMessages.getMessage(ScheduleMessageConfig.TNT_RUN_POINTS);
         if (gameTypeEnum == GameTypeEnum.TGTTOS)
             return CoreMessages.getMessage(ScheduleMessageConfig.TGTTOS_POINTS);
-        if (gameTypeEnum == GameTypeEnum.SnowballShowdown)
-            return CoreMessages.getMessage(ScheduleMessageConfig.SNOWBALL_POINTS);
+        if (gameTypeEnum == GameTypeEnum.LaserShowdown)
+            return CoreMessages.getMessage(ScheduleMessageConfig.LASER_SHOWDOWN_POINTS);
         if (gameTypeEnum == GameTypeEnum.SkyWars)
             return CoreMessages.getMessage(ScheduleMessageConfig.SKY_WARS_POINTS);
         if (gameTypeEnum == GameTypeEnum.ParkourWarrior)

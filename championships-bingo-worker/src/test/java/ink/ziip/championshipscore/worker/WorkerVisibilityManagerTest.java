@@ -6,21 +6,18 @@ import org.junit.jupiter.api.Test;
 
 class WorkerVisibilityManagerTest {
     @Test
-    void spectatorsSeeBothPlayersAndOtherSpectators() {
-        assertTrue(WorkerVisibilityManager.allows(true, true, true));
-        assertTrue(WorkerVisibilityManager.allows(true, true, false));
-        assertTrue(WorkerVisibilityManager.allows(false, true, true));
-    }
-
-    @Test
-    void participantsNeverSeeSpectatorEntities() {
-        assertFalse(WorkerVisibilityManager.allows(true, false, true));
-        assertTrue(WorkerVisibilityManager.allows(true, false, false));
-    }
-
-    @Test
-    void unjoinedViewersKeepNormalLobbyPolicy() {
-        assertTrue(WorkerVisibilityManager.allows(false, false, true));
-        assertTrue(WorkerVisibilityManager.allows(false, false, false));
+    void visibilityTruthTableKeepsSpectatorMutualVisibilityAndParticipantProtection() {
+        boolean[][] cases = {
+            {false, false, false, true}, {false, false, true, true},
+            {false, true, false, true}, {false, true, true, true},
+            {true, false, false, true}, {true, false, true, false},
+            {true, true, false, true}, {true, true, true, true}
+        };
+        for (boolean[] example : cases) {
+            assertEquals(
+                    example[3],
+                    WorkerVisibilityManager.allows(example[0], example[1], example[2]),
+                    java.util.Arrays.toString(example));
+        }
     }
 }

@@ -1,6 +1,9 @@
 package ink.ziip.championshipscore.api.game.riptiderush.mechanics;
 
 import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideCourseGeometry;
+import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideCoursePlan;
+import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideDifficulty;
+import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideLevelType;
 
 import org.bukkit.Location;
 
@@ -11,7 +14,45 @@ import java.util.List;
 public final class RiptideMathRun {
     static final int TITLE_TICKS = 80;
 
-    public record Gate(int level, int step, RiptideQuestion question) {}
+    public record Gate(
+            int level,
+            int step,
+            RiptideQuestion question,
+            int previousStageEnd,
+            int previousStopStep) {
+        public Gate(int level, int step, RiptideQuestion question) {
+            this(level, step, question, Integer.MIN_VALUE, Integer.MIN_VALUE);
+        }
+    }
+
+    /** Retain the intervening stages instead of treating all math gates as one empty corridor. */
+    public static List<Gate> gates(
+            RiptideCourseGeometry geometry,
+            List<RiptideCoursePlan.Level> levels,
+            int minimum,
+            int maximum) {
+        var result = new ArrayList<Gate>();
+        int previousEnd = Integer.MIN_VALUE;
+        int previousStop = Integer.MIN_VALUE;
+        for (var level : levels) {
+            if (level.type() == RiptideLevelType.MATH && !level.isSideSweep()) {
+                result.add(
+                        new Gate(
+                                level.number(),
+                                level.step(),
+                                level.question(
+                                        minimum,
+                                        maximum,
+                                        RiptideDifficulty.stage(
+                                                level.step(), geometry.totalSteps())),
+                                previousEnd,
+                                previousStop));
+            }
+            previousEnd = level.step() + level.extent();
+            if (level.stopsRaft()) previousStop = geometry.stoppedStep(level.step());
+        }
+        return List.copyOf(result);
+    }
 
     public enum Result {
         CORRECT,
@@ -81,10 +122,19 @@ public final class RiptideMathRun {
     }
 
     public Gate preview(
-            Location current, double speed, int previewBlocks, int tick, boolean paused) {
+            Location current,
+            int raftStep,
+            double speed,
+            int previewBlocks,
+            int tick,
+            boolean paused) {
         if (failed || nextGate >= gates.size() || paused || !sameWorld(previous, current))
             return null;
         Gate gate = gates.get(nextGate);
+        if (raftStep <= gate.previousStopStep()
+                || gate.previousStageEnd() != Integer.MIN_VALUE
+                        && geometry.forwardOffset(current, gate.previousStageEnd()) <= 0D)
+            return null;
         double distance = -geometry.forwardOffset(current, gate.step());
         if (distance <= 0D || distance > Math.min(previewBlocks, speed * TITLE_TICKS / 20D) + 1e-9D)
             return null;

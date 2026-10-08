@@ -58,11 +58,11 @@ public class ScheduleMessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "tgttos-points")
     public static List<String> TGTTOS_POINTS;
 
-    @ConfigOption(path = "snowball")
-    public static List<String> SNOWBALL;
+    @ConfigOption(path = "lasershowdown")
+    public static List<String> LASER_SHOWDOWN;
 
-    @ConfigOption(path = "snowball-points")
-    public static List<String> SNOWBALL_POINTS;
+    @ConfigOption(path = "lasershowdown-points")
+    public static List<String> LASER_SHOWDOWN_POINTS;
 
     @ConfigOption(path = "dragon-egg-carnival")
     public static List<String> DRAGON_EGG_CARNIVAL;

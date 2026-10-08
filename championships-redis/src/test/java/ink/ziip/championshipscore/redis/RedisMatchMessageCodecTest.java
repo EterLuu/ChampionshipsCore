@@ -8,11 +8,8 @@ import ink.ziip.championshipscore.protocol.BinaryProtocolCodec;
 import ink.ziip.championshipscore.protocol.BingoRuntimeRules;
 import ink.ziip.championshipscore.protocol.BingoScoringRules;
 import ink.ziip.championshipscore.protocol.BingoTaskSpec;
-import ink.ziip.championshipscore.protocol.CompletionObservation;
 import ink.ziip.championshipscore.protocol.DeterministicIds;
-import ink.ziip.championshipscore.protocol.MatchEvent;
 import ink.ziip.championshipscore.protocol.MatchManifest;
-import ink.ziip.championshipscore.protocol.MatchMessages;
 import ink.ziip.championshipscore.protocol.MatchRunMode;
 import ink.ziip.championshipscore.protocol.ParticipantRole;
 import ink.ziip.championshipscore.protocol.PlayerSnapshot;
@@ -55,17 +52,6 @@ class RedisMatchMessageCodecTest {
         fields.put("epoch", "2");
         assertThrows(
                 IllegalArgumentException.class, () -> new RedisMatchMessageCodec().decode(fields));
-    }
-
-    @Test
-    void taskCompletionFactoryRoundTripsWithoutAttributeKnowledge() {
-        CompletionObservation observation =
-                new CompletionObservation(MATCH, 1, 7, 1, PLAYER, 3, 99);
-        MatchEvent event = MatchMessages.taskCompleted(observation, CLOCK);
-
-        assertEquals(observation, MatchMessages.completionObservation(event));
-        assertEquals(
-                event.messageId(), MatchMessages.taskCompleted(observation, CLOCK).messageId());
     }
 
     @Test

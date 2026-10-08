@@ -131,20 +131,11 @@ public final class RiptideCourseTrial implements Listener {
         math =
                 new RiptideMathRun(
                         geometry,
-                        levels.stream()
-                                .filter(l -> l.type() == RiptideLevelType.MATH && !l.isSideSweep())
-                                .map(
-                                        l ->
-                                                new RiptideMathRun.Gate(
-                                                        l.number(),
-                                                        l.step(),
-                                                        l.question(
-                                                                config.getMinimumOperand(),
-                                                                config.getMaximumOperand(),
-                                                                RiptideDifficulty.stage(
-                                                                        l.step(),
-                                                                        geometry.totalSteps()))))
-                                .toList(),
+                        RiptideMathRun.gates(
+                                geometry,
+                                levels,
+                                config.getMinimumOperand(),
+                                config.getMaximumOperand()),
                         player.getLocation());
         courseReveal = new RiptideCourseReveal(config, geometry, levels);
     }
@@ -355,6 +346,7 @@ public final class RiptideCourseTrial implements Listener {
             var gate =
                     math.preview(
                             player.getLocation(),
+                            step,
                             RiptideCoursePlanner.speedAt(config, geometry, step),
                             config.getMathPreviewBlocks(),
                             elapsed,

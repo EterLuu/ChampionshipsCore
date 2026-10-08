@@ -3,23 +3,32 @@ package ink.ziip.championshipscore.api.game.parkourtag.runtime;
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.api.game.manager.GameManager;
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.api.game.parkourtag.ParkourTagManager;
 import ink.ziip.championshipscore.api.game.parkourtag.config.ParkourTagConfig;
 import ink.ziip.championshipscore.api.game.parkourtag.geometry.ParkourTagGeometry;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.ConfigurationStateExtension;
+import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.lang.reflect.Proxy;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -28,7 +37,50 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+@ExtendWith(ConfigurationStateExtension.class)
 class ParkourTagPreparationTest {
+    @Test
+    void selectionRemindersShowTheAvailableQuotaOnceWithoutSpendingIt() throws Exception {
+        CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES = 4;
+        try (var reader =
+                new InputStreamReader(
+                        getClass().getResourceAsStream("/message.yml"), StandardCharsets.UTF_8)) {
+            new MessageConfig(allocate(ChampionshipsCore.class))
+                    .loadFromConfiguration(YamlConfiguration.loadConfiguration(reader));
+        }
+        for (int used : new int[] {0, 3, 4}) {
+            Fixture fixture = fixture();
+            UUID uuid = new UUID(1, 1);
+            for (int i = 0; i < used; i++) fixture.manager.addChaserTimes(uuid);
+            List<String> messages = new ArrayList<>();
+            Player player =
+                    (Player)
+                            Proxy.newProxyInstance(
+                                    Player.class.getClassLoader(),
+                                    new Class<?>[] {Player.class},
+                                    (proxy, method, arguments) ->
+                                            switch (method.getName()) {
+                                                case "getUniqueId" -> uuid;
+                                                case "sendMessage" -> {
+                                                    messages.add((String) arguments[0]);
+                                                    yield null;
+                                                }
+                                                default ->
+                                                        throw new AssertionError(method.getName());
+                                            });
+            fixture.right.onlinePlayers = List.of(player);
+            fixture.area.startGamePreparation();
+            assertEquals(1, messages.size());
+            String expected = used == 0 ? "4次" : used == 3 ? "最后一次" : "你已无追击次数，请其他队友担任";
+            assertTrue(messages.getFirst().contains(expected), messages.toString());
+            assertFalse(messages.getFirst().contains("%times%"));
+            fixture.tick.get().run();
+            assertEquals(1, messages.size());
+            assertEquals(used, fixture.manager.getChaserTimes(uuid));
+            assertNull(fixture.match.getRightAreaChaser());
+        }
+    }
+
     @Test
     void spendsTwentySecondsAtTheTeamPreparationSpotsBeforeEnteringTheCages() throws Exception {
         Fixture fixture = fixture();
@@ -101,11 +153,16 @@ class ParkourTagPreparationTest {
             TestTeam right,
             TestTeam left,
             ParkourTagMatch match,
+            ParkourTagManager manager,
             AtomicReference<Runnable> tick,
             AtomicBoolean cancelled) {}
 
     private static Fixture fixture() throws Exception {
         var plugin = allocate(ChampionshipsCore.class);
+        var manager = new ParkourTagManager(null);
+        var gameManager = allocate(GameManager.class);
+        set(gameManager, "parkourTagManager", manager);
+        set(plugin, "gameManager", gameManager);
         var area = allocate(TestArea.class);
         set(area, "plugin", plugin);
         set(area, "gameTypeEnum", GameTypeEnum.ParkourTag);
@@ -155,7 +212,7 @@ class ParkourTagPreparationTest {
         var left = new TestTeam(2);
         var match = new ParkourTagMatch(0, right, left, ParkourTagGeometry.from(config));
         set(area, "match", match);
-        return new Fixture(area, right, left, match, tick, cancelled);
+        return new Fixture(area, right, left, match, manager, tick, cancelled);
     }
 
     private static final class TestArea extends ParkourTagArea {
@@ -202,6 +259,7 @@ class ParkourTagPreparationTest {
 
     private static final class TestTeam extends ChampionshipTeam {
         Location teleported;
+        List<Player> onlinePlayers = List.of();
 
         private TestTeam(int id) {
             super(id, "team-" + id, "red", "#FFFFFF", Set.of(new UUID(id, 1)), null);
@@ -210,6 +268,11 @@ class ParkourTagPreparationTest {
         @Override
         public void teleportAllPlayers(Location target) {
             teleported = target;
+        }
+
+        @Override
+        public List<Player> getOnlinePlayers() {
+            return onlinePlayers;
         }
     }
 

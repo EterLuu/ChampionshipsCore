@@ -9,15 +9,13 @@ import java.util.List;
 
 class SharedPresentationPolicyTest {
     @Test
-    void ordinaryRulesKeepTenSecondCadenceInLongIntroductions() {
+    void introductionsKeepNormalCadenceAndCompressLongRuleListsToFit() {
+
         assertEquals(0, RuleIntroductionTimeline.sectionAt(10, 90, 3));
         assertEquals(1, RuleIntroductionTimeline.sectionAt(20, 90, 3));
         assertEquals(2, RuleIntroductionTimeline.sectionAt(30, 90, 3));
         assertEquals(-1, RuleIntroductionTimeline.sectionAt(49, 90, 3));
-    }
 
-    @Test
-    void longRuleListsCompressToFit() {
         for (int section = 0; section < 8; section++) {
             assertEquals(section, RuleIntroductionTimeline.sectionAt(10 + section * 4, 45, 8));
         }
@@ -34,6 +32,7 @@ class SharedPresentationPolicyTest {
     @Test
     void formatsCountdownAsMinutesAndSeconds() {
         assertEquals("00:00", DurationText.minutesSeconds(-1));
+        assertEquals("00:00", DurationText.minutesSeconds(0));
         assertEquals("00:07", DurationText.minutesSeconds(7));
         assertEquals("09:59", DurationText.minutesSeconds(599));
         assertEquals("12:56", DurationText.minutesSeconds(12 * 60L + 56));

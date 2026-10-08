@@ -51,6 +51,12 @@ class MatchProtocolSemanticsTest {
         assertEquals(15, decoded.seq());
         assertEquals(observation, MatchMessages.completionObservation(decoded));
         assertNotEquals(observation.seq(), decoded.seq());
+        MatchEvent defaultSequence = MatchMessages.taskCompleted(observation, CLOCK);
+        assertEquals(observation, MatchMessages.completionObservation(defaultSequence));
+        assertEquals(observation.seq(), defaultSequence.seq());
+        assertEquals(
+                defaultSequence.messageId(),
+                MatchMessages.taskCompleted(observation, CLOCK).messageId());
     }
 
     @Test

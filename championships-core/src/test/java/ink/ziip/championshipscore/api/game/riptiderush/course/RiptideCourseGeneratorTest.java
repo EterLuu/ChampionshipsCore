@@ -24,6 +24,23 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 class RiptideCourseGeneratorTest {
     @Test
+    void clearingAnAlreadyEmptySliceDoesNotWriteAndOnlyOwnedNonAirCellsAreRemoved()
+            throws Exception {
+        var world = new TestWorld();
+        var c = config(world, new int[] {0, 1});
+        var g = c.resolveGeometry();
+        assertEquals(0, RiptideCourseGenerator.clearSlice(world.world, g, 20, 5, 12));
+        assertEquals(0, world.writes);
+        world.set(g, 20, 0, 3, Material.STONE);
+        world.set(g, 20, 6, 3, Material.DIAMOND_BLOCK);
+        world.writes = 0;
+        assertEquals(1, RiptideCourseGenerator.clearSlice(world.world, g, 20, 5, 12));
+        assertEquals(1, world.writes);
+        assertEquals(Material.AIR, world.at(g, 20, 0, 3));
+        assertEquals(Material.DIAMOND_BLOCK, world.at(g, 20, 6, 3));
+    }
+
+    @Test
     void everyStoppedChildBuildsTheSameGoldEntranceInsteadOfPastingAFloorBuilding()
             throws Exception {
         for (int[] axis : new int[][] {{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {

@@ -66,85 +66,108 @@ class BuildMartMaterialDisplaysTest {
     }
 
     @Test
-    void countsAllMaterialsAndUsesActualItemQuantitiesForSlabsDoorsAndBeds() {
-        BuildMartBlueprint blueprint =
-                blueprint(
-                        data(Material.OAK_PLANKS),
-                        data(Material.OAK_PLANKS),
-                        data(Material.CUT_COPPER_SLAB, Slab.class, "getType", Slab.Type.DOUBLE),
-                        data(Material.CUT_COPPER_SLAB, Slab.class, "getType", Slab.Type.TOP),
-                        data(Material.OAK_DOOR, Bisected.class, "getHalf", Bisected.Half.BOTTOM),
-                        data(Material.OAK_DOOR, Bisected.class, "getHalf", Bisected.Half.TOP),
-                        data(Material.RED_BED, Bed.class, "getPart", Bed.Part.FOOT),
-                        data(Material.RED_BED, Bed.class, "getPart", Bed.Part.HEAD),
-                        data(Material.PEONY, Bisected.class, "getHalf", Bisected.Half.BOTTOM),
-                        data(Material.PEONY, Bisected.class, "getHalf", Bisected.Half.TOP));
-        assertEquals(
-                Map.of(
-                        Material.OAK_PLANKS,
-                        2,
-                        Material.CUT_COPPER_SLAB,
-                        3,
-                        Material.OAK_DOOR,
-                        1,
-                        Material.RED_BED,
-                        1,
-                        Material.PEONY,
-                        1),
-                BuildMartMaterialDisplays.materials(blueprint));
-    }
-
-    @Test
-    void topStairsAndTrapdoorsStillRequireOneItemEach() {
-        assertEquals(
-                Map.of(Material.OAK_STAIRS, 1, Material.OAK_TRAPDOOR, 1),
-                BuildMartMaterialDisplays.materials(
-                        blueprint(
-                                data(
-                                        Material.OAK_STAIRS,
-                                        Stairs.class,
-                                        "getHalf",
-                                        Bisected.Half.TOP),
-                                data(
-                                        Material.OAK_TRAPDOOR,
-                                        TrapDoor.class,
-                                        "getHalf",
-                                        Bisected.Half.TOP))));
-    }
-
-    @Test
-    void listsWallItemsAndBothIngredientsOfPottedPlantsWithoutCountingPistonHeads() {
-        assertEquals(
-                Map.of(
-                        Material.OAK_SIGN,
-                        1,
-                        Material.RED_BANNER,
-                        1,
-                        Material.WARPED_HANGING_SIGN,
-                        1,
-                        Material.FLOWER_POT,
-                        4,
-                        Material.PINK_TULIP,
-                        1,
-                        Material.DEAD_BUSH,
-                        1,
-                        Material.PISTON,
-                        1,
-                        Material.AZALEA,
-                        1,
-                        Material.FLOWERING_AZALEA,
-                        1),
-                BuildMartMaterialDisplays.materials(
-                        blueprint(
-                                data(Material.OAK_WALL_SIGN),
-                                data(Material.RED_WALL_BANNER),
-                                data(Material.WARPED_WALL_HANGING_SIGN),
-                                data(Material.POTTED_PINK_TULIP),
-                                data(Material.POTTED_DEAD_BUSH),
-                                data(Material.PISTON),
-                                data(Material.PISTON_HEAD),
-                                data(Material.POTTED_AZALEA_BUSH),
-                                data(Material.POTTED_FLOWERING_AZALEA_BUSH))));
+    void materialCountsHandleMultipartBlocksWallItemsAndDisplayOnlyParts() {
+        assertAll(
+                () -> {
+                    BuildMartBlueprint blueprint =
+                            blueprint(
+                                    data(Material.OAK_PLANKS),
+                                    data(Material.OAK_PLANKS),
+                                    data(
+                                            Material.CUT_COPPER_SLAB,
+                                            Slab.class,
+                                            "getType",
+                                            Slab.Type.DOUBLE),
+                                    data(
+                                            Material.CUT_COPPER_SLAB,
+                                            Slab.class,
+                                            "getType",
+                                            Slab.Type.TOP),
+                                    data(
+                                            Material.OAK_DOOR,
+                                            Bisected.class,
+                                            "getHalf",
+                                            Bisected.Half.BOTTOM),
+                                    data(
+                                            Material.OAK_DOOR,
+                                            Bisected.class,
+                                            "getHalf",
+                                            Bisected.Half.TOP),
+                                    data(Material.RED_BED, Bed.class, "getPart", Bed.Part.FOOT),
+                                    data(Material.RED_BED, Bed.class, "getPart", Bed.Part.HEAD),
+                                    data(
+                                            Material.PEONY,
+                                            Bisected.class,
+                                            "getHalf",
+                                            Bisected.Half.BOTTOM),
+                                    data(
+                                            Material.PEONY,
+                                            Bisected.class,
+                                            "getHalf",
+                                            Bisected.Half.TOP));
+                    assertEquals(
+                            Map.of(
+                                    Material.OAK_PLANKS,
+                                    2,
+                                    Material.CUT_COPPER_SLAB,
+                                    3,
+                                    Material.OAK_DOOR,
+                                    1,
+                                    Material.RED_BED,
+                                    1,
+                                    Material.PEONY,
+                                    1),
+                            BuildMartMaterialDisplays.materials(blueprint));
+                },
+                () -> {
+                    assertEquals(
+                            Map.of(Material.OAK_STAIRS, 1, Material.OAK_TRAPDOOR, 1),
+                            BuildMartMaterialDisplays.materials(
+                                    blueprint(
+                                            data(
+                                                    Material.OAK_STAIRS,
+                                                    Stairs.class,
+                                                    "getHalf",
+                                                    Bisected.Half.TOP),
+                                            data(
+                                                    Material.OAK_TRAPDOOR,
+                                                    TrapDoor.class,
+                                                    "getHalf",
+                                                    Bisected.Half.TOP))));
+                },
+                () -> {
+                    assertEquals(
+                            Map.of(
+                                    Material.OAK_SIGN,
+                                    1,
+                                    Material.RED_BANNER,
+                                    1,
+                                    Material.WARPED_HANGING_SIGN,
+                                    1,
+                                    Material.FLOWER_POT,
+                                    4,
+                                    Material.PINK_TULIP,
+                                    1,
+                                    Material.DEAD_BUSH,
+                                    1,
+                                    Material.PISTON,
+                                    1,
+                                    Material.AZALEA,
+                                    1,
+                                    Material.FLOWERING_AZALEA,
+                                    1),
+                            BuildMartMaterialDisplays.materials(
+                                    blueprint(
+                                            data(Material.OAK_WALL_SIGN),
+                                            data(Material.RED_WALL_BANNER),
+                                            data(Material.WARPED_WALL_HANGING_SIGN),
+                                            data(Material.POTTED_PINK_TULIP),
+                                            data(Material.POTTED_DEAD_BUSH),
+                                            data(Material.PISTON),
+                                            data(Material.PISTON_HEAD),
+                                            data(Material.POTTED_AZALEA_BUSH),
+                                            data(Material.POTTED_FLOWERING_AZALEA_BUSH))));
+                });
     }
 
     @Test

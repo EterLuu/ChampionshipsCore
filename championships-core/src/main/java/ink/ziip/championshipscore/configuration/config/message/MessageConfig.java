@@ -482,6 +482,15 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "map-editor-step.world-confirm-prompt")
     public static String MAP_EDITOR_STEP_WORLD_CONFIRM_PROMPT;
 
+    @ConfigOption(path = "map-editor-step.riptide-introduction-arena-unavailable")
+    public static String MAP_EDITOR_RIPTIDE_INTRODUCTION_ARENA_UNAVAILABLE;
+
+    @ConfigOption(path = "map-editor-step.riptide-introduction-arena-teleport-failed")
+    public static String MAP_EDITOR_RIPTIDE_INTRODUCTION_ARENA_TELEPORT_FAILED;
+
+    @ConfigOption(path = "map-editor-step.riptide-introduction-arena-teleported")
+    public static String MAP_EDITOR_RIPTIDE_INTRODUCTION_ARENA_TELEPORTED;
+
     // Map editor step feedback
 
     @ConfigOption(path = "map-editor-step.deleted")
@@ -1486,8 +1495,8 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "game.tntrun")
     public static String GAME_TNT_RUN;
 
-    @ConfigOption(path = "game.snowballsnowdown")
-    public static String GAME_SNOWBALL_SNOW_DOWN;
+    @ConfigOption(path = "game.lasershowdown")
+    public static String GAME_LASER_SHOWDOWN;
 
     @ConfigOption(path = "game.skywars")
     public static String GAME_SKY_WARS;
@@ -1549,6 +1558,9 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "laserbox.hit")
     public static String LASER_BOX_HIT;
 
+    @ConfigOption(path = "laserbox.headshot", nullable = true)
+    public static String LASER_BOX_HEADSHOT;
+
     @ConfigOption(path = "laserbox.respawn-title")
     public static String LASER_BOX_RESPAWN_TITLE;
 
@@ -1578,6 +1590,69 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "laserbox.item-reveal")
     public static String LASER_BOX_ITEM_REVEAL;
+
+    @ConfigOption(path = "laserbox.gun-selection-title", nullable = true)
+    public static String LASER_BOX_GUN_SELECTION_TITLE;
+
+    @ConfigOption(path = "laserbox.gun-selection-subtitle", nullable = true)
+    public static String LASER_BOX_GUN_SELECTION_SUBTITLE;
+
+    @ConfigOption(path = "laserbox.gun-selection-chosen", nullable = true)
+    public static String LASER_BOX_GUN_SELECTION_CHOSEN;
+
+    @ConfigOption(path = "laserbox.gun-selection-default", nullable = true)
+    public static String LASER_BOX_GUN_SELECTION_DEFAULT;
+
+    @ConfigOption(path = "laserbox.ammo", nullable = true)
+    public static String LASER_BOX_AMMO;
+
+    @ConfigOption(path = "laserbox.reload", nullable = true)
+    public static String LASER_BOX_RELOAD;
+
+    @ConfigOption(path = "laserbox.reload-complete", nullable = true)
+    public static String LASER_BOX_RELOAD_COMPLETE;
+
+    @ConfigOption(path = "laserbox.no-ammo", nullable = true)
+    public static String LASER_BOX_NO_AMMO;
+
+    @ConfigOption(path = "laserbox.ammo-item", nullable = true)
+    public static String LASER_BOX_AMMO_ITEM;
+
+    @ConfigOption(path = "laserbox.gun-magazine", nullable = true)
+    public static String LASER_BOX_GUN_MAGAZINE;
+
+    @ConfigOption(path = "laserbox.gun-selected", nullable = true)
+    public static String LASER_BOX_GUN_SELECTED;
+
+    @ConfigOption(path = "laserbox.guns.sniper.name", nullable = true)
+    public static String LASER_BOX_GUN_SNIPER_NAME;
+
+    @ConfigOption(path = "laserbox.guns.sniper.description", nullable = true)
+    public static String LASER_BOX_GUN_SNIPER_DESCRIPTION;
+
+    @ConfigOption(path = "laserbox.guns.rifle.name", nullable = true)
+    public static String LASER_BOX_GUN_RIFLE_NAME;
+
+    @ConfigOption(path = "laserbox.guns.rifle.description", nullable = true)
+    public static String LASER_BOX_GUN_RIFLE_DESCRIPTION;
+
+    @ConfigOption(path = "laserbox.guns.smg.name", nullable = true)
+    public static String LASER_BOX_GUN_SMG_NAME;
+
+    @ConfigOption(path = "laserbox.guns.smg.description", nullable = true)
+    public static String LASER_BOX_GUN_SMG_DESCRIPTION;
+
+    @ConfigOption(path = "laserbox.guns.machine.name", nullable = true)
+    public static String LASER_BOX_GUN_MACHINE_NAME;
+
+    @ConfigOption(path = "laserbox.guns.machine.description", nullable = true)
+    public static String LASER_BOX_GUN_MACHINE_DESCRIPTION;
+
+    @ConfigOption(path = "laserbox.guns.shotgun.name", nullable = true)
+    public static String LASER_BOX_GUN_SHOTGUN_NAME;
+
+    @ConfigOption(path = "laserbox.guns.shotgun.description", nullable = true)
+    public static String LASER_BOX_GUN_SHOTGUN_DESCRIPTION;
 
     @ConfigOption(path = "frostbite.start-preparation")
     public static String FROSTBITE_START_PREPARATION;
@@ -1946,6 +2021,15 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "parkourtag.become-chaser")
     public static String PARKOUR_TAG_BECOME_CHASER;
+
+    @ConfigOption(path = "parkourtag.become-chaser-last")
+    public static String PARKOUR_TAG_BECOME_CHASER_LAST;
+
+    @ConfigOption(path = "parkourtag.chaser-selection-remaining")
+    public static String PARKOUR_TAG_CHASER_SELECTION_REMAINING;
+
+    @ConfigOption(path = "parkourtag.chaser-selection-last")
+    public static String PARKOUR_TAG_CHASER_SELECTION_LAST;
 
     @ConfigOption(path = "parkourtag.become-chaser-failed")
     public static String PARKOUR_TAG_BECOME_CHASER_FAILED;
@@ -2489,45 +2573,45 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "dragoneggcarnival.dragon-pressure")
     public static String DRAGON_EGG_CARNIVAL_DRAGON_PRESSURE;
 
-    // Snowball
-    @ConfigOption(path = "snowball.start-preparation")
-    public static String SNOWBALL_START_PREPARATION;
+    // Laser Showdown
+    @ConfigOption(path = "lasershowdown.start-preparation")
+    public static String LASER_SHOWDOWN_START_PREPARATION;
 
-    @ConfigOption(path = "snowball.start-preparation-title")
-    public static String SNOWBALL_START_PREPARATION_TITLE;
+    @ConfigOption(path = "lasershowdown.start-preparation-title")
+    public static String LASER_SHOWDOWN_START_PREPARATION_TITLE;
 
-    @ConfigOption(path = "snowball.start-preparation-subtitle")
-    public static String SNOWBALL_START_PREPARATION_SUBTITLE;
+    @ConfigOption(path = "lasershowdown.start-preparation-subtitle")
+    public static String LASER_SHOWDOWN_START_PREPARATION_SUBTITLE;
 
-    @ConfigOption(path = "snowball.game-start-soon-title")
-    public static String SNOWBALL_GAME_START_SOON_TITLE;
+    @ConfigOption(path = "lasershowdown.game-start-soon-title")
+    public static String LASER_SHOWDOWN_GAME_START_SOON_TITLE;
 
-    @ConfigOption(path = "snowball.game-start-title")
-    public static String SNOWBALL_GAME_START_TITLE;
+    @ConfigOption(path = "lasershowdown.game-start-title")
+    public static String LASER_SHOWDOWN_GAME_START_TITLE;
 
-    @ConfigOption(path = "snowball.game-start-subtitle")
-    public static String SNOWBALL_GAME_START_SUBTITLE;
+    @ConfigOption(path = "lasershowdown.game-start-subtitle")
+    public static String LASER_SHOWDOWN_GAME_START_SUBTITLE;
 
-    @ConfigOption(path = "snowball.game-end-title")
-    public static String SNOWBALL_GAME_END_TITLE;
+    @ConfigOption(path = "lasershowdown.game-end-title")
+    public static String LASER_SHOWDOWN_GAME_END_TITLE;
 
-    @ConfigOption(path = "snowball.game-end-subtitle")
-    public static String SNOWBALL_GAME_END_SUBTITLE;
+    @ConfigOption(path = "lasershowdown.game-end-subtitle")
+    public static String LASER_SHOWDOWN_GAME_END_SUBTITLE;
 
-    @ConfigOption(path = "snowball.action-bar-count-down")
-    public static String SNOWBALL_ACTION_BAR_COUNT_DOWN;
+    @ConfigOption(path = "lasershowdown.action-bar-count-down")
+    public static String LASER_SHOWDOWN_ACTION_BAR_COUNT_DOWN;
 
-    @ConfigOption(path = "snowball.kill-player")
-    public static String SNOWBALL_KILL_PLAYER;
+    @ConfigOption(path = "lasershowdown.kill-player")
+    public static String LASER_SHOWDOWN_KILL_PLAYER;
 
-    @ConfigOption(path = "snowball.player-death")
-    public static String SNOWBALL_PLAYER_DEATH;
+    @ConfigOption(path = "lasershowdown.player-death")
+    public static String LASER_SHOWDOWN_PLAYER_DEATH;
 
-    @ConfigOption(path = "snowball.player-death-by-void")
-    public static String SNOWBALL_PLAYER_DEATH_BY_VOID;
+    @ConfigOption(path = "lasershowdown.player-death-by-void")
+    public static String LASER_SHOWDOWN_PLAYER_DEATH_BY_VOID;
 
-    @ConfigOption(path = "snowball.player-leave")
-    public static String SNOWBALL_PLAYER_LEAVE;
+    @ConfigOption(path = "lasershowdown.player-leave")
+    public static String LASER_SHOWDOWN_PLAYER_LEAVE;
 
     // Parkour Warrior
     @ConfigOption(path = "parkourwarrior.start-preparation")

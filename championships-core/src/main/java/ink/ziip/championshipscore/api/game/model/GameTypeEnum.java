@@ -12,7 +12,7 @@ public enum GameTypeEnum {
     ParkourTag,
     BattleBox,
     TNTRun,
-    SnowballShowdown,
+    LaserShowdown,
     SkyWars,
     TGTTOS,
     DragonEggCarnival,
@@ -29,7 +29,7 @@ public enum GameTypeEnum {
     /** Canonical command token shared by command parsing and tab completion. */
     public @NotNull String commandName() {
         return switch (this) {
-            case SnowballShowdown -> "snowball";
+            case LaserShowdown -> "lasershowdown";
             case RiptideRush -> "riptide";
             case FrostbiteFrenzy -> "frostbite";
             default -> name().toLowerCase(Locale.ROOT);
@@ -60,7 +60,7 @@ public enum GameTypeEnum {
             case ParkourTag -> MessageConfig.GAME_PARKOUR_TAG;
             case BattleBox -> MessageConfig.GAME_BATTLE_BOX;
             case TNTRun -> MessageConfig.GAME_TNT_RUN;
-            case SnowballShowdown -> MessageConfig.GAME_SNOWBALL_SNOW_DOWN;
+            case LaserShowdown -> MessageConfig.GAME_LASER_SHOWDOWN;
             case SkyWars -> MessageConfig.GAME_SKY_WARS;
             case TGTTOS -> MessageConfig.GAME_TGTTOS;
             case DragonEggCarnival -> MessageConfig.GAME_DRAGON_EGG_CARNIVAL;

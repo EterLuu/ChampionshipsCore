@@ -284,7 +284,7 @@ class RiptidePassRunTest {
                     assertEquals(List.of(l), plan.trialLevels(l));
                 }
                 if (l.wallGroup() > 0) {
-                    groups++;
+                    if (!l.rhythm().equals("FINAL_TRIPLE")) groups++;
                     var selected = plan.trialLevels(l);
                     assertTrue(selected.size() >= 2);
                     assertTrue(selected.stream().allMatch(w -> w.wallGroup() == l.wallGroup()));
@@ -313,7 +313,7 @@ class RiptidePassRunTest {
         var c = RiptideTestFixtures.config();
         var template = RiptideHitwCatalog.templates().getFirst();
         var mirrors = new HashSet<Boolean>();
-        for (long seed = 0; seed < 100; seed++) {
+        for (long seed : new long[] {0, 1, 2, 3, 7, 42, -1, Long.MIN_VALUE, Long.MAX_VALUE}) {
             var plan = RiptideCoursePlanner.templatePreview(c, template, seed);
             mirrors.add(plan.levels().getFirst().mirrored());
             assertEquals(template, plan.levels().getFirst().template());
@@ -526,11 +526,11 @@ class RiptidePassRunTest {
     @Test
     void eachSideWallDrawsAnIndependentMirrorAndLogsIt() throws Exception {
         var c = RiptideTestFixtures.config();
+        var g = c.resolveGeometry();
         var seen = new HashSet<List<Boolean>>();
         for (int seed = 0; seed < 100; seed++) {
             var walls =
-                    RiptideWallGroups.selectSideWalls(
-                            c, c.resolveGeometry(), 200, new HashMap<>(), new Random(seed));
+                    RiptideWallGroups.selectSideWalls(c, g, 200, new HashMap<>(), new Random(seed));
             seen.add(walls.stream().map(RiptideCoursePlan.SideWall::mirrored).toList());
             var l =
                     new RiptideCoursePlan.Level(

@@ -83,7 +83,7 @@ AuthProxy 服务统一 UUID 登录部署。它从 `/login-profile/<username>` �
 
 启动时使用 `/proxy-ban-snapshot` 获取全部当前获准玩家的 `username/status/uuid`、有效封禁、显式 `maintenance` 状态和当前 outbox 游标；之后轮询 `/proxy-changes?after=<cursor>`，接收 `PROVISION`、`WHITELISTED`、`USERNAME_UPDATED`、`REVOKED`、`BANNED`、`UNBANNED` 对应账户的当前最终准入状态。改名事件同时携带 `previousUsername`，Proxy 必须删除旧名称缓存。该流不包含密码哈希，proxy key 也不能调用 writer ACK。
 
-Proxy 将身份档案、UUID、封禁、维护状态和游标原子写入本地 `state.properties`；升级时若新文件尚不存在，会将旧版 `ban-state.properties` 原子迁移为新文件且不覆盖已有状态。实时 `/login-profile` 成功时同步刷新单人档案；连接、DNS、超时、HTTP 429 或 5xx 时可以按 `offline-cache` 配置回退，其他 HTTP 错误和响应校验错误不得回退。`max-stale-hours: 0` 表示不按时间自动失效；管理员可设置正数限制允许档案的最长陈旧时间。维护锁和未到期封禁不因普通档案超时而放行。每个 proxy key 的服务端只读游标独立推进。
+Proxy 将身份档案、UUID、封禁、维护状态和游标原子写入本地 `state.properties`。实时 `/login-profile` 成功时同步刷新单人档案；连接、DNS、超时、HTTP 429 或 5xx 时可以按 `offline-cache` 配置回退，其他 HTTP 错误和响应校验错误不得回退。`max-stale-hours: 0` 表示不按时间自动失效；管理员可设置正数限制允许档案的最长陈旧时间。维护锁和未到期封禁不因普通档案超时而放行。每个 proxy key 的服务端只读游标独立推进。
 
 AuthProxy 没有 `access.admission-owner` 配置；只要插件启用，它就是玩家面对的准入决策点。后端 AuthBridge 不应在 `PROXY` 模式下再次按本地未绑定/封禁名单拒绝或踢出玩家，以免身份平台短暂延迟造成双重判定。
 
@@ -103,7 +103,7 @@ access:
 
 `PROXY` 适用于前面已有 AuthProxy 的 Bungee 链路；`BRIDGE` 适用于没有可靠代理准入或要求 Core 自行判定的部署。两种模式都必须继续执行维护锁和 UUID mismatch 检查，且都不生成离线 UUID。两种模式均把 `BANNED`/`UNBANNED` 写入本地状态，保证重启后切换模式不会丢失封禁；只有 `BRIDGE` 使用该状态拒绝登录或主动踢人。
 
-存在 pending 或 failed 的 `IDENTITY_MODE_MIGRATION` 时，预登录返回 `MAINTENANCE`，snapshot 与 proxy stream 也必须显式返回 `maintenance:true`。旧版缺少该字段的服务应被插件视为响应不完整。
+存在 pending 或 failed 的 `IDENTITY_MODE_MIGRATION` 时，预登录返回 `MAINTENANCE`，snapshot 与 proxy stream 也必须显式返回 `maintenance:true`。响应缺少该字段时，插件按响应不完整处理。
 
 ## 7. 测试和验收
 

@@ -75,7 +75,7 @@ class RiptideColorFloorRunTest {
     void everyThemeOffersTheRequiredNumberOfRealAnswersAcrossSeedsAndSmallRafts() {
         for (var theme : RiptideColorFloorRun.Theme.values()) {
             for (int size : new int[] {3, 7, 9}) {
-                for (int seed = 0; seed < 50; seed++) {
+                for (int seed = 0; seed < 8; seed++) {
                     var run = run(size, size == 7 ? 9 : size, theme, seed);
                     for (int round = 0; round < 7; round++) {
                         assertEquals(

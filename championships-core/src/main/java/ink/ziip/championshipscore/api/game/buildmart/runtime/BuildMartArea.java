@@ -1341,7 +1341,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
             giveStartingEquipment(player);
             return;
         }
-        player.teleport(CCConfig.LOBBY_LOCATION);
+        teleportToLobby(player);
         player.setGameMode(GameMode.ADVENTURE);
     }
 

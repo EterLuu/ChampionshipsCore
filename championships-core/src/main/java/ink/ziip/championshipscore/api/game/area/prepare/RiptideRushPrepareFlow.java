@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.game.area.prepare;
 
 import ink.ziip.championshipscore.api.game.area.prepare.step.ConfirmWorldStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.RiptideCourseEditorStep;
+import ink.ziip.championshipscore.api.game.area.prepare.step.RiptideIntroductionArenaStep;
 import ink.ziip.championshipscore.api.game.riptiderush.config.RiptideRushConfig;
 import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideCourseGenerator;
 import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideCourseGeometry;
@@ -31,6 +32,7 @@ public final class RiptideRushPrepareFlow extends SnapshotMapPrepareFlow {
     public void onSessionExit(@NotNull PrepareSession session) {
         ink.ziip.championshipscore.api.game.riptiderush.editor.RiptideWorkshop.cancel(session);
         RiptideCourseGenerator.cancel(org.bukkit.Bukkit.getWorld(session.getTarget().worldName()));
+        saveIntroductionArena(session);
     }
 
     @Override
@@ -38,6 +40,7 @@ public final class RiptideRushPrepareFlow extends SnapshotMapPrepareFlow {
         return List.of(
                 new ConfirmWorldStep(
                         player -> isInCorrectWorld(player, target), target.worldName()),
+                new RiptideIntroductionArenaStep(),
                 new RiptideCourseEditorStep(RiptideCourseEditorStep.Category.PASS),
                 new RiptideCourseEditorStep(RiptideCourseEditorStep.Category.MATH),
                 new RiptideCourseEditorStep(RiptideCourseEditorStep.Category.STOPPED),
@@ -123,11 +126,13 @@ public final class RiptideRushPrepareFlow extends SnapshotMapPrepareFlow {
 
     @Override
     public @NotNull CompletableFuture<Boolean> publish(@NotNull PrepareSession session) {
+        saveIntroductionArena(session);
         return generateAndSave(session);
     }
 
     @Override
     public @NotNull CompletableFuture<Boolean> saveDraft(@NotNull PrepareSession session) {
+        saveIntroductionArena(session);
         // Incomplete/temporarily unsatisfiable pools must still be saveable as drafts.
         if (ink.ziip.championshipscore.api.game.riptiderush.editor.RiptideWorkshop.get(session)
                         != null
@@ -175,5 +180,10 @@ public final class RiptideRushPrepareFlow extends SnapshotMapPrepareFlow {
 
     private static RiptideRushConfig cfg(SetupTarget target) {
         return (RiptideRushConfig) target.config();
+    }
+
+    private static void saveIntroductionArena(PrepareSession session) {
+        if (!session.getPlugin().isLoaded() || session.getPlugin().getGameManager() == null) return;
+        session.getPlugin().getGameManager().getRiptideRushManager().saveIntroductionArena();
     }
 }

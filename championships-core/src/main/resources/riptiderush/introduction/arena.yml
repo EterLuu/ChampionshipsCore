@@ -1,0 +1,13 @@
+dont-edit-this:
+  version: 1
+enabled: true
+# One fixed teaching world for all Riptide maps. The route runs toward positive Z.
+# The prototype is built once; remove prototype-built only when intentionally rebuilding it.
+spawn:
+  world: riptide_introduction
+  x: 0.5
+  y: 80.0
+  z: 0.5
+  yaw: 0.0
+  pitch: 0.0
+prototype-built: false

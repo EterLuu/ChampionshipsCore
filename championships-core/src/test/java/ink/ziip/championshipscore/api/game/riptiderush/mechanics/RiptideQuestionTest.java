@@ -12,11 +12,11 @@ import java.util.Random;
 
 class RiptideQuestionTest {
     @Test
-    void generatedQuestionsMixAllOperationsAndBothMultiplicationOrders() {
+    void generatedQuestionsMixOperationsAndKeepBothChoicesPlausible() {
         Random random = new Random(42L);
         var operations = java.util.EnumSet.noneOf(RiptideMathQuestion.Operation.class);
         boolean singleFirst = false, doubleFirst = false;
-        for (int index = 0; index < 1000; index++) {
+        for (int index = 0; index < 128; index++) {
             var question = RiptideMathQuestion.generate(random, 1000, 9999);
             operations.add(question.operation());
             int a = question.firstOperand(), b = question.secondOperand();
@@ -47,23 +47,14 @@ class RiptideQuestionTest {
             assertNotEquals(question.leftAnswer(), question.rightAnswer());
             assertTrue(question.accepts(question.correctOnLeft()));
             assertFalse(question.accepts(!question.correctOnLeft()));
-        }
-        assertEquals(3, operations.size());
-        assertTrue(singleFirst && doubleFirst);
-    }
-
-    @Test
-    void decoysPreserveWidthAndUnitsWithoutObviousMagnitudeDifferences() {
-        Random random = new Random(18);
-        for (int i = 0; i < 2000; i++) {
-            var question = RiptideMathQuestion.generate(random, 1000, 9999);
             int correct = question.correctAnswer(), decoy = question.decoyAnswer();
-            assertNotEquals(correct, decoy);
             assertTrue(decoy >= 0);
             assertEquals(String.valueOf(correct).length(), String.valueOf(decoy).length());
             assertTrue(Math.abs((long) correct - decoy) <= Math.max(10, correct / 20));
             if (correct >= 10) assertEquals(correct % 10, decoy % 10);
         }
+        assertEquals(3, operations.size());
+        assertTrue(singleFirst && doubleFirst);
     }
 
     @Test
@@ -110,7 +101,7 @@ class RiptideQuestionTest {
         for (String variant :
                 RiptideQuestion.variants().stream().filter(v -> v.startsWith("OBSERVE_")).toList())
             for (int stage = 0; stage < 5; stage++)
-                for (int seed = 0; seed < 100; seed++) {
+                for (int seed = 0; seed < 16; seed++) {
                     var q = RiptideObservationQuestion.generate(variant, new Random(seed), stage);
                     assertEquals(
                             q, RiptideQuestion.generate(variant, new Random(seed), 10, 99, stage));

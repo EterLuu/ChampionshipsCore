@@ -4,7 +4,7 @@ Bingo LoadTest 用逻辑移动者重现远程 Bingo 的区块加载窗口和实�
 
 > 警告：测试会生成并保存大量新区块，最多主动创建数万实体。请在备份完毕、允许丢弃的世界运行；生产赛事服保持干净，安装此插件后测试结束即移除。停止测试会清理插件管理的实体和 chunk ticket，测试生成的新区块与地形修改保留在世界中。
 
-源码组织和通用验证命令见 [开发指南](../docs/development.md)。容量测试方法和验收边界见 [性能指南](../docs/bingo-64-player-performance-report.md)。
+源码组织和通用验证命令见 [开发指南](../docs/development.md)。容量测试方法和验收边界见 [性能指南](../docs/bingo-performance-validation.md)。
 
 ## 要求
 

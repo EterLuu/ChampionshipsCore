@@ -15,7 +15,7 @@ import ink.ziip.championshipscore.api.game.manager.*;
 import ink.ziip.championshipscore.api.game.model.*;
 import ink.ziip.championshipscore.api.game.riptiderush.config.RiptideRushConfig;
 import ink.ziip.championshipscore.api.game.riptiderush.runtime.RiptideRushArea;
-import ink.ziip.championshipscore.api.game.snowball.runtime.SnowballShowdownTeamArea;
+import ink.ziip.championshipscore.api.game.lasershowdown.runtime.LaserShowdownTeamArea;
 import ink.ziip.championshipscore.api.game.tntrun.config.TNTRunConfig;
 import ink.ziip.championshipscore.api.game.tntrun.runtime.TNTRunTeamArea;
 import ink.ziip.championshipscore.api.schedule.ScheduleManager;
@@ -215,12 +215,12 @@ class GameStartServiceTest {
                     c.setCopies(4);
                     config = c;
                 }
-                case SnowballShowdown -> {
-                    area = allocate(SnowballShowdownTeamArea.class);
+                case LaserShowdown -> {
+                    area = allocate(LaserShowdownTeamArea.class);
                     set(area, "areaLocations", List.of(List.of(), List.of(), List.of(), List.of()));
                     config =
-                            new ink.ziip.championshipscore.api.game.snowball.config
-                                    .SnowballShowdownConfig(plugin, "Chosen");
+                            new ink.ziip.championshipscore.api.game.lasershowdown.config
+                                    .LaserShowdownConfig(plugin, "Chosen");
                 }
                 case FrostbiteFrenzy -> {
                     area = allocate(FrostbiteArea.class);

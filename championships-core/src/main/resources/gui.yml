@@ -1864,6 +1864,14 @@ map-editor:
               title: "&#fff566起点后的坠落重置高度"
         riptide-rush:
           items:
+            introduction-arena:
+              material: OAK_BOAT
+              title: "&#55ffff规则介绍试玩场地"
+              lore:
+                - "&#a0a0a0进入共享教学世界，精修规则介绍试玩场地"
+              states:
+                available:
+                  title: "&#55ff55规则介绍试玩场地（可编辑）"
             start-point:
               material: OAK_BOAT
               title: "&#55ff55木筏起点"
@@ -1989,13 +1997,13 @@ map-editor:
               title: "&#55ff55队伍出生点"
               lore:
                 - "&#a0a0a0逐个添加每队的出生位置"
-        snowball-showdown:
+        laser-showdown:
           items:
             site-boundary:
               material: BEDROCK
-              title: "&#55ffff雪球场地"
+              title: "&#55ffff激光乱斗场地"
               lore:
-                - "&#a0a0a0用WorldEdit框选整片雪球场地"
+                - "&#a0a0a0用WorldEdit框选整片激光乱斗场地"
             lane-spawn:
               material: PLAYER_HEAD
               title: "&#55ffff玩家出生点%lane%"
@@ -4868,25 +4876,25 @@ voting:
                   - ""
                   - "&#ffaa00&l★ 当前领跑"
                   - "&#fff566点击投给这个游戏"
-          snowball-showdown:
-            material: SNOWBALL
-            title: "&#ededed&l雪球大战"
+          laser-showdown:
+            material: CROSSBOW
+            title: "&#ededed&l激光乱斗"
             states:
               available:
                 lore:
                   - "&#696969击退 • 生存赛"
-                  - "&#a0a0a0用雪球将对手击出逐渐缩小的场地"
+                  - "&#a0a0a0使用 LaserBox 五种枪械击倒对手"
                   - ""
                   - "%bar%"
                   - "&#ededed%votes%票 &#696969• %percentage%%"
                   - ""
                   - "&#55ff55点击投票"
               selected:
-                title: "&#55ffff&l✓ 雪球大战"
+                title: "&#55ffff&l✓ 激光乱斗"
                 glint: true
                 lore:
                   - "&#696969击退 • 生存赛"
-                  - "&#a0a0a0用雪球将对手击出逐渐缩小的场地"
+                  - "&#a0a0a0使用 LaserBox 五种枪械击倒对手"
                   - ""
                   - "%bar%"
                   - "&#ededed%votes%票 &#696969• %percentage%%"
@@ -4894,10 +4902,10 @@ voting:
                   - "&#55ffff&l✓ 我的选择"
                   - "&#696969点击其他游戏即可改票"
               leading:
-                title: "&#ffaa00&l★ 雪球大战"
+                title: "&#ffaa00&l★ 激光乱斗"
                 lore:
                   - "&#696969击退 • 生存赛"
-                  - "&#a0a0a0用雪球将对手击出逐渐缩小的场地"
+                  - "&#a0a0a0使用 LaserBox 五种枪械击倒对手"
                   - ""
                   - "%bar%"
                   - "&#ededed%votes%票 &#696969• %percentage%%"
@@ -5196,8 +5204,8 @@ voting:
             material: CROSSBOW
             title: "&#ededed&l激光方盒"
             lore:
-              - "&#696969射击 • 团队战"
-              - "&#a0a0a0使用激光武器交战，争夺补给"
+              - "&#696969团队射击"
+              - "&#a0a0a0击倒对手，争夺胜利"
               - ""
               - "%bar%"
               - "&#ededed%votes%票 &#696969• %percentage%%"
@@ -5208,8 +5216,8 @@ voting:
                 title: "&#55ffff&l✓ 激光方盒"
                 glint: true
                 lore:
-                  - "&#696969射击 • 团队战"
-                  - "&#a0a0a0使用激光武器交战，争夺补给"
+                  - "&#696969团队射击"
+                  - "&#a0a0a0击倒对手，争夺胜利"
                   - ""
                   - "%bar%"
                   - "&#ededed%votes%票 &#696969• %percentage%%"
@@ -5219,8 +5227,8 @@ voting:
               leading:
                 title: "&#ffaa00&l★ 激光方盒"
                 lore:
-                  - "&#696969射击 • 团队战"
-                  - "&#a0a0a0使用激光武器交战，争夺补给"
+                  - "&#696969团队射击"
+                  - "&#a0a0a0击倒对手，争夺胜利"
                   - ""
                   - "%bar%"
                   - "&#ededed%votes%票 &#696969• %percentage%%"

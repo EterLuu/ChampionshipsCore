@@ -8,7 +8,7 @@ public class PlaceholderManager extends BaseManager {
     private ParkourTagPlaceholder parkourTagPlaceholder;
     private DragonEggCarnivalPlaceholder dragonEggCarnivalPlaceholder;
     private SkyWarsPlaceholder skyWarsPlaceholder;
-    private SnowballPlaceholder snowballPlaceholder;
+    private LaserShowdownPlaceholder laserShowdownPlaceholder;
     private TGTTOSPlaceholder tgttosPlaceholder;
     private TNTRunPlaceholder tntRunPlaceholder;
     private ChampionshipPlaceholder championshipPlaceholder;
@@ -32,7 +32,7 @@ public class PlaceholderManager extends BaseManager {
         parkourTagPlaceholder = new ParkourTagPlaceholder(plugin);
         dragonEggCarnivalPlaceholder = new DragonEggCarnivalPlaceholder(plugin);
         skyWarsPlaceholder = new SkyWarsPlaceholder(plugin);
-        snowballPlaceholder = new SnowballPlaceholder(plugin);
+        laserShowdownPlaceholder = new LaserShowdownPlaceholder(plugin);
         tgttosPlaceholder = new TGTTOSPlaceholder(plugin);
         tntRunPlaceholder = new TNTRunPlaceholder(plugin);
         championshipPlaceholder = new ChampionshipPlaceholder(plugin);
@@ -50,7 +50,7 @@ public class PlaceholderManager extends BaseManager {
         parkourTagPlaceholder.register();
         dragonEggCarnivalPlaceholder.register();
         skyWarsPlaceholder.register();
-        snowballPlaceholder.register();
+        laserShowdownPlaceholder.register();
         tgttosPlaceholder.register();
         tntRunPlaceholder.register();
         championshipPlaceholder.register();
@@ -71,7 +71,7 @@ public class PlaceholderManager extends BaseManager {
         parkourTagPlaceholder.unregister();
         dragonEggCarnivalPlaceholder.unregister();
         skyWarsPlaceholder.unregister();
-        snowballPlaceholder.unregister();
+        laserShowdownPlaceholder.unregister();
         tgttosPlaceholder.unregister();
         tntRunPlaceholder.unregister();
         championshipPlaceholder.unregister();

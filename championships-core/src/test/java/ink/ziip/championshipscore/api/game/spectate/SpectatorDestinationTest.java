@@ -6,7 +6,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.manager.GameManager;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
-import ink.ziip.championshipscore.api.game.snowball.runtime.SnowballShowdownTeamArea;
+import ink.ziip.championshipscore.api.game.lasershowdown.runtime.LaserShowdownTeamArea;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -90,7 +90,7 @@ class SpectatorDestinationTest {
         }
     }
 
-    private static final class TestArea extends SnowballShowdownTeamArea {
+    private static final class TestArea extends LaserShowdownTeamArea {
         Set<UUID> roster;
 
         private TestArea() {

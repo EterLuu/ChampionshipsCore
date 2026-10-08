@@ -38,6 +38,8 @@ Core 是正式积分和数据库的唯一权威，负责冻结队伍、名册、
 
 两端共用任务判定、装备、效果、世界规则、安全散布、玩家状态和队伍展示；纯计分运行于 Bingo engine。消息、语言、任务富文本与 `scoreboards.yml` 从 Core 冻结到 manifest，Worker 不维护另一份玩法配置。
 
+骑乘路程观察按原版统计分类累计三维距离。玩家移动与载具移动分别累计，载具观察覆盖直接乘客，再与本局原版统计增量取最大值，不相加；取消移动、传送不计入，保留往返与小数厘米。该补偿只用于判题，不写回玩家原版统计。
+
 旁观服务器模式为真实 Spectator，客户端呈现由平台层统一处理。Core 与 Worker 各有实体显隐管理器，双方均保持完整 Tab；详见 [旁观契约](spectator-visibility-contract.md)。
 
 ## 生命周期与路由
@@ -148,6 +150,6 @@ Worker 每 5 秒发心跳，Core 默认 20 秒无连续事件或心跳即终止�
 3. 在空闲窗口切到 `REMOTE`，用测试队伍验证准备、到达、任务、重生、结算、返回和第二局。
 4. 演练 Worker/Core 重启、Redis/数据库中断、玩家重连、重复事件、代理目标不可达。
 5. 核对连续事件、幂等积分、旧 epoch 隔离、outbox 恢复及所有临时实体/任务/票据清理。
-6. 用 [LoadTest](../championships-bingo-loadtest/README.md) 定位区块与实体压力，再按 [容量指南](bingo-64-player-performance-report.md) 验证真实连接的完整比赛。
+6. 用 [LoadTest](../championships-bingo-loadtest/README.md) 定位区块与实体压力，再按 [容量指南](bingo-performance-validation.md) 验证真实连接的完整比赛。
 
 Folia 的并行收益依赖空间分布；单 region 热点不能仅靠增加 tick 线程解决。部署验收同时查看 region TPS/MSPT、区块加载延迟、实体分布、Redis 与数据库指标。

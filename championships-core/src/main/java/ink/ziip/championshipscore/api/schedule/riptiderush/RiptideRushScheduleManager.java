@@ -2,12 +2,38 @@ package ink.ziip.championshipscore.api.schedule.riptiderush;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.api.game.riptiderush.runtime.RiptideRushArea;
 import ink.ziip.championshipscore.api.schedule.BaseSingleGameSchedule;
 import ink.ziip.championshipscore.api.schedule.FormalEventMapResolver;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+
 public final class RiptideRushScheduleManager extends BaseSingleGameSchedule {
     private java.util.List<String> roundMaps = java.util.List.of();
+    private RiptideRushArea upcomingArea;
+
+    @Override
+    protected long resultDisplayTicks(boolean hasNextRound) {
+        return hasNextRound ? 0L : super.resultDisplayTicks(false);
+    }
+
+    @Override
+    protected CompletionStage<Boolean> prepareNextRound() {
+        upcomingArea = plugin.getGameManager().getRiptideRushManager().getArea(getArea());
+        return upcomingArea == null
+                ? CompletableFuture.completedFuture(false)
+                : upcomingArea.prepareUpcomingEventRound();
+    }
+
+    @Override
+    public void endSchedule() {
+        RiptideRushArea pending = upcomingArea;
+        upcomingArea = null;
+        super.endSchedule();
+        if (pending != null) pending.cancelUpcomingEventRound();
+    }
 
     @Override
     public void startGame() {

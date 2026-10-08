@@ -10,8 +10,10 @@ class GameTypeCommandTest {
     void parsesCanonicalNamesCaseInsensitively() {
         assertEquals(GameTypeEnum.BattleBox, GameTypeEnum.fromCommand("battle-box"));
         assertEquals(GameTypeEnum.ParkourWarrior, GameTypeEnum.fromCommand("PARKOUR_WARRIOR"));
-        assertEquals(GameTypeEnum.SnowballShowdown, GameTypeEnum.fromCommand("snowball"));
-        assertEquals(GameTypeEnum.SnowballShowdown, GameTypeEnum.fromCommand("SnowballShowdown"));
+        assertEquals(GameTypeEnum.LaserShowdown, GameTypeEnum.fromCommand("lasershowdown"));
+        assertEquals(GameTypeEnum.LaserShowdown, GameTypeEnum.fromCommand("LaserShowdown"));
+        assertNull(GameTypeEnum.fromCommand("snowball"));
+        assertNull(GameTypeEnum.fromCommand("SnowballShowdown"));
         assertEquals(GameTypeEnum.RiptideRush, GameTypeEnum.fromCommand("riptide"));
         assertNull(GameTypeEnum.fromCommand("raft"));
         assertNull(GameTypeEnum.fromCommand("RaftSurvival"));
@@ -21,7 +23,7 @@ class GameTypeCommandTest {
 
     @Test
     void exposesTheSameTokensUsedByStartCommands() {
-        assertEquals("snowball", GameTypeEnum.SnowballShowdown.commandName());
+        assertEquals("lasershowdown", GameTypeEnum.LaserShowdown.commandName());
         assertEquals("acerace", GameTypeEnum.AceRace.commandName());
         assertEquals("dragoneggcarnival", GameTypeEnum.DragonEggCarnival.commandName());
         assertEquals("riptide", GameTypeEnum.RiptideRush.commandName());

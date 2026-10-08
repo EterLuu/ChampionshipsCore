@@ -8,17 +8,14 @@ import org.junit.jupiter.api.Test;
 
 class PlayerUuidSourceTest {
     @Test
-    void defaultsToOfflineAndAcceptsBothSupportedModes() {
+    void parsingUsesOfflineByDefaultAcceptsCurrentModesAndRejectsRemovedModes() {
         assertEquals(PlayerUuidSource.OFFLINE, PlayerUuidSource.parse(null));
         assertEquals(PlayerUuidSource.OFFLINE, PlayerUuidSource.parse("offline"));
         assertEquals(PlayerUuidSource.PROFILE_UUID, PlayerUuidSource.parse("PROFILE_UUID"));
-    }
-
-    @Test
-    void rejectsRemovedUuidModes() {
-        assertThrows(IllegalArgumentException.class, () -> PlayerUuidSource.parse("SERVER_UUID"));
-        assertThrows(IllegalArgumentException.class, () -> PlayerUuidSource.parse("CUSTOM_UUID"));
-        assertThrows(IllegalArgumentException.class, () -> PlayerUuidSource.parse("ONLINE"));
+        for (String removed : new String[] {"SERVER_UUID", "CUSTOM_UUID", "ONLINE"}) {
+            assertThrows(
+                    IllegalArgumentException.class, () -> PlayerUuidSource.parse(removed), removed);
+        }
     }
 
     @Test

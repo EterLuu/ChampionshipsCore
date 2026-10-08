@@ -246,7 +246,7 @@ final class VoteMenu implements Listener {
             case ParkourTag -> "parkour-tag";
             case BattleBox -> "battle-box";
             case TNTRun -> "tnt-run";
-            case SnowballShowdown -> "snowball-showdown";
+            case LaserShowdown -> "laser-showdown";
             case SkyWars -> "sky-wars";
             case TGTTOS -> "tgttos";
             case ParkourWarrior -> "parkour-warrior";
@@ -266,7 +266,7 @@ final class VoteMenu implements Listener {
             case ParkourTag -> Material.GOLDEN_CARROT;
             case BattleBox -> Material.WHITE_WOOL;
             case TNTRun -> Material.TNT;
-            case SnowballShowdown -> Material.SNOWBALL;
+            case LaserShowdown -> Material.CROSSBOW;
             case SkyWars -> Material.GRASS_BLOCK;
             case TGTTOS -> Material.FEATHER;
             case ParkourWarrior -> Material.IRON_BOOTS;

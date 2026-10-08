@@ -3,6 +3,9 @@ package ink.ziip.championshipscore.api.game.riptiderush.mechanics;
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideCourseGeometry;
+import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideCoursePlan;
+import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideLevelTemplate;
+import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideLevelType;
 
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -24,7 +27,9 @@ class RiptideMathRunTest {
     @Test
     void correctPassThenSwitchingSidesOrReturningThroughGateNeverChangesAnswer() {
         var run = new RiptideMathRun(SOUTH, List.of(FIRST, SECOND), at(29, 2));
-        assertEquals(RiptideMathRun.Result.CORRECT, run.sample(at(31, 2)).getFirst().result());
+        assertEquals(RiptideMathRun.Result.CORRECT, run.sample(at(30.2, 2)).getFirst().result());
+        assertTrue(run.sample(at(31, -2)).isEmpty());
+        assertTrue(run.sample(at(31, -2)).isEmpty()); // tick fallback sees no additional answer
         // Old implementation sampled here (raft centre 34), after the player had changed lanes.
         assertTrue(run.sample(at(34, -2)).isEmpty());
         assertTrue(run.sample(at(29, -2)).isEmpty());
@@ -87,7 +92,7 @@ class RiptideMathRunTest {
         assertEquals(RiptideMathRun.Result.WRONG, run.sample(at(31, -2)).getFirst().result());
         run.recoverAt(at(28, 0));
         assertTrue(run.sample(at(31, 0)).isEmpty());
-        assertEquals(SECOND, run.preview(at(70, 2), 2, 18, 100, false));
+        assertEquals(SECOND, run.preview(at(70, 2), 0, 2, 18, 100, false));
         run.sample(at(75, 2));
         assertEquals(RiptideMathRun.Result.WRONG, run.sample(at(77, 2)).getFirst().result());
     }
@@ -133,23 +138,23 @@ class RiptideMathRunTest {
         for (double speed : new double[] {2, 2.8, 4}) {
             var run = new RiptideMathRun(SOUTH, List.of(FIRST), at(0, 2));
             double firstStep = 30 - speed * 4;
-            assertNull(run.preview(at(firstStep - .01, 2), speed, 18, 0, false));
-            assertEquals(FIRST, run.preview(at(firstStep, 2), speed, 18, 10, false));
-            assertEquals(FIRST, run.preview(at(29, 2), speed, 18, 89, false));
-            assertNull(run.preview(at(29, 2), speed, 18, 90, false));
-            assertNull(run.preview(at(0, 2), speed, 18, 100, false));
-            assertNull(run.preview(at(29, 2), speed, 18, 101, false));
+            assertNull(run.preview(at(firstStep - .01, 2), 0, speed, 18, 0, false));
+            assertEquals(FIRST, run.preview(at(firstStep, 2), 0, speed, 18, 10, false));
+            assertEquals(FIRST, run.preview(at(29, 2), 0, speed, 18, 89, false));
+            assertNull(run.preview(at(29, 2), 0, speed, 18, 90, false));
+            assertNull(run.preview(at(0, 2), 0, speed, 18, 100, false));
+            assertNull(run.preview(at(29, 2), 0, speed, 18, 101, false));
         }
     }
 
     @Test
     void previewYieldsToPauseAndClearsImmediatelyOnCorrectCrossing() {
         var run = new RiptideMathRun(SOUTH, List.of(FIRST, SECOND), at(22, 2));
-        assertNull(run.preview(at(22, 2), 2, 18, 0, true));
-        assertEquals(FIRST, run.preview(at(22, 2), 2, 18, 100, false));
+        assertNull(run.preview(at(22, 2), 0, 2, 18, 0, true));
+        assertEquals(FIRST, run.preview(at(22, 2), 0, 2, 18, 100, false));
         run.sample(at(31, 2));
-        assertNull(run.preview(at(31, 2), 2, 18, 101, false));
-        assertEquals(SECOND, run.preview(at(68, -2), 2, 18, 200, false));
+        assertNull(run.preview(at(31, 2), 0, 2, 18, 101, false));
+        assertEquals(SECOND, run.preview(at(68, -2), 0, 2, 18, 200, false));
     }
 
     @Test
@@ -164,12 +169,89 @@ class RiptideMathRunTest {
     @Test
     void sideSweepLongerThanPreviewDoesNotConsumeNextQuestion() {
         var run = new RiptideMathRun(SOUTH, List.of(FIRST), at(24, 2));
-        assertEquals(FIRST, run.preview(at(24, 2), 2, 18, 10, false));
+        assertEquals(FIRST, run.preview(at(24, 2), 0, 2, 18, 10, false));
         for (int tick = 11; tick <= 155; tick++) run.suspendPreview();
-        assertEquals(FIRST, run.preview(at(24, 2), 2, 18, 156, false));
-        assertEquals(FIRST, run.preview(at(29, 2), 2, 18, 215, false));
+        assertEquals(FIRST, run.preview(at(24, 2), 0, 2, 18, 156, false));
+        assertEquals(FIRST, run.preview(at(29, 2), 0, 2, 18, 215, false));
         assertEquals(RiptideMathRun.Result.CORRECT, run.sample(at(31, 2)).getFirst().result());
-        assertNull(run.preview(at(31, 2), 2, 18, 216, false));
+        assertNull(run.preview(at(31, 2), 0, 2, 18, 216, false));
+    }
+
+    @Test
+    void upcomingStoppedChildrenBlockLaterMathUntilDepartureAndEntranceCrossing() {
+        var pass = RiptideLevelTemplate.create("wall", RiptideLevelType.PASS);
+        var floor = RiptideLevelTemplate.create("floor", RiptideLevelType.COLOR_FLOOR);
+        var dodge = RiptideLevelTemplate.create("dodge", RiptideLevelType.DODGE);
+        var math = RiptideLevelTemplate.create("math", RiptideLevelType.MATH);
+        var children =
+                List.of(
+                        new RiptideCoursePlan.Level(1, 20, floor, "COPPER", 0, false, 1),
+                        new RiptideCoursePlan.Level(1, 20, dodge, "ZOMBIE", 0, false, 1),
+                        new RiptideCoursePlan.Level(
+                                1,
+                                20,
+                                floor,
+                                "COPPER",
+                                0,
+                                false,
+                                1,
+                                0,
+                                0,
+                                "SIDE",
+                                1,
+                                List.of(new RiptideCoursePlan.SideWall(pass, "GAP", 0, 1, 7))));
+        for (var stopped : children) {
+            var gates =
+                    RiptideMathRun.gates(
+                            SOUTH,
+                            List.of(
+                                    stopped,
+                                    new RiptideCoursePlan.Level(2, 30, math, "ADD", 0, false, 2)),
+                            10,
+                            99);
+            var run = new RiptideMathRun(SOUTH, gates, at(14, 2));
+            assertNull(run.preview(at(19, 2), 14, 3.7, 18, 0, false));
+            // Even a player ahead of the entrance cannot skip the raft's upcoming stop.
+            assertNull(run.preview(at(21, 2), 15, 3.7, 18, 1, false));
+            assertNull(run.preview(at(21, 2), 15, 3.7, 18, 500, true));
+            assertNull(run.preview(at(20, 2), 16, 3.7, 18, 501, false));
+            assertEquals(gates.getFirst(), run.preview(at(21, 2), 16, 3.7, 18, 502, false));
+            assertEquals(gates.getFirst(), run.preview(at(29, 2), 24, 3.7, 18, 581, false));
+            assertNull(run.preview(at(29, 2), 24, 3.7, 18, 582, false));
+            var spectator = new RiptideMathRun(SOUTH, gates, at(14, 0));
+            spectator.followCourse(at(15, 0));
+            assertNull(spectator.preview(at(15, 0), 15, 4.45, 18, 0, false));
+            spectator.followCourse(at(21, 0));
+            assertEquals(gates.getFirst(), spectator.preview(at(21, 0), 21, 4.45, 18, 200, false));
+        }
+    }
+
+    @Test
+    void mathPreviewWaitsForInterveningPassOrRhythmIncludingItsBuildingExtent() {
+        var math = RiptideLevelTemplate.create("math", RiptideLevelType.MATH);
+        for (var type : List.of(RiptideLevelType.PASS, RiptideLevelType.RHYTHM)) {
+            var preceding =
+                    new RiptideCoursePlan.Level(
+                            1,
+                            23,
+                            RiptideLevelTemplate.create("preceding", type),
+                            type == RiptideLevelType.PASS ? "WEAVE" : "SHUTTER",
+                            0,
+                            false,
+                            1);
+            var gates =
+                    RiptideMathRun.gates(
+                            SOUTH,
+                            List.of(
+                                    preceding,
+                                    new RiptideCoursePlan.Level(2, 35, math, "ADD", 0, false, 2)),
+                            10,
+                            99);
+            var run = new RiptideMathRun(SOUTH, gates, at(21, 2));
+            int end = preceding.step() + preceding.extent();
+            assertNull(run.preview(at(end, 2), 23, 3.7, 18, 0, false));
+            assertEquals(gates.getFirst(), run.preview(at(end + .01, 2), 23, 3.7, 18, 100, false));
+        }
     }
 
     private static Location at(double step, double lateral) {
@@ -177,22 +259,14 @@ class RiptideMathRunTest {
     }
 
     @Test
-    void multipleAcceptedSegmentsWithinOneTickKeepTheActualDoorChoice() {
-        var run = new RiptideMathRun(SOUTH, List.of(FIRST, SECOND), at(29, 2));
-        assertEquals(RiptideMathRun.Result.CORRECT, run.sample(at(30.2, 2)).getFirst().result());
-        assertTrue(run.sample(at(31, -2)).isEmpty());
-        assertTrue(run.sample(at(31, -2)).isEmpty()); // tick fallback sees no additional answer
-    }
-
-    @Test
     void spectatorAdvancesQuestionsWithoutSubmittingAnAnswer() {
         var run = new RiptideMathRun(SOUTH, List.of(FIRST, SECOND), at(0, 0));
         run.followCourse(at(22, 0));
-        assertEquals(FIRST, run.preview(at(22, 0), 2, 18, 100, false));
+        assertEquals(FIRST, run.preview(at(22, 0), 0, 2, 18, 100, false));
         run.followCourse(at(34, 0));
-        assertNull(run.preview(at(34, 0), 2, 18, 200, false));
+        assertNull(run.preview(at(34, 0), 0, 2, 18, 200, false));
         run.followCourse(at(68, 0));
-        assertEquals(SECOND, run.preview(at(68, 0), 2, 18, 300, false));
+        assertEquals(SECOND, run.preview(at(68, 0), 0, 2, 18, 300, false));
     }
 
     private static World world(String name) {

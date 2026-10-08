@@ -39,37 +39,28 @@ class ChampionshipsAuthProxyPluginTest {
     }
 
     @Test
-    void rejectionLogContainsPlayerStatusAndReason() {
-        String log =
-                ChampionshipsAuthProxyPlugin.rejectionLog(
-                        "BlockedPlayer", "BANNED", "Repeated cheating");
-
-        assertTrue(log.contains("player=BlockedPlayer"));
-        assertTrue(log.contains("status=BANNED"));
-        assertTrue(log.contains("reason=Repeated cheating"));
-    }
-
-    @Test
-    void rejectionLogUsesFallbacksForMissingValues() {
-        assertEquals(
-                "Rejected login: player=unknown, status=UNKNOWN, reason=not provided",
-                ChampionshipsAuthProxyPlugin.rejectionLog(null, " ", ""));
-    }
-
-    @Test
-    void rejectionLogPreventsMultilineLogInjection() {
-        String log =
-                ChampionshipsAuthProxyPlugin.rejectionLog(
-                        "Player\nForgedEntry",
-                        "UNBOUND\r\nWARNING",
-                        "line one\tline two\u0000tail");
-
-        assertFalse(log.contains("\n"));
-        assertFalse(log.contains("\r"));
-        assertFalse(log.contains("\t"));
-        assertFalse(log.contains("\u0000"));
-        assertTrue(log.contains("player=Player ForgedEntry"));
-        assertTrue(log.contains("status=UNBOUND WARNING"));
-        assertTrue(log.contains("reason=line one line two tail"));
+    void rejectionLogsRetainFieldsAndNormalizeMissingOrUnsafeText() {
+        String[][] examples = {
+            {
+                "BlockedPlayer",
+                "BANNED",
+                "Repeated cheating",
+                "Rejected login: player=BlockedPlayer, status=BANNED, reason=Repeated cheating"
+            },
+            {null, " ", "", "Rejected login: player=unknown, status=UNKNOWN, reason=not provided"},
+            {
+                "Player\nForgedEntry",
+                "UNBOUND\r\nWARNING",
+                "line one\tline two\u0000tail",
+                "Rejected login: player=Player ForgedEntry, status=UNBOUND WARNING, reason=line one"
+                        + " line two tail"
+            }
+        };
+        for (String[] example : examples) {
+            assertEquals(
+                    example[3],
+                    ChampionshipsAuthProxyPlugin.rejectionLog(example[0], example[1], example[2]),
+                    "player=" + example[0]);
+        }
     }
 }

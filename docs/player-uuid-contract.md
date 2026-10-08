@@ -14,7 +14,7 @@
 | current effective UUID | 身份平台为已绑定玩家当前生效的 UUID。平台内部的历史迁移状态不会成为 Core 的配置模式。 |
 | server original identity | 身份平台统一账户关联的服务器原始身份，只有离线身份与 Mojang 正版身份两类，用于明确旧服务器资料的 UUID 语义。 |
 
-Core 的 `identity.mode` 只有 `OFFLINE` 与 `PROFILE_UUID`。`ONLINE`、`PROFILE_API`、`SERVER_UUID`、`CUSTOM_UUID` 都不是有效的 Core 模式。旧配置中的 `ONLINE` 和 `PROFILE_API` 必须显式改为 `PROFILE_UUID` 并配置档案服务；运行代码不识别这些旧值，也不自动改写已有玩家数据。
+Core 的 `identity.mode` 只接受 `OFFLINE` 与 `PROFILE_UUID`。其他值会拒绝加载，平台内部身份模式和 Bridge 协议枚举不能作为 Core 配置。切换模式需要配置对应登录链路与档案服务；涉及已有 UUID 变化时，执行 [显式迁移](#5-uuid-迁移规范)。
 
 ## 2. ChampionshipsCore 的身份规则
 
@@ -47,7 +47,7 @@ identity:
 
 ### 2.2 一致性与冲突处理
 
-1. `PROFILE_UUID` 的 profile directory 返回值必须与玩家实际登录时 Bukkit 暴露的 UUID 相同。该要求由部署验收保证，在线操作使用 Bukkit UUID，不再二次查询。
+1. `PROFILE_UUID` 的 profile directory 返回值必须与玩家实际登录时 Bukkit 暴露的 UUID 相同。该要求由部署验收保证，在线操作使用 Bukkit UUID，不进行二次查询。
 2. profile 响应为 204/404、超时、非 2xx、非法 JSON、缺失/非法 UUID 或名称不匹配时，离线录入操作失败。Core 不生成离线 UUID，不使用平台账户 ID，也不使用缓存的其他名字结果。
 3. 同名 Core 身份记录与查得 UUID 不同时，普通加队、自动建档和隐式合并都拒绝；处理方式是显式 UUID 迁移。
 4. `OFFLINE` 只使用本地离线算法；`PROFILE_UUID` 只使用档案目录或登录链路提供的 UUID。两条路径保持独立、可审计。
@@ -71,7 +71,7 @@ AuthProxy 是统一 UUID 部署中的可选代理组件：
 2. 每次成功快照、增量或登录查询都会原子更新持久缓存。连接失败、DNS 故障、超时、HTTP 429 或 5xx 可回退到已同步的同名档案；401/403、其他 4xx、非法 JSON、未知状态与缺失/非法 UUID 均失败关闭。
 3. 离线回退使用缓存中的同一身份。未知玩家、从未完成全量快照且未单独成功查询的玩家拒绝登录；已缓存的撤销、有效封禁和维护锁继续拒绝。
 4. AuthProxy 服务启用统一 UUID 的 Bungee 登录链路；`OFFLINE` 部署无需安装它。
-5. authlib-injector 负责 Yggdrasil/profile/皮肤兼容，AuthProxy 负责预登录注入。两者必须配置为返回同一 UUID，后续环节不再独立改写登录身份。
+5. authlib-injector 负责 Yggdrasil/profile/皮肤兼容，AuthProxy 负责预登录注入。两者必须配置为返回同一 UUID，后续环节不得独立改写登录身份。
 
 ### 3.2 身份平台的统一身份、Yggdrasil 与皮肤
 
@@ -114,7 +114,7 @@ AuthBridge 是可选的密码与认证资料同步组件。它只按协议事件
 | --- | --- | --- |
 | 全量快照/账户下发 | `username`、密码哈希、修订号、`uuidSource`，以及该来源所需字段 | 根据 `uuidSource` 得到 UUID 后写入 AuthMe/本地访问状态；字段缺失、解析失败或非法即拒绝。 |
 | 密码更新 | `username`、密码哈希、修订号 | 只更新密码，不重新计算 UUID。 |
-| 改名 | `oldName`、`newName`、当前 UUID | 以显式 UUID 锁定同一身份，再更新名称。 |
+| 改名事件 `USERNAME_UPDATED` | `oldAuthmeUsername`、`authmeUsername`、`uuidSource`，以及该来源所需字段 | 按来源解析当前 UUID，再更新 AuthMe、本地状态与 Core 名称。 |
 | UUID 迁移 | `fromUuid`、`toUuid`、迁移 ID/修订号 | 使用冻结值执行，不从名字重算任一端 UUID。 |
 
 `uuidSource` 是 Bridge 协议枚举，取值固定如下：

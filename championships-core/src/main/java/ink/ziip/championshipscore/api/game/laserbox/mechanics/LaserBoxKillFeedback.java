@@ -23,6 +23,7 @@ import java.util.function.BooleanSupplier;
  */
 public final class LaserBoxKillFeedback {
     private static final String KILL_FIREWORK = "kill-firework";
+    private static final Color HEADSHOT_COLOR = Color.fromRGB(0xFFD700);
     private static final Note E = Note.natural(0, Note.Tone.E);
     // Bukkit octave boundaries start at F#, so E4 is in octave 0 and F#4-A4 in octave 1.
     private static final Note G = Note.natural(1, Note.Tone.G);
@@ -34,6 +35,11 @@ public final class LaserBoxKillFeedback {
     private LaserBoxKillFeedback() {}
 
     public static void burst(Player victim, Color teamColor, NamespacedKey itemKey) {
+        burst(victim, teamColor, itemKey, false);
+    }
+
+    public static void burst(
+            Player victim, Color teamColor, NamespacedKey itemKey, boolean headshot) {
         Location neck = victim.getEyeLocation().subtract(0, 0.25, 0);
         Firework firework =
                 neck.getWorld()
@@ -46,7 +52,9 @@ public final class LaserBoxKillFeedback {
                                     meta.addEffect(
                                             FireworkEffect.builder()
                                                     .with(FireworkEffect.Type.BALL)
-                                                    .withColor(teamColor, Color.WHITE)
+                                                    .withColor(
+                                                            teamColor,
+                                                            headshot ? HEADSHOT_COLOR : Color.WHITE)
                                                     .build());
                                     meta.setPower(0);
                                     rocket.setFireworkMeta(meta);

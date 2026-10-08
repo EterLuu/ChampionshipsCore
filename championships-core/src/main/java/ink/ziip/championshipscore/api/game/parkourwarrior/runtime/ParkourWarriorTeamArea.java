@@ -13,7 +13,6 @@ import ink.ziip.championshipscore.api.game.parkourwarrior.model.PKWCheckpoint;
 import ink.ziip.championshipscore.api.game.parkourwarrior.model.PKWFinalCheckPointTypeEnum;
 import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.location.LocationConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
@@ -840,7 +839,7 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
             if (stage == GameStageEnum.PROGRESS) hideAndShowPlayer(player);
             return;
         }
-        player.teleport(CCConfig.LOBBY_LOCATION);
+        teleportToLobby(player);
         player.setGameMode(GameMode.ADVENTURE);
         player.setFlying(false);
         player.setAllowFlight(false);

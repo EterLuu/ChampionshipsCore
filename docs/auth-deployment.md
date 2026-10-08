@@ -51,4 +51,8 @@ AuthProxy 使用 `offline-cache.enabled` 和 `offline-cache.max-stale-hours` 控
 4. 测试未绑定、撤销、封禁、维护、网络中断、密钥错误及重连行为。
 5. 已有身份发生 UUID 变化时执行 [UUID 迁移流程](player-uuid-contract.md#5-uuid-迁移规范)，只改配置不会迁移数据库。
 
+## 持久状态与兼容文件
+
 Proxy 持久状态位于其数据目录的 `state.properties`，Bridge 位于 `state.yml`。保留这些文件以支持重启后的游标、准入和封禁恢复。
+
+Proxy 在 `state.properties` 不存在且 `ban-state.properties` 存在时，原子迁移该兼容状态文件；已有 `state.properties` 时不覆盖。此行为只处理本地状态，不替代 UUID 数据迁移。

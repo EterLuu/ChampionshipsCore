@@ -26,27 +26,95 @@ BLOCK_RE = re.compile(
 COUNT_RE = re.compile(r"^\s{4}minecraft:([^:\[]+)(?:\[[^]]*\])?:\s*(\d+)\s*$")
 COORD_RE = re.compile(r"^\s{4}([xyz]):\s*(-?[\d.]+)\s*$")
 
-DIRECTION_KEYS = {"axis", "face", "facing", "half", "hinge", "orientation", "rotation", "shape", "type"}
+DIRECTION_KEYS = {
+    "axis",
+    "face",
+    "facing",
+    "half",
+    "hinge",
+    "orientation",
+    "rotation",
+    "shape",
+    "type",
+}
 COMPLEX_KEYS = DIRECTION_KEYS | {
-    "attached", "hanging", "in_wall", "open", "part", "side_chain", "signal_fire", "waterlogged"
+    "attached",
+    "hanging",
+    "in_wall",
+    "open",
+    "part",
+    "side_chain",
+    "signal_fire",
+    "waterlogged",
 }
 IGNORED_KEYS = {"age"}
 CONNECTABLE_SUFFIXES = ("_pane", "_bars", "_wall")
 WOOD_TYPES = (
-    "pale_oak", "dark_oak", "mangrove", "cherry", "spruce", "birch", "jungle", "acacia", "oak",
-    "bamboo", "crimson", "warped",
+    "pale_oak",
+    "dark_oak",
+    "mangrove",
+    "cherry",
+    "spruce",
+    "birch",
+    "jungle",
+    "acacia",
+    "oak",
+    "bamboo",
+    "crimson",
+    "warped",
 )
 STONE_BASES = (
-    "polished_blackstone_bricks", "mossy_stone_bricks", "mossy_cobblestone", "deepslate_bricks",
-    "deepslate_tiles", "polished_deepslate", "end_stone_bricks", "prismarine_bricks", "dark_prismarine",
-    "smooth_red_sandstone", "red_sandstone", "smooth_sandstone", "sandstone", "smooth_quartz",
-    "quartz_block", "polished_andesite", "polished_diorite", "polished_granite", "polished_tuff",
-    "mud_bricks", "nether_bricks", "stone_bricks", "blackstone", "cobblestone", "prismarine",
-    "andesite", "diorite", "granite", "deepslate", "tuff", "bricks", "stone", "purpur_block",
+    "polished_blackstone_bricks",
+    "mossy_stone_bricks",
+    "mossy_cobblestone",
+    "deepslate_bricks",
+    "deepslate_tiles",
+    "polished_deepslate",
+    "end_stone_bricks",
+    "prismarine_bricks",
+    "dark_prismarine",
+    "smooth_red_sandstone",
+    "red_sandstone",
+    "smooth_sandstone",
+    "sandstone",
+    "smooth_quartz",
+    "quartz_block",
+    "polished_andesite",
+    "polished_diorite",
+    "polished_granite",
+    "polished_tuff",
+    "mud_bricks",
+    "nether_bricks",
+    "stone_bricks",
+    "blackstone",
+    "cobblestone",
+    "prismarine",
+    "andesite",
+    "diorite",
+    "granite",
+    "deepslate",
+    "tuff",
+    "bricks",
+    "stone",
+    "purpur_block",
 )
 COLORS = (
-    "light_blue", "light_gray", "white", "orange", "magenta", "yellow", "lime", "pink", "gray",
-    "cyan", "purple", "blue", "brown", "green", "red", "black",
+    "light_blue",
+    "light_gray",
+    "white",
+    "orange",
+    "magenta",
+    "yellow",
+    "lime",
+    "pink",
+    "gray",
+    "cyan",
+    "purple",
+    "blue",
+    "brown",
+    "green",
+    "red",
+    "black",
 )
 
 
@@ -124,7 +192,9 @@ def parse_blueprint(path: Path) -> tuple[str, int, list[Block], list[str]]:
                 invalid.append(f"line {line_number}: invalid block entry")
                 continue
             x, y, z = (int(match.group(i)) for i in range(1, 4))
-            blocks.append(Block(x, y, z, without_copper_wax(match.group(4)), parse_properties(match.group(5))))
+            blocks.append(
+                Block(x, y, z, without_copper_wax(match.group(4)), parse_properties(match.group(5)))
+            )
     return name, stars, blocks, invalid
 
 
@@ -200,7 +270,9 @@ def parse_islands(path: Path) -> list[tuple[str, float, float]]:
     return islands
 
 
-def material_regions(zones: list[dict], islands: list[tuple[str, float, float]]) -> dict[str, set[str]]:
+def material_regions(
+    zones: list[dict], islands: list[tuple[str, float, float]]
+) -> dict[str, set[str]]:
     result: dict[str, set[str]] = {}
     if not islands:
         return result
@@ -253,15 +325,24 @@ def stone_source(material: str, available: set[str]) -> set[str] | None:
             if base in available:
                 return {base}
             fallback = {
-                "smooth_quartz": "quartz_block", "quartz_block": "quartz_block",
-                "smooth_red_sandstone": "red_sand", "red_sandstone": "red_sand",
-                "smooth_sandstone": "sand", "sandstone": "sand",
-                "polished_blackstone_bricks": "blackstone", "blackstone": "blackstone",
-                "mossy_cobblestone": "cobblestone", "mossy_stone_bricks": "stone_bricks",
-                "deepslate_bricks": "deepslate", "deepslate_tiles": "deepslate",
-                "polished_deepslate": "deepslate", "end_stone_bricks": "end_stone",
-                "polished_andesite": "andesite", "polished_diorite": "diorite",
-                "polished_granite": "granite", "polished_tuff": "tuff",
+                "smooth_quartz": "quartz_block",
+                "quartz_block": "quartz_block",
+                "smooth_red_sandstone": "red_sand",
+                "red_sandstone": "red_sand",
+                "smooth_sandstone": "sand",
+                "sandstone": "sand",
+                "polished_blackstone_bricks": "blackstone",
+                "blackstone": "blackstone",
+                "mossy_cobblestone": "cobblestone",
+                "mossy_stone_bricks": "stone_bricks",
+                "deepslate_bricks": "deepslate",
+                "deepslate_tiles": "deepslate",
+                "polished_deepslate": "deepslate",
+                "end_stone_bricks": "end_stone",
+                "polished_andesite": "andesite",
+                "polished_diorite": "diorite",
+                "polished_granite": "granite",
+                "polished_tuff": "tuff",
             }.get(base)
             if fallback in available:
                 return {fallback}
@@ -269,20 +350,30 @@ def stone_source(material: str, available: set[str]) -> set[str] | None:
 
 
 def copper_stage(material: str) -> str | None:
-    if (material == "copper_block" or material.startswith("copper_")
-            or material.startswith("cut_copper") or material.startswith("chiseled_copper")):
+    if (
+        material == "copper_block"
+        or material.startswith("copper_")
+        or material.startswith("cut_copper")
+        or material.startswith("chiseled_copper")
+    ):
         return ""
     for stage in ("exposed_", "weathered_", "oxidized_"):
-        if (material.startswith(stage + "copper") or material.startswith(stage + "cut_copper")
-                or material.startswith(stage + "chiseled_copper")):
+        if (
+            material.startswith(stage + "copper")
+            or material.startswith(stage + "cut_copper")
+            or material.startswith(stage + "chiseled_copper")
+        ):
             return stage
     return None
 
 
 def is_stonecut_copper(material: str, stage: str) -> bool:
     return material in {
-        stage + "cut_copper", stage + "cut_copper_slab", stage + "cut_copper_stairs",
-        stage + "chiseled_copper", stage + "copper_grate",
+        stage + "cut_copper",
+        stage + "cut_copper_slab",
+        stage + "cut_copper_stairs",
+        stage + "chiseled_copper",
+        stage + "copper_grate",
     }
 
 
@@ -307,7 +398,13 @@ def copper_sources(material: str, available: set[str]) -> set[str] | None:
         base = "copper_block" if not stage else stage + "copper"
         if base in available:
             return {base}
-    if material in {"copper_bars", "copper_chain", "copper_trapdoor", "copper_door", "lightning_rod"}:
+    if material in {
+        "copper_bars",
+        "copper_chain",
+        "copper_trapdoor",
+        "copper_door",
+        "lightning_rod",
+    }:
         return {"copper_block"} if "copper_block" in available else None
     if material == "copper_chest":
         return {"copper_block", "oak_log"} if {"copper_block", "oak_log"} <= available else None
@@ -343,23 +440,42 @@ def recipe_sources(material: str, available: set[str]) -> set[str] | None:
         return {color + "_wool", "oak_log"} if color and color + "_wool" in available else None
 
     fixed: dict[str, set[str]] = {
-        "anvil": {"iron_block"}, "cauldron": {"iron_block"}, "hopper": {"iron_block", "oak_log"},
-        "iron_bars": {"iron_block"}, "iron_chain": {"iron_block"}, "iron_trapdoor": {"iron_block"},
-        "heavy_weighted_pressure_plate": {"iron_block"}, "light_weighted_pressure_plate": {"gold_block"},
-        "lantern": {"iron_block", "coal_block", "oak_log"}, "rail": {"iron_block", "oak_log"},
-        "tripwire_hook": {"iron_block", "oak_log"}, "lever": {"stone", "oak_log"},
-        "redstone_torch": {"redstone_block", "oak_log"}, "redstone_lamp": {"redstone_block", "glowstone"},
+        "anvil": {"iron_block"},
+        "cauldron": {"iron_block"},
+        "hopper": {"iron_block", "oak_log"},
+        "iron_bars": {"iron_block"},
+        "iron_chain": {"iron_block"},
+        "iron_trapdoor": {"iron_block"},
+        "heavy_weighted_pressure_plate": {"iron_block"},
+        "light_weighted_pressure_plate": {"gold_block"},
+        "lantern": {"iron_block", "coal_block", "oak_log"},
+        "rail": {"iron_block", "oak_log"},
+        "tripwire_hook": {"iron_block", "oak_log"},
+        "lever": {"stone", "oak_log"},
+        "redstone_torch": {"redstone_block", "oak_log"},
+        "redstone_lamp": {"redstone_block", "glowstone"},
         "comparator": {"redstone_block", "quartz_block", "stone"},
-        "note_block": {"redstone_block", "oak_log"}, "jukebox": {"diamond_block", "oak_log"},
-        "target": {"redstone_block", "hay_block"}, "crafter": {"redstone_block", "iron_block", "stone", "oak_log"},
-        "furnace": {"stone"}, "blast_furnace": {"stone", "iron_block"},
-        "smoker": {"stone", "oak_log"}, "grindstone": {"stone", "oak_log"},
-        "stonecutter": {"stone", "iron_block"}, "campfire": {"coal_block", "oak_log"},
-        "barrel": {"oak_log"}, "chest": {"oak_log"}, "crafting_table": {"oak_log"},
-        "composter": {"oak_log"}, "ladder": {"oak_log"}, "flower_pot": {"clay"},
-        "decorated_pot": {"clay"}, "piston_head": {"stone", "oak_log", "iron_block", "redstone_block"},
+        "note_block": {"redstone_block", "oak_log"},
+        "jukebox": {"diamond_block", "oak_log"},
+        "target": {"redstone_block", "hay_block"},
+        "crafter": {"redstone_block", "iron_block", "stone", "oak_log"},
+        "furnace": {"stone"},
+        "blast_furnace": {"stone", "iron_block"},
+        "smoker": {"stone", "oak_log"},
+        "grindstone": {"stone", "oak_log"},
+        "stonecutter": {"stone", "iron_block"},
+        "campfire": {"coal_block", "oak_log"},
+        "barrel": {"oak_log"},
+        "chest": {"oak_log"},
+        "crafting_table": {"oak_log"},
+        "composter": {"oak_log"},
+        "ladder": {"oak_log"},
+        "flower_pot": {"clay"},
+        "decorated_pot": {"clay"},
+        "piston_head": {"stone", "oak_log", "iron_block", "redstone_block"},
         "sticky_piston": {"stone", "oak_log", "iron_block", "redstone_block", "slime_block"},
-        "carved_pumpkin": {"pumpkin"}, "moss_carpet": {"moss_block"},
+        "carved_pumpkin": {"pumpkin"},
+        "moss_carpet": {"moss_block"},
     }
     if material in fixed:
         return fixed[material] if fixed[material] <= available else None
@@ -369,7 +485,9 @@ def recipe_sources(material: str, available: set[str]) -> set[str] | None:
     if "copper" in material or material.endswith("lightning_rod"):
         return copper_sources(material, available)
     if material == "dirt_path":
-        source = next((candidate for candidate in ("dirt", "grass_block") if candidate in available), None)
+        source = next(
+            (candidate for candidate in ("dirt", "grass_block") if candidate in available), None
+        )
         return {source} if source else None
     if material.startswith("chiseled_") or material.startswith("cracked_"):
         tail = material.removeprefix("chiseled_").removeprefix("cracked_")
@@ -385,8 +503,14 @@ def connected_components(blocks: list[Block]) -> int:
         queue = deque([remaining.pop()])
         while queue:
             x, y, z = queue.popleft()
-            for neighbour in ((x + 1, y, z), (x - 1, y, z), (x, y + 1, z),
-                              (x, y - 1, z), (x, y, z + 1), (x, y, z - 1)):
+            for neighbour in (
+                (x + 1, y, z),
+                (x - 1, y, z),
+                (x, y + 1, z),
+                (x, y - 1, z),
+                (x, y, z + 1),
+                (x, y, z - 1),
+            ):
                 if neighbour in remaining:
                     remaining.remove(neighbour)
                     queue.append(neighbour)
@@ -405,13 +529,38 @@ def suggested_stars(score: float) -> int:
     return 5
 
 
-def audit_blueprint(path: Path, available_counts: dict[str, int], regions_by_material: dict[str, set[str]]) -> Audit:
+def audit_blueprint(
+    path: Path, available_counts: dict[str, int], regions_by_material: dict[str, set[str]]
+) -> Audit:
     name, stars, blocks, invalid = parse_blueprint(path)
     warnings = list(invalid)
     if not blocks:
         warnings.append("no valid blocks")
-        return Audit(name, stars, 1, 0, "invalid", 0, 0, "0x0x0", 0, 0, 0, 0, 0, 0, 0,
-                     0, "", 0, 0, 0, "", "invalid", "; ".join(warnings))
+        return Audit(
+            name,
+            stars,
+            1,
+            0,
+            "invalid",
+            0,
+            0,
+            "0x0x0",
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            "",
+            0,
+            0,
+            0,
+            "",
+            "invalid",
+            "; ".join(warnings),
+        )
 
     coords = [(b.x, b.y, b.z) for b in blocks]
     unique_coords = set(coords)
@@ -430,9 +579,12 @@ def audit_blueprint(path: Path, available_counts: dict[str, int], regions_by_mat
     material_counts = Counter(block.material for block in blocks)
     stateful = sum(bool(block.properties) for block in blocks)
     directional = sum(bool(DIRECTION_KEYS & block.properties.keys()) for block in blocks)
-    complex_blocks = sum(bool((COMPLEX_KEYS - IGNORED_KEYS) & block.properties.keys()) for block in blocks)
+    complex_blocks = sum(
+        bool((COMPLEX_KEYS - IGNORED_KEYS) & block.properties.keys()) for block in blocks
+    )
     strict_connectable = sum(
-        block.material.endswith(CONNECTABLE_SUFFIXES) and not block.material.endswith("_fence") for block in blocks
+        block.material.endswith(CONNECTABLE_SUFFIXES) and not block.material.endswith("_fence")
+        for block in blocks
     )
     components = connected_components(blocks)
 
@@ -532,7 +684,8 @@ def write_markdown(path: Path, audits: list[Audit], input_path: Path, manifest: 
         f"- Input: `{input_path}`",
         f"- Material manifest: `{manifest}`",
         f"- Blueprints: {len(audits)}",
-        f"- Star distribution: " + ", ".join(f"{star}★={star_counts[star]}" for star in range(1, 6)),
+        f"- Star distribution: "
+        + ", ".join(f"{star}★={star_counts[star]}" for star in range(1, 6)),
         f"- Fully covered: {covered}/{len(audits)}",
         "- Difficulty score: 0-100; combines block count, material/region count, height, disconnected parts, "
         "directional and complex BlockData. Missing resources do not inflate difficulty.",
@@ -544,12 +697,25 @@ def write_markdown(path: Path, audits: list[Audit], input_path: Path, manifest: 
         "Directional | Complex | Regions | Coverage | Uncovered | Warnings |",
         "|---|---:|---:|---:|---|---:|---:|---|---:|---:|---:|---:|---|---|---|",
     ]
-    for audit in sorted(audits, key=lambda row: (row.configured_stars, row.difficulty_score, row.blueprint)):
+    for audit in sorted(
+        audits, key=lambda row: (row.configured_stars, row.difficulty_score, row.blueprint)
+    ):
         values = [
-            audit.blueprint, str(audit.configured_stars), str(audit.suggested_stars), f"{audit.difficulty_score:.1f}",
-            audit.segment_assessment, str(audit.blocks), str(audit.unique_materials), audit.dimensions,
-            str(audit.stateful_blocks), str(audit.directional_blocks), str(audit.complex_state_blocks),
-            str(audit.material_regions), audit.coverage, audit.uncovered_list or "-", audit.warnings or "-",
+            audit.blueprint,
+            str(audit.configured_stars),
+            str(audit.suggested_stars),
+            f"{audit.difficulty_score:.1f}",
+            audit.segment_assessment,
+            str(audit.blocks),
+            str(audit.unique_materials),
+            audit.dimensions,
+            str(audit.stateful_blocks),
+            str(audit.directional_blocks),
+            str(audit.complex_state_blocks),
+            str(audit.material_regions),
+            audit.coverage,
+            audit.uncovered_list or "-",
+            audit.warnings or "-",
         ]
         lines.append("| " + " | ".join(value.replace("|", "\\|") for value in values) + " |")
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -558,7 +724,9 @@ def write_markdown(path: Path, audits: list[Audit], input_path: Path, manifest: 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("input", type=Path, help="blueprint YAML file or directory")
-    parser.add_argument("--manifest", type=Path, required=True, help="generated material-manifest YAML")
+    parser.add_argument(
+        "--manifest", type=Path, required=True, help="generated material-manifest YAML"
+    )
     parser.add_argument("--area-config", type=Path, help="area YAML containing material-islands")
     parser.add_argument("--markdown", type=Path, help="write a Markdown report")
     parser.add_argument("--csv", type=Path, help="write a CSV report")
@@ -585,8 +753,10 @@ def main() -> int:
         write_csv(args.csv, audits)
     if args.json:
         args.json.parent.mkdir(parents=True, exist_ok=True)
-        args.json.write_text(json.dumps([asdict(audit) for audit in audits], ensure_ascii=False, indent=2) + "\n",
-                             encoding="utf-8")
+        args.json.write_text(
+            json.dumps([asdict(audit) for audit in audits], ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
     if not any((args.markdown, args.csv, args.json)):
         print(json.dumps([asdict(audit) for audit in audits], ensure_ascii=False, indent=2))
     return 0

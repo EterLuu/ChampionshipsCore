@@ -28,10 +28,10 @@ ChampionshipsCore 是用于 Minecraft 团队锦标赛的 Paper 插件，统一�
 | Java | JDK 25（构建）；Java 25（运行） |
 | Core 服务端 | Paper 26.2，项目编译 API 为 `26.2.build.112-stable` |
 | 数据库 | MariaDB 或 MySQL；需预先创建数据库和可读写、建表的账号 |
-| 必需插件 | PacketEvents 2.13.0、ProtocolLib 5.4.0、PlaceholderAPI 2.12.2、FastAsyncWorldEdit 2.15.0 |
+| 必需插件 | PacketEvents 2.13.0、ProtocolLib 5.4.0、PlaceholderAPI 2.12.2、FastAsyncWorldEdit 2.15.3 |
 | 构建工具 | Maven；依赖版本与仓库地址由根目录和各模块的 `pom.xml` 定义 |
 
-以上插件版本来自当前构建依赖。Core 的插件描述未声明 Folia 支持；远程 Bingo 使用单独的 [Folia Worker](championships-bingo-worker/README.md)。单服 `LOCAL` 模式无需 Redis、代理或身份平台。
+以上插件版本来自构建依赖，其中 FAWE 的 Bukkit 插件依赖为 2.15.3、Core API 依赖为 2.15.0。Core 的插件描述未声明 Folia 支持；远程 Bingo 使用单独的 [Folia Worker](championships-bingo-worker/README.md)。单服 `LOCAL` 模式无需 Redis、代理或身份平台。
 
 ## 快速开始
 
@@ -129,7 +129,7 @@ Core 的配置位于 `plugins/ChampionshipsCore/`：
 - [游戏与玩法](docs/games.md)、[命令参考](docs/commands.md)、[比赛启动](docs/game-start.md)
 - [地图编辑与发布](docs/map-editing.md)、[自由游玩](docs/daily-mode.md)
 - [积分、观战与展示](docs/presentation.md)
-- [Bingo 跨服架构](docs/bingo-remote-architecture.md)、[容量验证](docs/bingo-64-player-performance-report.md)
+- [Bingo 跨服架构](docs/bingo-remote-architecture.md)、[容量验证](docs/bingo-performance-validation.md)
 - [开发指南](docs/development.md)、[旁观契约](docs/spectator-visibility-contract.md)
 
 ## 参与开发与许可证

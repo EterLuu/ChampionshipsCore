@@ -9,7 +9,7 @@ import ink.ziip.championshipscore.api.game.instance.paired.BasePairedGameInstanc
 import ink.ziip.championshipscore.api.game.manager.GameManager;
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
-import ink.ziip.championshipscore.api.game.snowball.runtime.SnowballShowdownTeamArea;
+import ink.ziip.championshipscore.api.game.lasershowdown.runtime.LaserShowdownTeamArea;
 import ink.ziip.championshipscore.api.game.tntrun.runtime.TNTRunTeamArea;
 import ink.ziip.championshipscore.api.gui.MenuInventory;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
@@ -52,12 +52,10 @@ import java.util.UUID;
 /** Live selector for every currently running game instance, including replicated paired arenas. */
 public final class SpectateMenu implements Listener {
     private static final int INVENTORY_SIZE = 54;
-    private static final int PAGE_SIZE = 36;
     private static final int CURRENT_SLOT = 4;
     private static final int LEAVE_SLOT = 45;
     private static final int PREVIOUS_SLOT = 48;
     private static final int REFRESH_SLOT = 49;
-    private static final int PAGE_SLOT = 50;
     private static final int NEXT_SLOT = 52;
     private static final int CLOSE_SLOT = 53;
     private static final Map<GameTypeEnum, GameStyle> GAME_STYLES = createGameStyles();
@@ -354,8 +352,8 @@ public final class SpectateMenu implements Listener {
                                     Material.TNT,
                                     location));
             }
-        } else if (instance instanceof SnowballShowdownTeamArea snowball) {
-            ConfigurationSection section = snowball.getGameConfig().getPlayerSpawnPoints();
+        } else if (instance instanceof LaserShowdownTeamArea lasershowdown) {
+            ConfigurationSection section = lasershowdown.getGameConfig().getPlayerSpawnPoints();
             if (section == null) return List.of();
             List<String> names = new ArrayList<>(section.getKeys(false));
             names.sort(String.CASE_INSENSITIVE_ORDER);
@@ -367,7 +365,7 @@ public final class SpectateMenu implements Listener {
                                 .findFirst()
                                 .orElse(null);
                 if (location != null)
-                    destinations.add(new SubArenaDestination(name, Material.SNOWBALL, location));
+                    destinations.add(new SubArenaDestination(name, Material.CROSSBOW, location));
             }
         }
         return List.copyOf(destinations);
@@ -809,8 +807,8 @@ public final class SpectateMenu implements Listener {
         styles.put(GameTypeEnum.BattleBox, new GameStyle(Material.WHITE_WOOL, NamedTextColor.GOLD));
         styles.put(GameTypeEnum.TNTRun, new GameStyle(Material.TNT, NamedTextColor.RED));
         styles.put(
-                GameTypeEnum.SnowballShowdown,
-                new GameStyle(Material.SNOWBALL, NamedTextColor.WHITE));
+                GameTypeEnum.LaserShowdown,
+                new GameStyle(Material.CROSSBOW, NamedTextColor.WHITE));
         styles.put(
                 GameTypeEnum.SkyWars, new GameStyle(Material.GRASS_BLOCK, NamedTextColor.YELLOW));
         styles.put(

@@ -80,7 +80,7 @@ public final class RiptideCourseGenerator {
         try {
             int side = geometry.halfWidth() + Math.max(2, config.getObstacleMargin());
             int height = Math.max(5, config.getClearHeight());
-            int slices = Math.max(1, 3000 / ((side * 2 + 1) * (height + 1)));
+            int slices = Math.max(1, 12000 / ((side * 2 + 1) * (height + 1)));
             var job =
                     new BukkitRunnable() {
                         int forward = -geometry.halfLength() - 2;
@@ -104,8 +104,16 @@ public final class RiptideCourseGenerator {
                                 }
                                 int last = geometry.totalSteps() + geometry.halfLength() + 2;
                                 if (forward <= last) {
-                                    for (int n = 0; n < slices && forward <= last; n++, forward++)
-                                        clearSlice(world, geometry, forward, side, height);
+                                    long deadline = System.nanoTime() + 2_000_000L;
+                                    int writes = 0;
+                                    for (int n = 0; n < slices && forward <= last; n++, forward++) {
+                                        writes +=
+                                                clearSlice(world, geometry, forward, side, height);
+                                        if (writes >= 3000 || System.nanoTime() >= deadline) {
+                                            forward++;
+                                            break;
+                                        }
+                                    }
                                     return;
                                 }
                                 if (!raftBuilt) {
@@ -191,11 +199,22 @@ public final class RiptideCourseGenerator {
         }
     }
 
-    static void clearSlice(
+    static int clearSlice(
             World world, RiptideCourseGeometry geometry, int forward, int side, int height) {
+        int writes = 0;
         for (int lateral = -side; lateral <= side; lateral++)
-            for (int y = 0; y <= height; y++)
-                set(world, geometry, forward, lateral, y, Material.AIR);
+            for (int y = 0; y <= height; y++) {
+                var block =
+                        world.getBlockAt(
+                                geometry.blockX(forward, lateral),
+                                geometry.floorY() + y,
+                                geometry.blockZ(forward, lateral));
+                if (block.getType() != Material.AIR) {
+                    block.setType(Material.AIR, false);
+                    writes++;
+                }
+            }
+        return writes;
     }
 
     private static void clearOwnedCorridor(

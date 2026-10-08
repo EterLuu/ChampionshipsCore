@@ -16,6 +16,9 @@ import org.bukkit.Sound;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+
 public abstract class BaseSingleGameSchedule extends BaseManager {
     private static final int ROUND_TRANSITION_SECONDS = 10;
     protected final BukkitScheduler scheduler;
@@ -27,7 +30,7 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
     @Getter protected boolean enabled;
     protected BukkitTask firstStartTask;
     protected BukkitTask startTask;
-    private long scheduleGeneration;
+    protected long scheduleGeneration;
 
     public BaseSingleGameSchedule(
             ChampionshipsCore championshipsCore, BaseListener handler, GameTypeEnum gameTypeEnum) {
@@ -137,13 +140,34 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
                         return;
                     }
                     startNextRoundCountdown();
-                });
+                },
+                resultDisplayTicks(hasNextRound));
     }
 
-    private void startNextRoundCountdown() {
+    protected long resultDisplayTicks(boolean hasNextRound) {
+        return 200L;
+    }
+
+    /** Starts game-owned preparation while the shared ten-second round clock runs. */
+    protected CompletionStage<Boolean> prepareNextRound() {
+        return CompletableFuture.completedFuture(true);
+    }
+
+    protected void startNextRoundCountdown() {
         long generation = scheduleGeneration;
         subRound++;
-        CoreMessages.playSoundToAllPlayers(Sound.ENTITY_PLAYER_LEVELUP, 1, 1F);
+        CompletionStage<Boolean> prepared;
+        try {
+            prepared = java.util.Objects.requireNonNull(prepareNextRound());
+        } catch (RuntimeException failure) {
+            handleStartResult(
+                    generation,
+                    false,
+                    MessageConfig.codeText(
+                            "base-single-game-schedule.start-next-round-countdown-1"));
+            return;
+        }
+        playNextRoundSound();
 
         timer = ROUND_TRANSITION_SECONDS;
         startTask =
@@ -161,18 +185,36 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
 
                             if (timer == 0) {
                                 if (startTask != null) startTask.cancel();
-                                plugin.getGameManager()
-                                        .joinSingleTeamAreaForAllTeamsAsync(
-                                                gameTypeEnum, getArea(), false, GameRunMode.EVENT)
-                                        .whenComplete(
-                                                (started, failure) ->
-                                                        handleStartResult(
-                                                                generation,
-                                                                failure == null
-                                                                        && Boolean.TRUE.equals(
-                                                                                started),
-                                                                MessageConfig.codeText(
-                                                                        "base-single-game-schedule.start-next-round-countdown-1")));
+                                prepared.whenComplete(
+                                        (ready, preparationFailure) -> {
+                                            if (!enabled || scheduleGeneration != generation)
+                                                return;
+                                            if (preparationFailure != null
+                                                    || !Boolean.TRUE.equals(ready)) {
+                                                handleStartResult(
+                                                        generation,
+                                                        false,
+                                                        MessageConfig.codeText(
+                                                                "base-single-game-schedule.start-next-round-countdown-1"));
+                                                return;
+                                            }
+                                            plugin.getGameManager()
+                                                    .joinSingleTeamAreaForAllTeamsAsync(
+                                                            gameTypeEnum,
+                                                            getArea(),
+                                                            false,
+                                                            GameRunMode.EVENT)
+                                                    .whenComplete(
+                                                            (started, failure) ->
+                                                                    handleStartResult(
+                                                                            generation,
+                                                                            failure == null
+                                                                                    && Boolean.TRUE
+                                                                                            .equals(
+                                                                                                    started),
+                                                                            MessageConfig.codeText(
+                                                                                    "base-single-game-schedule.start-next-round-countdown-1")));
+                                        });
                             }
                             timer--;
                         },
@@ -182,6 +224,10 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
 
     public boolean hasNextRound() {
         return enabled && subRound < getTotalRounds();
+    }
+
+    protected void playNextRoundSound() {
+        CoreMessages.playSoundToAllPlayers(Sound.ENTITY_PLAYER_LEVELUP, 1, 1F);
     }
 
     private void handleStartResult(long generation, boolean started, String failureMessage) {

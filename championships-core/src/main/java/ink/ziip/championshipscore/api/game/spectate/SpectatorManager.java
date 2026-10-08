@@ -244,21 +244,26 @@ public final class SpectatorManager extends BaseManager implements Listener {
             // External spectators are released by BaseGameInstance.releaseAllSpectators (or held
             // for
             // the next event round) and must not be stolen by participant cleanup here.
-            if (session.area() != area || session.external()) continue;
-            Player player = Bukkit.getPlayer(session.uuid());
-            sessions.remove(session.uuid(), session);
-            if (player != null) clearPresentation(player, session.external());
-            snapshots.remove(session.uuid());
-            participantControlItems.remove(session.uuid());
-            // An offline eliminated participant cannot be restored yet. Keep the original
-            // presentation
-            // state until the next join, where onJoin() removes the core effects and restores it.
-            if (player != null) {
-                participantHelmets.remove(session.uuid());
-                participantNoPhysics.remove(session.uuid());
-            }
-            plugin.getVisibilityManager().clearManualOverrides(session.uuid());
+            onParticipantReleased(session.uuid(), area);
         }
+    }
+
+    /** Releases only this area's participant session, including an offline round reservation. */
+    public void onParticipantReleased(@NotNull UUID uuid, @NotNull BaseGameInstance area) {
+        SpectatorSession session = sessions.get(uuid);
+        if (session == null || session.area() != area || session.external()) return;
+        if (!sessions.remove(uuid, session)) return;
+        teleportRequests.remove(uuid);
+        Player player = Bukkit.getPlayer(uuid);
+        if (player != null) clearPresentation(player, false);
+        snapshots.remove(uuid);
+        participantControlItems.remove(uuid);
+        // Preserve offline presentation flags for the existing stale-state recovery on join.
+        if (player != null) {
+            participantHelmets.remove(uuid);
+            participantNoPhysics.remove(uuid);
+        }
+        plugin.getVisibilityManager().clearManualOverrides(uuid);
     }
 
     public void beforeParticipantJoin(@NotNull Player player, @NotNull BaseGameInstance area) {
@@ -266,6 +271,20 @@ public final class SpectatorManager extends BaseManager implements Listener {
         // A reconnect may already have the requested saved mode. Give the game a normal baseline so
         // choosing Spectator again produces a real transition and a fresh managed session.
         if (player.getGameMode() == GameMode.SPECTATOR) player.setGameMode(GameMode.ADVENTURE);
+    }
+
+    /** Keeps a reserved participant protected across reset and reconnect without a lobby detour. */
+    public void prepareParticipantTransition(
+            @NotNull Player player, @NotNull BaseGameInstance area) {
+        if (!loaded || gameManager.getNextRoundHoldArea(player.getUniqueId()) != area) return;
+        SpectatorSession current = sessions.get(player.getUniqueId());
+        if (current != null && current.external()) {
+            if (current.area() != null) return;
+            sessions.remove(player.getUniqueId(), current);
+        }
+        prepareParticipant(player, area);
+        player.setGameMode(GameMode.SPECTATOR);
+        applyPresentation(player);
     }
 
     public void openControls(@NotNull Player player) {

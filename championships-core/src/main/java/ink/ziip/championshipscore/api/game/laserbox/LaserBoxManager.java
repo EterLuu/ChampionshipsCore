@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.game.laserbox;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.laserbox.config.LaserBoxConfig;
 import ink.ziip.championshipscore.api.game.laserbox.runtime.LaserBoxArea;
+import ink.ziip.championshipscore.api.game.laserbox.runtime.LaserBoxIntroductionArena;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 
@@ -15,8 +16,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import lombok.Getter;
+
 /** Loads configured LaserBox maps and exposes their arena copies as paired-game instances. */
 public final class LaserBoxManager extends BaseGameInstanceManager<LaserBoxArea> {
+
+    @Getter private LaserBoxIntroductionArena introductionArena;
 
     public LaserBoxManager(ChampionshipsCore plugin) {
         super(plugin);
@@ -26,6 +31,8 @@ public final class LaserBoxManager extends BaseGameInstanceManager<LaserBoxArea>
     public void load() {
         deferMapLoad(
                 () -> {
+                    introductionArena = new LaserBoxIntroductionArena(plugin);
+                    introductionArena.load();
                     Set<String> loadedWorlds = new HashSet<>();
                     loadMapDefinitions(
                             new File(plugin.getDataFolder(), "laserbox"),
@@ -44,6 +51,13 @@ public final class LaserBoxManager extends BaseGameInstanceManager<LaserBoxArea>
                                 createInstances(name, config);
                             });
                 });
+    }
+
+    @Override
+    public void unload() {
+        if (introductionArena != null) introductionArena.close();
+        introductionArena = null;
+        super.unload();
     }
 
     @Override

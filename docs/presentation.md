@@ -6,6 +6,8 @@
 
 在正式赛事模式中开启 `strict-spectator-rule` 后，正常赛事轮次中的参赛队员不能随意观战；拥有 `cc.refuge` 的裁判或替补不受此限制。DAILY 模式始终跳过该判定。
 
+旁观身份、实体可见性与 Tab 列表遵守 [旁观契约](spectator-visibility-contract.md)。下面的展示配置不改变玩家的真实角色或游戏资格。
+
 ## 聊天与跨服展示
 
 Core 与 Worker 的比赛聊天使用 `玩家名 <队名> » 消息` 格式，日常聊天保留 `[标签] 玩家名 » 消息` 格式；加入/退出消息和 TAB 使用 `[标签] 玩家名` 格式。队伍颜色、活动选手状态和聊天模式由共享的 `PlayerPresentation` 提供，跨服聊天也保留发送方的模式。拥有 `cc.admin` 或 `cc.refuge` 的玩家可在公共聊天中使用 `&c` 颜色、`&l` 加粗、`&n` 下划线等格式代码，也支持十六进制颜色，跨服转发会保留这些格式。Worker 会从 manifest 投影本局原生队伍，并在平台不支持队伍变更时降级为插件侧 `/teammsg`、`/tm` 处理。
@@ -14,7 +16,7 @@ Core 与 Worker 的比赛聊天使用 `玩家名 <队名> » 消息` 格式，�
 
 ## PlaceholderAPI
 
-以下变量可用于计分板、Tab 列表和全息文字。`[场地]`、`[游戏]`、`[名次]` 替换为实际值。
+以下列出 Core 注册的主要变量，可用于支持 PlaceholderAPI 的计分板、Tab 和全息文字插件。`[场地]`、`[游戏]`、`[名次]` 替换为实际值；游戏配置名称与 PAPI 前缀分别管理。
 
 ### 选手与排行榜
 
@@ -44,14 +46,16 @@ Core 与 Worker 的比赛聊天使用 `玩家名 <队名> » 消息` 格式，�
 
 ### 游戏通用变量
 
-多数游戏实现了：
+以下通用变量由各游戏 expansion 提供：
 
 ```text
 %<游戏前缀>_area_status_[场地]%
 %<游戏前缀>_area_timer_[场地]%
 ```
 
-游戏前缀包括 `battlebox`、`parkourtag`、`tntrun`、`skywars`、`tgttos`、`snowball`、`decarnival`、`parkourwarrior` 和 `hotycodydusky`。各游戏还提供存活人数、队伍、对手、角色、击杀和检查点等专属变量。
+可用前缀为 `battlebox`、`parkourtag`、`tntrun`、`skywars`、`tgttos`、`lasershowdown`、`decarnival`、`parkourwarrior`、`hotycodydusky`、`bingo`、`buildmart`、`dodgebolt` 和 `acerace`。各游戏还提供存活人数、队伍、对手、角色、击杀和检查点等专属变量。`riptide`、`frostbite` 和 `laserbox` 的内置侧栏使用模板值，不提供同名的 PAPI expansion。
+
+`[areaName]` 是通用场地变量支持的特殊标记，表示查看者当前参赛或旁观的运行实例。例如 `%acerace_area_timer_[areaName]%` 读取查看者的比赛计时；指定真实地图名时读取该地图，同图副本中的参赛者匹配自己的实例。
 
 ### 宾果
 
@@ -65,11 +69,18 @@ Core 与 Worker 的比赛聊天使用 `玩家名 <队名> » 消息` 格式，�
 
 Bingo 同样支持通用的 `%bingo_area_status_[场地]%` 和 `%bingo_area_timer_[场地]%`。
 
+## Tab 展示
+
+| Placeholder | 用途 |
+| --- | --- |
+| `%cc_tab_prefix%` | 赛事队伍或 DAILY 游戏/状态标签 |
+| `%cc_tab_name_color%` | 当前游戏队色；非活动选手使用白色 |
+| `%cc_tab_footer_status%` | 赛事队伍积分或 DAILY 当前游戏/临时队伍信息 |
+
+Core 与 Worker 共用这些展示规则。实体隐藏保留全部在线玩家的 Tab 条目，真实离线时移除。DAILY 的临时队伍与正式队伍数据分别处理，详见 [自由游玩指南](daily-mode.md#数据与-papi)。
+
 ## 侧栏记分板
 
-ChampionshipsCore 内置基于 FastBoard 的统一侧栏，取代 SternalBoard。显示优先级为参赛/旁观游戏板、地图 prepare 编辑板、管理员地图状态板和赛事大厅板；游戏板按玩家实际归属选择。remote Bingo 的模板由 Core 随比赛 manifest 下发，Worker 复用同一份配置。
+ChampionshipsCore 内置基于 FastBoard 的统一侧栏。按玩家上下文依次选择参赛/旁观游戏板、地图 prepare 编辑板、DAILY 大厅板、管理员地图状态板和赛事大厅板；管理员地图状态板在所在世界有地图定义时显示。远程 Bingo 的模板由 Core 随比赛 manifest 下发，Worker 复用同一份配置。
 
-所有标题、行文本、颜色、游戏模板和地图覆盖均位于 `scoreboards.yml`。配置沿用 `&`、
-`#RRGGBB` 和 `&#RRGGBB` 颜色写法，最多渲染 15 行；`/cc admin reload --confirm` 会原子重载，
-配置无效时继续使用上一份有效快照。默认模板展示赛事和游戏信息，并为
-队伍、对手、排行榜及管理员警告增加原生彩色显示。
+所有标题、行文本、颜色、游戏模板和地图覆盖均位于 `scoreboards.yml`。配置支持 `&`、`#RRGGBB` 和 `&#RRGGBB` 颜色写法，最多渲染 15 行；`/cc admin reload --confirm` 原子重载，配置无效时继续使用上一份有效快照。默认模板展示赛事、游戏、队伍、对手、排行榜及管理员警告。

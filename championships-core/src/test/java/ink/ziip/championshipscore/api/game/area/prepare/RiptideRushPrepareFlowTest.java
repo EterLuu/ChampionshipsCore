@@ -86,6 +86,15 @@ class RiptideRushPrepareFlowTest {
         assertFalse(session.getFlow().validateForDisplay(session).isEmpty());
     }
 
+    @Test
+    void mapEditIncludesSharedIntroductionArenaUtility() throws Exception {
+        var session = session();
+        var step = session.step("riptide_introduction_arena");
+        assertNotNull(step);
+        assertEquals(StepCaptureType.SELECT, step.captureType());
+        assertTrue(step.isSet(session));
+    }
+
     private static PrepareSession session() throws Exception {
         var field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
         field.setAccessible(true);

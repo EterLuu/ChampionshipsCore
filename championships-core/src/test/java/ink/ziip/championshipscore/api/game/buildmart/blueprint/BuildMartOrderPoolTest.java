@@ -1,7 +1,6 @@
 package ink.ziip.championshipscore.api.game.buildmart.blueprint;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -71,18 +70,14 @@ class BuildMartOrderPoolTest {
     }
 
     @Test
-    void allOneToFiveStarBlueprintsAreNormalOrders() {
-        for (int stars = 1; stars <= 5; stars++) {
-            assertTrue(BuildMartOrderPool.isNormalRating(stars));
+    void ratingBoundariesKeepAllNormalStarsAndOnlyTwoStarGoldenSources() {
+        for (int stars : new int[] {1, 2, 3, 4, 5, 7}) {
+            assertEquals(
+                    stars <= 5, BuildMartOrderPool.isNormalRating(stars), "normal stars=" + stars);
+            assertEquals(
+                    stars == 2,
+                    BuildMartOrderPool.isGoldenSourceRating(stars),
+                    "golden stars=" + stars);
         }
-        assertFalse(BuildMartOrderPool.isNormalRating(7));
-    }
-
-    @Test
-    void onlyTwoStarBlueprintsFeedTheGoldenPool() {
-        assertTrue(BuildMartOrderPool.isGoldenSourceRating(2));
-        assertFalse(BuildMartOrderPool.isGoldenSourceRating(3));
-        assertFalse(BuildMartOrderPool.isGoldenSourceRating(5));
-        assertFalse(BuildMartOrderPool.isGoldenSourceRating(7));
     }
 }

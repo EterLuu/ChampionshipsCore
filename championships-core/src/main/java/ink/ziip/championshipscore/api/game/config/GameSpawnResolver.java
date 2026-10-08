@@ -10,7 +10,7 @@ import ink.ziip.championshipscore.api.game.parkourtag.config.ParkourTagConfig;
 import ink.ziip.championshipscore.api.game.parkourwarrior.config.ParkourWarriorConfig;
 import ink.ziip.championshipscore.api.game.riptiderush.config.RiptideRushConfig;
 import ink.ziip.championshipscore.api.game.skywars.config.SkyWarsConfig;
-import ink.ziip.championshipscore.api.game.snowball.config.SnowballShowdownConfig;
+import ink.ziip.championshipscore.api.game.lasershowdown.config.LaserShowdownConfig;
 import ink.ziip.championshipscore.api.game.tgttos.config.TGTTOSConfig;
 import ink.ziip.championshipscore.api.game.tntrun.config.TNTRunConfig;
 import ink.ziip.championshipscore.configuration.location.LocationConfig;
@@ -56,7 +56,7 @@ public final class GameSpawnResolver {
                     case RiptideRushConfig c -> c.getStartPoint();
                     case ink.ziip.championshipscore.api.game.laserbox.config.LaserBoxConfig c ->
                             first(c.getRightSpawnPoint(), c.getLeftSpawnPoint());
-                    case SnowballShowdownConfig c -> firstSectionLocation(c.getPlayerSpawnPoints());
+                    case LaserShowdownConfig c -> firstSectionLocation(c.getPlayerSpawnPoints());
                     case DragonEggCarnivalConfig c -> dragonEggCarnivalSpawn(c);
                     case DodgeboltConfig c ->
                             firstString(c.getRightSpawnPoints(), c.getLeftSpawnPoints());

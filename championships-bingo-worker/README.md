@@ -81,7 +81,7 @@ Worker 每个进程只承载一个活动比赛。`worlds.allow-reuse-without-res
 3. Core 先保持 `LOCAL`；空闲时按 [跨服架构](../docs/bingo-remote-architecture.md) 配置 `REMOTE`。
 4. 用测试队伍走通准备、转服、倒计时、任务、结算和返回。
 5. 核对卡片、积分、队伍颜色、完整 Tab、旁观、侧栏、普通聊天和 `/teammsg`。
-6. 确认停服、移走旧世界、重启和第二局均成功，再进行 [容量验证](../docs/bingo-64-player-performance-report.md)。
+6. 确认停服、移走旧世界、重启和第二局均成功，再进行 [容量验证](../docs/bingo-performance-validation.md)。
 
 ## 排障
 

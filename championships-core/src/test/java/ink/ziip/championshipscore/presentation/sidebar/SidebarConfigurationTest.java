@@ -64,11 +64,11 @@ class SidebarConfigurationTest {
                 configuration.game(GameTypeEnum.Bingo).base().lines().size(),
                 Integer.parseInt(worker.get("sidebar.line-count")));
 
-        var snowball = configuration.game(GameTypeEnum.SnowballShowdown);
-        assertTrue(snowball.base().lines().contains("{ranking}"));
+        var lasershowdown = configuration.game(GameTypeEnum.LaserShowdown);
+        assertTrue(lasershowdown.base().lines().contains("{ranking}"));
         assertTrue(
-                snowball.base().lines().stream()
-                        .noneMatch(line -> line.contains("snowball_area_rank_")));
+                lasershowdown.base().lines().stream()
+                        .noneMatch(line -> line.contains("lasershowdown_area_rank_")));
     }
 
     @Test

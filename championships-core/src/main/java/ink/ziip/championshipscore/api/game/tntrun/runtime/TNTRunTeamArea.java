@@ -702,7 +702,7 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
             player.setGameMode(GameMode.ADVENTURE);
             return;
         }
-        player.teleport(CCConfig.LOBBY_LOCATION);
+        teleportToLobby(player);
         player.setGameMode(GameMode.ADVENTURE);
     }
 

@@ -1,6 +1,6 @@
 # 自由游玩模式
 
-自由游玩是正式赛事系统之外的一层大厅编排。它复用原有游戏实例和地图配置，但队列、同行小队、临时队伍、比赛结果与纪录均使用独立生命周期；与正式赛事的积分、轮次和赛程表相互独立。代码和配置中的稳定标识仍使用 `DAILY`/`daily`。
+自由游玩提供自助大厅匹配，复用游戏实例和地图配置。队列、同行小队、临时队伍、比赛结果与纪录使用独立生命周期，与正式赛事的积分、轮次和赛程表分别管理。代码和配置标识为 `DAILY`/`daily`。
 
 ## 模式与命令
 
@@ -39,7 +39,9 @@ Bingo 记录胜场、连线数、完成任务总数和单场最多完成数；Ac
 
 自由游玩占位符统一使用 `%cc_daily_*%`，包括 `mode`、`party_leader`、`party_size`、`selected_game`、`queue_state`、`queue_players`、`countdown`、`active_game`、`active_map`、`match_id`、`games`、`wins`。DAILY 没有累计积分或通用 best 值，使用对应玩法的统计和纪录占位符。这些占位符只读取快照或缓存，离线/空上下文返回稳定默认值，不在 PAPI 回调线程访问数据库。
 
-DAILY 下正式队伍占位符 `player_team_name*`、`player_team_color*` 返回空文本，`player_team_points`/`player_team_rank` 返回 `0`。TAB 应使用 `%cc_tab_prefix%`、`%cc_tab_name_color%` 与 `%cc_tab_footer_status%`：大厅玩家使用白色名字，进入游戏后才使用当局队色；聊天和加入/离开提示复用相同的 `[前缀] 玩家名` 身份格式。匹配产生的临时队伍按颜色命名为“红队、绿队、蓝队”等。
+DAILY 的 `player_team_name*`、`player_team_color*` 只展示当局临时队伍，不读取玩家的正式队伍；没有临时队伍时使用 `message.yml` 的 `papi.spectator` 或 `papi.none` 默认文本。Core 的 `player_team_points`/`player_team_rank` 返回 `0`，Worker 的队伍积分也返回 `0`。匹配产生的临时队伍按颜色命名为“红队、绿队、蓝队”等。
+
+TAB 使用 `%cc_tab_prefix%`、`%cc_tab_name_color%` 与 `%cc_tab_footer_status%`：大厅玩家使用白色名字，活动选手使用当局队色；聊天和加入/离开提示复用 `[前缀] 玩家名` 身份格式。完整展示规则见 [积分与展示指南](presentation.md#tab-展示)。
 
 排行榜占位符格式为 `%cc_daily_lb_<榜单>_<名次>%`，并可追加 `_name` 或 `_value` 只取玩家名/数值。例如：`wins`、`bingo_wins`、`bingo_lines`、`bingo_completed_tasks`、`bingo_max_completed`、`acerace_fastest_lap_<地图>`、`acerace_fastest_three_laps_<地图>`。不存在累计积分榜。地图名会转为小写下划线标识。可在支持 PlaceholderAPI 的展示插件中配置这些占位符。
 

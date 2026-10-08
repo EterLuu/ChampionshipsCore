@@ -8,6 +8,7 @@ import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.game.model.GameRunMode;
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.api.game.spatial.LobbyReturnLocations;
 import ink.ziip.championshipscore.api.game.spatial.TeleportPositions;
 import ink.ziip.championshipscore.api.game.start.ArenaSelection;
 import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
@@ -313,9 +314,9 @@ public abstract class BaseGameInstance {
         for (UUID uuid : getParticipantUniqueIds()) {
             Player player = Bukkit.getPlayer(uuid);
             if (player == null) continue;
-            // The legacy bulk methods above intentionally remain part of the public API. These
-            // direct operations complete the reset for partial team starts and clear the exp bar,
-            // total exp and transient hazards that those methods do not cover.
+            // The bulk methods above reset the common fields. These direct operations complete
+            // partial team starts and clear the exp bar, total exp, and transient hazards they do
+            // not cover.
             PlayerStateService.resetExperience(player);
             PlayerStateService.resetVitals(player);
         }
@@ -1083,17 +1084,20 @@ public abstract class BaseGameInstance {
     }
 
     /**
-     * Lobby spawn scattered horizontally around the configured centre for one player, shared with
-     * the daily-mode lobby routing via {@link TeleportPositions#getScatteredLobbyLocation(Location,
-     * Player)}.
+     * Returns a player to their last lobby position, retaining the spawn fallback for new players.
      */
-    private Location getScatteredLobbyLocation(@NotNull Player player) {
-        return TeleportPositions.getScatteredLobbyLocation(getLobbyLocation(), player);
+    protected final void teleportToLobby(@NotNull Player player) {
+        Location destination = LobbyReturnLocations.resolve(player, getLobbyLocation());
+        if (destination != null && destination.getWorld() != null) player.teleport(destination);
     }
 
     /** True while the visible result phase still owns the participant roster. */
     public boolean isPostGamePending() {
         return postGamePending;
+    }
+
+    public final boolean isRoundTransitionPending() {
+        return roundTransitionPending;
     }
 
     /** Removes all game state that could leak into the lobby and applies its authoritative mode. */
@@ -1104,8 +1108,7 @@ public abstract class BaseGameInstance {
         PlayerStateService.disableFlight(player);
         PlayerStateService.clearHazards(player);
         player.setLevel(0);
-        if (teleport && getLobbyLocation() != null && getLobbyLocation().getWorld() != null)
-            player.teleport(getScatteredLobbyLocation(player));
+        if (teleport) teleportToLobby(player);
         player.setGameMode(GameMode.ADVENTURE);
     }
 
@@ -1222,19 +1225,24 @@ public abstract class BaseGameInstance {
         }
 
         List<List<String>> rules = getIntroductionRules();
+        boolean interactive = isInteractiveIntroduction();
         Location introductionSpawnPoint = resolveIntroductionSpawnPoint();
-        if (rules == null || rules.isEmpty() || introductionSpawnPoint == null) {
+        if ((!interactive && (rules == null || rules.isEmpty()))
+                || introductionSpawnPoint == null) {
             onComplete.run();
             return;
         }
 
         introductionPhase = true;
+        onIntroductionStarted();
         applyIntroductionGameModeToAllParticipants();
         teleportAllPlayers(introductionSpawnPoint);
-        sendTimedTitleToAllGamePlayers(
-                MessageConfig.GAME_INTRODUCTION_TITLE.replace("%game%", gameTypeEnum.toString()),
-                "",
-                INTRODUCTION_TITLE_DURATION_SECONDS * 20);
+        if (!interactive)
+            sendTimedTitleToAllGamePlayers(
+                    MessageConfig.GAME_INTRODUCTION_TITLE.replace(
+                            "%game%", gameTypeEnum.toString()),
+                    "",
+                    INTRODUCTION_TITLE_DURATION_SECONDS * 20);
 
         final int[] remain = {INTRODUCTION_DURATION};
 
@@ -1244,8 +1252,10 @@ public abstract class BaseGameInstance {
                         () -> {
                             int elapsed = INTRODUCTION_DURATION - remain[0];
                             int section =
-                                    RuleIntroductionTimeline.sectionAt(
-                                            elapsed, INTRODUCTION_DURATION, rules.size());
+                                    interactive
+                                            ? -1
+                                            : RuleIntroductionTimeline.sectionAt(
+                                                    elapsed, INTRODUCTION_DURATION, rules.size());
                             if (section >= 0) broadcastRuleSection(rules.get(section));
 
                             showPreparationCountdown(remain[0]);
@@ -1274,8 +1284,29 @@ public abstract class BaseGameInstance {
         return gameConfig.getRules();
     }
 
+    /** Interactive lessons own mechanic cues; lobby rules need not be repeated at the arena. */
+    protected boolean isInteractiveIntroduction() {
+        return false;
+    }
+
+    /** Games may keep their participants in managed spectator mode during an event hand-off. */
+    public boolean retainsParticipantSpectatorsForNextRound() {
+        return false;
+    }
+
+    /**
+     * Background preparation also reserves a waiting instance for lifecycle and reload handling.
+     */
+    public boolean hasPendingPreparation() {
+        return false;
+    }
+
+    public void prepareParticipantForNextRound(@NotNull Player player) {
+        sanitizeParticipantForLobby(player, false);
+    }
+
     /** A dedicated viewpoint is optional; every playable map already defines a spectator spawn. */
-    private Location resolveIntroductionSpawnPoint() {
+    protected Location resolveIntroductionSpawnPoint() {
         Location configured = gameConfig.getIntroductionSpawnPoint();
         if (configured == null) configured = gameConfig.getSpectatorSpawnPoint();
         if (configured == null || configured.getWorld() != null) return configured;
@@ -1311,11 +1342,10 @@ public abstract class BaseGameInstance {
             player.setFireTicks(0);
             Location lobby = getLobbyLocation();
             // A reconnecting participant normally already stands in the lobby where they left it;
-            // only
-            // pull them to the lobby spawn when they are somewhere else entirely.
+            // only return them to the remembered lobby position when they are somewhere else.
             if (lobby != null
                     && lobby.getWorld() != null
-                    && !player.getWorld().equals(lobby.getWorld())) player.teleport(lobby);
+                    && !player.getWorld().equals(lobby.getWorld())) teleportToLobby(player);
             return true;
         }
         if (stage == GameStageEnum.PREPARATION && introductionPhase) {
@@ -1410,6 +1440,41 @@ public abstract class BaseGameInstance {
             String startTitle,
             String startSubtitle,
             @NotNull Runnable onStart) {
+        startFinalCountdown(
+                countdownSeconds, gameTitle, startTitle, startSubtitle, true, onStart);
+    }
+
+    /** Runs a final countdown with optional per-second and start cues. */
+    protected void startFinalCountdown(
+            int countdownSeconds,
+            String gameTitle,
+            String startTitle,
+            String startSubtitle,
+            boolean playCountdownSound,
+            @NotNull Runnable onStart) {
+        startFinalCountdown(
+                countdownSeconds,
+                gameTitle,
+                startTitle,
+                startSubtitle,
+                playCountdownSound,
+                true,
+                onStart);
+    }
+
+    /**
+     * Runs a countdown that can hand off to another countdown without entering live progress.
+     * Selection windows use this so the formal start countdown remains the only transition into
+     * {@link GameStageEnum#PROGRESS}.
+     */
+    protected void startFinalCountdown(
+            int countdownSeconds,
+            String gameTitle,
+            String startTitle,
+            String startSubtitle,
+            boolean playCountdownSound,
+            boolean transitionToProgress,
+            @NotNull Runnable onStart) {
         cancelFinalCountdown();
         clearGameTimerBossBar();
         changeLevelForAllGamePlayers(0);
@@ -1431,7 +1496,7 @@ public abstract class BaseGameInstance {
                                 String title = getFinalCountdownTitle(seconds);
                                 String subtitle = getFinalCountdownSubtitle(gameTitle, seconds);
                                 sendTitleToAllGamePlayers(title, subtitle);
-                                playCountdownBit(BIT_C4);
+                                if (playCountdownSound) playCountdownBit(BIT_C4);
                                 remaining[0]--;
                                 return;
                             }
@@ -1440,7 +1505,7 @@ public abstract class BaseGameInstance {
                             finalCountdownTask = null;
                             if (getGameStageEnum() != GameStageEnum.COUNTDOWN) return;
 
-                            setGameStageEnum(GameStageEnum.PROGRESS);
+                            if (transitionToProgress) setGameStageEnum(GameStageEnum.PROGRESS);
                             try {
                                 onStart.run();
                             } catch (Throwable failure) {
@@ -1453,9 +1518,10 @@ public abstract class BaseGameInstance {
                                 abortAndReset();
                                 return;
                             }
-                            if (getGameStageEnum() == GameStageEnum.PROGRESS) {
+                            if (transitionToProgress
+                                    && getGameStageEnum() == GameStageEnum.PROGRESS) {
                                 announceGameStart(startTitle, startSubtitle);
-                                playCountdownBit(BIT_C5);
+                                if (playCountdownSound) playCountdownBit(BIT_C5);
                             }
                         },
                         0L,
@@ -1583,8 +1649,16 @@ public abstract class BaseGameInstance {
             introductionTask.cancel();
             introductionTask = null;
         }
+        boolean wasActive = introductionPhase;
         introductionPhase = false;
+        if (wasActive) onIntroductionStopped();
     }
+
+    /** Optional game-owned activity; the shared introduction still owns timing and recovery. */
+    protected void onIntroductionStarted() {}
+
+    /** Called once for completion, cancellation, reset or disposal, before normal preparation. */
+    protected void onIntroductionStopped() {}
 
     /**
      * Where a player (re)joining or being pulled back during PREPARATION should land: the
@@ -1848,7 +1922,7 @@ public abstract class BaseGameInstance {
         if (spectators.contains(uuid)) {
             spectators.remove(player.getUniqueId());
             removePlayerFromBossBars(player);
-            player.teleport(getScatteredLobbyLocation(player));
+            teleportToLobby(player);
             clearSpectatorGameMode(player);
             plugin.getGameManager().getSpectatorManager().leavePresentation(player);
             player.setGameMode(GameMode.ADVENTURE);

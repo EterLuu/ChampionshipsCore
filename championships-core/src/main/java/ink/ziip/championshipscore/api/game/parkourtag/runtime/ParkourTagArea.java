@@ -227,6 +227,10 @@ public class ParkourTagArea extends BasePairedGameInstance {
                 MessageConfig.PARKOUR_TAG_START_PREPARATION,
                 MessageConfig.PARKOUR_TAG_START_PREPARATION_TITLE,
                 MessageConfig.PARKOUR_TAG_START_PREPARATION_SUBTITLE);
+        if (match != null) {
+            for (Player player : match.getRight().getOnlinePlayers()) remindChaserSelection(player);
+            for (Player player : match.getLeft().getOnlinePlayers()) remindChaserSelection(player);
+        }
 
         timer = 20;
         startGamePreparationTask =
@@ -313,39 +317,22 @@ public class ParkourTagArea extends BasePairedGameInstance {
      */
     private void assignChasers(ParkourTagMatch match) {
         ParkourTagManager manager = plugin.getGameManager().getParkourTagManager();
-        String message = MessageConfig.PARKOUR_TAG_BECOME_CHASER;
 
         if (match.getRightAreaChaser() == null) {
             match.setRightAreaChaser(manager.getTeamChaser(match.getRight()));
             match.getRight()
                     .sendMessageToAll(
-                            message.replace(
-                                            "%player%",
-                                            CoreMessages.formatPlayerName(
-                                                    match.getRightAreaChaser()))
-                                    .replace(
-                                            "%times%",
-                                            String.valueOf(
-                                                    CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES
-                                                            - manager.getChaserTimes(
-                                                                    match.getRightAreaChaser())
-                                                            - 1)));
+                            chaserAnnouncement(
+                                    match.getRightAreaChaser(),
+                                    CoreMessages.formatPlayerName(match.getRightAreaChaser())));
         }
         if (match.getLeftAreaChaser() == null) {
             match.setLeftAreaChaser(manager.getTeamChaser(match.getLeft()));
             match.getLeft()
                     .sendMessageToAll(
-                            message.replace(
-                                            "%player%",
-                                            CoreMessages.formatPlayerName(
-                                                    match.getLeftAreaChaser()))
-                                    .replace(
-                                            "%times%",
-                                            String.valueOf(
-                                                    CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES
-                                                            - manager.getChaserTimes(
-                                                                    match.getLeftAreaChaser())
-                                                            - 1)));
+                            chaserAnnouncement(
+                                    match.getLeftAreaChaser(),
+                                    CoreMessages.formatPlayerName(match.getLeftAreaChaser())));
         }
 
         manager.addChaserTimes(match.getRightAreaChaser());
@@ -758,22 +745,13 @@ public class ParkourTagArea extends BasePairedGameInstance {
         if (match == null) return;
         ParkourTagManager manager = plugin.getGameManager().getParkourTagManager();
         if (!manager.canBeChaser(uuid)) {
-            player.sendMessage(MessageConfig.PARKOUR_TAG_BECOME_CHASER_FAILED);
+            player.sendMessage(
+                    LegacyText.translateColorCodes(MessageConfig.PARKOUR_TAG_BECOME_CHASER_FAILED));
             return;
         }
         ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(uuid);
         if (team == null) return;
-        String message =
-                MessageConfig.PARKOUR_TAG_BECOME_CHASER
-                        .replace("%player%", CoreMessages.formatPlayerName(player))
-                        .replace(
-                                "%times%",
-                                String.valueOf(
-                                        Math.max(
-                                                0,
-                                                CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES
-                                                        - manager.getChaserTimes(uuid)
-                                                        - 1)));
+        String message = chaserAnnouncement(uuid, CoreMessages.formatPlayerName(player));
         if (team.equals(match.getRight())) {
             match.setRightAreaChaser(uuid);
             match.getRight().sendMessageToAll(message);
@@ -781,6 +759,39 @@ public class ParkourTagArea extends BasePairedGameInstance {
             match.setLeftAreaChaser(uuid);
             match.getLeft().sendMessageToAll(message);
         }
+    }
+
+    private void remindChaserSelection(Player player) {
+        int remaining =
+                CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES
+                        - plugin.getGameManager()
+                                .getParkourTagManager()
+                                .getChaserTimes(player.getUniqueId());
+        String message =
+                remaining <= 0
+                        ? MessageConfig.PARKOUR_TAG_BECOME_CHASER_FAILED
+                        : remaining == 1
+                                ? MessageConfig.PARKOUR_TAG_CHASER_SELECTION_LAST
+                                : MessageConfig.PARKOUR_TAG_CHASER_SELECTION_REMAINING.replace(
+                                        "%times%", String.valueOf(remaining));
+        player.sendMessage(LegacyText.translateColorCodes(message));
+    }
+
+    private String chaserAnnouncement(UUID uuid, String playerName) {
+        int remaining =
+                Math.max(
+                        0,
+                        CCConfig.PARKOUR_TAG_MAX_CHASER_TIMES
+                                - plugin.getGameManager()
+                                        .getParkourTagManager()
+                                        .getChaserTimes(uuid)
+                                - 1);
+        String message =
+                remaining == 0
+                        ? MessageConfig.PARKOUR_TAG_BECOME_CHASER_LAST
+                        : MessageConfig.PARKOUR_TAG_BECOME_CHASER;
+        return message.replace("%player%", playerName)
+                .replace("%times%", String.valueOf(remaining));
     }
 
     /**

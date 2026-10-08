@@ -25,8 +25,8 @@ public class SchedulePlaceholder extends BasePlaceholder {
         if (params.startsWith("round_total")) {
             return String.valueOf(plugin.getRankManager().getRound());
         }
-        if (params.startsWith("round_snowball")) {
-            return String.valueOf(scheduleManager.getSnowballScheduleManager().getSubRound());
+        if (params.startsWith("round_lasershowdown")) {
+            return String.valueOf(scheduleManager.getLaserShowdownScheduleManager().getSubRound());
         }
         if (params.startsWith("round_skywars")) {
             return String.valueOf(scheduleManager.getSkyWarsScheduleManager().getSubRound());

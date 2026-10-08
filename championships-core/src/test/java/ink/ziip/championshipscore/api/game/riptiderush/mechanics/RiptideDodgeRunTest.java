@@ -38,7 +38,7 @@ class RiptideDodgeRunTest {
     }
 
     @Test
-    void runtimeEmitsExactlyTheScheduleUsedByTheOfflineSimulation() {
+    void runtimeEmitsExactlyTheSharedChargeSchedule() {
         for (Mob mob : Mob.values())
             for (int phase = 0; phase < 5; phase++) {
                 var run = new RiptideDodgeRun(mob.name(), 1234L, 7, 9, phase);

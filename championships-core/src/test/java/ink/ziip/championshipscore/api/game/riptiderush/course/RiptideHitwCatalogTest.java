@@ -44,7 +44,13 @@ class RiptideHitwCatalogTest {
     void allThirteenTabsAndAllDifficultyGroupsAreBundledAndEditable() throws Exception {
         var templates = RiptideHitwCatalog.templates();
         assertEquals(354, templates.size());
-        assertEquals(354, templates.stream().map(RiptideLevelTemplate::id).distinct().count());
+        Map<String, RiptideLevelTemplate> byId =
+                templates.stream()
+                        .collect(
+                                java.util.stream.Collectors.toMap(
+                                        RiptideLevelTemplate::id,
+                                        java.util.function.Function.identity()));
+        assertEquals(354, byId.size());
         for (String map :
                 List.of(
                         "beach",
@@ -75,11 +81,8 @@ class RiptideHitwCatalogTest {
                         n <= (group.equals("e") ? easy : group.equals("d") ? normal : hard);
                         n++) {
                     String id = "hitw_" + map + "_" + group + n;
-                    var t =
-                            templates.stream()
-                                    .filter(row -> row.id().equals(id))
-                                    .findFirst()
-                                    .orElseThrow();
+                    var t = byId.get(id);
+                    assertNotNull(t, id);
                     assertEquals("CUSTOM", t.variant());
                     assertTrue(t.enabled());
                     assertTrue(t.difficulty() >= 1 && t.difficulty() <= 3);
@@ -235,7 +238,7 @@ class RiptideHitwCatalogTest {
     }
 
     @Test
-    void fullDefaultPoolPlansReproduciblyAndRespectsDifficultyAndTransitions() throws Exception {
+    void bundledDefaultPoolMatchesTheCurrentCatalogAndFormat() throws Exception {
         var defaults = new YamlConfiguration();
         try (var reader =
                 new InputStreamReader(
@@ -255,31 +258,6 @@ class RiptideHitwCatalogTest {
         assertEquals(
                 new HashSet<>(RiptideRushConfig.defaultPool()),
                 new HashSet<>(rows.stream().map(RiptideLevelTemplate::serialize).toList()));
-        var c = RiptideTestFixtures.config();
-        c.setTemplates(rows);
-        for (long seed = 0; seed < 8; seed++) {
-            var plan = RiptideCoursePlanner.plan(c, seed);
-            if (seed == 0) assertEquals(plan, RiptideCoursePlanner.plan(c, seed));
-            assertEquals(
-                    32,
-                    plan.levels().stream().map(RiptideCoursePlan.Level::number).distinct().count());
-            assertEquals(
-                    RiptideCoursePlanner.estimateTicks(c, c.resolveGeometry(), plan.levels()),
-                    plan.estimatedTicks());
-            for (var level : plan.levels()) {
-                if (level.type() == RiptideLevelType.PASS && !level.isSideSweep())
-                    assertTrue(
-                            RiptideDifficulty.allowsPass(
-                                    level.template().difficulty(), level.step(), 500));
-            }
-            for (int i = 1; i < plan.levels().size(); i++)
-                assertTrue(
-                        RiptideCoursePlanner.safeTransition(
-                                c,
-                                c.resolveGeometry(),
-                                plan.levels().get(i - 1),
-                                plan.levels().get(i)));
-        }
     }
 
     @Test

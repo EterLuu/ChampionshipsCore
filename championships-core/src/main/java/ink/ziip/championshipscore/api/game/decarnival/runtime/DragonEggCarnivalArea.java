@@ -8,7 +8,6 @@ import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.game.spatial.TeleportPositions;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 import ink.ziip.championshipscore.util.Enchants;
@@ -649,7 +648,7 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
                 || getGameStageEnum() == GameStageEnum.WAITING
                 || getGameStageEnum() == GameStageEnum.END) {
             player.getInventory().clear();
-            player.teleport(CCConfig.LOBBY_LOCATION);
+            teleportToLobby(player);
             scheduler.runTask(plugin, () -> player.setGameMode(GameMode.ADVENTURE));
             return;
         }

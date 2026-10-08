@@ -16,21 +16,18 @@ import java.util.stream.IntStream;
 
 class WorkerScatterPlanTest {
     @Test
-    void sixteenTeamsKeepTheBufferAndRemainFarApartEvenAtSearchAreaEdges() {
-        for (int seed = 0; seed < 100; seed++) {
-            var plan = WorkerScatterPlan.create(teamIds(16), new Random(seed));
-            assertEquals(16, plan.size());
-            assertBufferedAndSeparated(plan, 1_900);
-            assertTrue(plan.values().stream().anyMatch(area -> area.minX() == -5_000));
-            assertTrue(plan.values().stream().anyMatch(area -> area.maxX() == 4_999));
-            assertTrue(plan.values().stream().anyMatch(area -> area.minZ() == -5_000));
-            assertTrue(plan.values().stream().anyMatch(area -> area.maxZ() == 4_999));
+    void completeSixteenAndSixtyFourTeamGridsKeepTheBufferAndSeparateEverySearchArea() {
+        for (int count : List.of(16, 64)) {
+            for (long seed : new long[] {-1L, 0L, 20L}) {
+                var plan = WorkerScatterPlan.create(teamIds(count), new Random(seed));
+                assertEquals(count, plan.size(), "teams=" + count + " seed=" + seed);
+                assertBufferedAndSeparated(plan, count == 16 ? 1_900 : 700);
+                assertTrue(plan.values().stream().anyMatch(area -> area.minX() == -5_000));
+                assertTrue(plan.values().stream().anyMatch(area -> area.maxX() == 4_999));
+                assertTrue(plan.values().stream().anyMatch(area -> area.minZ() == -5_000));
+                assertTrue(plan.values().stream().anyMatch(area -> area.maxZ() == 4_999));
+            }
         }
-    }
-
-    @Test
-    void sixtyFourTeamsStillHaveSeparateRegions() {
-        assertBufferedAndSeparated(WorkerScatterPlan.create(teamIds(64), new Random(20)), 700);
     }
 
     @Test

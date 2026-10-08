@@ -1,7 +1,6 @@
 package ink.ziip.championshipscore.api.game.decarnival.runtime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
@@ -25,8 +24,12 @@ class DragonEggCarnivalRulesTest {
     }
 
     @Test
-    void crystalRewardGivesTwoPearlsPerPlayer() {
+    void staticRewardAndVictoryRulesKeepTwoPearlsAndTwoOfTheThreeAdvancements() {
         assertEquals(2, DragonEggCarnivalArea.CRYSTAL_PEARLS_PER_PLAYER);
+        assertEquals(2, DragonEggCarnivalArea.ADVANCEMENTS_TO_WIN);
+        assertEquals(
+                java.util.Set.of("end/kill_dragon", "end/dragon_egg", "end/enter_end_gateway"),
+                DragonEggCarnivalArea.VICTORY_ADVANCEMENTS);
     }
 
     @Test
@@ -34,14 +37,5 @@ class DragonEggCarnivalRulesTest {
         assertEquals(0, DragonEggCarnivalArea.crossedDragonDamageThresholds(0, 39.99, 200));
         assertEquals(1, DragonEggCarnivalArea.crossedDragonDamageThresholds(39.99, 40, 200));
         assertEquals(3, DragonEggCarnivalArea.crossedDragonDamageThresholds(35, 121, 200));
-    }
-
-    @Test
-    void victoryUsesTheThreeRequestedAdvancements() {
-        assertEquals(2, DragonEggCarnivalArea.ADVANCEMENTS_TO_WIN);
-        assertEquals(3, DragonEggCarnivalArea.VICTORY_ADVANCEMENTS.size());
-        assertTrue(DragonEggCarnivalArea.VICTORY_ADVANCEMENTS.contains("end/kill_dragon"));
-        assertTrue(DragonEggCarnivalArea.VICTORY_ADVANCEMENTS.contains("end/dragon_egg"));
-        assertTrue(DragonEggCarnivalArea.VICTORY_ADVANCEMENTS.contains("end/enter_end_gateway"));
     }
 }

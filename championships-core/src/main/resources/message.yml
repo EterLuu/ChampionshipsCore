@@ -315,7 +315,7 @@ game:
   parkourtag: 跑酷追击
   battlebox: 斗战方框
   tntrun: TNT飞跃
-  snowballsnowdown: 雪球大战
+  lasershowdown: 激光乱斗
   skywars: 空岛乱斗
   tgttos: 去到另一边
   dragoneggcarnival: 龙蛋狂欢
@@ -351,23 +351,51 @@ game:
     replaced: "该实例已被替换，请重新使用命令补全选择：%instance%&#ededed。"
     failed: "实例未能安全结束，请查看服务端日志：%instance%&#ededed。"
 laserbox:
-  start-preparation: "&#fff566激光方盒 &#bababa•&#ededed 2v2 多轮对战，准备进入场地"
+  start-preparation: "&#fff566激光方盒 &#bababa•&#ededed 两队交战，准备入场"
   start-preparation-title: "&#fff566&l激光方盒"
-  start-preparation-subtitle: "&#ededed确认装备与站位，准备开始对战"
+  start-preparation-subtitle: "&#ededed选择装备，准备开战"
   game-start-title: "&#fff566&l激光方盒"
-  game-start-subtitle: "&#ededed命中敌人夺取分数，阵亡后 4 秒重生"
-  boss-bar: "&#fff566激光方盒 &#bababa•&#ededed %right_team% &#ff6b26%right% &#bababa: &#ff6b26%left% %left_team% &#bababa•&#ededed 剩余&#ff6b26%time%"
-  hit: "&e%attacker% &7击中 &f%victim%"
-  respawn-title: "&c被击中"
+  game-start-subtitle: "&#ededed击倒对手得分，阵亡后 4 秒重生"
+  boss-bar: "&#fff566激光方盒 &#bababa•&#ededed %right_team% &#ff6b26%right% &#bababa: &#ff6b26%left% %left_team% &#bababa•&#ededed &#ff6b26%time%"
+  hit: "&e%attacker% &7击倒了 &f%victim%"
+  headshot: "&e%attacker% &7爆头击倒了 &f%victim%"
+  respawn-title: "&e重新出发"
   respawn-subtitle: "&e%seconds% 秒后重生"
-  winner: "%team% &e赢得激光方盒！"
-  draw: "&e激光方盒平局"
-  end-title: "&e&l激光方盒结束"
+  winner: "%team% &e获胜！"
+  draw: "&e本轮平局"
+  end-title: "&e&l本轮结束"
   end-subtitle: "&f%right% : %left%"
-  item-shield: "护盾 · 阻挡 1 次激光"
-  item-grenade: "获得 烟幕弹 · 右键使用 · 生成烟幕，遮挡激光"
-  item-strike: "获得 定点爆破 · 右键使用 · 轰击最近两名敌人的当前位置"
-  item-reveal: "获得 追踪脉冲 · 右键使用 · 短暂显示敌方位置"
+  item-shield: "护盾 · 抵挡一次攻击"
+  item-grenade: "烟幕弹 · 右键使用"
+  item-strike: "定点爆破 · 右键使用"
+  item-reveal: "追踪脉冲 · 右键使用"
+  gun-selection-title: "&#fff566选择装备"
+  gun-selection-subtitle: "&#ededed选择一件武器"
+  gun-selection-chosen: "&#a8ff78已装备 %gun%"
+  gun-selection-default: "&#bababa已自动装备步枪"
+  ammo: "&#fff566%gun% &#bababa• &#ff6b26%ammo%&#ededed/%magazine%"
+  reload: "&#fff566%gun% &#bababa• &#ededed正在换弹"
+  reload-complete: "&#a8ff78%gun% · 换弹完成"
+  no-ammo: "&#ff6b26弹药耗尽，正在换弹"
+  ammo-item: "&#fff566弹药"
+  gun-magazine: "&#bababa弹药有限"
+  gun-selected: "&#a8ff78✓ 当前装备"
+  guns:
+    sniper:
+      name: "&#ffd35a狙击步枪"
+      description: "&#ededed远距离精准射击"
+    rifle:
+      name: "&#d9b38c突击步枪"
+      description: "&#ededed稳定的全能武器"
+    smg:
+      name: "&#c0c0c0冲锋枪"
+      description: "&#ededed近距离快速射击"
+    machine:
+      name: "&#9b9b9b轻机枪"
+      description: "&#ededed持续射击，火力充足"
+    shotgun:
+      name: "&#b9f2ff霰弹枪"
+      description: "&#ededed近距离爆发"
 frostbite:
   start-preparation: "&#bff6ff霜冻决斗 &#bababa•&#ededed 三轮乱斗，冻结敌人并争夺补给"
   start-preparation-title: "&#bff6ff&l霜冻决斗"
@@ -458,9 +486,9 @@ battlebox:
     heal: 治愈！
     pull: 拉扯！
 parkourtag:
-  start-preparation: "&#bababa[&#fff566跑酷追击&#bababa]&#ededed 选定追击者，确认道具"
+  start-preparation: "&#bababa[&#fff566跑酷追击&#bababa]&#ededed 请按按钮选择追击者"
   start-preparation-title: "&#fff566&l跑酷追击"
-  start-preparation-subtitle: "&#ededed选择追击者 &#bababa•&#ff6b26 开赛前完成"
+  start-preparation-subtitle: "&#ededed按按钮选择追击者"
   game-start-soon-title: "&#fff566&l跑酷追击"
   game-start-title: "&#ff6b26&l跑酷追击"
   game-start-subtitle: "&#fff566&l追击开始"
@@ -468,8 +496,11 @@ parkourtag:
   game-end-subtitle: "&#ededed本场结束 &#bababa•&#ff6b26 积分结算中"
   catch-player: "&#bababa[&#fff566跑酷追击&#bababa] %chaser%&#ff6b26抓住&#ededed%player%"
   player-leave: "&#bababa[&#fff566跑酷追击&#bababa]&#ededed %player%&#696969离场，计为被抓"
-  become-chaser: "&#bababa[&#fff566跑酷追击&#bababa]&#ededed 追击者 &#bababa•&#fff566 %player%&#696969（剩余%times%次）"
-  become-chaser-failed: "&#bababa[&#ff6b26跑酷追击&#bababa]&#ededed 追击次数已用完"
+  become-chaser: "&#bababa[&#fff566跑酷追击&#bababa]&#ededed 追击者：%player%&#696969（之后剩余%times%次）"
+  become-chaser-last: "&#bababa[&#fff566跑酷追击&#bababa]&#ededed 追击者：%player%&#ff6b26（最后一次机会）"
+  chaser-selection-remaining: "&#bababa[&#fff566跑酷追击&#bababa]&#ededed 你还可担任追击者&#fff566%times%次"
+  chaser-selection-last: "&#bababa[&#fff566跑酷追击&#bababa]&#ff6b26 这是你最后一次担任追击者的机会"
+  become-chaser-failed: "&#bababa[&#ff6b26跑酷追击&#bababa]&#ededed 你已无追击次数，请其他队友担任"
   action-bar-count-down: "&#fff566跑酷追击 &#bababa•&#ededed 剩余&#ff6b26%time%秒"
   show-points: "&#bababa[&#fff566跑酷追击&#bababa] %team%&#ff6b26 %team_points% &#bababa• %rival%&#ff6b26 %rival_points%"
   whole-team-was-killed: "&#bababa[&#fff566跑酷追击&#bababa] %team%&#ff6b26全员被抓"
@@ -662,20 +693,20 @@ dodgebolt:
   stopped: "&#bababa[&#ff6b26躲避箭&#bababa]&#ededed 决赛已由管理员终止，本场不产生冠军"
   cant-shoot: "&#ff6b26必须在己方射箭区内且持有有效箭"
   cant-cross: "&#ff6b26不能越过中央分界线"
-snowball:
-  start-preparation: "&#bababa[&#fff566雪球大战&#bababa]&#ededed 战场就位，准备交战"
-  start-preparation-title: "&#fff566&l雪球大战"
-  start-preparation-subtitle: "&#ededed观察地形 &#bababa•&#ff6b26 准备交战"
-  game-start-soon-title: "&#fff566&l雪球大战"
-  game-start-title: "&#ff6b26&l雪球大战"
-  game-start-subtitle: "&#fff566&l战斗开始"
-  game-end-title: "&#fff566&l雪球大战"
+lasershowdown:
+  start-preparation: "&#bababa[&#fff566激光乱斗&#bababa]&#ededed 战场就位，选择枪械"
+  start-preparation-title: "&#fff566&l激光乱斗"
+  start-preparation-subtitle: "&#ededed选择 LaserBox 枪械 &#bababa•&#ff6b26 准备交战"
+  game-start-soon-title: "&#fff566&l激光乱斗"
+  game-start-title: "&#ff6b26&l激光乱斗"
+  game-start-subtitle: "&#fff566&l激光开火"
+  game-end-title: "&#fff566&l激光乱斗"
   game-end-subtitle: "&#ededed本场结束 &#bababa•&#ff6b26 积分结算中"
-  action-bar-count-down: "&#fff566雪球大战 &#bababa•&#ededed 剩余&#ff6b26%time%秒"
-  kill-player: "&#bababa[&#fff566雪球大战&#bababa] %killer%&#ff6b26 →&#ededed %player%"
-  player-death: "&#bababa[&#fff566雪球大战&#bababa]&#ededed %player%&#ff6b26倒下"
-  player-death-by-void: "&#bababa[&#fff566雪球大战&#bababa]&#ededed %player%&#ff6b26坠入虚空"
-  player-leave: "&#bababa[&#fff566雪球大战&#bababa]&#ededed %player%&#696969离场"
+  action-bar-count-down: "&#fff566激光乱斗 &#bababa•&#ededed 剩余&#ff6b26%time%秒"
+  kill-player: "&#bababa[&#fff566激光乱斗&#bababa] %killer%&#ff6b26 →&#ededed %player%"
+  player-death: "&#bababa[&#fff566激光乱斗&#bababa]&#ededed %player%&#ff6b26倒下"
+  player-death-by-void: "&#bababa[&#fff566激光乱斗&#bababa]&#ededed %player%&#ff6b26坠入虚空"
+  player-leave: "&#bababa[&#fff566激光乱斗&#bababa]&#ededed %player%&#696969离场"
 parkourwarrior:
   start-preparation: "&#bababa[&#fff566跑路战士&#bababa]&#ededed 起点就位，确认路线"
   start-preparation-title: "&#fff566&l跑路战士"
@@ -969,6 +1000,9 @@ map-editor-step:
   arena-instance-running: 这张地图仍有比赛正在进行，暂时无法重新生成或保存。
   introduction-spawn-set: 已设置规则介绍专用出生点。
   world-confirm-prompt: 前往&#fff566%world%&#ededed世界后点击此项确认
+  riptide-introduction-arena-unavailable: Riptide规则介绍场地尚未加载完成，暂时无法进入。
+  riptide-introduction-arena-teleport-failed: 无法传送到Riptide规则介绍场地。
+  riptide-introduction-arena-teleported: 已进入Riptide规则介绍场地；完成编辑后返回地图世界并保存或退出地图编辑。
 map-editor-acerace:
   line-select-first: 请先用WorldEdit选取起点线或终点线。
   line-invalid: 起点线/终点线必须是同一高度、沿X或Z方向延伸的直线。
@@ -1181,6 +1215,23 @@ sulfursoccer:
 
 # Text extracted from Java; %argN% preserves each dynamic argument.
 code-text:
+  riptide-introduction-arena:
+    load-failed: 'Riptide 教学场地加载失败，将使用原规则介绍地点。'
+    run-failed: 'Riptide 教学体验失败，正在中止并恢复本次场地。'
+  riptide-introduction-run:
+    welcome: '&b欢迎来到激流训练营！&f每人有一次护盾，可试着离筏；练习失误会被救回。'
+    follow: '&e跟上木筏！&f木筏会前进，请自己向前跑，别被落下。'
+    pass: '&e穿过洞口！&f提前观察下一面墙，移动到洞口的一侧。'
+    color: '&e踩色练习！&f在倒计时结束前，站到提示的方块上。'
+    dodge: '&e躲避冲刺！&f木筏暂停时，观察来向并避开生物。'
+    speed: '&6木筏加速，护盾破碎！&f加快脚步，继续跟上木筏。'
+    finish: '&a练习完成！&f正式赛失误会出局，坚持越久，积分越高。'
+    color-prompt: '&e请踩：'
+    fall: '&e你离开了木筏。&f正式赛会出局；练习中已将你救回。'
+    wrong-color: '&e你没有踩中目标方块。&f已救回，继续练习下一轮。'
+    hit: '&e你被冲刺生物撞到了。&f已救回，注意生物的来向。'
+    shield-used: '&b护盾抵挡了这次失误！'
+    retry: '&e再试一次！'
   championships-core:
     on-enable-1: "依赖"
     on-enable-2: "缺少必要插件=%arg1%，ChampionshipsCore 已关闭"
@@ -1637,23 +1688,27 @@ code-text:
     validate-3: "请在边界内设置补给点"
   laser-box-area:
     try-start-game-1: "启动"
-    item-1: "激光枪 · 光束发射器"
-    item-2: "烟幕弹 · 视线封锁"
-    item-3: "定点爆破 · 范围打击"
-    item-4: "追踪脉冲 · 敌方显形"
-    item-5: "护盾 · 1次拦截"
+    item-1: "激光枪"
+    item-2: "烟幕弹"
+    item-3: "定点爆破"
+    item-4: "追踪脉冲"
+    item-5: "护盾"
     item-6: "右键使用"
-    item-7: "拾取后立即生效"
-    item-8: "沿准星方向发射激光"
-    item-9: "落点生成持续烟幕，遮挡激光"
-    item-10: "标记最近两名敌人的位置并造成范围打击"
-    item-11: "短暂显示敌方位置"
-    item-12: "阻挡 1 次激光"
+    item-7: "拾取即生效"
+    item-8: "右键开火 · F 换弹"
+    item-9: "生成烟幕"
+    item-10: "打击敌人"
+    item-11: "显示敌方位置"
+    item-12: "抵挡一次攻击"
+    item-13: "枪械选择器"
+    item-14: "开火或受击后消失"
+    item-15: "左键开火 · 右键瞄准"
+    item-16: "按住右键连射"
     hit-1: "场地"
-    item-hint-1: "获得 烟幕弹  ·  右键使用  ·  生成烟幕，遮挡激光"
-    item-hint-2: "获得 定点爆破  ·  右键使用  ·  轰击最近两名敌人的当前位置"
-    item-hint-3: "获得 追踪脉冲  ·  右键使用  ·  短暂显示敌方位置"
-    item-hint-4: "护盾 · 阻挡 1 次激光"
+    item-hint-1: "获得烟幕弹 · 右键使用"
+    item-hint-2: "获得定点爆破 · 右键使用"
+    item-hint-3: "获得追踪脉冲 · 右键使用"
+    item-hint-4: "护盾 · 抵挡一次攻击"
   base-game-instance-manager:
     delete-area-1: "无法删除地图配置 %arg1% | %arg2%"
   game-manager:

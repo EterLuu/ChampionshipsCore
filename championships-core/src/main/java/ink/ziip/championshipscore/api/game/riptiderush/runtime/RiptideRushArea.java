@@ -2,6 +2,8 @@ package ink.ziip.championshipscore.api.game.riptiderush.runtime;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
+import ink.ziip.championshipscore.api.game.arena.ArenaChunkPreloader;
+import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameInstance;
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
@@ -23,9 +25,9 @@ import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptidePassRun;
 import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptideQuestionDisplay;
 import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptideRaftBlocks;
 import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptideRhythmRun;
+import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 import ink.ziip.championshipscore.shared.presentation.DurationText;
 
@@ -52,7 +54,6 @@ import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -61,7 +62,9 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BooleanSupplier;
 import java.util.logging.Level;
 
 public final class RiptideRushArea extends BaseMultiTeamGameInstance {
@@ -109,6 +112,142 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
     private boolean finalSprintAnnounced;
     private boolean ending;
     @Getter private int timer;
+    private RiptideIntroductionRun introductionRun;
+    private CompletableFuture<Boolean> upcomingCourse;
+    private final Set<ArenaChunkPreloader.ChunkTicket> courseTickets = new java.util.HashSet<>();
+
+    @Override
+    public boolean retainsParticipantSpectatorsForNextRound() {
+        return true;
+    }
+
+    @Override
+    public boolean hasPendingPreparation() {
+        return upcomingCourse != null;
+    }
+
+    @Override
+    public void prepareParticipantForNextRound(@NotNull Player player) {
+        plugin.getGameManager().getSpectatorManager().prepareParticipantTransition(player, this);
+        teleportSpectatorAsync(player, getSpectatorSpawnLocation());
+    }
+
+    @Override
+    public boolean tryStartGame(List<ChampionshipTeam> teams) {
+        return (upcomingCourse == null || isEventRun()) && super.tryStartGame(teams);
+    }
+
+    @Override
+    public boolean tryStartGame(List<ChampionshipTeam> teams, List<UUID> players) {
+        return (upcomingCourse == null || isEventRun()) && super.tryStartGame(teams, players);
+    }
+
+    public CompletableFuture<Boolean> prepareUpcomingEventRound() {
+        if (getGameStageEnum() != GameStageEnum.WAITING)
+            return CompletableFuture.completedFuture(false);
+        if (upcomingCourse == null)
+            upcomingCourse = prepareCourse(() -> getGameStageEnum() == GameStageEnum.WAITING);
+        return upcomingCourse;
+    }
+
+    public void cancelUpcomingEventRound() {
+        if (upcomingCourse != null) cancelTasks();
+    }
+
+    private RiptideIntroductionArena introductionArena() {
+        return plugin.getGameManager().getRiptideRushManager().getIntroductionArena();
+    }
+
+    @Override
+    protected Location resolveIntroductionSpawnPoint() {
+        if (introductionRun != null) return introductionRun.respawn();
+        if (isEventRun()) {
+            RiptideIntroductionArena arena = introductionArena();
+            if (arena != null && arena.availableTo(this)) return arena.spawn();
+        }
+        return super.resolveIntroductionSpawnPoint();
+    }
+
+    @Override
+    protected boolean isInteractiveIntroduction() {
+        RiptideIntroductionArena arena = introductionArena();
+        return arena != null && arena.availableTo(this);
+    }
+
+    @Override
+    protected void onIntroductionStarted() {
+        RiptideIntroductionArena arena = introductionArena();
+        if (arena != null) introductionRun = arena.begin(this);
+        if (introductionRun != null) {
+            // Apply the teaching arena's participant visibility before the first teleport.  The
+            // lesson re-applies this for newly admitted/reconnected players, but doing it here
+            // closes the one-tick window in which opponents could remain visible from the lobby.
+            applyIntroductionVisibility();
+            teleportAllSpectators(arena.spectatorSpawn());
+            introductionRun.start();
+        }
+    }
+
+    private void applyIntroductionVisibility() {
+        if (!isIntroductionPhase()) return;
+        for (UUID uuid : getParticipantUniqueIds()) {
+            if (plugin.getGameManager().getBasePlayerArea(uuid) != this) continue;
+            plugin.getVisibilityManager()
+                    .seeTeammates(
+                            uuid,
+                            visibilityOwner,
+                            MessageConfig.codeText(
+                                    "riptide-rush-area.finish-formal-preparation-1"));
+            plugin.getVisibilityManager().reconcilePlayer(uuid);
+        }
+    }
+
+    @Override
+    protected void onIntroductionStopped() {
+        boolean hadActivity = introductionRun != null;
+        if (introductionRun != null) introductionRun.close();
+        introductionRun = null;
+        if (hadActivity) {
+            Location waiting = super.resolveIntroductionSpawnPoint();
+            if (waiting != null)
+                for (UUID uuid : getParticipantUniqueIds()) {
+                    Player player = Bukkit.getPlayer(uuid);
+                    if (player == null || plugin.getGameManager().getBasePlayerArea(uuid) != this)
+                        continue;
+                    if (isGameplayParticipant(player)) {
+                        player.setVelocity(new Vector());
+                        player.setFallDistance(0F);
+                        player.teleport(waiting);
+                    } else if (isManagedSpectator(player))
+                        teleportSpectatorAsync(player, getSpectatorSpawnLocation());
+                }
+            teleportAllSpectators(getSpectatorSpawnLocation());
+        }
+    }
+
+    void prepareIntroductionParticipant(Player player) {
+        if (!isIntroductionPhase() || !isGameplayParticipant(player)) return;
+        disableSpawnCollision(player);
+        applyIntroductionVisibility(player.getUniqueId());
+    }
+
+    private void applyIntroductionVisibility(UUID uuid) {
+        if (!isIntroductionPhase() || plugin.getGameManager().getBasePlayerArea(uuid) != this)
+            return;
+        plugin.getVisibilityManager()
+                .seeTeammates(
+                        uuid,
+                        visibilityOwner,
+                        MessageConfig.codeText("riptide-rush-area.finish-formal-preparation-1"));
+        plugin.getVisibilityManager().reconcilePlayer(uuid);
+    }
+
+    @Override
+    public boolean isSpectatorLocationAllowed(@NotNull Location location) {
+        return introductionRun != null
+                ? introductionArena().contains(location)
+                : super.isSpectatorLocationAllowed(location);
+    }
 
     public RiptideRushArea(
             ChampionshipsCore plugin,
@@ -149,76 +288,125 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
     }
 
     private void startFormalPreparation() {
+        CompletableFuture<Boolean> ready = upcomingCourse;
+        upcomingCourse = null;
+        if (ready == null)
+            ready = prepareCourse(() -> getGameStageEnum() == GameStageEnum.PREPARATION);
+        long epoch = generationEpoch;
+        ready.whenComplete(
+                (built, error) -> {
+                    if (generationEpoch != epoch || getGameStageEnum() != GameStageEnum.PREPARATION)
+                        return;
+                    if (error != null || !Boolean.TRUE.equals(built)) {
+                        logGame(
+                                Level.SEVERE,
+                                MessageConfig.codeText(
+                                        "riptide-rush-area.start-formal-preparation-3"),
+                                MessageConfig.codeText(
+                                        "riptide-rush-area.start-formal-preparation-5", error));
+                        abortAndReset();
+                        return;
+                    }
+                    try {
+                        finishFormalPreparation();
+                    } catch (RuntimeException failure) {
+                        logGame(
+                                Level.SEVERE,
+                                MessageConfig.codeText(
+                                        "riptide-rush-area.start-formal-preparation-3"),
+                                MessageConfig.codeText(
+                                        "riptide-rush-area.start-formal-preparation-4", failure));
+                        abortAndReset();
+                    }
+                });
+    }
+
+    private CompletableFuture<Boolean> prepareCourse(BooleanSupplier phase) {
+        CompletableFuture<Boolean> result = new CompletableFuture<>();
+        long epoch = ++generationEpoch;
+        long gameGeneration = captureGameGeneration();
+        BooleanSupplier current =
+                () ->
+                        generationEpoch == epoch
+                                && captureGameGeneration() == gameGeneration
+                                && plugin.isLoaded()
+                                && phase.getAsBoolean();
         try {
             geometry = getGameConfig().resolveGeometry();
             coursePlan =
                     RiptideCoursePlanner.plan(getGameConfig(), getGameConfig().nextCourseSeed());
             resolveGeneratedLevels();
-        } catch (RuntimeException exception) {
             logGame(
-                    Level.SEVERE,
-                    MessageConfig.codeText("riptide-rush-area.start-formal-preparation-1"),
-                    MessageConfig.codeText(
-                            "riptide-rush-area.start-formal-preparation-2",
-                            exception.getMessage()));
-            abortAndReset();
-            return;
-        }
-
-        long epoch = ++generationEpoch;
-        logGame(
-                Level.INFO,
-                MessageConfig.codeText("riptide-rush-area.start-formal-preparation-3"),
-                "seed="
-                        + coursePlan.seed()
-                        + " generator="
-                        + coursePlan.algorithmVersion()
-                        + " ticks="
-                        + coursePlan.estimatedTicks()
-                        + " mathMin="
-                        + getGameConfig().getMinimumOperand()
-                        + " mathMax="
-                        + getGameConfig().getMaximumOperand()
-                        + " plan="
-                        + new com.google.gson.Gson().toJson(coursePlan.logLevels()));
-        RiptideCourseGenerator.generateAsync(
-                        plugin,
-                        getGameConfig(),
-                        coursePlan,
-                        () ->
-                                generationEpoch == epoch
-                                        && getGameStageEnum() == GameStageEnum.PREPARATION)
-                .whenComplete(
-                        (built, error) -> {
-                            if (generationEpoch != epoch) return;
-                            if (error != null || !Boolean.TRUE.equals(built)) {
-                                logGame(
-                                        Level.SEVERE,
-                                        MessageConfig.codeText(
-                                                "riptide-rush-area.start-formal-preparation-3"),
-                                        MessageConfig.codeText(
-                                                "riptide-rush-area.start-formal-preparation-5",
-                                                error));
-                                abortAndReset();
-                            } else {
-                                try {
-                                    finishFormalPreparation();
-                                } catch (RuntimeException failure) {
-                                    logGame(
-                                            Level.SEVERE,
-                                            MessageConfig.codeText(
-                                                    "riptide-rush-area.start-formal-preparation-3"),
-                                            MessageConfig.codeText(
-                                                    "riptide-rush-area.start-formal-preparation-4",
-                                                    failure));
-                                    abortAndReset();
+                    Level.INFO,
+                    MessageConfig.codeText("riptide-rush-area.start-formal-preparation-3"),
+                    "seed="
+                            + coursePlan.seed()
+                            + " generator="
+                            + coursePlan.algorithmVersion()
+                            + " ticks="
+                            + coursePlan.estimatedTicks()
+                            + " mathMin="
+                            + getGameConfig().getMinimumOperand()
+                            + " mathMax="
+                            + getGameConfig().getMaximumOperand()
+                            + " plan="
+                            + new com.google.gson.Gson().toJson(coursePlan.logLevels()));
+            List<Location> chunks = new ArrayList<>();
+            for (int step = -geometry.halfLength(); step <= geometry.totalSteps(); step += 16)
+                chunks.add(geometry.centerAt(step));
+            chunks.add(geometry.centerAt(geometry.totalSteps() + geometry.halfLength()));
+            ArenaChunkPreloader.preload(plugin, chunks, 1, courseTickets, current)
+                    .whenComplete(
+                            (unused, preloadFailure) -> {
+                                if (!current.getAsBoolean()) {
+                                    result.complete(false);
+                                    return;
                                 }
-                            }
-                        });
+                                if (preloadFailure != null) {
+                                    result.completeExceptionally(preloadFailure);
+                                    return;
+                                }
+                                RiptideCourseGenerator.generateAsync(
+                                                plugin, getGameConfig(), coursePlan, current)
+                                        .whenComplete(
+                                                (built, failure) -> {
+                                                    if (!current.getAsBoolean()) {
+                                                        result.complete(false);
+                                                        return;
+                                                    }
+                                                    if (failure != null) {
+                                                        result.completeExceptionally(failure);
+                                                        return;
+                                                    }
+                                                    if (!Boolean.TRUE.equals(built)) {
+                                                        result.complete(false);
+                                                        return;
+                                                    }
+                                                    try {
+                                                        courseReveal =
+                                                                new RiptideCourseReveal(
+                                                                        getGameConfig(),
+                                                                        geometry,
+                                                                        coursePlan.levels());
+                                                        result.complete(true);
+                                                    } catch (RuntimeException error) {
+                                                        result.completeExceptionally(error);
+                                                    }
+                                                });
+                            });
+        } catch (RuntimeException exception) {
+            result.completeExceptionally(exception);
+        }
+        return result;
     }
 
     private void finishFormalPreparation() {
-        courseReveal = new RiptideCourseReveal(getGameConfig(), geometry, coursePlan.levels());
+        for (UUID uuid : gamePlayers) {
+            Player player = Bukkit.getPlayer(uuid);
+            BaseGameInstance previous = plugin.getGameManager().getSpectatorManager().areaOf(uuid);
+            if (player != null && previous != null)
+                plugin.getGameManager().getSpectatorManager().resumeParticipant(player, previous);
+        }
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
         resetPlayerHealthFoodEffectLevelInventory();
         for (UUID uuid : gamePlayers)
@@ -349,22 +537,6 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
             var answers = passRun.tick(players);
             var wrong = new ArrayList<UUID>();
             for (var answer : answers) {
-                plugin.getLogger()
-                        .info(
-                                "Riptide side math: player="
-                                        + answer.player()
-                                        + ", level="
-                                        + answer.level()
-                                        + ", beat="
-                                        + answer.beat()
-                                        + ", question="
-                                        + answer.question().expression()
-                                        + ", red="
-                                        + answer.question().leftAnswer()
-                                        + ", blue="
-                                        + answer.question().rightAnswer()
-                                        + ", correct="
-                                        + answer.correct());
                 if (!answer.correct()) wrong.add(answer.player());
                 else {
                     var player = Bukkit.getPlayer(answer.player());
@@ -711,10 +883,7 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
                         + " speed="
                         + dodgeRun.spawns().getFirst().speed());
         dodgeTicksRemaining = RiptideDodgeRun.DURATION_TICKS;
-        sendTitleToAllGamePlayers(
-                MessageConfig.RIPTIDE_RUSH_DODGE_TITLE.replace(
-                        "%direction%", dodgeRun.direction().arrivalSide()),
-                "");
+        sendTitleToAllGamePlayers(RiptidePresentation.dodgeTitle(dodgeRun), "");
         refreshDodgePresentation();
         return true;
     }
@@ -746,9 +915,7 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
 
     private void refreshDodgePresentation() {
         if (dodgeTicksRemaining <= 0) return;
-        String seconds = String.format(java.util.Locale.ROOT, "%.1f", dodgeTicksRemaining / 20D);
-        sendActionBarToAllGamePlayers(
-                MessageConfig.RIPTIDE_RUSH_DODGE_ACTIONBAR.replace("%seconds%", seconds));
+        sendActionBarToAllGamePlayers(RiptidePresentation.dodgeActionbar(dodgeTicksRemaining));
     }
 
     private void clearDodgeRun() {
@@ -759,39 +926,9 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
     }
 
     private void refreshColorFloorPresentation() {
-        String seconds =
-                String.format(java.util.Locale.ROOT, "%.1f", colorFloorRun.remainingTicks() / 20D);
-        Component title =
-                LegacyText.component(
-                        colorFloorRun.preparing()
-                                ? MessageConfig.RIPTIDE_RUSH_FLOOR_INTRO_TITLE
-                                : MessageConfig.RIPTIDE_RUSH_FLOOR_TITLE.replace(
-                                        "%seconds%", seconds));
-        Component actionbar =
-                LegacyText.component(
-                                MessageConfig.RIPTIDE_RUSH_FLOOR_ACTIONBAR
-                                        .replace(
-                                                "%round%",
-                                                String.valueOf(colorFloorRun.roundNumber()))
-                                        .replace(
-                                                "%rounds%",
-                                                String.valueOf(colorFloorRun.roundCount())))
-                        .replaceText(
-                                builder ->
-                                        builder.matchLiteral("%block%")
-                                                .replacement(
-                                                        Component.translatable(
-                                                                colorFloorRun
-                                                                        .target()
-                                                                        .translationKey())));
-        Title display =
-                Title.title(
-                        title,
-                        Component.empty(),
-                        Title.Times.times(
-                                Duration.ZERO,
-                                Duration.ofMillis(colorFloorRun.preparing() ? 1500 : 350),
-                                Duration.ZERO));
+        RiptidePresentation.Floor presentation = RiptidePresentation.floor(colorFloorRun);
+        Title display = presentation.title();
+        Component actionbar = presentation.actionbar();
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null
@@ -799,17 +936,10 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
                     && isGameplayParticipant(player)) {
                 player.showTitle(display);
                 player.sendActionBar(
-                        speedShieldNoticeUntil > presentationTicks
-                                ? LegacyText.component(
-                                                MessageConfig.RIPTIDE_RUSH_SPEED_SHIELD_BREAK
-                                                        + " §7| ")
-                                        .append(actionbar)
-                                : shieldNoticeUntil.getOrDefault(uuid, 0) > presentationTicks
-                                        ? LegacyText.component(
-                                                        MessageConfig.RIPTIDE_RUSH_SHIELD_BROKEN
-                                                                + " §7| ")
-                                                .append(actionbar)
-                                        : actionbar);
+                        RiptidePresentation.floorActionbar(
+                                actionbar,
+                                speedShieldNoticeUntil > presentationTicks,
+                                shieldNoticeUntil.getOrDefault(uuid, 0) > presentationTicks));
             }
         }
         for (var spectator : getOnlineCCSpectators()) {
@@ -822,7 +952,9 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
     }
 
     public boolean isColorFloorParticipant(Player player) {
-        return colorFloorRun != null
+        return (colorFloorRun != null
+                        || (introductionRun != null
+                                && introductionRun.isColorFloorParticipant(player)))
                 && isGameplayParticipant(player)
                 && !eliminatedPlayers.contains(player.getUniqueId());
     }
@@ -890,6 +1022,7 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
                     player,
                     run.preview(
                             player.getLocation(),
+                            completedSteps,
                             currentSpeed(),
                             getGameConfig().getMathPreviewBlocks(),
                             presentationTicks,
@@ -901,6 +1034,7 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
         var preview =
                 spectatorMathRun.preview(
                         center,
+                        completedSteps,
                         currentSpeed(),
                         getGameConfig().getMathPreviewBlocks(),
                         presentationTicks,
@@ -1071,8 +1205,10 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
                 MessageConfig.RIPTIDE_RUSH_GAME_END_TITLE,
                 MessageConfig.RIPTIDE_RUSH_GAME_END_SUBTITLE);
         beginPostGameSettlement();
-        changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
-        resetPlayerHealthFoodEffectLevelInventory();
+        if (!isEventRun() || !plugin.getScheduleManager().hasNextRound(GameTypeEnum.RiptideRush)) {
+            changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
+            resetPlayerHealthFoodEffectLevelInventory();
+        }
         publishGameEndEvent(new SingleGameEndEvent(this, List.copyOf(gameTeams)));
         finishPostGameAfterEndEvent();
     }
@@ -1122,13 +1258,15 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
         announcedSpeedStage = 0;
         finalSprintAnnounced = false;
         ending = false;
-        preloadMap();
+        if (isRoundTransitionPending()) setGameStageEnum(GameStageEnum.WAITING);
+        else preloadMap();
     }
 
     @Override
     public java.util.concurrent.CompletableFuture<Boolean> abortAndReset() {
         if (!Bukkit.isPrimaryThread()) return super.abortAndReset();
-        if (isEventRun()) plugin.getScheduleManager().endGameSchedule(GameTypeEnum.RiptideRush);
+        if (isEventRun() || upcomingCourse != null)
+            plugin.getScheduleManager().endGameSchedule(GameTypeEnum.RiptideRush);
         return super.abortAndReset();
     }
 
@@ -1146,6 +1284,10 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
     private RiptideCourseReveal courseReveal;
 
     private void cancelTasks() {
+        if (upcomingCourse != null && !upcomingCourse.isDone()) upcomingCourse.complete(false);
+        upcomingCourse = null;
+        ArenaChunkPreloader.release(plugin, courseTickets);
+        cancelIntroduction();
         if (passRun != null) {
             passRun.close();
             passRun = null;
@@ -1171,6 +1313,7 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
         plugin.getVisibilityManager().releaseAll(gamePlayers, visibilityOwner);
         for (UUID uuid : new ArrayList<>(spawnCollisionStates.keySet()))
             restoreSpawnCollision(uuid);
+        teamCollisions.close();
         if (timerTask != null) timerTask.cancel();
         if (movementTask != null) movementTask.cancel();
         timerTask = null;
@@ -1184,20 +1327,9 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
     }
 
     private void resolveGeneratedLevels() {
-        List<RiptideMathRun.Gate> resolvedMath = new ArrayList<>();
         List<Integer> resolvedFloors = new ArrayList<>();
         for (var level : coursePlan.levels()) {
-            if (level.type() == RiptideLevelType.MATH && !level.isSideSweep()) {
-                resolvedMath.add(
-                        new RiptideMathRun.Gate(
-                                level.number(),
-                                level.step(),
-                                level.question(
-                                        getGameConfig().getMinimumOperand(),
-                                        getGameConfig().getMaximumOperand(),
-                                        RiptideDifficulty.stage(
-                                                level.step(), geometry.totalSteps()))));
-            } else if (level.colorFloor()) {
+            if (level.colorFloor()) {
                 resolvedFloors.add(level.step());
             }
         }
@@ -1207,18 +1339,27 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
                 coursePlan.levels().stream()
                         .filter(level -> level.type() == RiptideLevelType.DODGE)
                         .toList();
-        mathStages = List.copyOf(resolvedMath);
+        mathStages =
+                RiptideMathRun.gates(
+                        geometry,
+                        coursePlan.levels(),
+                        getGameConfig().getMinimumOperand(),
+                        getGameConfig().getMaximumOperand());
         colorFloorSteps = List.copyOf(resolvedFloors);
     }
 
     private final Map<UUID, Boolean> spawnCollisionStates = new java.util.HashMap<>();
+    private final RiptideTeamCollisions teamCollisions = new RiptideTeamCollisions();
 
     private void disableSpawnCollision(Player player) {
         spawnCollisionStates.putIfAbsent(player.getUniqueId(), player.isCollidable());
         player.setCollidable(false);
+        // setCollidable alone does not disable the client's native-team pushing prediction.
+        teamCollisions.disable(player);
     }
 
     private void restoreSpawnCollision(UUID uuid) {
+        teamCollisions.restore(uuid);
         Boolean previous = spawnCollisionStates.remove(uuid);
         Player player = Bukkit.getPlayer(uuid);
         if (previous != null && player != null) player.setCollidable(previous);
@@ -1292,6 +1433,7 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
 
     @Override
     public void handlePlayerQuit(@NotNull PlayerQuitEvent event) {
+        if (introductionRun != null) introductionRun.disconnected(event.getPlayer().getUniqueId());
         restoreColorFloorInventory(event.getPlayer());
         restoreSpawnCollision(event.getPlayer().getUniqueId());
         plugin.getVisibilityManager().release(event.getPlayer().getUniqueId(), visibilityOwner);
@@ -1321,7 +1463,7 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
             teleportPlayerToSpawnPoint(player);
             player.setGameMode(GameMode.ADVENTURE);
         } else {
-            player.teleport(CCConfig.LOBBY_LOCATION);
+            teleportToLobby(player);
             player.setGameMode(GameMode.ADVENTURE);
         }
         if ((stage == GameStageEnum.PREPARATION || stage == GameStageEnum.COUNTDOWN)
@@ -1384,6 +1526,7 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
 
     @Override
     public Location getSpectatorSpawnLocation() {
+        if (introductionRun != null) return introductionArena().spectatorSpawn();
         Location location = getGameConfig().getSpectatorSpawnPoint();
         if (location != null) return location;
         World world = Bukkit.getWorld(getWorldName());

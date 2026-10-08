@@ -34,7 +34,7 @@ import ink.ziip.championshipscore.api.game.parkourtag.runtime.ParkourTagArea;
 import ink.ziip.championshipscore.api.game.parkourwarrior.ParkourWarriorManager;
 import ink.ziip.championshipscore.api.game.riptiderush.RiptideRushManager;
 import ink.ziip.championshipscore.api.game.skywars.SkyWarsManager;
-import ink.ziip.championshipscore.api.game.snowball.SnowballShowdownManager;
+import ink.ziip.championshipscore.api.game.lasershowdown.LaserShowdownManager;
 import ink.ziip.championshipscore.api.game.spectate.SpectateMenu;
 import ink.ziip.championshipscore.api.game.spectate.SpectatorManager;
 import ink.ziip.championshipscore.api.game.start.ArenaSelection;
@@ -100,7 +100,7 @@ public class GameManager extends BaseManager {
     @Getter private final TGTTOSManager tgttosManager;
     @Getter private final TNTRunManager tntRunManager;
     @Getter private final DragonEggCarnivalManager dragonEggCarnivalManager;
-    @Getter private final SnowballShowdownManager snowballShowdownManager;
+    @Getter private final LaserShowdownManager laserShowdownManager;
     @Getter private final ParkourWarriorManager parkourWarriorManager;
     @Getter private final HotyCodyDuskyManager hotyCodyDuskyManager;
     @Getter private final BingoManager bingoManager;
@@ -145,7 +145,7 @@ public class GameManager extends BaseManager {
         tgttosManager = new TGTTOSManager(plugin);
         tntRunManager = new TNTRunManager(plugin);
         dragonEggCarnivalManager = new DragonEggCarnivalManager(plugin);
-        snowballShowdownManager = new SnowballShowdownManager(plugin);
+        laserShowdownManager = new LaserShowdownManager(plugin);
         parkourWarriorManager = new ParkourWarriorManager(plugin);
         hotyCodyDuskyManager = new HotyCodyDuskyManager(plugin);
         bingoManager = new BingoManager(plugin);
@@ -165,7 +165,7 @@ public class GameManager extends BaseManager {
         areaManagers.put(GameTypeEnum.TGTTOS, tgttosManager);
         areaManagers.put(GameTypeEnum.TNTRun, tntRunManager);
         areaManagers.put(GameTypeEnum.DragonEggCarnival, dragonEggCarnivalManager);
-        areaManagers.put(GameTypeEnum.SnowballShowdown, snowballShowdownManager);
+        areaManagers.put(GameTypeEnum.LaserShowdown, laserShowdownManager);
         areaManagers.put(GameTypeEnum.ParkourWarrior, parkourWarriorManager);
         areaManagers.put(GameTypeEnum.HotyCodyDusky, hotyCodyDuskyManager);
         areaManagers.put(GameTypeEnum.Dodgebolt, dodgeboltManager);
@@ -354,7 +354,8 @@ public class GameManager extends BaseManager {
                     areaManagers.get(gameType);
             if (manager == null) continue;
             for (BaseGameInstance instance : manager.getRuntimeInstances()) {
-                if (instance.getGameStageEnum() != GameStageEnum.WAITING)
+                if (instance.getGameStageEnum() != GameStageEnum.WAITING
+                        || instance.hasPendingPreparation())
                     activeConfigurations.add(instance.getGameConfig());
             }
         }
@@ -371,7 +372,8 @@ public class GameManager extends BaseManager {
             if (manager == null) continue;
             boolean disabling = managersToDisable.contains(gameType);
             for (BaseGameInstance instance : manager.getRuntimeInstances()) {
-                if (instance.getGameStageEnum() == GameStageEnum.WAITING) {
+                if (instance.getGameStageEnum() == GameStageEnum.WAITING
+                        && !instance.hasPendingPreparation()) {
                     if (!disabling
                             && !activeConfigurations.contains(instance.getGameConfig())
                             && visitedConfigurations.add(instance.getGameConfig())) {
@@ -1662,7 +1664,7 @@ public class GameManager extends BaseManager {
                     uuid, new RoundTransitionHold(instance, instance.getRunMode()));
             Player player = org.bukkit.Bukkit.getPlayer(uuid);
             if (player == null) continue;
-            instance.sanitizeParticipantForLobby(player, false);
+            instance.prepareParticipantForNextRound(player);
         }
     }
 
@@ -1678,6 +1680,12 @@ public class GameManager extends BaseManager {
         return roundTransitionHolds.containsKey(uuid);
     }
 
+    @Nullable
+    public BaseGameInstance getNextRoundHoldArea(@NotNull UUID uuid) {
+        RoundTransitionHold hold = roundTransitionHolds.get(uuid);
+        return hold == null ? null : hold.instance();
+    }
+
     /** Releases round reservations when a schedule stops or its next arena fails to start. */
     public void releaseRoundTransitionHolds(@NotNull GameTypeEnum game) {
         for (var entry : List.copyOf(roundTransitionHolds.entrySet())) {
@@ -1686,6 +1694,7 @@ public class GameManager extends BaseManager {
             if (!roundTransitionHolds.remove(entry.getKey(), hold)) continue;
             Player player = org.bukkit.Bukkit.getPlayer(entry.getKey());
             if (player != null) hold.instance().sanitizeParticipantForLobby(player, true);
+            else spectatorManager.onParticipantReleased(entry.getKey(), hold.instance());
         }
     }
 
@@ -1693,7 +1702,7 @@ public class GameManager extends BaseManager {
     public boolean restoreNextRoundHold(@NotNull Player player) {
         RoundTransitionHold hold = roundTransitionHolds.get(player.getUniqueId());
         if (hold == null) return false;
-        hold.instance().sanitizeParticipantForLobby(player, false);
+        hold.instance().prepareParticipantForNextRound(player);
         return true;
     }
 
@@ -1707,7 +1716,9 @@ public class GameManager extends BaseManager {
 
     /** Clears only mappings owned by the instance being finalized. */
     public void releaseInstanceParticipants(@NotNull BaseGameInstance instance) {
-        spectatorManager.onAreaReleased(instance);
+        if (!instance.isRoundTransitionPending()
+                || !instance.retainsParticipantSpectatorsForNextRound())
+            spectatorManager.onAreaReleased(instance);
         pendingFinaleAudience.remove(instance);
         teamStatus.entrySet().removeIf(entry -> entry.getValue() == instance);
         List<UUID> released =
@@ -2014,8 +2025,11 @@ public class GameManager extends BaseManager {
 
     private synchronized void focusSpectatorsOn(@NotNull BaseGameInstance startedInstance) {
         if (!startedInstance.isEventRun()) return;
-        spectatorFocus = startedInstance;
-        if (!isRegularSpectatingStage(startedInstance.getGameStageEnum())) return;
+        if (!isRegularSpectatingStage(startedInstance.getGameStageEnum())) {
+            spectatorFocus = startedInstance;
+            return;
+        }
+        // Parallel copies must retain the active focus before choosing where to move spectators.
         BaseGameInstance current = getCurrentSpectatorFocus();
         BaseGameInstance target =
                 current != null

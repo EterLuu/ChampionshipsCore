@@ -14,7 +14,7 @@ class RiptideDifficultyTest {
     @Test
     void passAndSideBandsSwitchAtExactAccelerationTicks() {
         for (int total : List.of(500, 503))
-            for (int step = 0; step <= total; step++)
+            for (int step : boundarySteps(total))
                 for (int difficulty = 1; difficulty <= 3; difficulty++) {
                     double progress = step / (double) total;
                     boolean pass =
@@ -28,49 +28,6 @@ class RiptideDifficultyTest {
                     assertEquals(pass, RiptideDifficulty.allowsPass(difficulty, step, total));
                     assertEquals(side, RiptideDifficulty.allowsSide(difficulty, step, total));
                 }
-    }
-
-    @Test
-    void finalPlansKeepDifficultyMathAndMirrorRulesAfterGrouping() throws Exception {
-        var c = RiptideTestFixtures.config();
-        var pool = new ArrayList<>(c.resolvePool());
-        pool.add(
-                new RiptideLevelTemplate(
-                        "double", "double", RiptideLevelType.MATH, "DOUBLE", true, 10, 64, 1));
-        c.setTemplates(pool);
-        var front = new HashSet<Integer>();
-        var side = new HashSet<Integer>();
-        var frontMirrors = new HashSet<Boolean>();
-        var sideMirrors = new HashSet<Boolean>();
-        boolean pair = false;
-        for (int seed = 0; seed < 8; seed++)
-            for (var l : RiptideCoursePlanner.plan(c, seed).levels()) {
-                if (l.type() == RiptideLevelType.PASS && !l.isSideSweep()) {
-                    assertTrue(
-                            RiptideDifficulty.allowsPass(l.template().difficulty(), l.step(), 500));
-                    front.add(l.template().difficulty());
-                    frontMirrors.add(l.mirrored());
-                }
-                if (l.type() == RiptideLevelType.MATH) {
-                    assertTrue(RiptideDifficulty.allowsMath(l.variant(), l.step(), 500));
-                    if (l.wallGroup() < 0) {
-                        pair = true;
-                        assertTrue(l.step() >= 100);
-                    }
-                }
-                for (var wall : l.sideWalls()) {
-                    assertTrue(
-                            RiptideDifficulty.allowsSide(
-                                    wall.template().difficulty(), l.step(), 500));
-                    side.add(wall.template().difficulty());
-                    sideMirrors.add(wall.mirrored());
-                }
-            }
-        assertTrue(pair);
-        assertEquals(Set.of(1, 2, 3), front);
-        assertEquals(Set.of(1, 2, 3), side);
-        assertEquals(Set.of(false, true), frontMirrors);
-        assertEquals(Set.of(false, true), sideMirrors);
     }
 
     @Test
@@ -97,7 +54,7 @@ class RiptideDifficultyTest {
                         List.of(60, 60, 60, 60, 60, 50, 50),
                         List.of(60, 50, 50, 40, 40, 40, 40));
         for (int total : List.of(500, 503))
-            for (int step = 0; step <= total; step++) {
+            for (int step : boundarySteps(total)) {
                 int stage = Math.min(4, (int) ((long) step * 5 / total));
                 assertEquals(expected.get(stage), RiptideDifficulty.floorRoundTicks(step, total));
             }
@@ -124,8 +81,8 @@ class RiptideDifficultyTest {
     @Test
     void exactMilestonesControlFloorsAndOperations() {
         int[] times = {640, 560, 480, 400, 320};
-        for (int step = 0; step < 500; step++) {
-            int stage = step / 100;
+        for (int step : boundarySteps(500)) {
+            int stage = Math.min(4, step / 100);
             assertEquals(times[stage], RiptideDifficulty.floorTicks(step, 500));
             assertEquals(5 + Math.min(stage, 3), RiptideDifficulty.floorMaterials(step, 500));
             assertEquals(stage >= 1, RiptideDifficulty.allowsMath("SUBTRACT", step, 500));
@@ -165,5 +122,20 @@ class RiptideDifficultyTest {
                     assertEquals(ticks + RiptideColorFloorRun.INTRO_TICKS, elapsed);
                 }
             }
+    }
+
+    private static List<Integer> boundarySteps(int total) {
+        var steps = new TreeSet<Integer>(List.of(0, total));
+        for (int band = 0; band < 5; band++) {
+            steps.add((int) ((band + .5) * total / 5));
+            int boundary = (int) Math.ceil((band + 1) * total / 5D);
+            for (int offset : List.of(-1, 0, 1)) {
+                int step = boundary + offset;
+                if (step <= total) steps.add(step);
+            }
+        }
+        int doubleStart = (int) Math.ceil(total / 5D) + 6;
+        steps.addAll(List.of(doubleStart - 1, doubleStart, doubleStart + 1));
+        return List.copyOf(steps);
     }
 }

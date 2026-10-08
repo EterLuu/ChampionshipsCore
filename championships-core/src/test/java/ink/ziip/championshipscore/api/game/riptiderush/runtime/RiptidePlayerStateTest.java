@@ -28,25 +28,16 @@ class RiptidePlayerStateTest {
     @Nested
     class RiptideRushParticipationCases {
         @Test
-        void eliminatingOfflineTeammatesDoesNotEndSoloRunBeforeMovementStarts() {
-            // The reported roster contained one online player and one disconnected teammate.
-            int rosterSize = 2;
-            int offlinePlayers = 1;
-            assertFalse(RiptideRushArea.shouldEndAfterElimination(rosterSize - offlinePlayers, 1));
-        }
-
-        @Test
-        void soloRunStillEndsWhenItsOnlyPlayerIsEliminated() {
-            assertTrue(RiptideRushArea.shouldEndAfterElimination(1, 0));
-            assertTrue(RiptideRushArea.shouldEndAfterElimination(0, 0));
-        }
-
-        @Test
-        void multiplayerKeepsTheLastSurvivorInTheRound() {
-            assertFalse(RiptideRushArea.shouldEndAfterElimination(3, 2));
-            assertFalse(RiptideRushArea.shouldEndAfterElimination(3, 1));
-            assertFalse(RiptideRushArea.shouldEndAfterElimination(2, 1));
-            assertTrue(RiptideRushArea.shouldEndAfterElimination(2, 0));
+        void eliminationEndsOnlyAfterTheCurrentRosterHasNoSurvivors() {
+            int[][] cases = {
+                {1, 1, 0}, {1, 0, 1}, {0, 0, 1}, {3, 2, 0}, {3, 1, 0}, {2, 1, 0}, {2, 0, 1}
+            };
+            for (int[] example : cases) {
+                assertEquals(
+                        example[2] == 1,
+                        RiptideRushArea.shouldEndAfterElimination(example[0], example[1]),
+                        "roster=" + example[0] + " survivors=" + example[1]);
+            }
         }
     }
 
