@@ -320,7 +320,9 @@ public final class SpectatorManager extends BaseManager implements Listener {
                     .runTask(
                             plugin,
                             () -> {
-                                if (player.isOnline() && currentSession(uuid, expected))
+                                if (player.isOnline()
+                                        && Bukkit.getPlayer(uuid) == player
+                                        && currentSession(uuid, expected))
                                     applyPresentation(player);
                                 plugin.getVisibilityManager().reconcilePlayer(uuid);
                             });
@@ -336,7 +338,9 @@ public final class SpectatorManager extends BaseManager implements Listener {
                         .runTask(
                                 plugin,
                                 () -> {
-                                    if (player.isOnline() && currentSession(uuid, current))
+                                    if (player.isOnline()
+                                            && Bukkit.getPlayer(uuid) == player
+                                            && currentSession(uuid, current))
                                         enforcePassiveState(player, current);
                                 });
         }
@@ -355,9 +359,11 @@ public final class SpectatorManager extends BaseManager implements Listener {
                 .runTask(
                         plugin,
                         () -> {
-                            if (player.isOnline() && currentSession(player.getUniqueId(), expected))
-                                applyPresentation(player);
-                            plugin.getVisibilityManager().reconcilePlayer(player.getUniqueId());
+                            UUID uuid = player.getUniqueId();
+                            if (player.isOnline()
+                                    && Bukkit.getPlayer(uuid) == player
+                                    && currentSession(uuid, expected)) applyPresentation(player);
+                            plugin.getVisibilityManager().reconcilePlayer(uuid);
                         });
     }
 
@@ -573,7 +579,8 @@ public final class SpectatorManager extends BaseManager implements Listener {
                 .runTask(
                         plugin,
                         () -> {
-                            if (!event.getPlayer().isOnline()) return;
+                            if (!event.getPlayer().isOnline()
+                                    || Bukkit.getPlayer(uuid) != event.getPlayer()) return;
                             if (isSpectatorLike(uuid)) {
                                 if (!sessions.containsKey(uuid)) adoptExisting(event.getPlayer());
                                 else applyPresentation(event.getPlayer());

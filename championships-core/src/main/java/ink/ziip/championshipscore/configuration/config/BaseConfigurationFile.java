@@ -20,8 +20,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -104,7 +106,7 @@ public abstract class BaseConfigurationFile {
         if (configuration == null || configurationPath == null) {
             throw new IOException("Configuration is not initialized: " + getFileName());
         }
-        configuration.save(configurationPath.toFile());
+        saveAtomically(configuration);
     }
 
     /** Restores both the parsed document and any static/custom runtime fields backed by it. */
@@ -169,7 +171,7 @@ public abstract class BaseConfigurationFile {
                 }
             }
 
-            configuration.save(configurationPath.toFile());
+            saveAtomically(configuration);
         } catch (Exception exception) {
             plugin.getLogger()
                     .log(
@@ -187,6 +189,32 @@ public abstract class BaseConfigurationFile {
 
     /** Save custom options for sub classes */
     protected void saveCustomOptions() {}
+
+    /** Writes a complete configuration beside the target before replacing it. */
+    private void saveAtomically(@NotNull YamlConfiguration document) throws IOException {
+        Path target = configurationPath;
+        Path parent = target.toAbsolutePath().getParent();
+        if (parent == null) throw new IOException("Configuration has no parent: " + target);
+        Files.createDirectories(parent);
+        Path temporary =
+                Files.createTempFile(parent, target.getFileName().toString() + ".", ".tmp");
+        boolean moved = false;
+        try {
+            document.save(temporary.toFile());
+            try {
+                Files.move(
+                        temporary,
+                        target,
+                        StandardCopyOption.ATOMIC_MOVE,
+                        StandardCopyOption.REPLACE_EXISTING);
+            } catch (AtomicMoveNotSupportedException exception) {
+                Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING);
+            }
+            moved = true;
+        } finally {
+            if (!moved) Files.deleteIfExists(temporary);
+        }
+    }
 
     /** Load default config options from the resource folder */
     public void loadDefaultOptions() {

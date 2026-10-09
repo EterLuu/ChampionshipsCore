@@ -14,6 +14,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.Level;
 
 /**
  * Connection pool plus the single entry point for schema provisioning.
@@ -76,7 +77,20 @@ public class DatabaseManager extends BaseManager {
     private void preloadClass(String className) {
         try {
             Class.forName(className);
-        } catch (Throwable ignored) {
+        } catch (ClassNotFoundException | LinkageError failure) {
+            plugin.getLogger()
+                    .log(
+                            Level.WARNING,
+                            "Unable to preload optional database class "
+                                    + className
+                                    + "; shutdown may report a driver class-loading error.",
+                            failure);
+        } catch (SecurityException failure) {
+            plugin.getLogger()
+                    .log(
+                            Level.WARNING,
+                            "Database class preloading was blocked for " + className + ".",
+                            failure);
         }
     }
 

@@ -61,16 +61,17 @@ public final class PlayerVisibilityManager extends BaseManager implements Listen
         loaded = false;
         generation++;
         HandlerList.unregisterAll(this);
+        Set<VisibilityPair> restorePairs = Set.copyOf(hiddenPairs);
+        hiddenPairs.clear();
+        states.clear();
+        sessionByPlayer.clear();
         Runnable restore =
                 () -> {
-                    for (VisibilityPair pair : Set.copyOf(hiddenPairs))
+                    for (VisibilityPair pair : restorePairs)
                         apply(pair.viewer(), pair.target(), true, true);
-                    hiddenPairs.clear();
                 };
         if (Bukkit.isPrimaryThread()) restore.run();
         else Bukkit.getScheduler().runTask(plugin, restore);
-        states.clear();
-        sessionByPlayer.clear();
     }
 
     public void setState(@NotNull UUID viewerId, @NotNull PlayerVisibilityState state) {

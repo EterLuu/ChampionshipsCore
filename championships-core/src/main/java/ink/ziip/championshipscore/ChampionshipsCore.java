@@ -119,7 +119,11 @@ public final class ChampionshipsCore extends JavaPlugin {
         logManager = CCLogManager.install(this);
 
         java.util.List<String> missingDependencies =
-                java.util.stream.Stream.of("PlaceholderAPI", "ProtocolLib", "FastAsyncWorldEdit")
+                java.util.stream.Stream.of(
+                                "packetevents",
+                                "PlaceholderAPI",
+                                "ProtocolLib",
+                                "FastAsyncWorldEdit")
                         .filter(name -> Bukkit.getPluginManager().getPlugin(name) == null)
                         .toList();
         if (!missingDependencies.isEmpty()) {
@@ -315,6 +319,7 @@ public final class ChampionshipsCore extends JavaPlugin {
             logManager.close();
             logManager = null;
         }
+        if (instance == this) instance = null;
     }
 
     private void handlePlayerNameChange(PlayerNameChangeEvent event) {
