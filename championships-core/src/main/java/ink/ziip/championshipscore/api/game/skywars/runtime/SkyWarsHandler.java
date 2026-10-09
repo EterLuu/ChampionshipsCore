@@ -363,14 +363,13 @@ public class SkyWarsHandler extends BaseListener {
                         skyWarsArea.addDeathPlayer(player);
                     }
                     ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-                    championshipsCore
-                            .getServer()
-                            .getScheduler()
-                            .runTask(
-                                    championshipsCore,
-                                    () -> {
-                                        player.setGameMode(GameMode.SPECTATOR);
-                                    });
+                    plugin.getGameManager()
+                            .getSpectatorManager()
+                            .scheduleParticipantSpectator(
+                                    player,
+                                    skyWarsArea,
+                                    skyWarsArea.getSpectatorSpawnLocation(),
+                                    false);
                 }
             }
         }

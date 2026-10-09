@@ -13,6 +13,7 @@ import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
 import ink.ziip.championshipscore.api.game.frostbite.runtime.FrostbiteArea;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.laserbox.runtime.LaserBoxArea;
+import ink.ziip.championshipscore.api.game.lasershowdown.runtime.LaserShowdownTeamArea;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.game.model.GameRunMode;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
@@ -20,7 +21,6 @@ import ink.ziip.championshipscore.api.game.parkourtag.runtime.ParkourTagArea;
 import ink.ziip.championshipscore.api.game.parkourtag.runtime.ParkourTagMatch;
 import ink.ziip.championshipscore.api.game.parkourwarrior.runtime.ParkourWarriorTeamArea;
 import ink.ziip.championshipscore.api.game.riptiderush.runtime.RiptideRushArea;
-import ink.ziip.championshipscore.api.game.lasershowdown.runtime.LaserShowdownTeamArea;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
@@ -61,6 +61,8 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
     private volatile SidebarConfiguration configuration;
     private SharedSidebar sidebar;
     private BukkitTask refreshTask;
+    private Map<String, List<MapDescriptor>> batchWorldIndex;
+    private boolean refreshingBatch;
 
     public CoreSidebarManager(ChampionshipsCore plugin) {
         super(plugin);
@@ -90,7 +92,7 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
                                                         warning)));
         Bukkit.getPluginManager().registerEvents(this, plugin);
         scheduleRefresh();
-        Bukkit.getOnlinePlayers().forEach(this::refresh);
+        refreshAll();
     }
 
     @Override
@@ -150,7 +152,7 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
 
     public void invalidateAll() {
         rendered.clear();
-        if (sidebar != null && plugin.isEnabled()) Bukkit.getOnlinePlayers().forEach(this::refresh);
+        if (sidebar != null && plugin.isEnabled()) refreshAll();
     }
 
     private void scheduleRefresh() {
@@ -159,11 +161,18 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         if (config == null || !config.enabled() || !plugin.isEnabled()) return;
         refreshTask =
                 Bukkit.getScheduler()
-                        .runTaskTimer(
-                                plugin,
-                                () -> Bukkit.getOnlinePlayers().forEach(this::refresh),
-                                1L,
-                                config.updateIntervalTicks());
+                        .runTaskTimer(plugin, this::refreshAll, 1L, config.updateIntervalTicks());
+    }
+
+    private void refreshAll() {
+        refreshingBatch = true;
+        batchWorldIndex = null;
+        try {
+            Bukkit.getOnlinePlayers().forEach(this::refresh);
+        } finally {
+            refreshingBatch = false;
+            batchWorldIndex = null;
+        }
     }
 
     private void refresh(Player player) {
@@ -276,7 +285,8 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
                 lines.addAll(renderLocalBingoRanking(config, bingo, game, viewerTeam));
                 continue;
             }
-            if ("{ranking}".equals(raw) && instance instanceof LaserShowdownTeamArea lasershowdown) {
+            if ("{ranking}".equals(raw)
+                    && instance instanceof LaserShowdownTeamArea lasershowdown) {
                 lines.addAll(renderLocalLaserShowdownRanking(config, player, lasershowdown, game));
                 continue;
             }
@@ -417,7 +427,8 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
                             .replace("{rank.position}", Integer.toString(position))
                             .replace("{rank.team}", team.getName())
                             .replace(
-                                    "{rank.score}", Integer.toString(lasershowdown.getTeamScore(team))));
+                                    "{rank.score}",
+                                    Integer.toString(lasershowdown.getTeamScore(team))));
         }
         return result;
     }
@@ -518,29 +529,47 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
     }
 
     private List<MapDescriptor> mapsIn(World world) {
-        Map<String, MapDescriptor> unique = new LinkedHashMap<>();
+        if (!refreshingBatch) return buildWorldIndex().getOrDefault(world.getName(), List.of());
+        if (batchWorldIndex == null) batchWorldIndex = buildWorldIndex();
+        return batchWorldIndex.getOrDefault(world.getName(), List.of());
+    }
+
+    private Map<String, List<MapDescriptor>> buildWorldIndex() {
+        Map<String, Map<String, MapDescriptor>> worlds = new LinkedHashMap<>();
         for (GameTypeEnum gameType : GameTypeEnum.values()) {
             if (!plugin.getGameManager().isGameManagerLoaded(gameType)) continue;
             BaseGameInstanceManager<? extends BaseGameInstance> manager =
                     plugin.getGameManager().getAreaManager(gameType);
             if (manager == null) continue;
             for (BaseGameInstance instance : manager.getRuntimeInstances()) {
-                if (!world.getName().equals(instance.getWorldName())) continue;
                 String mapName =
                         Objects.toString(
                                 instance.getGameConfig().getConfigName(),
                                 instance.getGameConfig().getAreaName());
-                unique.putIfAbsent(
-                        gameType.name() + '\u0000' + mapName.toLowerCase(java.util.Locale.ROOT),
-                        new MapDescriptor(gameType, mapName, instance.getGameConfig(), instance));
+                worlds.computeIfAbsent(instance.getWorldName(), ignored -> new LinkedHashMap<>())
+                        .putIfAbsent(
+                                gameType.name()
+                                        + '\u0000'
+                                        + mapName.toLowerCase(java.util.Locale.ROOT),
+                                new MapDescriptor(
+                                        gameType, mapName, instance.getGameConfig(), instance));
             }
         }
-        return unique.values().stream()
-                .sorted(
-                        Comparator.comparing((MapDescriptor value) -> value.game().ordinal())
-                                .thenComparing(
-                                        MapDescriptor::mapName, String.CASE_INSENSITIVE_ORDER))
-                .toList();
+        Map<String, List<MapDescriptor>> index = new LinkedHashMap<>();
+        worlds.forEach(
+                (name, maps) ->
+                        index.put(
+                                name,
+                                maps.values().stream()
+                                        .sorted(
+                                                Comparator.comparing(
+                                                                (MapDescriptor value) ->
+                                                                        value.game().ordinal())
+                                                        .thenComparing(
+                                                                MapDescriptor::mapName,
+                                                                String.CASE_INSENSITIVE_ORDER))
+                                        .toList()));
+        return index;
     }
 
     private RenderedSidebar renderTemplate(

@@ -16,6 +16,7 @@ import ink.ziip.championshipscore.platform.bukkit.scoreboard.NativeTeamOverlay;
 import ink.ziip.championshipscore.platform.bukkit.scoreboard.NativeTeamService;
 import ink.ziip.championshipscore.platform.bukkit.scoreboard.TeamColors;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+import ink.ziip.championshipscore.util.concurrent.LifecycleTasks;
 
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -71,6 +72,7 @@ public class TeamManager extends BaseManager {
     private final Set<String> pendingMemberNames = ConcurrentHashMap.newKeySet();
     private final Set<Integer> pendingMemberTeamIds = ConcurrentHashMap.newKeySet();
     private final Set<Integer> pendingTeamDeletions = ConcurrentHashMap.newKeySet();
+    private final LifecycleTasks teamTasks = new LifecycleTasks("cc-team-database", 1024);
     private final TeamDaoImpl teamDaoImpl = new TeamDaoImpl();
     private final BukkitScheduler scheduler;
     private final NativeTeamService nativeTeams;
@@ -96,6 +98,13 @@ public class TeamManager extends BaseManager {
 
     public CompletionStage<Boolean> addTeam(
             @NotNull String name, @NotNull String colorName, @NotNull String colorCode) {
+        LifecycleTasks.Token token;
+        try {
+            token = teamTasks.token();
+        } catch (RuntimeException failure) {
+            return CompletableFuture.failedFuture(failure);
+        }
+
         String normalizedName = name.toLowerCase(Locale.ROOT);
         String normalizedColor = colorName.toLowerCase(Locale.ROOT);
         synchronized (cachedTeams) {
@@ -116,9 +125,24 @@ public class TeamManager extends BaseManager {
                 return CompletableFuture.completedFuture(false);
             }
         }
-        CompletableFuture<Boolean> result = new CompletableFuture<>();
-        scheduler.runTaskAsynchronously(
-                plugin,
+        CompletableFuture<Boolean> result = token.future();
+        result.whenComplete(
+                (ignored, failure) -> {
+                    if (failure != null && token.isCurrent()) {
+                        try {
+                            token.publish(
+                                    () -> {
+                                        pendingTeamNames.remove(normalizedName);
+                                        pendingTeamColors.remove(normalizedColor);
+                                    });
+                        } catch (java.util.concurrent.CancellationException stopped) {
+                            /* unload owns cleanup */
+                        }
+                    }
+                });
+        dispatchAsync(
+                token,
+                result,
                 () -> {
                     int id;
                     try {
@@ -129,8 +153,9 @@ public class TeamManager extends BaseManager {
                         id = -1;
                     }
                     int createdId = id;
-                    scheduler.runTask(
-                            plugin,
+                    dispatchMain(
+                            token,
+                            result,
                             () -> {
                                 try {
                                     if (createdId < 0) {
@@ -170,18 +195,27 @@ public class TeamManager extends BaseManager {
                     .anyMatch(team -> plugin.getGameManager().getTeamCurrenArea(team) != null))
                 return CompletableFuture.completedFuture(false);
         }
-        CompletableFuture<Boolean> result = new CompletableFuture<>();
-        scheduler.runTaskAsynchronously(
-                plugin,
+        LifecycleTasks.Token token;
+        try {
+            token = teamTasks.token();
+        } catch (RuntimeException failure) {
+            return CompletableFuture.failedFuture(failure);
+        }
+        CompletableFuture<Boolean> result = token.future();
+        dispatchAsync(
+                token,
+                result,
                 () -> {
                     boolean replaced = teamDaoImpl.replaceAllTeams(teams);
                     if (!replaced) {
                         result.complete(false);
                         return;
                     }
+                    token.check();
                     refreshFormalTeamsFromDatabase()
                             .whenComplete(
                                     (ignored, failure) -> {
+                                        if (!token.isCurrent()) return;
                                         if (failure != null) {
                                             result.completeExceptionally(failure);
                                             return;
@@ -190,6 +224,7 @@ public class TeamManager extends BaseManager {
                                                 .refreshFromDatabase()
                                                 .whenComplete(
                                                         (rankIgnored, rankFailure) -> {
+                                                            if (!token.isCurrent()) return;
                                                             if (rankFailure != null)
                                                                 result.completeExceptionally(
                                                                         rankFailure);
@@ -206,6 +241,7 @@ public class TeamManager extends BaseManager {
 
     @Override
     public void load() {
+        teamTasks.start();
         refreshFormalTeamsFromDatabase()
                 .exceptionally(
                         failure -> {
@@ -220,9 +256,16 @@ public class TeamManager extends BaseManager {
 
     /** Reloads the authoritative formal-team snapshot without touching match-scoped DAILY teams. */
     public CompletionStage<Void> refreshFormalTeamsFromDatabase() {
-        CompletableFuture<List<FormalTeamSnapshot>> query = new CompletableFuture<>();
-        scheduler.runTaskAsynchronously(
-                plugin,
+        LifecycleTasks.Token token;
+        try {
+            token = teamTasks.token();
+        } catch (RuntimeException failure) {
+            return CompletableFuture.failedFuture(failure);
+        }
+        CompletableFuture<List<FormalTeamSnapshot>> query = token.future();
+        dispatchAsync(
+                token,
+                query,
                 () -> {
                     try {
                         List<FormalTeamSnapshot> snapshots = new ArrayList<>();
@@ -235,6 +278,7 @@ public class TeamManager extends BaseManager {
                                                                 "Unable to query formal team"
                                                                         + " list"));
                         for (TeamEntry entry : entries) {
+                            token.check();
                             Map<UUID, String> members = new LinkedHashMap<>();
                             Set<TeamMemberEntry> queriedMembers =
                                     teamDaoImpl
@@ -260,14 +304,16 @@ public class TeamManager extends BaseManager {
                         query.completeExceptionally(failure);
                     }
                 });
-        return query.thenCompose(this::applyFormalTeamSnapshots);
+        return query.thenCompose(snapshots -> applyFormalTeamSnapshots(token, snapshots));
     }
 
-    private CompletionStage<Void> applyFormalTeamSnapshots(List<FormalTeamSnapshot> snapshots) {
-        CompletableFuture<Void> applied = new CompletableFuture<>();
+    private CompletionStage<Void> applyFormalTeamSnapshots(
+            LifecycleTasks.Token token, List<FormalTeamSnapshot> snapshots) {
+        CompletableFuture<Void> applied = token.future();
         Runnable apply =
                 () -> {
                     try {
+                        token.check();
                         Set<UUID> changedMembers = new HashSet<>();
                         synchronized (cachedTeams) {
                             Map<Integer, FormalTeamSnapshot> snapshotById = new HashMap<>();
@@ -318,8 +364,26 @@ public class TeamManager extends BaseManager {
                     }
                 };
         if (Bukkit.isPrimaryThread()) apply.run();
-        else scheduler.runTask(plugin, apply);
+        else dispatchMain(token, applied, apply);
         return applied;
+    }
+
+    private void dispatchAsync(
+            LifecycleTasks.Token token, CompletableFuture<?> result, Runnable action) {
+        token.submit(action)
+                .whenComplete(
+                        (ignored, failure) -> {
+                            if (failure != null) result.completeExceptionally(failure);
+                        });
+    }
+
+    private void dispatchMain(
+            LifecycleTasks.Token token, CompletableFuture<?> result, Runnable action) {
+        token.dispatch(task -> scheduler.runTask(plugin, task), action)
+                .whenComplete(
+                        (ignored, failure) -> {
+                            if (failure != null) result.completeExceptionally(failure);
+                        });
     }
 
     private ChampionshipTeam createFormalTeam(FormalTeamSnapshot snapshot) {
@@ -377,12 +441,20 @@ public class TeamManager extends BaseManager {
 
     @Override
     public void unload() {
+        teamTasks.close();
         List<ChampionshipTeam> teams;
         synchronized (transientTeams) {
             teams = new ArrayList<>(transientTeams);
         }
         removeTransientTeams(teams);
         restoreDailyLobbyIdentities();
+        for (ChampionshipTeam team : cachedTeams.values()) unregister(team.getTeam());
+        cachedTeams.clear();
+        pendingTeamNames.clear();
+        pendingTeamColors.clear();
+        pendingMemberNames.clear();
+        pendingMemberTeamIds.clear();
+        pendingTeamDeletions.clear();
     }
 
     public List<ChampionshipTeam> getTeamList() {
@@ -417,6 +489,13 @@ public class TeamManager extends BaseManager {
     }
 
     public CompletionStage<TeamDeletionResult> deleteTeam(@NotNull String name) {
+        LifecycleTasks.Token token;
+        try {
+            token = teamTasks.token();
+        } catch (RuntimeException failure) {
+            return CompletableFuture.failedFuture(failure);
+        }
+
         ChampionshipTeam championshipTeam = getTeam(name);
         if (championshipTeam == null)
             return CompletableFuture.completedFuture(TeamDeletionResult.NOT_FOUND);
@@ -433,9 +512,24 @@ public class TeamManager extends BaseManager {
             pendingTeamDeletions.remove(deleting.getId());
             return CompletableFuture.completedFuture(TeamDeletionResult.NOT_FOUND);
         }
-        CompletableFuture<TeamDeletionResult> result = new CompletableFuture<>();
-        scheduler.runTaskAsynchronously(
-                plugin,
+        CompletableFuture<TeamDeletionResult> result = token.future();
+        result.whenComplete(
+                (ignored, failure) -> {
+                    if (failure != null && token.isCurrent()) {
+                        try {
+                            token.publish(
+                                    () -> {
+                                        cachedTeams.putIfAbsent(deleting.getName(), deleting);
+                                        pendingTeamDeletions.remove(deleting.getId());
+                                    });
+                        } catch (java.util.concurrent.CancellationException stopped) {
+                            /* unload owns cleanup */
+                        }
+                    }
+                });
+        dispatchAsync(
+                token,
+                result,
                 () -> {
                     boolean deleted;
                     try {
@@ -449,8 +543,9 @@ public class TeamManager extends BaseManager {
                         deleted = false;
                     }
                     boolean deletionSucceeded = deleted;
-                    scheduler.runTask(
-                            plugin,
+                    dispatchMain(
+                            token,
+                            result,
                             () -> {
                                 try {
                                     if (deletionSucceeded) {
@@ -713,6 +808,13 @@ public class TeamManager extends BaseManager {
 
     public CompletionStage<MemberAddResult> addTeamMember(
             @NotNull String username, @NotNull String teamName) {
+        LifecycleTasks.Token token;
+        try {
+            token = teamTasks.token();
+        } catch (RuntimeException failure) {
+            return CompletableFuture.failedFuture(failure);
+        }
+
         if (!username.matches("[A-Za-z0-9_]{3,16}"))
             return CompletableFuture.completedFuture(MemberAddResult.INVALID_PLAYER_NAME);
         ChampionshipTeam targetTeam = getTeam(teamName);
@@ -724,13 +826,28 @@ public class TeamManager extends BaseManager {
         if (!reserveMemberMutation(normalizedName, Set.of(targetTeam.getId())))
             return CompletableFuture.completedFuture(MemberAddResult.OPERATION_IN_PROGRESS);
 
-        CompletableFuture<MemberAddResult> result = new CompletableFuture<>();
+        CompletableFuture<MemberAddResult> result = token.future();
+        result.whenComplete(
+                (ignored, failure) -> {
+                    if (failure != null && token.isCurrent()) {
+                        try {
+                            token.publish(
+                                    () -> {
+                                        releaseMemberMutation(
+                                                normalizedName, Set.of(targetTeam.getId()));
+                                    });
+                        } catch (java.util.concurrent.CancellationException stopped) {
+                            /* unload owns cleanup */
+                        }
+                    }
+                });
         plugin.getPlayerManager()
                 .resolvePlayerUUID(username)
                 .whenComplete(
                         (uuid, identityFailure) ->
-                                scheduler.runTask(
-                                        plugin,
+                                dispatchMain(
+                                        token,
+                                        result,
                                         () -> {
                                             if (identityFailure != null || uuid == null) {
                                                 finishMemberMutation(
@@ -765,8 +882,9 @@ public class TeamManager extends BaseManager {
                                                         MemberAddResult.TEAM_FULL);
                                                 return;
                                             }
-                                            scheduler.runTaskAsynchronously(
-                                                    plugin,
+                                            dispatchAsync(
+                                                    token,
+                                                    result,
                                                     () -> {
                                                         MemberAddResult persisted =
                                                                 MemberAddResult.DATABASE_ERROR;
@@ -798,8 +916,9 @@ public class TeamManager extends BaseManager {
                                                                             failure);
                                                         }
                                                         MemberAddResult finalResult = persisted;
-                                                        scheduler.runTask(
-                                                                plugin,
+                                                        dispatchMain(
+                                                                token,
+                                                                result,
                                                                 () -> {
                                                                     if (finalResult
                                                                             == MemberAddResult
@@ -850,6 +969,13 @@ public class TeamManager extends BaseManager {
 
     public CompletionStage<MemberMoveResult> moveTeamMember(
             @NotNull UUID uuid, @NotNull String username, @NotNull ChampionshipTeam targetTeam) {
+        LifecycleTasks.Token token;
+        try {
+            token = teamTasks.token();
+        } catch (RuntimeException failure) {
+            return CompletableFuture.failedFuture(failure);
+        }
+
         if (!username.matches("[A-Za-z0-9_]{1,16}"))
             return CompletableFuture.completedFuture(MemberMoveResult.INVALID_PLAYER);
         ChampionshipTeam currentTeam = getFormalTeamByPlayer(uuid);
@@ -870,9 +996,23 @@ public class TeamManager extends BaseManager {
         if (!reserveMemberMutation(normalizedName, teamIds))
             return CompletableFuture.completedFuture(MemberMoveResult.FAILED);
 
-        CompletableFuture<MemberMoveResult> result = new CompletableFuture<>();
-        scheduler.runTaskAsynchronously(
-                plugin,
+        CompletableFuture<MemberMoveResult> result = token.future();
+        result.whenComplete(
+                (ignored, failure) -> {
+                    if (failure != null && token.isCurrent()) {
+                        try {
+                            token.publish(
+                                    () -> {
+                                        releaseMemberMutation(normalizedName, teamIds);
+                                    });
+                        } catch (java.util.concurrent.CancellationException stopped) {
+                            /* unload owns cleanup */
+                        }
+                    }
+                });
+        dispatchAsync(
+                token,
+                result,
                 () -> {
                     boolean moved = false;
                     try {
@@ -885,8 +1025,9 @@ public class TeamManager extends BaseManager {
                                         failure);
                     }
                     boolean persisted = moved;
-                    scheduler.runTask(
-                            plugin,
+                    dispatchMain(
+                            token,
+                            result,
                             () -> {
                                 if (persisted) {
                                     for (ChampionshipTeam team : cachedTeams.values()) {
@@ -919,6 +1060,13 @@ public class TeamManager extends BaseManager {
 
     public CompletionStage<Boolean> deleteTeamMember(
             @NotNull String username, @NotNull String teamName) {
+        LifecycleTasks.Token token;
+        try {
+            token = teamTasks.token();
+        } catch (RuntimeException failure) {
+            return CompletableFuture.failedFuture(failure);
+        }
+
         ChampionshipTeam championshipTeam = getTeam(teamName);
         if (championshipTeam == null) return CompletableFuture.completedFuture(false);
         Set<TeamMemberEntry> matchingMembers =
@@ -930,9 +1078,23 @@ public class TeamManager extends BaseManager {
         if (matchingMembers.isEmpty() || !reserveMemberMutation(normalizedName, teamIds))
             return CompletableFuture.completedFuture(false);
 
-        CompletableFuture<Boolean> result = new CompletableFuture<>();
-        scheduler.runTaskAsynchronously(
-                plugin,
+        CompletableFuture<Boolean> result = token.future();
+        result.whenComplete(
+                (ignored, failure) -> {
+                    if (failure != null && token.isCurrent()) {
+                        try {
+                            token.publish(
+                                    () -> {
+                                        releaseMemberMutation(normalizedName, teamIds);
+                                    });
+                        } catch (java.util.concurrent.CancellationException stopped) {
+                            /* unload owns cleanup */
+                        }
+                    }
+                });
+        dispatchAsync(
+                token,
+                result,
                 () -> {
                     boolean deleted = false;
                     try {
@@ -945,8 +1107,9 @@ public class TeamManager extends BaseManager {
                                         failure);
                     }
                     boolean persisted = deleted;
-                    scheduler.runTask(
-                            plugin,
+                    dispatchMain(
+                            token,
+                            result,
                             () -> {
                                 if (persisted) {
                                     for (TeamMemberEntry member : matchingMembers) {

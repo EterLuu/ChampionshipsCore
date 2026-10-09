@@ -271,14 +271,10 @@ public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
             return;
         }
 
-        scheduler.runTask(
-                plugin,
-                () -> {
-                    event.getEntity().spigot().respawn();
-                    event.getEntity().teleport(getSpectatorSpawnLocation());
-                    event.getEntity().setGameMode(GameMode.SPECTATOR);
-                });
-        player.teleport(getSpectatorSpawnLocation());
+        plugin.getGameManager()
+                .getSpectatorManager()
+                .scheduleParticipantSpectator(
+                        event.getEntity(), this, getSpectatorSpawnLocation(), true);
     }
 
     /** Terra Swoop Force failures restart the flight from the configured launch area. */
@@ -420,10 +416,10 @@ public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
             ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
             if (getGameConfig().getAreaType().equals("ELYTRA")
                     && arrivedPlayers.contains(player.getUniqueId())) {
-                championshipsCore
-                        .getServer()
-                        .getScheduler()
-                        .runTask(championshipsCore, () -> player.setGameMode(GameMode.SPECTATOR));
+                plugin.getGameManager()
+                        .getSpectatorManager()
+                        .scheduleParticipantSpectator(
+                                player, this, getSpectatorSpawnLocation(), false);
                 return;
             }
             switch (getGameConfig().getAreaType()) {

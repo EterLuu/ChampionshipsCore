@@ -1181,7 +1181,7 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
         playerRespawnTick.put(victimId, laserTick + 80);
         victim.getInventory().clear();
         victim.setLevel(0);
-        victim.setGameMode(GameMode.SPECTATOR);
+        plugin.getGameManager().getSpectatorManager().enterParticipantSpectator(victim, this);
         ChampionshipTeam killerTeam = attackerTeam;
         if (killerTeam != null)
             LaserBoxKillFeedback.burst(

@@ -664,8 +664,10 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
                         teleportPlayerToSpawnPoint(player);
                         player.setGameMode(GameMode.ADVENTURE);
                     } else if (stage == GameStageEnum.PROGRESS) {
-                        player.teleport(getSpectatorSpawnLocation());
-                        player.setGameMode(GameMode.SPECTATOR);
+                        plugin.getGameManager()
+                                .getSpectatorManager()
+                                .enterParticipantSpectator(
+                                        player, this, getSpectatorSpawnLocation());
                     }
                 });
     }
@@ -679,7 +681,9 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
 
         if (getGameStageEnum() == GameStageEnum.PROGRESS) {
             addDeathPlayer(player);
-            player.setGameMode(GameMode.SPECTATOR);
+            plugin.getGameManager()
+                    .getSpectatorManager()
+                    .enterParticipantSpectator(player, this, getSpectatorSpawnLocation());
             return;
         }
     }
@@ -693,7 +697,9 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
 
         if (getGameStageEnum() == GameStageEnum.PROGRESS) {
             addDeathPlayer(player);
-            player.setGameMode(GameMode.SPECTATOR);
+            plugin.getGameManager()
+                    .getSpectatorManager()
+                    .enterParticipantSpectator(player, this, getSpectatorSpawnLocation());
             return;
         }
         if (getGameStageEnum() == GameStageEnum.PREPARATION

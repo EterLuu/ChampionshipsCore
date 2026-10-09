@@ -1676,7 +1676,9 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         player.removePotionEffect(PotionEffectType.DOLPHINS_GRACE);
         applyProgressPointEquipment(player, AceRaceEquipment.NONE);
         restoreRacerVisibility(player);
-        player.setGameMode(GameMode.SPECTATOR);
+        plugin.getGameManager()
+                .getSpectatorManager()
+                .enterParticipantSpectator(player, this, getSpectatorSpawnLocation());
         // Formal matches retain the complete roster. DAILY runs treat a disconnected racer as
         // unable
         // to finish, so that UUID must not keep the remaining racers in PROGRESS.
@@ -1850,8 +1852,9 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         } else if (getGameStageEnum() == GameStageEnum.COUNTDOWN
                 || getGameStageEnum() == GameStageEnum.PROGRESS) {
             if (finishedPlayers.contains(player.getUniqueId())) {
-                player.teleport(getSpectatorSpawnLocation());
-                player.setGameMode(GameMode.SPECTATOR);
+                plugin.getGameManager()
+                        .getSpectatorManager()
+                        .enterParticipantSpectator(player, this, getSpectatorSpawnLocation());
             } else {
                 player.setGameMode(GameMode.ADVENTURE);
                 returnToLatestRespawnPoint(player);

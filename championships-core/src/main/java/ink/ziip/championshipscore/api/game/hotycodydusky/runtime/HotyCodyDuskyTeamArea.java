@@ -545,9 +545,10 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
                     if (preparation && getGameStageEnum() == GameStageEnum.PREPARATION) {
                         player.teleport(getPreparationTeleportLocation(playerSpawn(id)));
                     } else if (deathPlayer.contains(id)) {
-                        player.setGameMode(GameMode.SPECTATOR);
-                        plugin.getGameManager().getSpectatorManager().refreshPresentation(player);
-                        player.teleport(getSpectatorSpawnLocation());
+                        plugin.getGameManager()
+                                .getSpectatorManager()
+                                .enterParticipantSpectator(
+                                        player, this, getSpectatorSpawnLocation());
                     }
                 });
         if (preparation) return;
@@ -604,8 +605,13 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
             player.setGameMode(GameMode.ADVENTURE);
             return;
         }
-        player.teleport(getSpectatorSpawnLocation());
-        player.setGameMode(
-                getGameStageEnum() == GameStageEnum.END ? GameMode.ADVENTURE : GameMode.SPECTATOR);
+        if (getGameStageEnum() == GameStageEnum.END) {
+            player.teleport(getSpectatorSpawnLocation());
+            player.setGameMode(GameMode.ADVENTURE);
+            return;
+        }
+        plugin.getGameManager()
+                .getSpectatorManager()
+                .enterParticipantSpectator(player, this, getSpectatorSpawnLocation());
     }
 }

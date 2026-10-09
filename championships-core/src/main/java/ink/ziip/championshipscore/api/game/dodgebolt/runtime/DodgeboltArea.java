@@ -1080,8 +1080,9 @@ public final class DodgeboltArea extends BasePairedGameInstance {
     }
 
     public void teleportToSpectatorArea(@NotNull Player player) {
-        player.teleport(getSpectatorSpawnLocation());
-        player.setGameMode(GameMode.SPECTATOR);
+        plugin.getGameManager()
+                .getSpectatorManager()
+                .enterParticipantSpectator(player, this, getSpectatorSpawnLocation());
     }
 
     @Override

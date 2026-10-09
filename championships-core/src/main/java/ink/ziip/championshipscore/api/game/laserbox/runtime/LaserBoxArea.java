@@ -230,7 +230,9 @@ public final class LaserBoxArea extends BasePairedGameInstance {
     @Override
     protected Location resolveIntroductionSpawnPoint() {
         if (introductionRun != null) {
-            Location spawn = introductionRun.respawn(getParticipantUniqueIds().stream().findFirst().orElse(null));
+            Location spawn =
+                    introductionRun.respawn(
+                            getParticipantUniqueIds().stream().findFirst().orElse(null));
             if (spawn != null) return spawn;
         }
         LaserBoxIntroductionArena arena = introductionArena();
@@ -658,15 +660,14 @@ public final class LaserBoxArea extends BasePairedGameInstance {
         lore.add(LegacyText.component(MessageConfig.codeText(controls)));
         lore.add(
                 LegacyText.component(
-                        configured(
-                                        MessageConfig.LASER_BOX_GUN_MAGAZINE,
-                                        "&#bababaLimited ammo")
+                        configured(MessageConfig.LASER_BOX_GUN_MAGAZINE, "&#bababaLimited ammo")
                                 .replace("%magazine%", Integer.toString(gun.magazine()))
                                 .replace("%seconds%", formatSeconds(gun.reloadTicks()))));
         if (selected == gun)
             lore.add(
                     LegacyText.component(
-                            configured(MessageConfig.LASER_BOX_GUN_SELECTED, "&#a8ff78✓ Equipped")));
+                            configured(
+                                    MessageConfig.LASER_BOX_GUN_SELECTED, "&#a8ff78✓ Equipped")));
         meta.lore(lore);
         meta.getPersistentDataContainer()
                 .set(itemKey, PersistentDataType.STRING, "gun:" + gun.id());
@@ -717,16 +718,13 @@ public final class LaserBoxArea extends BasePairedGameInstance {
                             "A reliable all-round weapon");
             case SMG ->
                     configured(
-                            MessageConfig.LASER_BOX_GUN_SMG_DESCRIPTION,
-                            "Fast close-range fire");
+                            MessageConfig.LASER_BOX_GUN_SMG_DESCRIPTION, "Fast close-range fire");
             case MACHINE ->
                     configured(
-                            MessageConfig.LASER_BOX_GUN_MACHINE_DESCRIPTION,
-                            "Sustained firepower");
+                            MessageConfig.LASER_BOX_GUN_MACHINE_DESCRIPTION, "Sustained firepower");
             case SHOTGUN ->
                     configured(
-                            MessageConfig.LASER_BOX_GUN_SHOTGUN_DESCRIPTION,
-                            "Close-range burst");
+                            MessageConfig.LASER_BOX_GUN_SHOTGUN_DESCRIPTION, "Close-range burst");
         };
     }
 
@@ -753,8 +751,7 @@ public final class LaserBoxArea extends BasePairedGameInstance {
                 meta.displayName(
                         LegacyText.component(
                                 configured(MessageConfig.LASER_BOX_AMMO_ITEM, "&#fff566Ammo")));
-                meta.getPersistentDataContainer()
-                        .set(itemKey, PersistentDataType.STRING, "ammo");
+                meta.getPersistentDataContainer().set(itemKey, PersistentDataType.STRING, "ammo");
                 stack.setItemMeta(meta);
             }
             player.getInventory().setItem(AMMO_SLOT, stack);
@@ -803,12 +800,7 @@ public final class LaserBoxArea extends BasePairedGameInstance {
                     player.removePotionEffect(PotionEffectType.SLOWNESS);
                 player.addPotionEffect(
                         new PotionEffect(
-                                PotionEffectType.SLOWNESS,
-                                40,
-                                slowAmplifier,
-                                true,
-                                false,
-                                false));
+                                PotionEffectType.SLOWNESS, 40, slowAmplifier, true, false, false));
             }
             movementSlow.add(id);
         } else if (movementSlow.remove(id)) player.removePotionEffect(PotionEffectType.SLOWNESS);
@@ -962,8 +954,7 @@ public final class LaserBoxArea extends BasePairedGameInstance {
     private void playReloadStartSound(Player player) {
         World world = player.getWorld();
         if (world != null)
-            world.playSound(
-                    player.getLocation(), Sound.ITEM_CROSSBOW_LOADING_START, 0.85F, 0.9F);
+            world.playSound(player.getLocation(), Sound.ITEM_CROSSBOW_LOADING_START, 0.85F, 0.9F);
     }
 
     private void playReloadCompleteSound(Player player) {
@@ -1025,8 +1016,8 @@ public final class LaserBoxArea extends BasePairedGameInstance {
         if (round == null) return;
         UUID id = player.getUniqueId();
         LaserBoxGun reloadingGun = round.reloadGun(id);
-        if (reloadingGun == null
-                || reloadingGun == gun(player.getInventory().getItemInMainHand())) return;
+        if (reloadingGun == null || reloadingGun == gun(player.getInventory().getItemInMainHand()))
+            return;
         round.cancelReload(id);
         player.setCooldown(reloadingGun.material(), 0);
     }
@@ -1102,7 +1093,9 @@ public final class LaserBoxArea extends BasePairedGameInstance {
                         region,
                         (current, next) ->
                                 current == LaserBoxGun.HitRegion.HEAD
-                                        || next != LaserBoxGun.HitRegion.HEAD ? current : next);
+                                                || next != LaserBoxGun.HitRegion.HEAD
+                                        ? current
+                                        : next);
             } else if (intercept && hit != null && intercepted.add(hit.getUniqueId())) {
                 Grenade grenade = grenades.remove(hit.getUniqueId());
                 if (grenade != null) {
@@ -1305,7 +1298,7 @@ public final class LaserBoxArea extends BasePairedGameInstance {
         endAiming(victim);
         victim.setLevel(0);
         victim.removePotionEffect(PotionEffectType.GLOWING);
-        victim.setGameMode(GameMode.SPECTATOR);
+        plugin.getGameManager().getSpectatorManager().enterParticipantSpectator(victim, this);
         clearMovementSpeed(victim);
         if (killer != null && !introduction) {
             addPlayerPoints(killer, getGameConfig().getKillPoints());
@@ -1877,15 +1870,15 @@ public final class LaserBoxArea extends BasePairedGameInstance {
             if (introductionRun != null) {
                 introductionRun.disconnected(p.getUniqueId());
                 p.teleport(introductionRun.respawn(p.getUniqueId()));
-            }
-            else p.teleport(getPreparationTeleportLocation(getSpectatorSpawnLocation()));
+            } else p.teleport(getPreparationTeleportLocation(getSpectatorSpawnLocation()));
             return;
         }
         if (live()) {
             round.disconnect(p.getUniqueId());
             p.getInventory().clear();
-            p.setGameMode(GameMode.SPECTATOR);
-            p.teleport(getSpectatorSpawnLocation());
+            plugin.getGameManager()
+                    .getSpectatorManager()
+                    .enterParticipantSpectator(p, this, getSpectatorSpawnLocation());
         } else if (getGameStageEnum() == GameStageEnum.COUNTDOWN
                 || getGameStageEnum() == GameStageEnum.PREPARATION) spawnPlayer(p, false);
     }

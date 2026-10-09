@@ -15,6 +15,7 @@ import ink.ziip.championshipscore.database.sync.DatabaseSyncDomain;
 import ink.ziip.championshipscore.logging.LogText;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
+import ink.ziip.championshipscore.util.concurrent.LifecycleTasks;
 
 import lombok.Getter;
 
@@ -31,7 +32,6 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RankManager extends BaseManager {
@@ -82,13 +82,15 @@ public class RankManager extends BaseManager {
     private final Map<GameTypeEnum, Double> gameTotalPoints = new ConcurrentHashMap<>();
     private final RankDaoImpl rankDao = new RankDaoImpl();
     private final BukkitScheduler scheduler = Bukkit.getScheduler();
-    private final Queue<Runnable> rankTaskQueue = new ConcurrentLinkedQueue<>();
-    private final AtomicBoolean rankTaskRunning = new AtomicBoolean();
+    private final LifecycleTasks rankTasks = new LifecycleTasks("cc-rank-database", 4096);
     private final AtomicBoolean periodicRefreshPending = new AtomicBoolean();
     private final PendingPointTransactionStore pendingPointTransactions;
     private volatile EventStateStore.ActiveEvent activeEvent;
-    @Getter private List<Map.Entry<ChampionshipTeam, Double>> teamLeaderboard = new ArrayList<>();
-    @Getter private List<Map.Entry<UUID, Double>> playerLeaderboard = new ArrayList<>();
+
+    @Getter
+    private volatile List<Map.Entry<ChampionshipTeam, Double>> teamLeaderboard = new ArrayList<>();
+
+    @Getter private volatile List<Map.Entry<UUID, Double>> playerLeaderboard = new ArrayList<>();
     @Getter private String teamRankString;
     @Getter private String playerRankString = "";
     private volatile String latestRankingSummary;
@@ -102,6 +104,7 @@ public class RankManager extends BaseManager {
 
     @Override
     public void load() {
+        rankTasks.start();
         reloadActiveEventScoring();
         List<PlayerPointEntry> pendingEntries = pendingPointTransactions.load();
         if (!pendingEntries.isEmpty())
@@ -121,7 +124,20 @@ public class RankManager extends BaseManager {
     @Override
     public void unload() {
         if (updateTask != null) updateTask.cancel();
+        updateTask = null;
+        rankTasks.close();
+        periodicRefreshPending.set(false);
         validPointSnapshot = List.of();
+        gameOrder = Map.of();
+        teamPoints.clear();
+        playerPoints.clear();
+        teamRank.clear();
+        playerRank.clear();
+        gameWeight.clear();
+        gameTotalPoints.clear();
+        teamLeaderboard = List.of();
+        playerLeaderboard = List.of();
+        latestRankingSummary = null;
     }
 
     public int getPlayerRank(Player player) {
@@ -312,7 +328,7 @@ public class RankManager extends BaseManager {
         }
     }
 
-    private void updateGameOrder() {
+    private Map<GameTypeEnum, Integer> queryGameOrder() {
         List<GameStatusEntry> queried =
                 rankDao.getGameStatusList()
                         .orElseThrow(
@@ -322,7 +338,7 @@ public class RankManager extends BaseManager {
             if (isScoringGame(gameStatusEntry.getGame()))
                 refreshed.put(gameStatusEntry.getGame(), gameStatusEntry.getOrder());
         }
-        gameOrder = Map.copyOf(refreshed);
+        return Map.copyOf(refreshed);
     }
 
     public void addGameOrder(GameTypeEnum gameTypeEnum, int order) {
@@ -354,7 +370,7 @@ public class RankManager extends BaseManager {
                     for (GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
                         rankDao.deleteGameStatus(gameTypeEnum);
                     }
-                    gameOrder = Map.of();
+                    rankTasks.token().publish(() -> gameOrder = Map.of());
                     publishRankChange("game-order-reset");
                 });
     }
@@ -385,10 +401,16 @@ public class RankManager extends BaseManager {
                 () -> {
                     rankDao.deleteGameStatus(gameTypeEnum);
                     rankDao.deleteGamePoints(gameTypeEnum);
-                    EnumMap<GameTypeEnum, Integer> updated = new EnumMap<>(GameTypeEnum.class);
-                    updated.putAll(gameOrder);
-                    updated.remove(gameTypeEnum);
-                    gameOrder = Map.copyOf(updated);
+                    rankTasks
+                            .token()
+                            .publish(
+                                    () -> {
+                                        EnumMap<GameTypeEnum, Integer> updated =
+                                                new EnumMap<>(GameTypeEnum.class);
+                                        updated.putAll(gameOrder);
+                                        updated.remove(gameTypeEnum);
+                                        gameOrder = Map.copyOf(updated);
+                                    });
                     publishRankChange("game-records-deleted");
                 });
     }
@@ -472,56 +494,70 @@ public class RankManager extends BaseManager {
         }
         if (frozen.isEmpty()) return CompletableFuture.completedFuture(true);
 
-        CompletableFuture<Boolean> accepted = new CompletableFuture<>();
-        enqueueRankTask(
-                () -> {
-                    try {
-                        List<PlayerPointEntry> entries = new ArrayList<>(frozen.size());
-                        String timestamp = LogText.currentTimestamp();
-                        for (FrozenPointSubmission submission : frozen) {
-                            entries.add(
-                                    PlayerPointEntry.builder()
-                                            .transactionId(submission.transactionId())
-                                            .uuid(submission.playerId())
-                                            .username(submission.playerName())
-                                            .teamId(submission.teamId())
-                                            .team(submission.teamName())
-                                            .rivalId(submission.rivalId())
-                                            .rival(submission.rivalName())
-                                            .game(submission.game())
-                                            .area(submission.area())
-                                            .round(submission.round())
-                                            .points(submission.points())
-                                            .time(timestamp)
-                                            .build());
-                        }
-                        if (!pendingPointTransactions.stageAll(entries)) {
-                            plugin.getLogger()
-                                    .severe(
-                                            LogText.formatModuleLog(
-                                                    "Rank",
-                                                    MessageConfig.codeText("rank-manager.load-1"),
-                                                    MessageConfig.codeText(
-                                                            "rank-manager.add-player-points-batch-2",
-                                                            entries.size())));
-                            accepted.complete(false);
-                            return;
-                        }
-                        // Acceptance means durably staged, even when the database is temporarily
-                        // unavailable.
-                        accepted.complete(true);
-                        commitPointTransactions(pendingPointTransactions.snapshotForRetry());
-                    } catch (Throwable failure) {
-                        accepted.completeExceptionally(failure);
-                        if (failure instanceof RuntimeException runtime) throw runtime;
-                        throw new RuntimeException(failure);
-                    }
-                });
+        CompletableFuture<Boolean> accepted;
+        try {
+            accepted = rankTasks.token().future();
+        } catch (RuntimeException failure) {
+            return CompletableFuture.failedFuture(failure);
+        }
+        rankTasks
+                .submit(
+                        () -> {
+                            try {
+                                List<PlayerPointEntry> entries = new ArrayList<>(frozen.size());
+                                String timestamp = LogText.currentTimestamp();
+                                for (FrozenPointSubmission submission : frozen) {
+                                    entries.add(
+                                            PlayerPointEntry.builder()
+                                                    .transactionId(submission.transactionId())
+                                                    .uuid(submission.playerId())
+                                                    .username(submission.playerName())
+                                                    .teamId(submission.teamId())
+                                                    .team(submission.teamName())
+                                                    .rivalId(submission.rivalId())
+                                                    .rival(submission.rivalName())
+                                                    .game(submission.game())
+                                                    .area(submission.area())
+                                                    .round(submission.round())
+                                                    .points(submission.points())
+                                                    .time(timestamp)
+                                                    .build());
+                                }
+                                if (!pendingPointTransactions.stageAll(entries)) {
+                                    plugin.getLogger()
+                                            .severe(
+                                                    LogText.formatModuleLog(
+                                                            "Rank",
+                                                            MessageConfig.codeText(
+                                                                    "rank-manager.load-1"),
+                                                            MessageConfig.codeText(
+                                                                    "rank-manager.add-player-points-batch-2",
+                                                                    entries.size())));
+                                    accepted.complete(false);
+                                    return;
+                                }
+                                // Acceptance means durably staged, even when the database is
+                                // temporarily
+                                // unavailable.
+                                accepted.complete(true);
+                                commitPointTransactions(
+                                        pendingPointTransactions.snapshotForRetry());
+                            } catch (Throwable failure) {
+                                accepted.completeExceptionally(failure);
+                                if (failure instanceof RuntimeException runtime) throw runtime;
+                                throw new RuntimeException(failure);
+                            }
+                        })
+                .whenComplete(
+                        (ignored, failure) -> {
+                            if (failure != null) accepted.completeExceptionally(failure);
+                        });
         return accepted;
     }
 
     private void commitPointTransactions(@NotNull List<PlayerPointEntry> entries) {
         if (rankDao.addPlayerPoints(entries)) {
+            rankTasks.token().check();
             pendingPointTransactions.completeAll(
                     entries.stream().map(PlayerPointEntry::getTransactionId).toList());
             publishRankChange("player-points-added");
@@ -537,18 +573,7 @@ public class RankManager extends BaseManager {
      * Queues a complete authoritative cache rebuild after all database work already submitted here.
      */
     public CompletionStage<Void> refreshFromDatabase() {
-        CompletableFuture<Void> refreshed = new CompletableFuture<>();
-        enqueueRankTask(
-                () -> {
-                    try {
-                        refreshRankingsNow();
-                        refreshed.complete(null);
-                    } catch (RuntimeException failure) {
-                        refreshed.completeExceptionally(failure);
-                        throw failure;
-                    }
-                });
-        return refreshed;
+        return rankTasks.submit(this::refreshRankingsNow);
     }
 
     /** Builds the complete current formal-event score table after all pending point writes. */
@@ -694,7 +719,10 @@ public class RankManager extends BaseManager {
                     refreshRankingsNow();
                     List<Map.Entry<ChampionshipTeam, Double>> snapshot =
                             List.copyOf(teamLeaderboard);
-                    scheduler.runTask(plugin, () -> callback.accept(snapshot));
+                    var token = rankTasks.token();
+                    token.dispatch(
+                            task -> scheduler.runTask(plugin, task),
+                            () -> token.publish(() -> callback.accept(snapshot)));
                 });
     }
 
@@ -714,7 +742,7 @@ public class RankManager extends BaseManager {
     public void broadcastFinalRankings(
             GameTypeEnum gameTypeEnum, @NotNull Runnable afterBroadcast) {
         if (!isScoringGame(gameTypeEnum)) {
-            scheduler.runTask(plugin, afterBroadcast);
+            rankTasks.token().dispatch(task -> scheduler.runTask(plugin, task), afterBroadcast);
             return;
         }
         enqueueRankTask(
@@ -723,8 +751,13 @@ public class RankManager extends BaseManager {
                     List<Map.Entry<ChampionshipTeam, Double>> gameLeaderboard =
                             getGameTeamLeaderboard(gameTypeEnum);
                     String summary = buildFinalRankingSummary(gameTypeEnum, gameLeaderboard);
-                    latestRankingSummary = summary;
-                    latestRankingSummaryAt = System.currentTimeMillis();
+                    rankTasks
+                            .token()
+                            .publish(
+                                    () -> {
+                                        latestRankingSummary = summary;
+                                        latestRankingSummaryAt = System.currentTimeMillis();
+                                    });
 
                     String winner = MessageConfig.PLACEHOLDER_NONE;
                     String winnerPoints = "0";
@@ -736,8 +769,9 @@ public class RankManager extends BaseManager {
                             MessageConfig.RANK_FINAL_SUBTITLE
                                     .replace("%winner%", winner)
                                     .replace("%points%", winnerPoints);
-                    scheduler.runTask(
-                            plugin,
+                    var token = rankTasks.token();
+                    token.dispatch(
+                            task -> scheduler.runTask(plugin, task),
                             () -> {
                                 CoreMessages.sendMessageToAllPlayers(summary);
                                 CoreMessages.sendTitleToAllPlayers(
@@ -746,9 +780,11 @@ public class RankManager extends BaseManager {
                                         org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 0.8F, 1.1F);
                                 scheduler.runTaskLater(
                                         plugin,
-                                        () ->
+                                        () -> {
+                                            if (token.isCurrent())
                                                 CoreMessages.sendActionBarToAllPlayers(
-                                                        MessageConfig.RANK_RECAP_HINT_ACTIONBAR),
+                                                        MessageConfig.RANK_RECAP_HINT_ACTIONBAR);
+                                        },
                                         60L);
                                 afterBroadcast.run();
                             });
@@ -802,66 +838,69 @@ public class RankManager extends BaseManager {
     }
 
     private void queuePeriodicRefresh() {
+        LifecycleTasks.Token token;
+        try {
+            token = rankTasks.token();
+        } catch (java.util.concurrent.CancellationException stopped) {
+            return;
+        }
         if (!periodicRefreshPending.compareAndSet(false, true)) return;
-        enqueueRankTask(
-                () -> {
-                    try {
-                        List<PlayerPointEntry> retry = pendingPointTransactions.snapshotForRetry();
-                        if (!retry.isEmpty()) commitPointTransactions(retry);
-                        refreshRankingsNow();
-                    } finally {
-                        periodicRefreshPending.set(false);
-                    }
-                });
+        token.submit(
+                        () -> {
+                            List<PlayerPointEntry> retry =
+                                    pendingPointTransactions.snapshotForRetry();
+                            if (!retry.isEmpty()) commitPointTransactions(retry);
+                            refreshRankingsNow();
+                        })
+                .whenComplete(
+                        (ignored, failure) -> {
+                            try {
+                                token.publish(() -> periodicRefreshPending.set(false));
+                            } catch (java.util.concurrent.CancellationException stopped) {
+                                return;
+                            }
+                            if (failure != null)
+                                plugin.getLogger()
+                                        .log(
+                                                java.util.logging.Level.WARNING,
+                                                "Periodic rank refresh failed",
+                                                failure);
+                        });
     }
 
     private void refreshRankingsNow() {
-        updateGameOrder();
+        var token = rankTasks.token();
+        var order = queryGameOrder();
+        token.check();
         List<PlayerPointEntry> pointSnapshot =
                 rankDao.getAllValidPlayerPoints()
                         .orElseThrow(
                                 () ->
                                         new IllegalStateException(
                                                 "Unable to query valid point snapshot"));
-        validPointSnapshot = pointSnapshot;
-        updateTeamPoints(pointSnapshot);
-        updatePlayerPoint(pointSnapshot);
-    }
-
-    /** Runs rank database work in submission order on one Bukkit async worker. */
-    private void enqueueRankTask(Runnable task) {
-        rankTaskQueue.add(task);
-        drainRankTaskQueue();
-    }
-
-    private void drainRankTaskQueue() {
-        if (!rankTaskRunning.compareAndSet(false, true)) return;
-        scheduler.runTaskAsynchronously(
-                plugin,
+        token.publish(
                 () -> {
-                    try {
-                        Runnable task;
-                        while ((task = rankTaskQueue.poll()) != null) {
-                            try {
-                                task.run();
-                            } catch (Exception exception) {
+                    gameOrder = order;
+                    validPointSnapshot = List.copyOf(pointSnapshot);
+                    updateTeamPoints(pointSnapshot);
+                    updatePlayerPoint(pointSnapshot);
+                });
+    }
+
+    /** Runs database work in submission order with a bounded, plugin-owned executor. */
+    private void enqueueRankTask(Runnable task) {
+        rankTasks
+                .submit(task)
+                .exceptionally(
+                        failure -> {
+                            if (!(failure instanceof java.util.concurrent.CancellationException))
                                 plugin.getLogger()
                                         .log(
                                                 java.util.logging.Level.SEVERE,
-                                                LogText.formatModuleLog(
-                                                        "Rank",
-                                                        MessageConfig.codeText(
-                                                                "rank-manager.drain-rank-task-queue-1"),
-                                                        MessageConfig.codeText(
-                                                                "rank-manager.drain-rank-task-queue-2")),
-                                                exception);
-                            }
-                        }
-                    } finally {
-                        rankTaskRunning.set(false);
-                        if (!rankTaskQueue.isEmpty()) drainRankTaskQueue();
-                    }
-                });
+                                                "Rank database task failed",
+                                                failure);
+                            return null;
+                        });
     }
 
     /**

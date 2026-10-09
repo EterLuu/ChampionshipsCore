@@ -11,11 +11,10 @@ import ink.ziip.championshipscore.api.daily.entry.DailyStatEntry;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.database.daily.DailyStatsDao;
 import ink.ziip.championshipscore.database.daily.DailyStatsDaoImpl;
+import ink.ziip.championshipscore.util.concurrent.LifecycleTasks;
 
-import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -26,14 +25,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * DAILY result manager. Business state stays here; every database operation is delegated to its
@@ -57,8 +52,7 @@ public final class DailyStatsManager extends BaseManager {
     private final Set<MilestoneKey> emittedMilestones = ConcurrentHashMap.newKeySet();
     private final Set<UUID> recordedMatches = ConcurrentHashMap.newKeySet();
     private volatile boolean active;
-    private final Queue<Runnable> databaseTasks = new ConcurrentLinkedQueue<>();
-    private final AtomicBoolean databaseTaskRunning = new AtomicBoolean();
+    private final LifecycleTasks databaseTasks = new LifecycleTasks("cc-daily-database", 4096);
 
     public DailyStatsManager(ChampionshipsCore plugin) {
         super(plugin);
@@ -66,6 +60,7 @@ public final class DailyStatsManager extends BaseManager {
 
     @Override
     public void load() {
+        databaseTasks.start();
         active = true;
         runAsync(this::loadCaches);
     }
@@ -73,6 +68,7 @@ public final class DailyStatsManager extends BaseManager {
     @Override
     public void unload() {
         active = false;
+        databaseTasks.close();
         stats.clear();
         records.clear();
         pkwRecords.clear();
@@ -82,7 +78,6 @@ public final class DailyStatsManager extends BaseManager {
         leaderboards = Map.of();
         emittedMilestones.clear();
         recordedMatches.clear();
-        databaseTasks.clear();
     }
 
     /**
@@ -90,24 +85,7 @@ public final class DailyStatsManager extends BaseManager {
      * cleanup.
      */
     public CompletionStage<Void> reloadFromDatabase() {
-        CompletableFuture<Void> completion = new CompletableFuture<>();
-        if (!active || !plugin.isEnabled()) {
-            completion.completeExceptionally(
-                    new IllegalStateException("DAILY statistics manager is not active"));
-            return completion;
-        }
-        databaseTasks.add(
-                () -> {
-                    try {
-                        clearDatabaseCaches();
-                        loadCaches();
-                        completion.complete(null);
-                    } catch (Exception exception) {
-                        completion.completeExceptionally(exception);
-                    }
-                });
-        drainDatabaseTasks();
-        return completion;
+        return databaseTasks.submit(() -> loadCaches(true));
     }
 
     public DailyStatSnapshot stat(UUID player, @Nullable GameTypeEnum game) {
@@ -674,68 +652,84 @@ public final class DailyStatsManager extends BaseManager {
     }
 
     private void loadCaches() {
-        for (DailyStatEntry entry : statsDao.getPlayerStats()) {
-            names.put(entry.uuid(), entry.username());
-            stats.put(
-                    new StatKey(entry.uuid(), entry.game()),
-                    new DailyStatSnapshot(
-                            entry.gamesPlayed(),
-                            entry.wins(),
-                            entry.lineCount(),
-                            entry.completedTasks(),
-                            entry.maxCompletedTasks()));
-        }
-        for (DailyRecordEntry entry : statsDao.getPlayerRecords()) {
-            names.put(entry.uuid(), entry.username());
-            RecordKey key =
-                    new RecordKey(entry.uuid(), entry.game(), entry.map(), entry.recordType());
-            records.compute(
-                    key, (ignored, previous) -> topRecords(concat(previous, List.of(entry))));
-        }
-        for (DailyPkwRecordEntry entry : statsDao.getPlayerPkwRecords()) {
-            names.put(entry.uuid(), entry.username());
-            pkwRecords.merge(
-                    new PkwRecordKey(entry.uuid(), entry.map(), entry.recordType()),
-                    new PkwRecordValue(entry.primaryValue(), entry.durationMs()),
-                    DailyStatsManager::betterPkwRecord);
-        }
-        for (DailyMapStatEntry entry : statsDao.getPlayerMapStats()) {
-            names.put(entry.uuid(), entry.username());
-            mapStats.merge(
-                    new MapStatKey(entry.uuid(), entry.game(), entry.map()),
-                    toMapStat(entry),
-                    DailyMapStat::merge);
-        }
-        backfillMapStatsFromMatchResults();
-        rebuildLeaderboards();
+        loadCaches(false);
     }
 
-    /**
-     * Folds the historical {@code daily_match_results} rows into the per-map cache so games played
-     * before the per-map stat table existed still show up as map-level match counts and Bingo
-     * maxima. Counts take the maximum because both sources cover overlapping match sets;
-     * first-completion and dragon metrics stay table-only ({@code trackedGames} denominator).
-     */
-    private void backfillMapStatsFromMatchResults() {
-        for (DailyMatchAggregateEntry history : statsDao.getMatchResultMapAggregates()) {
-            MapStatKey key = new MapStatKey(history.uuid(), history.game(), history.map());
-            DailyMapStat base = mapStats.getOrDefault(key, DailyMapStat.EMPTY);
-            mapStats.put(
-                    key,
-                    new DailyMapStat(
-                            Math.max(base.gamesPlayed(), history.gamesPlayed()),
-                            Math.max(base.wins(), history.wins()),
-                            base.trackedGames(),
-                            Math.max(base.maxTasks(), history.maxCompletedTasks()),
-                            Math.max(base.maxLines(), history.maxLines()),
-                            base.maxFirstTasks(),
-                            base.maxDragonDamage(),
-                            base.firstLiberate(),
-                            base.firstNextGen(),
-                            base.firstGateway(),
-                            base.maxStars(),
-                            base.finishes()));
-        }
+    private void loadCaches(boolean replace) {
+        var token = databaseTasks.token();
+        var queriedStats = statsDao.getPlayerStats();
+        token.check();
+        var queriedRecords = statsDao.getPlayerRecords();
+        token.check();
+        var queriedPkw = statsDao.getPlayerPkwRecords();
+        token.check();
+        var queriedMaps = statsDao.getPlayerMapStats();
+        token.check();
+        var queriedHistory = statsDao.getMatchResultMapAggregates();
+        token.check();
+        token.publish(
+                () -> {
+                    if (replace) clearDatabaseCaches();
+                    for (DailyStatEntry entry : queriedStats) {
+                        names.put(entry.uuid(), entry.username());
+                        stats.put(
+                                new StatKey(entry.uuid(), entry.game()),
+                                new DailyStatSnapshot(
+                                        entry.gamesPlayed(),
+                                        entry.wins(),
+                                        entry.lineCount(),
+                                        entry.completedTasks(),
+                                        entry.maxCompletedTasks()));
+                    }
+                    for (DailyRecordEntry entry : queriedRecords) {
+                        names.put(entry.uuid(), entry.username());
+                        RecordKey key =
+                                new RecordKey(
+                                        entry.uuid(),
+                                        entry.game(),
+                                        entry.map(),
+                                        entry.recordType());
+                        records.compute(
+                                key,
+                                (ignored, previous) ->
+                                        topRecords(concat(previous, List.of(entry))));
+                    }
+                    for (DailyPkwRecordEntry entry : queriedPkw) {
+                        names.put(entry.uuid(), entry.username());
+                        pkwRecords.merge(
+                                new PkwRecordKey(entry.uuid(), entry.map(), entry.recordType()),
+                                new PkwRecordValue(entry.primaryValue(), entry.durationMs()),
+                                DailyStatsManager::betterPkwRecord);
+                    }
+                    for (DailyMapStatEntry entry : queriedMaps) {
+                        names.put(entry.uuid(), entry.username());
+                        mapStats.merge(
+                                new MapStatKey(entry.uuid(), entry.game(), entry.map()),
+                                toMapStat(entry),
+                                DailyMapStat::merge);
+                    }
+                    for (DailyMatchAggregateEntry history : queriedHistory) {
+                        MapStatKey key =
+                                new MapStatKey(history.uuid(), history.game(), history.map());
+                        DailyMapStat base = mapStats.getOrDefault(key, DailyMapStat.EMPTY);
+                        mapStats.put(
+                                key,
+                                new DailyMapStat(
+                                        Math.max(base.gamesPlayed(), history.gamesPlayed()),
+                                        Math.max(base.wins(), history.wins()),
+                                        base.trackedGames(),
+                                        Math.max(base.maxTasks(), history.maxCompletedTasks()),
+                                        Math.max(base.maxLines(), history.maxLines()),
+                                        base.maxFirstTasks(),
+                                        base.maxDragonDamage(),
+                                        base.firstLiberate(),
+                                        base.firstNextGen(),
+                                        base.firstGateway(),
+                                        base.maxStars(),
+                                        base.finishes()));
+                    }
+                    rebuildLeaderboards();
+                });
     }
 
     private void rebuildLeaderboards() {
@@ -983,35 +977,17 @@ public final class DailyStatsManager extends BaseManager {
     }
 
     private void runAsync(Runnable runnable) {
-        if (!active || !plugin.isEnabled()) return;
-        databaseTasks.add(runnable);
-        drainDatabaseTasks();
-    }
-
-    private void drainDatabaseTasks() {
-        if (!databaseTaskRunning.compareAndSet(false, true)) return;
-        Bukkit.getScheduler()
-                .runTaskAsynchronously(
-                        plugin,
-                        () -> {
-                            try {
-                                Runnable task;
-                                while (active && (task = databaseTasks.poll()) != null) {
-                                    try {
-                                        task.run();
-                                    } catch (Exception exception) {
-                                        plugin.getLogger()
-                                                .log(
-                                                        java.util.logging.Level.SEVERE,
-                                                        MessageConfig.codeText(
-                                                                "daily-stats-manager.drain-database-tasks-1"),
-                                                        exception);
-                                    }
-                                }
-                            } finally {
-                                databaseTaskRunning.set(false);
-                                if (active && !databaseTasks.isEmpty()) drainDatabaseTasks();
-                            }
+        databaseTasks
+                .submit(runnable)
+                .exceptionally(
+                        failure -> {
+                            if (active)
+                                plugin.getLogger()
+                                        .log(
+                                                java.util.logging.Level.SEVERE,
+                                                "DAILY database task failed",
+                                                failure);
+                            return null;
                         });
     }
 

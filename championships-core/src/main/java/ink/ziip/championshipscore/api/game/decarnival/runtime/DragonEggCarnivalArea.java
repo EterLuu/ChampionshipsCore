@@ -519,8 +519,9 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
     private void enterRespawnCooldown(@NotNull Player player, int delaySeconds) {
         if (getGameStageEnum() != GameStageEnum.PROGRESS
                 || !respawnReadyAt.containsKey(player.getUniqueId())) return;
-        player.setGameMode(GameMode.SPECTATOR);
-        player.teleport(getCentralCooldownLocation());
+        plugin.getGameManager()
+                .getSpectatorManager()
+                .enterParticipantSpectator(player, this, getCentralCooldownLocation());
         CoreMessages.sendActionBar(
                 player,
                 MessageConfig.DRAGON_EGG_CARNIVAL_RESPAWN_COUNTDOWN.replace(
@@ -653,8 +654,9 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
             return;
         }
 
-        player.teleport(getSpectatorSpawnLocation());
-        scheduler.runTask(plugin, () -> player.setGameMode(GameMode.SPECTATOR));
+        plugin.getGameManager()
+                .getSpectatorManager()
+                .scheduleParticipantSpectator(player, this, getSpectatorSpawnLocation(), false);
     }
 
     public void replenishTeamConcrete(@NotNull Player player, @NotNull ItemStack placedStack) {
@@ -682,8 +684,9 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
                                             : GameMode.SURVIVAL));
             return;
         }
-        player.teleport(getSpectatorSpawnLocation());
-        scheduler.runTask(plugin, () -> player.setGameMode(GameMode.SPECTATOR));
+        plugin.getGameManager()
+                .getSpectatorManager()
+                .scheduleParticipantSpectator(player, this, getSpectatorSpawnLocation(), false);
     }
 
     private void teleportTeamsToPlatforms() {

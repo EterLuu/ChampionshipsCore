@@ -32,6 +32,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 
@@ -53,13 +54,15 @@ public final class RedisManager extends BaseManager {
     private final Set<RedisMatchConsumer> matchConsumers = ConcurrentHashMap.newKeySet();
     private final AtomicBoolean ready = new AtomicBoolean();
     private final AtomicBoolean connecting = new AtomicBoolean();
+    private final AtomicBoolean reconciling = new AtomicBoolean();
     private final AtomicBoolean stopping = new AtomicBoolean();
     private final AtomicInteger connectionFailures = new AtomicInteger();
-    private final CompletableFuture<Void> readyFuture = new CompletableFuture<>();
+    private volatile CompletableFuture<Void> readyFuture = new CompletableFuture<>();
+    private final AtomicLong lifecycleGeneration = new AtomicLong();
     private RedisConnectionConfig connectionConfig;
-    private RedisStreamPublisher publisher;
+    private volatile RedisStreamPublisher publisher;
     private RedisStreamConsumer syncConsumer;
-    private RedisChatTransport chatTransport;
+    private volatile RedisChatTransport chatTransport;
     private volatile Consumer<CrossServerChatMessage> chatReceiver = ignored -> {};
     private BukkitTask reconciliationTask;
     private BukkitTask connectionRetryTask;
@@ -78,7 +81,15 @@ public final class RedisManager extends BaseManager {
     }
 
     @Override
-    public void load() {
+    public synchronized void load() {
+        if (reconciliationTask != null || connectionRetryTask != null || ready.get()) unload();
+        long generation = lifecycleGeneration.incrementAndGet();
+        stopping.set(false);
+        ready.set(false);
+        connecting.set(false);
+        reconciling.set(false);
+        connectionFailures.set(0);
+        readyFuture = new CompletableFuture<>();
         configuredEnabled = Boolean.TRUE.equals(CCConfig.REDIS_ENABLED);
         configuredUri = CCConfig.REDIS_URI;
         configuredNamespace = CCConfig.REDIS_NAMESPACE;
@@ -111,13 +122,17 @@ public final class RedisManager extends BaseManager {
                     plugin.getServer()
                             .getScheduler()
                             .runTaskTimer(
-                                    plugin, this::reconcileDatabaseCaches, interval, interval);
+                                    plugin,
+                                    () -> reconcileDatabaseCaches(generation),
+                                    interval,
+                                    interval);
             // Initial connection attempts run off the server thread. A Redis outage at boot leaves
             // database reconciliation active and is retried without requiring a Core restart.
             connectionRetryTask =
                     plugin.getServer()
                             .getScheduler()
-                            .runTaskTimerAsynchronously(plugin, this::ensureConnected, 0L, 200L);
+                            .runTaskTimerAsynchronously(
+                                    plugin, () -> ensureConnected(generation), 0L, 200L);
         } catch (RuntimeException failure) {
             readyFuture.completeExceptionally(failure);
             plugin.getLogger().log(Level.SEVERE, "Unified Redis initialization failed", failure);
@@ -125,8 +140,12 @@ public final class RedisManager extends BaseManager {
         }
     }
 
-    private void ensureConnected() {
-        if (stopping.get() || ready.get() || !connecting.compareAndSet(false, true)) return;
+    private boolean isCurrent(long generation) {
+        return !stopping.get() && lifecycleGeneration.get() == generation && plugin.isEnabled();
+    }
+
+    private synchronized void ensureConnected(long generation) {
+        if (!isCurrent(generation) || ready.get() || !connecting.compareAndSet(false, true)) return;
         RedisStreamPublisher candidatePublisher = null;
         RedisStreamConsumer candidateConsumer = null;
         RedisChatTransport candidateChat = null;
@@ -148,7 +167,7 @@ public final class RedisManager extends BaseManager {
                             consumerConfig,
                             dataSyncStream(),
                             "$",
-                            this::consumeDatabaseSync,
+                            delivery -> consumeDatabaseSync(generation, delivery),
                             failure ->
                                     plugin.getLogger()
                                             .log(
@@ -167,7 +186,9 @@ public final class RedisManager extends BaseManager {
                     new RedisChatTransport(
                             connectionConfig,
                             chatConsumerConfig,
-                            this::receiveChat,
+                            message -> {
+                                if (isCurrent(generation)) receiveChat(message);
+                            },
                             failure ->
                                     plugin.getLogger()
                                             .log(
@@ -179,11 +200,24 @@ public final class RedisManager extends BaseManager {
             RedisChatTransport connectedChat = candidateChat;
             candidatePublisher
                     .ping()
-                    .thenCompose(ignored -> connectedConsumer.start())
-                    .thenCompose(ignored -> connectedChat.start())
+                    .thenCompose(
+                            ignored ->
+                                    isCurrent(generation)
+                                            ? connectedConsumer.start()
+                                            : CompletableFuture.failedFuture(
+                                                    new java.util.concurrent
+                                                            .CancellationException()))
+                    .thenCompose(
+                            ignored ->
+                                    isCurrent(generation)
+                                            ? connectedChat.start()
+                                            : CompletableFuture.failedFuture(
+                                                    new java.util.concurrent
+                                                            .CancellationException()))
                     .whenComplete(
                             (ignored, failure) ->
                                     finishConnectionAttempt(
+                                            generation,
                                             connectedPublisher,
                                             connectedConsumer,
                                             connectedChat,
@@ -192,22 +226,24 @@ public final class RedisManager extends BaseManager {
             close(candidateChat);
             close(candidateConsumer);
             close(candidatePublisher);
-            connectionAttemptFailed(failure);
-            connecting.set(false);
+            connectionAttemptFailed(generation, failure);
+            if (isCurrent(generation)) connecting.set(false);
         }
     }
 
     private synchronized void finishConnectionAttempt(
+            long generation,
             RedisStreamPublisher connectedPublisher,
             RedisStreamConsumer connectedConsumer,
             RedisChatTransport connectedChat,
             Throwable failure) {
-        if (failure != null || stopping.get()) {
+        if (failure != null || !isCurrent(generation)) {
             close(connectedChat);
             close(connectedConsumer);
             close(connectedPublisher);
-            if (failure != null && !stopping.get()) connectionAttemptFailed(failure);
-            connecting.set(false);
+            if (failure != null && isCurrent(generation))
+                connectionAttemptFailed(generation, failure);
+            if (isCurrent(generation)) connecting.set(false);
             return;
         }
         publisher = connectedPublisher;
@@ -231,7 +267,8 @@ public final class RedisManager extends BaseManager {
                                         RedisChatTransport.stream(connectionConfig))));
     }
 
-    private void connectionAttemptFailed(Throwable failure) {
+    private void connectionAttemptFailed(long generation, Throwable failure) {
+        if (!isCurrent(generation)) return;
         int attempts = connectionFailures.incrementAndGet();
         if (attempts == 1 || attempts % 6 == 0) {
             plugin.getLogger()
@@ -284,6 +321,7 @@ public final class RedisManager extends BaseManager {
             @NotNull String reason,
             @NotNull DatabaseSyncDomain first,
             DatabaseSyncDomain... additional) {
+        if (stopping.get()) return;
         EnumSet<DatabaseSyncDomain> domains = EnumSet.of(first, additional);
         DatabaseSyncEvent event =
                 new DatabaseSyncEvent(
@@ -335,8 +373,11 @@ public final class RedisManager extends BaseManager {
     }
 
     private CompletionStage<DeliveryDisposition> consumeDatabaseSync(
+            long generation,
             ink.ziip.championshipscore.protocol.transport.InboundDelivery<Map<String, String>>
                     delivery) {
+        if (!isCurrent(generation))
+            return CompletableFuture.completedFuture(DeliveryDisposition.RETRY);
         DatabaseSyncEvent event;
         try {
             event = DatabaseSyncEvent.parse(delivery.payload());
@@ -370,13 +411,21 @@ public final class RedisManager extends BaseManager {
         if (event.domains().contains(DatabaseSyncDomain.RANK)
                 || event.domains().contains(DatabaseSyncDomain.TEAM)
                 || event.domains().contains(DatabaseSyncDomain.PLAYER)) {
-            refresh = refresh.thenCompose(ignored -> plugin.getRankManager().refreshFromDatabase());
+            refresh =
+                    refresh.thenCompose(
+                            ignored ->
+                                    isCurrent(generation)
+                                            ? plugin.getRankManager().refreshFromDatabase()
+                                            : CompletableFuture.failedFuture(
+                                                    new java.util.concurrent
+                                                            .CancellationException()));
         }
         CompletionStage<Void> teamAndRankRefresh = refresh;
         return dailyRefresh
                 .thenCompose(ignored -> teamAndRankRefresh)
                 .handle(
                         (ignored, failure) -> {
+                            if (!isCurrent(generation)) return DeliveryDisposition.RETRY;
                             if (failure != null) {
                                 plugin.getLogger()
                                         .log(
@@ -391,26 +440,39 @@ public final class RedisManager extends BaseManager {
                         });
     }
 
-    private void reconcileDatabaseCaches() {
+    private void reconcileDatabaseCaches(long generation) {
+        if (!isCurrent(generation) || !reconciling.compareAndSet(false, true)) return;
         flushPendingPublications();
         plugin.getTeamManager()
                 .refreshFormalTeamsFromDatabase()
-                .thenCompose(ignored -> plugin.getRankManager().refreshFromDatabase())
-                .exceptionally(
-                        failure -> {
-                            plugin.getLogger()
-                                    .log(
-                                            Level.WARNING,
-                                            "Periodic cross-server database reconciliation failed",
-                                            failure);
-                            return null;
+                .thenCompose(
+                        ignored ->
+                                isCurrent(generation)
+                                        ? plugin.getRankManager().refreshFromDatabase()
+                                        : CompletableFuture.failedFuture(
+                                                new java.util.concurrent.CancellationException()))
+                .whenComplete(
+                        (ignored, failure) -> {
+                            if (!isCurrent(generation)) return;
+                            reconciling.set(false);
+                            if (failure != null)
+                                plugin.getLogger()
+                                        .log(
+                                                Level.WARNING,
+                                                "Periodic cross-server database reconciliation"
+                                                        + " failed",
+                                                failure);
                         });
     }
 
-    private void flushPendingPublications() {
-        DatabaseSyncEvent event;
-        while ((event = pendingPublications.poll()) != null) {
-            if ("starting".equals(event.sourceInstance())) {
+    private synchronized void flushPendingPublications() {
+        // Reconciliation also runs during outages: leave the queue intact until a publisher exists.
+        if (stopping.get() || !ready.get() || publisher == null) return;
+        int pending = pendingPublications.size();
+        for (int i = 0; i < pending; i++) {
+            DatabaseSyncEvent event = pendingPublications.poll();
+            if (event == null) break;
+            if ("starting".equals(event.sourceInstance()))
                 event =
                         new DatabaseSyncEvent(
                                 event.eventId(),
@@ -418,24 +480,31 @@ public final class RedisManager extends BaseManager {
                                 event.createdAt(),
                                 event.domains(),
                                 event.reason());
-            }
             publish(event);
         }
     }
 
-    private void publish(DatabaseSyncEvent event) {
-        publisher
-                .append(dataSyncStream(), event.fields())
-                .exceptionally(
-                        failure -> {
-                            enqueuePendingPublication(event);
-                            plugin.getLogger()
-                                    .log(
-                                            Level.WARNING,
-                                            "Unable to publish database sync event "
-                                                    + event.eventId(),
-                                            failure);
-                            return null;
+    private synchronized void publish(DatabaseSyncEvent event) {
+        if (stopping.get()) return;
+        RedisStreamPublisher current = publisher;
+        if (!ready.get() || current == null) {
+            enqueuePendingPublication(event);
+            return;
+        }
+        long generation = lifecycleGeneration.get();
+        current.append(dataSyncStream(), event.fields())
+                .whenComplete(
+                        (ignored, failure) -> {
+                            synchronized (this) {
+                                if (failure == null || !isCurrent(generation)) return;
+                                enqueuePendingPublication(event);
+                                plugin.getLogger()
+                                        .log(
+                                                Level.WARNING,
+                                                "Unable to publish database sync event "
+                                                        + event.eventId(),
+                                                failure);
+                            }
                         });
     }
 
@@ -495,13 +564,21 @@ public final class RedisManager extends BaseManager {
 
     @Override
     public synchronized void unload() {
+        lifecycleGeneration.incrementAndGet();
         stopping.set(true);
         ready.set(false);
+        CompletableFuture<Void> currentReady = readyFuture;
+        if (!currentReady.isDone())
+            currentReady.completeExceptionally(new IllegalStateException("Redis manager unloaded"));
         if (connectionRetryTask != null) connectionRetryTask.cancel();
         connectionRetryTask = null;
         if (reconciliationTask != null) reconciliationTask.cancel();
         reconciliationTask = null;
         closeResources();
+        pendingPublications.clear();
+        processedEvents.clear();
+        connecting.set(false);
+        reconciling.set(false);
     }
 
     private void closeResources() {

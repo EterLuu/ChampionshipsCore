@@ -20,7 +20,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -73,7 +72,7 @@ public final class DailyStatsDaoImpl implements DailyStatsDao {
         } catch (SQLException exception) {
             logFailure(
                     MessageConfig.codeText("daily-stats-dao-impl.get-player-stats-1"), exception);
-            return Collections.emptyList();
+            throw new IllegalStateException("Unable to load DAILY statistics snapshot", exception);
         }
     }
 
@@ -102,7 +101,7 @@ public final class DailyStatsDaoImpl implements DailyStatsDao {
         } catch (SQLException exception) {
             logFailure(
                     MessageConfig.codeText("daily-stats-dao-impl.get-player-records-1"), exception);
-            return Collections.emptyList();
+            throw new IllegalStateException("Unable to load DAILY statistics snapshot", exception);
         }
     }
 
@@ -146,7 +145,7 @@ public final class DailyStatsDaoImpl implements DailyStatsDao {
             logFailure(
                     MessageConfig.codeText("daily-stats-dao-impl.get-player-map-stats-1"),
                     exception);
-            return Collections.emptyList();
+            throw new IllegalStateException("Unable to load DAILY statistics snapshot", exception);
         }
     }
 
@@ -185,7 +184,7 @@ public final class DailyStatsDaoImpl implements DailyStatsDao {
             logFailure(
                     MessageConfig.codeText("daily-stats-dao-impl.get-player-pkw-records-1"),
                     exception);
-            return Collections.emptyList();
+            throw new IllegalStateException("Unable to load DAILY statistics snapshot", exception);
         }
     }
 
@@ -227,7 +226,7 @@ public final class DailyStatsDaoImpl implements DailyStatsDao {
                     MessageConfig.codeText(
                             "daily-stats-dao-impl.get-match-result-map-aggregates-1"),
                     exception);
-            return Collections.emptyList();
+            throw new IllegalStateException("Unable to load DAILY statistics snapshot", exception);
         }
     }
 

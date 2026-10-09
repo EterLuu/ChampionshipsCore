@@ -1363,20 +1363,18 @@ public abstract class BaseGameInstance {
     }
 
     private void applyIntroductionGameModeToAllParticipants() {
-        GameMode mode = gameConfig.getIntroductionGameMode();
-        changeGameModelForAllGamePlayers(mode);
-        if (mode != GameMode.ADVENTURE) return;
         for (UUID uuid : getParticipantUniqueIds()) {
             Player player = Bukkit.getPlayer(uuid);
-            if (player != null) {
-                player.setFlying(false);
-                player.setAllowFlight(false);
-            }
+            if (player != null) applyIntroductionGameMode(player);
         }
     }
 
     private void applyIntroductionGameMode(@NotNull Player player) {
         GameMode mode = gameConfig.getIntroductionGameMode();
+        if (mode == GameMode.SPECTATOR) {
+            plugin.getGameManager().getSpectatorManager().enterParticipantSpectator(player, this);
+            return;
+        }
         player.setGameMode(mode);
         if (mode == GameMode.ADVENTURE) {
             player.setFlying(false);
@@ -1440,8 +1438,7 @@ public abstract class BaseGameInstance {
             String startTitle,
             String startSubtitle,
             @NotNull Runnable onStart) {
-        startFinalCountdown(
-                countdownSeconds, gameTitle, startTitle, startSubtitle, true, onStart);
+        startFinalCountdown(countdownSeconds, gameTitle, startTitle, startSubtitle, true, onStart);
     }
 
     /** Runs a final countdown with optional per-second and start cues. */
@@ -1675,6 +1672,11 @@ public abstract class BaseGameInstance {
         return spectators.contains(player.getUniqueId());
     }
 
+    /** Returns whether this runtime instance has been released and may no longer own players. */
+    public final boolean isDisposed() {
+        return disposed;
+    }
+
     /**
      * Gameplay admission is separate from roster membership, which still owns results and recovery.
      */
@@ -1691,11 +1693,11 @@ public abstract class BaseGameInstance {
     }
 
     /** Recovery callbacks may restore an eliminated participant, but only in their original run. */
-    protected final long captureGameGeneration() {
+    public final long captureGameGeneration() {
         return startGeneration;
     }
 
-    protected final boolean isCurrentParticipantConnection(long generation, Player player) {
+    public final boolean isCurrentParticipantConnection(long generation, Player player) {
         return generation == startGeneration
                 && !disposed
                 && plugin.isLoaded()

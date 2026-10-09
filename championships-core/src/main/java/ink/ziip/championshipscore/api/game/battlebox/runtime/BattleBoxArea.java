@@ -278,8 +278,9 @@ public class BattleBoxArea extends BasePairedGameInstance {
         match.setFinished(true);
         for (ChampionshipTeam team : List.of(match.getRight(), match.getLeft())) {
             for (Player player : team.getOnlinePlayers()) {
-                player.setGameMode(GameMode.SPECTATOR);
-                if (match.getSpectatorSpawn() != null) player.teleport(match.getSpectatorSpawn());
+                plugin.getGameManager()
+                        .getSpectatorManager()
+                        .enterParticipantSpectator(player, this, match.getSpectatorSpawn());
             }
             team.sendMessageToAll(MessageConfig.BATTLE_BOX_GAME_END);
         }
@@ -394,13 +395,9 @@ public class BattleBoxArea extends BasePairedGameInstance {
                 match != null && match.getSpectatorSpawn() != null
                         ? match.getSpectatorSpawn()
                         : getSpectatorSpawnLocation();
-        scheduler.runTask(
-                plugin,
-                () -> {
-                    event.getEntity().spigot().respawn();
-                    event.getEntity().teleport(respawn);
-                    event.getEntity().setGameMode(GameMode.SPECTATOR);
-                });
+        plugin.getGameManager()
+                .getSpectatorManager()
+                .scheduleParticipantSpectator(event.getEntity(), this, respawn, true);
 
         event.getDrops().clear();
         event.setDroppedExp(0);
@@ -441,9 +438,14 @@ public class BattleBoxArea extends BasePairedGameInstance {
                 return;
             }
         }
-        player.teleport(getSpectatorSpawnLocation());
-        player.setGameMode(
-                getGameStageEnum() == GameStageEnum.END ? GameMode.ADVENTURE : GameMode.SPECTATOR);
+        if (getGameStageEnum() == GameStageEnum.END) {
+            player.teleport(getSpectatorSpawnLocation());
+            player.setGameMode(GameMode.ADVENTURE);
+            return;
+        }
+        plugin.getGameManager()
+                .getSpectatorManager()
+                .enterParticipantSpectator(player, this, getSpectatorSpawnLocation());
     }
 
     private void giveItemToAllGamePlayers() {

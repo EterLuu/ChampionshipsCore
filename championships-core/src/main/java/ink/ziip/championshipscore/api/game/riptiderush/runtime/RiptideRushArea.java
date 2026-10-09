@@ -1171,9 +1171,9 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
             if (player != null && !player.isDead()) {
                 restoreColorFloorInventory(player);
                 player.setVelocity(new Vector());
-                player.teleport(getSpectatorSpawnLocation());
-                player.setGameMode(GameMode.SPECTATOR);
-                plugin.getVisibilityManager().reconcilePlayer(uuid);
+                plugin.getGameManager()
+                        .getSpectatorManager()
+                        .enterParticipantSpectator(player, this, getSpectatorSpawnLocation());
             }
         }
     }
@@ -1423,8 +1423,10 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
                         teleportPlayerToSpawnPoint(player);
                         player.setGameMode(GameMode.ADVENTURE);
                     } else if (current == GameStageEnum.PROGRESS) {
-                        player.teleport(getSpectatorSpawnLocation());
-                        player.setGameMode(GameMode.SPECTATOR);
+                        plugin.getGameManager()
+                                .getSpectatorManager()
+                                .enterParticipantSpectator(
+                                        player, this, getSpectatorSpawnLocation());
                     } else {
                         sanitizeParticipantForLobby(player, true);
                     }
@@ -1457,8 +1459,9 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
                         List.of(player.getUniqueId()),
                         MessageConfig.RIPTIDE_RUSH_REASON_DISCONNECTED,
                         false);
-            player.teleport(getSpectatorSpawnLocation());
-            player.setGameMode(GameMode.SPECTATOR);
+            plugin.getGameManager()
+                    .getSpectatorManager()
+                    .enterParticipantSpectator(player, this, getSpectatorSpawnLocation());
         } else if (stage == GameStageEnum.PREPARATION || stage == GameStageEnum.COUNTDOWN) {
             teleportPlayerToSpawnPoint(player);
             player.setGameMode(GameMode.ADVENTURE);

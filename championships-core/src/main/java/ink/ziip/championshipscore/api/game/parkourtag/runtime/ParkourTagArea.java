@@ -874,7 +874,9 @@ public class ParkourTagArea extends BasePairedGameInstance {
 
         if (assailant.getUniqueId().equals(match.getLeftAreaChaser())
                 || assailant.getUniqueId().equals(match.getRightAreaChaser())) {
-            scheduler.runTask(plugin, () -> victim.setGameMode(GameMode.SPECTATOR));
+            plugin.getGameManager()
+                    .getSpectatorManager()
+                    .scheduleParticipantSpectator(victim, this, getSpectatorSpawnLocation(), false);
             assailant.playSound(assailant, Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1, 1F);
             addPlayerPoints(assailant.getUniqueId(), 6);
 
@@ -1048,14 +1050,14 @@ public class ParkourTagArea extends BasePairedGameInstance {
             return;
         }
 
-        player.teleport(getSpectatorSpawnLocation());
-        scheduler.runTask(
-                plugin,
-                () ->
-                        player.setGameMode(
-                                getGameStageEnum() == GameStageEnum.END
-                                        ? GameMode.ADVENTURE
-                                        : GameMode.SPECTATOR));
+        if (getGameStageEnum() == GameStageEnum.END) {
+            player.teleport(getSpectatorSpawnLocation());
+            player.setGameMode(GameMode.ADVENTURE);
+            return;
+        }
+        plugin.getGameManager()
+                .getSpectatorManager()
+                .scheduleParticipantSpectator(player, this, getSpectatorSpawnLocation(), false);
     }
 
     @Override
@@ -1104,8 +1106,14 @@ public class ParkourTagArea extends BasePairedGameInstance {
                 return;
             }
         }
-        player.teleport(getSpectatorSpawnLocation());
-        player.setGameMode(GameMode.SPECTATOR);
+        if (getGameStageEnum() == GameStageEnum.END) {
+            player.teleport(getSpectatorSpawnLocation());
+            player.setGameMode(GameMode.ADVENTURE);
+            return;
+        }
+        plugin.getGameManager()
+                .getSpectatorManager()
+                .enterParticipantSpectator(player, this, getSpectatorSpawnLocation());
     }
 
     @Override

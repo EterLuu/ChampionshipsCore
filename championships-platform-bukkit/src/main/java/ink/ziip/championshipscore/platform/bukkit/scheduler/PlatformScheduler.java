@@ -122,30 +122,29 @@ public final class PlatformScheduler {
     }
 
     public CompletableFuture<Void> runEntityFuture(Entity entity, Runnable task) {
-        CompletableFuture<Void> future = new CompletableFuture<>();
-        boolean scheduled =
-                Objects.requireNonNull(entity, "entity")
-                        .getScheduler()
-                        .execute(
-                                plugin,
-                                () -> complete(task, future),
-                                () -> future.complete(null),
-                                1L);
-        if (!scheduled) future.complete(null);
-        return future;
+        return supplyEntity(
+                entity,
+                () -> {
+                    task.run();
+                    return null;
+                });
     }
 
     public <T> CompletableFuture<T> supplyEntity(Entity entity, Supplier<T> supplier) {
         CompletableFuture<T> future = new CompletableFuture<>();
-        boolean scheduled =
-                Objects.requireNonNull(entity, "entity")
-                        .getScheduler()
-                        .execute(
-                                plugin,
-                                () -> complete(supplier, future),
-                                () -> future.complete(null),
-                                1L);
-        if (!scheduled) future.complete(null);
+        try {
+            boolean scheduled =
+                    Objects.requireNonNull(entity, "entity")
+                            .getScheduler()
+                            .execute(
+                                    plugin,
+                                    () -> complete(supplier, future),
+                                    () -> future.complete(null),
+                                    1L);
+            if (!scheduled) future.complete(null);
+        } catch (RuntimeException failure) {
+            future.completeExceptionally(failure);
+        }
         return future;
     }
 

@@ -7,7 +7,6 @@ import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import lombok.Getter;
 import lombok.Setter;
 
-import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -61,14 +60,13 @@ public class TNTRunHandler extends BaseListener {
             if (stage == GameStageEnum.PROGRESS) {
                 tntRunTeamArea.addDeathPlayer(player);
                 ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-                championshipsCore
-                        .getServer()
-                        .getScheduler()
-                        .runTask(
-                                championshipsCore,
-                                () -> {
-                                    player.setGameMode(GameMode.SPECTATOR);
-                                });
+                plugin.getGameManager()
+                        .getSpectatorManager()
+                        .scheduleParticipantSpectator(
+                                player,
+                                tntRunTeamArea,
+                                tntRunTeamArea.getSpectatorSpawnLocation(),
+                                false);
             }
             return;
         }

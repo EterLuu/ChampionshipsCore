@@ -1372,8 +1372,9 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
         if (round != null && getGameStageEnum() == GameStageEnum.PROGRESS) {
             awardKill(round.leave(p.getUniqueId()), p.getUniqueId());
             cleanupPlayer(p.getUniqueId());
-            teleport(p, getSpectatorSpawnLocation());
-            p.setGameMode(GameMode.SPECTATOR);
+            plugin.getGameManager()
+                    .getSpectatorManager()
+                    .enterParticipantSpectator(p, this, getSpectatorSpawnLocation());
         } else {
             teleport(p, getSpectatorSpawnLocation());
             p.setGameMode(GameMode.ADVENTURE);
@@ -1397,7 +1398,9 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
     public void respawnEvent(PlayerRespawnEvent e) {
         if (!participant(e.getPlayer())) return;
         e.setRespawnLocation(getSpectatorSpawnLocation());
-        e.getPlayer().setGameMode(GameMode.SPECTATOR);
+        plugin.getGameManager()
+                .getSpectatorManager()
+                .enterParticipantSpectator(e.getPlayer(), this, getSpectatorSpawnLocation());
     }
 
     @Override

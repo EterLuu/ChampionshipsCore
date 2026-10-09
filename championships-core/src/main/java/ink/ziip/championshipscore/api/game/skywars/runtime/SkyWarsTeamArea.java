@@ -743,8 +743,10 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
                 plugin,
                 () -> {
                     event.getEntity().spigot().respawn();
-                    event.getEntity().teleport(getSpectatorSpawnLocation());
-                    event.getEntity().setGameMode(GameMode.SPECTATOR);
+                    plugin.getGameManager()
+                            .getSpectatorManager()
+                            .enterParticipantSpectator(
+                                    event.getEntity(), this, getSpectatorSpawnLocation());
                 });
 
         if (getGameStageEnum() != GameStageEnum.PROGRESS) {
@@ -862,9 +864,14 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
                 return;
             }
         }
-        player.teleport(getSpectatorSpawnLocation());
-        player.setGameMode(
-                getGameStageEnum() == GameStageEnum.END ? GameMode.ADVENTURE : GameMode.SPECTATOR);
+        if (getGameStageEnum() == GameStageEnum.END) {
+            player.teleport(getSpectatorSpawnLocation());
+            player.setGameMode(GameMode.ADVENTURE);
+            return;
+        }
+        plugin.getGameManager()
+                .getSpectatorManager()
+                .enterParticipantSpectator(player, this, getSpectatorSpawnLocation());
     }
 
     public int getPlayerBoarderDistance(Player player) {

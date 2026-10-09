@@ -9,7 +9,6 @@ import ink.ziip.championshipscore.presentation.text.CoreMessages;
 import lombok.Getter;
 import lombok.Setter;
 
-import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.entity.Chicken;
 import org.bukkit.entity.Player;
@@ -157,14 +156,13 @@ public class TGTTOSHandler extends BaseListener {
                     event.getEntity().remove();
                     tgttosTeamArea.playerArrivedAtEndPoint(player);
                     ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-                    championshipsCore
-                            .getServer()
-                            .getScheduler()
-                            .runTask(
-                                    championshipsCore,
-                                    () -> {
-                                        player.setGameMode(GameMode.SPECTATOR);
-                                    });
+                    plugin.getGameManager()
+                            .getSpectatorManager()
+                            .scheduleParticipantSpectator(
+                                    player,
+                                    tgttosTeamArea,
+                                    tgttosTeamArea.getSpectatorSpawnLocation(),
+                                    false);
                 }
             }
         }

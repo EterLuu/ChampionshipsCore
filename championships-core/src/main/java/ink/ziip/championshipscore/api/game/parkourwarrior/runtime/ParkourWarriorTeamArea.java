@@ -328,7 +328,10 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
                                         .recordParkourWarriorProgress(
                                                 this, uuid, countStars(uuid), true, durationMillis);
                             }
-                            player.setGameMode(GameMode.SPECTATOR);
+                            plugin.getGameManager()
+                                    .getSpectatorManager()
+                                    .enterParticipantSpectator(
+                                            player, this, getSpectatorSpawnLocation());
                             hideAndShowPlayer(player);
 
                             double finalMultiplier = checkpoint.getPointMultiplier(getGameConfig());
@@ -820,8 +823,9 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
         GameStageEnum stage = getGameStageEnum();
         if (shouldRestoreFinishedPlayerAsSpectator(
                 stage, finishedPlayers.contains(player.getUniqueId()))) {
-            player.teleport(getSpectatorSpawnLocation());
-            player.setGameMode(GameMode.SPECTATOR);
+            plugin.getGameManager()
+                    .getSpectatorManager()
+                    .enterParticipantSpectator(player, this, getSpectatorSpawnLocation());
             hideAndShowPlayer(player);
             return;
         }

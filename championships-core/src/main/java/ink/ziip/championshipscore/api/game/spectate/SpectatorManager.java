@@ -239,6 +239,52 @@ public final class SpectatorManager extends BaseManager implements Listener {
         plugin.getVisibilityManager().reconcilePlayer(uuid);
     }
 
+    /**
+     * Enters an eliminated participant into the shared spectator lifecycle.
+     *
+     * <p>Game areas decide when elimination occurs, but this manager owns the session, real server
+     * mode, passive protection, controls, inventory snapshot and visibility reconciliation.
+     */
+    public void enterParticipantSpectator(@NotNull Player player, @NotNull BaseGameInstance area) {
+        enterParticipantSpectator(player, area, null);
+    }
+
+    /** Enters a participant into spectator mode and applies the area's spectator destination. */
+    public void enterParticipantSpectator(
+            @NotNull Player player,
+            @NotNull BaseGameInstance area,
+            org.bukkit.Location destination) {
+        UUID uuid = player.getUniqueId();
+        if (!loaded || !area.isCurrentParticipantConnection(area.captureGameGeneration(), player))
+            return;
+        SpectatorSession current = sessions.get(uuid);
+        if (current != null && (current.external() || current.area() != area)) return;
+        prepareParticipant(player, area);
+        if (player.getGameMode() != GameMode.SPECTATOR) player.setGameMode(GameMode.SPECTATOR);
+        applyPresentation(player);
+        if (destination != null) teleportManaged(player, area, destination, ignored -> {});
+    }
+
+    /** Defers a death/event transition while retaining the original run and connection. */
+    public void scheduleParticipantSpectator(
+            Player player,
+            BaseGameInstance area,
+            org.bukkit.Location destination,
+            boolean respawn) {
+        long generation = area.captureGameGeneration();
+        org.bukkit.Location location = destination == null ? null : destination.clone();
+        Bukkit.getScheduler()
+                .runTask(
+                        plugin,
+                        () -> {
+                            if (!loaded || !area.isCurrentParticipantConnection(generation, player))
+                                return;
+                            if (respawn && player.isDead()) player.spigot().respawn();
+                            if (area.isCurrentParticipantConnection(generation, player))
+                                enterParticipantSpectator(player, area, location);
+                        });
+    }
+
     public void onAreaReleased(@NotNull BaseGameInstance area) {
         for (SpectatorSession session : List.copyOf(sessions.values())) {
             // External spectators are released by BaseGameInstance.releaseAllSpectators (or held
@@ -742,6 +788,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
         UUID uuid = player.getUniqueId();
         SpectatorSession expected = sessions.get(uuid);
         if (!loaded || expected == null || expected.area() != expectedArea) return;
+        long generation = expectedArea == null ? -1 : expectedArea.captureGameGeneration();
         UUID request = UUID.randomUUID();
         teleportRequests.put(uuid, request);
         org.bukkit.Location location = destination.clone();
@@ -764,7 +811,12 @@ public final class SpectatorManager extends BaseManager implements Listener {
                                                             || !request.equals(
                                                                     teleportRequests.get(uuid))
                                                             || Bukkit.getPlayer(uuid) != player
-                                                            || !currentSession(uuid, expected)) {
+                                                            || !currentSession(uuid, expected)
+                                                            || expectedArea != null
+                                                                    && (expectedArea.isDisposed()
+                                                                            || expectedArea
+                                                                                            .captureGameGeneration()
+                                                                                    != generation)) {
                                                         teleportRequests.remove(uuid, request);
                                                         return;
                                                     }
@@ -806,16 +858,20 @@ public final class SpectatorManager extends BaseManager implements Listener {
     }
 
     private void clearPresentation(@NotNull Player player, boolean restoreSnapshot) {
+        InventorySnapshot snapshot = snapshots.get(player.getUniqueId());
         clearPassiveState(player);
-        InventorySnapshot snapshot = restoreSnapshot ? snapshots.get(player.getUniqueId()) : null;
-        if (snapshot != null) snapshot.restore(player);
-        else {
-            restoreParticipantHelmet(player);
-            player.getInventory().clear();
-            player.setGameMode(GameMode.ADVENTURE);
-            Boolean previousNoPhysics = participantNoPhysics.remove(player.getUniqueId());
-            if (previousNoPhysics != null) player.setNoPhysics(previousNoPhysics);
+        if (restoreSnapshot && snapshot != null) {
+            snapshot.restore(player);
+            return;
         }
+        // Final participant release clears game inventory but restores the captured physical flags
+        // and effects; live-play recovery uses resumeParticipant instead.
+        restoreParticipantHelmet(player);
+        player.getInventory().clear();
+        player.setGameMode(GameMode.ADVENTURE);
+        if (snapshot != null) snapshot.restoreFlags(player);
+        Boolean previousNoPhysics = participantNoPhysics.remove(player.getUniqueId());
+        if (previousNoPhysics != null) player.setNoPhysics(previousNoPhysics);
     }
 
     private void clearPassiveState(@NotNull Player player) {
@@ -1146,6 +1202,8 @@ public final class SpectatorManager extends BaseManager implements Listener {
             float flySpeed,
             float walkSpeed,
             List<PotionEffect> effects,
+            float fallDistance,
+            int fireTicks,
             long capturedAt) {
         private static InventorySnapshot capture(Player player) {
             PlayerInventory inventory = player.getInventory();
@@ -1166,6 +1224,8 @@ public final class SpectatorManager extends BaseManager implements Listener {
                             player.getFlySpeed(),
                             player.getWalkSpeed(),
                             new ArrayList<>(player.getActivePotionEffects()),
+                            player.getFallDistance(),
+                            player.getFireTicks(),
                             System.nanoTime());
             if (snapshot.mode() != GameMode.SPECTATOR) return snapshot;
             // No pre-spectate snapshot exists after a cold/mid-session load. Vanilla spectator
@@ -1188,6 +1248,8 @@ public final class SpectatorManager extends BaseManager implements Listener {
                     snapshot.flySpeed(),
                     snapshot.walkSpeed(),
                     snapshot.effects(),
+                    0F,
+                    0,
                     snapshot.capturedAt());
         }
 
@@ -1211,6 +1273,8 @@ public final class SpectatorManager extends BaseManager implements Listener {
             player.setSleepingIgnored(sleepingIgnored);
             player.setFlySpeed(flySpeed);
             player.setWalkSpeed(walkSpeed);
+            player.setFallDistance(fallDistance);
+            player.setFireTicks(fireTicks);
             for (PotionEffect effect : player.getActivePotionEffects())
                 player.removePotionEffect(effect.getType());
             long elapsedTicks = Math.max(0L, (System.nanoTime() - capturedAt) / 50_000_000L);
