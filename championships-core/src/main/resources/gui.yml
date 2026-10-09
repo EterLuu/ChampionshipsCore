@@ -4393,7 +4393,7 @@ daily:
           material: PLAYER_HEAD
           title: "&#55ffff&l我的概览"
           lore:
-            - 完整场次：
+            - "&#a0a0a0完整场次：&#ededed%games%"
             - ""
             - "&#a0a0a0按游戏分类，点击卡片查看分图明细"
         game:
@@ -4457,7 +4457,7 @@ daily:
           material: PAPER
           title: "&#ededed&l%map%"
           lore:
-            - 参与场次：
+            - "&#a0a0a0参与场次：&#ededed%games%"
             - ""
             - "&#696969按地图独立记录"
         empty:

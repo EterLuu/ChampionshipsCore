@@ -331,7 +331,13 @@ final class DailyStatsMenu {
                 configured(
                         "page",
                         null,
-                        Map.of("page", holder.page + 1, "pages", holder.pageCount),
+                        Map.of(
+                                "page",
+                                holder.page + 1,
+                                "pages",
+                                holder.pageCount,
+                                "maps",
+                                maps.size()),
                         item(
                                 Material.PAPER,
                                 GuiConfig.component(
@@ -339,8 +345,9 @@ final class DailyStatsMenu {
                                         Map.of("page", holder.page + 1, "pages", holder.pageCount)),
                                 List.of(
                                         LegacyText.component(
-                                                GuiConfig.text(
+                                                GuiConfig.line(
                                                         MENU_PATH + ".items.page.lore",
+                                                        0,
                                                         Map.of("maps", maps.size())),
                                                 NamedTextColor.GRAY)),
                                 false)));
@@ -374,17 +381,7 @@ final class DailyStatsMenu {
     }
 
     private ItemStack playerSummary(UUID viewer, DailyStatSnapshot stat) {
-        List<Component> lore =
-                List.of(
-                        LegacyText.component(
-                                GuiConfig.line(
-                                        MENU_PATH + ".items.summary.lore",
-                                        0,
-                                        Map.of("games", stat.gamesPlayed()))),
-                        Component.empty(),
-                        LegacyText.component(
-                                GuiConfig.line(MENU_PATH + ".items.summary.lore", 2),
-                                NamedTextColor.GRAY));
+        List<Component> lore = summaryLore(stat.gamesPlayed());
         ItemStack stack = new ItemStack(Material.PLAYER_HEAD);
         ItemMeta rawMeta = stack.getItemMeta();
         if (!(rawMeta instanceof SkullMeta meta))
@@ -442,19 +439,7 @@ final class DailyStatsMenu {
                 }
             }
         }
-        lore.add(
-                LegacyText.component(
-                        GuiConfig.line(
-                                MENU_PATH + ".items.game.lore",
-                                0,
-                                Map.of("games", stat.gamesPlayed()))));
-        lore.add(Component.empty());
-        lore.add(
-                LegacyText.component(
-                        GuiConfig.text(
-                                MENU_PATH + ".items.game.lore",
-                                Map.of("maps", daily.knownMaps(game).size())),
-                        NamedTextColor.GRAY));
+        lore.addAll(gameSummaryLore(stat.gamesPlayed(), daily.knownMaps(game).size()));
         lore.add(Component.empty());
         lore.add(
                 LegacyText.component(
@@ -470,29 +455,19 @@ final class DailyStatsMenu {
     }
 
     private ItemStack gameSummary(GameTypeEnum game, DailyStatSnapshot stat) {
-        List<Component> lore = new ArrayList<>();
-        lore.add(
-                LegacyText.component(
-                        GuiConfig.line(
-                                MENU_PATH + ".items.game.lore",
-                                0,
-                                Map.of("games", stat.gamesPlayed()))));
-        lore.add(Component.empty());
-        lore.add(
-                LegacyText.component(
-                        GuiConfig.line(MENU_PATH + ".items.game.lore", 2), NamedTextColor.GRAY));
         return item(
                 gameMaterial(game),
                 LegacyText.component(game.toString(), gameColor(game))
                         .decorate(TextDecoration.BOLD),
-                lore,
+                gameSummaryLore(stat.gamesPlayed(), daily.knownMaps(game).size()),
                 stat.gamesPlayed() > 0);
     }
 
     /** Map item: the viewer's records on this one map (three rows for timed metrics). */
     private ItemStack mapItem(UUID viewer, GameTypeEnum game, String map) {
         List<Component> lore = new ArrayList<>();
-        boolean recorded = daily.statsManager().mapStat(viewer, game, map).gamesPlayed() > 0;
+        DailyMapStat stat = daily.statsManager().mapStat(viewer, game, map);
+        boolean recorded = stat.gamesPlayed() > 0;
         for (DailyMetric metric : DailyMetric.forGame(game)) {
             List<Double> values = daily.statsManager().metricValues(viewer, map, metric);
             if (values.isEmpty()) {
@@ -513,25 +488,36 @@ final class DailyStatsMenu {
                 }
             }
         }
-        lore.add(
-                LegacyText.component(
-                        GuiConfig.line(
-                                MENU_PATH + ".items.game.lore",
-                                0,
-                                Map.of(
-                                        "games",
-                                        daily.statsManager()
-                                                .mapStat(viewer, game, map)
-                                                .gamesPlayed()))));
-        lore.add(Component.empty());
-        lore.add(
-                LegacyText.component(
-                        GuiConfig.line(MENU_PATH + ".items.map.lore", 2), NamedTextColor.GRAY));
+        lore.addAll(mapSummaryLore(stat.gamesPlayed()));
         return item(
                 gameMaterial(game),
                 LegacyText.component(map, gameColor(game)).decorate(TextDecoration.BOLD),
                 lore,
                 recorded);
+    }
+
+    static List<Component> summaryLore(long gamesPlayed) {
+        return GuiConfig.lines(MENU_PATH + ".items.summary.lore", Map.of("games", gamesPlayed))
+                .stream()
+                .map(LegacyText::component)
+                .toList();
+    }
+
+    static List<Component> gameSummaryLore(long gamesPlayed, int mapCount) {
+        Map<String, ?> placeholders = Map.of("games", gamesPlayed, "maps", mapCount);
+        return List.of(
+                LegacyText.component(
+                        GuiConfig.line(MENU_PATH + ".items.game.lore", 0, placeholders)),
+                Component.empty(),
+                LegacyText.component(
+                        GuiConfig.line(MENU_PATH + ".items.game.lore", 2, placeholders),
+                        NamedTextColor.GRAY));
+    }
+
+    static List<Component> mapSummaryLore(long gamesPlayed) {
+        return GuiConfig.lines(MENU_PATH + ".items.map.lore", Map.of("games", gamesPlayed)).stream()
+                .map(LegacyText::component)
+                .toList();
     }
 
     /** Shared game-card positions used by both the personal stats and total leaderboard menus. */
@@ -613,11 +599,12 @@ final class DailyStatsMenu {
     }
 
     static String metricRecordLabel(DailyMetric metric, int index) {
-        if (metric.format() != DailyMetric.Format.TIME) return GuiConfig.text(metric.labelKey());
+        if (metric.format() != DailyMetric.Format.TIME)
+            return GuiConfig.text(metric.labelKey() + ".title");
         return switch (index) {
-            case 0 -> GuiConfig.text(metric.labelKey(1));
-            case 1 -> GuiConfig.text(metric.labelKey(2));
-            default -> GuiConfig.text(metric.labelKey(3));
+            case 0 -> GuiConfig.text(metric.labelKey(1) + ".title");
+            case 1 -> GuiConfig.text(metric.labelKey(2) + ".title");
+            default -> GuiConfig.text(metric.labelKey(3) + ".title");
         };
     }
 

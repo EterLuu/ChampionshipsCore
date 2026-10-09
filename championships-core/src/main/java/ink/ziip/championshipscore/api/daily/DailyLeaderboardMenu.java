@@ -242,8 +242,9 @@ public final class DailyLeaderboardMenu {
                                                 MENU_PATH + ".items.overview.states.board.lore", 0),
                                         NamedTextColor.GRAY),
                                 LegacyText.component(
-                                        GuiConfig.text(
+                                        GuiConfig.line(
                                                 MENU_PATH + ".items.overview.states.board.lore",
+                                                1,
                                                 Map.of("maps", maps.size())),
                                         NamedTextColor.WHITE)),
                         false));
@@ -309,7 +310,13 @@ public final class DailyLeaderboardMenu {
                 configured(
                         "page",
                         null,
-                        Map.of("page", holder.page + 1, "pages", holder.pageCount),
+                        Map.of(
+                                "page",
+                                holder.page + 1,
+                                "pages",
+                                holder.pageCount,
+                                "maps",
+                                maps.size()),
                         item(
                                 Material.PAPER,
                                 GuiConfig.component(
@@ -317,8 +324,9 @@ public final class DailyLeaderboardMenu {
                                         Map.of("page", holder.page + 1, "pages", holder.pageCount)),
                                 List.of(
                                         LegacyText.component(
-                                                GuiConfig.text(
+                                                GuiConfig.line(
                                                         MENU_PATH + ".items.page.lore",
+                                                        0,
                                                         Map.of("maps", maps.size())),
                                                 NamedTextColor.GRAY)),
                                 false)));
@@ -366,7 +374,8 @@ public final class DailyLeaderboardMenu {
                 if (values.isEmpty()) {
                     lore.add(
                             LegacyText.component(
-                                            GuiConfig.text(metric.labelKey()), NamedTextColor.GRAY)
+                                            GuiConfig.text(metric.labelKey() + ".title"),
+                                            NamedTextColor.GRAY)
                                     .append(
                                             LegacyText.component(
                                                     GuiConfig.line(
@@ -418,7 +427,9 @@ public final class DailyLeaderboardMenu {
         boolean listed = false;
         for (DailyMetric metric : DailyMetric.forGame(game)) {
             List<DailyLeaderboardEntry> entries = stats.leaderboard(metric.boardId(null));
-            lore.add(LegacyText.component(GuiConfig.text(metric.labelKey()), NamedTextColor.GRAY));
+            lore.add(
+                    LegacyText.component(
+                            GuiConfig.text(metric.labelKey() + ".title"), NamedTextColor.GRAY));
             if (entries.isEmpty()) {
                 lore.add(
                         LegacyText.component(
@@ -442,8 +453,9 @@ public final class DailyLeaderboardMenu {
         lore.add(Component.empty());
         lore.add(
                 LegacyText.component(
-                        GuiConfig.text(
+                        GuiConfig.line(
                                 MENU_PATH + ".items.category.lore",
+                                3,
                                 Map.of(
                                         "maps",
                                         daily.knownMaps(game).size(),
@@ -471,7 +483,9 @@ public final class DailyLeaderboardMenu {
         List<Component> lore = new ArrayList<>();
         boolean recorded = false;
         for (DailyMetric metric : DailyMetric.forGame(game)) {
-            lore.add(LegacyText.component(GuiConfig.text(metric.labelKey()), NamedTextColor.GRAY));
+            lore.add(
+                    LegacyText.component(
+                            GuiConfig.text(metric.labelKey() + ".title"), NamedTextColor.GRAY));
             List<DailyLeaderboardEntry> entries = stats.leaderboard(metric.boardId(map));
             if (entries.isEmpty()) {
                 lore.add(
