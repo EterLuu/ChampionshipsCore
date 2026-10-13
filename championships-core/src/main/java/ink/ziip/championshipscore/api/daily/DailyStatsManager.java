@@ -9,6 +9,7 @@ import ink.ziip.championshipscore.api.daily.entry.DailyPkwRecordEntry;
 import ink.ziip.championshipscore.api.daily.entry.DailyRecordEntry;
 import ink.ziip.championshipscore.api.daily.entry.DailyStatEntry;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
+import ink.ziip.championshipscore.api.game.lasershowdown.runtime.LaserShowdownTeamArea;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.database.daily.DailyStatsDao;
@@ -191,6 +192,17 @@ public final class DailyStatsManager extends BaseManager {
         }
         DailyMapStat stat = mapStat(player, metric.game(), map);
         return switch (metric) {
+            case LASERSHOWDOWN_WINS -> stat.gamesPlayed() > 0 ? stat.wins() : Double.NaN;
+            case LASERSHOWDOWN_AVERAGE_KILLS ->
+                    stat.laser().games() > 0
+                            ? (double) stat.laser().kills() / stat.laser().games()
+                            : Double.NaN;
+            case LASERSHOWDOWN_HEADSHOT_RATE ->
+                    rate(stat.laser().headHits(), stat.laser().enemyHits());
+            case LASERSHOWDOWN_FAVORITE_GUN ->
+                    stat.laser().favoriteGun() == null
+                            ? Double.NaN
+                            : stat.laser().favoriteGun().ordinal();
             case BINGO_MAX_TASKS -> stat.maxTasks() > 0 ? stat.maxTasks() : Double.NaN;
             case BINGO_MAX_LINES -> stat.maxLines() > 0 ? stat.maxLines() : Double.NaN;
             case BINGO_MAX_FIRSTS -> stat.maxFirstTasks() > 0 ? stat.maxFirstTasks() : Double.NaN;
@@ -447,9 +459,11 @@ public final class DailyStatsManager extends BaseManager {
         Map<ChampionshipTeam, Double> teamScores = new HashMap<>();
         for (ChampionshipTeam team : session.teams()) {
             double score =
-                    team.getMembers().stream()
-                            .mapToDouble(uuid -> points.getOrDefault(uuid, 0D))
-                            .sum();
+                    session.instance() instanceof LaserShowdownTeamArea laser
+                            ? laser.getTeamScore(team)
+                            : team.getMembers().stream()
+                                    .mapToDouble(uuid -> points.getOrDefault(uuid, 0D))
+                                    .sum();
             teamScores.put(team, score);
         }
         double winningScore =
@@ -563,7 +577,11 @@ public final class DailyStatsManager extends BaseManager {
                 match != null && match.firstGateway() ? 1L : 0L,
                 match == null ? 0L : match.stars(),
                 match != null && match.finished() ? 1L : 0L,
-                System.currentTimeMillis());
+                System.currentTimeMillis(),
+                session.instance() instanceof LaserShowdownTeamArea laser
+                        ? laser.getPlayerCombatStats(player)
+                        : ink.ziip.championshipscore.api.game.lasershowdown.model.LaserShowdownStats
+                                .EMPTY);
     }
 
     private static DailyMapStat toMapStat(DailyMapStatEntry entry) {
@@ -579,7 +597,8 @@ public final class DailyStatsManager extends BaseManager {
                 entry.firstNextGen(),
                 entry.firstGateway(),
                 entry.maxStars(),
-                entry.finishes());
+                entry.finishes(),
+                entry.laser());
     }
 
     public void recordTeamMilestone(
@@ -726,7 +745,8 @@ public final class DailyStatsManager extends BaseManager {
                                         base.firstNextGen(),
                                         base.firstGateway(),
                                         base.maxStars(),
-                                        base.finishes()));
+                                        base.finishes(),
+                                        base.laser()));
                     }
                     rebuildLeaderboards();
                 });
@@ -737,6 +757,7 @@ public final class DailyStatsManager extends BaseManager {
         // Legacy boards kept for PlaceholderAPI compatibility; the menus use DailyMetric boards.
         rebuilt.putAll(legacyBoards());
         for (DailyMetric metric : DailyMetric.values()) {
+            if (!metric.rankable()) continue;
             // Per-map boards.
             for (String map : mapsWithStats(metric.game())) {
                 rebuilt.put(metric.boardId(map), metricBoard(metric, map));
@@ -905,6 +926,8 @@ public final class DailyStatsManager extends BaseManager {
      * table existed); every other metric accepts the backfilled match-result history.
      */
     private static long gateGames(DailyMapStat stat, DailyMetric metric) {
+        if (metric.game() == GameTypeEnum.LaserShowdown && metric != DailyMetric.LASERSHOWDOWN_WINS)
+            return stat.laser().games();
         return metric.isRate() ? stat.trackedGames() : stat.gamesPlayed();
     }
 

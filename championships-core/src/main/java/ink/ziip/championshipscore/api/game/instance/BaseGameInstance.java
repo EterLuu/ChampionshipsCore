@@ -19,6 +19,7 @@ import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 import ink.ziip.championshipscore.platform.bukkit.player.PlayerStateService;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+import ink.ziip.championshipscore.shared.presentation.DurationText;
 import ink.ziip.championshipscore.shared.presentation.RuleIntroductionTimeline;
 
 import org.bukkit.*;
@@ -1417,7 +1418,7 @@ public abstract class BaseGameInstance {
         updateGameTimerBossBar(
                 MessageConfig.GAME_PREPARATION_COUNT_DOWN
                         .replace("%game%", gameTypeEnum.toString())
-                        .replace("%time%", String.valueOf(remaining)),
+                        .replace("%time%", DurationText.bossBarSeconds(remaining)),
                 remaining,
                 preparationCountdownDuration);
     }

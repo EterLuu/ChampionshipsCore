@@ -3,21 +3,28 @@ package ink.ziip.championshipscore.api.game.lasershowdown.runtime;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
 import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameInstance;
-import ink.ziip.championshipscore.api.game.laserbox.mechanics.LaserBoxKillFeedback;
-import ink.ziip.championshipscore.api.game.laserbox.model.LaserBoxGun;
+import ink.ziip.championshipscore.api.game.laser.mechanics.LaserGunMechanics;
+import ink.ziip.championshipscore.api.game.laser.mechanics.LaserShotEngine;
+import ink.ziip.championshipscore.api.game.laser.model.LaserGun;
+import ink.ziip.championshipscore.api.game.laser.presentation.LaserBeam;
+import ink.ziip.championshipscore.api.game.laser.presentation.LaserGunItems;
+import ink.ziip.championshipscore.api.game.laser.presentation.LaserKillFeedback;
+import ink.ziip.championshipscore.api.game.laser.presentation.LaserNameTags;
+import ink.ziip.championshipscore.api.game.laser.presentation.LaserZoom;
+import ink.ziip.championshipscore.api.game.laser.runtime.LaserWeaponState;
 import ink.ziip.championshipscore.api.game.lasershowdown.config.LaserShowdownConfig;
+import ink.ziip.championshipscore.api.game.lasershowdown.model.LaserShowdownLife;
+import ink.ziip.championshipscore.api.game.lasershowdown.model.LaserShowdownStats;
+import ink.ziip.championshipscore.api.game.model.GameRunMode;
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.api.game.start.ArenaSelection;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-import ink.ziip.championshipscore.configuration.location.LocationConfig;
 import ink.ziip.championshipscore.platform.bukkit.scoreboard.TeamColors;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
-
-import io.papermc.paper.datacomponent.DataComponentTypes;
-import io.papermc.paper.datacomponent.item.KineticWeapon;
-import io.papermc.paper.datacomponent.item.UseEffects;
+import ink.ziip.championshipscore.shared.presentation.DurationText;
 
 import lombok.Getter;
 
@@ -26,7 +33,6 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 
 import org.bukkit.*;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.*;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -43,7 +49,6 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.BoundingBox;
-import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
@@ -52,19 +57,20 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
+    static final int DAILY_DURATION_SECONDS = 900;
+    static final int DAILY_KILL_TARGET = 40;
+    private final Map<UUID, LaserShowdownLife> playerLives = new ConcurrentHashMap<>();
+    private final Map<UUID, EnumMap<LaserGun, Long>> playerWeaponLives = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> playerEnemyHits = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> playerHeadHits = new ConcurrentHashMap<>();
     private final List<List<Location>> areaLocations = new ArrayList<>();
     private final Map<UUID, List<Location>> playerRespawnLocations = new ConcurrentHashMap<>();
     private final Map<UUID, Location> playerSpawnLocation = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> playerRespawnTick = new ConcurrentHashMap<>();
     private final Map<UUID, Double> playerLaserHealth = new ConcurrentHashMap<>();
-    private final Map<UUID, Integer> playerAmmo = new ConcurrentHashMap<>();
-    private final Map<UUID, Integer> playerNextShot = new ConcurrentHashMap<>();
-    private final Map<UUID, Integer> playerLastShot = new ConcurrentHashMap<>();
-    private final Map<UUID, Integer> playerBurst = new ConcurrentHashMap<>();
-    private final Map<UUID, Integer> playerReloadUntil = new ConcurrentHashMap<>();
-    private final Map<UUID, LaserBoxGun> playerReloadGun = new ConcurrentHashMap<>();
+    private LaserWeaponState weapons = new LaserWeaponState();
     private final Map<UUID, Integer> playerProtectionUntil = new ConcurrentHashMap<>();
-    private final Map<UUID, LaserBoxGun> selectedGuns = new ConcurrentHashMap<>();
+    private final Map<UUID, LaserGun> selectedGuns = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> aimingUntil = new ConcurrentHashMap<>();
     private final Set<UUID> laserMovementSpeed = ConcurrentHashMap.newKeySet();
     private final Set<UUID> laserMovementSlow = ConcurrentHashMap.newKeySet();
@@ -77,13 +83,13 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
     private BukkitTask startGameProgressTask;
     private BukkitTask laserTickTask;
     private int laserTick;
+    private LaserZoom zoom;
+    private LaserNameTags nameTags;
     private boolean firstRoundGunSelectionWindow;
     private final NamespacedKey laserItemKey;
     private static final int GUN_SELECTOR_SLOT = 8;
     private static final int AMMO_SLOT = 4;
     private static final String GUN_SELECTOR_TYPE = "gun-selector";
-    private static final Particle.DustOptions LASER_PARTICLE =
-            new Particle.DustOptions(Color.fromRGB(0xE8FFFF), 0.35F);
 
     public LaserShowdownTeamArea(
             ChampionshipsCore plugin, LaserShowdownConfig laserShowdownConfig) {
@@ -102,22 +108,43 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
 
         setGameStageEnum(GameStageEnum.WAITING);
 
-        ConfigurationSection configurationSection = getGameConfig().getPlayerSpawnPoints();
-        for (String areaName :
-                configurationSection.getKeys(false).stream()
-                        .sorted(String.CASE_INSENSITIVE_ORDER)
-                        .toList()) {
-            List<Location> locations = new ArrayList<>();
-            for (String stringLocation : configurationSection.getStringList(areaName)) {
-                locations.add(LocationConfig.readLocation(stringLocation));
-            }
+        refreshArenaLocations();
+    }
 
-            areaLocations.add(locations);
-        }
+    private void refreshArenaLocations() {
+        if (!(gameConfig instanceof LaserShowdownConfig config)) return;
+        areaLocations.clear();
+        for (List<Location> locations : config.arenaSpawns())
+            areaLocations.add(new ArrayList<>(locations));
     }
 
     public int getArenaCount() {
+        refreshArenaLocations();
         return areaLocations.size();
+    }
+
+    /** Empty sub-arenas cannot supply initial or respawn locations. */
+    public List<Integer> getPlayableArenaIndices() {
+        refreshArenaLocations();
+        return java.util.stream.IntStream.range(0, areaLocations.size())
+                .filter(index -> !areaLocations.get(index).isEmpty())
+                .boxed()
+                .toList();
+    }
+
+    @Override
+    public void prepareRunMode(@NotNull GameRunMode mode) {
+        GameRunMode previous = getRunMode();
+        List<Integer> playable = mode == GameRunMode.DAILY ? getPlayableArenaIndices() : List.of();
+        if (mode == GameRunMode.DAILY && playable.isEmpty())
+            throw new IllegalStateException("Laser Showdown has no playable sub-arena");
+        super.prepareRunMode(mode);
+        if (mode == GameRunMode.DAILY) {
+            int arena = playable.get(ThreadLocalRandom.current().nextInt(playable.size()));
+            prepareArenaSelection(new ArenaSelection(List.of(arena)));
+        } else if (mode == GameRunMode.GAME && previous == GameRunMode.DAILY) {
+            prepareArenaSelection(ArenaSelection.all());
+        }
     }
 
     private List<List<Location>> selectedArenaLocations() {
@@ -131,8 +158,28 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
         return selected.get(ThreadLocalRandom.current().nextInt(selected.size()));
     }
 
+    public boolean notInPlayerArena(Player player, Location location) {
+        LaserShowdownConfig config = getGameConfig();
+        if (!config.hasCopyLayout() || !isGameplayParticipant(player)) return notInArea(location);
+        List<Location> assigned = playerRespawnLocations.get(player.getUniqueId());
+        if (assigned != null && !assigned.isEmpty()) {
+            for (int arena = 0; arena < areaLocations.size(); arena++) {
+                if (config.contains(assigned.getFirst(), arena))
+                    return !config.contains(location, arena);
+            }
+        }
+        return getSelectedArenaIndices(areaLocations.size()).stream()
+                .noneMatch(arena -> config.contains(location, arena));
+    }
+
     private List<Player> players() {
         return gamePlayers.stream().map(Bukkit::getPlayer).filter(Objects::nonNull).toList();
+    }
+
+    @Override
+    public boolean freezeMovementDuringCountdown() {
+        // Spawn points can be above the floor. Let gravity finish the landing during selection.
+        return false;
     }
 
     @Override
@@ -140,20 +187,26 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
         if (startGameProgressTask != null) startGameProgressTask.cancel();
         if (laserTickTask != null) laserTickTask.cancel();
         for (Player player : players()) clearLaserEffects(player);
+        if (zoom != null) zoom.close();
+        zoom = null;
+        restoreNameTags();
         startGameProgressTask = null;
         laserTickTask = null;
         cleanDroppedItems();
 
+        playerLives.clear();
+        firstRoundGunSelectionWindow = false;
+        playerWeaponLives.clear();
+        playerEnemyHits.clear();
+        playerHeadHits.clear();
+        locationIterators.clear();
+        if (getRunMode() == GameRunMode.DAILY) selectedGuns.clear();
         playerRespawnLocations.clear();
         playerSpawnLocation.clear();
         playerRespawnTick.clear();
         playerLaserHealth.clear();
-        playerAmmo.clear();
-        playerNextShot.clear();
-        playerLastShot.clear();
-        playerBurst.clear();
-        playerReloadUntil.clear();
-        playerReloadGun.clear();
+        weapons.close();
+        weapons = new LaserWeaponState();
         playerProtectionUntil.clear();
         aimingUntil.clear();
         laserMovementSpeed.clear();
@@ -183,6 +236,7 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
 
     @Override
     public void startGamePreparation() {
+        refreshArenaLocations();
         setGameStageEnum(GameStageEnum.PREPARATION);
 
         // Rule-introduction phase (if configured): gather players at the introduction spawn point
@@ -193,9 +247,19 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
 
     /** Normal preparation: spawn assignment + countdown, runs after the rule-introduction phase. */
     private void startFormalPreparation() {
+        assignSpawnLocations();
 
-        changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
+        announceGamePreparation(
+                MessageConfig.LASER_SHOWDOWN_START_PREPARATION,
+                MessageConfig.LASER_SHOWDOWN_START_PREPARATION_TITLE,
+                MessageConfig.LASER_SHOWDOWN_START_PREPARATION_SUBTITLE);
 
+        firstRoundGunSelectionWindow = selectedGuns.isEmpty();
+        startGameProgress();
+    }
+
+    /** Assigns the complete roster before any player is teleported. */
+    private void assignSpawnLocations() {
         List<List<Location>> selectedAreas = selectedArenaLocations();
         for (List<Location> locations : selectedAreas) {
             Collections.shuffle(locations, ThreadLocalRandom.current());
@@ -227,28 +291,6 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
                 }
             }
         }
-
-        teleportPlayersToSpawnLocation();
-
-        changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
-
-        resetPlayerHealthFoodEffectLevelInventory();
-
-        announceGamePreparation(
-                MessageConfig.LASER_SHOWDOWN_START_PREPARATION,
-                MessageConfig.LASER_SHOWDOWN_START_PREPARATION_TITLE,
-                MessageConfig.LASER_SHOWDOWN_START_PREPARATION_SUBTITLE);
-
-        firstRoundGunSelectionWindow = selectedGuns.isEmpty();
-        for (UUID uuid : gamePlayers) {
-            Player player = Bukkit.getPlayer(uuid);
-            if (player != null) {
-                givePlayerItem(player);
-                if (firstRoundGunSelectionWindow) openGunMenu(player);
-            }
-        }
-
-        startGameProgress();
     }
 
     public void startGameProgress() {
@@ -256,8 +298,12 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
         resetPlayerHealthFoodEffectLevelInventory();
 
         giveItemToAllGamePlayersAndTeleport();
+        if (firstRoundGunSelectionWindow) {
+            for (Player player : players()) openGunMenu(player);
+        }
 
         startFinalCountdown(
+                firstRoundGunSelectionWindow ? 15 : 5,
                 MessageConfig.LASER_SHOWDOWN_GAME_START_SOON_TITLE,
                 MessageConfig.LASER_SHOWDOWN_GAME_START_TITLE,
                 MessageConfig.LASER_SHOWDOWN_GAME_START_SUBTITLE,
@@ -268,7 +314,9 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
         firstRoundGunSelectionWindow = false;
         for (Player player : players()) player.closeInventory();
         laserTick = 0;
+        hideNameTags();
         for (UUID uuid : gamePlayers) {
+            playerLives.put(uuid, new LaserShowdownLife(laserTick));
             playerLaserHealth.put(uuid, 100D);
             playerProtectionUntil.put(uuid, laserTick + 80);
             Player player = Bukkit.getPlayer(uuid);
@@ -276,16 +324,17 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
                 player.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 60, 0));
         }
 
+        int duration = matchDurationSeconds();
         startGameProgressTask =
                 startRemainingTimer(
-                        getGameConfig().getTimer(),
+                        duration,
                         seconds -> {
                             timer = seconds;
                             updateGameTimerBossBar(
                                     MessageConfig.LASER_SHOWDOWN_ACTION_BAR_COUNT_DOWN.replace(
-                                            "%time%", String.valueOf(timer)),
+                                            "%time%", DurationText.bossBarSeconds(timer)),
                                     timer,
-                                    getGameConfig().getTimer());
+                                    duration);
                             calculateCurrentRank();
                         },
                         this::endGame);
@@ -307,7 +356,14 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
             return;
 
         if (startGameProgressTask != null) startGameProgressTask.cancel();
+        if (laserTickTask != null) laserTickTask.cancel();
+        for (Player player : players()) clearLaserEffects(player);
+        if (zoom != null) zoom.close();
+        zoom = null;
+        restoreNameTags();
+        weapons.close();
 
+        for (UUID id : gamePlayers) finishLife(id);
         if (isSettlementAllowed()) calculatePoints();
 
         announceGameEnd(
@@ -329,7 +385,13 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
 
     protected void calculatePoints() {
         ArrayList<Map.Entry<ChampionshipTeam, Integer>> list;
-        list = new ArrayList<>(teamShootTimes.entrySet());
+        list =
+                getRunMode() == GameRunMode.DAILY
+                        ? new ArrayList<>(
+                                gameTeams.stream()
+                                        .map(team -> Map.entry(team, getTeamScore(team)))
+                                        .toList())
+                        : new ArrayList<>(teamShootTimes.entrySet());
         list.sort(Map.Entry.comparingByValue());
 
         Collections.reverse(list);
@@ -372,6 +434,9 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
             }
         }
 
+        clearLaserEffects(player);
+        finishLife(player.getUniqueId());
+        playerRespawnTick.put(player.getUniqueId(), laserTick);
         long generation = captureGameGeneration();
         scheduler.runTask(
                 plugin,
@@ -396,6 +461,14 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
 
         if (getGameStageEnum() != GameStageEnum.PROGRESS) {
             return;
+        }
+
+        clearLaserEffects(player);
+        if (nameTags != null) nameTags.remove(player.getUniqueId());
+        LaserShowdownLife life = playerLives.get(player.getUniqueId());
+        if (life != null) {
+            life.closeMenu(laserTick);
+            recordLifeWeapon(player.getUniqueId());
         }
 
         ChampionshipTeam playerChampionshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
@@ -475,11 +548,6 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
 
     private synchronized void addTeamShootCount(ChampionshipTeam championshipTeam) {
         teamShootTimes.put(championshipTeam, teamShootTimes.getOrDefault(championshipTeam, 0) + 1);
-
-        int times = teamShootTimes.get(championshipTeam);
-        if (times == 100) {
-            endGame();
-        }
     }
 
     public void respawnPlayer(Player player) {
@@ -491,12 +559,21 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
                                 || !playerRespawnTick.containsKey(player.getUniqueId()))) return;
         player.setGameMode(GameMode.ADVENTURE);
         plugin.getGameManager().getSpectatorManager().resumeParticipant(player, this);
-        playerRespawnTick.remove(player.getUniqueId());
+        UUID id = player.getUniqueId();
+        boolean newLife = playerRespawnTick.remove(id) != null || !playerLives.containsKey(id);
+        int previousAmmo = weapons.ammo(id, selectedGuns.getOrDefault(id, LaserGun.RIFLE));
+        if (newLife) {
+            weapons.forget(id);
+            finishLife(id);
+            playerLives.put(id, new LaserShowdownLife(laserTick));
+        }
         playerLaserHealth.put(player.getUniqueId(), 100D);
         playerProtectionUntil.put(player.getUniqueId(), laserTick + 80);
         teleportPlayerToSpawnLocation(player);
         player.setHealth(20);
         givePlayerItem(player);
+        if (!newLife) weapons.setAmmo(id, previousAmmo);
+        syncGunSelection(player);
         for (UUID uuid : gamePlayers) {
             Player gamePlayer = Bukkit.getPlayer(uuid);
             if (gamePlayer != null) {
@@ -582,8 +659,8 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
         player.setFoodLevel(20);
         player.setFireTicks(0);
         player.setFallDistance(0);
-        LaserBoxGun gun =
-                selectedGuns.computeIfAbsent(player.getUniqueId(), ignored -> LaserBoxGun.RIFLE);
+        LaserGun gun =
+                selectedGuns.computeIfAbsent(player.getUniqueId(), ignored -> LaserGun.RIFLE);
         equipGun(player, gun);
         playerInventory.setItem(GUN_SELECTOR_SLOT, item("gun-selector"));
 
@@ -602,6 +679,7 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
     private void tickLaserCombat() {
         if (getGameStageEnum() != GameStageEnum.PROGRESS) return;
         laserTick++;
+        if (laserTick % 5 == 0 && nameTags != null) nameTags.refresh(gamePlayers);
         for (Player player : players()) {
             UUID id = player.getUniqueId();
             if (playerRespawnTick.containsKey(id)) {
@@ -625,37 +703,48 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
                             0);
                 continue;
             }
-            if (playerReloadGun.containsKey(id)
-                    && playerReloadUntil.getOrDefault(id, Integer.MAX_VALUE) <= laserTick)
-                completeReload(player);
-            if (aimingUntil.getOrDefault(id, 0) <= laserTick) aimingUntil.remove(id);
-            LaserBoxGun gun = gun(player.getInventory().getItemInMainHand());
-            if (gun != null
-                    && gun != LaserBoxGun.SNIPER
+            if (!active(player)) {
+                clearLaserEffects(player);
+                continue;
+            }
+            syncGunSelection(player);
+            cancelReloadIfNotHolding(player);
+            if (!holdsSniper(player) || weapons.reloading(id) || !aiming(player)) endAiming(player);
+            LaserGun gun = gun(player.getInventory().getItemInMainHand());
+            if (LaserGunMechanics.automatic(gun)
                     && player.isHandRaised()
                     && player.getActiveItemHand() == EquipmentSlot.HAND
-                    && !playerReloadGun.containsKey(id)) fireGun(player, gun);
-            if (gun != null) syncAmmoItem(player, gun);
+                    && !weapons.reloading(id)) fireGun(player, gun);
+            if (getGameStageEnum() != GameStageEnum.PROGRESS) return;
+            if (weapons.reloading(id) && weapons.reloadRemaining(id, laserTick) == 0)
+                completeReload(player);
+            if (gun != null) {
+                syncAmmoItem(player, gun);
+                if (weapons.reloading(id) && laserTick % 10 == 0) showReload(player, gun);
+            }
             syncMovementEffects(player, gun);
             player.setLevel((int) Math.ceil(playerLaserHealth.getOrDefault(id, 100D)));
         }
     }
 
     private void clearLaserEffects(Player player) {
-        playerReloadGun.remove(player.getUniqueId());
-        playerReloadUntil.remove(player.getUniqueId());
-        aimingUntil.remove(player.getUniqueId());
+        weapons.cancelReload(player.getUniqueId());
+        endAiming(player);
         if (laserMovementSpeed.remove(player.getUniqueId()))
             player.removePotionEffect(PotionEffectType.SPEED);
         if (laserMovementSlow.remove(player.getUniqueId()))
             player.removePotionEffect(PotionEffectType.SLOWNESS);
-        for (LaserBoxGun gun : LaserBoxGun.values()) player.setCooldown(gun.material(), 0);
+        for (LaserGun gun : LaserGun.values()) player.setCooldown(gun.material(), 0);
     }
 
-    private void syncMovementEffects(Player player, LaserBoxGun gun) {
+    private void syncMovementEffects(Player player, LaserGun gun) {
         UUID id = player.getUniqueId();
-        int speed =
-                gun == LaserBoxGun.SMG ? 1 : gun == null ? 1 : gun == LaserBoxGun.MACHINE ? -1 : 0;
+        ItemStack held = player.getInventory().getItemInMainHand();
+        ItemStack offHand = player.getInventory().getItemInOffHand();
+        boolean empty =
+                ("ammo".equals(type(held)) || held == null || held.getType().isAir())
+                        && (offHand == null || offHand.getType().isAir());
+        int speed = LaserGunMechanics.speedAmplifier(gun, empty);
         PotionEffect current = player.getPotionEffect(PotionEffectType.SPEED);
         if (speed < 0) {
             if (current != null) player.removePotionEffect(PotionEffectType.SPEED);
@@ -668,10 +757,7 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
                     new PotionEffect(PotionEffectType.SPEED, 40, speed, true, false, false));
         }
         laserMovementSpeed.add(id);
-        int slow =
-                gun == LaserBoxGun.SNIPER && aimingUntil.getOrDefault(id, 0) > laserTick
-                        ? 1
-                        : gun == LaserBoxGun.SNIPER ? 0 : -1;
+        int slow = LaserGunMechanics.slownessAmplifier(gun, aiming(player));
         PotionEffect currentSlow = player.getPotionEffect(PotionEffectType.SLOWNESS);
         if (slow >= 0) {
             if (currentSlow == null
@@ -702,7 +788,8 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
         meta.lore(
                 List.of(
                         Component.text(
-                                        MessageConfig.codeText("laser-box-area.item-14"),
+                                        MessageConfig.codeText(
+                                                "laser-showdown-team-area.gun-selector-lore"),
                                         NamedTextColor.GRAY)
                                 .decoration(TextDecoration.ITALIC, false)));
         meta.getPersistentDataContainer().set(laserItemKey, PersistentDataType.STRING, type);
@@ -719,97 +806,18 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
                 .get(laserItemKey, PersistentDataType.STRING);
     }
 
-    private LaserBoxGun gun(String type) {
+    private LaserGun gun(String type) {
         if (type == null) return null;
-        return LaserBoxGun.fromId(type.startsWith("gun:") ? type : type);
+        return LaserGun.fromId(type.startsWith("gun:") ? type : type);
     }
 
-    private LaserBoxGun gun(ItemStack stack) {
+    private LaserGun gun(ItemStack stack) {
         String type = type(stack);
         if (type != null) {
-            LaserBoxGun parsed = gun(type);
+            LaserGun parsed = gun(type);
             if (parsed != null) return parsed;
         }
-        return stack == null ? null : LaserBoxGun.fromMaterial(stack.getType());
-    }
-
-    private String gunName(LaserBoxGun gun) {
-        return switch (gun) {
-            case SNIPER -> configured(MessageConfig.LASER_BOX_GUN_SNIPER_NAME, "Sniper Rifle");
-            case RIFLE -> configured(MessageConfig.LASER_BOX_GUN_RIFLE_NAME, "Assault Rifle");
-            case SMG -> configured(MessageConfig.LASER_BOX_GUN_SMG_NAME, "SMG");
-            case MACHINE -> configured(MessageConfig.LASER_BOX_GUN_MACHINE_NAME, "LMG");
-            case SHOTGUN -> configured(MessageConfig.LASER_BOX_GUN_SHOTGUN_NAME, "Shotgun");
-        };
-    }
-
-    private String gunDescription(LaserBoxGun gun) {
-        return switch (gun) {
-            case SNIPER ->
-                    configured(
-                            MessageConfig.LASER_BOX_GUN_SNIPER_DESCRIPTION,
-                            "Accurate long-range fire");
-            case RIFLE ->
-                    configured(
-                            MessageConfig.LASER_BOX_GUN_RIFLE_DESCRIPTION,
-                            "A reliable all-round weapon");
-            case SMG ->
-                    configured(
-                            MessageConfig.LASER_BOX_GUN_SMG_DESCRIPTION, "Fast close-range fire");
-            case MACHINE ->
-                    configured(
-                            MessageConfig.LASER_BOX_GUN_MACHINE_DESCRIPTION, "Sustained firepower");
-            case SHOTGUN ->
-                    configured(
-                            MessageConfig.LASER_BOX_GUN_SHOTGUN_DESCRIPTION, "Close-range burst");
-        };
-    }
-
-    private ItemStack gunItem(LaserBoxGun gun, LaserBoxGun selected) {
-        ItemStack result = new ItemStack(gun.material());
-        ItemMeta meta = result.getItemMeta();
-        if (meta == null) return result;
-        meta.displayName(LegacyText.component(gunName(gun)));
-        List<Component> lore = new ArrayList<>();
-        lore.add(LegacyText.component(gunDescription(gun)));
-        String control =
-                gun == LaserBoxGun.SNIPER
-                        ? "laser-box-area.item-15"
-                        : gun == LaserBoxGun.SMG || gun == LaserBoxGun.MACHINE
-                                ? "laser-box-area.item-16"
-                                : "laser-box-area.item-8";
-        lore.add(LegacyText.component(MessageConfig.codeText(control)));
-        lore.add(
-                LegacyText.component(
-                        configured(MessageConfig.LASER_BOX_GUN_MAGAZINE, "&#bababaLimited ammo")
-                                .replace("%magazine%", Integer.toString(gun.magazine()))
-                                .replace(
-                                        "%seconds%",
-                                        String.format(
-                                                Locale.ROOT, "%.1f", gun.reloadTicks() / 20.0D))));
-        if (selected == gun)
-            lore.add(
-                    LegacyText.component(
-                            configured(
-                                    MessageConfig.LASER_BOX_GUN_SELECTED, "&#a8ff78✓ Equipped")));
-        meta.lore(lore);
-        meta.getPersistentDataContainer()
-                .set(laserItemKey, PersistentDataType.STRING, "gun:" + gun.id());
-        meta.setUnbreakable(true);
-        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
-        result.setItemMeta(meta);
-        if (gun == LaserBoxGun.SMG || gun == LaserBoxGun.MACHINE) {
-            result.setData(
-                    DataComponentTypes.KINETIC_WEAPON,
-                    KineticWeapon.kineticWeapon()
-                            .delayTicks(Integer.MAX_VALUE)
-                            .forwardMovement(0.0F)
-                            .damageMultiplier(0.0F));
-            result.setData(
-                    DataComponentTypes.USE_EFFECTS,
-                    UseEffects.useEffects().canSprint(true).speedMultiplier(1.0F));
-        }
-        return result;
+        return stack == null ? null : LaserGun.fromMaterial(stack.getType());
     }
 
     private static String configured(String value, String fallback) {
@@ -817,9 +825,20 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
     }
 
     void openGunMenu(Player player) {
-        if (!gamePlayers.contains(player.getUniqueId())
-                || getGameStageEnum() == GameStageEnum.PROGRESS) return;
-        LaserShowdownGunMenuHolder holder = new LaserShowdownGunMenuHolder(this);
+        if (!isGameplayParticipant(player)) return;
+        GameStageEnum stage = getGameStageEnum();
+        LaserShowdownLife life = playerLives.get(player.getUniqueId());
+        if (player.getOpenInventory().getTopInventory().getHolder()
+                        instanceof LaserShowdownGunMenuHolder current
+                && current.area() == this
+                && current.life() == life) return;
+        if (stage == GameStageEnum.PROGRESS) {
+            if (life == null || !life.openMenu(laserTick)) {
+                syncGunSelection(player);
+                return;
+            }
+        } else if (stage != GameStageEnum.PREPARATION && stage != GameStageEnum.COUNTDOWN) return;
+        LaserShowdownGunMenuHolder holder = new LaserShowdownGunMenuHolder(this, life);
         Inventory inventory =
                 Bukkit.createInventory(
                         holder,
@@ -829,9 +848,11 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
                                         MessageConfig.LASER_BOX_GUN_SELECTION_TITLE,
                                         "&#fff566Choose equipment")));
         holder.inventory(inventory);
-        LaserBoxGun selected = selectedGuns.get(player.getUniqueId());
-        LaserBoxGun[] guns = LaserBoxGun.values();
-        for (int i = 0; i < guns.length; i++) inventory.setItem(10 + i, gunItem(guns[i], selected));
+        LaserGun selected = selectedGuns.get(player.getUniqueId());
+        LaserGun[] guns = LaserGun.values();
+        for (int i = 0; i < guns.length; i++)
+            inventory.setItem(
+                    10 + i, LaserGunItems.gunItem(plugin, laserItemKey, guns[i], selected));
         player.openInventory(inventory);
         player.sendActionBar(
                 LegacyText.component(
@@ -844,10 +865,18 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
         if (!(event.getView().getTopInventory().getHolder()
                         instanceof LaserShowdownGunMenuHolder holder)
                 || holder.area() != this
+                || !isGameplayParticipant(player)
+                || (getGameStageEnum() == GameStageEnum.PROGRESS
+                        && (holder.life() == null
+                                || holder.life() != playerLives.get(player.getUniqueId())
+                                || !holder.life().canSelect(laserTick)))
+                || (getGameStageEnum() != GameStageEnum.PROGRESS
+                        && getGameStageEnum() != GameStageEnum.PREPARATION
+                        && getGameStageEnum() != GameStageEnum.COUNTDOWN)
                 || event.getRawSlot() < 0
                 || event.getRawSlot() >= event.getView().getTopInventory().getSize()) return;
         ItemStack clicked = event.getView().getTopInventory().getItem(event.getRawSlot());
-        LaserBoxGun selected = gun(clicked);
+        LaserGun selected = gun(clicked);
         if (selected == null) return;
         selectedGuns.put(player.getUniqueId(), selected);
         equipGun(player, selected);
@@ -857,7 +886,66 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
                         configured(
                                         MessageConfig.LASER_BOX_GUN_SELECTION_CHOSEN,
                                         "&#a8ff78Equipped %gun%")
-                                .replace("%gun%", gunName(selected))));
+                                .replace("%gun%", LaserGunItems.gunName(selected))));
+    }
+
+    void closeGunMenu(Player player, LaserShowdownGunMenuHolder holder) {
+        LaserShowdownLife life = playerLives.get(player.getUniqueId());
+        if (holder.area() != this || holder.life() != life || life == null) return;
+        life.closeMenu(laserTick);
+        if (isGameplayParticipant(player)) syncGunSelection(player);
+    }
+
+    private void syncGunSelection(Player player) {
+        LaserShowdownLife life = playerLives.get(player.getUniqueId());
+        if (life == null) return;
+        life.expire(laserTick);
+        recordLifeWeapon(player.getUniqueId());
+        if (life.locked()
+                && GUN_SELECTOR_TYPE.equals(type(player.getInventory().getItem(GUN_SELECTOR_SLOT))))
+            player.getInventory().setItem(GUN_SELECTOR_SLOT, null);
+    }
+
+    private void lockGunSelection(Player player) {
+        LaserShowdownLife life = playerLives.get(player.getUniqueId());
+        if (life == null) return;
+        life.lock();
+        syncGunSelection(player);
+        if (player.getOpenInventory().getTopInventory().getHolder()
+                        instanceof LaserShowdownGunMenuHolder holder
+                && holder.area() == this
+                && holder.life() == life) player.closeInventory();
+    }
+
+    private void finishLife(UUID player) {
+        LaserShowdownLife life = playerLives.get(player);
+        if (life == null) return;
+        life.lock();
+        recordLifeWeapon(player);
+    }
+
+    private void recordLifeWeapon(UUID player) {
+        LaserShowdownLife life = playerLives.get(player);
+        if (life == null || !life.takeUsage()) return;
+        LaserGun gun = selectedGuns.getOrDefault(player, LaserGun.RIFLE);
+        playerWeaponLives
+                .computeIfAbsent(player, ignored -> new EnumMap<>(LaserGun.class))
+                .merge(gun, 1L, Long::sum);
+    }
+
+    public LaserShowdownStats getPlayerCombatStats(UUID player) {
+        Map<LaserGun, Long> lives =
+                playerWeaponLives.getOrDefault(player, new EnumMap<>(LaserGun.class));
+        return new LaserShowdownStats(
+                1,
+                playerIndividualKills.getOrDefault(player, 0),
+                playerEnemyHits.getOrDefault(player, 0L),
+                playerHeadHits.getOrDefault(player, 0L),
+                lives.getOrDefault(LaserGun.SNIPER, 0L),
+                lives.getOrDefault(LaserGun.RIFLE, 0L),
+                lives.getOrDefault(LaserGun.SMG, 0L),
+                lives.getOrDefault(LaserGun.MACHINE, 0L),
+                lives.getOrDefault(LaserGun.SHOTGUN, 0L));
     }
 
     boolean holdsGun(Player player) {
@@ -865,12 +953,12 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
     }
 
     boolean holdsSniper(Player player) {
-        return gun(player.getInventory().getItemInMainHand()) == LaserBoxGun.SNIPER;
+        return gun(player.getInventory().getItemInMainHand()) == LaserGun.SNIPER;
     }
 
     boolean holdsRightClickAutomaticGun(Player player) {
-        LaserBoxGun gun = gun(player.getInventory().getItemInMainHand());
-        return gun == LaserBoxGun.SMG || gun == LaserBoxGun.MACHINE;
+        LaserGun gun = gun(player.getInventory().getItemInMainHand());
+        return gun == LaserGun.SMG || gun == LaserGun.MACHINE;
     }
 
     boolean holdsGunSelector(Player player) {
@@ -878,298 +966,216 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
     }
 
     void beginAiming(Player player) {
-        if (!active(player) || !holdsSniper(player)) return;
-        aimingUntil.put(player.getUniqueId(), laserTick + 7);
+        if (!active(player) || !holdsSniper(player) || weapons.reloading(player.getUniqueId())) {
+            endAiming(player);
+            return;
+        }
+        aimingUntil.put(
+                player.getUniqueId(),
+                Bukkit.getCurrentTick() + LaserGunMechanics.AIM_INPUT_GRACE_TICKS);
+        if (zoom == null) zoom = new LaserZoom(plugin);
+        zoom.setAiming(player, true);
+    }
+
+    private boolean aiming(Player player) {
+        return aimingUntil.getOrDefault(player.getUniqueId(), 0) > Bukkit.getCurrentTick();
+    }
+
+    private void endAiming(Player player) {
+        if (aimingUntil.remove(player.getUniqueId()) != null && zoom != null)
+            zoom.setAiming(player, false);
     }
 
     void fireFromLeftClick(Player player) {
         if (!active(player)) return;
-        LaserBoxGun gun = gun(player.getInventory().getItemInMainHand());
-        if (gun == LaserBoxGun.SNIPER) fireGun(player, gun);
+        LaserGun gun = gun(player.getInventory().getItemInMainHand());
+        if (gun == LaserGun.SNIPER) fireGun(player, gun);
     }
 
     void fireFromRightClick(Player player) {
         if (!active(player)) return;
-        LaserBoxGun gun = gun(player.getInventory().getItemInMainHand());
-        if (gun != null && gun != LaserBoxGun.SNIPER) fireGun(player, gun);
+        LaserGun gun = gun(player.getInventory().getItemInMainHand());
+        if (gun != null && gun != LaserGun.SNIPER) fireGun(player, gun);
     }
 
     void reloadFromSwap(Player player) {
         if (!active(player)) return;
-        LaserBoxGun gun = gun(player.getInventory().getItemInMainHand());
+        LaserGun gun = gun(player.getInventory().getItemInMainHand());
         if (gun == null) return;
+        cancelReloadIfNotHolding(player);
         UUID id = player.getUniqueId();
-        if (!playerReloadUntil.containsKey(id)
-                && playerAmmo.getOrDefault(id, gun.magazine()) < gun.magazine()) {
-            playerReloadGun.put(id, gun);
-            playerReloadUntil.put(id, laserTick + gun.reloadTicks());
-            player.playSound(player.getLocation(), Sound.ITEM_CROSSBOW_LOADING_START, 0.85F, 0.9F);
-            player.sendActionBar(
-                    LegacyText.component(
-                            configured(
-                                            MessageConfig.LASER_BOX_RELOAD,
-                                            "&#fff566%gun% &#bababa• Reloading")
-                                    .replace("%gun%", gunName(gun))
-                                    .replace(
-                                            "%seconds%",
-                                            String.format(
-                                                    Locale.ROOT,
-                                                    "%.1f",
-                                                    gun.reloadTicks() / 20.0D))));
-        }
+        if (weapons.reloading(id)) showReload(player, gun);
+        else if (weapons.requestReload(id, gun, laserTick, active(player)))
+            showReloadStarted(player, gun);
+    }
+
+    private void showReloadStarted(Player player, LaserGun gun) {
+        endAiming(player);
+        World world = player.getWorld();
+        if (world != null)
+            world.playSound(player.getLocation(), Sound.ITEM_CROSSBOW_LOADING_START, 0.85F, 0.9F);
+        showReload(player, gun);
+    }
+
+    private void showReload(Player player, LaserGun gun) {
+        endAiming(player);
+        int remaining = weapons.reloadRemaining(player.getUniqueId(), laserTick);
+        player.setCooldown(gun.material(), remaining);
+        player.sendActionBar(
+                LegacyText.component(
+                        configured(
+                                        MessageConfig.LASER_BOX_RELOAD,
+                                        "&#fff566%gun% &#bababa• Reloading")
+                                .replace("%gun%", LaserGunItems.gunName(gun))
+                                .replace(
+                                        "%seconds%",
+                                        String.format(Locale.ROOT, "%.1f", remaining / 20.0D))));
+    }
+
+    private void cancelReload(Player player) {
+        LaserGun gun = weapons.cancelReload(player.getUniqueId());
+        if (gun != null) player.setCooldown(gun.material(), 0);
+    }
+
+    private void cancelReloadIfNotHolding(Player player) {
+        LaserGun gun = weapons.reloadGun(player.getUniqueId());
+        if (gun != null && gun != gun(player.getInventory().getItemInMainHand()))
+            cancelReload(player);
     }
 
     void heldItemChanged(Player player, int newSlot) {
-        UUID id = player.getUniqueId();
-        LaserBoxGun reload = playerReloadGun.get(id);
-        if (reload == null) return;
-        if (reload != gun(player.getInventory().getItem(newSlot))) {
-            playerReloadGun.remove(id);
-            playerReloadUntil.remove(id);
-        }
+        LaserGun next = gun(player.getInventory().getItem(newSlot));
+        LaserGun reload = weapons.reloadGun(player.getUniqueId());
+        if (reload != null && reload != next) cancelReload(player);
+        if (next != LaserGun.SNIPER) endAiming(player);
     }
 
     private boolean active(Player player) {
         return getGameStageEnum() == GameStageEnum.PROGRESS
-                && gamePlayers.contains(player.getUniqueId())
+                && isGameplayParticipant(player)
+                && !playerRespawnTick.containsKey(player.getUniqueId())
                 && player.getGameMode() == GameMode.ADVENTURE
                 && !notInArea(player.getLocation())
                 && !isManagedSpectator(player);
     }
 
-    private void equipGun(Player player, LaserBoxGun gun) {
+    private void equipGun(Player player, LaserGun gun) {
+        player.clearActiveItem();
+        endAiming(player);
+        cancelReload(player);
+        player.setCooldown(gun.material(), 0);
         selectedGuns.put(player.getUniqueId(), gun);
-        player.getInventory().setItem(0, gunItem(gun, null));
+        player.getInventory().setItem(0, LaserGunItems.gunItem(plugin, laserItemKey, gun, null));
         player.getInventory().setItemInOffHand(null);
         player.getInventory().setHeldItemSlot(0);
-        playerAmmo.put(player.getUniqueId(), gun.magazine());
-        playerReloadUntil.remove(player.getUniqueId());
-        playerReloadGun.remove(player.getUniqueId());
+        weapons.equip(player.getUniqueId(), gun);
         syncAmmoItem(player, gun);
     }
 
-    private void syncAmmoItem(Player player, LaserBoxGun gun) {
-        int ammo = playerAmmo.getOrDefault(player.getUniqueId(), gun.magazine());
-        if (ammo <= 0) {
-            ItemStack current = player.getInventory().getItem(AMMO_SLOT);
-            if (current != null && "ammo".equals(type(current)))
-                player.getInventory().setItem(AMMO_SLOT, null);
-            return;
-        }
-        ItemStack current = player.getInventory().getItem(AMMO_SLOT);
-        if (current == null
-                || current.getType() != Material.SPECTRAL_ARROW
-                || !"ammo".equals(type(current))) {
-            ItemStack stack = new ItemStack(Material.SPECTRAL_ARROW, ammo);
-            ItemMeta meta = stack.getItemMeta();
-            if (meta != null) {
-                meta.displayName(
-                        LegacyText.component(
-                                configured(MessageConfig.LASER_BOX_AMMO_ITEM, "&#fff566Ammo")));
-                meta.getPersistentDataContainer()
-                        .set(laserItemKey, PersistentDataType.STRING, "ammo");
-                stack.setItemMeta(meta);
-            }
-            player.getInventory().setItem(AMMO_SLOT, stack);
-        } else current.setAmount(ammo);
+    private void syncAmmoItem(Player player, LaserGun gun) {
+        LaserGunItems.syncAmmo(
+                player, laserItemKey, AMMO_SLOT, weapons.ammo(player.getUniqueId(), gun));
     }
 
-    private void fireGun(Player shooter, LaserBoxGun weapon) {
+    private void fireGun(Player shooter, LaserGun weapon) {
+        if (weapon == null || !active(shooter)) return;
         UUID id = shooter.getUniqueId();
-        LaserBoxGun reload = playerReloadGun.get(id);
-        if (reload != null) {
-            if (playerReloadUntil.getOrDefault(id, Integer.MAX_VALUE) <= laserTick)
-                completeReload(shooter);
-            else return;
+        cancelReloadIfNotHolding(shooter);
+        if (weapons.reloading(id) && weapons.reloadRemaining(id, laserTick) == 0)
+            completeReload(shooter);
+        boolean scopedShot = aiming(shooter);
+        boolean wasReloading = weapons.reloading(id);
+        LaserWeaponState.FireResult result = weapons.shoot(id, weapon, laserTick, active(shooter));
+        if (result == LaserWeaponState.FireResult.RELOADING) {
+            if (!wasReloading) showReloadStarted(shooter, weapon);
+            else showReload(shooter, weapon);
+            return;
         }
-        int ammo = playerAmmo.getOrDefault(id, weapon.magazine());
-        int now = laserTick * 4;
-        if (playerNextShot.getOrDefault(id, 0) > now) return;
-        if (ammo <= 0) {
-            playerReloadGun.put(id, weapon);
-            playerReloadUntil.put(id, laserTick + weapon.reloadTicks());
+        if (result != LaserWeaponState.FireResult.FIRED) return;
+        lockGunSelection(shooter);
+        syncAmmoItem(shooter, weapon);
+        if (!wasReloading && weapons.reloading(id)) showReloadStarted(shooter, weapon);
+        else {
             shooter.sendActionBar(
                     LegacyText.component(
                             configured(
-                                            MessageConfig.LASER_BOX_RELOAD,
-                                            "&#fff566%gun% &#bababa• Reloading")
-                                    .replace("%gun%", gunName(weapon))
-                                    .replace(
-                                            "%seconds%",
-                                            String.format(
-                                                    Locale.ROOT,
-                                                    "%.1f",
-                                                    weapon.reloadTicks() / 20.0D))));
-            return;
+                                            MessageConfig.LASER_BOX_AMMO,
+                                            "&#fff566%gun% &#bababa•"
+                                                    + " &#ff6b26%ammo%&#ededed/%magazine%")
+                                    .replace("%gun%", LaserGunItems.gunName(weapon))
+                                    .replace("%ammo%", Integer.toString(weapons.ammo(id, weapon)))
+                                    .replace("%magazine%", Integer.toString(weapon.magazine()))));
         }
-        int previous = playerLastShot.getOrDefault(id, Integer.MIN_VALUE);
-        int burst = now - previous < 32 ? playerBurst.getOrDefault(id, 0) + 1 : 0;
-        playerLastShot.put(id, now);
-        playerBurst.put(id, burst);
-        playerNextShot.put(id, now + weapon.fireIntervalQuarterTicks());
-        playerAmmo.put(id, ammo - 1);
-        syncAmmoItem(shooter, weapon);
-        if (ammo == 1) {
-            playerReloadGun.put(id, weapon);
-            playerReloadUntil.put(id, laserTick + weapon.reloadTicks());
-        }
-        shooter.sendActionBar(
-                LegacyText.component(
-                        configured(
-                                        MessageConfig.LASER_BOX_AMMO,
-                                        "&#fff566%gun% &#bababa• &#ff6b26%ammo%&#ededed/%magazine%")
-                                .replace("%gun%", gunName(weapon))
-                                .replace("%ammo%", Integer.toString(ammo - 1))
-                                .replace("%magazine%", Integer.toString(weapon.magazine()))));
-        Location eye = shooter.getEyeLocation();
-        World world = eye.getWorld();
-        if (world == null) return;
-        Vector direction = eye.getDirection().normalize();
-        int pellets = weapon.pellets();
-        for (int pellet = 0; pellet < pellets; pellet++) {
-            Vector shot = recoil(spread(direction, combatSpread(shooter, weapon)), weapon, burst);
-            RayTraceResult block =
-                    world.rayTraceBlocks(eye, shot, weapon.range(), FluidCollisionMode.NEVER, true);
-            double distance =
-                    block == null
-                            ? weapon.range()
-                            : block.getHitPosition().distance(eye.toVector());
-            RayTraceResult hit =
-                    world.rayTraceEntities(
-                            eye,
-                            shot,
-                            distance,
-                            0.15,
-                            entity ->
-                                    entity instanceof Player p
-                                            && active(p)
-                                            && !p.getUniqueId().equals(id));
-            if (hit != null) distance = hit.getHitPosition().distance(eye.toVector());
-            spawnLaser(world, eye, shot, distance);
-            if (hit != null && hit.getHitEntity() instanceof Player victim) {
-                LaserBoxGun.HitRegion region = hitRegion(victim, hit.getHitPosition());
-                applyLaserHit(shooter, victim, weapon.damage(region, distance), weapon, region);
-            }
-        }
-        world.playSound(
-                shooter.getLocation(), gunSound(weapon), gunVolume(weapon), gunPitch(weapon));
+        LaserWeaponState shootingWeapons = weapons;
+        long generation = captureGameGeneration();
+        LaserShotEngine.fire(
+                shooter,
+                weapon,
+                weapons.burstShot(id),
+                scopedShot,
+                new LaserShotEngine.Context() {
+                    @Override
+                    public boolean current() {
+                        return weapons == shootingWeapons
+                                && captureGameGeneration() == generation
+                                && active(shooter);
+                    }
+
+                    @Override
+                    public boolean collidable(Entity entity) {
+                        return entity instanceof Player player && active(player);
+                    }
+
+                    @Override
+                    public boolean enemy(Player player) {
+                        return LaserShowdownTeamArea.this.enemy(shooter, player);
+                    }
+
+                    @Override
+                    public void beam(World world, Location eye, Vector direction, double distance) {
+                        Set<Player> viewers = new LinkedHashSet<>(players());
+                        for (UUID uuid : getSpectatorUniqueIds()) {
+                            Player player = Bukkit.getPlayer(uuid);
+                            if (player != null) viewers.add(player);
+                        }
+                        LaserBeam.draw(world, eye, direction, distance, viewers);
+                    }
+
+                    @Override
+                    public void pelletHit(Player player, LaserGun.HitRegion region) {
+                        recordEnemyHit(id, region);
+                    }
+
+                    @Override
+                    public void damage(Player player, double amount, LaserGun.HitRegion region) {
+                        applyLaserHit(shooter, player, amount, weapon, region);
+                    }
+                });
     }
 
-    private Sound gunSound(LaserBoxGun gun) {
-        return switch (gun) {
-            case SMG -> Sound.ENTITY_ARROW_SHOOT;
-            case RIFLE -> Sound.ENTITY_FIREWORK_ROCKET_BLAST;
-            case MACHINE -> Sound.ENTITY_FIREWORK_ROCKET_BLAST_FAR;
-            case SNIPER -> Sound.ENTITY_GENERIC_EXPLODE;
-            case SHOTGUN -> Sound.BLOCK_RESPAWN_ANCHOR_DEPLETE;
-        };
+    private boolean enemy(Player attacker, Player victim) {
+        if (!active(attacker) || !active(victim)) return false;
+        ChampionshipTeam attackerTeam = plugin.getTeamManager().getTeamByPlayer(attacker);
+        ChampionshipTeam victimTeam = plugin.getTeamManager().getTeamByPlayer(victim);
+        return attackerTeam != null && victimTeam != null && !attackerTeam.equals(victimTeam);
     }
 
-    private float gunVolume(LaserBoxGun gun) {
-        return gun == LaserBoxGun.SNIPER || gun == LaserBoxGun.SHOTGUN ? 1.25F : 1.05F;
-    }
-
-    private float gunPitch(LaserBoxGun gun) {
-        return switch (gun) {
-            case SMG -> 1.65F;
-            case RIFLE -> 0.82F;
-            case MACHINE -> 0.65F;
-            case SNIPER -> 0.5F;
-            case SHOTGUN -> 0.42F;
-        };
-    }
-
-    private double combatSpread(Player player, LaserBoxGun gun) {
-        double spread = gun.spreadDegrees(playerBurst.getOrDefault(player.getUniqueId(), 0));
-        Vector velocity = player.getVelocity();
-        boolean moving =
-                velocity.getX() * velocity.getX() + velocity.getZ() * velocity.getZ() > 0.0025D;
-        if (!player.isOnGround())
-            return spread + gun.spreadDegrees() * (gun == LaserBoxGun.SMG ? 2.25D : 4D);
-        if (player.isSneaking()) return gun.crouchedSpread(spread, moving);
-        double result =
-                moving
-                        ? spread + gun.spreadDegrees() * (gun == LaserBoxGun.SMG ? 1D : 1.6D)
-                        : spread;
-        if (gun == LaserBoxGun.SNIPER
-                && aimingUntil.getOrDefault(player.getUniqueId(), 0) > laserTick)
-            result *= moving ? 0.65D : 0.25D;
-        return result;
-    }
-
-    private Vector spread(Vector direction, double degrees) {
-        if (degrees <= 0) return direction.clone();
-        double radians = Math.toRadians(degrees);
-        return perturb(
-                direction,
-                Math.tan(ThreadLocalRandom.current().nextDouble(-radians, radians)),
-                Math.tan(ThreadLocalRandom.current().nextDouble(-radians, radians)));
-    }
-
-    private Vector recoil(Vector direction, LaserBoxGun gun, int burstShot) {
-        return perturb(
-                direction,
-                Math.tan(Math.toRadians(gun.recoilYawDegrees(burstShot))),
-                Math.tan(Math.toRadians(gun.recoilPitchDegrees(burstShot))));
-    }
-
-    private Vector perturb(Vector direction, double horizontal, double vertical) {
-        Vector forward = direction.clone().normalize();
-        Vector right = forward.clone().crossProduct(new Vector(0, 1, 0));
-        if (right.lengthSquared() < 0.0001) right = new Vector(1, 0, 0);
-        right.normalize();
-        Vector up = right.clone().crossProduct(forward).normalize();
-        return forward.add(right.multiply(horizontal)).add(up.multiply(vertical)).normalize();
-    }
-
-    private void spawnLaser(World world, Location eye, Vector direction, double distance) {
-        Set<Player> viewers = new LinkedHashSet<>(players());
-        for (UUID uuid : getSpectatorUniqueIds()) {
-            Player spectator = Bukkit.getPlayer(uuid);
-            if (spectator != null) viewers.add(spectator);
-        }
-        List<Player> viewerList = new ArrayList<>(viewers);
-        for (double d = 0; d <= distance; d += 1D)
-            world.spawnParticle(
-                    Particle.DUST,
-                    viewerList,
-                    null,
-                    eye.getX() + direction.getX() * d,
-                    eye.getY() + direction.getY() * d,
-                    eye.getZ() + direction.getZ() * d,
-                    1,
-                    0,
-                    0,
-                    0,
-                    0,
-                    LASER_PARTICLE,
-                    false);
-    }
-
-    private LaserBoxGun.HitRegion hitRegion(Player victim, Vector point) {
-        double min = victim.getBoundingBox().getMinY();
-        double height = Math.max(0.1D, victim.getBoundingBox().getMaxY() - min);
-        double relative = (point.getY() - min) / height;
-        if (relative >= 0.72D) return LaserBoxGun.HitRegion.HEAD;
-        if (relative <= 0.35D) return LaserBoxGun.HitRegion.LEGS;
-        return LaserBoxGun.HitRegion.BODY;
+    private void recordEnemyHit(UUID attacker, LaserGun.HitRegion region) {
+        playerEnemyHits.merge(attacker, 1L, Long::sum);
+        if (region == LaserGun.HitRegion.HEAD) playerHeadHits.merge(attacker, 1L, Long::sum);
     }
 
     private void applyLaserHit(
             Player attacker,
             Player victim,
             double damage,
-            LaserBoxGun weapon,
-            LaserBoxGun.HitRegion region) {
-        if (getGameStageEnum() != GameStageEnum.PROGRESS
-                || !active(attacker)
-                || !gamePlayers.contains(victim.getUniqueId())
-                || victim.getGameMode() != GameMode.ADVENTURE) return;
+            LaserGun weapon,
+            LaserGun.HitRegion region) {
+        if (!enemy(attacker, victim)) return;
         ChampionshipTeam attackerTeam = plugin.getTeamManager().getTeamByPlayer(attacker);
-        ChampionshipTeam victimTeam = plugin.getTeamManager().getTeamByPlayer(victim);
-        if (attackerTeam == null || victimTeam == null || attackerTeam.equals(victimTeam)) return;
         UUID victimId = victim.getUniqueId();
         if (playerProtectionUntil.getOrDefault(victimId, 0) > laserTick) return;
+        lockGunSelection(victim);
         double health = playerLaserHealth.getOrDefault(victimId, 100D) - damage;
         if (health > 0) {
             playerLaserHealth.put(victimId, health);
@@ -1177,6 +1183,7 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
             victim.playSound(victim.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, 0.5F, 1.8F);
             return;
         }
+        clearLaserEffects(victim);
         playerLaserHealth.remove(victimId);
         playerRespawnTick.put(victimId, laserTick + 80);
         victim.getInventory().clear();
@@ -1184,25 +1191,24 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
         plugin.getGameManager().getSpectatorManager().enterParticipantSpectator(victim, this);
         ChampionshipTeam killerTeam = attackerTeam;
         if (killerTeam != null)
-            LaserBoxKillFeedback.burst(
+            LaserKillFeedback.burst(
                     victim,
                     TeamColors.fromHex(killerTeam.getColorCode()),
                     laserItemKey,
-                    region == LaserBoxGun.HitRegion.HEAD);
+                    region == LaserGun.HitRegion.HEAD);
         int kills = playerIndividualKills.getOrDefault(attacker.getUniqueId(), 0) + 1;
         playerIndividualKills.put(attacker.getUniqueId(), kills);
         if (killerTeam != null) addTeamShootCount(killerTeam);
         addPlayerPoints(attacker.getUniqueId(), 4);
-        LaserBoxKillFeedback.play(
+        long feedbackGeneration = captureGameGeneration();
+        UUID attackerId = attacker.getUniqueId();
+        LaserKillFeedback.play(
                 attacker,
                 kills,
-                scheduler,
                 plugin,
-                () ->
-                        getGameStageEnum() == GameStageEnum.PROGRESS
-                                && gamePlayers.contains(attacker.getUniqueId()));
+                () -> isKillFeedbackCurrent(feedbackGeneration, attackerId));
         String template =
-                region == LaserBoxGun.HitRegion.HEAD
+                region == LaserGun.HitRegion.HEAD
                         ? configured(
                                 MessageConfig.LASER_BOX_HEADSHOT,
                                 "&#ff6b26%attacker% &#bababaheadshot &#ededed%victim%")
@@ -1212,25 +1218,60 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
         sendMessageToAllGamePlayers(
                 template.replace("%attacker%", CoreMessages.formatPlayerName(attacker))
                         .replace("%victim%", CoreMessages.formatPlayerName(victim))
-                        .replace("%gun%", gunName(weapon)));
+                        .replace("%gun%", LaserGunItems.gunName(weapon)));
+        if (reachedKillTarget(kills, getTeamScore(attackerTeam))) endGame();
+    }
+
+    /** The decisive kill's four notes may finish in settlement, but never in a later run. */
+    boolean isKillFeedbackCurrent(long generation, UUID player) {
+        GameStageEnum stage = getGameStageEnum();
+        return captureGameGeneration() == generation
+                && !isDisposed()
+                && (stage == GameStageEnum.PROGRESS || stage == GameStageEnum.END)
+                && gamePlayers.contains(player);
+    }
+
+    int matchDurationSeconds() {
+        return getRunMode() == GameRunMode.DAILY
+                ? DAILY_DURATION_SECONDS
+                : getGameConfig().getTimer();
+    }
+
+    boolean reachedKillTarget(int individualKills, int teamKills) {
+        return getRunMode() == GameRunMode.DAILY
+                ? individualKills >= DAILY_KILL_TARGET
+                : teamKills >= 100;
     }
 
     private void completeReload(Player player) {
         UUID id = player.getUniqueId();
-        LaserBoxGun gun = playerReloadGun.get(id);
-        if (gun == null || playerReloadUntil.getOrDefault(id, Integer.MAX_VALUE) > laserTick)
-            return;
-        playerReloadGun.remove(id);
-        playerReloadUntil.remove(id);
-        playerAmmo.put(id, gun.magazine());
+        LaserGun gun = weapons.reloadGun(id);
+        if (!active(player)
+                || gun == null
+                || gun != gun(player.getInventory().getItemInMainHand())
+                || !weapons.completeReload(id, gun, laserTick)) return;
+        player.setCooldown(gun.material(), 0);
         syncAmmoItem(player, gun);
-        player.playSound(player.getLocation(), Sound.ITEM_CROSSBOW_LOADING_END, 0.9F, 1.05F);
+        World world = player.getWorld();
+        if (world != null)
+            world.playSound(player.getLocation(), Sound.ITEM_CROSSBOW_LOADING_END, 0.9F, 1.05F);
         player.sendActionBar(
                 LegacyText.component(
                         configured(
                                         MessageConfig.LASER_BOX_RELOAD_COMPLETE,
                                         "&#a8ff78%gun% reloaded")
-                                .replace("%gun%", gunName(gun))));
+                                .replace("%gun%", LaserGunItems.gunName(gun))));
+    }
+
+    private void hideNameTags() {
+        restoreNameTags();
+        nameTags = new LaserNameTags(plugin);
+        nameTags.refresh(gamePlayers);
+    }
+
+    private void restoreNameTags() {
+        if (nameTags != null) nameTags.close();
+        nameTags = null;
     }
 
     @Override
@@ -1243,6 +1284,15 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
         if (startGameProgressTask != null) startGameProgressTask.cancel();
         if (laserTickTask != null) laserTickTask.cancel();
         for (Player player : players()) clearLaserEffects(player);
+        if (zoom != null) zoom.close();
+        zoom = null;
+        restoreNameTags();
+        weapons.close();
+        playerLives.clear();
+        firstRoundGunSelectionWindow = false;
+        playerWeaponLives.clear();
+        playerEnemyHits.clear();
+        playerHeadHits.clear();
         selectedGuns.clear();
         locationIterators.clear();
         super.dispose();

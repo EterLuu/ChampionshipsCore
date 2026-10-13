@@ -1,8 +1,10 @@
 package ink.ziip.championshipscore.api.daily;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.configuration.ConfigurationStateExtension;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
@@ -90,6 +92,63 @@ class DailyTeamAllocationTest {
                 sizes(
                         DailyManager.allocate(
                                 List.of(group(Set.of(UUID.randomUUID()))), SOLO_RULES)));
+    }
+
+    private static final DailyRules LASER_RULES = new DailyRules(2, 16, 1, 16, 60);
+
+    @Test
+    void laserUsesEveryAvailableTeamBeforeAddingSecondPlayers() {
+        for (int count = 2; count <= 16; count++) {
+            List<DailyQueue.Group> groups = solos(count);
+            List<Set<UUID>> teams =
+                    DailyManager.allocate(groups, LASER_RULES, GameTypeEnum.LaserShowdown);
+            assertEquals(Math.min(count, 16), teams.size(), "players=" + count);
+            assertEquals(count, teams.stream().mapToInt(Set::size).sum());
+            assertEquals(count, teams.stream().flatMap(Set::stream).distinct().count());
+            assertTrue(teams.stream().allMatch(team -> !team.isEmpty() && team.size() == 1));
+            assertTrue(
+                    teams.stream().mapToInt(Set::size).max().orElseThrow()
+                                    - teams.stream().mapToInt(Set::size).min().orElseThrow()
+                            <= 1);
+        }
+    }
+
+    @Test
+    void laserSplitsOnePartyButQueueStillMovesAndRemovesItAsAWhole() {
+        Set<UUID> party = sizedPlayers(4);
+        DailyQueue queue = new DailyQueue(GameTypeEnum.LaserShowdown);
+        assertTrue(queue.add(UUID.randomUUID(), party, LASER_RULES));
+        assertTrue(DailyManager.hasEnoughQueueGroups(queue.game(), queue.groupCount()));
+        List<DailyQueue.Group> selected = queue.take(16);
+        assertEquals(
+                List.of(1, 1, 1, 1),
+                sizes(DailyManager.allocate(selected, LASER_RULES, queue.game())));
+        assertEquals(0, queue.size());
+        queue.restore(selected, LASER_RULES);
+        assertEquals(party, queue.removePlayer(party.iterator().next()));
+        assertEquals(0, queue.size());
+    }
+
+    @Test
+    void laserSpreadsMixedPartiesWhileOtherGamesKeepTheirExistingRules() {
+        List<DailyQueue.Group> groups = new ArrayList<>();
+        groups.add(group(sizedPlayers(4)));
+        groups.add(group(sizedPlayers(3)));
+        groups.addAll(solos(9));
+        assertEquals(
+                16, DailyManager.allocate(groups, LASER_RULES, GameTypeEnum.LaserShowdown).size());
+        assertEquals(
+                List.of(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+                sizes(DailyManager.allocate(groups, LASER_RULES, GameTypeEnum.LaserShowdown)));
+        assertEquals(
+                List.of(2, 2), sizes(DailyManager.allocate(solos(4), RULES, GameTypeEnum.Bingo)));
+        assertFalse(DailyManager.hasEnoughQueueGroups(GameTypeEnum.Bingo, 1));
+        assertFalse(DailyManager.hasEnoughQueueGroups(GameTypeEnum.LaserShowdown, 0));
+        assertTrue(
+                DailyManager.allocate(solos(1), LASER_RULES, GameTypeEnum.LaserShowdown).isEmpty());
+        assertTrue(
+                DailyManager.allocate(solos(17), LASER_RULES, GameTypeEnum.LaserShowdown)
+                        .isEmpty());
     }
 
     @Test

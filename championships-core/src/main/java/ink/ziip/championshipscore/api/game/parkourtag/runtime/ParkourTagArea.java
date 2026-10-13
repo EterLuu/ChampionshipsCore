@@ -15,6 +15,7 @@ import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
+import ink.ziip.championshipscore.shared.presentation.DurationText;
 
 import lombok.Getter;
 
@@ -294,7 +295,7 @@ public class ParkourTagArea extends BasePairedGameInstance {
                                     MessageConfig.codeText(
                                             "parkour-tag-area.begin-game-progress-1",
                                             MessageConfig.PARKOUR_TAG_ACTION_BAR_COUNT_DOWN.replace(
-                                                    "%time%", String.valueOf(timer)),
+                                                    "%time%", DurationText.bossBarSeconds(timer)),
                                             chasers),
                                     timer,
                                     getGameConfig().getTimer());

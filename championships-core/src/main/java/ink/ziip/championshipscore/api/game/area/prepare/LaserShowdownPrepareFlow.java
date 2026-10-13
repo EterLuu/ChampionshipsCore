@@ -1,11 +1,12 @@
 package ink.ziip.championshipscore.api.game.area.prepare;
 
 import ink.ziip.championshipscore.api.game.area.prepare.step.ConfirmWorldStep;
+import ink.ziip.championshipscore.api.game.area.prepare.step.FourArenaSchematicStep;
+import ink.ziip.championshipscore.api.game.area.prepare.step.FourArenaStampStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.ListStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.StandAndRunStep;
-import ink.ziip.championshipscore.api.game.area.prepare.step.WeSelectionStep;
-import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.api.game.lasershowdown.config.LaserShowdownConfig;
+import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
@@ -25,7 +26,6 @@ import java.util.List;
 
 /** Guided setup for one Laser Showdown region in the shared permanent world. */
 public final class LaserShowdownPrepareFlow extends PrepareFlowDefinition {
-    private static final List<String> LANES = List.of("area1", "area2", "area3", "area4");
 
     @Override
     public @NotNull String worldName(@NotNull SetupTarget target) {
@@ -51,24 +51,8 @@ public final class LaserShowdownPrepareFlow extends PrepareFlowDefinition {
         steps.add(
                 new ConfirmWorldStep(
                         player -> isInCorrectWorld(player, target), target.worldName()));
-        steps.add(
-                new WeSelectionStep(
-                        "area_pos",
-                        LegacyText.component(
-                                GuiConfig.text(
-                                        "map-editor.menus.step-list.items.site-boundary.title")),
-                        LegacyText.component(
-                                GuiConfig.line(
-                                        "map-editor.menus.step-list.games.laser-showdown.items.site-boundary.lore",
-                                        0)),
-                        Material.BEDROCK,
-                        t -> cfg(t).getAreaPos1() != null && cfg(t).getAreaPos2() != null,
-                        (t, v) -> {
-                            cfg(t).setAreaPos1(v[0]);
-                            cfg(t).setAreaPos2(v[1]);
-                        },
-                        CoreMessages.formatAdminSuccess(
-                                MessageConfig.MAP_EDITOR_STEP_SITE_BOUNDARY_SET)));
+        steps.add(new FourArenaSchematicStep(target));
+        steps.add(new FourArenaStampStep());
         steps.add(
                 new StandAndRunStep(
                         "spectator_spawn",
@@ -84,31 +68,40 @@ public final class LaserShowdownPrepareFlow extends PrepareFlowDefinition {
                         (t, l) -> cfg(t).setSpectatorSpawnPoint(l),
                         CoreMessages.formatAdminSuccess(
                                 MessageConfig.MAP_EDITOR_STEP_SPECTATOR_SPAWN_POINT_SET)));
-        for (String lane : LANES) {
-            steps.add(
-                    new ListStep(
-                            "player_spawn_" + lane,
-                            LegacyText.component(
-                                    GuiConfig.text(
-                                            "map-editor.menus.step-list.games.laser-showdown.items.lane-spawn.title",
-                                            java.util.Map.of("lane", lane))),
-                            LegacyText.component(
-                                    GuiConfig.line(
-                                            "map-editor.menus.step-list.games.laser-showdown.items.lane-spawn.lore",
-                                            0)),
-                            Material.PLAYER_HEAD,
-                            t -> laneValues(t, lane),
-                            (t, values) -> section(t).set(lane, values),
-                            t -> laneValues(t, lane).isEmpty(),
-                            (t, value) -> {
-                                List<String> values = laneValues(t, lane);
-                                values.add(value);
-                                section(t).set(lane, values);
-                            },
-                            t -> section(t).set(lane, new ArrayList<>()),
-                            t -> laneValues(t, lane).size()));
-        }
+        String lane = "area1";
+        steps.add(
+                new ListStep(
+                        "spawns",
+                        LegacyText.component(
+                                GuiConfig.text(
+                                        "map-editor.games.lasershowdown.menus.prepare.items.spawns.title")),
+                        LegacyText.component(
+                                GuiConfig.line(
+                                        "map-editor.games.lasershowdown.menus.prepare.items.spawns.lore",
+                                        0)),
+                        Material.PLAYER_HEAD,
+                        t -> laneValues(t, lane),
+                        (t, values) -> section(t).set(lane, values),
+                        t -> laneValues(t, lane).isEmpty(),
+                        (t, value) -> {
+                            List<String> values = laneValues(t, lane);
+                            values.add(value);
+                            section(t).set(lane, values);
+                        },
+                        t -> section(t).set(lane, new ArrayList<>()),
+                        t -> laneValues(t, lane).size()));
         return steps;
+    }
+
+    @Override
+    public @NotNull List<String> validate(@NotNull PrepareSession session) {
+        List<String> errors = new ArrayList<>(super.validate(session));
+        try {
+            cfg(session.getTarget()).validate();
+        } catch (RuntimeException failure) {
+            errors.add(failure.getMessage());
+        }
+        return errors;
     }
 
     private static LaserShowdownConfig cfg(SetupTarget target) {

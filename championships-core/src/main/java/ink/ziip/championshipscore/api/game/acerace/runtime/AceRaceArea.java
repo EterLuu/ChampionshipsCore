@@ -651,10 +651,10 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
                     LegacyText.translateColorCodes(
                             MessageConfig.ACE_RACE_ACTION_BAR_COUNT_DOWN
                                     .replace(
-                                            "%time%", DurationText.minutesSeconds(remainingSeconds))
+                                            "%time%", DurationText.bossBarSeconds(remainingSeconds))
                                     .replace(
                                             "%lap-time%",
-                                            DurationText.minutesSeconds(
+                                            DurationText.bossBarSeconds(
                                                     currentLapElapsedSeconds(uuid, now)))
                                     .replace("%lap%", String.valueOf(currentLapNumber(uuid)))));
             bossBar.setProgress(Math.max(0D, Math.min(1D, progress)));

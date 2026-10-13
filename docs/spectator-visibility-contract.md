@@ -75,4 +75,4 @@ Core 游戏机制通过已绑定运行实例的 `BaseListener` / `SpectatorGameE
 5. JUnit 和测试工具位于各 Maven 模块的 `src/test/java`，保持同包名；临时原生探针与构建日志放系统临时目录。从根仓库执行 `mvn -B -ntp -pl championships-core,championships-bingo-worker -am package`，缓存完整时可使用 `-o`。
 6. 成功打包后直接替换对应运行 JAR，不创建 JAR 备份，不例行做额外归档完整性校验。双方代码发生变化时部署双方，并明确 Core 与 Bingo Worker 都需要重启；仅改本文等文档不需要重新打包或部署。
 
-当前实现依赖已安装的 PacketEvents，并使用受支持的 Paper 26.2 原生玩家信息包保留头像和签名会话。升级服务端、PacketEvents、玩家信息协议或原生字段/方法时，必须重新验证契约，不能用会破坏 Tab 或真实旁观语义的静默降级绕过失败。
+当前实现依赖已安装的 PacketEvents 2.14.0，并使用受支持的 Paper 26.3 / Folia 26.2 原生玩家信息包保留头像和签名会话。升级服务端、PacketEvents、玩家信息协议或原生字段/方法时，必须重新验证契约，不能用会破坏 Tab 或真实旁观语义的静默降级绕过失败。

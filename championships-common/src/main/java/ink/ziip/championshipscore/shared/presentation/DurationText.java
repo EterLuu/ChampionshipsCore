@@ -11,4 +11,18 @@ public final class DurationText {
         long seconds = Math.max(0L, totalSeconds);
         return String.format(Locale.ROOT, "%02d:%02d", seconds / 60L, seconds % 60L);
     }
+
+    /** BossBar durations use minutes and seconds only above the strict 60-second boundary. */
+    public static String bossBarSeconds(long totalSeconds) {
+        return bossBarSeconds(totalSeconds, "%seconds%秒", "%minutes%分%seconds%秒");
+    }
+
+    /** Localized forms include their units, so the surrounding title must not append a unit. */
+    public static String bossBarSeconds(
+            long totalSeconds, String secondsTemplate, String minutesSecondsTemplate) {
+        long seconds = Math.max(0L, totalSeconds);
+        String template = seconds > 60L ? minutesSecondsTemplate : secondsTemplate;
+        return template.replace("%minutes%", Long.toString(seconds / 60L))
+                .replace("%seconds%", Long.toString(seconds > 60L ? seconds % 60L : seconds));
+    }
 }

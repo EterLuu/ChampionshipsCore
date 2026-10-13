@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.laserbox.runtime;
 
-import ink.ziip.championshipscore.api.game.laserbox.model.LaserBoxGun;
+import ink.ziip.championshipscore.api.game.laser.model.LaserGun;
+import ink.ziip.championshipscore.api.game.laser.runtime.LaserWeaponState;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -9,30 +10,18 @@ import java.util.UUID;
 /** Pure match state. Tick deadlines prevent cooldown/respawn races across disconnects. */
 final class LaserBoxRound {
     private static final int RESPAWN_TICKS = 80;
-    private static final int BURST_RESET_QUARTER_TICKS = 32;
     static final int INITIAL_SCORE = 50;
     static final int INITIAL_TRANSFER = 5;
     private static final int TOTAL_SCORE = INITIAL_SCORE * 2;
     private int right = INITIAL_SCORE;
     private int tick;
     private boolean finished;
-    private final Map<UUID, Integer> shots = new HashMap<>();
-    private final Map<UUID, Integer> lastFiredAt = new HashMap<>();
-    private final Map<UUID, Integer> burstShots = new HashMap<>();
-    private final Map<UUID, Integer> ammunition = new HashMap<>();
-    private final Map<UUID, Reload> reloads = new HashMap<>();
+    private final LaserWeaponState weapons = new LaserWeaponState();
     private final Map<UUID, Double> health = new HashMap<>();
     private final Map<UUID, Integer> respawns = new HashMap<>();
     private final Map<UUID, Integer> shields = new HashMap<>();
     private final Map<UUID, Integer> protection = new HashMap<>();
     private final Map<UUID, Integer> kills = new HashMap<>();
-
-    enum FireResult {
-        FIRED,
-        COOLDOWN,
-        RELOADING,
-        NOT_READY
-    }
 
     enum DamageResult {
         IGNORED,
@@ -42,8 +31,6 @@ final class LaserBoxRound {
     }
 
     private static final double MAX_HEALTH = 100.0D;
-
-    private record Reload(int deadline, LaserBoxGun gun) {}
 
     int right() {
         return right;
@@ -75,6 +62,7 @@ final class LaserBoxRound {
     boolean finish() {
         if (finished) return false;
         finished = true;
+        weapons.close();
         return true;
     }
 
@@ -82,95 +70,44 @@ final class LaserBoxRound {
         return !finished && !respawns.containsKey(player);
     }
 
-    /** Compatibility path for the old single laser tests and integrations. */
-    boolean shoot(UUID player) {
-        // The original LaserBox laser fired every 6.25 ticks.  Keep this overload stable for
-        // callers that do not participate in the weapon-selection system.
-        int now = tick * 4;
-        Integer deadline = shots.get(player);
-        if (!ready(player) || deadline != null && deadline > now) return false;
-        int base = deadline != null && now - deadline < 4 ? deadline : now;
-        shots.put(player, base + 25);
-        return true;
+    LaserWeaponState.FireResult shoot(UUID player, LaserGun gun) {
+        return weapons.shoot(player, gun, tick, ready(player));
     }
 
-    FireResult shoot(UUID player, LaserBoxGun gun) {
-        if (!ready(player) || gun == null) return FireResult.NOT_READY;
-        completeReload(player, gun);
-        if (reloads.containsKey(player)) return FireResult.RELOADING;
-
-        int now = tick * 4;
-        Integer deadline = shots.get(player);
-        if (deadline != null && deadline > now) return FireResult.COOLDOWN;
-
-        int ammo = ammunition.getOrDefault(player, gun.magazine());
-        if (ammo <= 0) {
-            reloads.put(player, new Reload(tick + gun.reloadTicks(), gun));
-            return FireResult.RELOADING;
-        }
-
-        int base =
-                deadline != null && now - deadline < gun.fireIntervalQuarterTicks() / 2
-                        ? deadline
-                        : now;
-        shots.put(player, base + gun.fireIntervalQuarterTicks());
-        ammunition.put(player, ammo - 1);
-        int burstShot = 0;
-        Integer previous = lastFiredAt.get(player);
-        if (previous != null && now - previous < BURST_RESET_QUARTER_TICKS)
-            burstShot = burstShots.getOrDefault(player, 0) + 1;
-        burstShots.put(player, burstShot);
-        lastFiredAt.put(player, now);
-        if (ammo == 1) reloads.put(player, new Reload(tick + gun.reloadTicks(), gun));
-        return FireResult.FIRED;
-    }
-
-    double spreadDegrees(UUID player, LaserBoxGun gun) {
-        return gun.spreadDegrees(burstShots.getOrDefault(player, 0));
+    double spreadDegrees(UUID player, LaserGun gun) {
+        return gun.spreadDegrees(weapons.burstShot(player));
     }
 
     int burstShot(UUID player) {
-        return burstShots.getOrDefault(player, 0);
+        return weapons.burstShot(player);
     }
 
-    boolean completeReload(UUID player, LaserBoxGun gun) {
-        Reload reload = reloads.get(player);
-        if (reload == null || reload.gun() != gun || reload.deadline() > tick) return false;
-        reloads.remove(player);
-        ammunition.put(player, gun.magazine());
-        return true;
+    boolean completeReload(UUID player, LaserGun gun) {
+        return ready(player) && weapons.completeReload(player, gun, tick);
     }
 
-    /** Starts a player-requested reload when the current magazine is not already full. */
-    boolean requestReload(UUID player, LaserBoxGun gun) {
-        if (!ready(player) || gun == null || reloads.containsKey(player)) return false;
-        int ammo = ammunition.getOrDefault(player, gun.magazine());
-        if (ammo >= gun.magazine()) return false;
-        reloads.put(player, new Reload(tick + gun.reloadTicks(), gun));
-        return true;
+    boolean requestReload(UUID player, LaserGun gun) {
+        return weapons.requestReload(player, gun, tick, ready(player));
     }
 
     boolean reloading(UUID player) {
-        return reloads.containsKey(player);
+        return weapons.reloading(player);
     }
 
-    LaserBoxGun reloadGun(UUID player) {
-        Reload reload = reloads.get(player);
-        return reload == null ? null : reload.gun();
+    LaserGun reloadGun(UUID player) {
+        return weapons.reloadGun(player);
     }
 
-    LaserBoxGun cancelReload(UUID player) {
-        Reload reload = reloads.remove(player);
-        return reload == null ? null : reload.gun();
+    LaserGun cancelReload(UUID player) {
+        return weapons.cancelReload(player);
     }
 
     int reloadRemaining(UUID player) {
-        Reload reload = reloads.get(player);
-        return Math.max(0, reload == null ? 0 : reload.deadline() - tick);
+        return weapons.reloadRemaining(player, tick);
     }
 
-    int ammo(UUID player, LaserBoxGun gun) {
-        return ammunition.getOrDefault(player, gun.magazine());
+    int ammo(UUID player, LaserGun gun) {
+        return weapons.ammo(player, gun);
     }
 
     double health(UUID player) {
@@ -263,11 +200,7 @@ final class LaserBoxRound {
     boolean respawn(UUID player) {
         if (finished || !respawning(player) || respawnRemaining(player) > 0) return false;
         respawns.remove(player);
-        shots.remove(player);
-        lastFiredAt.remove(player);
-        burstShots.remove(player);
-        reloads.remove(player);
-        ammunition.remove(player);
+        weapons.forget(player);
         health.remove(player);
         protect(player);
         return true;
@@ -275,11 +208,7 @@ final class LaserBoxRound {
 
     void disconnect(UUID player) {
         shields.remove(player);
-        shots.remove(player);
-        lastFiredAt.remove(player);
-        burstShots.remove(player);
-        ammunition.remove(player);
-        reloads.remove(player);
+        weapons.forget(player);
         health.remove(player);
         protection.remove(player);
         respawns.put(player, tick + RESPAWN_TICKS);

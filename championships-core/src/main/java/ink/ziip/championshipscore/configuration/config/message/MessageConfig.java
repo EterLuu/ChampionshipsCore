@@ -1621,6 +1621,9 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "laserbox.gun-magazine", nullable = true)
     public static String LASER_BOX_GUN_MAGAZINE;
 
+    @ConfigOption(path = "laserbox.gun-fire-rate", nullable = true)
+    public static String LASER_BOX_GUN_FIRE_RATE;
+
     @ConfigOption(path = "laserbox.gun-selected", nullable = true)
     public static String LASER_BOX_GUN_SELECTED;
 

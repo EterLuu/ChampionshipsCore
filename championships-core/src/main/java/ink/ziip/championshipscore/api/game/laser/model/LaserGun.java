@@ -1,27 +1,27 @@
-package ink.ziip.championshipscore.api.game.laserbox.model;
+package ink.ziip.championshipscore.api.game.laser.model;
 
 import org.bukkit.Material;
 
 import java.util.Locale;
 
 /**
- * The five LaserBox weapons. Damage is expressed against a 100 point combat pool; a normal body
- * shot therefore makes the rifle a three-shot weapon and the SMG/LMG six-shot weapons. The values
- * are deliberately independent of Minecraft attack damage so that every weapon uses the same
- * ray-trace and shield rules.
+ * Shared laser weapons. Damage is expressed against a 100 point combat pool; a normal body shot
+ * therefore makes the rifle a three-shot weapon and the SMG/LMG six-shot weapons. The values are
+ * deliberately independent of Minecraft attack damage so that every weapon uses the same ray-trace
+ * and damage model.
  */
-public enum LaserBoxGun {
-    SNIPER("sniper", Material.GOLDEN_SHOVEL, 5, 80, 80, 80, 0.1, 0.0, 110, 145, 75, 0.96),
-    RIFLE("rifle", Material.COPPER_HOE, 12, 50, 20, 80, 0.75, 0.0, 34, 110, 22, 0.90),
-    SMG("smg", Material.IRON_SPEAR, 30, 40, 10, 80, 1.8, 0.45, 18, 45, 11, 0.50),
-    MACHINE("machine", Material.STONE_SPEAR, 50, 70, 8, 80, 2.5, 0.625, 22, 45, 14, 0.75),
-    SHOTGUN("shotgun", Material.DIAMOND_AXE, 3, 50, 40, 16, 7.0, 7.0, 18, 26, 10, 0.25);
+public enum LaserGun {
+    SNIPER("sniper", Material.GOLDEN_SHOVEL, 2, 80, 2.75, 80, 0.1, 0.0, 90, 160, 75, 0.96),
+    RIFLE("rifle", Material.COPPER_HOE, 12, 50, 5.25, 80, 0.75, 0.0, 34, 110, 22, 0.90),
+    SMG("smg", Material.IRON_SPEAR, 35, 40, 15, 80, 1.8, 0.45, 18, 45, 11, 0.50),
+    MACHINE("machine", Material.STONE_SPEAR, 60, 70, 15, 80, 2.5, 0.625, 22, 45, 14, 0.75),
+    SHOTGUN("shotgun", Material.DIAMOND_AXE, 7, 50, 3.5, 16, 7.0, 7.0, 18, 26, 10, 0.25);
 
     private final String id;
     private final Material material;
     private final int magazine;
     private final int reloadTicks;
-    private final int fireIntervalQuarterTicks;
+    private final double shotsPerSecond;
     private final int range;
     private final double spreadDegrees;
     private final double firstShotSpreadDegrees;
@@ -30,12 +30,12 @@ public enum LaserBoxGun {
     private final double legDamage;
     private final double minimumFalloff;
 
-    LaserBoxGun(
+    LaserGun(
             String id,
             Material material,
             int magazine,
             int reloadTicks,
-            int fireIntervalQuarterTicks,
+            double shotsPerSecond,
             int range,
             double spreadDegrees,
             double firstShotSpreadDegrees,
@@ -47,7 +47,7 @@ public enum LaserBoxGun {
         this.material = material;
         this.magazine = magazine;
         this.reloadTicks = reloadTicks;
-        this.fireIntervalQuarterTicks = fireIntervalQuarterTicks;
+        this.shotsPerSecond = shotsPerSecond;
         this.range = range;
         this.spreadDegrees = spreadDegrees;
         this.firstShotSpreadDegrees = firstShotSpreadDegrees;
@@ -73,9 +73,13 @@ public enum LaserBoxGun {
         return reloadTicks;
     }
 
-    /** Cooldown in quarter ticks, allowing the SMG and machine gun to fire between ticks. */
-    public int fireIntervalQuarterTicks() {
-        return fireIntervalQuarterTicks;
+    public double shotsPerSecond() {
+        return shotsPerSecond;
+    }
+
+    /** Nominal interval at 20 TPS; fractional deadlines retain the requested long-term cadence. */
+    public double fireIntervalTicks() {
+        return 20.0D / shotsPerSecond;
     }
 
     public int range() {
@@ -98,14 +102,12 @@ public enum LaserBoxGun {
     }
 
     /**
-     * Returns the spread while crouching. The machine gun is intentionally steadier in this
-     * stance so that crouching gives it a stronger sustained-fire role than the other weapons.
+     * Returns the spread while crouching. The machine gun is intentionally steadier in this stance
+     * so that crouching gives it a stronger sustained-fire role than the other weapons.
      */
     public double crouchedSpread(double burstSpread, boolean moving) {
         if (this == MACHINE) {
-            return moving
-                    ? burstSpread * 0.65D + spreadDegrees * 0.75D
-                    : burstSpread * 0.55D;
+            return moving ? burstSpread * 0.65D + spreadDegrees * 0.75D : burstSpread * 0.55D;
         }
         return moving ? burstSpread * 0.75D + spreadDegrees : burstSpread * 0.70D;
     }
@@ -169,16 +171,16 @@ public enum LaserBoxGun {
         return base * falloff;
     }
 
-    public static LaserBoxGun fromId(String value) {
+    public static LaserGun fromId(String value) {
         if (value == null) return null;
         String id = value.startsWith("gun:") ? value.substring(4) : value;
-        for (LaserBoxGun gun : values()) if (gun.id.equalsIgnoreCase(id)) return gun;
+        for (LaserGun gun : values()) if (gun.id.equalsIgnoreCase(id)) return gun;
         return null;
     }
 
-    public static LaserBoxGun fromMaterial(Material material) {
+    public static LaserGun fromMaterial(Material material) {
         if (material == null) return null;
-        for (LaserBoxGun gun : values()) if (gun.material == material) return gun;
+        for (LaserGun gun : values()) if (gun.material == material) return gun;
         return null;
     }
 

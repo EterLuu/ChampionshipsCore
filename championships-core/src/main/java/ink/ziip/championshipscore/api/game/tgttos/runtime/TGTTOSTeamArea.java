@@ -10,6 +10,7 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.location.LocationConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
+import ink.ziip.championshipscore.shared.presentation.DurationText;
 
 import lombok.Getter;
 
@@ -168,7 +169,7 @@ public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
                             timer = seconds;
                             updateGameTimerBossBar(
                                     MessageConfig.TGTTOS_ACTION_BAR_COUNT_DOWN.replace(
-                                            "%time%", String.valueOf(timer)),
+                                            "%time%", DurationText.bossBarSeconds(timer)),
                                     timer,
                                     getGameConfig().getTimer());
                         },

@@ -2,13 +2,34 @@ package ink.ziip.championshipscore.api.game.laserbox.runtime;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import ink.ziip.championshipscore.api.game.laserbox.model.LaserBoxGun;
+import ink.ziip.championshipscore.api.game.laser.model.LaserGun;
+import ink.ziip.championshipscore.api.game.laser.runtime.LaserWeaponState;
 
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
 class LaserBoxWeaponRoundTest {
+    @Test
+    void eliminatedDisconnectedAndFinishedPlayersCannotFireOrCompleteOldReloads() {
+        LaserBoxRound round = new LaserBoxRound();
+        UUID player = UUID.randomUUID();
+        assertEquals(LaserWeaponState.FireResult.FIRED, round.shoot(player, LaserGun.RIFLE));
+        assertTrue(round.requestReload(player, LaserGun.RIFLE));
+        round.damage(player, true, true, null, 100);
+        assertEquals(LaserWeaponState.FireResult.NOT_READY, round.shoot(player, LaserGun.RIFLE));
+        for (int tick = 0; tick < 80; tick++) round.advance();
+        assertFalse(round.completeReload(player, LaserGun.RIFLE));
+        assertTrue(round.respawn(player));
+        assertEquals(LaserWeaponState.FireResult.FIRED, round.shoot(player, LaserGun.RIFLE));
+        assertEquals(0, round.burstShot(player));
+        round.disconnect(player);
+        assertEquals(LaserWeaponState.FireResult.NOT_READY, round.shoot(player, LaserGun.RIFLE));
+        assertTrue(round.finish());
+        assertFalse(round.requestReload(UUID.randomUUID(), LaserGun.RIFLE));
+        assertFalse(round.respawn(player));
+    }
+
     @Test
     void rifleBodyShotsNeedThreeHitsAndShieldStillConsumesOneShot() {
         LaserBoxRound round = new LaserBoxRound();
@@ -34,29 +55,29 @@ class LaserBoxWeaponRoundTest {
     void magazineAutomaticallyLocksTheWeaponUntilReloadDeadline() {
         LaserBoxRound round = new LaserBoxRound();
         UUID player = UUID.randomUUID();
-        for (int shot = 0; shot < LaserBoxGun.SNIPER.magazine(); shot++) {
-            assertEquals(LaserBoxRound.FireResult.FIRED, round.shoot(player, LaserBoxGun.SNIPER));
+        for (int shot = 0; shot < LaserGun.SNIPER.magazine(); shot++) {
+            assertEquals(LaserWeaponState.FireResult.FIRED, round.shoot(player, LaserGun.SNIPER));
             for (int tick = 0; tick < 20; tick++) round.advance();
         }
         assertTrue(round.reloading(player));
-        assertEquals(LaserBoxRound.FireResult.RELOADING, round.shoot(player, LaserBoxGun.SNIPER));
-        for (int tick = 0; tick < LaserBoxGun.SNIPER.reloadTicks(); tick++) round.advance();
-        assertEquals(LaserBoxRound.FireResult.FIRED, round.shoot(player, LaserBoxGun.SNIPER));
-        assertEquals(LaserBoxGun.SNIPER.magazine() - 1, round.ammo(player, LaserBoxGun.SNIPER));
+        assertEquals(LaserWeaponState.FireResult.RELOADING, round.shoot(player, LaserGun.SNIPER));
+        for (int tick = 0; tick < LaserGun.SNIPER.reloadTicks(); tick++) round.advance();
+        assertEquals(LaserWeaponState.FireResult.FIRED, round.shoot(player, LaserGun.SNIPER));
+        assertEquals(LaserGun.SNIPER.magazine() - 1, round.ammo(player, LaserGun.SNIPER));
     }
 
     @Test
     void manualReloadStartsOnlyForADepletedMagazine() {
         LaserBoxRound round = new LaserBoxRound();
         UUID player = UUID.randomUUID();
-        assertFalse(round.requestReload(player, LaserBoxGun.RIFLE));
-        assertEquals(LaserBoxRound.FireResult.FIRED, round.shoot(player, LaserBoxGun.RIFLE));
-        assertTrue(round.requestReload(player, LaserBoxGun.RIFLE));
+        assertFalse(round.requestReload(player, LaserGun.RIFLE));
+        assertEquals(LaserWeaponState.FireResult.FIRED, round.shoot(player, LaserGun.RIFLE));
+        assertTrue(round.requestReload(player, LaserGun.RIFLE));
         assertTrue(round.reloading(player));
-        assertFalse(round.requestReload(player, LaserBoxGun.RIFLE));
-        for (int tick = 0; tick < LaserBoxGun.RIFLE.reloadTicks(); tick++) round.advance();
-        assertTrue(round.completeReload(player, LaserBoxGun.RIFLE));
-        assertEquals(LaserBoxGun.RIFLE.magazine(), round.ammo(player, LaserBoxGun.RIFLE));
+        assertFalse(round.requestReload(player, LaserGun.RIFLE));
+        for (int tick = 0; tick < LaserGun.RIFLE.reloadTicks(); tick++) round.advance();
+        assertTrue(round.completeReload(player, LaserGun.RIFLE));
+        assertEquals(LaserGun.RIFLE.magazine(), round.ammo(player, LaserGun.RIFLE));
     }
 
     @Test
@@ -64,14 +85,14 @@ class LaserBoxWeaponRoundTest {
         LaserBoxRound round = new LaserBoxRound();
         UUID player = UUID.randomUUID();
 
-        assertEquals(LaserBoxRound.FireResult.FIRED, round.shoot(player, LaserBoxGun.RIFLE));
-        assertTrue(round.requestReload(player, LaserBoxGun.RIFLE));
-        assertEquals(LaserBoxGun.RIFLE, round.reloadGun(player));
-        assertEquals(LaserBoxGun.RIFLE, round.cancelReload(player));
+        assertEquals(LaserWeaponState.FireResult.FIRED, round.shoot(player, LaserGun.RIFLE));
+        assertTrue(round.requestReload(player, LaserGun.RIFLE));
+        assertEquals(LaserGun.RIFLE, round.reloadGun(player));
+        assertEquals(LaserGun.RIFLE, round.cancelReload(player));
 
-        for (int tick = 0; tick < LaserBoxGun.RIFLE.reloadTicks(); tick++) round.advance();
-        assertFalse(round.completeReload(player, LaserBoxGun.RIFLE));
-        assertEquals(LaserBoxGun.RIFLE.magazine() - 1, round.ammo(player, LaserBoxGun.RIFLE));
+        for (int tick = 0; tick < LaserGun.RIFLE.reloadTicks(); tick++) round.advance();
+        assertFalse(round.completeReload(player, LaserGun.RIFLE));
+        assertEquals(LaserGun.RIFLE.magazine() - 1, round.ammo(player, LaserGun.RIFLE));
     }
 
     @Test
@@ -79,26 +100,26 @@ class LaserBoxWeaponRoundTest {
         LaserBoxRound round = new LaserBoxRound();
         UUID player = UUID.randomUUID();
 
-        assertEquals(LaserBoxRound.FireResult.FIRED, round.shoot(player, LaserBoxGun.RIFLE));
-        assertTrue(round.requestReload(player, LaserBoxGun.RIFLE));
-        for (int tick = 0; tick < LaserBoxGun.RIFLE.reloadTicks(); tick++) round.advance();
+        assertEquals(LaserWeaponState.FireResult.FIRED, round.shoot(player, LaserGun.RIFLE));
+        assertTrue(round.requestReload(player, LaserGun.RIFLE));
+        for (int tick = 0; tick < LaserGun.RIFLE.reloadTicks(); tick++) round.advance();
 
-        assertFalse(round.completeReload(player, LaserBoxGun.SMG));
-        assertEquals(LaserBoxGun.RIFLE, round.reloadGun(player));
-        assertEquals(LaserBoxGun.RIFLE.magazine() - 1, round.ammo(player, LaserBoxGun.RIFLE));
+        assertFalse(round.completeReload(player, LaserGun.SMG));
+        assertEquals(LaserGun.RIFLE, round.reloadGun(player));
+        assertEquals(LaserGun.RIFLE.magazine() - 1, round.ammo(player, LaserGun.RIFLE));
     }
 
     @Test
     void burstSpreadResetsAfterAQuietPeriod() {
         LaserBoxRound round = new LaserBoxRound();
         UUID player = UUID.randomUUID();
-        assertEquals(LaserBoxRound.FireResult.FIRED, round.shoot(player, LaserBoxGun.RIFLE));
-        assertEquals(0.0D, round.spreadDegrees(player, LaserBoxGun.RIFLE));
+        assertEquals(LaserWeaponState.FireResult.FIRED, round.shoot(player, LaserGun.RIFLE));
+        assertEquals(0.0D, round.spreadDegrees(player, LaserGun.RIFLE));
         for (int tick = 0; tick < 5; tick++) round.advance();
-        assertEquals(LaserBoxRound.FireResult.FIRED, round.shoot(player, LaserBoxGun.RIFLE));
-        assertEquals(0.25D, round.spreadDegrees(player, LaserBoxGun.RIFLE));
+        assertEquals(LaserWeaponState.FireResult.FIRED, round.shoot(player, LaserGun.RIFLE));
+        assertEquals(0.25D, round.spreadDegrees(player, LaserGun.RIFLE));
         for (int tick = 0; tick < 8; tick++) round.advance();
-        assertEquals(LaserBoxRound.FireResult.FIRED, round.shoot(player, LaserBoxGun.RIFLE));
-        assertEquals(0.0D, round.spreadDegrees(player, LaserBoxGun.RIFLE));
+        assertEquals(LaserWeaponState.FireResult.FIRED, round.shoot(player, LaserGun.RIFLE));
+        assertEquals(0.0D, round.spreadDegrees(player, LaserGun.RIFLE));
     }
 }

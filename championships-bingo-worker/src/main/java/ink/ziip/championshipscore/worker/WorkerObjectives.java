@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.platform.bukkit.bingo.BingoEventObjectiveEvalu
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoEventObjectiveRule;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoObjectiveProgressTracker;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoRidingTravel;
+import ink.ziip.championshipscore.protocol.BingoContentCatalog;
 import ink.ziip.championshipscore.protocol.BingoTaskSpec;
 
 import org.bukkit.Material;
@@ -64,7 +65,10 @@ final class WorkerObjectives {
 
     synchronized void replace(List<BingoTaskSpec> specs) {
         List<Objective> parsed = new ArrayList<>(specs.size());
-        for (BingoTaskSpec spec : specs) parsed.add(parse(spec));
+        for (BingoTaskSpec spec : specs) {
+            BingoContentCatalog.worker26_2().requireSupported(spec);
+            parsed.add(parse(spec));
+        }
         this.objectives = List.copyOf(parsed);
         this.pollingObjectives =
                 parsed.stream()

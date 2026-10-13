@@ -11,6 +11,7 @@ import ink.ziip.championshipscore.api.game.model.GameRunMode;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.protocol.BingoContentCatalog;
 import ink.ziip.championshipscore.protocol.BingoDimension;
 import ink.ziip.championshipscore.protocol.BingoIntroductionMode;
 import ink.ziip.championshipscore.protocol.BingoLocationSnapshot;
@@ -193,6 +194,7 @@ public final class BingoManifestFactory {
                 runMode == GameRunMode.DAILY
                         ? variant.durationSeconds(config.getTimer())
                         : config.getTimer();
+        tasks.forEach(BingoContentCatalog.worker26_2()::requireSupported);
         String configHash =
                 BingoManifestHasher.hash(duration, cardSeed, scoring, runtimeRules, tasks);
 

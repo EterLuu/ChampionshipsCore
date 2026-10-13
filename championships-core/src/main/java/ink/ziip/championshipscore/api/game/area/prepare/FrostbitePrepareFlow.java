@@ -4,7 +4,6 @@ import ink.ziip.championshipscore.api.game.area.prepare.step.*;
 import ink.ziip.championshipscore.api.game.area.prepare.step.ConfirmWorldStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.ListStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.StandAndRunStep;
-import ink.ziip.championshipscore.api.game.area.prepare.step.WeSelectionStep;
 import ink.ziip.championshipscore.api.game.frostbite.config.FrostbiteConfig;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
@@ -15,7 +14,7 @@ import org.bukkit.*;
 
 import java.util.*;
 
-/** Edits the shared coordinates of the four prebuilt, spatially separated terrain copies. */
+/** Captures one terrain template and generates the three other arenas and their coordinates. */
 public final class FrostbitePrepareFlow extends SnapshotMapPrepareFlow {
     public FrostbitePrepareFlow() {
         super(World.Environment.NORMAL);
@@ -29,22 +28,8 @@ public final class FrostbitePrepareFlow extends SnapshotMapPrepareFlow {
     public List<PrepareStep> buildSteps(SetupTarget target) {
         return List.of(
                 new ConfirmWorldStep(p -> isInCorrectWorld(p, target), target.worldName()),
-                new WeSelectionStep(
-                        "arena",
-                        LegacyText.component(
-                                GuiConfig.text(
-                                        "map-editor.games.frostbite.menus.prepare.items.boundary.title")),
-                        LegacyText.component(
-                                GuiConfig.line(
-                                        "map-editor.games.frostbite.menus.prepare.items.boundary.lore",
-                                        0)),
-                        Material.BEDROCK,
-                        t -> cfg(t).getArenaMin() != null && cfg(t).getArenaMax() != null,
-                        (t, points) -> {
-                            cfg(t).setArenaMin(points[0]);
-                            cfg(t).setArenaMax(points[1]);
-                        },
-                        MessageConfig.codeText("frostbite-prepare-flow.build-steps-1")),
+                new FourArenaSchematicStep(target),
+                new FourArenaStampStep(),
                 new StandAndRunStep(
                         "spectator",
                         LegacyText.component(
@@ -99,8 +84,9 @@ public final class FrostbitePrepareFlow extends SnapshotMapPrepareFlow {
     public List<String> validate(PrepareSession session) {
         var errors = new ArrayList<>(super.validate(session));
         try {
+            cfg(session.getTarget()).validateCopies();
             cfg(session.getTarget()).validate();
-        } catch (IllegalArgumentException failure) {
+        } catch (RuntimeException failure) {
             errors.add(failure.getMessage());
         }
         return errors;

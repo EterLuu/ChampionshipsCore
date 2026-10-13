@@ -5,7 +5,7 @@ AuthBridge 在 Paper 上同步 AuthMe 账号、BCrypt 密码和身份控制任�
 ## 要求与构建
 
 - JDK / Java 25。
-- AuthBridge：Paper 26.2、ChampionshipsCore 与 AuthMe；项目编译依赖 AuthMe 5.7.0。
+- AuthBridge：Paper 26.3、ChampionshipsCore 与 AuthMe；项目编译依赖 AuthMe 5.7.0。
 - AuthProxy：BungeeCord，项目编译 API 为 `26.1-R0.1-SNAPSHOT`。本模块不是 Velocity 插件。
 - 可访问的兼容身份 API、独立 keyId 和至少 32 字节的 HMAC 密钥。
 

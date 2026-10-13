@@ -684,7 +684,7 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
                                             : MessageConfig.PARKOUR_WARRIOR_ACTION_BAR_COUNT_DOWN;
                             updateGameTimerBossBar(
                                     timerTemplate.replace(
-                                            "%time%", DurationText.minutesSeconds(timer)),
+                                            "%time%", DurationText.bossBarSeconds(timer)),
                                     timer,
                                     getGameConfig().getTimer());
                         },

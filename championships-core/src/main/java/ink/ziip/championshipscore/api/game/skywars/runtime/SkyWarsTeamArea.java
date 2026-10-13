@@ -25,6 +25,7 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.location.LocationConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
+import ink.ziip.championshipscore.shared.presentation.DurationText;
 
 import lombok.Getter;
 
@@ -379,21 +380,25 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
         boolean drain = timer <= variant().rules().disableHealthRegainAtRemainingSeconds();
         if (shrink && drain) {
             return MessageConfig.SKY_WARS_BOSS_BAR_SHRINK_DRAIN
-                    .replace("%time%", String.valueOf(timer))
+                    .replace("%time%", DurationText.bossBarSeconds(timer))
                     .replace(
                             "%shrink-time%",
-                            String.valueOf(Math.max(0, timer - activeShrink().getEndTime())));
+                            DurationText.bossBarSeconds(
+                                    Math.max(0, timer - activeShrink().getEndTime())));
         }
         if (shrink) {
             return MessageConfig.SKY_WARS_BOSS_BAR_SHRINK
-                    .replace("%time%", String.valueOf(timer))
+                    .replace("%time%", DurationText.bossBarSeconds(timer))
                     .replace(
                             "%shrink-time%",
-                            String.valueOf(Math.max(0, timer - activeShrink().getEndTime())));
+                            DurationText.bossBarSeconds(
+                                    Math.max(0, timer - activeShrink().getEndTime())));
         }
         if (drain)
-            return MessageConfig.SKY_WARS_BOSS_BAR_DRAIN.replace("%time%", String.valueOf(timer));
-        return MessageConfig.SKY_WARS_BOSS_BAR.replace("%time%", String.valueOf(timer));
+            return MessageConfig.SKY_WARS_BOSS_BAR_DRAIN.replace(
+                    "%time%", DurationText.bossBarSeconds(timer));
+        return MessageConfig.SKY_WARS_BOSS_BAR.replace(
+                "%time%", DurationText.bossBarSeconds(timer));
     }
 
     private void announceUpcomingTimedEvent() {

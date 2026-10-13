@@ -204,7 +204,7 @@ daily:
   match-aborted: "&#ededed本场游戏意外中止，不会记录结果。"
   bossbar:
     waiting: "&#fff566%game% &#bababa•&#ededed 等待同游者&#24abff%players%/%required%%needs-group%"
-    countdown: "&#fff566%game% &#bababa•&#ededed 即将启程&#ff6b26%time%秒"
+    countdown: "&#fff566%game% &#bababa•&#ededed 即将启程&#ff6b26%time%"
     needs-group: "&#bababa•&#fff566 还需另一个玩家或小队"
   queue-clear:
     championship: "&#ededed服务器已切换到正式比赛模式，匹配队列已清空。"
@@ -329,9 +329,9 @@ game:
   laserbox: 激光方盒
   sulfursoccer: 硫方足球
   acerace: 王牌竞速
-  preparation-count-down: "&#fff566%game% &#bababa•&#ededed 准备&#ff6b26%time%秒"
+  preparation-count-down: "&#fff566%game% &#bababa•&#ededed 准备&#ff6b26%time%"
   introduction-title: "&#fff566&l%game%"
-  round-preparation-action-bar: "&#fff566%game% &#bababa•&#ededed 第%round%轮进入场地&#ff6b26%time%秒"
+  round-preparation-action-bar: "&#fff566%game% &#bababa•&#ededed 第%round%轮进入场地&#ff6b26%time%"
   start-count-down-title: "&#ff6b26&l%time%"
   start-count-down-subtitle: "%game% &#bababa•&#ededed 即将开始"
   start-action-bar: "&#fff566%game% &#bababa•&#ff6b26&l 开赛"
@@ -378,24 +378,25 @@ laserbox:
   reload-complete: "&#a8ff78%gun% · 换弹完成"
   no-ammo: "&#ff6b26弹药耗尽，正在换弹"
   ammo-item: "&#fff566弹药"
-  gun-magazine: "&#bababa弹药有限"
+  gun-magazine: "&#bababa弹匣 %magazine% 发 · 换弹 %seconds% 秒"
+  gun-fire-rate: "&#bababa射速 %rate% 发/秒"
   gun-selected: "&#a8ff78✓ 当前装备"
   guns:
     sniper:
-      name: "&#ffd35a狙击步枪"
-      description: "&#ededed远距离精准射击"
+      name: "&#ffd35a莽侠· 狙击枪"
+      description: "&#ededed精准点射 · 爆头致命，开镜更稳"
     rifle:
-      name: "&#d9b38c突击步枪"
-      description: "&#ededed稳定的全能武器"
+      name: "&#d9b38c戍卫 · 步枪"
+      description: "&#ededed中远距离点射 · 稳定精准"
     smg:
-      name: "&#c0c0c0冲锋枪"
-      description: "&#ededed近距离快速射击"
+      name: "&#c0c0c0骇灵 · 冲锋枪"
+      description: "&#ededed近距连射 · 轻装快速推进"
     machine:
-      name: "&#9b9b9b轻机枪"
-      description: "&#ededed持续射击，火力充足"
+      name: "&#9b9b9b战神 · 机枪"
+      description: "&#ededed大弹匣压制 · 蹲伏射击更稳"
     shotgun:
-      name: "&#b9f2ff霰弹枪"
-      description: "&#ededed近距离爆发"
+      name: "&#b9f2ff判官 · 霰弹枪"
+      description: "&#ededed近距霰弹 · 快速连续爆发"
 frostbite:
   start-preparation: "&#bff6ff霜冻决斗 &#bababa•&#ededed 三轮乱斗，冻结敌人并争夺补给"
   start-preparation-title: "&#bff6ff&l霜冻决斗"
@@ -478,7 +479,7 @@ battlebox:
   player-leave: "&#bababa[&#fff566斗战方框&#bababa]&#ededed %player%&#696969离场"
   kit-choose: "&#bababa[&#fff566斗战方框&#bababa]&#ededed 装备 &#bababa•&#fff566 %kit%"
   kit-already-choose: "&#bababa[&#ff6b26斗战方框&#bababa]&#fff566 %kit%&#ededed已被队友选择"
-  action-bar-count-down: "&#fff566斗战方框 &#bababa•&#ededed 剩余&#ff6b26%time%秒"
+  action-bar-count-down: "&#fff566斗战方框 &#bababa•&#ededed 剩余&#ff6b26%time%"
   show-points: "&#bababa[&#fff566斗战方框&#bababa] %team%&#ff6b26 %team_points% &#bababa• %rival%&#ff6b26 %rival_points%"
   kits:
     armor: 武装！
@@ -501,7 +502,7 @@ parkourtag:
   chaser-selection-remaining: "&#bababa[&#fff566跑酷追击&#bababa]&#ededed 你还可担任追击者&#fff566%times%次"
   chaser-selection-last: "&#bababa[&#fff566跑酷追击&#bababa]&#ff6b26 这是你最后一次担任追击者的机会"
   become-chaser-failed: "&#bababa[&#ff6b26跑酷追击&#bababa]&#ededed 你已无追击次数，请其他队友担任"
-  action-bar-count-down: "&#fff566跑酷追击 &#bababa•&#ededed 剩余&#ff6b26%time%秒"
+  action-bar-count-down: "&#fff566跑酷追击 &#bababa•&#ededed 剩余&#ff6b26%time%"
   show-points: "&#bababa[&#fff566跑酷追击&#bababa] %team%&#ff6b26 %team_points% &#bababa• %rival%&#ff6b26 %rival_points%"
   whole-team-was-killed: "&#bababa[&#fff566跑酷追击&#bababa] %team%&#ff6b26全员被抓"
   kits:
@@ -533,10 +534,10 @@ skywars:
   whole-team-was-killed: "&#bababa[&#fff566空岛乱斗&#bababa] %team%&#ff6b26全队出局"
   board-shrink: "&#bababa[&#fff566空岛乱斗&#bababa]&#ff6b26 边界开始收缩"
   board-shrink-count-down: "&#fff566空岛乱斗 &#bababa•&#ededed 边界将在&#ff6b26%time%秒&#ededed后收缩"
-  boss-bar: "&#fff566空岛乱斗 &#bababa•&#ededed 剩余&#ff6b26%time%秒"
-  boss-bar-shrink: "&#fff566空岛乱斗 &#bababa•&#ededed 剩余&#ff6b26%time%秒 &#bababa•&#ff6b26 边界收缩中&#ededed%shrink-time%秒"
-  boss-bar-drain: "&#fff566空岛乱斗 &#bababa•&#ededed 剩余&#ff6b26%time%秒 &#bababa•&#ff6b26 生命持续流失"
-  boss-bar-shrink-drain: "&#fff566空岛乱斗 &#bababa•&#ededed 剩余&#ff6b26%time%秒 &#bababa•&#ff6b26 边界收缩中&#ededed%shrink-time%秒 &#bababa•&#ff6b26 生命持续流失"
+  boss-bar: "&#fff566空岛乱斗 &#bababa•&#ededed 剩余&#ff6b26%time%"
+  boss-bar-shrink: "&#fff566空岛乱斗 &#bababa•&#ededed 剩余&#ff6b26%time% &#bababa•&#ff6b26 边界收缩中&#ededed%shrink-time%"
+  boss-bar-drain: "&#fff566空岛乱斗 &#bababa•&#ededed 剩余&#ff6b26%time% &#bababa•&#ff6b26 生命持续流失"
+  boss-bar-shrink-drain: "&#fff566空岛乱斗 &#bababa•&#ededed 剩余&#ff6b26%time% &#bababa•&#ff6b26 边界收缩中&#ededed%shrink-time% &#bababa•&#ff6b26 生命持续流失"
   stop-board-shrink: "&#bababa[&#fff566空岛乱斗&#bababa]&#ededed 边界收缩完成"
   happy-ghast-spawned: "&#bababa[&#fff566空岛乱斗&#bababa]&#ededed 各存活队伍的快乐恶魂已在出生岛生成"
   happy-ghast-count-down: "&#fff566空岛乱斗 &#bababa•&#ededed 快乐恶魂将在&#ff6b26%time%秒&#ededed后生成"
@@ -552,7 +553,7 @@ tgttos:
   start-preparation-title: "&#fff566&l去到另一边"
   start-preparation-subtitle: "&#ededed确认路线 &#bababa•&#ff6b26 倒计时后出发"
   game-start-soon-title: "&#fff566&l去到另一边"
-  action-bar-count-down: "&#fff566去到另一边 &#bababa•&#ededed 剩余&#ff6b26%time%秒"
+  action-bar-count-down: "&#fff566去到另一边 &#bababa•&#ededed 剩余&#ff6b26%time%"
   game-start-title: "&#ff6b26&l去到另一边"
   game-start-subtitle: "&#fff566&l立即出发"
   game-end-title: "&#fff566&l去到另一边"
@@ -591,8 +592,8 @@ bingo:
   game-end-subtitle: "&#ededed本场结束 &#bababa•&#ff6b26 积分结算中"
   action-bar-count-down: "&#fff566宾果飞速 &#bababa•&#ededed 剩余 &#ff6b26%time%"
   action-bar-count-down-pvp: "&#fff566宾果飞速 &#bababa•&#ededed 剩余 &#ff6b26%time% &#bababa•&#ff6b26 PvP已开启"
-  action-bar-count-down-protection: "&#fff566宾果飞速 &#bababa•&#ededed 剩余 &#ff6b26%time% &#bababa•&#31e061 PvP保护&#ededed%grace%秒"
-  pvp-protection: "&#31e061PvP保护&#ededed%time%秒"
+  action-bar-count-down-protection: "&#fff566宾果飞速 &#bababa•&#ededed 剩余 &#ff6b26%time% &#bababa•&#31e061 PvP保护&#ededed%grace%"
+  pvp-protection: "&#31e061PvP保护&#ededed%time%"
   pvp-active: "&#ff6b26PvP已开启"
   pvp-start-count-down: "&#fff566宾果飞速 &#bababa•&#ededed PvP将在&#ff6b26%time%秒&#ededed后开启"
   pvp-started: "&#fff566宾果飞速 &#bababa•&#ff6b26 PvP已开启"
@@ -600,9 +601,9 @@ bingo:
   game-winner: "&#bababa[&#fff566宾果飞速&#bababa] %team%&#fff566获胜&#696969（%points%分）"
 buildmart:
   bossbar:
-    title: "&#fff566匹配赛建 &#696969|&#ededed 剩余&#fff566%timer%秒 &#696969|&#ededed %golden%"
+    title: "&#fff566匹配赛建 &#696969|&#ededed 剩余&#fff566%timer% &#696969|&#ededed %golden%"
     golden-none: "&#696969黄金：&#ededed无"
-    golden-active: "&#fff566黄金：&#ededed%blueprint% &#696969（%seconds%秒）"
+    golden-active: "&#fff566黄金：&#ededed%blueprint% &#696969（%seconds%）"
   start-preparation: "&#bababa[&#fff566匹配赛建&#bababa]&#ededed 准备开工"
   start-preparation-title: "&#fff566&l匹配赛建"
   start-preparation-subtitle: "&#ededed确认分工 &#bababa•&#ff6b26 准备建造"
@@ -634,8 +635,8 @@ tntrun:
   fall-into-void: "&#bababa[&#fff566TNT飞跃&#bababa]&#ededed %player%&#ff6b26出局"
   tnt-rain: "&#fff566TNT飞跃 &#bababa•&#ff6b26 TNT雨来袭"
   tnt-rain-count-down: "&#fff566TNT飞跃 &#bababa•&#ededed TNT雨将在&#ff6b26%time%秒&#ededed后来袭"
-  boss-bar: "&#fff566TNT飞跃 &#bababa•&#ededed 剩余&#ff6b26%time%秒"
-  boss-bar-tnt-rain: "&#fff566TNT飞跃 &#bababa•&#ededed 剩余&#ff6b26%time%秒 &#bababa•&#ff6b26 TNT雨进行中&#ededed%rain-time%秒"
+  boss-bar: "&#fff566TNT飞跃 &#bababa•&#ededed 剩余&#ff6b26%time%"
+  boss-bar-tnt-rain: "&#fff566TNT飞跃 &#bababa•&#ededed 剩余&#ff6b26%time% &#bababa•&#ff6b26 TNT雨进行中&#ededed%rain-time%"
 dragoneggcarnival:
   start-preparation: "&#bababa[&#fff566龙蛋狂欢&#bababa]&#ededed 双方就位 &#bababa•&#ff6b26 率先完成2项目标"
   start-preparation-title: "&#fff566&l龙蛋狂欢"
@@ -643,7 +644,7 @@ dragoneggcarnival:
   game-start-soon-title: "&#fff566&l龙蛋狂欢"
   game-start-title: "&#ff6b26&l龙蛋狂欢"
   game-start-subtitle: "&#fff566&l完成任意两项末地进度"
-  action-bar-count-down: "&#fff566龙蛋狂欢 &#bababa•&#ededed 已进行&#ff6b26%time%秒"
+  action-bar-count-down: "&#fff566龙蛋狂欢 &#bababa•&#ededed 已进行&#ff6b26%time%"
   game-end-title: "&#fff566&l龙蛋狂欢"
   game-end-subtitle: "&#ededed对决结束 &#bababa•&#ff6b26 结果结算中"
   kill-player: "&#bababa[&#fff566龙蛋狂欢&#bababa] %killer%&#ff6b26 →&#ededed %player%"
@@ -674,7 +675,7 @@ dodgebolt:
   round-win: "&#bababa[&#fff566躲避箭&#bababa]&#ededed 第%round%局 &#bababa• %team%&#fff566获胜&#696969（%right_wins%-%left_wins%）"
   round-win-title: "&#fff566&l本场结束"
   round-win-subtitle: "%team% &#bababa•&#ff6b26 %right_wins%-%left_wins%"
-  next-round: "&#fff566躲避箭 &#bababa•&#ededed 第%round%局进入场地&#ff6b26%time%秒"
+  next-round: "&#fff566躲避箭 &#bababa•&#ededed 第%round%局进入场地&#ff6b26%time%"
   score-bar: "&#fff566第%round%局 &#bababa• %right%&#ff6b26 %right_wins%&#696969[%right_alive%] &#bababa- &#696969[%left_alive%]&#ff6b26 %left_wins%%left% &#bababa• %state%"
   state-live: "&#31e061进行中"
   state-paused: "&#ff6b26已暂停"
@@ -702,7 +703,7 @@ lasershowdown:
   game-start-subtitle: "&#fff566&l激光开火"
   game-end-title: "&#fff566&l激光乱斗"
   game-end-subtitle: "&#ededed本场结束 &#bababa•&#ff6b26 积分结算中"
-  action-bar-count-down: "&#fff566激光乱斗 &#bababa•&#ededed 剩余&#ff6b26%time%秒"
+  action-bar-count-down: "&#fff566激光乱斗 &#bababa•&#ededed 剩余&#ff6b26%time%"
   kill-player: "&#bababa[&#fff566激光乱斗&#bababa] %killer%&#ff6b26 →&#ededed %player%"
   player-death: "&#bababa[&#fff566激光乱斗&#bababa]&#ededed %player%&#ff6b26倒下"
   player-death-by-void: "&#bababa[&#fff566激光乱斗&#bababa]&#ededed %player%&#ff6b26坠入虚空"
@@ -738,7 +739,7 @@ hotycodydusky:
   game-start-subtitle: "&#fff566&l鳕鱼已出现"
   game-end-title: "&#fff566&l烫手鳕鱼"
   game-end-subtitle: "&#ededed本场结束 &#bababa•&#ff6b26 积分结算中"
-  action-bar-count-down: "&#fff566烫手鳕鱼 &#bababa•&#ededed 鳕鱼&#ff6b26%holder% &#bababa•&#ededed %time%秒"
+  action-bar-count-down: "&#fff566烫手鳕鱼 &#bababa•&#ededed 鳕鱼&#ff6b26%holder% &#bababa•&#ededed %time%"
   give-cody-to-player: "&#fff566烫手鳕鱼 &#bababa•&#ededed %from%&#ff6b26 →&#ededed %to%"
   player-death: "&#bababa[&#fff566烫手鳕鱼&#bababa]&#ededed %player%&#ff6b26出局"
   player-received-cody: "&#fff566烫手鳕鱼 &#bababa•&#ff6b26 %player%持有鳕鱼"
@@ -1215,6 +1216,8 @@ sulfursoccer:
 
 # Text extracted from Java; %argN% preserves each dynamic argument.
 code-text:
+  laser-showdown-team-area:
+    gun-selector-lore: "出生后6秒内可换枪，开火或受击立即锁定"
   riptide-introduction-arena:
     load-failed: 'Riptide 教学场地加载失败，将使用原规则介绍地点。'
     run-failed: 'Riptide 教学体验失败，正在中止并恢复本次场地。'
@@ -1279,6 +1282,15 @@ code-text:
     hide-racer-1: "Ace Race 开始后一分钟内隐藏其他玩家"
     set-racer-visible-1: "Ace Race 距离或冲刺规则隐藏"
     set-racer-visible-2: "Ace Race 距离内玩家可见"
+  four-arena-config:
+    boundary-missing: "请先保存第一场地模板与边界"
+    generate-required: "请按当前模板重新生成四个比赛场地"
+    four-required: "此游戏需要四个比赛场地，请输入总数 4（含第一场地）"
+    template-mismatch: "模板尺寸与边界不一致，请重新保存模板"
+    source-overlap: "新模板与旧副本重叠，清理会破坏第一场地，请调整模板选区"
+  laser-showdown-config:
+    invalid-spawns: "比赛时长必须为正数，第一场地必须设置 1 至 128 个重生点"
+    spawn-outside: "重生点不在第一场地边界内：%arg1%"
   frostbite-prepare-flow:
     build-steps-1: "§a已设置第一张地图边界"
     build-steps-2: "§a已设置观战出生点"

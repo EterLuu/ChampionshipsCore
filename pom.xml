@@ -33,9 +33,11 @@
     <properties>
         <java.version>25</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <paper.version>26.2.build.112-stable</paper.version>
-        <spigot.version>26.2-R0.1-SNAPSHOT</spigot.version>
+        <paper.version>26.3.build.171-beta</paper.version>
+        <spigot.version>26.3-R0.1-SNAPSHOT</spigot.version>
         <bungeecord.version>26.1-R0.1-SNAPSHOT</bungeecord.version>
+        <packetevents.version>2.14.0</packetevents.version>
+        <fawe.version>2.16.1</fawe.version>
     </properties>
 
     <build>
@@ -155,7 +157,7 @@
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
-            <!-- Keep the Adventure API family aligned with Paper 26.2. -->
+            <!-- Keep the Adventure API family aligned with Paper 26.3 and Folia 26.2. -->
             <dependency>
                 <groupId>net.kyori</groupId>
                 <artifactId>adventure-api</artifactId>

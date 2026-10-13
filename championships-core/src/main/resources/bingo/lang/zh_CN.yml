@@ -319,7 +319,10 @@ vote:
   started: "&d宾果飞速投票开始！请在 {0} 秒内选择模式、难度和胜利线数。"
   remaining: "&7投票剩余 &e{0} &7秒"
   cancelled-insufficient: "&c投票因参与人数不足而取消，玩家将返回匹配队列。"
-  bossbar: "&d宾果飞速投票 &7• 剩余 &e{0} &7秒"
+  bossbar: "&d宾果飞速投票 &7• 剩余 &e{0}"
+  bossbar-time:
+    seconds: "%seconds%秒"
+    minutes-seconds: "%minutes%分%seconds%秒"
   previous: "上一页"
   next: "下一页"
   close: "关闭"

@@ -150,7 +150,25 @@ public class CCConfig extends BaseConfigurationFile {
     @ConfigOption(path = "daily.games.ParkourWarrior.concurrent-instances")
     public static int DAILY_PARKOUR_WARRIOR_CONCURRENT_INSTANCES;
 
+    @ConfigOption(path = "daily.games.LaserShowdown.min-players")
+    public static int DAILY_LASER_SHOWDOWN_MIN_PLAYERS;
+
+    @ConfigOption(path = "daily.games.LaserShowdown.max-players")
+    public static int DAILY_LASER_SHOWDOWN_MAX_PLAYERS;
+
+    @ConfigOption(path = "daily.games.LaserShowdown.team-size")
+    public static int DAILY_LASER_SHOWDOWN_TEAM_SIZE;
+
+    @ConfigOption(path = "daily.games.LaserShowdown.teams")
+    public static int DAILY_LASER_SHOWDOWN_TEAMS;
+
+    @ConfigOption(path = "daily.games.LaserShowdown.countdown-seconds")
+    public static int DAILY_LASER_SHOWDOWN_COUNTDOWN_SECONDS;
+
     // Optional cc-web DAILY leaderboard cache publisher.
+    @ConfigOption(path = "leaderboard-sync.enabled-games")
+    public static List<String> WEB_LEADERBOARD_SYNC_ENABLED_GAMES;
+
     @ConfigOption(path = "leaderboard-sync.enabled")
     public static Boolean WEB_LEADERBOARD_SYNC_ENABLED;
 

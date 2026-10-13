@@ -15,6 +15,7 @@ import ink.ziip.championshipscore.configuration.location.LocationConfig;
 import ink.ziip.championshipscore.platform.bukkit.scoreboard.TeamColors;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
+import ink.ziip.championshipscore.shared.presentation.DurationText;
 
 import lombok.Getter;
 
@@ -463,7 +464,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         updateGameTimerBossBar(
                 MessageConfig.DODGEBOLT_NEXT_ROUND
                         .replace("%round%", String.valueOf(roundNumber))
-                        .replace("%time%", String.valueOf(countdownSeconds)),
+                        .replace("%time%", DurationText.bossBarSeconds(countdownSeconds)),
                 countdownSeconds,
                 countdownSeconds);
     }

@@ -15,8 +15,8 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * Common prepare behavior for one independently editable map world. The world itself is the source
- * of truth while editing; publish snapshots it into the map store. These maps must not expose
- * schematic capture or copy-stamping steps, which are only meaningful for replicated arena layouts.
+ * of truth while editing; publish snapshots it into the map store, including generated sub-arenas
+ * for games whose match uses a replicated layout.
  */
 public abstract class SnapshotMapPrepareFlow extends PrepareFlowDefinition {
     private final World.Environment environment;

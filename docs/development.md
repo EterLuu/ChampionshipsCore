@@ -16,6 +16,8 @@
 
 Core 每个游戏以 `api/game/<game>/` 为功能边界。根目录的 Manager 注册地图和创建实例；`config/` 读取地图选项，`runtime/` 管理场地、回合、事件和清理，`model/` 保存模型，`geometry/` 处理空间算法，`mechanics/` 实现游戏机制。按需要创建子包，无需为空的职责建目录。Riptide 另有 `course/` 负责关卡池与生成，`editor/` 负责建筑草稿和试玩。游戏模型放在所属游戏内，共享的游戏类型、运行模式和阶段位于 `api/game/model/`，对局配对模型位于 `api/schedule/model/`。模型按所属领域组织，禁止放入通用的 `api/object/` 包。
 
+Laser 类游戏统一使用中立的 `api/game/laser/` 枪械包：`model/LaserGun` 定义枪械数值，`runtime/LaserWeaponState` 管理每个对局的弹药、换弹、连射及射击截止时间，`mechanics/LaserShotEngine` 负责射线检测和霰弹合并，`presentation/` 负责枪械物品、弹药显示、激光、开镜与击杀反馈。接入方式及生命周期见 [Laser 枪械接入](laser-weapons.md)。
+
 新增玩法接入 `GameTypeEnum`、`GameManager`、对应地图 Manager 和 prepare 流程。启动参数统一通过 `GameStartArguments` / `GameStartService`，正式赛保存 `EventStartSelection`；不得为单个游戏再写一套 all/队伍解析器。复制双队比赛共用批量占用、预热和回滚入口，单实例多分区用 `ArenaSelection` / `StartAllocation`，选择不得修改共享地图配置或拆成多份计分实例。场地生命周期使用 `BaseGameInstance`；双队比赛使用已有 paired 抽象，复制地图使用现有 arena/spatial 工具。不要在命令或 GUI 内再维护一套场地注册、游戏状态或复制坐标算法。地图文件使用小写 `.yml` 后缀；目录扫描和首次 tick 初始化调用 `BaseGameInstanceManager` 的 `loadMapDefinitions` / `deferMapLoad`。公共清理会使旧加载请求失效并通过 `onAreaDetached` 移除副本索引。复制场地通过 `registerMapInstances` 发布实例，查询和删除沿用基类，不另存副本注册表；子类只处理游戏特有的取消操作，不复制通用卸载循环。
 
 开赛占用、区块票据和异步回调都须有明确的所有者。重叠副本的区块票据由 `ArenaChunkPreloader` 统一引用计数，最后一个使用者结束才释放。正式赛停止或重新开始后，旧执行端结果不得结束新赛程；实例 reset/dispose 后的预热、持鱼、重生和补给回调不得重建旧状态。变更启动入口时逐项验证全部 `GameTypeEnum`，包含三个最终对决、双队批量回滚和四种单实例子场地玩法。

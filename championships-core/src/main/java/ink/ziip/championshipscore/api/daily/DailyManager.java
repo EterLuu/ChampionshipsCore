@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.daily.adapter.AceRaceDailyGameAdapter;
 import ink.ziip.championshipscore.api.daily.adapter.BingoDailyGameAdapter;
 import ink.ziip.championshipscore.api.daily.adapter.DragonEggCarnivalDailyGameAdapter;
+import ink.ziip.championshipscore.api.daily.adapter.LaserShowdownDailyGameAdapter;
 import ink.ziip.championshipscore.api.daily.adapter.ParkourWarriorDailyGameAdapter;
 import ink.ziip.championshipscore.api.game.bingo.execution.RemoteBingoInstance;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
@@ -20,6 +21,7 @@ import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
+import ink.ziip.championshipscore.shared.presentation.DurationText;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -117,6 +119,7 @@ public final class DailyManager extends BaseManager {
         adapters.put(GameTypeEnum.AceRace, new AceRaceDailyGameAdapter(plugin));
         adapters.put(GameTypeEnum.DragonEggCarnival, new DragonEggCarnivalDailyGameAdapter(plugin));
         adapters.put(GameTypeEnum.ParkourWarrior, new ParkourWarriorDailyGameAdapter(plugin));
+        adapters.put(GameTypeEnum.LaserShowdown, new LaserShowdownDailyGameAdapter(plugin));
         for (GameTypeEnum game : enabledGames()) queues.put(game, new DailyQueue(game));
         listener.register();
         tickTask = Bukkit.getScheduler().runTaskTimer(plugin, (Runnable) this::tick, 20L, 20L);
@@ -261,6 +264,11 @@ public final class DailyManager extends BaseManager {
         return game == GameTypeEnum.AceRace || game == GameTypeEnum.ParkourWarrior;
     }
 
+    static boolean hasEnoughQueueGroups(GameTypeEnum game, int groupCount) {
+        return groupCount > 0
+                && (allowsSoloQueue(game) || game == GameTypeEnum.LaserShowdown || groupCount >= 2);
+    }
+
     public void openMenu(@NotNull Player player) {
         if (!isDailyLobby()) {
             message(player, MessageConfig.DAILY_UNAVAILABLE);
@@ -336,13 +344,17 @@ public final class DailyManager extends BaseManager {
         DailyParty party = partyManager.getParty(requester.getUniqueId());
         Set<UUID> joining = party == null ? Set.of(requester.getUniqueId()) : party.members();
         UUID groupId = party == null ? requester.getUniqueId() : party.id();
-        if (joining.size() > targetRules.teamSize()) {
+        int partyLimit =
+                game == GameTypeEnum.LaserShowdown
+                        ? targetRules.maxPlayers()
+                        : targetRules.teamSize();
+        if (joining.size() > partyLimit) {
             message(
                     requester,
                     replace(
                             MessageConfig.DAILY_PARTY_TOO_LARGE,
                             "%limit%",
-                            Integer.toString(targetRules.teamSize())));
+                            Integer.toString(partyLimit)));
             return false;
         }
         for (UUID uuid : joining) {
@@ -593,6 +605,8 @@ public final class DailyManager extends BaseManager {
             maps.addAll(plugin.getGameManager().getDragonEggCarnivalManager().getAreaNameList());
         else if (game == GameTypeEnum.ParkourWarrior)
             maps.addAll(plugin.getGameManager().getParkourWarriorManager().getAreaNameList());
+        else if (game == GameTypeEnum.LaserShowdown)
+            maps.addAll(plugin.getGameManager().getLaserShowdownManager().getAreaNameList());
         maps.addAll(statsManager.recordMaps(game));
         return Set.copyOf(maps);
     }
@@ -839,7 +853,7 @@ public final class DailyManager extends BaseManager {
         }
         if (rules == null
                 || queue.size() < rules.minPlayers()
-                || (!allowsSoloQueue(queue.game()) && queue.groupCount() < 2)) {
+                || !hasEnoughQueueGroups(queue.game(), queue.groupCount())) {
             queue.countdown(-1);
             refreshWaitingBar(queue, rules);
             return;
@@ -876,11 +890,11 @@ public final class DailyManager extends BaseManager {
         List<DailyQueue.Group> selected = queue.take(rules.maxPlayers());
         int playerCount = selected.stream().mapToInt(group -> group.players().size()).sum();
         if (playerCount < rules.minPlayers()
-                || (!allowsSoloQueue(queue.game()) && selected.size() < 2)) {
+                || !hasEnoughQueueGroups(queue.game(), selected.size())) {
             queue.restore(selected, rules);
             return;
         }
-        List<Set<UUID>> allocations = allocate(selected, rules);
+        List<Set<UUID>> allocations = allocate(selected, rules, queue.game());
         if (allocations.isEmpty()) {
             queue.restore(selected, rules);
             broadcast(queue.players(), MessageConfig.DAILY_QUEUE_COMPOSITION_FAILED);
@@ -1018,6 +1032,25 @@ public final class DailyManager extends BaseManager {
                         Integer.toString(started.instance().getCopyIndex() + 1)));
         refreshWaitingBar(queue, rules);
         rebuildSnapshots();
+    }
+
+    /** Laser Showdown parties share queue/exit ownership, but every member fights independently. */
+    static List<Set<UUID>> allocate(
+            List<DailyQueue.Group> groups, DailyRules rules, GameTypeEnum game) {
+        if (game != GameTypeEnum.LaserShowdown) return allocate(groups, rules);
+        List<UUID> players = new ArrayList<>();
+        for (DailyQueue.Group group : groups) players.addAll(group.players());
+        if (players.size() < rules.minPlayers()
+                || players.size() > rules.maxPlayers()
+                || new HashSet<>(players).size() != players.size()) return List.of();
+        int teamCount = Math.min(rules.teams(), players.size());
+        if (teamCount < 2) return List.of();
+        Collections.shuffle(players);
+        List<Set<UUID>> teams = new ArrayList<>();
+        for (int index = 0; index < teamCount; index++) teams.add(new LinkedHashSet<>());
+        for (int index = 0; index < players.size(); index++)
+            teams.get(index % teamCount).add(players.get(index));
+        return teams;
     }
 
     /**
@@ -1331,7 +1364,7 @@ public final class DailyManager extends BaseManager {
                             "%game%",
                             queue.game().toString(),
                             "%time%",
-                            Integer.toString(countdown));
+                            DurationText.bossBarSeconds(countdown));
             progress = countdown / (double) Math.max(1, rules.countdownSeconds());
         } else {
             title =

@@ -28,7 +28,11 @@ final class DailyQueue {
     }
 
     synchronized boolean canAdd(Set<UUID> players, DailyRules rules) {
-        if (players.isEmpty() || players.size() > rules.teamSize()) return false;
+        if (players.isEmpty()
+                || players.size()
+                        > (game == GameTypeEnum.LaserShowdown
+                                ? rules.maxPlayers()
+                                : rules.teamSize())) return false;
         return players.stream().noneMatch(groupByPlayer::containsKey);
     }
 

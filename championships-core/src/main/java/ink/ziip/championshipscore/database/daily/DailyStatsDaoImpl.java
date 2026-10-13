@@ -9,6 +9,7 @@ import ink.ziip.championshipscore.api.daily.entry.DailyMatchResultEntry;
 import ink.ziip.championshipscore.api.daily.entry.DailyPkwRecordEntry;
 import ink.ziip.championshipscore.api.daily.entry.DailyRecordEntry;
 import ink.ziip.championshipscore.api.daily.entry.DailyStatEntry;
+import ink.ziip.championshipscore.api.game.lasershowdown.model.LaserShowdownStats;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
@@ -114,7 +115,7 @@ public final class DailyStatsDaoImpl implements DailyStatsDao {
                                 SELECT `uuid`, `username`, `game`, `map`, `gamesPlayed`, `wins`,
                                        `maxTasks`, `maxLines`, `maxFirstTasks`, `maxDragonDamage`,
                                        `firstLiberate`, `firstNextGen`, `firstGateway`,
-                                       `maxStars`, `finishes`, `updatedAt`
+                                       `maxStars`, `finishes`, `updatedAt`, `laserGames`, `laserKills`, `laserEnemyHits`, `laserHeadHits`, `laserSniperLives`, `laserRifleLives`, `laserSmgLives`, `laserMachineLives`, `laserShotgunLives`
                                 FROM `daily_map_player_stats`
                                 """);
                 ResultSet result = statement.executeQuery()) {
@@ -124,16 +125,31 @@ public final class DailyStatsDaoImpl implements DailyStatsDao {
                     entries.add(
                             new DailyMapStatEntry(
                                     UUID.fromString(result.getString("uuid")),
-                                            result.getString("username"),
+                                    result.getString("username"),
                                     GameTypeEnum.valueOf(result.getString("game")),
-                                            result.getString("map"),
-                                    result.getLong("gamesPlayed"), result.getLong("wins"),
-                                    result.getLong("maxTasks"), result.getLong("maxLines"),
+                                    result.getString("map"),
+                                    result.getLong("gamesPlayed"),
+                                    result.getLong("wins"),
+                                    result.getLong("maxTasks"),
+                                    result.getLong("maxLines"),
                                     result.getLong("maxFirstTasks"),
-                                            result.getDouble("maxDragonDamage"),
-                                    result.getLong("firstLiberate"), result.getLong("firstNextGen"),
-                                    result.getLong("firstGateway"), result.getLong("maxStars"),
-                                    result.getLong("finishes"), result.getLong("updatedAt")));
+                                    result.getDouble("maxDragonDamage"),
+                                    result.getLong("firstLiberate"),
+                                    result.getLong("firstNextGen"),
+                                    result.getLong("firstGateway"),
+                                    result.getLong("maxStars"),
+                                    result.getLong("finishes"),
+                                    result.getLong("updatedAt"),
+                                    new LaserShowdownStats(
+                                            result.getLong("laserGames"),
+                                            result.getLong("laserKills"),
+                                            result.getLong("laserEnemyHits"),
+                                            result.getLong("laserHeadHits"),
+                                            result.getLong("laserSniperLives"),
+                                            result.getLong("laserRifleLives"),
+                                            result.getLong("laserSmgLives"),
+                                            result.getLong("laserMachineLives"),
+                                            result.getLong("laserShotgunLives"))));
                 } catch (IllegalArgumentException exception) {
                     logFailure(
                             MessageConfig.codeText("daily-stats-dao-impl.get-player-map-stats-2"),
@@ -419,8 +435,8 @@ public final class DailyStatsDaoImpl implements DailyStatsDao {
                                 INSERT INTO `daily_map_player_stats`
                                 (`uuid`,`username`,`game`,`map`,`gamesPlayed`,`wins`,`maxTasks`,`maxLines`,
                                  `maxFirstTasks`,`maxDragonDamage`,`firstLiberate`,`firstNextGen`,`firstGateway`,
-                                 `maxStars`,`finishes`,`updatedAt`)
-                                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                                 `maxStars`,`finishes`,`updatedAt`,`laserGames`,`laserKills`,`laserEnemyHits`,`laserHeadHits`,`laserSniperLives`,`laserRifleLives`,`laserSmgLives`,`laserMachineLives`,`laserShotgunLives`)
+                                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                                 ON DUPLICATE KEY UPDATE `username`=VALUES(`username`),
                                 `gamesPlayed`=`gamesPlayed`+VALUES(`gamesPlayed`),
                                 `wins`=`wins`+VALUES(`wins`),
@@ -433,6 +449,15 @@ public final class DailyStatsDaoImpl implements DailyStatsDao {
                                 `firstGateway`=`firstGateway`+VALUES(`firstGateway`),
                                 `maxStars`=GREATEST(`maxStars`,VALUES(`maxStars`)),
                                 `finishes`=`finishes`+VALUES(`finishes`),
+                                `laserGames`=`laserGames`+VALUES(`laserGames`),
+                                `laserKills`=`laserKills`+VALUES(`laserKills`),
+                                `laserEnemyHits`=`laserEnemyHits`+VALUES(`laserEnemyHits`),
+                                `laserHeadHits`=`laserHeadHits`+VALUES(`laserHeadHits`),
+                                `laserSniperLives`=`laserSniperLives`+VALUES(`laserSniperLives`),
+                                `laserRifleLives`=`laserRifleLives`+VALUES(`laserRifleLives`),
+                                `laserSmgLives`=`laserSmgLives`+VALUES(`laserSmgLives`),
+                                `laserMachineLives`=`laserMachineLives`+VALUES(`laserMachineLives`),
+                                `laserShotgunLives`=`laserShotgunLives`+VALUES(`laserShotgunLives`),
                                 `updatedAt`=VALUES(`updatedAt`)
                                 """)) {
             for (DailyMapStatEntry entry : stats) {
@@ -452,6 +477,16 @@ public final class DailyStatsDaoImpl implements DailyStatsDao {
                 statement.setLong(14, entry.maxStars());
                 statement.setLong(15, entry.finishes());
                 statement.setLong(16, entry.updatedAt());
+                statement.setLong(17, entry.laser().games());
+                statement.setLong(18, entry.laser().kills());
+                statement.setLong(19, entry.laser().enemyHits());
+                statement.setLong(20, entry.laser().headHits());
+                statement.setLong(21, entry.laser().sniperLives());
+                statement.setLong(22, entry.laser().rifleLives());
+                statement.setLong(23, entry.laser().smgLives());
+                statement.setLong(24, entry.laser().machineLives());
+                statement.setLong(25, entry.laser().shotgunLives());
+
                 statement.addBatch();
             }
             statement.executeBatch();

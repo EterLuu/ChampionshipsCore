@@ -63,6 +63,7 @@ public final class StatisticCategories {
                     FURNACE_INTERACTION,
                     CRAFTING_TABLE_INTERACTION,
                     SLEEP_IN_BED,
+                    SLEEP_IN_STRAW_BED,
                     INTERACT_WITH_BLAST_FURNACE,
                     INTERACT_WITH_SMOKER,
                     INTERACT_WITH_LECTERN,

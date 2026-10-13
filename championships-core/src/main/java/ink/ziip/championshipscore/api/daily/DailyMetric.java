@@ -1,7 +1,9 @@
 package ink.ziip.championshipscore.api.daily;
 
+import ink.ziip.championshipscore.api.game.laser.model.LaserGun;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -26,14 +28,20 @@ public enum DailyMetric {
     DRAGON_FIRST_NEXT_GEN_RATE(GameTypeEnum.DragonEggCarnival, Format.PERCENT, 5),
     DRAGON_FIRST_GATEWAY_RATE(GameTypeEnum.DragonEggCarnival, Format.PERCENT, 5),
     PKW_STARS_TIME(GameTypeEnum.ParkourWarrior, Format.COMPOSITE, 1),
-    PKW_POINTS_TIME(GameTypeEnum.ParkourWarrior, Format.COMPOSITE, 1);
+    PKW_POINTS_TIME(GameTypeEnum.ParkourWarrior, Format.COMPOSITE, 1),
+    LASERSHOWDOWN_WINS(GameTypeEnum.LaserShowdown, Format.COUNT, 1),
+    LASERSHOWDOWN_AVERAGE_KILLS(GameTypeEnum.LaserShowdown, Format.DECIMAL, 1),
+    LASERSHOWDOWN_HEADSHOT_RATE(GameTypeEnum.LaserShowdown, Format.PERCENT, 1),
+    LASERSHOWDOWN_FAVORITE_GUN(GameTypeEnum.LaserShowdown, Format.WEAPON, 1);
 
     public enum Format {
         COUNT,
         TIME,
         DAMAGE,
         PERCENT,
-        COMPOSITE
+        COMPOSITE,
+        DECIMAL,
+        WEAPON
     }
 
     private final GameTypeEnum game;
@@ -95,15 +103,36 @@ public enum DailyMetric {
         return java.util.Arrays.stream(values()).filter(metric -> metric.game == game).toList();
     }
 
+    public boolean rankable() {
+        return format != Format.WEAPON;
+    }
+
+    public static List<DailyMetric> rankedForGame(GameTypeEnum game) {
+        return forGame(game).stream().filter(DailyMetric::rankable).toList();
+    }
+
     /** Renders one metric value the same way in every menu. */
     public static @NotNull String format(@NotNull DailyMetric metric, double value) {
         return switch (metric.format()) {
             case TIME -> DailyLeaderboardMenu.formatDuration((long) value);
-            case DAMAGE -> String.format(Locale.ROOT, "%.1f", value);
+            case DAMAGE, DECIMAL -> String.format(Locale.ROOT, "%.1f", value);
+            case WEAPON -> weaponName(LaserGun.values()[(int) value]);
             case PERCENT -> String.format(Locale.ROOT, "%.1f%%", value);
             case COUNT -> Long.toString(Math.round(value));
             case COMPOSITE -> Long.toString(Math.round(value));
         };
+    }
+
+    private static String weaponName(LaserGun gun) {
+        String name =
+                switch (gun) {
+                    case SNIPER -> MessageConfig.LASER_BOX_GUN_SNIPER_NAME;
+                    case RIFLE -> MessageConfig.LASER_BOX_GUN_RIFLE_NAME;
+                    case SMG -> MessageConfig.LASER_BOX_GUN_SMG_NAME;
+                    case MACHINE -> MessageConfig.LASER_BOX_GUN_MACHINE_NAME;
+                    case SHOTGUN -> MessageConfig.LASER_BOX_GUN_SHOTGUN_NAME;
+                };
+        return name == null ? gun.id() : name;
     }
 
     /** Formats a Parkour Warrior result using the primary value and its same-run duration. */

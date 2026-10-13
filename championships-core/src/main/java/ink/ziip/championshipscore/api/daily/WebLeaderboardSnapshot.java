@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.daily;
 
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.configuration.config.CCConfig;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -11,7 +12,7 @@ import java.util.Set;
 
 /**
  * Immutable DAILY leaderboard snapshot sent to cc-web. Empty boards are omitted, while every
- * enabled game is announced so the web side can replace that game's previous submissions.
+ * enabled, web-supported game is announced so the web side can replace its previous submissions.
  */
 public record WebLeaderboardSnapshot(
         @NotNull List<String> games, @NotNull List<WebLeaderboardBoard> boards, long generatedAt) {
@@ -20,15 +21,25 @@ public record WebLeaderboardSnapshot(
         List<String> games = new ArrayList<>();
         List<WebLeaderboardBoard> boards = new ArrayList<>();
         for (GameTypeEnum game : daily.enabledGames()) {
+            if (!canPublish(game)) continue;
             games.add(game.name());
             Set<String> maps = daily.knownMaps(game);
-            for (DailyMetric metric : DailyMetric.forGame(game)) {
+            for (DailyMetric metric : DailyMetric.rankedForGame(game)) {
                 appendBoard(boards, stats, game, metric, null);
                 for (String map : maps) appendBoard(boards, stats, game, metric, map);
             }
         }
         return new WebLeaderboardSnapshot(
                 List.copyOf(games), List.copyOf(boards), System.currentTimeMillis());
+    }
+
+    /** Older web deployments reject an entire snapshot containing an unrecognized game. */
+    static boolean canPublish(GameTypeEnum game) {
+        List<String> supported = CCConfig.WEB_LEADERBOARD_SYNC_ENABLED_GAMES;
+        if (supported == null)
+            supported = List.of("Bingo", "AceRace", "DragonEggCarnival", "ParkourWarrior");
+        return supported.stream()
+                .anyMatch(name -> name != null && name.trim().equalsIgnoreCase(game.name()));
     }
 
     private static void appendBoard(
@@ -54,7 +65,9 @@ public record WebLeaderboardSnapshot(
                         game.name(),
                         metric.name(),
                         map,
-                        metric.format().name(),
+                        metric.format() == DailyMetric.Format.DECIMAL
+                                ? "DAMAGE"
+                                : metric.format().name(),
                         metric.lowerBetter(),
                         entries));
     }

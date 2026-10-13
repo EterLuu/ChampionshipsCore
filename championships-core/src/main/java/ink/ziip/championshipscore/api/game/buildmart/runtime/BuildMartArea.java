@@ -26,6 +26,7 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
+import ink.ziip.championshipscore.shared.presentation.DurationText;
 import ink.ziip.championshipscore.util.Enchants;
 
 import io.papermc.paper.registry.keys.EnchantmentKeys;
@@ -597,9 +598,11 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
                         ? MessageConfig.BUILD_MART_BOSSBAR_GOLDEN_NONE
                         : MessageConfig.BUILD_MART_BOSSBAR_GOLDEN_ACTIVE
                                 .replace("%blueprint%", currentGolden.getDisplayName())
-                                .replace("%seconds%", Integer.toString(goldenSecondsRemaining()));
+                                .replace(
+                                        "%seconds%",
+                                        DurationText.bossBarSeconds(goldenSecondsRemaining()));
         return MessageConfig.BUILD_MART_BOSSBAR_TITLE
-                .replace("%timer%", Integer.toString(timer))
+                .replace("%timer%", DurationText.bossBarSeconds(timer))
                 .replace("%golden%", golden);
     }
 

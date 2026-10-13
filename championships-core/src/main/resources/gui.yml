@@ -2,6 +2,30 @@ dont-edit-this:
   version: 45
 map-editor:
   games:
+    four-arena:
+      menus:
+        prepare:
+          items:
+            save-template:
+              material: STRUCTURE_BLOCK
+              title: "保存第一场地模板与边界"
+              lore:
+                - "用 WorldEdit 选取完整第一场地，保存建筑及边界为 arena.schem"
+            stamp:
+              material: DISPENSER
+              title: "自动复制为四个比赛场地"
+              lore:
+                - "输入总数 4；保留第一场地，自动复制其余三份地图"
+                - "按模板尺寸加 128 格隔离空隙排列；重新生成会清理旧副本"
+    lasershowdown:
+      menus:
+        prepare:
+          items:
+            spawns:
+              material: PLAYER_HEAD
+              title: "第一场地公共重生点"
+              lore:
+                - "只编辑第一场地出生位置，其余三份地图自动平移点位"
     frostbite:
       menus:
         prepare:
@@ -3958,6 +3982,90 @@ daily:
                   - "&#55ffff&l✓ 正在等待空闲场地"
                   - "&#696969有场地空闲后会自动继续匹配"
                 glint: true
+          laser-showdown:
+            material: DIAMOND_HORSE_ARMOR
+            title: "&#ff7373&l激光乱斗"
+            states:
+              available:
+                lore:
+                  - "&#696969射击 • 多队乱斗"
+                  - "&#a0a0a0同场乱斗 15 分钟；率先达到 40 杀立即结算"
+                  - ""
+                  - "&#a0a0a0游戏状态：&#ffaa00%stage%"
+                  - "&#a0a0a0进行中场次：&#ededed%active_sessions%场"
+                  - "&#a0a0a0空闲场地：&#ededed%slots%个"
+                  - "&#a0a0a0排队：&#ededed%queued%/%min%人"
+                  - "&#a0a0a0倒计时：&#ffaa00%countdown%秒"
+                  - ""
+                  - "&#a0a0a0地图：&#55ffff%maps%"
+                  - "&#a0a0a0我的成绩：&#ededed%games_played%场"
+                  - ""
+                  - "&#a0a0a0分队规则：&#ededed每队 1 人，最多%team_count%队"
+                  - "&#a0a0a0单场容量：&#ededed%min%-%max%人"
+                  - ""
+                  - "&#55ff55&l点击加入匹配"
+                  - "&#696969小队一起排队，成员也会优先分开"
+                glint: false
+              waiting:
+                lore:
+                  - "&#696969射击 • 多队乱斗"
+                  - "&#a0a0a0同场乱斗 15 分钟；率先达到 40 杀立即结算"
+                  - ""
+                  - "&#a0a0a0游戏状态：&#ffaa00%stage%"
+                  - "&#a0a0a0进行中场次：&#ededed%active_sessions%场"
+                  - "&#a0a0a0空闲场地：&#ededed%slots%个"
+                  - "&#a0a0a0排队：&#ededed%queued%/%min%人"
+                  - "&#a0a0a0倒计时：&#ffaa00%countdown%秒"
+                  - ""
+                  - "&#a0a0a0地图：&#55ffff%maps%"
+                  - "&#a0a0a0我的成绩：&#ededed%games_played%场"
+                  - ""
+                  - "&#a0a0a0分队规则：&#ededed每队 1 人，最多%team_count%队"
+                  - "&#a0a0a0单场容量：&#ededed%min%-%max%人"
+                  - ""
+                  - "&#ffaa00&l点击等待空闲场地"
+                  - "&#696969场地空闲后会自动开始倒计时"
+                glint: false
+              selected:
+                lore:
+                  - "&#696969射击 • 多队乱斗"
+                  - "&#a0a0a0同场乱斗 15 分钟；率先达到 40 杀立即结算"
+                  - ""
+                  - "&#a0a0a0游戏状态：&#ffaa00%stage%"
+                  - "&#a0a0a0进行中场次：&#ededed%active_sessions%场"
+                  - "&#a0a0a0空闲场地：&#ededed%slots%个"
+                  - "&#a0a0a0排队：&#ededed%queued%/%min%人"
+                  - "&#a0a0a0倒计时：&#ffaa00%countdown%秒"
+                  - ""
+                  - "&#a0a0a0地图：&#55ffff%maps%"
+                  - "&#a0a0a0我的成绩：&#ededed%games_played%场"
+                  - ""
+                  - "&#a0a0a0分队规则：&#ededed每队 1 人，最多%team_count%队"
+                  - "&#a0a0a0单场容量：&#ededed%min%-%max%人"
+                  - ""
+                  - "&#55ffff&l✓ 当前选择"
+                  - "&#696969再次点击不会重复加入"
+                glint: true
+              selected-waiting:
+                lore:
+                  - "&#696969射击 • 多队乱斗"
+                  - "&#a0a0a0同场乱斗 15 分钟；率先达到 40 杀立即结算"
+                  - ""
+                  - "&#a0a0a0游戏状态：&#ffaa00%stage%"
+                  - "&#a0a0a0进行中场次：&#ededed%active_sessions%场"
+                  - "&#a0a0a0空闲场地：&#ededed%slots%个"
+                  - "&#a0a0a0排队：&#ededed%queued%/%min%人"
+                  - "&#a0a0a0倒计时：&#ffaa00%countdown%秒"
+                  - ""
+                  - "&#a0a0a0地图：&#55ffff%maps%"
+                  - "&#a0a0a0我的成绩：&#ededed%games_played%场"
+                  - ""
+                  - "&#a0a0a0分队规则：&#ededed每队 1 人，最多%team_count%队"
+                  - "&#a0a0a0单场容量：&#ededed%min%-%max%人"
+                  - ""
+                  - "&#55ffff&l✓ 正在等待空闲场地"
+                  - "&#696969有场地空闲后会自动继续匹配"
+                glint: true
           parkour-warrior:
             material: LEATHER_BOOTS
             title: "&#ededed&l跑路战士"
@@ -4413,6 +4521,14 @@ daily:
           lore:
             - "&#a0a0a0%label% &#696969• &#ededed%value%"
           states:
+            lasershowdown-wins:
+              title: 胜场
+            lasershowdown-average-kills:
+              title: 场均击杀
+            lasershowdown-headshot-rate:
+              title: 爆头率
+            lasershowdown-favorite-gun:
+              title: 最喜欢使用的枪械
             no-record:
               title: "&#696969暂无记录"
             bingo-max-tasks:

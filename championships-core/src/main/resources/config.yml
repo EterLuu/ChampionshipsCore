@@ -42,11 +42,18 @@ formal-events:
 # DAILY opens the self-service game menu and queues. It does not disable /cc event or /cc game start.
 daily:
   enabled-games:
+    - "LaserShowdown"
     - "Bingo"
     - "AceRace"
     - "DragonEggCarnival"
     - "ParkourWarrior"
   games:
+    LaserShowdown:
+      min-players: 2
+      max-players: 16
+      team-size: 1
+      teams: 16
+      countdown-seconds: 60
     Bingo:
       min-players: 2
       max-players: 16
@@ -77,6 +84,8 @@ daily:
       concurrent-instances: 2
 # Optional publisher for cc-web DAILY leaderboards. Use an AUTHBRIDGE_WRITER key.
 leaderboard-sync:
+  # Match the deployed web catalog; unsupported games would reject the entire snapshot.
+  enabled-games: [Bingo, AceRace, DragonEggCarnival, ParkourWarrior]
   enabled: false
   base-url: "http://127.0.0.1:3000"
   key-id: "cc-core"

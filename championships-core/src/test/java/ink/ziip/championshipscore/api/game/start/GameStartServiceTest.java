@@ -11,11 +11,11 @@ import ink.ziip.championshipscore.api.game.hotycodydusky.runtime.HotyCodyDuskyTe
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameInstance;
 import ink.ziip.championshipscore.api.game.instance.paired.BasePairedGameInstance;
+import ink.ziip.championshipscore.api.game.lasershowdown.runtime.LaserShowdownTeamArea;
 import ink.ziip.championshipscore.api.game.manager.*;
 import ink.ziip.championshipscore.api.game.model.*;
 import ink.ziip.championshipscore.api.game.riptiderush.config.RiptideRushConfig;
 import ink.ziip.championshipscore.api.game.riptiderush.runtime.RiptideRushArea;
-import ink.ziip.championshipscore.api.game.lasershowdown.runtime.LaserShowdownTeamArea;
 import ink.ziip.championshipscore.api.game.tntrun.config.TNTRunConfig;
 import ink.ziip.championshipscore.api.game.tntrun.runtime.TNTRunTeamArea;
 import ink.ziip.championshipscore.api.schedule.ScheduleManager;
@@ -217,10 +217,16 @@ class GameStartServiceTest {
                 }
                 case LaserShowdown -> {
                     area = allocate(LaserShowdownTeamArea.class);
-                    set(area, "areaLocations", List.of(List.of(), List.of(), List.of(), List.of()));
-                    config =
+                    set(area, "areaLocations", new java.util.ArrayList<>());
+                    var c =
                             new ink.ziip.championshipscore.api.game.lasershowdown.config
                                     .LaserShowdownConfig(plugin, "Chosen");
+                    var document = new org.bukkit.configuration.file.YamlConfiguration();
+                    var spawns = document.createSection("player-spawn-points");
+                    for (String arena : List.of("area1", "area2", "area3", "area4"))
+                        spawns.set(arena, List.of());
+                    c.setPlayerSpawnPoints(spawns);
+                    config = c;
                 }
                 case FrostbiteFrenzy -> {
                     area = allocate(FrostbiteArea.class);

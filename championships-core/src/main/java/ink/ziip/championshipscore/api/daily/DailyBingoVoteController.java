@@ -16,6 +16,7 @@ import ink.ziip.championshipscore.protocol.BingoDifficulty;
 import ink.ziip.championshipscore.protocol.BingoMode;
 import ink.ziip.championshipscore.protocol.BingoRemix;
 import ink.ziip.championshipscore.protocol.BingoVariantRules;
+import ink.ziip.championshipscore.shared.presentation.DurationText;
 
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -826,7 +827,12 @@ final class DailyBingoVoteController {
     private void updateBossBar() {
         if (result == null || result.isDone() || phase == null) return;
         MessageService messages = MessageService.global();
-        String title = messages.tr("vote.bossbar", secondsLeft);
+        String time =
+                DurationText.bossBarSeconds(
+                        secondsLeft,
+                        messages.tr("vote.bossbar-time.seconds"),
+                        messages.tr("vote.bossbar-time.minutes-seconds"));
+        String title = messages.tr("vote.bossbar", time);
         String legacyTitle = LEGACY.serialize(LegacyText.component(title));
         if (bossBar == null)
             bossBar = Bukkit.createBossBar(legacyTitle, BarColor.PURPLE, BarStyle.SOLID);

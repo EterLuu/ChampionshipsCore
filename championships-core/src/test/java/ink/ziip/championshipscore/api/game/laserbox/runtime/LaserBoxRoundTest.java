@@ -2,6 +2,9 @@ package ink.ziip.championshipscore.api.game.laserbox.runtime;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ink.ziip.championshipscore.api.game.laser.model.LaserGun;
+import ink.ziip.championshipscore.api.game.laser.runtime.LaserWeaponState;
+
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
@@ -100,16 +103,16 @@ class LaserBoxRoundTest {
     }
 
     @Test
-    void laserCooldownIsSixAndAQuarterTicks() {
+    void rifleCooldownUsesTheSharedFractionalDeadline() {
         LaserBoxRound round = new LaserBoxRound();
         UUID player = UUID.randomUUID();
-        assertTrue(round.shoot(player));
-        for (int i = 0; i < 6; i++) {
+        assertEquals(LaserWeaponState.FireResult.FIRED, round.shoot(player, LaserGun.RIFLE));
+        for (int i = 0; i < 3; i++) {
             round.advance();
-            assertFalse(round.shoot(player));
+            assertEquals(LaserWeaponState.FireResult.COOLDOWN, round.shoot(player, LaserGun.RIFLE));
         }
         round.advance();
-        assertTrue(round.shoot(player));
+        assertEquals(LaserWeaponState.FireResult.FIRED, round.shoot(player, LaserGun.RIFLE));
     }
 
     @Test

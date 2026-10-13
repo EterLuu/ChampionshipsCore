@@ -1,4 +1,4 @@
-package ink.ziip.championshipscore.api.game.laserbox.mechanics;
+package ink.ziip.championshipscore.api.game.laser.presentation;
 
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerAbstract;
@@ -18,13 +18,13 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /** Client FOV presentation only; never changes movement attributes or item-use state. */
-public final class LaserBoxZoom extends PacketListenerAbstract implements AutoCloseable {
-    private static final float FOV_DENOMINATOR_MULTIPLIER = 12.0F;
+public final class LaserZoom extends PacketListenerAbstract implements AutoCloseable {
+    private static final float FOV_DENOMINATOR_MULTIPLIER = 20.0F;
     private final Set<UUID> aiming = ConcurrentHashMap.newKeySet();
     private final PlatformScheduler scheduler;
     private volatile boolean closed;
 
-    public LaserBoxZoom(Plugin plugin) {
+    public LaserZoom(Plugin plugin) {
         super(PacketListenerPriority.HIGH);
         scheduler = new PlatformScheduler(plugin);
         PacketEvents.getAPI().getEventManager().registerListener(this);

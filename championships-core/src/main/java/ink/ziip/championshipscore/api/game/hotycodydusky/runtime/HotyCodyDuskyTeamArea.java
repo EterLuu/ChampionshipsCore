@@ -9,6 +9,7 @@ import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
+import ink.ziip.championshipscore.shared.presentation.DurationText;
 
 import lombok.Getter;
 
@@ -275,7 +276,7 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
                             timer = seconds;
                             updateGameTimerBossBar(
                                     MessageConfig.HOTY_CODY_DUSKY_ACTION_BAR_COUNT_DOWN
-                                            .replace("%time%", String.valueOf(timer))
+                                            .replace("%time%", DurationText.bossBarSeconds(timer))
                                             .replace(
                                                     "%holder%",
                                                     codyHolders.isEmpty()

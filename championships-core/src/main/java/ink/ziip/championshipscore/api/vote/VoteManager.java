@@ -10,6 +10,7 @@ import ink.ziip.championshipscore.command.MainCommand;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
+import ink.ziip.championshipscore.shared.presentation.DurationText;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
@@ -77,9 +78,7 @@ public class VoteManager extends BaseManager {
     }
 
     private void updateVoteBars() {
-        String time =
-                String.format(
-                        Locale.ROOT, "%d:%02d", Math.max(0, timer) / 60, Math.max(0, timer) % 60);
+        String time = DurationText.bossBarSeconds(timer);
         double progress = Math.max(0D, Math.min(1D, timer / (double) VOTE_DURATION_SECONDS));
         int totalVotes = getTotalVoteCount();
         int eligibleVoters = getEligibleVoterCount();

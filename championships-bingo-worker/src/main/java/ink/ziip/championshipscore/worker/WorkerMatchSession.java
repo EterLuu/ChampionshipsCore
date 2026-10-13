@@ -622,7 +622,7 @@ final class WorkerMatchSession {
                         "%game%",
                         gameName(),
                         "%time%",
-                        Integer.toString(remaining));
+                        DurationText.bossBarSeconds(remaining));
         updateTimerBossBar(preparation, remaining, duration);
         scheduler.runGlobalLater(() -> introductionTick(elapsedSeconds + 1), 20L);
     }
@@ -668,7 +668,7 @@ final class WorkerMatchSession {
                         "%game%",
                         gameName(),
                         "%time%",
-                        Integer.toString(remaining));
+                        DurationText.bossBarSeconds(remaining));
         updateTimerBossBar(preparation, remaining, manifest.runtimeRules().preparationSeconds());
         scheduler.runGlobalLater(() -> preparationTick(remaining - 1), 20L);
     }
@@ -2290,7 +2290,7 @@ final class WorkerMatchSession {
                         manifest.runtimeRules().pvpGraceSeconds()
                                 - (manifest.durationSeconds() - remaining));
         Component title =
-                message("bingo.timer", "%time%", DurationText.minutesSeconds(remaining))
+                message("bingo.timer", "%time%", DurationText.bossBarSeconds(remaining))
                         .append(WorkerPresentationService.component(" &#bababa• "))
                         .append(
                                 pvpEnabled
@@ -2298,7 +2298,7 @@ final class WorkerMatchSession {
                                         : message(
                                                 "bingo.pvp-protection",
                                                 "%time%",
-                                                Integer.toString(graceRemaining)));
+                                                DurationText.bossBarSeconds(graceRemaining)));
         updateTimerBossBar(title, remaining, manifest.durationSeconds());
         if (!pvpEnabled && graceRemaining >= 1 && graceRemaining <= 10) {
             Component warning =

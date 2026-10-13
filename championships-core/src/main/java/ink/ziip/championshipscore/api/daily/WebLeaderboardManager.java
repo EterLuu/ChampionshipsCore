@@ -82,6 +82,7 @@ public final class WebLeaderboardManager extends BaseManager {
     private void publish() {
         if (!plugin.isEnabled() || client == null) return;
         WebLeaderboardSnapshot snapshot = WebLeaderboardSnapshot.from(dailyManager, statsManager);
+        if (snapshot.games().isEmpty()) return;
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> send(snapshot));
     }
 

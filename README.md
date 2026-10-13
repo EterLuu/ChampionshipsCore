@@ -26,12 +26,12 @@ ChampionshipsCore 是用于 Minecraft 团队锦标赛的 Paper 插件，统一�
 | 组件 | 要求 |
 | --- | --- |
 | Java | JDK 25（构建）；Java 25（运行） |
-| Core 服务端 | Paper 26.2，项目编译 API 为 `26.2.build.112-stable` |
+| Core 服务端 | Paper 26.3，项目编译 API 为 `26.3.build.171-beta` |
 | 数据库 | MariaDB 或 MySQL；需预先创建数据库和可读写、建表的账号 |
-| 必需插件 | PacketEvents 2.13.0、ProtocolLib 5.4.0、PlaceholderAPI 2.12.2、FastAsyncWorldEdit 2.15.3 |
+| 必需插件 | PacketEvents 2.14.0、支持 26.3 的 ProtocolLib 5.5.0 开发构建、PlaceholderAPI 2.12.3、FastAsyncWorldEdit 2.16.1 |
 | 构建工具 | Maven；依赖版本与仓库地址由根目录和各模块的 `pom.xml` 定义 |
 
-以上插件版本来自构建依赖，其中 FAWE 的 Bukkit 插件依赖为 2.15.3、Core API 依赖为 2.15.0。Core 的插件描述未声明 Folia 支持；远程 Bingo 使用单独的 [Folia Worker](championships-bingo-worker/README.md)。单服 `LOCAL` 模式无需 Redis、代理或身份平台。
+ProtocolLib 编译接口仍为 5.4.0，运行时须安装修复 26.3 协议映射的 5.5.0 开发构建。FAWE 的 Bukkit 与 Core API 使用同一版本。Core 的插件描述未声明 Folia 支持；远程 Bingo 使用单独的 [Folia Worker](championships-bingo-worker/README.md)，仍兼容 Folia 26.2。单服 `LOCAL` 模式无需 Redis、代理或身份平台。
 
 ## 快速开始
 

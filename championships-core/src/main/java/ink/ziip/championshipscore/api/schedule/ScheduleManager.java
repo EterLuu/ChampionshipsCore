@@ -21,6 +21,8 @@ import ink.ziip.championshipscore.api.schedule.frostbite.FrostbiteScheduleHandle
 import ink.ziip.championshipscore.api.schedule.frostbite.FrostbiteScheduleManager;
 import ink.ziip.championshipscore.api.schedule.hotycodydusky.HotyCodyDuskyScheduleManager;
 import ink.ziip.championshipscore.api.schedule.laserbox.LaserBoxScheduleManager;
+import ink.ziip.championshipscore.api.schedule.lasershowdown.LaserShowdownScheduleHandler;
+import ink.ziip.championshipscore.api.schedule.lasershowdown.LaserShowdownScheduleManager;
 import ink.ziip.championshipscore.api.schedule.model.TwoVTwoVector;
 import ink.ziip.championshipscore.api.schedule.parkourtag.ParkourTagScheduleManager;
 import ink.ziip.championshipscore.api.schedule.parkourwarrior.ParkourWarriorScheduleHandler;
@@ -29,8 +31,6 @@ import ink.ziip.championshipscore.api.schedule.riptiderush.RiptideRushScheduleHa
 import ink.ziip.championshipscore.api.schedule.riptiderush.RiptideRushScheduleManager;
 import ink.ziip.championshipscore.api.schedule.skywars.SkyWarsScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.skywars.SkyWarsScheduleManager;
-import ink.ziip.championshipscore.api.schedule.lasershowdown.LaserShowdownScheduleHandler;
-import ink.ziip.championshipscore.api.schedule.lasershowdown.LaserShowdownScheduleManager;
 import ink.ziip.championshipscore.api.schedule.tgttos.TGTTOSScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.tgttos.TGTTOSScheduleManager;
 import ink.ziip.championshipscore.api.schedule.tntrun.TNTRunScheduleHandler;
@@ -41,6 +41,7 @@ import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageCo
 import ink.ziip.championshipscore.logging.LogText;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
+import ink.ziip.championshipscore.shared.presentation.DurationText;
 
 import lombok.Getter;
 
@@ -568,7 +569,7 @@ public class ScheduleManager extends BaseManager {
             return;
         }
         String roundValue = String.valueOf(Math.max(1, round));
-        String secondsValue = String.valueOf(seconds);
+        String secondsValue = DurationText.bossBarSeconds(seconds);
         String title =
                 LegacyText.translateColorCodes(
                         MessageConfig.GAME_ROUND_PREPARATION_ACTION_BAR
@@ -601,7 +602,8 @@ public class ScheduleManager extends BaseManager {
     public void endGameSchedule(GameTypeEnum gameTypeEnum) {
         switch (gameTypeEnum) {
             case LaserShowdown -> {
-                if (laserShowdownScheduleManager.isEnabled()) laserShowdownScheduleManager.endSchedule();
+                if (laserShowdownScheduleManager.isEnabled())
+                    laserShowdownScheduleManager.endSchedule();
             }
             case SkyWars -> {
                 if (skyWarsScheduleManager.isEnabled()) skyWarsScheduleManager.endSchedule();

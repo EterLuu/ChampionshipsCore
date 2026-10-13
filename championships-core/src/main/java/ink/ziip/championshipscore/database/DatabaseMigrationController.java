@@ -265,7 +265,28 @@ public final class DatabaseMigrationController {
                                             .createStatement()
                                             .execute(
                                                     "DROP TABLE IF EXISTS"
-                                                            + " `cc_identity_settings`")));
+                                                            + " `cc_identity_settings`")),
+                    new DatabaseMigration(
+                            14,
+                            "laser-showdown-daily-combat-stats",
+                            connection -> {
+                                for (String column :
+                                        List.of(
+                                                "laserGames",
+                                                "laserKills",
+                                                "laserEnemyHits",
+                                                "laserHeadHits",
+                                                "laserSniperLives",
+                                                "laserRifleLives",
+                                                "laserSmgLives",
+                                                "laserMachineLives",
+                                                "laserShotgunLives"))
+                                    ensureColumn(
+                                            connection,
+                                            "daily_map_player_stats",
+                                            column,
+                                            "BIGINT NOT NULL DEFAULT 0");
+                            }));
 
     private final ChampionshipsCore plugin;
 

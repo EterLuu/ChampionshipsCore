@@ -575,7 +575,9 @@ final class DailyStatsMenu {
                         ? Material.ELYTRA
                         : game == GameTypeEnum.DragonEggCarnival
                                 ? Material.DRAGON_EGG
-                                : Material.PAPER;
+                                : game == GameTypeEnum.LaserShowdown
+                                        ? Material.DIAMOND_HORSE_ARMOR
+                                        : Material.PAPER;
     }
 
     private static NamedTextColor gameColor(GameTypeEnum game) {
@@ -585,13 +587,16 @@ final class DailyStatsMenu {
                         ? NamedTextColor.AQUA
                         : game == GameTypeEnum.DragonEggCarnival
                                 ? NamedTextColor.GOLD
-                                : NamedTextColor.WHITE;
+                                : game == GameTypeEnum.LaserShowdown
+                                        ? NamedTextColor.RED
+                                        : NamedTextColor.WHITE;
     }
 
     static NamedTextColor metricColor(DailyMetric metric) {
         return switch (metric.format()) {
             case TIME -> NamedTextColor.AQUA;
-            case DAMAGE -> NamedTextColor.RED;
+            case DAMAGE, DECIMAL -> NamedTextColor.RED;
+            case WEAPON -> NamedTextColor.AQUA;
             case PERCENT -> NamedTextColor.GREEN;
             case COUNT -> NamedTextColor.GOLD;
             case COMPOSITE -> NamedTextColor.LIGHT_PURPLE;

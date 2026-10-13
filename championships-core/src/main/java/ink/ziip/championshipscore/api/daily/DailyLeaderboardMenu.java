@@ -138,7 +138,7 @@ public final class DailyLeaderboardMenu {
         drawBorder(inventory);
         List<GameTypeEnum> games =
                 daily.enabledGames().stream()
-                        .filter(game -> !DailyMetric.forGame(game).isEmpty())
+                        .filter(game -> !DailyMetric.rankedForGame(game).isEmpty())
                         .sorted(Comparator.comparingInt(Enum::ordinal))
                         .toList();
         holder.pageCount = Math.max(1, (games.size() + 6) / 7);
@@ -147,7 +147,7 @@ public final class DailyLeaderboardMenu {
         inventory.setItem(PLAYER_SLOT, playerSummary(holder.viewer));
         int totalEntries = 0;
         for (GameTypeEnum game : games) {
-            for (DailyMetric metric : DailyMetric.forGame(game)) {
+            for (DailyMetric metric : DailyMetric.rankedForGame(game)) {
                 totalEntries += stats.leaderboard(metric.boardId(null)).size();
             }
         }
@@ -369,7 +369,7 @@ public final class DailyLeaderboardMenu {
     private ItemStack personalRecords(UUID viewer, List<GameTypeEnum> games) {
         List<Component> lore = new ArrayList<>();
         for (GameTypeEnum game : games) {
-            for (DailyMetric metric : DailyMetric.forGame(game)) {
+            for (DailyMetric metric : DailyMetric.rankedForGame(game)) {
                 List<Double> values = stats.metricValues(viewer, null, metric);
                 if (values.isEmpty()) {
                     lore.add(
@@ -425,7 +425,7 @@ public final class DailyLeaderboardMenu {
     private ItemStack gameItem(GameTypeEnum game, UUID viewer) {
         List<Component> lore = new ArrayList<>();
         boolean listed = false;
-        for (DailyMetric metric : DailyMetric.forGame(game)) {
+        for (DailyMetric metric : DailyMetric.rankedForGame(game)) {
             List<DailyLeaderboardEntry> entries = stats.leaderboard(metric.boardId(null));
             lore.add(
                     LegacyText.component(
@@ -482,7 +482,7 @@ public final class DailyLeaderboardMenu {
     private ItemStack mapItem(GameTypeEnum game, String map) {
         List<Component> lore = new ArrayList<>();
         boolean recorded = false;
-        for (DailyMetric metric : DailyMetric.forGame(game)) {
+        for (DailyMetric metric : DailyMetric.rankedForGame(game)) {
             lore.add(
                     LegacyText.component(
                             GuiConfig.text(metric.labelKey() + ".title"), NamedTextColor.GRAY));

@@ -16,6 +16,16 @@ timer: 90
 spectator-spawn-point:
 area-pos1:
 area-pos2:
+arena-min: null
+arena-max: null
+# 保存第一场地模板时记录边界；生成后记录实际地图复制布局。
+copy-layout:
+  origin: null
+  step: null
+  size: null
+  generated: false
+  template-captured: false
+# 编辑器只维护 area1；生成地图后其余三个区域从 area1 自动平移。
 player-spawn-points:
   area1: [ ]
   area2: [ ]
@@ -33,7 +43,7 @@ rules:
     - "&#fff566选择枪械，用激光击倒对手！"
     - "&#ededed五种枪械各有射程、弹道、弹匣和换弹节奏"
     - "&#ededed命中头部伤害更高，阵亡后短暂观战并自动重生"
-    - "&#ededed使用指南针可随时重新选择枪械"
+    - "&#ededed出生后6秒内用指南针换枪，开火或受击立即锁定"
   - - "&#696969==========&r&#fff566积分规则&#696969==========&r"
     - "&#ededed每击杀一名对手：&#fff566+4分"
     - "&#ededed激光命中按头部、身体和腿部区域计算伤害"

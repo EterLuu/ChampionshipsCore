@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.daily;
 
+import ink.ziip.championshipscore.api.game.lasershowdown.model.LaserShowdownStats;
+
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -20,7 +22,37 @@ public record DailyMapStat(
         long firstNextGen,
         long firstGateway,
         long maxStars,
-        long finishes) {
+        long finishes,
+        LaserShowdownStats laser) {
+    public DailyMapStat(
+            long gamesPlayed,
+            long wins,
+            long trackedGames,
+            long maxTasks,
+            long maxLines,
+            long maxFirstTasks,
+            double maxDragonDamage,
+            long firstLiberate,
+            long firstNextGen,
+            long firstGateway,
+            long maxStars,
+            long finishes) {
+        this(
+                gamesPlayed,
+                wins,
+                trackedGames,
+                maxTasks,
+                maxLines,
+                maxFirstTasks,
+                maxDragonDamage,
+                firstLiberate,
+                firstNextGen,
+                firstGateway,
+                maxStars,
+                finishes,
+                LaserShowdownStats.EMPTY);
+    }
+
     public static final DailyMapStat EMPTY =
             new DailyMapStat(0L, 0L, 0L, 0L, 0L, 0L, 0D, 0L, 0L, 0L, 0L, 0L);
 
@@ -38,6 +70,7 @@ public record DailyMapStat(
                 firstNextGen + other.firstNextGen,
                 firstGateway + other.firstGateway,
                 Math.max(maxStars, other.maxStars),
-                finishes + other.finishes);
+                finishes + other.finishes,
+                laser.merge(other.laser));
     }
 }

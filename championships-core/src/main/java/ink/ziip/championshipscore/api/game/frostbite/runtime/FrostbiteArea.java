@@ -14,6 +14,7 @@ import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
+import ink.ziip.championshipscore.shared.presentation.DurationText;
 
 import org.bukkit.*;
 import org.bukkit.block.data.type.Snow;
@@ -257,13 +258,7 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
                             timer = remaining;
                             updateGameTimerBossBar(
                                     MessageConfig.FROSTBITE_BOSS_BAR.replace(
-                                            "%time%",
-                                            remaining / 60
-                                                    + ":"
-                                                    + String.format(
-                                                            java.util.Locale.ROOT,
-                                                            "%02d",
-                                                            remaining % 60)),
+                                            "%time%", DurationText.bossBarSeconds(remaining)),
                                     remaining,
                                     getGameConfig().getTimer());
                         },

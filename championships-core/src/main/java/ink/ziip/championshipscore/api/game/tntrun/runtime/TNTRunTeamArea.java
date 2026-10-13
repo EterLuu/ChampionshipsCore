@@ -12,6 +12,7 @@ import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.location.LocationConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
+import ink.ziip.championshipscore.shared.presentation.DurationText;
 import ink.ziip.championshipscore.util.Enchants;
 
 import io.papermc.paper.registry.keys.EnchantmentKeys;
@@ -433,10 +434,10 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
         int activeSeconds = activeTntRainSeconds();
         if (activeSeconds > 0) {
             return MessageConfig.TNT_RUN_BOSS_BAR_TNT_RAIN
-                    .replace("%time%", String.valueOf(timer))
-                    .replace("%rain-time%", String.valueOf(activeSeconds));
+                    .replace("%time%", DurationText.bossBarSeconds(timer))
+                    .replace("%rain-time%", DurationText.bossBarSeconds(activeSeconds));
         }
-        return MessageConfig.TNT_RUN_BOSS_BAR.replace("%time%", String.valueOf(timer));
+        return MessageConfig.TNT_RUN_BOSS_BAR.replace("%time%", DurationText.bossBarSeconds(timer));
     }
 
     private int tntRainWarningSeconds() {

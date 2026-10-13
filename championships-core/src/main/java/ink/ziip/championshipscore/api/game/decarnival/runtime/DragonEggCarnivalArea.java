@@ -10,6 +10,7 @@ import ink.ziip.championshipscore.api.game.spatial.TeleportPositions;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
+import ink.ziip.championshipscore.shared.presentation.DurationText;
 import ink.ziip.championshipscore.util.Enchants;
 
 import io.papermc.paper.registry.keys.EnchantmentKeys;
@@ -263,7 +264,7 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
     private void updateFightBossBar() {
         updateGameTimerBossBar(
                 MessageConfig.DRAGON_EGG_CARNIVAL_ACTION_BAR_COUNT_DOWN.replace(
-                        "%time%", String.valueOf(timer)),
+                        "%time%", DurationText.bossBarSeconds(timer)),
                 1D);
     }
 

@@ -999,7 +999,7 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
                 MessageConfig.RIPTIDE_RUSH_BOSS_BAR
                         .replace("%alive%", String.valueOf(getSurvivedPlayerNums()))
                         .replace("%total%", String.valueOf(gamePlayers.size()))
-                        .replace("%time%", DurationText.minutesSeconds(timer))
+                        .replace("%time%", DurationText.bossBarSeconds(timer))
                         .replace(
                                 "%speed%",
                                 String.format(java.util.Locale.ROOT, "%.1f", currentSpeed()));

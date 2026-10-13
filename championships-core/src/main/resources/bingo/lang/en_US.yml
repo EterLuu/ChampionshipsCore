@@ -319,7 +319,10 @@ vote:
   started: "&dBingo vote started! Choose the mode, difficulty, and winning lines within {0} seconds."
   remaining: "&7Vote ends in &e{0} &7seconds"
   cancelled-insufficient: "&cVote cancelled because too few players joined; players return to matchmaking."
-  bossbar: "&dBingo vote &7• {0}s remaining"
+  bossbar: "&dBingo vote &7• {0} remaining"
+  bossbar-time:
+    seconds: "%seconds%s"
+    minutes-seconds: "%minutes%m %seconds%s"
   previous: "Previous page"
   next: "Next page"
   close: "Close"

@@ -1,7 +1,7 @@
 package ink.ziip.championshipscore.api.game.frostbite.config;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
+import ink.ziip.championshipscore.api.game.config.FourArenaConfig;
 import ink.ziip.championshipscore.configuration.ConfigOption;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.location.ConfiguredLocation;
@@ -16,7 +16,7 @@ import java.util.*;
 
 @Getter
 @Setter
-public final class FrostbiteConfig extends BaseGameConfig {
+public final class FrostbiteConfig extends FourArenaConfig {
     private final String resourceName = "frostbite/area.yml";
     private final String folderName = "frostbite/";
 
@@ -47,12 +47,6 @@ public final class FrostbiteConfig extends BaseGameConfig {
     @ConfigOption(path = "copy-spacing")
     private int copySpacing = 256;
 
-    @ConfigOption(path = "arena-min")
-    private Vector arenaMin;
-
-    @ConfigOption(path = "arena-max")
-    private Vector arenaMax;
-
     @ConfigOption(path = "spawn-points")
     private List<String> spawnPoints = List.of();
 
@@ -73,17 +67,20 @@ public final class FrostbiteConfig extends BaseGameConfig {
 
     @Override
     public Vector getAreaPos1() {
-        return arenaMin;
+        return hasCopyLayout() ? getCopyGrid().origin(0) : getArenaMin();
     }
 
     @Override
     public Vector getAreaPos2() {
-        return arenaMax == null
+        if (hasCopyLayout())
+            return getCopyGrid().origin(3).add(getCopySize()).subtract(new Vector(1, 1, 1));
+        return getArenaMax() == null
                 ? null
-                : arenaMax.clone().add(new Vector(copySpacing, 0, copySpacing));
+                : getArenaMax().clone().add(new Vector(copySpacing, 0, copySpacing));
     }
 
     public Vector offset(int arena) {
+        if (hasCopyLayout()) return getCopyGrid().delta(arena);
         return new Vector((arena % 2) * copySpacing, 0, (arena / 2) * copySpacing);
     }
 
@@ -109,10 +106,13 @@ public final class FrostbiteConfig extends BaseGameConfig {
         if (location.getWorld() == null || !location.getWorld().getName().equals(worldName))
             return false;
         Vector p = location.toVector().subtract(offset(arena));
-        return p.isInAABB(arenaMin, arenaMax);
+        return p.isInAABB(getArenaMin(), getArenaMax());
     }
 
     public void validate() {
+        Vector arenaMin = getArenaMin();
+        Vector arenaMax = getArenaMax();
+        if (isTemplateCaptured() || hasCopyLayout()) validateCopies();
         if (timer < 30
                 || timer > 600
                 || freezeSeconds < 1
@@ -138,8 +138,9 @@ public final class FrostbiteConfig extends BaseGameConfig {
                 || arenaMin.getX() >= arenaMax.getX()
                 || arenaMin.getY() >= arenaMax.getY()
                 || arenaMin.getZ() >= arenaMax.getZ()
-                || arenaMax.getX() - arenaMin.getX() >= copySpacing
-                || arenaMax.getZ() - arenaMin.getZ() >= copySpacing)
+                || !hasCopyLayout()
+                        && (arenaMax.getX() - arenaMin.getX() >= copySpacing
+                                || arenaMax.getZ() - arenaMin.getZ() >= copySpacing))
             throw new IllegalArgumentException(
                     MessageConfig.codeText("frostbite-config.validate-3"));
         if (spawnPoints.size() < 16

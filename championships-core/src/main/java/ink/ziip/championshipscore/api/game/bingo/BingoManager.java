@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.game.bingo;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.bingo.config.BingoConfig;
 import ink.ziip.championshipscore.api.game.bingo.execution.BingoExecutionMode;
+import ink.ziip.championshipscore.api.game.bingo.execution.RemoteBingoContent;
 import ink.ziip.championshipscore.api.game.bingo.gui.CardItemListener;
 import ink.ziip.championshipscore.api.game.bingo.gui.CardMenuListener;
 import ink.ziip.championshipscore.api.game.bingo.mechanics.BingoCompassListener;
@@ -172,6 +173,16 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
         TagFilterLoader.load(plugin, config);
         String selected = config.getString("cards.selected", "default");
         TaskPoolSpec spec = TaskPoolLoader.load(plugin, selected);
+        if (remoteExecutionConfigured()) {
+            int total = spec.entries().size();
+            spec = RemoteBingoContent.filter(spec);
+            plugin.getLogger()
+                    .info(
+                            "Remote Bingo content baseline=26.2; kept="
+                                    + spec.entries().size()
+                                    + "; excluded="
+                                    + (total - spec.entries().size()));
+        }
         TaskPoolSource.set(spec, selected);
         TaskGenerator.setDifficultyWeights(readDifficultyWeights(config));
         TaskGenerator.setKitFilter(BingoStarterKit::trivialises);

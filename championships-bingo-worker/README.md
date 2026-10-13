@@ -4,13 +4,15 @@ Bingo Worker 在独立 Folia 服务端执行 ChampionshipsCore 的远程 Bingo�
 
 ## 要求
 
-- Java 25、Folia 26.2 与 PacketEvents 2.13.0。
+- Java 25、Folia 26.2 与 PacketEvents 2.14.0。
 - 配套版本的 Core、双方可访问的 Redis。
 - BungeeCord，或启用 BungeeCord 兼容 channel 的 Velocity。
 - 已加载的主世界、下界和末地，三个维度位于同一主世界目录下。
 - 能处理世界重置标记的外部服务管理流程，见下方说明。
 
 PlaceholderAPI 可选；FastBoard、Redis 客户端和内部共享模块已包含在 Worker JAR 中。服务端与插件版本以当前 POM 和插件描述为准。
+
+远程任务内容限定为 Minecraft 26.2：Core 在通配展开后、抽卡前过滤新版本注册项，冻结 manifest 和 Worker 编译任务时再次校验。物品集合、事件主体、统计、成就和显示物品均须兼容该基线；Core 升级到 26.3 不会向 Folia 26.2 下发新增任务。本地 Bingo 使用所在服务器的任务池。
 
 ## 构建与安装
 

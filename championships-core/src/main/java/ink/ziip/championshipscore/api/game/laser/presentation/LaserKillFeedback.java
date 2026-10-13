@@ -1,5 +1,8 @@
-package ink.ziip.championshipscore.api.game.laserbox.mechanics;
+package ink.ziip.championshipscore.api.game.laser.presentation;
 
+import ink.ziip.championshipscore.platform.bukkit.scheduler.PlatformScheduler;
+
+import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.FireworkEffect;
 import org.bukkit.Instrument;
@@ -11,17 +14,17 @@ import org.bukkit.entity.Firework;
 import org.bukkit.entity.Player;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.util.Vector;
 
 import java.util.List;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 
 /**
  * Kill fireworks and private notes; ACE can finish during settlement, but never carry into a new
  * round.
  */
-public final class LaserBoxKillFeedback {
+public final class LaserKillFeedback {
     private static final String KILL_FIREWORK = "kill-firework";
     private static final Color HEADSHOT_COLOR = Color.fromRGB(0xFFD700);
     private static final Note E = Note.natural(0, Note.Tone.E);
@@ -32,7 +35,7 @@ public final class LaserBoxKillFeedback {
     };
     private static final long ACE_NOTE_INTERVAL_TICKS = 3L;
 
-    private LaserBoxKillFeedback() {}
+    private LaserKillFeedback() {}
 
     public static void burst(Player victim, Color teamColor, NamespacedKey itemKey) {
         burst(victim, teamColor, itemKey, false);
@@ -74,26 +77,42 @@ public final class LaserBoxKillFeedback {
                                 .get(itemKey, PersistentDataType.STRING));
     }
 
-    public static void play(
+    public static void play(Player killer, int kills, Plugin plugin, BooleanSupplier currentRound) {
+        if (!plugin.isEnabled()) return;
+        Runnable playback =
+                () -> play(killer, kills, plugin, currentRound, note -> playNote(killer, note));
+        if (Bukkit.isOwnedByCurrentRegion(killer)) playback.run();
+        else new PlatformScheduler(plugin).runEntity(killer, playback);
+    }
+
+    /** Keeps native sound rendering separate from entity-owned playback and its lifetime guard. */
+    static void play(
             Player killer,
             int kills,
-            BukkitScheduler scheduler,
             Plugin plugin,
-            BooleanSupplier currentRound) {
-        if (kills < 1 || !killer.isOnline()) return;
+            BooleanSupplier currentRound,
+            Consumer<Note> emit) {
+        var id = killer.getUniqueId();
+        BooleanSupplier currentPlayback =
+                () ->
+                        plugin.isEnabled()
+                                && killer.isOnline()
+                                && Bukkit.getPlayer(id) == killer
+                                && currentRound.getAsBoolean();
+        if (kills < 1 || !currentPlayback.getAsBoolean()) return;
         if (kills <= KILL_NOTES.length) {
-            playNote(killer, noteForKills(kills), false);
+            emit.accept(noteForKills(kills));
             return;
         }
         List<Note> melody = aceMelody();
-        playNote(killer, melody.getFirst(), true);
+        emit.accept(melody.getFirst());
+        PlatformScheduler scheduler = new PlatformScheduler(plugin);
         for (int beat = 1; beat < melody.size(); beat++) {
             Note note = melody.get(beat);
-            scheduler.runTaskLater(
-                    plugin,
+            scheduler.runEntityLater(
+                    killer,
                     () -> {
-                        if (killer.isOnline() && currentRound.getAsBoolean())
-                            playNote(killer, note, true);
+                        if (currentPlayback.getAsBoolean()) emit.accept(note);
                     },
                     beat * ACE_NOTE_INTERVAL_TICKS);
         }
@@ -108,9 +127,8 @@ public final class LaserBoxKillFeedback {
         return List.of(E, E, E, G);
     }
 
-    private static void playNote(Player killer, Note note, boolean ace) {
+    private static void playNote(Player killer, Note note) {
         var location = killer.getLocation();
         killer.playNote(location, Instrument.BIT, note);
-        if (ace) killer.playNote(location, Instrument.PLING, note);
     }
 }

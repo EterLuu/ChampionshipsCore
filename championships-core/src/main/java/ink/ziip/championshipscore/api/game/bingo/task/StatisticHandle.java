@@ -71,6 +71,7 @@ public record StatisticHandle(
                     Map.entry(Statistic.FURNACE_INTERACTION, "interact_with_furnace"),
                     Map.entry(Statistic.CRAFTING_TABLE_INTERACTION, "interact_with_crafting_table"),
                     Map.entry(Statistic.SLEEP_IN_BED, "sleep_in_bed"),
+                    Map.entry(Statistic.SLEEP_IN_STRAW_BED, "sleep_in_straw_bed"),
                     Map.entry(Statistic.SHULKER_BOX_OPENED, "open_shulker_box"),
                     Map.entry(Statistic.INTERACT_WITH_BLAST_FURNACE, "interact_with_blast_furnace"),
                     Map.entry(Statistic.INTERACT_WITH_SMOKER, "interact_with_smoker"),
@@ -227,6 +228,7 @@ public record StatisticHandle(
             case CRAFTING_TABLE_INTERACTION -> Material.CRAFTING_TABLE;
             case CHEST_OPENED -> Material.CHEST;
             case SLEEP_IN_BED -> Material.RED_BED;
+            case SLEEP_IN_STRAW_BED -> Material.STRAW_BED;
             case SHULKER_BOX_OPENED -> Material.SHULKER_BOX;
             case TIME_SINCE_REST -> Material.YELLOW_BED;
             case SWIM_ONE_CM -> Material.BUBBLE_CORAL;

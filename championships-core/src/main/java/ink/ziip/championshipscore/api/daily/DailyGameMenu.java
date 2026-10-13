@@ -231,7 +231,7 @@ public final class DailyGameMenu {
         placeholders.put("countdown", daily.queueCountdown(game));
         placeholders.put("maps", maps.isEmpty() ? "-" : String.join("、", maps));
         placeholders.put("games_played", stat.gamesPlayed());
-        placeholders.put("team_size", rules.teams());
+        placeholders.put("team_size", rules.teamSize());
         placeholders.put("team_count", rules.teams());
         return configured("games." + gameId(game), state, placeholders, styleMaterial(game));
     }
@@ -250,7 +250,11 @@ public final class DailyGameMenu {
                                                 ? plugin.getGameManager()
                                                         .getParkourWarriorManager()
                                                         .getAreaNameList()
-                                                : List.of();
+                                                : game == GameTypeEnum.LaserShowdown
+                                                        ? plugin.getGameManager()
+                                                                .getLaserShowdownManager()
+                                                                .getAreaNameList()
+                                                        : List.of();
         return maps.stream().sorted(String.CASE_INSENSITIVE_ORDER).limit(3).toList();
     }
 
@@ -260,6 +264,7 @@ public final class DailyGameMenu {
             case AceRace -> "ace-race";
             case DragonEggCarnival -> "dragon-egg";
             case ParkourWarrior -> "parkour-warrior";
+            case LaserShowdown -> "laser-showdown";
             default -> "unknown";
         };
     }
@@ -270,6 +275,7 @@ public final class DailyGameMenu {
             case AceRace -> Material.ELYTRA;
             case DragonEggCarnival -> Material.DRAGON_EGG;
             case ParkourWarrior -> Material.LEATHER_BOOTS;
+            case LaserShowdown -> Material.DIAMOND_HORSE_ARMOR;
             default -> Material.PAPER;
         };
     }

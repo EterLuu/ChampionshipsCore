@@ -19,11 +19,18 @@ rank-points-per-player: [60, 55, 50, 45, 40, 35, 30, 25, 20, 15, 10]
 copy-spacing: 256
 arena-min: null
 arena-max: null
+# 保存第一场地模板时记录边界；生成后记录实际地图复制布局。
+copy-layout:
+  origin: null
+  step: null
+  size: null
+  generated: false
+  template-captured: false
 spectator-spawn: null
 introduction-spawn-point: null
 introduction-game-mode: SPECTATOR
 # 导入地图使用 "x y z [yaw]"；编辑器使用 "当前世界:x:y:z:yaw:pitch"。
-# 两种坐标均位于第一张地图，运行时按 copy-spacing 平移到其余三张地图。
+# 坐标均位于第一张地图；新副本按 copy-layout 平移，旧预置地图沿用 copy-spacing。
 # 坐标列表统一使用 world:x:y:z:yaw:pitch，由地图编辑器写入。
 spawn-points: []
 item-points: []
