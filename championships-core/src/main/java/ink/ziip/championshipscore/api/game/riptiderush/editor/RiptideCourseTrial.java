@@ -189,7 +189,8 @@ public final class RiptideCourseTrial implements Listener {
                                                 .getLogger()
                                                 .log(
                                                         java.util.logging.Level.SEVERE,
-                                                        "激流试玩失败",
+                                                        MessageConfig.codeText(
+                                                                "riptide-course-trial.start-1"),
                                                         error);
                                         trial.finish(
                                                 MessageConfig.RIPTIDE_RUSH_TRIAL_ABORTED.replace(

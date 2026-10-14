@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.game.model.GameRunMode;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
@@ -99,7 +100,10 @@ public class HotyCodyDuskyScheduleManager extends BaseManager {
 
         handler.register();
 
-        if (!arrangeHotyCodyDuskyRounds(true)) abortSchedule("首轮启动失败");
+        if (!arrangeHotyCodyDuskyRounds(true))
+            abortSchedule(
+                    MessageConfig.codeText(
+                            "hoty-cody-dusky-schedule-manager.start-hoty-cody-dusky-round-1"));
     }
 
     private boolean arrangeHotyCodyDuskyRounds(boolean showIntroduction) {
@@ -157,7 +161,10 @@ public class HotyCodyDuskyScheduleManager extends BaseManager {
                             }
 
                             if (timer == 0) {
-                                if (!arrangeHotyCodyDuskyRounds(false)) abortSchedule("下一轮启动失败");
+                                if (!arrangeHotyCodyDuskyRounds(false))
+                                    abortSchedule(
+                                            MessageConfig.codeText(
+                                                    "hoty-cody-dusky-schedule-manager.next-hoty-cody-dusky-round-1"));
                                 if (startTask != null) startTask.cancel();
                             }
                             timer--;
@@ -190,7 +197,14 @@ public class HotyCodyDuskyScheduleManager extends BaseManager {
     private void abortSchedule(String reason) {
         plugin.getLogger()
                 .warning(
-                        LogText.formatGameLog(GameTypeEnum.HotyCodyDusky, "-", "调度", "中止", reason));
+                        LogText.formatGameLog(
+                                GameTypeEnum.HotyCodyDusky,
+                                "-",
+                                MessageConfig.codeText(
+                                        "hoty-cody-dusky-schedule-manager.abort-schedule-1"),
+                                MessageConfig.codeText(
+                                        "hoty-cody-dusky-schedule-manager.abort-schedule-2"),
+                                reason));
         endSchedule();
         plugin.getGameManager().forceEndAreas(GameTypeEnum.HotyCodyDusky);
     }

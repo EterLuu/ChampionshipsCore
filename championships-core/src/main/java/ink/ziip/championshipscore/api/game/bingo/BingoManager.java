@@ -20,6 +20,7 @@ import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.configuration.config.BaseConfigurationFile;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoPortalRouter;
 import ink.ziip.championshipscore.platform.bukkit.bingo.map.TaskImageAtlas;
@@ -95,7 +96,11 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
                 plugin.getLogger()
                         .severe(
                                 LogText.formatGameLog(
-                                        GameTypeEnum.Bingo, "-", "加载", "世界", "世界加载失败，游戏未注册"));
+                                        GameTypeEnum.Bingo,
+                                        "-",
+                                        MessageConfig.codeText("bingo-manager.load-1"),
+                                        MessageConfig.codeText("bingo-manager.load-2"),
+                                        MessageConfig.codeText("bingo-manager.load-3")));
                 return;
             }
         }
@@ -146,9 +151,12 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
                                                 LogText.formatGameLog(
                                                         GameTypeEnum.Bingo,
                                                         "-",
-                                                        "重载",
-                                                        "内容",
-                                                        "Bingo 内容配置重载失败"),
+                                                        MessageConfig.codeText(
+                                                                "bingo-manager.reload-content-configuration-1"),
+                                                        MessageConfig.codeText(
+                                                                "bingo-manager.reload-content-configuration-2"),
+                                                        MessageConfig.codeText(
+                                                                "bingo-manager.reload-content-configuration-3")),
                                                 failure);
                                 result.complete(false);
                             }
@@ -241,9 +249,12 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
                                 LogText.formatGameLog(
                                         GameTypeEnum.Bingo,
                                         "-",
-                                        "加载",
-                                        "配置",
-                                        "无法写出 bingo/config.yml | " + e.getMessage()));
+                                        MessageConfig.codeText("bingo-manager.load-1"),
+                                        MessageConfig.codeText(
+                                                "bingo-manager.load-global-config-1"),
+                                        MessageConfig.codeText(
+                                                "bingo-manager.load-global-config-2",
+                                                e.getMessage())));
             }
         }
         if (!configFile.isFile()) return null;
@@ -258,7 +269,11 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
                     .log(
                             Level.SEVERE,
                             LogText.formatGameLog(
-                                    GameTypeEnum.Bingo, "-", "加载", "配置", "无法解析 bingo/config.yml"),
+                                    GameTypeEnum.Bingo,
+                                    "-",
+                                    MessageConfig.codeText("bingo-manager.load-1"),
+                                    MessageConfig.codeText("bingo-manager.load-global-config-1"),
+                                    MessageConfig.codeText("bingo-manager.load-global-config-3")),
                             failure);
             return null;
         }

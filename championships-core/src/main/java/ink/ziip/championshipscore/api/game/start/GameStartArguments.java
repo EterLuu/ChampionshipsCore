@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.start;
 
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -26,27 +27,35 @@ public record GameStartArguments(
         for (int i = 0; i < tokens.size(); i++) {
             String token = tokens.get(i);
             if (token.equals("--arena") || token.startsWith("--arena=")) {
-                if (arenaSpecified) throw new IllegalArgumentException("--arena 只能指定一次");
+                if (arenaSpecified)
+                    throw new IllegalArgumentException(
+                            MessageConfig.codeText("game-start-arguments.parse-2"));
                 arenaSpecified = true;
                 String value;
                 if (token.equals("--arena")) {
-                    if (++i == tokens.size()) throw new IllegalArgumentException("--arena 缺少编号");
+                    if (++i == tokens.size())
+                        throw new IllegalArgumentException(
+                                MessageConfig.codeText("game-start-arguments.parse-3"));
                     value = tokens.get(i);
                 } else {
                     value = token.substring("--arena=".length());
                 }
                 selection = ArenaSelection.parse(value);
             } else if (token.startsWith("--")) {
-                throw new IllegalArgumentException("未知启动选项：" + token);
+                throw new IllegalArgumentException(
+                        MessageConfig.codeText("game-start-arguments.parse-1", token));
             } else {
                 positional.add(token);
             }
         }
         if (positional.isEmpty() || (!event && positional.size() < 2)) {
-            throw new IllegalArgumentException("请指定游戏和地图；地图使用 auto 可自动选择");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("game-start-arguments.parse-4"));
         }
         GameTypeEnum game = GameTypeEnum.fromCommand(positional.getFirst());
-        if (game == null) throw new IllegalArgumentException("未知游戏：" + positional.getFirst());
+        if (game == null)
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("game-start-arguments.parse-5", positional.getFirst()));
         String map =
                 positional.size() < 2 || positional.get(1).equalsIgnoreCase("auto")
                         ? null
@@ -56,11 +65,13 @@ public record GameStartArguments(
                         positional.subList(Math.min(2, positional.size()), positional.size()));
         if (teams.size() == 1 && teams.getFirst().equalsIgnoreCase("all")) teams.clear();
         if (teams.stream().anyMatch(name -> name.equalsIgnoreCase("all"))) {
-            throw new IllegalArgumentException("all 不能与指定队伍混用");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("game-start-arguments.parse-6"));
         }
         if (new HashSet<>(teams.stream().map(name -> name.toLowerCase(Locale.ROOT)).toList()).size()
                 != teams.size()) {
-            throw new IllegalArgumentException("参赛队伍不能重复");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("game-start-arguments.parse-7"));
         }
         return new GameStartArguments(game, map, teams, selection);
     }
@@ -81,14 +92,18 @@ public record GameStartArguments(
                 result.add(token);
             } else if (token.endsWith(String.valueOf(delimiter))) {
                 quoted.append(token, 0, token.length() - 1);
-                if (quoted.isEmpty()) throw new IllegalArgumentException("地图或队伍名称不能为空");
+                if (quoted.isEmpty())
+                    throw new IllegalArgumentException(
+                            MessageConfig.codeText("game-start-arguments.quoted-tokens-1"));
                 result.add(quoted.toString());
                 quoted = null;
             } else {
                 quoted.append(token);
             }
         }
-        if (quoted != null) throw new IllegalArgumentException("名称引号未闭合");
+        if (quoted != null)
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("game-start-arguments.quoted-tokens-2"));
         return result;
     }
 }

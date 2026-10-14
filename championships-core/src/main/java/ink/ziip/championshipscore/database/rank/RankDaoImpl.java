@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.rank.entry.GameStatusEntry;
 import ink.ziip.championshipscore.api.rank.entry.PlayerPointEntry;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 
 import java.sql.*;
@@ -31,7 +32,9 @@ public class RankDaoImpl implements RankDao {
             while (resultSet.next()) entries.add(readPlayerPoint(resultSet));
             return Optional.of(List.copyOf(entries));
         } catch (SQLException exception) {
-            logFailure("查询有效积分快照", exception);
+            logFailure(
+                    MessageConfig.codeText("rank-dao-impl.get-all-valid-player-points-1"),
+                    exception);
             return Optional.empty();
         }
     }
@@ -96,17 +99,15 @@ public class RankDaoImpl implements RankDao {
                                     Level.INFO,
                                     LogText.formatModuleLog(
                                             "Database",
-                                            "积分",
-                                            "玩家="
-                                                    + entry.getUsername()
-                                                    + " 队伍="
-                                                    + entry.getTeam()
-                                                    + " 游戏="
-                                                    + entry.getGame().name()
-                                                    + " 场地="
-                                                    + entry.getArea()
-                                                    + " 变更="
-                                                    + entry.getPoints()));
+                                            MessageConfig.codeText(
+                                                    "rank-dao-impl.add-player-points-2"),
+                                            MessageConfig.codeText(
+                                                    "rank-dao-impl.add-player-points-3",
+                                                    entry.getUsername(),
+                                                    entry.getTeam(),
+                                                    entry.getGame().name(),
+                                                    entry.getArea(),
+                                                    entry.getPoints())));
                 }
             } catch (SQLException failure) {
                 try {
@@ -118,7 +119,7 @@ public class RankDaoImpl implements RankDao {
             }
             return true;
         } catch (SQLException exception) {
-            logFailure("批量写入玩家积分", exception);
+            logFailure(MessageConfig.codeText("rank-dao-impl.add-player-points-1"), exception);
             return false;
         }
     }
@@ -149,7 +150,7 @@ public class RankDaoImpl implements RankDao {
                 return Optional.of(gameStatusEntries);
             }
         } catch (SQLException exception) {
-            logFailure("查询游戏状态", exception);
+            logFailure(MessageConfig.codeText("rank-dao-impl.get-game-status-list-1"), exception);
             return Optional.empty();
         }
     }
@@ -172,7 +173,7 @@ public class RankDaoImpl implements RankDao {
                 return -1;
             }
         } catch (SQLException exception) {
-            logFailure("查询游戏顺序", exception);
+            logFailure(MessageConfig.codeText("rank-dao-impl.get-game-status-order-1"), exception);
             return -1;
         }
     }
@@ -202,7 +203,7 @@ public class RankDaoImpl implements RankDao {
                 }
             }
         } catch (SQLException exception) {
-            logFailure("新增游戏状态", exception);
+            logFailure(MessageConfig.codeText("rank-dao-impl.add-game-status-1"), exception);
         }
     }
 
@@ -220,7 +221,7 @@ public class RankDaoImpl implements RankDao {
                 statement.executeUpdate();
             }
         } catch (SQLException exception) {
-            logFailure("删除游戏状态", exception);
+            logFailure(MessageConfig.codeText("rank-dao-impl.delete-game-status-1"), exception);
         }
     }
 
@@ -239,7 +240,7 @@ public class RankDaoImpl implements RankDao {
                 statement.executeUpdate();
             }
         } catch (SQLException exception) {
-            logFailure("作废玩家积分", exception);
+            logFailure(MessageConfig.codeText("rank-dao-impl.delete-player-points-1"), exception);
         }
     }
 
@@ -258,7 +259,7 @@ public class RankDaoImpl implements RankDao {
                 statement.executeUpdate();
             }
         } catch (SQLException exception) {
-            logFailure("作废队伍积分", exception);
+            logFailure(MessageConfig.codeText("rank-dao-impl.delete-team-points-1"), exception);
         }
     }
 
@@ -276,7 +277,7 @@ public class RankDaoImpl implements RankDao {
                 statement.executeUpdate();
             }
         } catch (SQLException exception) {
-            logFailure("作废游戏积分", exception);
+            logFailure(MessageConfig.codeText("rank-dao-impl.delete-game-points-1"), exception);
         }
     }
 
@@ -284,7 +285,10 @@ public class RankDaoImpl implements RankDao {
         plugin.getLogger()
                 .log(
                         Level.SEVERE,
-                        LogText.formatModuleLog("Database", "积分", "操作=" + operation + " 失败"),
+                        LogText.formatModuleLog(
+                                "Database",
+                                MessageConfig.codeText("rank-dao-impl.add-player-points-2"),
+                                MessageConfig.codeText("rank-dao-impl.log-failure-1", operation)),
                         exception);
     }
 }

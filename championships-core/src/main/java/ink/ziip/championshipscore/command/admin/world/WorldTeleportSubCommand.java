@@ -18,7 +18,10 @@ import java.util.List;
 
 public class WorldTeleportSubCommand extends BaseSubCommand {
     public WorldTeleportSubCommand() {
-        super("teleport", "传送至地图或世界出生点并开启飞行", "/cc admin world teleport <世界>");
+        super(
+                "teleport",
+                MessageConfig.codeText("world-teleport-sub-command.constructor-1"),
+                MessageConfig.codeText("world-teleport-sub-command.constructor-2"));
     }
 
     @Override

@@ -24,6 +24,7 @@ import com.sk89q.worldedit.world.block.BlockTypes;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -107,7 +108,9 @@ public class WorldEditManager extends BaseManager {
         com.sk89q.worldedit.world.World weWorld = bukkitPlayer.getWorld();
         RegionSelector selector =
                 worldEdit.getSessionManager().get(bukkitPlayer).getRegionSelector(weWorld);
-        if (!selector.isDefined()) throw new IllegalStateException("WorldEdit 选区未完整设置");
+        if (!selector.isDefined())
+            throw new IllegalStateException(
+                    MessageConfig.codeText("world-edit-manager.save-selection-as-schematic-1"));
         Region region = selector.getRegion();
 
         BlockArrayClipboard clipboard = new BlockArrayClipboard(region);

@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.api.player.entry.PlayerEntry;
 import ink.ziip.championshipscore.api.player.entry.PlayerIdentityMigrationResult;
 import ink.ziip.championshipscore.api.player.entry.PlayerUnknownRemovalResult;
 import ink.ziip.championshipscore.api.player.entry.PlayerUuidMigration;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 
 import org.jetbrains.annotations.NotNull;
@@ -58,7 +59,7 @@ public class PlayerDaoImpl implements PlayerDao {
                 return null;
             }
         } catch (SQLException exception) {
-            logFailure("按 UUID 查询玩家", exception);
+            logFailure(MessageConfig.codeText("player-dao-impl.get-player-1"), exception);
             return null;
         }
     }
@@ -86,7 +87,7 @@ public class PlayerDaoImpl implements PlayerDao {
                 return null;
             }
         } catch (SQLException exception) {
-            logFailure("按名称查询玩家", exception);
+            logFailure(MessageConfig.codeText("player-dao-impl.get-player-2"), exception);
             return null;
         }
     }
@@ -113,7 +114,7 @@ public class PlayerDaoImpl implements PlayerDao {
             }
             return players;
         } catch (SQLException | IllegalArgumentException exception) {
-            logFailure("查询玩家列表", exception);
+            logFailure(MessageConfig.codeText("player-dao-impl.get-player-list-1"), exception);
             return List.of();
         }
     }
@@ -172,7 +173,7 @@ public class PlayerDaoImpl implements PlayerDao {
                 }
             }
         } catch (SQLException | RuntimeException failure) {
-            logFailure("清理未获准玩家数据", failure);
+            logFailure(MessageConfig.codeText("player-dao-impl.remove-unknown-1"), failure);
             throw new IllegalStateException("Core unknown player removal failed", failure);
         }
     }
@@ -224,7 +225,7 @@ public class PlayerDaoImpl implements PlayerDao {
                 throw exception;
             }
         } catch (SQLException | RuntimeException exception) {
-            logFailure("同步玩家 UUID", exception);
+            logFailure(MessageConfig.codeText("player-dao-impl.synchronize-identity-1"), exception);
             return PlayerIdentityMigrationResult.failed(
                     name,
                     currentUuid,
@@ -247,7 +248,9 @@ public class PlayerDaoImpl implements PlayerDao {
                 if (currentUuid == null) {
                     connection.commit();
                     return PlayerIdentityMigrationResult.failed(
-                            newName, UUID.randomUUID(), "没有找到旧名称对应的 UUID");
+                            newName,
+                            UUID.randomUUID(),
+                            MessageConfig.codeText("player-dao-impl.migrate-name-change-2"));
                 }
                 previousUuids.remove(currentUuid);
 
@@ -326,7 +329,7 @@ public class PlayerDaoImpl implements PlayerDao {
                 throw exception;
             }
         } catch (SQLException | RuntimeException exception) {
-            logFailure("审批改名迁移", exception);
+            logFailure(MessageConfig.codeText("player-dao-impl.migrate-name-change-1"), exception);
             UUID fallback = replacementUuid != null ? replacementUuid : UUID.randomUUID();
             return PlayerIdentityMigrationResult.failed(
                     newName,
@@ -379,7 +382,7 @@ public class PlayerDaoImpl implements PlayerDao {
                 throw failure;
             }
         } catch (SQLException | RuntimeException failure) {
-            logFailure("批量迁移玩家身份", failure);
+            logFailure(MessageConfig.codeText("player-dao-impl.migrate-identities-1"), failure);
             throw new IllegalStateException("Core player identity migration failed", failure);
         }
     }
@@ -871,7 +874,10 @@ public class PlayerDaoImpl implements PlayerDao {
         plugin.getLogger()
                 .log(
                         Level.SEVERE,
-                        LogText.formatModuleLog("Database", "玩家", "操作=" + operation + " 失败"),
+                        LogText.formatModuleLog(
+                                "Database",
+                                MessageConfig.codeText("player-dao-impl.log-failure-1"),
+                                MessageConfig.codeText("player-dao-impl.log-failure-2", operation)),
                         exception);
     }
 }

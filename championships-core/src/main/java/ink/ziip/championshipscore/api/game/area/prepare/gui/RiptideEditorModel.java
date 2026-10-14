@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.api.game.riptiderush.*;
 import ink.ziip.championshipscore.api.game.riptiderush.config.RiptideRushConfig;
 import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideLevelTemplate;
 import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideLevelType;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +32,10 @@ public final class RiptideEditorModel {
         return rows(config, type).stream()
                 .filter(t -> t.id().equals(id))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("该变体已不存在，请返回类别列表"));
+                .orElseThrow(
+                        () ->
+                                new IllegalArgumentException(
+                                        MessageConfig.codeText("riptide-editor-model.find-1")));
     }
 
     public static void update(
@@ -43,7 +47,8 @@ public final class RiptideEditorModel {
         if (!List.of("name", "variant", "enabled", "weight", "max-uses", "difficulty")
                         .contains(field)
                 || type == RiptideLevelType.PASS && field.equals("max-uses"))
-            throw new IllegalArgumentException("不可编辑的变体属性");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-editor-model.update-1"));
         var original = find(config, type, id);
         var row = original.serialize();
         row.put(field, value);
@@ -80,7 +85,15 @@ public final class RiptideEditorModel {
                 };
         var template =
                 new RiptideLevelTemplate(
-                        newId(), "未命名" + type.displayName() + "变体", type, recipe, false, 10, 64, 1);
+                        newId(),
+                        MessageConfig.codeText(
+                                "riptide-editor-model.add-blank-1", type.displayName()),
+                        type,
+                        recipe,
+                        false,
+                        10,
+                        64,
+                        1);
         append(config, template);
         return template;
     }
@@ -91,7 +104,9 @@ public final class RiptideEditorModel {
         var copy =
                 new RiptideLevelTemplate(
                         newId(),
-                        t.name().substring(0, Math.min(30, t.name().length())) + "副本",
+                        MessageConfig.codeText(
+                                "riptide-editor-model.duplicate-1",
+                                t.name().substring(0, Math.min(30, t.name().length()))),
                         type,
                         t.variant(),
                         t.enabled(),
@@ -106,7 +121,8 @@ public final class RiptideEditorModel {
     private static void append(RiptideRushConfig config, RiptideLevelTemplate template) {
         var rows = new ArrayList<>(config.resolvePool());
         if (rows.size() >= RiptideRushConfig.MAX_POOL_SIZE)
-            throw new IllegalArgumentException("关卡池最多512项");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-editor-model.append-1"));
         rows.add(template);
         config.setTemplates(rows);
     }
@@ -120,15 +136,20 @@ public final class RiptideEditorModel {
 
     public static void quota(RiptideRushConfig config, RiptideLevelType type, int value) {
         if (type == RiptideLevelType.COLOR_FLOOR || type == RiptideLevelType.DODGE)
-            throw new IllegalArgumentException("停船挑战子类配额由父类统一分配");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-editor-model.quota-1"));
         if (value < (type == RiptideLevelType.PASS ? 2 : 0) || value > 64)
             throw new IllegalArgumentException(
-                    type == RiptideLevelType.PASS ? "穿越数量须为2–64" : "关卡数量须为0–64");
+                    type == RiptideLevelType.PASS
+                            ? MessageConfig.codeText("riptide-editor-model.quota-3")
+                            : MessageConfig.codeText("riptide-editor-model.quota-2"));
         switch (type) {
             case PASS -> config.setPassCount(value);
             case MATH -> config.setMathCount(value);
             case RHYTHM -> config.setRhythmCount(value);
-            default -> throw new IllegalArgumentException("不是独立配额类别");
+            default ->
+                    throw new IllegalArgumentException(
+                            MessageConfig.codeText("riptide-editor-model.quota-4"));
         }
     }
 

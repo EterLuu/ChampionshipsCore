@@ -88,7 +88,10 @@ public class BattleBoxArea extends BasePairedGameInstance {
         try {
             geometry = configuredGeometry();
         } catch (RuntimeException exception) {
-            logGame(Level.WARNING, "启动", "地图配置尚未完成，无法创建实例几何");
+            logGame(
+                    Level.WARNING,
+                    MessageConfig.codeText("battle-box-area.try-start-game-1"),
+                    MessageConfig.codeText("battle-box-area.try-start-game-2"));
             return false;
         }
         if (getGameConfig().getTimer() <= 0
@@ -98,7 +101,10 @@ public class BattleBoxArea extends BasePairedGameInstance {
                 || geometry.getRightPrepareSpot() == null
                 || geometry.getLeftPrepareSpot() == null
                 || geometry.getSpectatorSpawn() == null) {
-            logGame(Level.WARNING, "启动", "地图配置尚未完成，无法开始游戏");
+            logGame(
+                    Level.WARNING,
+                    MessageConfig.codeText("battle-box-area.try-start-game-1"),
+                    MessageConfig.codeText("battle-box-area.try-start-game-3"));
             return false;
         }
         match = new BattleBoxMatch(copyIndex, right, left, geometry);

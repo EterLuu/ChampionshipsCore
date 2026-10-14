@@ -6,6 +6,7 @@ import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptideColorFlo
 import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptideDodgeRun;
 import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptideSideSweep;
 import ink.ziip.championshipscore.api.game.riptiderush.runtime.RiptideDeparture;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,7 +26,8 @@ public final class RiptideCoursePlanner {
     public static RiptideCoursePlan templatePreview(
             RiptideRushConfig c, RiptideLevelTemplate template, long seed) {
         if (template.variant().equals("CUSTOM") && template.blueprint() == null)
-            throw new IllegalArgumentException("请先编辑并保存建筑，再试玩此变体");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-course-planner.template-preview-1"));
         var g = c.resolveGeometry();
         validateEnvironment(c, g);
         int step =
@@ -36,7 +38,8 @@ public final class RiptideCoursePlanner {
                                         ? .7
                                         : .5));
         if (step < 16 || step + g.halfLength() + 8 >= g.totalSteps())
-            throw new IllegalArgumentException("单关试玩需要更长的航道");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-course-planner.template-preview-2"));
         Random random = new Random(seed);
         var variants =
                 new ArrayList<>(
@@ -50,7 +53,8 @@ public final class RiptideCoursePlanner {
         if (speedAt(c, g, step + 3) > 2.8) variants.remove("WEAVE");
         if (!safeMathPair(c, g, template, step)) variants.remove("DOUBLE");
         if (variants.isEmpty())
-            throw new IllegalArgumentException("此变体在试玩位置没有足够的换位时间，请调整速度或建筑长度后试玩");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-course-planner.template-preview-3"));
         String variant = variants.get(random.nextInt(variants.size()));
         var level =
                 new RiptideCoursePlan.Level(
@@ -93,7 +97,9 @@ public final class RiptideCoursePlanner {
             if (building.width() < geometry.raftWidth() + 2
                     || building.width() > RiptideWorkshop.halfWidth(config, geometry) * 2 + 1
                     || building.height() > config.getClearHeight())
-                throw new IllegalArgumentException(template.name() + "：建筑尺寸不匹配，请重新编辑保存");
+                throw new IllegalArgumentException(
+                        MessageConfig.codeText(
+                                "riptide-course-planner.validate-inputs-1", template.name()));
             if (template.type() == RiptideLevelType.COLOR_FLOOR)
                 RiptideBlueprint.validateFloor(
                         building.floorMaterials(), geometry.raftWidth(), geometry.raftLength());
@@ -111,12 +117,11 @@ public final class RiptideCoursePlanner {
                             : enabled.stream().mapToInt(RiptideLevelTemplate::maxUses).sum();
             if (available < needed)
                 throw new IllegalArgumentException(
-                        type.displayName()
-                                + "关卡池不足：需要 "
-                                + needed
-                                + " 次，启用关卡最多提供 "
-                                + available
-                                + " 次");
+                        MessageConfig.codeText(
+                                "riptide-course-planner.validate-inputs-2",
+                                type.displayName(),
+                                needed,
+                                available));
         }
         return pool;
     }
@@ -169,9 +174,7 @@ public final class RiptideCoursePlanner {
             }
             return new RiptideCoursePlan(seed, VERSION, ticks, levels, geometry.totalSteps());
         }
-        throw new IllegalArgumentException(
-                "无法生成安全赛道：检查配额、池内次数上限和难度；穿越在首次加速前仅难度1，首次后仅2，第二次后2或3；"
-                    + "穿越墙体整场最多一次，连续穿越须错开通行位置；停船挑战包括踩色、躲避与侧向；末段三连门与侧向解题须有足够空间且总耗时短于限时；折返不用于高速段；建筑过长时请减少关数或缩短建筑以留足衔接距离");
+        throw new IllegalArgumentException(MessageConfig.codeText("riptide-course-planner.plan-1"));
     }
 
     public static int quota(RiptideRushConfig config, RiptideLevelType type) {
@@ -205,10 +208,13 @@ public final class RiptideCoursePlanner {
                 || c.getMathCount() < 0
                 || c.getStoppedCount() < 0
                 || c.getRhythmCount() < 0
-                || total > 64) throw new IllegalArgumentException("穿越至少2关，解题/停船挑战/节奏不能为负，总数最多64关");
+                || total > 64)
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-course-planner.validate-settings-1"));
         int spacing = (int) (g.totalSteps() / (total + 1D));
         if (spacing < Math.max(c.getMinimumLevelSpacing(), g.raftLength() + 5))
-            throw new IllegalArgumentException("关卡间距不足；请减少关数或延长航线");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-course-planner.validate-settings-2"));
         validateEnvironment(c, g);
     }
 
@@ -220,19 +226,23 @@ public final class RiptideCoursePlanner {
                 || c.getObstacleMargin() > 8
                 || c.getClearHeight() < 5
                 || c.getClearHeight() > 16)
-            throw new IllegalArgumentException("航线最多4096格，木筏边长最多15格，边距2–8格，清理高度5–16格");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-course-planner.validate-environment-1"));
         if (c.getTimer() < 1 || c.getTimer() > 3600 || !c.hasValidMovementSpeeds())
-            throw new IllegalArgumentException("速度须递增且在0.25–5.5格/秒内；限时1–3600秒");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-course-planner.validate-environment-2"));
         if (c.getMinimumOperand() < 0
                 || c.getMaximumOperand() < c.getMinimumOperand()
                 || c.getMaximumOperand() > Integer.MAX_VALUE / 2)
-            throw new IllegalArgumentException("解题数字范围无效");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-course-planner.validate-environment-3"));
         if (c.getMathPreviewBlocks() < 1
                 || !Double.isFinite(c.getHorizontalPadding())
                 || c.getHorizontalPadding() < 0
                 || !Double.isFinite(c.getFallDistance())
                 || c.getFallDistance() <= 0)
-            throw new IllegalArgumentException("解题预览距离、木筏边距或坠落距离无效");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-course-planner.validate-environment-4"));
     }
 
     /**

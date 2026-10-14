@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.riptiderush.course;
 
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -45,24 +47,32 @@ public record RiptideLevelTemplate(
 
     public RiptideLevelTemplate {
         if (id == null || !id.matches("[a-z0-9_-]{1,48}"))
-            throw new IllegalArgumentException("关卡ID须为1–48位小写字母、数字、下划线或连字符");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-level-template.text-1"));
         if (name == null
                 || name.isBlank()
                 || name.length() > 32
                 || name.chars().anyMatch(Character::isISOControl))
-            throw new IllegalArgumentException("关卡名称须为1–32字且不能含控制字符");
-        if (type == null) throw new IllegalArgumentException("缺少关卡类型");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-level-template.text-2"));
+        if (type == null)
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-level-template.text-3"));
         if (type == RiptideLevelType.RHYTHM && blueprint != null)
-            throw new IllegalArgumentException("节奏机关使用动态闸门，不支持静态建筑快照");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-level-template.text-4"));
         variant = variant == null ? "AUTO" : variant.toUpperCase(Locale.ROOT);
         if (type == RiptideLevelType.PASS && blueprint != null) variant = "CUSTOM";
         if (type == RiptideLevelType.PASS
                 && variant.equals("CUSTOM")
                 && blueprint == null
-                && enabled) throw new IllegalArgumentException("请先编辑并保存建筑，再启用此变体");
+                && enabled)
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-level-template.text-5"));
         if (!(type == RiptideLevelType.PASS && variant.equals("CUSTOM"))
                 && !variants(type).contains(variant))
-            throw new IllegalArgumentException(name + "：无效变体 " + variant);
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-level-template.text-6", name, variant));
         if (type == RiptideLevelType.PASS) maxUses = 1;
         if (weight < 1
                 || weight > 100
@@ -70,7 +80,8 @@ public record RiptideLevelTemplate(
                 || maxUses > 64
                 || difficulty < 1
                 || difficulty > 3)
-            throw new IllegalArgumentException(name + "：权重须1–100，次数上限须1–64，难度须1–3");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-level-template.text-7", name));
     }
 
     public static List<String> variants(RiptideLevelType type) {
@@ -133,58 +144,69 @@ public record RiptideLevelTemplate(
 
     public static String variantName(String variant) {
         return switch (variant) {
-            case "AUTO" -> "随机变体";
-            case "CUSTOM" -> "自定义建筑";
-            case "GAP" -> "偏侧门洞";
-            case "JUMP" -> "单栏跳跃";
-            case "WEAVE" -> "左右折返";
-            case "ADD" -> "加法";
-            case "SUBTRACT" -> "减法";
-            case "MULTIPLY" -> "乘法";
-            case "DOUBLE" -> "连续两道解题门";
-            case "OBSERVE_COUNT" -> "观察：数颜色";
-            case "OBSERVE_ORDER" -> "观察：找第几项";
-            case "OBSERVE_EXTREME" -> "观察：找最大最小";
-            case "OBSERVE_PARITY" -> "观察：数奇偶";
-            case "OBSERVE_UNIQUE" -> "观察：找唯一项";
-            case "SHUTTER" -> "节拍闸门";
-            case "ALTERNATING" -> "左右交替闸门";
-            case "DOUBLE_BEAT" -> "长短双拍闸门";
-            case "CENTER_SIDES" -> "中间两侧闸门";
-            case "SWEEP" -> "横移窗口闸门";
-            case "IN_OUT" -> "收放闸门";
-            case "CROSS_BEAT" -> "交错双拍闸门";
-            case "HORIZONTAL_WINDOW" -> "横移矮窗";
-            case "VERTICAL_WINDOW" -> "升降窗口";
-            case "WINDOW_SHUTTER" -> "定点开合窗";
-            case "STAGGERED_WINDOWS" -> "左右高低交替窗";
-            case "TRIPLE_PULSE" -> "三拍脉冲";
-            case "LEFT_RIGHT_CENTER" -> "左-右-中接力";
-            case "EDGE_SWAP" -> "边缘换气";
-            case "PINBALL" -> "弹珠回弹";
-            case "SNAKE" -> "蛇形追拍";
-            case "CENTER_PULSE" -> "中心脉冲";
-            case "EDGE_PULSE" -> "边缘脉冲";
-            case "FOLD" -> "折叠开口";
-            case "SPLIT_MERGE" -> "分流合流";
-            case "REST_ACCENT" -> "反拍留白";
-            case "MIRROR_CHASE" -> "镜像追逐";
-            case "DIAGONAL" -> "斜线节拍";
-            case "DOUBLE_WINDOW" -> "双窗交替";
-            case "BACKBEAT" -> "后拍回收";
-            case "QUICK_TURN" -> "急转弯拍";
-            case "ORE" -> "矿石";
-            case "LOG" -> "原木";
-            case "NETHER" -> "下界方块";
-            case "COPPER" -> "铜块";
-            case "WOOD" -> "木板";
-            case "TERRACOTTA" -> "陶瓦";
-            case "STONE" -> "石材";
-            case "ZOMBIE" -> "僵尸冲刺";
-            case "HUSK" -> "尸壳冲刺";
-            case "SKELETON" -> "骷髅冲刺";
-            case "SPIDER" -> "蜘蛛冲刺";
-            case "CREEPER" -> "苦力怕冲刺";
+            case "AUTO" -> MessageConfig.codeText("riptide-level-template.variant-name-1");
+            case "CUSTOM" -> MessageConfig.codeText("riptide-level-template.variant-name-2");
+            case "GAP" -> MessageConfig.codeText("riptide-level-template.variant-name-3");
+            case "JUMP" -> MessageConfig.codeText("riptide-level-template.variant-name-4");
+            case "WEAVE" -> MessageConfig.codeText("riptide-level-template.variant-name-5");
+            case "ADD" -> MessageConfig.codeText("riptide-level-template.variant-name-6");
+            case "SUBTRACT" -> MessageConfig.codeText("riptide-level-template.variant-name-7");
+            case "MULTIPLY" -> MessageConfig.codeText("riptide-level-template.variant-name-8");
+            case "DOUBLE" -> MessageConfig.codeText("riptide-level-template.variant-name-9");
+            case "OBSERVE_COUNT" ->
+                    MessageConfig.codeText("riptide-level-template.variant-name-10");
+            case "OBSERVE_ORDER" ->
+                    MessageConfig.codeText("riptide-level-template.variant-name-11");
+            case "OBSERVE_EXTREME" ->
+                    MessageConfig.codeText("riptide-level-template.variant-name-12");
+            case "OBSERVE_PARITY" ->
+                    MessageConfig.codeText("riptide-level-template.variant-name-13");
+            case "OBSERVE_UNIQUE" ->
+                    MessageConfig.codeText("riptide-level-template.variant-name-14");
+            case "SHUTTER" -> MessageConfig.codeText("riptide-level-template.variant-name-15");
+            case "ALTERNATING" -> MessageConfig.codeText("riptide-level-template.variant-name-16");
+            case "DOUBLE_BEAT" -> MessageConfig.codeText("riptide-level-template.variant-name-17");
+            case "CENTER_SIDES" -> MessageConfig.codeText("riptide-level-template.variant-name-18");
+            case "SWEEP" -> MessageConfig.codeText("riptide-level-template.variant-name-19");
+            case "IN_OUT" -> MessageConfig.codeText("riptide-level-template.variant-name-20");
+            case "CROSS_BEAT" -> MessageConfig.codeText("riptide-level-template.variant-name-21");
+            case "HORIZONTAL_WINDOW" ->
+                    MessageConfig.codeText("riptide-level-template.variant-name-22");
+            case "VERTICAL_WINDOW" ->
+                    MessageConfig.codeText("riptide-level-template.variant-name-23");
+            case "WINDOW_SHUTTER" ->
+                    MessageConfig.codeText("riptide-level-template.variant-name-24");
+            case "STAGGERED_WINDOWS" ->
+                    MessageConfig.codeText("riptide-level-template.variant-name-25");
+            case "TRIPLE_PULSE" -> MessageConfig.codeText("riptide-level-template.variant-name-26");
+            case "LEFT_RIGHT_CENTER" ->
+                    MessageConfig.codeText("riptide-level-template.variant-name-27");
+            case "EDGE_SWAP" -> MessageConfig.codeText("riptide-level-template.variant-name-28");
+            case "PINBALL" -> MessageConfig.codeText("riptide-level-template.variant-name-29");
+            case "SNAKE" -> MessageConfig.codeText("riptide-level-template.variant-name-30");
+            case "CENTER_PULSE" -> MessageConfig.codeText("riptide-level-template.variant-name-31");
+            case "EDGE_PULSE" -> MessageConfig.codeText("riptide-level-template.variant-name-32");
+            case "FOLD" -> MessageConfig.codeText("riptide-level-template.variant-name-33");
+            case "SPLIT_MERGE" -> MessageConfig.codeText("riptide-level-template.variant-name-34");
+            case "REST_ACCENT" -> MessageConfig.codeText("riptide-level-template.variant-name-35");
+            case "MIRROR_CHASE" -> MessageConfig.codeText("riptide-level-template.variant-name-36");
+            case "DIAGONAL" -> MessageConfig.codeText("riptide-level-template.variant-name-37");
+            case "DOUBLE_WINDOW" ->
+                    MessageConfig.codeText("riptide-level-template.variant-name-38");
+            case "BACKBEAT" -> MessageConfig.codeText("riptide-level-template.variant-name-39");
+            case "QUICK_TURN" -> MessageConfig.codeText("riptide-level-template.variant-name-40");
+            case "ORE" -> MessageConfig.codeText("riptide-level-template.variant-name-41");
+            case "LOG" -> MessageConfig.codeText("riptide-level-template.variant-name-42");
+            case "NETHER" -> MessageConfig.codeText("riptide-level-template.variant-name-43");
+            case "COPPER" -> MessageConfig.codeText("riptide-level-template.variant-name-44");
+            case "WOOD" -> MessageConfig.codeText("riptide-level-template.variant-name-45");
+            case "TERRACOTTA" -> MessageConfig.codeText("riptide-level-template.variant-name-46");
+            case "STONE" -> MessageConfig.codeText("riptide-level-template.variant-name-47");
+            case "ZOMBIE" -> MessageConfig.codeText("riptide-level-template.variant-name-48");
+            case "HUSK" -> MessageConfig.codeText("riptide-level-template.variant-name-49");
+            case "SKELETON" -> MessageConfig.codeText("riptide-level-template.variant-name-50");
+            case "SPIDER" -> MessageConfig.codeText("riptide-level-template.variant-name-51");
+            case "CREEPER" -> MessageConfig.codeText("riptide-level-template.variant-name-52");
             default -> variant;
         };
     }
@@ -210,7 +232,7 @@ public record RiptideLevelTemplate(
     public static RiptideLevelTemplate parse(Map<?, ?> row) {
         return new RiptideLevelTemplate(
                 string(row, "id", ""),
-                string(row, "name", "未命名"),
+                string(row, "name", MessageConfig.codeText("riptide-level-template.parse-1")),
                 RiptideLevelType.parse(string(row, "type", "")),
                 string(row, "variant", "AUTO"),
                 Boolean.parseBoolean(string(row, "enabled", "true")),

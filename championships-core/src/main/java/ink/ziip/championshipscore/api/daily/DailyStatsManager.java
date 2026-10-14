@@ -11,6 +11,7 @@ import ink.ziip.championshipscore.api.daily.entry.DailyStatEntry;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.database.daily.DailyStatsDao;
 import ink.ziip.championshipscore.database.daily.DailyStatsDaoImpl;
 
@@ -711,9 +712,9 @@ public final class DailyStatsManager extends BaseManager {
 
     /**
      * Folds the historical {@code daily_match_results} rows into the per-map cache so games played
-     * before the per-map stat table existed still show up as map-level 场次 and Bingo maxima. Counts
-     * take the maximum because both sources cover overlapping match sets; first-completion and
-     * dragon metrics stay table-only ({@code trackedGames} denominator).
+     * before the per-map stat table existed still show up as map-level match counts and Bingo
+     * maxima. Counts take the maximum because both sources cover overlapping match sets;
+     * first-completion and dragon metrics stay table-only ({@code trackedGames} denominator).
      */
     private void backfillMapStatsFromMatchResults() {
         for (DailyMatchAggregateEntry history : statsDao.getMatchResultMapAggregates()) {
@@ -1002,7 +1003,8 @@ public final class DailyStatsManager extends BaseManager {
                                         plugin.getLogger()
                                                 .log(
                                                         java.util.logging.Level.SEVERE,
-                                                        "DAILY 数据库队列任务失败",
+                                                        MessageConfig.codeText(
+                                                                "daily-stats-manager.drain-database-tasks-1"),
                                                         exception);
                                     }
                                 }

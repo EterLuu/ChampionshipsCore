@@ -70,9 +70,9 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
             Set.of("end/kill_dragon", "end/dragon_egg", "end/enter_end_gateway");
 
     private enum RewardEnchant {
-        SHARPNESS("锋利"),
-        PROTECTION("保护"),
-        POWER("力量");
+        SHARPNESS(MessageConfig.codeText("dragon-egg-carnival-area.sharpness-1")),
+        PROTECTION(MessageConfig.codeText("dragon-egg-carnival-area.protection-1")),
+        POWER(MessageConfig.codeText("dragon-egg-carnival-area.power-1"));
 
         private final String displayName;
 
@@ -899,9 +899,12 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
 
     private static String advancementDisplayName(String key) {
         return switch (key) {
-            case "end/kill_dragon" -> "解放末地";
-            case "end/dragon_egg" -> "下一世代";
-            case "end/enter_end_gateway" -> "远程折跃";
+            case "end/kill_dragon" ->
+                    MessageConfig.codeText("dragon-egg-carnival-area.advancement-display-name-1");
+            case "end/dragon_egg" ->
+                    MessageConfig.codeText("dragon-egg-carnival-area.advancement-display-name-2");
+            case "end/enter_end_gateway" ->
+                    MessageConfig.codeText("dragon-egg-carnival-area.advancement-display-name-3");
             default -> key;
         };
     }

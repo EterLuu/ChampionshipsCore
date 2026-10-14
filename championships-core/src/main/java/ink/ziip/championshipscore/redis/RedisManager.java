@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.redis;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.database.sync.DatabaseSyncDomain;
 import ink.ziip.championshipscore.database.sync.DatabaseSyncEvent;
 import ink.ziip.championshipscore.logging.LogText;
@@ -88,7 +89,12 @@ public final class RedisManager extends BaseManager {
         configuredMaxDeliveries = CCConfig.REDIS_MAX_DELIVERIES;
         if (!configuredEnabled) {
             readyFuture.completeExceptionally(new IllegalStateException("Redis is disabled"));
-            plugin.getLogger().info(LogText.formatModuleLog("Redis", "启动", "统一Redis管理器未启用"));
+            plugin.getLogger()
+                    .info(
+                            LogText.formatModuleLog(
+                                    "Redis",
+                                    MessageConfig.codeText("redis-manager.load-1"),
+                                    MessageConfig.codeText("redis-manager.load-2")));
             return;
         }
         try {
@@ -217,13 +223,12 @@ public final class RedisManager extends BaseManager {
                 .info(
                         LogText.formatModuleLog(
                                 "Redis",
-                                "启动",
-                                "实例="
-                                        + instanceId
-                                        + " 数据同步流="
-                                        + dataSyncStream()
-                                        + " 聊天流="
-                                        + RedisChatTransport.stream(connectionConfig)));
+                                MessageConfig.codeText("redis-manager.load-1"),
+                                MessageConfig.codeText(
+                                        "redis-manager.finish-connection-attempt-1",
+                                        instanceId,
+                                        dataSyncStream(),
+                                        RedisChatTransport.stream(connectionConfig))));
     }
 
     private void connectionAttemptFailed(Throwable failure) {
@@ -339,7 +344,11 @@ public final class RedisManager extends BaseManager {
             plugin.getLogger()
                     .warning(
                             LogText.formatModuleLog(
-                                    "Redis", "同步", "拒绝无效数据库同步事件=" + malformed.getMessage()));
+                                    "Redis",
+                                    MessageConfig.codeText("redis-manager.consume-database-sync-1"),
+                                    MessageConfig.codeText(
+                                            "redis-manager.consume-database-sync-2",
+                                            malformed.getMessage())));
             return CompletableFuture.completedFuture(DeliveryDisposition.DEAD_LETTER);
         }
         if (event.sourceInstance().equals(instanceId)

@@ -19,7 +19,10 @@ import java.util.List;
 /** Opens the map preparation UI and loads a disabled game's manager on demand. */
 public final class MapEditSubCommand extends BaseSubCommand {
     public MapEditSubCommand() {
-        super("edit", "打开指定游戏的地图准备界面（包括未启用游戏）", "/cc map edit <游戏>");
+        super(
+                "edit",
+                MessageConfig.codeText("map-edit-sub-command.constructor-1"),
+                MessageConfig.codeText("map-edit-sub-command.constructor-2"));
     }
 
     @Override

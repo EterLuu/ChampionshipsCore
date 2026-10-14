@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.api.game.bingo.task.EventSubject;
 import ink.ziip.championshipscore.api.game.bingo.task.EventTask;
 import ink.ziip.championshipscore.api.game.bingo.util.Materials;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 
 import org.bukkit.Material;
@@ -53,7 +54,10 @@ public final class TaskPoolSpec {
                         if (!Materials.isCollectObjective(m)) {
                             ChampionshipsCore.getInstance()
                                     .getLogger()
-                                    .warning(gameLog("不可获取的 ITEM=" + e.key() + "，已跳过"));
+                                    .warning(
+                                            gameLog(
+                                                    MessageConfig.codeText(
+                                                            "task-pool-spec.to-pool-2", e.key())));
                         } else {
                             b.item(m, e.count(), difficulty, e.dimension(), e.category());
                         }
@@ -82,7 +86,10 @@ public final class TaskPoolSpec {
                         if (form == null || !valid) {
                             ChampionshipsCore.getInstance()
                                     .getLogger()
-                                    .warning(gameLog("无效药水任务=" + e.key() + "，已跳过"));
+                                    .warning(
+                                            gameLog(
+                                                    MessageConfig.codeText(
+                                                            "task-pool-spec.to-pool-3", e.key())));
                         } else {
                             b.potion(
                                     form,
@@ -105,7 +112,10 @@ public final class TaskPoolSpec {
                         if (!m.isItem()) {
                             ChampionshipsCore.getInstance()
                                     .getLogger()
-                                    .warning(gameLog("非物品 CRAFT=" + e.key() + "，已跳过"));
+                                    .warning(
+                                            gameLog(
+                                                    MessageConfig.codeText(
+                                                            "task-pool-spec.to-pool-4", e.key())));
                         } else {
                             b.craft(m, e.count(), difficulty, e.dimension(), e.category());
                         }
@@ -137,7 +147,10 @@ public final class TaskPoolSpec {
                         if (items.isEmpty()) {
                             ChampionshipsCore.getInstance()
                                     .getLogger()
-                                    .warning(gameLog("one_of 任务没有有效成员，已跳过"));
+                                    .warning(
+                                            gameLog(
+                                                    MessageConfig.codeText(
+                                                            "task-pool-spec.to-pool-5")));
                         } else {
                             Material display = null;
                             if (e.key() != null && !e.key().isBlank()) {
@@ -171,7 +184,10 @@ public final class TaskPoolSpec {
                         if (items.isEmpty()) {
                             ChampionshipsCore.getInstance()
                                     .getLogger()
-                                    .warning(gameLog("all_of 任务没有有效成员，已跳过"));
+                                    .warning(
+                                            gameLog(
+                                                    MessageConfig.codeText(
+                                                            "task-pool-spec.to-pool-6")));
                         } else {
                             Material display = null;
                             if (e.key() != null && !e.key().isBlank()) {
@@ -207,7 +223,10 @@ public final class TaskPoolSpec {
                         if (!EventTask.KNOWN_TRIGGERS.contains(trigger)) {
                             ChampionshipsCore.getInstance()
                                     .getLogger()
-                                    .warning(gameLog("未知 event 触发器=" + trigger + "，已跳过"));
+                                    .warning(
+                                            gameLog(
+                                                    MessageConfig.codeText(
+                                                            "task-pool-spec.to-pool-7", trigger)));
                         } else {
                             java.util.Set<Material> memberSet = new java.util.LinkedHashSet<>();
                             for (String m : e.members()) {
@@ -253,7 +272,10 @@ public final class TaskPoolSpec {
             } catch (IllegalArgumentException ex) {
                 ChampionshipsCore.getInstance()
                         .getLogger()
-                        .warning(gameLog("无效任务=" + e.kind() + "/" + e.key() + "，已跳过"));
+                        .warning(
+                                gameLog(
+                                        MessageConfig.codeText(
+                                                "task-pool-spec.to-pool-1", e.kind(), e.key())));
             }
         }
         return b.build();
@@ -264,7 +286,12 @@ public final class TaskPoolSpec {
     }
 
     private static String gameLog(String message) {
-        return LogText.formatGameLog(GameTypeEnum.Bingo, "-", "加载", "卡池", message);
+        return LogText.formatGameLog(
+                GameTypeEnum.Bingo,
+                "-",
+                MessageConfig.codeText("task-pool-spec.game-log-1"),
+                MessageConfig.codeText("task-pool-spec.game-log-2"),
+                message);
     }
 
     /** Fluent spec collector that mirrors {@link TaskPool.Builder}; kept for migration tools. */

@@ -96,7 +96,10 @@ public class ParkourTagArea extends BasePairedGameInstance {
         try {
             geometry = configuredGeometry();
         } catch (RuntimeException exception) {
-            logGame(Level.WARNING, "启动", "地图配置尚未完成，无法创建实例几何");
+            logGame(
+                    Level.WARNING,
+                    MessageConfig.codeText("parkour-tag-area.try-start-game-1"),
+                    MessageConfig.codeText("parkour-tag-area.try-start-game-2"));
             return false;
         }
         if (getGameConfig().getTimer() <= 0
@@ -110,7 +113,10 @@ public class ParkourTagArea extends BasePairedGameInstance {
                 || geometry.getLeftChaserButton() == null
                 || geometry.getLeftZone().getEscapeeSpawns().isEmpty()
                 || geometry.getRightZone().getEscapeeSpawns().isEmpty()) {
-            logGame(Level.WARNING, "启动", "地图配置尚未完成，无法开始游戏");
+            logGame(
+                    Level.WARNING,
+                    MessageConfig.codeText("parkour-tag-area.try-start-game-1"),
+                    MessageConfig.codeText("parkour-tag-area.try-start-game-3"));
             return false;
         }
         match = new ParkourTagMatch(copyIndex, right, left, geometry);
@@ -281,10 +287,11 @@ public class ParkourTagArea extends BasePairedGameInstance {
                                                     + " / "
                                                     + formatChaserName(match.getLeftAreaChaser());
                             updateGameTimerBossBar(
-                                    MessageConfig.PARKOUR_TAG_ACTION_BAR_COUNT_DOWN.replace(
-                                                    "%time%", String.valueOf(timer))
-                                            + " &#bababa• &#ededed追击者 &#fff566"
-                                            + chasers,
+                                    MessageConfig.codeText(
+                                            "parkour-tag-area.begin-game-progress-1",
+                                            MessageConfig.PARKOUR_TAG_ACTION_BAR_COUNT_DOWN.replace(
+                                                    "%time%", String.valueOf(timer)),
+                                            chasers),
                                     timer,
                                     getGameConfig().getTimer());
                         },
@@ -296,7 +303,7 @@ public class ParkourTagArea extends BasePairedGameInstance {
 
     private String formatChaserName(UUID uuid) {
         return uuid == null
-                ? "待定"
+                ? MessageConfig.codeText("parkour-tag-area.format-chaser-name-1")
                 : CoreMessages.formatPlayerNameOnly(playerManager.getPlayerName(uuid));
     }
 

@@ -34,7 +34,10 @@ public final class BuildMartBlueprintCreateSubCommand extends BaseSubCommand {
     private static final int MAX_SIZE = 7;
 
     public BuildMartBlueprintCreateSubCommand() {
-        super("create", "从WE选区导出并自动审查蓝图", "/cc map blueprint create <名称> [覆盖星级]");
+        super(
+                "create",
+                MessageConfig.codeText("build-mart-blueprint-create-sub-command.constructor-1"),
+                MessageConfig.codeText("build-mart-blueprint-create-sub-command.constructor-2"));
     }
 
     @Override
@@ -106,7 +109,12 @@ public final class BuildMartBlueprintCreateSubCommand extends BaseSubCommand {
                         CoreMessages.sendAdminError(
                                 sender,
                                 MessageConfig.BUILD_MART_BLUEPRINT_SAVE_FAILED.replace(
-                                        "%detail%", "方块缺少有效支撑: " + x + "," + y + "," + z));
+                                        "%detail%",
+                                        MessageConfig.codeText(
+                                                "build-mart-blueprint-create-sub-command.on-command-1",
+                                                x,
+                                                y,
+                                                z)));
                         return true;
                     }
                     int ox = x - min.getBlockX();

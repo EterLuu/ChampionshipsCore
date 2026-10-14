@@ -16,7 +16,10 @@ import java.util.List;
 
 public class WorldUnloadSubCommand extends BaseSubCommand {
     public WorldUnloadSubCommand() {
-        super("unload", "保存并卸载世界（不删除文件）", "/cc admin world unload <世界>");
+        super(
+                "unload",
+                MessageConfig.codeText("world-unload-sub-command.constructor-1"),
+                MessageConfig.codeText("world-unload-sub-command.constructor-2"));
     }
 
     @Override

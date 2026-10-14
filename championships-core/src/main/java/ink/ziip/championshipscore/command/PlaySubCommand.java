@@ -13,7 +13,11 @@ import java.util.List;
 
 public final class PlaySubCommand extends BaseSubCommand {
     public PlaySubCommand() {
-        super("play", "自由游玩与排行榜", "/cc play [leave|leaderboard]", PLAYER_PERMISSION);
+        super(
+                "play",
+                MessageConfig.codeText("play-sub-command.constructor-1"),
+                "/cc play [leave|leaderboard]",
+                PLAYER_PERMISSION);
     }
 
     @Override

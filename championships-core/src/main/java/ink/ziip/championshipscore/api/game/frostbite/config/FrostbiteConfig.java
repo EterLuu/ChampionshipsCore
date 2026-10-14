@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.game.frostbite.config;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
 import ink.ziip.championshipscore.configuration.ConfigOption;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.location.ConfiguredLocation;
 
 import lombok.Getter;
@@ -94,7 +95,9 @@ public final class FrostbiteConfig extends BaseGameConfig {
 
     static Location parsePoint(String text, String worldName) {
         ConfiguredLocation point = ConfiguredLocation.read(text);
-        if (point == null) throw new IllegalArgumentException("坐标不能为空");
+        if (point == null)
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("frostbite-config.parse-point-1"));
         return point.requireWorld(worldName).resolve(identifier -> null);
     }
 
@@ -119,12 +122,15 @@ public final class FrostbiteConfig extends BaseGameConfig {
                 || itemRespawnSeconds < 1
                 || itemRespawnSeconds > 60
                 || pointsPerKill < 0
-                || pointsPerKill > 1000) throw new IllegalArgumentException("时长、冻结、保温、补给或击杀积分超出范围");
+                || pointsPerKill > 1000)
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("frostbite-config.validate-1"));
         if (rankPointsPerPlayer == null
                 || rankPointsPerPlayer.size() > 16
                 || rankPointsPerPlayer.stream()
                         .anyMatch(points -> points == null || points < 0 || points > 1000))
-            throw new IllegalArgumentException("排名奖励需要最多16项，每项积分须为0–1000");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("frostbite-config.validate-2"));
         if (arenaMin == null
                 || arenaMax == null
                 || copySpacing < 64
@@ -134,12 +140,14 @@ public final class FrostbiteConfig extends BaseGameConfig {
                 || arenaMin.getZ() >= arenaMax.getZ()
                 || arenaMax.getX() - arenaMin.getX() >= copySpacing
                 || arenaMax.getZ() - arenaMin.getZ() >= copySpacing)
-            throw new IllegalArgumentException("四张地图边界缺失或互相重叠");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("frostbite-config.validate-3"));
         if (spawnPoints.size() < 16
                 || spawnPoints.size() > 128
                 || itemPoints.isEmpty()
                 || itemPoints.size() > 128)
-            throw new IllegalArgumentException("需要 16–128 个重生点和 1–128 个补给点");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("frostbite-config.validate-4"));
         for (String p :
                 java.util.stream.Stream.concat(spawnPoints.stream(), itemPoints.stream())
                         .toList()) {
@@ -149,7 +157,8 @@ public final class FrostbiteConfig extends BaseGameConfig {
                     || !Double.isFinite(l.getZ())
                     || !Float.isFinite(l.getYaw())
                     || !l.toVector().isInAABB(arenaMin, arenaMax))
-                throw new IllegalArgumentException("坐标无效或超出地图：" + p);
+                throw new IllegalArgumentException(
+                        MessageConfig.codeText("frostbite-config.validate-5", p));
         }
     }
 }

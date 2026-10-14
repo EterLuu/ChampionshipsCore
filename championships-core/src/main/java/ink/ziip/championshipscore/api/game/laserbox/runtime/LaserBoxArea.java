@@ -194,7 +194,10 @@ public final class LaserBoxArea extends BasePairedGameInstance {
                                     getGameConfig().getCopyCount())
                             .geometry(copyIndex);
         } catch (RuntimeException failure) {
-            logGame(Level.WARNING, "启动", failure.getMessage());
+            logGame(
+                    Level.WARNING,
+                    MessageConfig.codeText("laser-box-area.try-start-game-1"),
+                    failure.getMessage());
             return false;
         }
         return super.tryStartGame(right, left);
@@ -352,20 +355,23 @@ public final class LaserBoxArea extends BasePairedGameInstance {
         var meta = result.getItemMeta();
         String name =
                 switch (type) {
-                    case "laser" -> "激光枪 · 光束发射器";
-                    case "grenade" -> "烟幕弹 · 视线封锁";
-                    case "strike" -> "定点爆破 · 范围打击";
-                    case "reveal" -> "追踪脉冲 · 敌方显形";
-                    default -> "护盾 · 1次拦截";
+                    case "laser" -> MessageConfig.codeText("laser-box-area.item-1");
+                    case "grenade" -> MessageConfig.codeText("laser-box-area.item-2");
+                    case "strike" -> MessageConfig.codeText("laser-box-area.item-3");
+                    case "reveal" -> MessageConfig.codeText("laser-box-area.item-4");
+                    default -> MessageConfig.codeText("laser-box-area.item-5");
                 };
-        String usage = type.equals("shield") ? "拾取后立即生效" : "右键使用";
+        String usage =
+                type.equals("shield")
+                        ? MessageConfig.codeText("laser-box-area.item-7")
+                        : MessageConfig.codeText("laser-box-area.item-6");
         String function =
                 switch (type) {
-                    case "laser" -> "沿准星方向发射激光";
-                    case "grenade" -> "落点生成持续烟幕，遮挡激光";
-                    case "strike" -> "标记最近两名敌人的位置并造成范围打击";
-                    case "reveal" -> "短暂显示敌方位置";
-                    default -> "阻挡 1 次激光";
+                    case "laser" -> MessageConfig.codeText("laser-box-area.item-8");
+                    case "grenade" -> MessageConfig.codeText("laser-box-area.item-9");
+                    case "strike" -> MessageConfig.codeText("laser-box-area.item-10");
+                    case "reveal" -> MessageConfig.codeText("laser-box-area.item-11");
+                    default -> MessageConfig.codeText("laser-box-area.item-12");
                 };
         meta.displayName(
                 Component.text(name, NamedTextColor.AQUA).decoration(TextDecoration.ITALIC, false));
@@ -573,7 +579,7 @@ public final class LaserBoxArea extends BasePairedGameInstance {
                         .replace(
                                 "%attacker%",
                                 owner == null
-                                        ? "场地"
+                                        ? MessageConfig.codeText("laser-box-area.hit-1")
                                         : plugin.getPlayerManager().getPlayerName(owner))
                         .replace("%victim%", CoreMessages.formatPlayerName(victim)));
         if (round.right() == 0 || round.left() == 0) endGame();
@@ -734,16 +740,19 @@ public final class LaserBoxArea extends BasePairedGameInstance {
                     case "grenade" ->
                             configured(
                                     MessageConfig.LASER_BOX_ITEM_GRENADE,
-                                    "获得 烟幕弹  ·  右键使用  ·  生成烟幕，遮挡激光");
+                                    MessageConfig.codeText("laser-box-area.item-hint-1"));
                     case "strike" ->
                             configured(
                                     MessageConfig.LASER_BOX_ITEM_STRIKE,
-                                    "获得 定点爆破  ·  右键使用  ·  轰击最近两名敌人的当前位置");
+                                    MessageConfig.codeText("laser-box-area.item-hint-2"));
                     case "reveal" ->
                             configured(
                                     MessageConfig.LASER_BOX_ITEM_REVEAL,
-                                    "获得 追踪脉冲  ·  右键使用  ·  短暂显示敌方位置");
-                    default -> configured(MessageConfig.LASER_BOX_ITEM_SHIELD, "护盾 · 阻挡 1 次激光");
+                                    MessageConfig.codeText("laser-box-area.item-hint-3"));
+                    default ->
+                            configured(
+                                    MessageConfig.LASER_BOX_ITEM_SHIELD,
+                                    MessageConfig.codeText("laser-box-area.item-hint-4"));
                 };
         return LegacyText.component(message)
                 .colorIfAbsent(NamedTextColor.YELLOW)

@@ -118,7 +118,10 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
                                 getGameConfig().getConfigName()),
                         "arena.schem");
         if (world == null || !schematic.isFile() || getGameConfig().getCopies() < 1) {
-            logGame(Level.SEVERE, "重置", "共享世界地图无法局部恢复：世界、arena.schem 或副本数量无效");
+            logGame(
+                    Level.SEVERE,
+                    MessageConfig.codeText("tnt-run-team-area.reset-area-1"),
+                    MessageConfig.codeText("tnt-run-team-area.reset-area-2"));
             setGameStageEnum(GameStageEnum.END);
             return;
         }
@@ -131,7 +134,11 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
                     getGameConfig().getCopies());
             setGameStageEnum(GameStageEnum.WAITING);
         } catch (Exception exception) {
-            logGame(Level.SEVERE, "重置", "局部恢复失败，地图保持禁用 | " + exception.getMessage());
+            logGame(
+                    Level.SEVERE,
+                    MessageConfig.codeText("tnt-run-team-area.reset-area-1"),
+                    MessageConfig.codeText(
+                            "tnt-run-team-area.reset-area-3", exception.getMessage()));
             setGameStageEnum(GameStageEnum.END);
         }
     }
@@ -253,12 +260,11 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
                 offlinePlayers++;
                 logGame(
                         Level.INFO,
-                        "玩家",
-                        "玩家="
-                                + playerManager.getPlayerName(uuid)
-                                + " uuid="
-                                + uuid
-                                + " 状态=离线，计入淘汰");
+                        MessageConfig.codeText("tnt-run-team-area.start-game-progress-1"),
+                        MessageConfig.codeText(
+                                "tnt-run-team-area.start-game-progress-2",
+                                playerManager.getPlayerName(uuid),
+                                uuid));
             }
         }
         addPointsToAllSurvivePlayers(offlinePlayers * 4);

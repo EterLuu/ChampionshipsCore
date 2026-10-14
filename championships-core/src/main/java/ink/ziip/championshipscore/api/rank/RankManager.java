@@ -112,7 +112,10 @@ public class RankManager extends BaseManager {
             plugin.getLogger()
                     .info(
                             LogText.formatModuleLog(
-                                    "Rank", "暂存事务", "恢复待提交积分事务=" + pendingEntries.size()));
+                                    "Rank",
+                                    MessageConfig.codeText("rank-manager.load-1"),
+                                    MessageConfig.codeText(
+                                            "rank-manager.load-2", pendingEntries.size())));
         }
         updateTask = scheduler.runTaskTimer(plugin, this::queuePeriodicRefresh, 0, 100L);
     }
@@ -406,7 +409,12 @@ public class RankManager extends BaseManager {
                                     .log(
                                             java.util.logging.Level.SEVERE,
                                             LogText.formatModuleLog(
-                                                    "Rank", "积分", "积分提交失败 玩家=" + uuid),
+                                                    "Rank",
+                                                    MessageConfig.codeText(
+                                                            "rank-manager.add-player-points-1"),
+                                                    MessageConfig.codeText(
+                                                            "rank-manager.add-player-points-2",
+                                                            uuid)),
                                             failure);
                             return false;
                         });
@@ -443,7 +451,10 @@ public class RankManager extends BaseManager {
             ChampionshipTeam team =
                     plugin.getTeamManager().getFormalTeamByPlayer(submission.playerId());
             if (team == null) {
-                plugin.getLogger().severe("积分提交拒绝：玩家没有正式队伍，保留以下事务供恢复：" + submissions);
+                plugin.getLogger()
+                        .severe(
+                                MessageConfig.codeText(
+                                        "rank-manager.add-player-points-batch-1", submissions));
                 return CompletableFuture.completedFuture(false);
             }
             ChampionshipTeam rival = submission.rival() == null ? team : submission.rival();
@@ -491,9 +502,10 @@ public class RankManager extends BaseManager {
                                     .severe(
                                             LogText.formatModuleLog(
                                                     "Rank",
-                                                    "暂存事务",
-                                                    "积分暂存写入失败，事务保留在内存并自动重试；请勿重启，事务数="
-                                                            + entries.size()));
+                                                    MessageConfig.codeText("rank-manager.load-1"),
+                                                    MessageConfig.codeText(
+                                                            "rank-manager.add-player-points-batch-2",
+                                                            entries.size())));
                             accepted.complete(false);
                             return;
                         }
@@ -839,7 +851,11 @@ public class RankManager extends BaseManager {
                                         .log(
                                                 java.util.logging.Level.SEVERE,
                                                 LogText.formatModuleLog(
-                                                        "Rank", "异步任务", "积分数据库任务失败"),
+                                                        "Rank",
+                                                        MessageConfig.codeText(
+                                                                "rank-manager.drain-rank-task-queue-1"),
+                                                        MessageConfig.codeText(
+                                                                "rank-manager.drain-rank-task-queue-2")),
                                                 exception);
                             }
                         }

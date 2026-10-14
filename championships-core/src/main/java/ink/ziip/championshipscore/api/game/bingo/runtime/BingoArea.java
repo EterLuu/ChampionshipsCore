@@ -198,7 +198,10 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         if (world == null) {
             // The persistent bingo world should have been created at startup; without it we can't
             // play.
-            logGame(Level.WARNING, "世界", "世界=" + getWorldName() + " 不存在，无法开始");
+            logGame(
+                    Level.WARNING,
+                    MessageConfig.codeText("bingo-area.start-game-progress-1"),
+                    MessageConfig.codeText("bingo-area.start-game-progress-2", getWorldName()));
             endGame();
             return;
         }
@@ -448,17 +451,22 @@ public class BingoArea extends BaseMultiTeamGameInstance {
                             }
                             if (activeVariant.remix() == BingoRemix.BLIND) {
                                 if (round.revealRandomHiddenTask())
-                                    sendMessageToAllGamePlayers("&8✦ 视障揭示了一项任务");
+                                    sendMessageToAllGamePlayers(
+                                            MessageConfig.codeText(
+                                                    "bingo-area.start-timed-remix-3"));
                             } else if (activeVariant.remix() == BingoRemix.VARIATION) {
                                 round.refreshUncompletedTasks();
                                 for (UUID uuid : gamePlayers) {
                                     Player player = Bukkit.getPlayer(uuid);
                                     if (player != null) round.ensureStatBaselines(player);
                                 }
-                                sendMessageToAllGamePlayers("&e✦ 变奏：未完成的任务已刷新！");
+                                sendMessageToAllGamePlayers(
+                                        MessageConfig.codeText("bingo-area.start-timed-remix-2"));
                             } else if (activeVariant.remix() == BingoRemix.FINALE) {
                                 if (round.lockRandomTask())
-                                    sendMessageToAllGamePlayers("&8✦ 终曲：一项任务被锁定");
+                                    sendMessageToAllGamePlayers(
+                                            MessageConfig.codeText(
+                                                    "bingo-area.start-timed-remix-1"));
                                 if (round.allTasksUncompletable()) endGame();
                             }
                         },
@@ -606,7 +614,8 @@ public class BingoArea extends BaseMultiTeamGameInstance {
                 addPlayerPoints(player.getUniqueId(), 1);
             }
         }
-        // Line bonus goes to every team member ("队内所有成员+50/+25"), not just the completer.
+        // Line bonus goes to every team member (all team members receive +50/+25), not just the
+        // completer.
         if (lineDelta != 0 && team != null) {
             addPlayerPointsToAllTeamMembers(team, lineDelta);
         }

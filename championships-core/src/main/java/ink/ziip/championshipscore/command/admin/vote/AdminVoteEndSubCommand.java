@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.command.admin.vote;
 
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -12,7 +13,10 @@ import java.util.List;
 
 public class AdminVoteEndSubCommand extends BaseSubCommand {
     public AdminVoteEndSubCommand() {
-        super("end", "结束游戏投票", "/cc admin vote end");
+        super(
+                "end",
+                MessageConfig.codeText("admin-vote-end-sub-command.constructor-1"),
+                "/cc admin vote end");
     }
 
     @Override

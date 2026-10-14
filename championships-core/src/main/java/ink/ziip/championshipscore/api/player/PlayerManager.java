@@ -11,6 +11,7 @@ import ink.ziip.championshipscore.api.player.identity.PlayerUuidSource;
 import ink.ziip.championshipscore.api.player.identity.ProfileUuidResolver;
 import ink.ziip.championshipscore.auth.AuthIdentity;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.database.player.PlayerDao;
 import ink.ziip.championshipscore.database.player.PlayerDaoImpl;
 import ink.ziip.championshipscore.database.sync.DatabaseSyncDomain;
@@ -236,12 +237,11 @@ public class PlayerManager extends BaseManager {
                             LogText.formatModuleLog(
                                     "Player",
                                     "IdentitySync",
-                                    "玩家="
-                                            + username
-                                            + " 当前UUID="
-                                            + currentUuid
-                                            + " 模式校验失败="
-                                            + modeFailure.failureReason()));
+                                    MessageConfig.codeText(
+                                            "player-manager.prepare-identity-1",
+                                            username,
+                                            currentUuid,
+                                            modeFailure.failureReason())));
             return modeFailure;
         }
         String normalizedName = normalizeName(username);
@@ -259,43 +259,36 @@ public class PlayerManager extends BaseManager {
                             LogText.formatModuleLog(
                                     "Player",
                                     "IdentitySync",
-                                    "玩家="
-                                            + username
-                                            + " 当前UUID="
-                                            + currentUuid
-                                            + " 同步失败="
-                                            + result.failureReason()));
+                                    MessageConfig.codeText(
+                                            "player-manager.prepare-identity-4",
+                                            username,
+                                            currentUuid,
+                                            result.failureReason())));
         } else if (result.hasTeamConflict()) {
             plugin.getLogger()
                     .warning(
                             LogText.formatModuleLog(
                                     "Player",
                                     "IdentitySync",
-                                    "玩家="
-                                            + username
-                                            + " 当前UUID="
-                                            + currentUuid
-                                            + " 旧UUID="
-                                            + result.previousUuids()
-                                            + " 队伍冲突="
-                                            + result.conflictingTeamIds()
-                                            + "，未自动选择队伍"));
+                                    MessageConfig.codeText(
+                                            "player-manager.prepare-identity-3",
+                                            username,
+                                            currentUuid,
+                                            result.previousUuids(),
+                                            result.conflictingTeamIds())));
         } else if (result.changed()) {
             plugin.getLogger()
                     .info(
                             LogText.formatModuleLog(
                                     "Player",
                                     "IdentitySync",
-                                    "玩家="
-                                            + username
-                                            + " 旧UUID="
-                                            + result.previousUuids()
-                                            + " 新UUID="
-                                            + currentUuid
-                                            + " 队伍="
-                                            + result.resolvedTeamId()
-                                            + " 迁移积分记录="
-                                            + result.migratedPointRows()));
+                                    MessageConfig.codeText(
+                                            "player-manager.prepare-identity-2",
+                                            username,
+                                            result.previousUuids(),
+                                            currentUuid,
+                                            result.resolvedTeamId(),
+                                            result.migratedPointRows())));
         }
         return result;
     }

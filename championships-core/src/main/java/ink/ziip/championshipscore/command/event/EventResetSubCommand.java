@@ -14,7 +14,10 @@ import java.util.List;
 
 public final class EventResetSubCommand extends BaseSubCommand {
     public EventResetSubCommand() {
-        super("reset", "重置正式比赛轮次", "/cc event reset --confirm");
+        super(
+                "reset",
+                MessageConfig.codeText("event-reset-sub-command.constructor-1"),
+                "/cc event reset --confirm");
     }
 
     @Override

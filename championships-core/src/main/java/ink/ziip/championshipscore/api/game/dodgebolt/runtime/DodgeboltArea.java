@@ -355,7 +355,9 @@ public final class DodgeboltArea extends BasePairedGameInstance {
             flight.arrow.setGravity(false);
         }
         String playerName =
-                disconnected == null ? "管理员" : CoreMessages.formatPlayerName(disconnected);
+                disconnected == null
+                        ? MessageConfig.codeText("dodgebolt-area.pause-match-1")
+                        : CoreMessages.formatPlayerName(disconnected);
         sendMessageToAllGamePlayers(MessageConfig.DODGEBOLT_PAUSED.replace("%player%", playerName));
         sendPauseTitle(disconnected);
         updateScoreBar();
@@ -364,7 +366,9 @@ public final class DodgeboltArea extends BasePairedGameInstance {
 
     private void sendPauseTitle(@Nullable UUID disconnected) {
         String playerName =
-                disconnected == null ? "管理员" : CoreMessages.formatPlayerName(disconnected);
+                disconnected == null
+                        ? MessageConfig.codeText("dodgebolt-area.pause-match-1")
+                        : CoreMessages.formatPlayerName(disconnected);
         sendTitleToAllGamePlayers(
                 MessageConfig.DODGEBOLT_PAUSED_TITLE,
                 MessageConfig.DODGEBOLT_PAUSED_SUBTITLE.replace("%player%", playerName));
@@ -712,7 +716,10 @@ public final class DodgeboltArea extends BasePairedGameInstance {
                 || areaPos2 == null
                 || rightChampionshipTeam == null
                 || leftChampionshipTeam == null) {
-            logGame(Level.WARNING, "队伍颜色", "无法替换决赛场地颜色：比赛区、世界或决赛队伍缺失");
+            logGame(
+                    Level.WARNING,
+                    MessageConfig.codeText("dodgebolt-area.apply-finalist-colors-1"),
+                    MessageConfig.codeText("dodgebolt-area.apply-finalist-colors-2"));
             return;
         }
 
@@ -724,7 +731,10 @@ public final class DodgeboltArea extends BasePairedGameInstance {
                 || rightCarpet == null
                 || leftConcrete == null
                 || leftCarpet == null) {
-            logGame(Level.WARNING, "队伍颜色", "无法解析决赛队伍的 Minecraft 颜色方块");
+            logGame(
+                    Level.WARNING,
+                    MessageConfig.codeText("dodgebolt-area.apply-finalist-colors-1"),
+                    MessageConfig.codeText("dodgebolt-area.apply-finalist-colors-3"));
             return;
         }
 
@@ -749,18 +759,14 @@ public final class DodgeboltArea extends BasePairedGameInstance {
                         leftCarpet);
         logGame(
                 Level.INFO,
-                "队伍颜色",
-                "右队="
-                        + rightChampionshipTeam.getName()
-                        + "("
-                        + rightChampionshipTeam.getColorName()
-                        + ") 左队="
-                        + leftChampionshipTeam.getName()
-                        + "("
-                        + leftChampionshipTeam.getColorName()
-                        + ") 已替换比赛区和观战区内 "
-                        + replacements
-                        + " 个占位方块");
+                MessageConfig.codeText("dodgebolt-area.apply-finalist-colors-1"),
+                MessageConfig.codeText(
+                        "dodgebolt-area.apply-finalist-colors-4",
+                        rightChampionshipTeam.getName(),
+                        rightChampionshipTeam.getColorName(),
+                        leftChampionshipTeam.getName(),
+                        leftChampionshipTeam.getColorName(),
+                        replacements));
     }
 
     private static int replaceFinalistColors(
@@ -812,7 +818,8 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         meta.getPersistentDataContainer()
                 .set(tokenKey, PersistentDataType.STRING, UUID.randomUUID().toString());
         meta.getPersistentDataContainer().set(tokenSideKey, PersistentDataType.STRING, side.name());
-        meta.displayName(LegacyText.component("&#fff566躲避箭"));
+        meta.displayName(
+                LegacyText.component(MessageConfig.codeText("dodgebolt-area.spawn-arrow-token-1")));
         stack.setItemMeta(meta);
         Item item = location.getWorld().dropItem(location, stack);
         item.setPickupDelay(0);
@@ -836,7 +843,9 @@ public final class DodgeboltArea extends BasePairedGameInstance {
             ItemMeta meta = bow.getItemMeta();
             meta.setUnbreakable(true);
             meta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
-            meta.displayName(LegacyText.component("&#fff566躲避箭之弓"));
+            meta.displayName(
+                    LegacyText.component(
+                            MessageConfig.codeText("dodgebolt-area.give-bows-to-alive-players-1")));
             bow.setItemMeta(meta);
             player.getInventory().setItem(0, bow);
             player.getInventory().setHeldItemSlot(0);

@@ -155,7 +155,12 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
                     RiptideCoursePlanner.plan(getGameConfig(), getGameConfig().nextCourseSeed());
             resolveGeneratedLevels();
         } catch (RuntimeException exception) {
-            logGame(Level.SEVERE, "配置", "木筏赛道无效，已终止本场 | " + exception.getMessage());
+            logGame(
+                    Level.SEVERE,
+                    MessageConfig.codeText("riptide-rush-area.start-formal-preparation-1"),
+                    MessageConfig.codeText(
+                            "riptide-rush-area.start-formal-preparation-2",
+                            exception.getMessage()));
             abortAndReset();
             return;
         }
@@ -163,7 +168,7 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
         long epoch = ++generationEpoch;
         logGame(
                 Level.INFO,
-                "随机赛道",
+                MessageConfig.codeText("riptide-rush-area.start-formal-preparation-3"),
                 "seed="
                         + coursePlan.seed()
                         + " generator="
@@ -187,13 +192,25 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
                         (built, error) -> {
                             if (generationEpoch != epoch) return;
                             if (error != null || !Boolean.TRUE.equals(built)) {
-                                logGame(Level.SEVERE, "随机赛道", "赛道生成失败，已终止本场 | " + error);
+                                logGame(
+                                        Level.SEVERE,
+                                        MessageConfig.codeText(
+                                                "riptide-rush-area.start-formal-preparation-3"),
+                                        MessageConfig.codeText(
+                                                "riptide-rush-area.start-formal-preparation-5",
+                                                error));
                                 abortAndReset();
                             } else {
                                 try {
                                     finishFormalPreparation();
                                 } catch (RuntimeException failure) {
-                                    logGame(Level.SEVERE, "随机赛道", "赛道准备失败，已终止本场 | " + failure);
+                                    logGame(
+                                            Level.SEVERE,
+                                            MessageConfig.codeText(
+                                                    "riptide-rush-area.start-formal-preparation-3"),
+                                            MessageConfig.codeText(
+                                                    "riptide-rush-area.start-formal-preparation-4",
+                                                    failure));
                                     abortAndReset();
                                 }
                             }
@@ -205,7 +222,12 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
         resetPlayerHealthFoodEffectLevelInventory();
         for (UUID uuid : gamePlayers)
-            plugin.getVisibilityManager().seeTeammates(uuid, visibilityOwner, "激流勇进参赛者显示同队队友");
+            plugin.getVisibilityManager()
+                    .seeTeammates(
+                            uuid,
+                            visibilityOwner,
+                            MessageConfig.codeText(
+                                    "riptide-rush-area.finish-formal-preparation-1"));
         assignAndTeleportSpawns();
         announceGamePreparation(
                 MessageConfig.RIPTIDE_RUSH_START_PREPARATION,
@@ -508,7 +530,7 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
                 var question = answer.gate().question();
                 logGame(
                         Level.INFO,
-                        "数学过门",
+                        MessageConfig.codeText("riptide-rush-area.resolve-player-math-crossings-1"),
                         "player="
                                 + player.getName()
                                 + " level="
@@ -587,7 +609,7 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
         }
         logGame(
                 Level.INFO,
-                "踩色",
+                MessageConfig.codeText("riptide-rush-area.show-color-floor-round-1"),
                 "stage="
                         + nextColorFloorStage
                         + " round="
@@ -626,7 +648,7 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
                 boolean correct = colorFloorRun.matches(feet, geometry, completedSteps);
                 logGame(
                         Level.INFO,
-                        "地板判定",
+                        MessageConfig.codeText("riptide-rush-area.tick-color-floor-1"),
                         "player="
                                 + player.getName()
                                 + " stage="
@@ -677,7 +699,7 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
         dodgeEntities = new RiptideDodgeEntities(geometry, completedSteps);
         logGame(
                 Level.INFO,
-                "躲避",
+                MessageConfig.codeText("riptide-rush-area.begin-reached-dodge-1"),
                 "phase="
                         + phase
                         + " variant="
@@ -1305,7 +1327,11 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
         if ((stage == GameStageEnum.PREPARATION || stage == GameStageEnum.COUNTDOWN)
                 && !eliminatedPlayers.contains(player.getUniqueId()))
             plugin.getVisibilityManager()
-                    .seeTeammates(player.getUniqueId(), visibilityOwner, "激流勇进参赛者显示同队队友");
+                    .seeTeammates(
+                            player.getUniqueId(),
+                            visibilityOwner,
+                            MessageConfig.codeText(
+                                    "riptide-rush-area.finish-formal-preparation-1"));
         else plugin.getVisibilityManager().release(player.getUniqueId(), visibilityOwner);
         plugin.getVisibilityManager().reconcilePlayer(player.getUniqueId());
     }

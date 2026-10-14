@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.buildmart.geometry;
 
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
@@ -16,7 +18,8 @@ public final class BuildMartRowLayoutPlanner {
 
     public static @NotNull Vector step(@NotNull Vector baseSize) {
         if (baseSize.getBlockX() < 1 || baseSize.getBlockY() < 1 || baseSize.getBlockZ() < 1)
-            throw new IllegalArgumentException("基地模板尺寸无效：" + baseSize);
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("build-mart-row-layout-planner.step-1", baseSize));
         int blocks = baseSize.getBlockX() + ROW_CLEARANCE_BLOCKS;
         int aligned = Math.floorDiv(blocks + CHUNK_SIZE - 1, CHUNK_SIZE) * CHUNK_SIZE;
         return new Vector(aligned, 0, 0);
@@ -27,7 +30,8 @@ public final class BuildMartRowLayoutPlanner {
             @NotNull Vector sourceOrigin, double occupiedMaxX) {
         double minimum = Math.max(occupiedMaxX, sourceOrigin.getX()) + ROW_CLEARANCE_BLOCKS;
         if (!Double.isFinite(minimum) || minimum > Integer.MAX_VALUE - CHUNK_SIZE)
-            throw new IllegalArgumentException("场地坐标超出可安全规划的范围");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("build-mart-row-layout-planner.generated-origin-1"));
         int alignedX =
                 Math.floorDiv((int) Math.ceil(minimum) + CHUNK_SIZE - 1, CHUNK_SIZE) * CHUNK_SIZE;
         return new Vector(alignedX, sourceOrigin.getY(), sourceOrigin.getZ());

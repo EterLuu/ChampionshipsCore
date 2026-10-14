@@ -194,10 +194,18 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
                         int toHeight = Integer.parseInt(shrinkTimeSetting[3]);
                         shrinkTimes.add(new SkyWarsShrink(start, end, toRadius, toHeight));
                     } catch (NumberFormatException e) {
-                        logGame(Level.WARNING, "配置", "无效的边界收缩配置=" + key);
+                        logGame(
+                                Level.WARNING,
+                                MessageConfig.codeText("sky-wars-team-area.reload-shrink-times-1"),
+                                MessageConfig.codeText(
+                                        "sky-wars-team-area.reload-shrink-times-2", key));
                     }
                 } else {
-                    logGame(Level.WARNING, "配置", "无效的边界收缩配置=" + key);
+                    logGame(
+                            Level.WARNING,
+                            MessageConfig.codeText("sky-wars-team-area.reload-shrink-times-1"),
+                            MessageConfig.codeText(
+                                    "sky-wars-team-area.reload-shrink-times-2", key));
                 }
             }
         }
@@ -259,12 +267,11 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
                 addTeamDeathPlayer(championshipTeam, false);
                 logGame(
                         Level.INFO,
-                        "玩家",
-                        "玩家="
-                                + playerManager.getPlayerName(uuid)
-                                + " uuid="
-                                + uuid
-                                + " 状态=离线，计入淘汰");
+                        MessageConfig.codeText("sky-wars-team-area.start-game-progress-1"),
+                        MessageConfig.codeText(
+                                "sky-wars-team-area.start-game-progress-2",
+                                playerManager.getPlayerName(uuid),
+                                uuid));
             }
         }
 
@@ -617,7 +624,13 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
         teamDeathPlayers.put(
                 championshipTeam, teamDeathPlayers.getOrDefault(championshipTeam, 0) + 1);
         Integer deathPlayer = teamDeathPlayers.get(championshipTeam);
-        logGame(Level.INFO, "淘汰", "队伍=" + championshipTeam.getName() + " 已淘汰人数=" + deathPlayer);
+        logGame(
+                Level.INFO,
+                MessageConfig.codeText("sky-wars-team-area.add-team-death-player-1"),
+                MessageConfig.codeText(
+                        "sky-wars-team-area.add-team-death-player-2",
+                        championshipTeam.getName(),
+                        deathPlayer));
         if (deathPlayer != null) {
             if (deathPlayer == getParticipatingTeamSize(championshipTeam)) {
                 sendMessageToAllGamePlayers(
@@ -686,7 +699,13 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
                     lastTeamEndCheckScheduled = false;
                     if (getGameStageEnum() == GameStageEnum.PROGRESS
                             && countSurvivingTeams() <= 1) {
-                        logGame(Level.INFO, "结束", "存活队伍数=" + countSurvivingTeams() + "，提前结束并结算");
+                        logGame(
+                                Level.INFO,
+                                MessageConfig.codeText(
+                                        "sky-wars-team-area.schedule-end-if-one-team-remains-1"),
+                                MessageConfig.codeText(
+                                        "sky-wars-team-area.schedule-end-if-one-team-remains-2",
+                                        countSurvivingTeams()));
                         endGame();
                     }
                 });
@@ -965,7 +984,11 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
             Location baseLocation = entry.getValue();
             World world = baseLocation.getWorld();
             if (world == null) {
-                logGame(Level.WARNING, "实体", "队伍=" + team.getName() + " 未生成快乐恶魂：出生点世界为空");
+                logGame(
+                        Level.WARNING,
+                        MessageConfig.codeText("sky-wars-team-area.spawn-team-happy-ghasts-1"),
+                        MessageConfig.codeText(
+                                "sky-wars-team-area.spawn-team-happy-ghasts-2", team.getName()));
                 continue;
             }
 
@@ -973,7 +996,11 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
             HappyGhast happyGhast =
                     (HappyGhast) world.spawnEntity(spawnLocation, EntityType.HAPPY_GHAST);
             if (happyGhast == null) {
-                logGame(Level.WARNING, "实体", "队伍=" + team.getName() + " 的快乐恶魂生成被取消");
+                logGame(
+                        Level.WARNING,
+                        MessageConfig.codeText("sky-wars-team-area.spawn-team-happy-ghasts-1"),
+                        MessageConfig.codeText(
+                                "sky-wars-team-area.spawn-team-happy-ghasts-3", team.getName()));
                 continue;
             }
 
@@ -997,8 +1024,11 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
             } else {
                 logGame(
                         Level.WARNING,
-                        "实体",
-                        "队伍=" + team.getName() + " 颜色=" + team.getColorName() + " 未找到对应挽具");
+                        MessageConfig.codeText("sky-wars-team-area.spawn-team-happy-ghasts-1"),
+                        MessageConfig.codeText(
+                                "sky-wars-team-area.spawn-team-happy-ghasts-4",
+                                team.getName(),
+                                team.getColorName()));
             }
 
             // 50 HP: raise max health first so setHealth(50) is not capped.
@@ -1015,8 +1045,11 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
 
             logGame(
                     Level.INFO,
-                    "实体",
-                    "队伍=" + team.getName() + " 已生成快乐恶魂，挽具=" + team.getColorName());
+                    MessageConfig.codeText("sky-wars-team-area.spawn-team-happy-ghasts-1"),
+                    MessageConfig.codeText(
+                            "sky-wars-team-area.spawn-team-happy-ghasts-5",
+                            team.getName(),
+                            team.getColorName()));
             spawned++;
         }
         if (vanillaFlight && spawned > 0) {
@@ -1115,7 +1148,11 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
         HappyGhast happyGhast = teamHappyGhasts.remove(team);
         if (happyGhast != null && !happyGhast.isDead()) {
             happyGhast.setHealth(0);
-            logGame(Level.INFO, "实体", "队伍=" + team.getName() + " 已淘汰，对应快乐恶魂死亡");
+            logGame(
+                    Level.INFO,
+                    MessageConfig.codeText("sky-wars-team-area.spawn-team-happy-ghasts-1"),
+                    MessageConfig.codeText(
+                            "sky-wars-team-area.kill-team-happy-ghast-1", team.getName()));
         }
     }
 

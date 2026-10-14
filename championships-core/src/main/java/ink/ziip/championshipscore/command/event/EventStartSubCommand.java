@@ -19,8 +19,8 @@ public final class EventStartSubCommand extends BaseSubCommand {
     public EventStartSubCommand() {
         super(
                 "start",
-                "开始正式比赛；进行中时再次执行会紧急停止",
-                "/cc event start <游戏> [地图|auto] [all|队伍...] [--arena all|编号]");
+                MessageConfig.codeText("event-start-sub-command.constructor-1"),
+                MessageConfig.codeText("event-start-sub-command.constructor-2"));
     }
 
     @Override
@@ -97,7 +97,12 @@ public final class EventStartSubCommand extends BaseSubCommand {
                     sender,
                     MessageConfig.EVENT_START_UNAVAILABLE
                             .replace("%game%", game.toString())
-                            .replace("%detail%", reason == null ? "地图、执行端或比赛状态不满足启动条件" : reason));
+                            .replace(
+                                    "%detail%",
+                                    reason == null
+                                            ? MessageConfig.codeText(
+                                                    "event-start-sub-command.on-command-1")
+                                            : reason));
         } else {
             CoreMessages.sendAdminError(sender, MessageConfig.EVENT_START_NO_SCHEDULE);
         }

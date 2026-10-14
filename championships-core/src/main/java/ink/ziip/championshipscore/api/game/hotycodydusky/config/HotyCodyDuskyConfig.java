@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.arena.*;
 import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
 import ink.ziip.championshipscore.configuration.ConfigOption;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.location.LocationConfig;
 
 import lombok.Getter;
@@ -104,7 +105,8 @@ public class HotyCodyDuskyConfig extends BaseGameConfig {
         if (copies < 1 || copySize == null) return List.of();
         if (!copyBounds.isEmpty()) {
             if (copyBounds.size() != copies)
-                throw new IllegalArgumentException("子场地边界数量与 copies 不一致");
+                throw new IllegalArgumentException(
+                        MessageConfig.codeText("hoty-cody-dusky-config.get-copy-boxes-1"));
             return copyBounds.stream()
                     .map(
                             row -> {
@@ -132,10 +134,13 @@ public class HotyCodyDuskyConfig extends BaseGameConfig {
     }
 
     public Location spawn(int arena) {
-        if (arena < 0 || arena >= copies) throw new IllegalArgumentException("子场地编号超出范围");
+        if (arena < 0 || arena >= copies)
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("hoty-cody-dusky-config.spawn-1"));
         if (!spawnPoints.isEmpty()) {
             if (spawnPoints.size() != copies)
-                throw new IllegalArgumentException("出生点数量与 copies 不一致");
+                throw new IllegalArgumentException(
+                        MessageConfig.codeText("hoty-cody-dusky-config.spawn-2"));
             return LocationConfig.readLocation(spawnPoints.get(arena));
         }
         return copySpawn == null ? null : copySpawn.clone().add(getCopyGrid().delta(arena));
@@ -151,29 +156,40 @@ public class HotyCodyDuskyConfig extends BaseGameConfig {
                 || !Double.isFinite(copySize.getX())
                 || !Double.isFinite(copySize.getY())
                 || !Double.isFinite(copySize.getZ())) {
-            throw new IllegalArgumentException("场地副本数量须为 1–64，尺寸须为有限正数");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("hoty-cody-dusky-config.validate-layout-1"));
         }
-        if (copyLayout == null) throw new IllegalArgumentException("未记录副本布局");
+        if (copyLayout == null)
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("hoty-cody-dusky-config.validate-layout-2"));
         if (copyLayout.isList("origins") && copyLayout.getList("origins").size() != copies)
-            throw new IllegalArgumentException("副本起点数量与 copies 不一致");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("hoty-cody-dusky-config.validate-layout-3"));
         if (!spawnPoints.isEmpty() && spawnPoints.size() != copies)
-            throw new IllegalArgumentException("出生点数量与 copies 不一致");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("hoty-cody-dusky-config.spawn-2"));
         if (copySpawn == null && spawnPoints.isEmpty())
-            throw new IllegalArgumentException("未记录主场地出生点");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("hoty-cody-dusky-config.validate-layout-4"));
         var boxes = getCopyBoxes();
         for (int i = 0; i < boxes.size(); i++) {
             var box = boxes.get(i);
             for (int j = 0; j < i; j++)
-                if (box.overlaps(boxes.get(j))) throw new IllegalArgumentException("副本边界不能重叠");
+                if (box.overlaps(boxes.get(j)))
+                    throw new IllegalArgumentException(
+                            MessageConfig.codeText("hoty-cody-dusky-config.validate-layout-5"));
             if (!spawnPoints.isEmpty()) {
                 var point =
                         ink.ziip.championshipscore.configuration.location.ConfiguredLocation.read(
                                         spawnPoints.get(i))
                                 .requireWorld(getConfiguredWorld());
                 if (!box.contains(new Vector(point.x(), point.y(), point.z())))
-                    throw new IllegalArgumentException("出生点不在对应子场地内：" + (i + 1));
+                    throw new IllegalArgumentException(
+                            MessageConfig.codeText(
+                                    "hoty-cody-dusky-config.validate-layout-7", (i + 1)));
             } else if (!box.contains(copySpawn.clone().add(getCopyGrid().delta(i)).toVector()))
-                throw new IllegalArgumentException("主场地出生点不在模板内部");
+                throw new IllegalArgumentException(
+                        MessageConfig.codeText("hoty-cody-dusky-config.validate-layout-6"));
         }
     }
 

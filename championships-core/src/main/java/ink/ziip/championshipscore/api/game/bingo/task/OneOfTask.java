@@ -152,7 +152,7 @@ public record OneOfTask(
         String token = familyToken();
         String familyKey = "task.family." + token;
         if (!token.isEmpty() && msg.has(familyKey)) {
-            // Name the family, not one variant: "任意羊毛" / "Any Wool".
+            // Name the family, not one variant: "Any Wool".
             return Component.text()
                     .color(NamedTextColor.YELLOW)
                     .append(LegacyText.component(msg.tr("task.one_of_family", msg.tr(familyKey))))

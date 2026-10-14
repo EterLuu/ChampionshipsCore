@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.sulfursoccer.mechanics;
 
 import ink.ziip.championshipscore.api.game.sulfursoccer.model.SulfurSoccerSide;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import java.util.List;
 import java.util.UUID;
@@ -27,7 +28,9 @@ public final class SulfurSoccerShootout {
                 || right.isEmpty()
                 || left.isEmpty()
                 || right.size() > 4
-                || left.size() > 4) throw new IllegalArgumentException("点球双方必须各有 1–4 名球员");
+                || left.size() > 4)
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("sulfur-soccer-shootout.constructor-1"));
         this.right = List.copyOf(right);
         this.left = List.copyOf(left);
     }
@@ -110,8 +113,12 @@ public final class SulfurSoccerShootout {
     }
 
     public void finishAttempt(boolean scored) {
-        if (winner != null) throw new IllegalStateException("点球大战已结束");
-        if (scored && !struck) throw new IllegalStateException("尚未射门不能记为进球");
+        if (winner != null)
+            throw new IllegalStateException(
+                    MessageConfig.codeText("sulfur-soccer-shootout.finish-attempt-1"));
+        if (scored && !struck)
+            throw new IllegalStateException(
+                    MessageConfig.codeText("sulfur-soccer-shootout.finish-attempt-2"));
         if (scored) {
             if (shootingSide() == SulfurSoccerSide.RIGHT) rightGoals++;
             else leftGoals++;

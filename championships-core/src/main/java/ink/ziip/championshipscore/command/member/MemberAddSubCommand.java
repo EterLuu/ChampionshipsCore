@@ -17,7 +17,10 @@ import java.util.List;
 
 public class MemberAddSubCommand extends BaseSubCommand {
     public MemberAddSubCommand() {
-        super("add", "向队伍添加成员", "/cc team member add <队伍ID> <玩家>");
+        super(
+                "add",
+                MessageConfig.codeText("member-add-sub-command.constructor-1"),
+                MessageConfig.codeText("member-add-sub-command.constructor-2"));
     }
 
     @Override

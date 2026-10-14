@@ -16,7 +16,11 @@ import java.util.List;
 
 public final class DailySubCommand extends BaseSubCommand {
     public DailySubCommand() {
-        super("daily", "自由游玩匹配与个人统计", "/cc daily <leave|stats> [游戏]", PLAYER_PERMISSION);
+        super(
+                "daily",
+                MessageConfig.codeText("daily-sub-command.constructor-1"),
+                MessageConfig.codeText("daily-sub-command.constructor-2"),
+                PLAYER_PERMISSION);
     }
 
     @Override

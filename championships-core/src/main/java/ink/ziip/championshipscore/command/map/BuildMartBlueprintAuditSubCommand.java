@@ -33,8 +33,9 @@ public final class BuildMartBlueprintAuditSubCommand extends BaseSubCommand {
     public BuildMartBlueprintAuditSubCommand(String commandName) {
         super(
                 commandName,
-                "审查蓝图结构、难度和材料覆盖",
-                "/cc map blueprint " + commandName + " <名称|all> [地图] [页码]");
+                MessageConfig.codeText("build-mart-blueprint-audit-sub-command.constructor-1"),
+                MessageConfig.codeText(
+                        "build-mart-blueprint-audit-sub-command.constructor-2", commandName));
     }
 
     @Override
@@ -117,7 +118,11 @@ public final class BuildMartBlueprintAuditSubCommand extends BaseSubCommand {
                 audits.stream().filter(BuildMartBlueprintAuditor.Audit::fullyCovered).count();
         long mismatched =
                 audits.stream().filter(a -> a.configuredStars() != a.suggestedStars()).count();
-        String map = config == null ? "无材料清单" : config.getAreaName();
+        String map =
+                config == null
+                        ? MessageConfig.codeText(
+                                "build-mart-blueprint-audit-sub-command.show-all-1")
+                        : config.getAreaName();
         CoreMessages.sendAdminInfo(
                 sender,
                 MessageConfig.BUILD_MART_BLUEPRINT_AUDIT_HEADER
@@ -136,7 +141,11 @@ public final class BuildMartBlueprintAuditSubCommand extends BaseSubCommand {
             String coverage =
                     !audit.coverageChecked()
                             ? "?"
-                            : audit.fullyCovered() ? "✓" : "缺" + audit.uncoveredMaterials().size();
+                            : audit.fullyCovered()
+                                    ? "✓"
+                                    : MessageConfig.codeText(
+                                            "build-mart-blueprint-audit-sub-command.show-all-2",
+                                            audit.uncoveredMaterials().size());
             String stars =
                     audit.configuredStars() == audit.suggestedStars()
                             ? MessageConfig.BUILD_MART_BLUEPRINT_STARS_SAME.replace(

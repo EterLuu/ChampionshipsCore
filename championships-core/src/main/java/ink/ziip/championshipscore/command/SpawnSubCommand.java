@@ -17,7 +17,11 @@ import java.util.List;
 
 public class SpawnSubCommand extends BaseSubCommand {
     public SpawnSubCommand() {
-        super("spawn", "回到大厅（游戏或观战期间不可用）", "/cc spawn", PLAYER_PERMISSION);
+        super(
+                "spawn",
+                MessageConfig.codeText("spawn-sub-command.constructor-1"),
+                "/cc spawn",
+                PLAYER_PERMISSION);
     }
 
     @Override

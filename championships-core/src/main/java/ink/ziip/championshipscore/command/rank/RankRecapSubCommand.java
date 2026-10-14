@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.command.rank;
 
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -13,7 +14,10 @@ import java.util.List;
 
 public class RankRecapSubCommand extends BaseSubCommand {
     public RankRecapSubCommand() {
-        super("recap", "重看最近一次结算", "/cc rank recap");
+        super(
+                "recap",
+                MessageConfig.codeText("rank-recap-sub-command.constructor-1"),
+                "/cc rank recap");
     }
 
     @Override

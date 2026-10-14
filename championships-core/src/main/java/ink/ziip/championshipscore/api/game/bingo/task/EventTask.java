@@ -256,9 +256,9 @@ public record EventTask(
     /**
      * True for "attain" triggers (reach a level, reach a place, earn N advancements). These cells
      * use one shared green-check corner badge on the map instead of a per-trigger item icon, so
-     * every "达到/获得" objective reads with the same unmistakable symbol. The two bedrock-boundary
-     * reaches (nether roof, overworld bottom) are exceptions: they carry the bedrock sprite badge
-     * instead.
+     * every attainment/acquisition objective reads with the same unmistakable symbol. The two
+     * bedrock-boundary reaches (nether roof, overworld bottom) are exceptions: they carry the
+     * bedrock sprite badge instead.
      */
     public boolean usesGreenCheckBadge() {
         return switch (trigger) {

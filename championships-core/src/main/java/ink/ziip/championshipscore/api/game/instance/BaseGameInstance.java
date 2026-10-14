@@ -142,7 +142,10 @@ public abstract class BaseGameInstance {
         clearBossBars();
 
         setGameStageEnum(GameStageEnum.WAITING);
-        logGame(Level.INFO, "流程", "场地已重置，等待下一场");
+        logGame(
+                Level.INFO,
+                MessageConfig.codeText("base-game-instance.reset-game-1"),
+                MessageConfig.codeText("base-game-instance.reset-game-2"));
     }
 
     public final void routePlayerMoveLow(@NotNull PlayerMoveEvent event) {
@@ -209,7 +212,13 @@ public abstract class BaseGameInstance {
         if (locations.isEmpty()) {
             preload = CompletableFuture.completedFuture(null);
         } else {
-            logGame(Level.INFO, "区块", "开始异步预热落地区域，目标点=" + locations.size());
+            logGame(
+                    Level.INFO,
+                    MessageConfig.codeText(
+                            "base-game-instance.start-game-preparation-after-preload-1"),
+                    MessageConfig.codeText(
+                            "base-game-instance.start-game-preparation-after-preload-2",
+                            locations.size()));
             preload =
                     ArenaChunkPreloader.preload(
                                     plugin,
@@ -245,13 +254,19 @@ public abstract class BaseGameInstance {
                                     if (error != null)
                                         logGame(
                                                 Level.WARNING,
-                                                "区块",
-                                                "预热未完全成功，将使用已加载区块 | " + error.getMessage());
+                                                MessageConfig.codeText(
+                                                        "base-game-instance.start-game-preparation-after-preload-1"),
+                                                MessageConfig.codeText(
+                                                        "base-game-instance.start-game-preparation-after-preload-4",
+                                                        error.getMessage()));
                                     else if (!locations.isEmpty())
                                         logGame(
                                                 Level.INFO,
-                                                "区块",
-                                                "落地区域预热完成，区块票=" + startChunkTickets.size());
+                                                MessageConfig.codeText(
+                                                        "base-game-instance.start-game-preparation-after-preload-1"),
+                                                MessageConfig.codeText(
+                                                        "base-game-instance.start-game-preparation-after-preload-3",
+                                                        startChunkTickets.size()));
                                     coordinatedStartGate = null;
                                     // Every game enters preparation through this common gate. Reset
                                     // the actual
@@ -271,7 +286,8 @@ public abstract class BaseGameInstance {
     /** Selects physical sub-arenas for the next run without changing its shared map definition. */
     public final void prepareArenaSelection(@NotNull ArenaSelection selection) {
         if (getGameStageEnum() != GameStageEnum.WAITING) {
-            throw new IllegalStateException("比赛实例正在使用，不能修改子场地选择");
+            throw new IllegalStateException(
+                    MessageConfig.codeText("base-game-instance.prepare-arena-selection-1"));
         }
         arenaSelection = Objects.requireNonNull(selection);
     }
@@ -307,19 +323,22 @@ public abstract class BaseGameInstance {
 
     public void addPlayerPoints(UUID uuid, double points) {
         if (uuid == null) {
-            logGame(Level.WARNING, "积分", "忽略空玩家 UUID 的积分变更=" + formatPointChange(points));
+            logGame(
+                    Level.WARNING,
+                    MessageConfig.codeText("base-game-instance.add-player-points-1"),
+                    MessageConfig.codeText(
+                            "base-game-instance.add-player-points-2", formatPointChange(points)));
             return;
         }
         playerPoints.merge(uuid, points, Double::sum);
         logGame(
                 Level.INFO,
-                "积分",
-                "玩家="
-                        + plugin.getPlayerManager().getPlayerName(uuid)
-                        + " uuid="
-                        + uuid
-                        + " 变更="
-                        + formatPointChange(points));
+                MessageConfig.codeText("base-game-instance.add-player-points-1"),
+                MessageConfig.codeText(
+                        "base-game-instance.add-player-points-3",
+                        plugin.getPlayerManager().getPlayerName(uuid),
+                        uuid,
+                        formatPointChange(points)));
         ChampionshipPlayer championshipPlayer = plugin.getPlayerManager().getPlayer(uuid);
         if (championshipPlayer != null) championshipPlayer.sendActionBar("&e[+] " + points);
         Player online = Bukkit.getPlayer(uuid);
@@ -332,13 +351,12 @@ public abstract class BaseGameInstance {
             playerPoints.merge(uuid, (double) points, Double::sum);
             logGame(
                     Level.INFO,
-                    "积分",
-                    "玩家="
-                            + plugin.getPlayerManager().getPlayerName(uuid)
-                            + " uuid="
-                            + uuid
-                            + " 变更="
-                            + formatPointChange(points));
+                    MessageConfig.codeText("base-game-instance.add-player-points-1"),
+                    MessageConfig.codeText(
+                            "base-game-instance.add-player-points-3",
+                            plugin.getPlayerManager().getPlayerName(uuid),
+                            uuid,
+                            formatPointChange(points)));
             Player online = Bukkit.getPlayer(uuid);
             if (online != null && plugin.getSidebarManager() != null)
                 plugin.getSidebarManager().invalidate(online);
@@ -359,8 +377,11 @@ public abstract class BaseGameInstance {
         String formatted = LogText.formatGameLog(gameTypeEnum, area, stage, event, message);
         boolean importantFlow =
                 Level.INFO.equals(level)
-                        && "流程".equals(event)
-                        && (message.startsWith("游戏开始") || message.startsWith("游戏结束"));
+                        && MessageConfig.codeText("base-game-instance.reset-game-1").equals(event)
+                        && (message.startsWith(
+                                        MessageConfig.codeText("base-game-instance.log-game-1"))
+                                || message.startsWith(
+                                        MessageConfig.codeText("base-game-instance.log-game-2")));
         if (importantFlow && plugin.getLogManager() != null)
             plugin.getLogManager().important(formatted);
         else plugin.getLogger().log(level, formatted);
@@ -393,11 +414,12 @@ public abstract class BaseGameInstance {
                             if (failure != null || !Boolean.TRUE.equals(accepted))
                                 logGame(
                                         Level.SEVERE,
-                                        "积分",
-                                        "批量积分尚未确认持久化，请检查暂存重试日志 | failure="
-                                                + failure
-                                                + " | transactions="
-                                                + submissions);
+                                        MessageConfig.codeText(
+                                                "base-game-instance.add-player-points-1"),
+                                        MessageConfig.codeText(
+                                                "base-game-instance.add-player-points-to-database-1",
+                                                failure,
+                                                submissions));
                         });
         plugin.getRankManager().refreshAfterPendingPointWrites();
     }
@@ -441,7 +463,13 @@ public abstract class BaseGameInstance {
         synchronized (this) {
             previous = this.gameStageEnum;
             if (previous != gameStageEnum && !allowedStageTransition(previous, gameStageEnum)) {
-                logGame(Level.WARNING, "流程", "异常状态跳转 " + previous + " -> " + gameStageEnum);
+                logGame(
+                        Level.WARNING,
+                        MessageConfig.codeText("base-game-instance.reset-game-1"),
+                        MessageConfig.codeText(
+                                "base-game-instance.set-game-stage-enum-1",
+                                previous,
+                                gameStageEnum));
             }
             this.gameStageEnum = gameStageEnum;
         }
@@ -485,12 +513,18 @@ public abstract class BaseGameInstance {
 
         setGameStageEnum(GameStageEnum.END);
         getGameHandler().unRegister();
-        logGame(Level.INFO, "世界", "开始加载 " + getWorldName());
+        logGame(
+                Level.INFO,
+                MessageConfig.codeText("base-game-instance.load-map-1"),
+                MessageConfig.codeText("base-game-instance.load-map-2", getWorldName()));
 
         // Repair the published template and preserve the current world before reload deletes either
         // copy.
         if (!plugin.getWorldManager().prepareWorldForFirstLoad(getWorldName())) {
-            logGame(Level.SEVERE, "世界", "加载失败：首次加载前世界修复未完成 " + getWorldName());
+            logGame(
+                    Level.SEVERE,
+                    MessageConfig.codeText("base-game-instance.load-map-1"),
+                    MessageConfig.codeText("base-game-instance.load-map-3", getWorldName()));
             result.complete(false);
             return result;
         }
@@ -498,7 +532,10 @@ public abstract class BaseGameInstance {
         File target = plugin.getWorldManager().getWorldFolder(getWorldName());
         World loadedWorld = plugin.getServer().getWorld(getWorldName());
         if (loadedWorld != null && !plugin.getWorldManager().unloadWorld(getWorldName(), false)) {
-            logGame(Level.SEVERE, "世界", "加载失败：Bukkit 无法卸载 " + getWorldName());
+            logGame(
+                    Level.SEVERE,
+                    MessageConfig.codeText("base-game-instance.load-map-1"),
+                    MessageConfig.codeText("base-game-instance.load-map-4", getWorldName()));
             result.complete(false);
             return result;
         }
@@ -523,8 +560,11 @@ public abstract class BaseGameInstance {
                             if (error != null)
                                 logGame(
                                         Level.SEVERE,
-                                        "世界",
-                                        "加载任务异常 " + getWorldName() + " | " + error.getMessage());
+                                        MessageConfig.codeText("base-game-instance.load-map-1"),
+                                        MessageConfig.codeText(
+                                                "base-game-instance.load-map-5",
+                                                getWorldName(),
+                                                error.getMessage()));
                             result.complete(error == null && Boolean.TRUE.equals(success));
                         });
         return result;
@@ -541,17 +581,26 @@ public abstract class BaseGameInstance {
                 || !plugin.isLoaded()
                 || !plugin.isEnabled()) return false;
         if (!filesReady) {
-            logGame(Level.SEVERE, "世界", "加载失败：无法异步重建地图文件 " + getWorldName());
+            logGame(
+                    Level.SEVERE,
+                    MessageConfig.codeText("base-game-instance.load-map-1"),
+                    MessageConfig.codeText("base-game-instance.finish-map-load-1", getWorldName()));
             return false;
         }
         long filesReadyAt = System.nanoTime();
         if (!plugin.getWorldManager().loadWorld(getWorldName(), environment, false)) {
-            logGame(Level.SEVERE, "世界", "加载失败：Bukkit 无法加载 " + getWorldName());
+            logGame(
+                    Level.SEVERE,
+                    MessageConfig.codeText("base-game-instance.load-map-1"),
+                    MessageConfig.codeText("base-game-instance.finish-map-load-2", getWorldName()));
             return false;
         }
 
         if (!getGameConfig().reloadConfigurationChecked(plugin.getFolder())) {
-            logGame(Level.SEVERE, "配置", "地图配置重载失败，场地保持禁用 " + getWorldName());
+            logGame(
+                    Level.SEVERE,
+                    MessageConfig.codeText("base-game-instance.finish-map-load-3"),
+                    MessageConfig.codeText("base-game-instance.finish-map-load-4", getWorldName()));
             return false;
         }
         getGameHandler().register();
@@ -559,18 +608,13 @@ public abstract class BaseGameInstance {
         long finishedAt = System.nanoTime();
         logGame(
                 Level.INFO,
-                "世界",
-                "加载完成 "
-                        + getWorldName()
-                        + " | 主线程卸载="
-                        + elapsedMillis(startedAt, unloadedAt)
-                        + "ms"
-                        + " 异步文件="
-                        + elapsedMillis(unloadedAt, filesReadyAt)
-                        + "ms"
-                        + " 主线程加载="
-                        + elapsedMillis(filesReadyAt, finishedAt)
-                        + "ms");
+                MessageConfig.codeText("base-game-instance.load-map-1"),
+                MessageConfig.codeText(
+                        "base-game-instance.finish-map-load-5",
+                        getWorldName(),
+                        elapsedMillis(startedAt, unloadedAt),
+                        elapsedMillis(unloadedAt, filesReadyAt),
+                        elapsedMillis(filesReadyAt, finishedAt)));
         teleportAllSpectators(getSpectatorSpawnLocation());
         return true;
     }
@@ -598,7 +642,10 @@ public abstract class BaseGameInstance {
         if (getGameConfig().isWorldBindingPending()) {
             getGameHandler().register();
             setGameStageEnum(GameStageEnum.WAITING);
-            logGame(Level.INFO, "世界", "地图草稿尚未绑定世界，等待 prepare 设置");
+            logGame(
+                    Level.INFO,
+                    MessageConfig.codeText("base-game-instance.load-map-1"),
+                    MessageConfig.codeText("base-game-instance.load-published-map-or-draft-1"));
             return CompletableFuture.completedFuture(true);
         }
         File template = new File(new File(plugin.getDataFolder(), "maps"), getWorldName());
@@ -606,7 +653,12 @@ public abstract class BaseGameInstance {
 
         if (getGameConfig().isPrepareReady()) {
             getGameConfig().beginPrepareDraft();
-            logGame(Level.SEVERE, "世界", "已发布地图缺少模板，已降为草稿并禁止开赛：" + template.getPath());
+            logGame(
+                    Level.SEVERE,
+                    MessageConfig.codeText("base-game-instance.load-map-1"),
+                    MessageConfig.codeText(
+                            "base-game-instance.load-published-map-or-draft-2",
+                            template.getPath()));
         }
         return CompletableFuture.completedFuture(loadDraftWorld(environment));
     }
@@ -616,16 +668,26 @@ public abstract class BaseGameInstance {
         teleportAllSpectators(getLobbyLocation());
         setGameStageEnum(GameStageEnum.END);
         getGameHandler().unRegister();
-        logGame(Level.INFO, "世界", "加载 prepare 草稿 " + getWorldName());
+        logGame(
+                Level.INFO,
+                MessageConfig.codeText("base-game-instance.load-map-1"),
+                MessageConfig.codeText("base-game-instance.load-draft-world-1", getWorldName()));
 
         if (!plugin.getWorldManager().loadWorld(getWorldName(), environment, false)) {
-            logGame(Level.SEVERE, "世界", "草稿世界加载失败：" + getWorldName());
+            logGame(
+                    Level.SEVERE,
+                    MessageConfig.codeText("base-game-instance.load-map-1"),
+                    MessageConfig.codeText(
+                            "base-game-instance.load-draft-world-2", getWorldName()));
             return false;
         }
 
         getGameHandler().register();
         setGameStageEnum(GameStageEnum.WAITING);
-        logGame(Level.INFO, "世界", "草稿世界已就绪，等待 prepare 发布");
+        logGame(
+                Level.INFO,
+                MessageConfig.codeText("base-game-instance.load-map-1"),
+                MessageConfig.codeText("base-game-instance.load-draft-world-3"));
         return true;
     }
 
@@ -646,18 +708,27 @@ public abstract class BaseGameInstance {
     public CompletableFuture<Boolean> saveMap(World.Environment environment) {
         if (!Bukkit.isPrimaryThread()) return runOnMain(() -> saveMap(environment));
         if (!canSaveMap()) {
-            logGame(Level.WARNING, "世界", "保存被拒绝：同一地图仍有运行中的游戏实例");
+            logGame(
+                    Level.WARNING,
+                    MessageConfig.codeText("base-game-instance.load-map-1"),
+                    MessageConfig.codeText("base-game-instance.save-map-1"));
             return CompletableFuture.completedFuture(false);
         }
 
         setGameStageEnum(GameStageEnum.END);
-        logGame(Level.INFO, "世界", "开始保存 " + getWorldName());
+        logGame(
+                Level.INFO,
+                MessageConfig.codeText("base-game-instance.load-map-1"),
+                MessageConfig.codeText("base-game-instance.save-map-2", getWorldName()));
         teleportAllSpectators(getLobbyLocation());
 
         World editWorld = plugin.getServer().getWorld(getWorldName());
         if (editWorld == null) {
             setGameStageEnum(GameStageEnum.WAITING);
-            logGame(Level.WARNING, "世界", "保存失败：世界未加载 " + getWorldName());
+            logGame(
+                    Level.WARNING,
+                    MessageConfig.codeText("base-game-instance.load-map-1"),
+                    MessageConfig.codeText("base-game-instance.save-map-3", getWorldName()));
             return CompletableFuture.completedFuture(false);
         }
         for (Player player : editWorld.getPlayers()) {
@@ -668,7 +739,10 @@ public abstract class BaseGameInstance {
         // Unload world but not remove files
         if (!plugin.getWorldManager().unloadWorld(getWorldName(), true)) {
             setGameStageEnum(GameStageEnum.WAITING);
-            logGame(Level.SEVERE, "世界", "保存失败：Bukkit 无法卸载 " + getWorldName());
+            logGame(
+                    Level.SEVERE,
+                    MessageConfig.codeText("base-game-instance.load-map-1"),
+                    MessageConfig.codeText("base-game-instance.save-map-4", getWorldName()));
             return CompletableFuture.completedFuture(false);
         }
 
@@ -689,8 +763,11 @@ public abstract class BaseGameInstance {
                                                 if (!draftLoaded)
                                                     logGame(
                                                             Level.SEVERE,
-                                                            "世界",
-                                                            "发布失败后编辑世界也无法重新加载 " + getWorldName());
+                                                            MessageConfig.codeText(
+                                                                    "base-game-instance.load-map-1"),
+                                                            MessageConfig.codeText(
+                                                                    "base-game-instance.save-map-5",
+                                                                    getWorldName()));
                                                 return CompletableFuture.completedFuture(false);
                                             }
                                             return loadMap(environment)
@@ -706,13 +783,14 @@ public abstract class BaseGameInstance {
                                                                                     logGame(
                                                                                             Level
                                                                                                     .WARNING,
-                                                                                            "世界",
-                                                                                            "发布成功，但旧"
-                                                                                                + " revision"
-                                                                                                + " 清理失败"
-                                                                                                + " "
-                                                                                                    + backup
-                                                                                                            .getPath());
+                                                                                            MessageConfig
+                                                                                                    .codeText(
+                                                                                                            "base-game-instance.load-map-1"),
+                                                                                            MessageConfig
+                                                                                                    .codeText(
+                                                                                                            "base-game-instance.save-map-6",
+                                                                                                            backup
+                                                                                                                    .getPath()));
                                                                                 return true;
                                                                             });
                                                                 return rollbackPublishedTemplate(
@@ -727,7 +805,11 @@ public abstract class BaseGameInstance {
     private boolean stagePublishedTemplate(File source, File target, File staging, File backup) {
         if (!plugin.getWorldManager().copyWorldFiles(source, staging)) {
             plugin.getWorldManager().deleteWorldFiles(staging);
-            logGame(Level.SEVERE, "世界", "发布失败：无法写入暂存模板，旧版本未改变 " + getWorldName());
+            logGame(
+                    Level.SEVERE,
+                    MessageConfig.codeText("base-game-instance.load-map-1"),
+                    MessageConfig.codeText(
+                            "base-game-instance.stage-published-template-1", getWorldName()));
             return false;
         }
         try {
@@ -739,13 +821,27 @@ public abstract class BaseGameInstance {
                 if (!target.exists() && backup.exists())
                     java.nio.file.Files.move(backup.toPath(), target.toPath());
             } catch (Exception rollback) {
-                logGame(Level.SEVERE, "世界", "发布回滚失败：" + rollback.getMessage());
+                logGame(
+                        Level.SEVERE,
+                        MessageConfig.codeText("base-game-instance.load-map-1"),
+                        MessageConfig.codeText(
+                                "base-game-instance.stage-published-template-2",
+                                rollback.getMessage()));
             }
-            logGame(Level.SEVERE, "世界", "发布失败：模板切换失败，编辑世界已保留 | " + exception.getMessage());
+            logGame(
+                    Level.SEVERE,
+                    MessageConfig.codeText("base-game-instance.load-map-1"),
+                    MessageConfig.codeText(
+                            "base-game-instance.stage-published-template-3",
+                            exception.getMessage()));
             return false;
         }
         if (!plugin.getWorldManager().deleteWorldFiles(source))
-            logGame(Level.WARNING, "世界", "新模板已切换，但编辑世界目录清理不完整 " + source.getPath());
+            logGame(
+                    Level.WARNING,
+                    MessageConfig.codeText("base-game-instance.load-map-1"),
+                    MessageConfig.codeText(
+                            "base-game-instance.stage-published-template-4", source.getPath()));
         return true;
     }
 
@@ -754,7 +850,10 @@ public abstract class BaseGameInstance {
         if (!backup.exists()) return CompletableFuture.completedFuture(false);
         World loadedWorld = plugin.getServer().getWorld(getWorldName());
         if (loadedWorld != null && !plugin.getWorldManager().unloadWorld(getWorldName(), false)) {
-            logGame(Level.SEVERE, "世界", "新 revision 加载失败且无法卸载残留世界，未执行文件回滚");
+            logGame(
+                    Level.SEVERE,
+                    MessageConfig.codeText("base-game-instance.load-map-1"),
+                    MessageConfig.codeText("base-game-instance.rollback-published-template-1"));
             return CompletableFuture.completedFuture(false);
         }
         return runAsyncFileOperation(
@@ -768,8 +867,10 @@ public abstract class BaseGameInstance {
                             } catch (Exception exception) {
                                 logGame(
                                         Level.SEVERE,
-                                        "世界",
-                                        "新 revision 加载失败且回滚失败：" + exception.getMessage());
+                                        MessageConfig.codeText("base-game-instance.load-map-1"),
+                                        MessageConfig.codeText(
+                                                "base-game-instance.rollback-published-template-3",
+                                                exception.getMessage()));
                                 return false;
                             }
                         })
@@ -784,9 +885,10 @@ public abstract class BaseGameInstance {
                                                             ignored -> {
                                                                 logGame(
                                                                         Level.SEVERE,
-                                                                        "世界",
-                                                                        "新 revision"
-                                                                            + " 加载失败，已回滚到上一发布版本");
+                                                                        MessageConfig.codeText(
+                                                                                "base-game-instance.load-map-1"),
+                                                                        MessageConfig.codeText(
+                                                                                "base-game-instance.rollback-published-template-2"));
                                                                 return false;
                                                             });
                                         }));
@@ -805,12 +907,22 @@ public abstract class BaseGameInstance {
                         try {
                             result.complete(operation.getAsBoolean());
                         } catch (Throwable throwable) {
-                            logGame(Level.SEVERE, "世界", "异步文件任务异常 | " + throwable.getMessage());
+                            logGame(
+                                    Level.SEVERE,
+                                    MessageConfig.codeText("base-game-instance.load-map-1"),
+                                    MessageConfig.codeText(
+                                            "base-game-instance.run-async-file-operation-2",
+                                            throwable.getMessage()));
                             result.complete(false);
                         }
                     });
         } catch (RuntimeException exception) {
-            logGame(Level.SEVERE, "世界", "无法提交异步文件任务 | " + exception.getMessage());
+            logGame(
+                    Level.SEVERE,
+                    MessageConfig.codeText("base-game-instance.load-map-1"),
+                    MessageConfig.codeText(
+                            "base-game-instance.run-async-file-operation-1",
+                            exception.getMessage()));
             result.complete(false);
         }
         return result;
@@ -921,7 +1033,10 @@ public abstract class BaseGameInstance {
         if (bossBar != null) {
             bossBar.setTitle(LegacyText.translateColorCodes(title));
         } else {
-            logGame(Level.WARNING, "BossBar", "未找到 " + name);
+            logGame(
+                    Level.WARNING,
+                    "BossBar",
+                    MessageConfig.codeText("base-game-instance.set-boss-bar-1", name));
         }
     }
 
@@ -932,7 +1047,10 @@ public abstract class BaseGameInstance {
         if (bossBar != null) {
             bossBar.addPlayer(player);
         } else {
-            logGame(Level.WARNING, "BossBar", "未找到 " + name);
+            logGame(
+                    Level.WARNING,
+                    "BossBar",
+                    MessageConfig.codeText("base-game-instance.set-boss-bar-1", name));
         }
     }
 
@@ -941,7 +1059,10 @@ public abstract class BaseGameInstance {
         if (bossBar != null) {
             bossBar.removePlayer(player);
         } else {
-            logGame(Level.WARNING, "BossBar", "未找到 " + name);
+            logGame(
+                    Level.WARNING,
+                    "BossBar",
+                    MessageConfig.codeText("base-game-instance.set-boss-bar-1", name));
         }
     }
 
@@ -950,7 +1071,10 @@ public abstract class BaseGameInstance {
         if (bossBar != null) {
             bossBar.setProgress(progress);
         } else {
-            logGame(Level.WARNING, "BossBar", "未找到 " + name);
+            logGame(
+                    Level.WARNING,
+                    "BossBar",
+                    MessageConfig.codeText("base-game-instance.set-boss-bar-1", name));
         }
     }
 
@@ -1252,7 +1376,10 @@ public abstract class BaseGameInstance {
     protected void announceGamePreparation(String message, String title, String subtitle) {
         sendMessageToAllGamePlayers(message);
         sendTitleToAllGamePlayers(title, subtitle);
-        logGame(Level.INFO, "流程", "进入场地准备");
+        logGame(
+                Level.INFO,
+                MessageConfig.codeText("base-game-instance.reset-game-1"),
+                MessageConfig.codeText("base-game-instance.announce-game-preparation-1"));
     }
 
     protected void showPreparationCountdown(int seconds) {
@@ -1289,7 +1416,10 @@ public abstract class BaseGameInstance {
         setGameStageEnum(GameStageEnum.COUNTDOWN);
         int duration = Math.max(0, countdownSeconds);
         countdownBlockDisappearance.start(duration);
-        logGame(Level.INFO, "流程", "开始 " + duration + " 秒开赛倒计时");
+        logGame(
+                Level.INFO,
+                MessageConfig.codeText("base-game-instance.reset-game-1"),
+                MessageConfig.codeText("base-game-instance.start-final-countdown-1", duration));
         final int[] remaining = {duration};
 
         finalCountdownTask =
@@ -1316,8 +1446,10 @@ public abstract class BaseGameInstance {
                             } catch (Throwable failure) {
                                 logGame(
                                         Level.SEVERE,
-                                        "流程",
-                                        "开赛回调异常，终止并恢复场地 | " + failure.getMessage());
+                                        MessageConfig.codeText("base-game-instance.reset-game-1"),
+                                        MessageConfig.codeText(
+                                                "base-game-instance.start-final-countdown-2",
+                                                failure.getMessage()));
                                 abortAndReset();
                                 return;
                             }
@@ -1403,13 +1535,19 @@ public abstract class BaseGameInstance {
         sendActionBarToAllGamePlayers(
                 MessageConfig.GAME_START_ACTION_BAR.replace("%game%", gameTypeEnum.toString()));
         sendTitleToAllGamePlayers(title, subtitle);
-        logGame(Level.INFO, "流程", "游戏开始");
+        logGame(
+                Level.INFO,
+                MessageConfig.codeText("base-game-instance.reset-game-1"),
+                MessageConfig.codeText("base-game-instance.log-game-1"));
     }
 
     protected void announceGameEnd(String title, String subtitle) {
         clearBossBars();
         if (settlementSuppressed) {
-            logGame(Level.INFO, "流程", "本场已作废，不执行结算公告");
+            logGame(
+                    Level.INFO,
+                    MessageConfig.codeText("base-game-instance.reset-game-1"),
+                    MessageConfig.codeText("base-game-instance.announce-game-end-1"));
             return;
         }
         sendActionBarToAllGamePlayers(
@@ -1423,7 +1561,10 @@ public abstract class BaseGameInstance {
                         ? MessageConfig.GAME_ROUND_COMPLETE_TITLE
                         : MessageConfig.GAME_ROUND_END_TITLE;
         sendTitleToAllGamePlayers(completionTitle, subtitle);
-        logGame(Level.INFO, "流程", "游戏结束，开始结算");
+        logGame(
+                Level.INFO,
+                MessageConfig.codeText("base-game-instance.reset-game-1"),
+                MessageConfig.codeText("base-game-instance.announce-game-end-2"));
     }
 
     /** Emits a normal completion event only when this run is actually being settled. */
@@ -1515,7 +1656,9 @@ public abstract class BaseGameInstance {
     public void handleSpectatorJoin(@NotNull PlayerJoinEvent event) {
         Player player = event.getPlayer();
         if (isSpectator(player)) {
-            teleportSpectatorAsync(player, getSpectatorSpawnLocation());
+            teleportSpectatorAsync(
+                    player,
+                    plugin.getGameManager().getSpectatorManager().defaultDestination(player, this));
         }
     }
 
@@ -1526,7 +1669,9 @@ public abstract class BaseGameInstance {
     }
 
     public void addSpectator(@NotNull Player player) {
-        addSpectator(player, getSpectatorSpawnLocation());
+        addSpectator(
+                player,
+                plugin.getGameManager().getSpectatorManager().defaultDestination(player, this));
     }
 
     /**
@@ -1563,7 +1708,13 @@ public abstract class BaseGameInstance {
                         success -> {
                             if (success) return;
                             plugin.getGameManager().leaveSpectating(player);
-                            logGame(Level.WARNING, "观战", "异步传送失败，已退出观战 | 玩家=" + player.getName());
+                            logGame(
+                                    Level.WARNING,
+                                    MessageConfig.codeText(
+                                            "base-game-instance.teleport-spectator-async-1"),
+                                    MessageConfig.codeText(
+                                            "base-game-instance.teleport-spectator-async-2",
+                                            player.getName()));
                         });
     }
 

@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.game.riptiderush.course;
 
 import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptideQuestion;
 import ink.ziip.championshipscore.api.game.riptiderush.model.RiptideStageKind;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import java.util.List;
 import java.util.Random;
@@ -238,19 +239,31 @@ public record RiptideCoursePlan(
 
         public String displayName() {
             return sweep != 0
-                    ? (sideMath() ? "侧向+解题" : "侧向")
-                            + sideWalls.size()
-                            + "连墙（"
-                            + sideWalls.stream()
-                                    .map(w -> w.direction() > 0 ? "左" : "右")
-                                    .collect(java.util.stream.Collectors.joining("→"))
-                            + "）"
+                    ? MessageConfig.codeText(
+                            "riptide-course-plan.display-name-7",
+                            (sideMath()
+                                            ? MessageConfig.codeText(
+                                                    "riptide-course-plan.display-name-4")
+                                            : MessageConfig.codeText(
+                                                    "riptide-course-plan.display-name-3"))
+                                    + sideWalls.size(),
+                            sideWalls.stream()
+                                    .map(
+                                            w ->
+                                                    w.direction() > 0
+                                                            ? MessageConfig.codeText(
+                                                                    "riptide-course-plan.display-name-6")
+                                                            : MessageConfig.codeText(
+                                                                    "riptide-course-plan.display-name-5"))
+                                    .collect(java.util.stream.Collectors.joining("→")))
                     : template.name()
                             + (wallGroup == 0
                                     ? ""
                                     : (type() == RiptideLevelType.MATH
-                                            ? " • 第" + beat + "道"
-                                            : " • 连墙第" + beat + "面"));
+                                            ? MessageConfig.codeText(
+                                                    "riptide-course-plan.display-name-2", beat)
+                                            : MessageConfig.codeText(
+                                                    "riptide-course-plan.display-name-1", beat)));
         }
 
         public int extent() {

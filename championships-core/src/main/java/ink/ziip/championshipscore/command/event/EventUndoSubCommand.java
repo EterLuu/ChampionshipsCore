@@ -15,7 +15,10 @@ import java.util.List;
 
 public final class EventUndoSubCommand extends BaseSubCommand {
     public EventUndoSubCommand() {
-        super("undo", "撤销最近正式比赛的轮次与成绩", "/cc event undo --confirm");
+        super(
+                "undo",
+                MessageConfig.codeText("event-undo-sub-command.constructor-1"),
+                "/cc event undo --confirm");
     }
 
     @Override

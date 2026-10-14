@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.game.area.rename;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.buildmart.BuildMartManager;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.util.world.WorldManager;
 
 import org.bukkit.Bukkit;
@@ -58,21 +59,28 @@ final class BuildMartWorldRename {
 
         String newWorldName = worldNameFor(newMapName);
         if (!WorldManager.isValidWorldName(newWorldName)) {
-            throw new IllegalStateException("地图名无法生成有效的 Build Mart 世界名：" + newWorldName);
+            throw new IllegalStateException(
+                    MessageConfig.codeText("build-mart-world-rename.validate-1", newWorldName));
         }
         WorldManager worldManager = plugin.getWorldManager();
         if (Bukkit.getWorld(newWorldName) != null
                 || worldManager.getWorldFolder(newWorldName).exists()) {
-            throw new IllegalStateException("目标 Build Mart 世界已存在：" + newWorldName);
+            throw new IllegalStateException(
+                    MessageConfig.codeText("build-mart-world-rename.validate-2", newWorldName));
         }
         if (!worldManager.getWorldFolder(expectedOldWorld).isDirectory()) {
-            throw new IllegalStateException("Build Mart 世界目录不存在：" + expectedOldWorld);
+            throw new IllegalStateException(
+                    MessageConfig.codeText("build-mart-world-rename.validate-3", expectedOldWorld));
         }
         for (DirectoryMove move : sidecarMoves(plugin, expectedOldWorld, newWorldName)) {
             if (move.newPath().exists())
-                throw new IllegalStateException("目标世界关联目录已存在：" + move.newPath().getPath());
+                throw new IllegalStateException(
+                        MessageConfig.codeText(
+                                "build-mart-world-rename.validate-4", move.newPath().getPath()));
             if (move.oldPath().exists() && !move.oldPath().isDirectory())
-                throw new IllegalStateException("世界关联路径不是目录：" + move.oldPath().getPath());
+                throw new IllegalStateException(
+                        MessageConfig.codeText(
+                                "build-mart-world-rename.validate-5", move.oldPath().getPath()));
         }
         return new Plan(expectedOldWorld, newWorldName, true);
     }
@@ -92,11 +100,14 @@ final class BuildMartWorldRename {
             @NotNull String newWorldName)
             throws Exception {
         World oldWorld = Bukkit.getWorld(oldWorldName);
-        if (oldWorld == null) throw new IllegalStateException("Build Mart 世界未加载：" + oldWorldName);
+        if (oldWorld == null)
+            throw new IllegalStateException(
+                    MessageConfig.codeText("build-mart-world-rename.rename-1", oldWorldName));
         World.Environment environment = oldWorld.getEnvironment();
         WorldManager worldManager = plugin.getWorldManager();
         if (!worldManager.unloadWorld(oldWorldName, true))
-            throw new IllegalStateException("无法卸载 Build Mart 世界：" + oldWorldName);
+            throw new IllegalStateException(
+                    MessageConfig.codeText("build-mart-world-rename.rename-2", oldWorldName));
 
         List<DirectoryMove> moved = new ArrayList<>();
         try {
@@ -110,7 +121,8 @@ final class BuildMartWorldRename {
                 moveRequired(worldManager, move.oldPath(), move.newPath(), moved);
             }
             if (!worldManager.loadWorld(newWorldName, environment, false))
-                throw new IllegalStateException("无法加载改名后的 Build Mart 世界：" + newWorldName);
+                throw new IllegalStateException(
+                        MessageConfig.codeText("build-mart-world-rename.rename-3", newWorldName));
             return new State(oldWorldName, newWorldName, environment, List.copyOf(moved));
         } catch (Exception exception) {
             restoreAfterFailure(plugin, oldWorldName, newWorldName, environment, moved);
@@ -122,11 +134,16 @@ final class BuildMartWorldRename {
         WorldManager worldManager = plugin.getWorldManager();
         World renamed = Bukkit.getWorld(state.newWorldName());
         if (renamed != null && !worldManager.unloadWorld(state.newWorldName(), false))
-            throw new IllegalStateException("无法卸载改名后的 Build Mart 世界：" + state.newWorldName());
+            throw new IllegalStateException(
+                    MessageConfig.codeText(
+                            "build-mart-world-rename.rollback-1", state.newWorldName()));
         Exception failure = moveBack(worldManager, state.directories());
         if (!worldManager.loadWorld(state.oldWorldName(), state.environment(), false)
                 && failure == null)
-            failure = new IllegalStateException("无法重新加载原 Build Mart 世界：" + state.oldWorldName());
+            failure =
+                    new IllegalStateException(
+                            MessageConfig.codeText(
+                                    "build-mart-world-rename.rollback-2", state.oldWorldName()));
         if (failure != null) throw failure;
     }
 
@@ -138,7 +155,9 @@ final class BuildMartWorldRename {
         if (!oldPath.isDirectory()
                 || newPath.exists()
                 || !worldManager.moveDirectory(oldPath, newPath))
-            throw new IllegalStateException("无法移动世界关联目录：" + oldPath.getPath());
+            throw new IllegalStateException(
+                    MessageConfig.codeText(
+                            "build-mart-world-rename.move-required-1", oldPath.getPath()));
         moved.add(new DirectoryMove(oldPath, newPath));
     }
 
@@ -162,7 +181,11 @@ final class BuildMartWorldRename {
             DirectoryMove move = moved.get(index);
             if (move.oldPath().exists() || !move.newPath().exists()) continue;
             if (!worldManager.moveDirectory(move.newPath(), move.oldPath()) && failure == null)
-                failure = new IllegalStateException("无法恢复世界关联目录：" + move.oldPath().getPath());
+                failure =
+                        new IllegalStateException(
+                                MessageConfig.codeText(
+                                        "build-mart-world-rename.move-back-1",
+                                        move.oldPath().getPath()));
         }
         return failure;
     }

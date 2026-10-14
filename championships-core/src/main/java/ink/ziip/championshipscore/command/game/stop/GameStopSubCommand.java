@@ -23,7 +23,10 @@ import java.util.Objects;
  */
 public final class GameStopSubCommand extends BaseSubCommand {
     public GameStopSubCommand() {
-        super("stop", "精确结束一个场地实例（已开赛则正常结算）", "/cc game stop <游戏> <场地> <实例> --confirm");
+        super(
+                "stop",
+                MessageConfig.codeText("game-stop-sub-command.constructor-1"),
+                MessageConfig.codeText("game-stop-sub-command.constructor-2"));
     }
 
     @Override
@@ -61,7 +64,7 @@ public final class GameStopSubCommand extends BaseSubCommand {
                             .distinct()
                             .sorted()
                             .reduce((left, right) -> left + ", " + right)
-                            .orElse("无");
+                            .orElse(MessageConfig.codeText("game-stop-sub-command.on-command-1"));
             CoreMessages.sendAdminError(
                     sender,
                     MessageConfig.GAME_STOP_INSTANCE_MISSING
@@ -84,8 +87,11 @@ public final class GameStopSubCommand extends BaseSubCommand {
                                 game,
                                 area,
                                 target.getGameStageEnum().name(),
-                                "管理员停止",
-                                "操作人=" + sender.getName() + " 实例=" + token));
+                                MessageConfig.codeText("game-stop-sub-command.on-command-2"),
+                                MessageConfig.codeText(
+                                        "game-stop-sub-command.on-command-3",
+                                        sender.getName(),
+                                        token)));
         plugin.getGameManager()
                 .stopGameInstance(target, auditReason)
                 .whenComplete(

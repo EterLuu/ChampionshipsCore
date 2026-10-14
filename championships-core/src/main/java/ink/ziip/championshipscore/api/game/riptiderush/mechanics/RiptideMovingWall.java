@@ -11,6 +11,7 @@ import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideCourseGener
 import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideCourseGeometry;
 import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideCoursePlan;
 import ink.ziip.championshipscore.api.game.riptiderush.editor.RiptideWorkshop;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import org.bukkit.Material;
 
@@ -67,7 +68,8 @@ final class RiptideMovingWall {
                         || dimensions.y() != blueprint.height()
                         || (dimensions.z() != 7
                                 && dimensions.z() != RiptideWorkshop.BUILDING_EXTENT * 2 + 1))
-                    throw new IllegalArgumentException("侧墙建筑尺寸与保存信息不符");
+                    throw new IllegalArgumentException(
+                            MessageConfig.codeText("riptide-moving-wall.compile-2"));
                 for (var position : clipboard.getRegion()) {
                     var block = clipboard.getFullBlock(position);
                     if (block.getBlockType().getMaterial().isAir()) continue;
@@ -75,7 +77,8 @@ final class RiptideMovingWall {
                     add(result, transform, relative, block);
                 }
             } catch (IOException failure) {
-                throw new IllegalStateException("读取侧墙建筑失败", failure);
+                throw new IllegalStateException(
+                        MessageConfig.codeText("riptide-moving-wall.compile-1"), failure);
             }
         } else {
             var level =
@@ -89,7 +92,9 @@ final class RiptideMovingWall {
                         BukkitAdapter.adapt(cell.material().createBlockData()).toBaseBlock());
         }
         result = new ArrayList<>(fitStoppedDeck(g, result));
-        if (result.isEmpty()) throw new IllegalArgumentException("侧墙建筑在停船甲板范围内不能为空");
+        if (result.isEmpty())
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-moving-wall.compile-3"));
         // Animate the leading cells first: a trailing cell's temporary piston must not erase
         // a moving entity that was already created for a cell in front of it.
         result.sort(leadingFirst(-wall.direction() * g.stepZ(), wall.direction() * g.stepX()));

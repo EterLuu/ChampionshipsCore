@@ -246,12 +246,12 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
                     addTeamDeathPlayer(championshipTeam);
                     logGame(
                             Level.INFO,
-                            "玩家",
-                            "玩家="
-                                    + playerManager.getPlayerName(uuid)
-                                    + " uuid="
-                                    + uuid
-                                    + " 状态=离线，计入淘汰");
+                            MessageConfig.codeText(
+                                    "hoty-cody-dusky-team-area.start-game-progress-1"),
+                            MessageConfig.codeText(
+                                    "hoty-cody-dusky-team-area.start-game-progress-2",
+                                    playerManager.getPlayerName(uuid),
+                                    uuid));
                 }
             }
         }
@@ -279,7 +279,8 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
                                             .replace(
                                                     "%holder%",
                                                     codyHolders.isEmpty()
-                                                            ? "待定"
+                                                            ? MessageConfig.codeText(
+                                                                    "hoty-cody-dusky-team-area.begin-game-progress-1")
                                                             : codyHolders.values().stream()
                                                                     .map(
                                                                             CoreMessages
@@ -502,7 +503,13 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
         teamDeathPlayers.put(
                 championshipTeam, teamDeathPlayers.getOrDefault(championshipTeam, 0) + 1);
         Integer deathPlayer = teamDeathPlayers.get(championshipTeam);
-        logGame(Level.INFO, "淘汰", "队伍=" + championshipTeam.getName() + " 已淘汰人数=" + deathPlayer);
+        logGame(
+                Level.INFO,
+                MessageConfig.codeText("hoty-cody-dusky-team-area.add-team-death-player-1"),
+                MessageConfig.codeText(
+                        "hoty-cody-dusky-team-area.add-team-death-player-2",
+                        championshipTeam.getName(),
+                        deathPlayer));
         if (deathPlayer != null) {
             if (deathPlayer == championshipTeam.getMembers().size()) {
                 sendMessageToAllGamePlayers(

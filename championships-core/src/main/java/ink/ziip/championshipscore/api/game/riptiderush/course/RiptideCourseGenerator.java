@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.riptiderush.course;
 
 import ink.ziip.championshipscore.api.game.riptiderush.config.RiptideRushConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -72,7 +73,9 @@ public final class RiptideCourseGenerator {
         var geometry = config.resolveGeometry();
         World world = config.getStartPoint().getWorld();
         if (world == null || isGenerating(world))
-            return CompletableFuture.failedFuture(new IllegalStateException("地图正在生成，请稍候"));
+            return CompletableFuture.failedFuture(
+                    new IllegalStateException(
+                            MessageConfig.codeText("riptide-course-generator.schedule-1")));
         var future = new CompletableFuture<Boolean>();
         try {
             int side = geometry.halfWidth() + Math.max(2, config.getObstacleMargin());

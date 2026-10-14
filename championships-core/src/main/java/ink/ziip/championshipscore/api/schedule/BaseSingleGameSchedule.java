@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.game.model.GameRunMode;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
@@ -104,7 +105,8 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
                                 handleStartResult(
                                         generation,
                                         failure == null && Boolean.TRUE.equals(started),
-                                        "首轮启动失败，执行端未就绪或参赛者不可用"));
+                                        MessageConfig.codeText(
+                                                "base-single-game-schedule.start-round-1")));
     }
 
     public void endSchedule() {
@@ -169,7 +171,8 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
                                                                 failure == null
                                                                         && Boolean.TRUE.equals(
                                                                                 started),
-                                                                "下一轮启动失败，已释放轮间玩家"));
+                                                                MessageConfig.codeText(
+                                                                        "base-single-game-schedule.start-next-round-countdown-1")));
                             }
                             timer--;
                         },
@@ -186,7 +189,14 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
         if (started) return;
         plugin.getLogger()
                 .warning(
-                        LogText.formatGameLog(gameTypeEnum, getArea(), "调度", "中止", failureMessage));
+                        LogText.formatGameLog(
+                                gameTypeEnum,
+                                getArea(),
+                                MessageConfig.codeText(
+                                        "base-single-game-schedule.handle-start-result-1"),
+                                MessageConfig.codeText(
+                                        "base-single-game-schedule.handle-start-result-2"),
+                                failureMessage));
         endSchedule();
     }
 

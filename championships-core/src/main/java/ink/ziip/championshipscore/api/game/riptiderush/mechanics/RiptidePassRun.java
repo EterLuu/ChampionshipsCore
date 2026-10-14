@@ -124,7 +124,10 @@ public final class RiptidePassRun implements AutoCloseable {
                         (tick < RiptideSideSweep.WARNING_TICKS ? warning + " §f• " : "")
                                 + display.subtitle()
                                 + " §f• "
-                                + String.format(Locale.ROOT, "%.1f秒后判题", remaining / 20D);
+                                + String.format(
+                                        Locale.ROOT,
+                                        MessageConfig.codeText("riptide-pass-run.tick-1"),
+                                        remaining / 20D);
             }
             for (var player : players) {
                 titleRecipients.add(player);
@@ -205,7 +208,8 @@ public final class RiptidePassRun implements AutoCloseable {
                 if (facing == null && cell.block().getNbt() != null) {
                     if (!adapted.setBlock(
                             BlockVector3.at(x, y, z), cell.block(), SideEffectSet.none()))
-                        throw new IllegalStateException("放置侧墙方块实体失败");
+                        throw new IllegalStateException(
+                                MessageConfig.codeText("riptide-pass-run.render-1"));
                     block.getState().update(true, false);
                 }
             }

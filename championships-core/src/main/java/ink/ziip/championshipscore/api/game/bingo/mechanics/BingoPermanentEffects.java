@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.game.bingo.mechanics;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.bingo.runtime.BingoArea;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoPermanentEffectService;
 
@@ -48,7 +49,13 @@ public final class BingoPermanentEffects {
                                 .getLogger()
                                 .warning(
                                         LogText.formatGameLog(
-                                                GameTypeEnum.Bingo, "-", "加载", "配置", warning)));
+                                                GameTypeEnum.Bingo,
+                                                "-",
+                                                MessageConfig.codeText(
+                                                        "bingo-permanent-effects.parse-1"),
+                                                MessageConfig.codeText(
+                                                        "bingo-permanent-effects.parse-2"),
+                                                warning)));
     }
 
     /**

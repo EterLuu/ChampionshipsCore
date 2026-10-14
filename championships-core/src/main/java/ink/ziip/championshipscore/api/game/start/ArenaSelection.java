@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.start;
 
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -11,7 +13,7 @@ public record ArenaSelection(List<Integer> indices) {
         indices = List.copyOf(indices);
         if (indices.stream().anyMatch(index -> index < 0)
                 || new HashSet<>(indices).size() != indices.size()) {
-            throw new IllegalArgumentException("子场地编号必须为正整数且不能重复");
+            throw new IllegalArgumentException(MessageConfig.codeText("arena-selection.text-1"));
         }
     }
 
@@ -28,7 +30,8 @@ public record ArenaSelection(List<Integer> indices) {
                 result.add(Integer.parseInt(token) - 1);
             }
         } catch (NumberFormatException exception) {
-            throw new IllegalArgumentException("子场地使用 all 或从 1 开始的编号，例如 1、1,3", exception);
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("arena-selection.parse-1"), exception);
         }
         return new ArenaSelection(result);
     }
@@ -38,9 +41,11 @@ public record ArenaSelection(List<Integer> indices) {
     }
 
     public List<Integer> resolve(int count) {
-        if (count < 1) throw new IllegalArgumentException("地图没有可用子场地");
+        if (count < 1)
+            throw new IllegalArgumentException(MessageConfig.codeText("arena-selection.resolve-1"));
         if (indices.stream().anyMatch(index -> index >= count)) {
-            throw new IllegalArgumentException("子场地编号超出范围；可用编号为 1–" + count);
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("arena-selection.resolve-2", count));
         }
         return automatic() ? IntStream.range(0, count).boxed().toList() : indices;
     }

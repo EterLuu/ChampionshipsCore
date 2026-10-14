@@ -19,6 +19,7 @@ import ink.ziip.championshipscore.api.visibility.PlayerVisibilityManager;
 import ink.ziip.championshipscore.api.vote.VoteManager;
 import ink.ziip.championshipscore.command.CommandManager;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.manager.ConfigurationManager;
 import ink.ziip.championshipscore.database.DatabaseManager;
 import ink.ziip.championshipscore.integration.papi.PlaceholderManager;
@@ -126,10 +127,10 @@ public final class ChampionshipsCore extends JavaPlugin {
             String message =
                     LogText.formatModuleLog(
                             "Bootstrap",
-                            "依赖",
-                            "缺少必要插件="
-                                    + String.join(", ", missingDependencies)
-                                    + "，ChampionshipsCore 已关闭");
+                            MessageConfig.codeText("championships-core.on-enable-1"),
+                            MessageConfig.codeText(
+                                    "championships-core.on-enable-2",
+                                    String.join(", ", missingDependencies)));
             if (logManager != null) logManager.important(message);
             else getLogger().severe(message);
             Bukkit.getPluginManager().disablePlugin(this);
@@ -192,7 +193,9 @@ public final class ChampionshipsCore extends JavaPlugin {
             if (logManager != null)
                 logManager.important(
                         LogText.formatModuleLog(
-                                "Bootstrap", "数据库", "数据库初始化或迁移失败，ChampionshipsCore 已关闭"));
+                                "Bootstrap",
+                                MessageConfig.codeText("championships-core.finish-bootstrap-1"),
+                                MessageConfig.codeText("championships-core.finish-bootstrap-2")));
             getLogger().log(Level.SEVERE, "Database bootstrap failed", failure);
             Bukkit.getPluginManager().disablePlugin(this);
             return;
@@ -247,7 +250,8 @@ public final class ChampionshipsCore extends JavaPlugin {
                             LogText.formatModuleLog(
                                     "Security",
                                     "OfflineMode",
-                                    "服务器处于 offline-mode；必须仅允许可信代理访问后端端口，并由代理或认证层完成可信身份校验"));
+                                    MessageConfig.codeText(
+                                            "championships-core.finish-manager-bootstrap-1")));
         }
 
         for (org.bukkit.entity.Player player : getServer().getOnlinePlayers())
@@ -257,7 +261,11 @@ public final class ChampionshipsCore extends JavaPlugin {
         pendingNameChanges.clear();
         queuedNameChanges.forEach(this::handlePlayerNameChange);
         String readyMessage =
-                LogText.formatModuleLog("Bootstrap", "启动", "加载完成 | 模式=" + CCConfig.MODE);
+                LogText.formatModuleLog(
+                        "Bootstrap",
+                        MessageConfig.codeText("championships-core.finish-manager-bootstrap-2"),
+                        MessageConfig.codeText(
+                                "championships-core.finish-manager-bootstrap-3", CCConfig.MODE));
         if (logManager != null) logManager.important(readyMessage);
         else getLogger().log(Level.INFO, readyMessage);
     }
@@ -299,7 +307,11 @@ public final class ChampionshipsCore extends JavaPlugin {
         if (glowingEntities != null) glowingEntities.disable();
 
         if (logManager != null) {
-            logManager.important(LogText.formatModuleLog("Bootstrap", "停止", "插件已安全卸载"));
+            logManager.important(
+                    LogText.formatModuleLog(
+                            "Bootstrap",
+                            MessageConfig.codeText("championships-core.on-disable-1"),
+                            MessageConfig.codeText("championships-core.on-disable-2")));
             logManager.close();
             logManager = null;
         }

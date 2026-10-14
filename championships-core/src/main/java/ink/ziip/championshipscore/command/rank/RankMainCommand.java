@@ -15,7 +15,7 @@ import java.util.Arrays;
 
 public class RankMainCommand extends BaseMainCommand {
     public RankMainCommand() {
-        super("rank", "查看积分与排行", PLAYER_PERMISSION);
+        super("rank", MessageConfig.codeText("rank-main-command.constructor-1"), PLAYER_PERMISSION);
         addSubCommand(new PlayerBoardSubCommand());
         addSubCommand(new TeamBoardSubCommand());
         addSubCommand(new GameWeightInfoSubCommand());

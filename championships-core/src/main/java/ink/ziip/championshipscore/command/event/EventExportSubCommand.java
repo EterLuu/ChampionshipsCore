@@ -18,7 +18,10 @@ import java.util.List;
 
 public final class EventExportSubCommand extends BaseSubCommand {
     public EventExportSubCommand() {
-        super("export", "导出当前正式比赛的完整积分 JSON", "/cc event export [冠军队伍]");
+        super(
+                "export",
+                MessageConfig.codeText("event-export-sub-command.constructor-1"),
+                MessageConfig.codeText("event-export-sub-command.constructor-2"));
     }
 
     @Override

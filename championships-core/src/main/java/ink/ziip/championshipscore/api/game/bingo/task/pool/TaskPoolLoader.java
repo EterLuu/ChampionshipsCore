@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.game.bingo.task.pool;
 
 import ink.ziip.championshipscore.api.game.bingo.task.PotionTask;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 
 import org.bukkit.Material;
@@ -60,13 +61,18 @@ public final class TaskPoolLoader {
             return result.spec().get();
         }
 
-        plugin.getLogger().warning(gameLog("卡池=" + selected + " 无法加载，回退到 default"));
+        plugin.getLogger()
+                .warning(gameLog(MessageConfig.codeText("task-pool-loader.load-1", selected)));
         LoadResult fallback = loadCard(plugin, DEFAULT_CARD);
         TaskPoolSource.setName(DEFAULT_CARD);
         return fallback.spec()
                 .orElseGet(
                         () -> {
-                            plugin.getLogger().warning(gameLog("default 卡池无法加载，本轮使用空任务池"));
+                            plugin.getLogger()
+                                    .warning(
+                                            gameLog(
+                                                    MessageConfig.codeText(
+                                                            "task-pool-loader.load-2")));
                             return new TaskPoolSpec(List.of());
                         });
     }
@@ -97,10 +103,18 @@ public final class TaskPoolLoader {
             if (parsed.isEmpty()) {
                 return LoadResult.error(name, "empty");
             }
-            log.info(gameLog("已加载 bingo/cards/" + name + ".yml，任务数=" + parsed.entries().size()));
+            log.info(
+                    gameLog(
+                            MessageConfig.codeText(
+                                    "task-pool-loader.load-card-2",
+                                    name,
+                                    parsed.entries().size())));
             return LoadResult.ok(name, parsed);
         } catch (Exception e) {
-            log.warning(gameLog("解析 bingo/cards/" + name + ".yml 失败 | " + e.getMessage()));
+            log.warning(
+                    gameLog(
+                            MessageConfig.codeText(
+                                    "task-pool-loader.load-card-1", name, e.getMessage())));
             return LoadResult.error(name, e.getMessage());
         }
     }
@@ -108,21 +122,39 @@ public final class TaskPoolLoader {
     private static void ensureDefaultCard(JavaPlugin plugin) {
         File dir = cardsDir(plugin);
         if (!dir.exists() && !dir.mkdirs()) {
-            plugin.getLogger().warning(gameLog("无法创建卡池目录=" + dir.getPath()));
+            plugin.getLogger()
+                    .warning(
+                            gameLog(
+                                    MessageConfig.codeText(
+                                            "task-pool-loader.ensure-default-card-1",
+                                            dir.getPath())));
             return;
         }
         File defaultFile = new File(dir, DEFAULT_CARD + ".yml");
         if (defaultFile.exists()) return;
         try (InputStream in = plugin.getResource(DEFAULT_RESOURCE)) {
             if (in == null) {
-                plugin.getLogger().warning(gameLog("JAR 缺少默认卡池资源=" + DEFAULT_RESOURCE));
+                plugin.getLogger()
+                        .warning(
+                                gameLog(
+                                        MessageConfig.codeText(
+                                                "task-pool-loader.ensure-default-card-3",
+                                                DEFAULT_RESOURCE)));
                 return;
             }
             Files.copy(in, defaultFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            plugin.getLogger().info(gameLog("已生成默认卡池 bingo/cards/default.yml"));
+            plugin.getLogger()
+                    .info(
+                            gameLog(
+                                    MessageConfig.codeText(
+                                            "task-pool-loader.ensure-default-card-4")));
         } catch (IOException e) {
             plugin.getLogger()
-                    .warning(gameLog("无法写出默认卡池 bingo/cards/default.yml | " + e.getMessage()));
+                    .warning(
+                            gameLog(
+                                    MessageConfig.codeText(
+                                            "task-pool-loader.ensure-default-card-2",
+                                            e.getMessage())));
         }
     }
 
@@ -136,7 +168,8 @@ public final class TaskPoolLoader {
         for (Map<?, ?> raw : y.getMapList("categories")) {
             Object idObj = raw.get("id");
             if (idObj == null) {
-                log.warning(gameLog(sourceName + " 存在无 id 分类，已跳过"));
+                log.warning(
+                        gameLog(MessageConfig.codeText("task-pool-loader.parse-1", sourceName)));
                 continue;
             }
             String id = String.valueOf(idObj).trim();
@@ -148,7 +181,10 @@ public final class TaskPoolLoader {
 
             Object membersObj = raw.get("members");
             if (!(membersObj instanceof List<?> rawMembers)) {
-                log.warning(gameLog(sourceName + " 分类=" + id + " 缺少 members，已跳过"));
+                log.warning(
+                        gameLog(
+                                MessageConfig.codeText(
+                                        "task-pool-loader.parse-2", sourceName, id)));
                 continue;
             }
             for (Object m : rawMembers) {
@@ -243,7 +279,10 @@ public final class TaskPoolLoader {
             return expandEntry(
                     g.kind(), key, count, difficulty, dimension, categoryId, log, sourceName);
         }
-        log.warning(gameLog(sourceName + " 分类=" + categoryId + " 成员缺少有效 kind，已跳过"));
+        log.warning(
+                gameLog(
+                        MessageConfig.codeText(
+                                "task-pool-loader.parse-member-1", sourceName, categoryId)));
         return List.of();
     }
 
@@ -256,7 +295,8 @@ public final class TaskPoolLoader {
             String sourceName) {
         Object raw = member.get("one_of");
         if (!(raw instanceof List<?> list) || list.isEmpty()) {
-            log.warning(gameLog(sourceName + " one_of 任务缺少成员列表，已跳过"));
+            log.warning(
+                    gameLog(MessageConfig.codeText("task-pool-loader.parse-one-of-1", sourceName)));
             return List.of();
         }
         LinkedHashSet<String> members = new LinkedHashSet<>();
@@ -271,7 +311,8 @@ public final class TaskPoolLoader {
             }
         }
         if (members.isEmpty()) {
-            log.warning(gameLog(sourceName + " one_of 任务未匹配物品，已跳过"));
+            log.warning(
+                    gameLog(MessageConfig.codeText("task-pool-loader.parse-one-of-2", sourceName)));
             return List.of();
         }
         int count = member.get("count") instanceof Number n ? n.intValue() : 1;
@@ -307,7 +348,8 @@ public final class TaskPoolLoader {
             String sourceName) {
         Object raw = member.get("all_of");
         if (!(raw instanceof List<?> list) || list.isEmpty()) {
-            log.warning(gameLog(sourceName + " all_of 任务缺少成员列表，已跳过"));
+            log.warning(
+                    gameLog(MessageConfig.codeText("task-pool-loader.parse-all-of-1", sourceName)));
             return List.of();
         }
         LinkedHashSet<String> members = new LinkedHashSet<>();
@@ -322,7 +364,8 @@ public final class TaskPoolLoader {
             }
         }
         if (members.isEmpty()) {
-            log.warning(gameLog(sourceName + " all_of 任务未匹配物品，已跳过"));
+            log.warning(
+                    gameLog(MessageConfig.codeText("task-pool-loader.parse-all-of-2", sourceName)));
             return List.of();
         }
         int count = member.get("count") instanceof Number n ? n.intValue() : 1;
@@ -352,7 +395,8 @@ public final class TaskPoolLoader {
     private static List<PoolEntrySpec> parseEvents(Map<?, ?> raw, Logger log, String sourceName) {
         Object triggerObj = raw.get("trigger");
         if (triggerObj == null) {
-            log.warning(gameLog(sourceName + " event 任务缺少 trigger，已跳过"));
+            log.warning(
+                    gameLog(MessageConfig.codeText("task-pool-loader.parse-events-1", sourceName)));
             return List.of();
         }
         String trigger = String.valueOf(triggerObj).trim().toLowerCase(Locale.ROOT);
@@ -390,7 +434,10 @@ public final class TaskPoolLoader {
                 else members.add(token);
             }
             if (members.isEmpty()) {
-                log.warning(gameLog(sourceName + " event=" + trigger + " 未匹配成员，已跳过"));
+                log.warning(
+                        gameLog(
+                                MessageConfig.codeText(
+                                        "task-pool-loader.parse-events-2", sourceName, trigger)));
                 return List.of();
             }
             String icon =
@@ -431,13 +478,21 @@ public final class TaskPoolLoader {
                 PotionTask.Form.parse(
                         raw.get("form") == null ? "normal" : String.valueOf(raw.get("form")));
         if (form == null) {
-            log.warning(gameLog(sourceName + " 药水任务 form=" + raw.get("form") + " 无效，已跳过"));
+            log.warning(
+                    gameLog(
+                            MessageConfig.codeText(
+                                    "task-pool-loader.parse-potions-1",
+                                    sourceName,
+                                    raw.get("form"))));
             return List.of();
         }
         String formKey = form.name().toLowerCase(Locale.ROOT);
         Object effectObj = raw.get("effect");
         if (effectObj == null) {
-            log.warning(gameLog(sourceName + " 药水任务缺少 effect，已跳过"));
+            log.warning(
+                    gameLog(
+                            MessageConfig.codeText(
+                                    "task-pool-loader.parse-potions-2", sourceName)));
             return List.of();
         }
         String effect = String.valueOf(effectObj).trim().toLowerCase(Locale.ROOT);
@@ -488,7 +543,10 @@ public final class TaskPoolLoader {
 
         List<String> keys = globKeys(kind, key);
         if (keys.isEmpty()) {
-            log.warning(gameLog(sourceName + " 通配任务=" + key + " 未匹配 " + kind + "，已跳过"));
+            log.warning(
+                    gameLog(
+                            MessageConfig.codeText(
+                                    "task-pool-loader.expand-entry-1", sourceName, key, kind)));
             return List.of();
         }
 
@@ -565,7 +623,12 @@ public final class TaskPoolLoader {
             return Difficulty.valueOf(String.valueOf(value).trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             log.warning(
-                    gameLog(sourceName + " 任务=" + key + " difficulty=" + value + " 无效，使用 MEDIUM"));
+                    gameLog(
+                            MessageConfig.codeText(
+                                    "task-pool-loader.parse-difficulty-1",
+                                    sourceName,
+                                    key,
+                                    value)));
             return Difficulty.MEDIUM;
         }
     }
@@ -578,18 +641,22 @@ public final class TaskPoolLoader {
                         () -> {
                             log.warning(
                                     gameLog(
-                                            sourceName
-                                                    + " 任务="
-                                                    + key
-                                                    + " dimension="
-                                                    + value
-                                                    + " 无效，使用 overworld"));
+                                            MessageConfig.codeText(
+                                                    "task-pool-loader.parse-dimension-1",
+                                                    sourceName,
+                                                    key,
+                                                    value)));
                             return Dimension.OVERWORLD;
                         });
     }
 
     private static String gameLog(String message) {
-        return LogText.formatGameLog(GameTypeEnum.Bingo, "-", "加载", "卡池", message);
+        return LogText.formatGameLog(
+                GameTypeEnum.Bingo,
+                "-",
+                MessageConfig.codeText("task-pool-loader.game-log-1"),
+                MessageConfig.codeText("task-pool-loader.game-log-2"),
+                message);
     }
 
     public record LoadResult(String name, Optional<TaskPoolSpec> spec, String error) {

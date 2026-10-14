@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.command.team;
 import ink.ziip.championshipscore.api.team.gui.TeamManagementMenu;
 import ink.ziip.championshipscore.command.BaseMainCommand;
 import ink.ziip.championshipscore.command.member.MemberMainCommand;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -13,7 +14,7 @@ public class TeamMainCommand extends BaseMainCommand {
     private final TeamManagementMenu menu;
 
     public TeamMainCommand() {
-        super("team", "队伍与成员管理", ADMIN_PERMISSION);
+        super("team", MessageConfig.codeText("team-main-command.constructor-1"), ADMIN_PERMISSION);
         menu = new TeamManagementMenu(plugin);
         addSubCommand(new TeamAddSubCommand());
         addSubCommand(new TeamDeleteSubCommand());

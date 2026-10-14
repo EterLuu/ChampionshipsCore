@@ -13,6 +13,7 @@ import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideCoursePlann
 import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideLevelType;
 import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 
 import org.bukkit.Material;
@@ -54,7 +55,9 @@ public final class RiptideCourseEditorStep extends PrepareStep {
             case PASS -> RiptideLevelType.PASS;
             case MATH -> RiptideLevelType.MATH;
             case RHYTHM -> RiptideLevelType.RHYTHM;
-            default -> throw new IllegalArgumentException("此类别没有独立关卡类型");
+            default ->
+                    throw new IllegalArgumentException(
+                            MessageConfig.codeText("riptide-course-editor-step.level-type-1"));
         };
     }
 

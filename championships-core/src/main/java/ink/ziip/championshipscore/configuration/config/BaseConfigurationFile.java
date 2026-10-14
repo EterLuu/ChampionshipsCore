@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.configuration.config;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.configuration.ConfigOption;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.location.ConfiguredLocation;
 import ink.ziip.championshipscore.configuration.location.LocationConfig;
 import ink.ziip.championshipscore.logging.LogText;
@@ -82,7 +83,12 @@ public abstract class BaseConfigurationFile {
                     .log(
                             Level.SEVERE,
                             LogText.formatModuleLog(
-                                    "Config", "加载", "配置文件=" + getFileName() + " 加载失败"),
+                                    "Config",
+                                    MessageConfig.codeText(
+                                            "base-configuration-file.initialize-configuration-checked-1"),
+                                    MessageConfig.codeText(
+                                            "base-configuration-file.initialize-configuration-checked-2",
+                                            getFileName())),
                             exception);
             return false;
         }
@@ -169,7 +175,12 @@ public abstract class BaseConfigurationFile {
                     .log(
                             Level.SEVERE,
                             LogText.formatModuleLog(
-                                    "Config", "保存", "配置文件=" + getFileName() + " 保存选项失败"),
+                                    "Config",
+                                    MessageConfig.codeText(
+                                            "base-configuration-file.save-options-1"),
+                                    MessageConfig.codeText(
+                                            "base-configuration-file.save-options-2",
+                                            getFileName())),
                             exception);
         }
     }
@@ -243,8 +254,12 @@ public abstract class BaseConfigurationFile {
                                     Level.SEVERE,
                                     LogText.formatModuleLog(
                                             "Config",
-                                            "加载",
-                                            "配置文件=" + getFileName() + " 缺少路径=" + option.path()));
+                                            MessageConfig.codeText(
+                                                    "base-configuration-file.initialize-configuration-checked-1"),
+                                            MessageConfig.codeText(
+                                                    "base-configuration-file.load-from-configuration-1",
+                                                    getFileName(),
+                                                    option.path())));
                 }
                 values.put(field, value);
             } catch (ReflectiveOperationException | IllegalArgumentException exception) {
@@ -301,16 +316,14 @@ public abstract class BaseConfigurationFile {
                                 Level.SEVERE,
                                 LogText.formatModuleLog(
                                         "Config",
-                                        "世界",
-                                        "配置文件="
-                                                + getFileName()
-                                                + " 路径="
-                                                + label
-                                                + " 世界="
-                                                + coordinates.world()
-                                                + " 不存在；已加载世界="
-                                                + loadedWorlds
-                                                + "，相关传送将失败"));
+                                        MessageConfig.codeText(
+                                                "base-configuration-file.coerce-location-section-1"),
+                                        MessageConfig.codeText(
+                                                "base-configuration-file.coerce-location-section-2",
+                                                getFileName(),
+                                                label,
+                                                coordinates.world(),
+                                                loadedWorlds)));
             }
             return location;
         }
@@ -320,7 +333,11 @@ public abstract class BaseConfigurationFile {
     public static void validateVersion(int actual, int expected, String fileName) {
         if (actual != expected)
             throw new IllegalArgumentException(
-                    "配置文件 " + fileName + " 版本 " + actual + " 与当前版本 " + expected + " 不一致；请直接更新配置文件");
+                    MessageConfig.codeText(
+                            "base-configuration-file.validate-version-1",
+                            fileName,
+                            actual,
+                            expected));
     }
 
     /**

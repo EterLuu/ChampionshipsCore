@@ -8,6 +8,7 @@ import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.spatial.TeleportPositions;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 import ink.ziip.championshipscore.platform.bukkit.player.PlayerStateService;
 
@@ -46,9 +47,10 @@ public class GameManagerHandler extends BaseListener {
                         Level.SEVERE,
                         LogText.formatModuleLog(
                                 "GameManager",
-                                "大厅",
-                                "大厅世界不可用，请检查 config.yml 的"
-                                        + " lobby.location.world_key/world；修复并重载前将跳过大厅传送"));
+                                MessageConfig.codeText(
+                                        "game-manager-handler.warn-lobby-unavailable-1"),
+                                MessageConfig.codeText(
+                                        "game-manager-handler.warn-lobby-unavailable-2")));
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

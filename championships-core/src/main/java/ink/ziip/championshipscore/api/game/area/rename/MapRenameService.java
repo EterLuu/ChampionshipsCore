@@ -228,7 +228,11 @@ public final class MapRenameService {
                 try {
                     transaction.rollback();
                 } catch (Exception rollbackException) {
-                    plugin.getLogger().log(Level.SEVERE, "地图改名数据库回滚失败", rollbackException);
+                    plugin.getLogger()
+                            .log(
+                                    Level.SEVERE,
+                                    MessageConfig.codeText("map-rename-service.execute-1"),
+                                    rollbackException);
                 }
             }
             rollbackRuntime(
@@ -242,7 +246,10 @@ public final class MapRenameService {
             plugin.getLogger()
                     .log(
                             Level.SEVERE,
-                            "地图改名失败，已执行回滚：" + context.oldName() + " -> " + context.newName(),
+                            MessageConfig.codeText(
+                                    "map-rename-service.execute-2",
+                                    context.oldName(),
+                                    context.newName()),
                             exception);
             finish(context.sender(), false, MessageConfig.MAP_EDITOR_RENAME_FAILED_RESTORED);
         } finally {
@@ -271,17 +278,29 @@ public final class MapRenameService {
                         return true;
                     });
         } catch (Exception rollbackException) {
-            plugin.getLogger().log(Level.SEVERE, "地图改名回滚时卸载新场地失败", rollbackException);
+            plugin.getLogger()
+                    .log(
+                            Level.SEVERE,
+                            MessageConfig.codeText("map-rename-service.rollback-runtime-1"),
+                            rollbackException);
         }
         try {
             if (fileState != null) MapConfigFileRename.rollback(fileState);
         } catch (Exception rollbackException) {
-            plugin.getLogger().log(Level.SEVERE, "地图改名回滚时无法恢复配置文件", rollbackException);
+            plugin.getLogger()
+                    .log(
+                            Level.SEVERE,
+                            MessageConfig.codeText("map-rename-service.rollback-runtime-2"),
+                            rollbackException);
         }
         try {
             if (assetState != null) MapAssetRename.rollback(assetState);
         } catch (Exception rollbackException) {
-            plugin.getLogger().log(Level.SEVERE, "地图改名回滚时无法恢复地图资产", rollbackException);
+            plugin.getLogger()
+                    .log(
+                            Level.SEVERE,
+                            MessageConfig.codeText("map-rename-service.rollback-runtime-3"),
+                            rollbackException);
         }
         try {
             if (formalEventState != null)
@@ -293,7 +312,11 @@ public final class MapRenameService {
                             return true;
                         });
         } catch (Exception rollbackException) {
-            plugin.getLogger().log(Level.SEVERE, "地图改名回滚时无法恢复正式赛程地图配置", rollbackException);
+            plugin.getLogger()
+                    .log(
+                            Level.SEVERE,
+                            MessageConfig.codeText("map-rename-service.rollback-runtime-4"),
+                            rollbackException);
         }
         try {
             if (managedWorldRenamed)
@@ -311,17 +334,26 @@ public final class MapRenameService {
                             return true;
                         });
         } catch (Exception rollbackException) {
-            plugin.getLogger().log(Level.SEVERE, "地图改名回滚时无法恢复 Build Mart 世界", rollbackException);
+            plugin.getLogger()
+                    .log(
+                            Level.SEVERE,
+                            MessageConfig.codeText("map-rename-service.rollback-runtime-5"),
+                            rollbackException);
         }
         try {
             if (pendingRenamed
                     && !plugin.getRankManager()
                             .renamePendingAreaRecords(
                                     context.game(), context.newName(), context.oldDisplayName())) {
-                plugin.getLogger().severe("地图改名回滚时无法恢复待提交积分记录");
+                plugin.getLogger()
+                        .severe(MessageConfig.codeText("map-rename-service.rollback-runtime-6"));
             }
         } catch (RuntimeException rollbackException) {
-            plugin.getLogger().log(Level.SEVERE, "地图改名回滚时无法恢复待提交积分记录", rollbackException);
+            plugin.getLogger()
+                    .log(
+                            Level.SEVERE,
+                            MessageConfig.codeText("map-rename-service.rollback-runtime-6"),
+                            rollbackException);
         }
         try {
             onMain(
@@ -330,7 +362,11 @@ public final class MapRenameService {
                                     .loadAreaAfterRename(
                                             context.oldName(), context.oldWorldName()));
         } catch (Exception rollbackException) {
-            plugin.getLogger().log(Level.SEVERE, "地图改名回滚时无法重新加载原场地", rollbackException);
+            plugin.getLogger()
+                    .log(
+                            Level.SEVERE,
+                            MessageConfig.codeText("map-rename-service.rollback-runtime-7"),
+                            rollbackException);
         }
     }
 

@@ -18,7 +18,10 @@ import java.util.List;
 
 public class AdminSudoSubCommand extends BaseSubCommand {
     public AdminSudoSubCommand() {
-        super("sudo", "让指定队伍或全体玩家执行命令", "/cc admin sudo <队伍ID|all> <命令...>");
+        super(
+                "sudo",
+                MessageConfig.codeText("admin-sudo-sub-command.constructor-1"),
+                MessageConfig.codeText("admin-sudo-sub-command.constructor-2"));
     }
 
     @Override

@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.game.area.rename;
 
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -21,7 +22,9 @@ final class FormalEventMapRename {
             @NotNull String newName)
             throws Exception {
         String snapshot = config.captureRuntimeConfiguration();
-        if (snapshot == null) throw new IllegalStateException("主配置尚未加载");
+        if (snapshot == null)
+            throw new IllegalStateException(
+                    MessageConfig.codeText("formal-event-map-rename.rename-1"));
 
         boolean changed = replaceRegistrations(config.getConfiguration(), game, oldName, newName);
         if (changed) {

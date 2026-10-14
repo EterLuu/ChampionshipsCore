@@ -2,18 +2,51 @@ package ink.ziip.championshipscore.command.finale;
 
 import ink.ziip.championshipscore.api.finale.FinaleGameDefinition;
 import ink.ziip.championshipscore.command.BaseMainCommand;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 final class FinaleDragonEggCarnivalMainCommand extends BaseMainCommand {
     FinaleDragonEggCarnivalMainCommand(FinaleGameDefinition definition) {
-        super(definition.commandName(), "龙蛋狂欢决赛启动与控制");
+        super(
+                definition.commandName(),
+                MessageConfig.codeText("finale-dragon-egg-carnival-main-command.constructor-1"));
         addSubCommand(new FinaleStartSubCommand(definition));
         addSubCommand(new FinaleDirectStartSubCommand(definition));
         addSubCommand(new FinaleCancelSubCommand(definition));
-        addSubCommand(new FinaleAreaControlSubCommand(definition, "pause", "暂停决赛"));
-        addSubCommand(new FinaleAreaControlSubCommand(definition, "resume", "恢复决赛"));
-        addSubCommand(new FinaleAreaControlSubCommand(definition, "restart-round", "重开当前小局"));
-        addSubCommand(new FinaleAreaControlSubCommand(definition, "eliminate", "裁判判定选手出局"));
-        addSubCommand(new FinaleAreaControlSubCommand(definition, "force-win", "裁判直接指定冠军"));
-        addSubCommand(new FinaleAreaControlSubCommand(definition, "stop", "终止场内决赛，不产生冠军"));
+        addSubCommand(
+                new FinaleAreaControlSubCommand(
+                        definition,
+                        "pause",
+                        MessageConfig.codeText(
+                                "finale-dragon-egg-carnival-main-command.constructor-2")));
+        addSubCommand(
+                new FinaleAreaControlSubCommand(
+                        definition,
+                        "resume",
+                        MessageConfig.codeText(
+                                "finale-dragon-egg-carnival-main-command.constructor-3")));
+        addSubCommand(
+                new FinaleAreaControlSubCommand(
+                        definition,
+                        "restart-round",
+                        MessageConfig.codeText(
+                                "finale-dragon-egg-carnival-main-command.constructor-4")));
+        addSubCommand(
+                new FinaleAreaControlSubCommand(
+                        definition,
+                        "eliminate",
+                        MessageConfig.codeText(
+                                "finale-dragon-egg-carnival-main-command.constructor-5")));
+        addSubCommand(
+                new FinaleAreaControlSubCommand(
+                        definition,
+                        "force-win",
+                        MessageConfig.codeText(
+                                "finale-dragon-egg-carnival-main-command.constructor-6")));
+        addSubCommand(
+                new FinaleAreaControlSubCommand(
+                        definition,
+                        "stop",
+                        MessageConfig.codeText(
+                                "finale-dragon-egg-carnival-main-command.constructor-7")));
     }
 }

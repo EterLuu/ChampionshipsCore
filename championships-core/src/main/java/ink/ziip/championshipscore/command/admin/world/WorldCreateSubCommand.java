@@ -19,7 +19,10 @@ public class WorldCreateSubCommand extends BaseSubCommand {
     private static final List<String> ENVIRONMENTS = List.of("normal", "nether", "the_end");
 
     public WorldCreateSubCommand() {
-        super("create", "创建或加载小游戏世界", "/cc admin world create <世界> [normal|nether|the_end]");
+        super(
+                "create",
+                MessageConfig.codeText("world-create-sub-command.constructor-1"),
+                MessageConfig.codeText("world-create-sub-command.constructor-2"));
     }
 
     @Override

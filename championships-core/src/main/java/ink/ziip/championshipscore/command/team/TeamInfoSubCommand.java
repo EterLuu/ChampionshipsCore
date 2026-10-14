@@ -14,7 +14,10 @@ import java.util.List;
 
 public class TeamInfoSubCommand extends BaseSubCommand {
     public TeamInfoSubCommand() {
-        super("info", "查看队伍信息", "/cc team info <队伍ID>");
+        super(
+                "info",
+                MessageConfig.codeText("team-info-sub-command.constructor-1"),
+                MessageConfig.codeText("team-info-sub-command.constructor-2"));
     }
 
     @Override

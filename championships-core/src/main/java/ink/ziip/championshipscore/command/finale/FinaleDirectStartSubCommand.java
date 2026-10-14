@@ -21,11 +21,11 @@ final class FinaleDirectStartSubCommand extends BaseSubCommand {
     FinaleDirectStartSubCommand(FinaleGameDefinition definition) {
         super(
                 "start-direct",
-                "在指定场地直接开始决赛单局",
-                "/cc finale "
-                        + definition.commandName()
-                        + " start-direct <场地> <队伍1> <队伍2>"
-                        + (definition.supportsPartialRoster() ? " [--force]" : ""));
+                MessageConfig.codeText("finale-direct-start-sub-command.constructor-1"),
+                MessageConfig.codeText(
+                        "finale-direct-start-sub-command.constructor-2",
+                        definition.commandName(),
+                        (definition.supportsPartialRoster() ? " [--force]" : "")));
         this.definition = definition;
     }
 

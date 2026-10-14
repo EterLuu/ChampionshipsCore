@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.rank;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.rank.entry.PlayerPointEntry;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 
 import org.bukkit.configuration.ConfigurationSection;
@@ -79,7 +80,11 @@ final class PendingPointTransactionStore {
                 }
                 logger.log(
                         Level.SEVERE,
-                        LogText.formatModuleLog("Rank", "暂存事务", "无法读取事务=" + key + "，该记录保留在暂存文件中"),
+                        LogText.formatModuleLog(
+                                "Rank",
+                                MessageConfig.codeText("pending-point-transaction-store.load-1"),
+                                MessageConfig.codeText(
+                                        "pending-point-transaction-store.load-2", key)),
                         exception);
             }
         }
@@ -201,7 +206,10 @@ final class PendingPointTransactionStore {
             dirty = true;
             logger.log(
                     Level.SEVERE,
-                    LogText.formatModuleLog("Rank", "暂存事务", "无法写入积分暂存文件=" + file),
+                    LogText.formatModuleLog(
+                            "Rank",
+                            MessageConfig.codeText("pending-point-transaction-store.load-1"),
+                            MessageConfig.codeText("pending-point-transaction-store.save-1", file)),
                     exception);
             try {
                 Files.deleteIfExists(temporary);

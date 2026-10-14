@@ -19,7 +19,10 @@ public final class MapRenameSubCommand extends BaseSubCommand {
     private final MapRenameService renameService;
 
     public MapRenameSubCommand() {
-        super("rename", "安全改名地图并迁移数据库记录", "/cc map rename <游戏> <旧场地名> <新场地名>");
+        super(
+                "rename",
+                MessageConfig.codeText("map-rename-sub-command.constructor-1"),
+                MessageConfig.codeText("map-rename-sub-command.constructor-2"));
         renameService = new MapRenameService(plugin);
     }
 

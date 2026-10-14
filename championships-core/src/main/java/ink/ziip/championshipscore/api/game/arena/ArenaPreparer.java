@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.arena;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -84,7 +85,10 @@ public final class ArenaPreparer {
             for (int right = left + 1; right < boxes.size(); right++) {
                 if (boxes.get(left).overlaps(boxes.get(right))) {
                     throw new IllegalArgumentException(
-                            "副本 " + left + " 与副本 " + right + " 的生成范围重叠，请增大复制间距");
+                            MessageConfig.codeText(
+                                    "arena-preparer.validate-non-overlapping-copies-1",
+                                    left,
+                                    right));
                 }
             }
         }

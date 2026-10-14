@@ -115,15 +115,18 @@ public final class CoreMessages {
     }
 
     public static String formatAdminSuccess(String message) {
-        return LegacyText.translateColorCodes("&#bababa[&#fff566管理&#bababa] &#ededed" + message);
+        return LegacyText.translateColorCodes(
+                MessageConfig.codeText("core-messages.format-admin-success-1", message));
     }
 
     public static String formatAdminInfo(String message) {
-        return LegacyText.translateColorCodes("&#bababa[&#fff566管理&#bababa] &#bababa" + message);
+        return LegacyText.translateColorCodes(
+                MessageConfig.codeText("core-messages.format-admin-info-1", message));
     }
 
     public static String formatAdminError(String message) {
-        return LegacyText.translateColorCodes("&#bababa[&#ff6b26管理&#bababa] &#ededed" + message);
+        return LegacyText.translateColorCodes(
+                MessageConfig.codeText("core-messages.format-admin-error-1", message));
     }
 
     public static void sendActionBar(Player player, String message) {

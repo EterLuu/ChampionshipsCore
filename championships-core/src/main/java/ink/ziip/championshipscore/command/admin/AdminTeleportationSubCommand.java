@@ -20,8 +20,8 @@ public class AdminTeleportationSubCommand extends BaseSubCommand {
     public AdminTeleportationSubCommand() {
         super(
                 "teleport",
-                "将指定队伍、游戏玩家或观战者传送到你的位置",
-                "/cc admin teleport <队伍ID|gameplayers|spectators>");
+                MessageConfig.codeText("admin-teleportation-sub-command.constructor-1"),
+                MessageConfig.codeText("admin-teleportation-sub-command.constructor-2"));
     }
 
     @Override

@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.riptiderush.course;
 
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+
 import org.bukkit.Material;
 import org.jetbrains.annotations.NotNull;
 
@@ -9,11 +11,14 @@ import java.util.Locale;
  * Semantic level categories. Visual pass obstacles are generator details, not persisted game rules.
  */
 public enum RiptideLevelType {
-    MATH("解题", "算术或观察题，左右选择答案；错误的一侧出局", Material.RED_CONCRETE),
-    PASS("穿越", "穿过自动生成的障碍，没有额外判定", Material.IRON_BARS),
-    COLOR_FLOOR("踩色", "木筏停留原地，完成逐轮踩色挑战", Material.LIME_CONCRETE),
-    DODGE("躲避", "木筏停留原地，按提示躲避同一方向随机刷新的冲刺生物", Material.SWEET_BERRIES),
-    RHYTHM("节奏", "木筏持续前进，抓住闸门节拍通过，离筏或掉落出局", Material.IRON_TRAPDOOR);
+    MATH("riptide-level-type.math-1", "riptide-level-type.math-2", Material.RED_CONCRETE),
+    PASS("riptide-level-type.pass-1", "riptide-level-type.pass-2", Material.IRON_BARS),
+    COLOR_FLOOR(
+            "riptide-level-type.color-floor-1",
+            "riptide-level-type.color-floor-2",
+            Material.LIME_CONCRETE),
+    DODGE("riptide-level-type.dodge-1", "riptide-level-type.dodge-2", Material.SWEET_BERRIES),
+    RHYTHM("riptide-level-type.rhythm-1", "riptide-level-type.rhythm-2", Material.IRON_TRAPDOOR);
 
     private final String displayName;
     private final String description;
@@ -26,11 +31,11 @@ public enum RiptideLevelType {
     }
 
     public @NotNull String displayName() {
-        return displayName;
+        return MessageConfig.codeText(displayName);
     }
 
     public @NotNull String description() {
-        return description;
+        return MessageConfig.codeText(description);
     }
 
     public @NotNull Material icon() {

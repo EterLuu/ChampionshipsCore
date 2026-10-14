@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.presentation.sidebar;
 
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -79,14 +80,14 @@ public final class SidebarConfiguration {
                             "&#3fb2ba[&#31e061CC&#3fb2ba]",
                             List.of(
                                     "&#4f4f4f&m+-------------------+",
-                                    "&#dfff2b当前游戏: &#f6ffa8{daily.selected-game}",
-                                    "&#ff0808当前状态: &#ff7373{daily.queue-state}",
+                                    MessageConfig.codeText("sidebar-configuration.load-1"),
+                                    MessageConfig.codeText("sidebar-configuration.load-2"),
                                     "",
-                                    "&f同行队长: &#24abff{daily.party-leader}",
-                                    "&f同行人数: &#ff6e26{daily.party-size}",
+                                    MessageConfig.codeText("sidebar-configuration.load-3"),
+                                    MessageConfig.codeText("sidebar-configuration.load-4"),
                                     "",
-                                    "&#4287f5等候人数: &#ff6e26{daily.queue-players}",
-                                    "&#4287f5启程倒计时: &#ff6e26{daily.countdown}",
+                                    MessageConfig.codeText("sidebar-configuration.load-5"),
+                                    MessageConfig.codeText("sidebar-configuration.load-6"),
                                     "",
                                     "&aHAMMER&f x &cRIA&f x &#ae70ffINF&f x &#036eb7&lHS"));
         Template mapStatus = template(yaml, "boards.map-status", styles, true);

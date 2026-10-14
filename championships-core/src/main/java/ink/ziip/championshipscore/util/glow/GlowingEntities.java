@@ -10,6 +10,7 @@ import com.comphenix.protocol.events.PacketEvent;
 import com.comphenix.protocol.wrappers.WrappedDataValue;
 import com.comphenix.protocol.wrappers.WrappedDataWatcher;
 
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 
 import org.bukkit.Bukkit;
@@ -167,7 +168,10 @@ public class GlowingEntities implements Listener {
             plugin.getLogger()
                     .warning(
                             LogText.formatModuleLog(
-                                    "Glow", "数据包", "发光元数据发送失败 | " + e.getMessage()));
+                                    "Glow",
+                                    MessageConfig.codeText("glowing-entities.send-flags-1"),
+                                    MessageConfig.codeText(
+                                            "glowing-entities.send-flags-2", e.getMessage())));
         }
     }
 

@@ -15,7 +15,10 @@ import java.util.List;
 
 public class AdminSetMaxPlayerSubCommand extends BaseSubCommand {
     public AdminSetMaxPlayerSubCommand() {
-        super("set-max-player", "设置每场游戏的最大玩家数", "/cc admin set-max-player <数量>");
+        super(
+                "set-max-player",
+                MessageConfig.codeText("admin-set-max-player-sub-command.constructor-1"),
+                MessageConfig.codeText("admin-set-max-player-sub-command.constructor-2"));
     }
 
     @Override

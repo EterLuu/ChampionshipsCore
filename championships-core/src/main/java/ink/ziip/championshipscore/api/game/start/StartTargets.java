@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.game.start;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -14,7 +15,8 @@ public final class StartTargets {
 
     public static <T extends BaseGameInstance> List<T> copies(
             List<T> pool, ArenaSelection selection, int needed) {
-        if (pool.isEmpty() || needed < 1) throw new IllegalArgumentException("地图没有可用比赛副本");
+        if (pool.isEmpty() || needed < 1)
+            throw new IllegalArgumentException(MessageConfig.codeText("start-targets.copies-1"));
         List<T> selected = new ArrayList<>();
         if (selection.automatic()) {
             selected.addAll(
@@ -31,15 +33,20 @@ public final class StartTargets {
                                 .filter(item -> item.getCopyIndex() == index)
                                 .findFirst()
                                 .orElseThrow(
-                                        () -> new IllegalArgumentException("找不到副本：" + (index + 1)));
+                                        () ->
+                                                new IllegalArgumentException(
+                                                        MessageConfig.codeText(
+                                                                "start-targets.copies-2",
+                                                                (index + 1))));
                 if (slot.getGameStageEnum() != GameStageEnum.WAITING)
-                    throw new IllegalArgumentException("指定副本正在比赛：" + (index + 1));
+                    throw new IllegalArgumentException(
+                            MessageConfig.codeText("start-targets.copies-3", (index + 1)));
                 selected.add(slot);
             }
         }
         if (selected.size() < needed)
             throw new IllegalArgumentException(
-                    "空闲副本不足：需要 " + needed + " 个，实际 " + selected.size() + " 个");
+                    MessageConfig.codeText("start-targets.copies-4", needed, selected.size()));
         return List.copyOf(selected.subList(0, needed));
     }
 
@@ -56,7 +63,7 @@ public final class StartTargets {
         if (GameStartRules.topology(game) != GameStartRules.Topology.PAIRED_COPIES
                 && !selection.automatic()
                 && selection.indices().size() != 1) {
-            throw new IllegalArgumentException("该游戏每次选择一个运行副本");
+            throw new IllegalArgumentException(MessageConfig.codeText("start-targets.for-game-1"));
         }
         return copies(
                 pool,

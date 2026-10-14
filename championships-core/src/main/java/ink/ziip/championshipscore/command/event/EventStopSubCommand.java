@@ -15,7 +15,10 @@ import java.util.List;
 
 public final class EventStopSubCommand extends BaseSubCommand {
     public EventStopSubCommand() {
-        super("stop", "停止正式比赛的赛程任务", "/cc event stop <游戏>");
+        super(
+                "stop",
+                MessageConfig.codeText("event-stop-sub-command.constructor-1"),
+                MessageConfig.codeText("event-stop-sub-command.constructor-2"));
     }
 
     @Override

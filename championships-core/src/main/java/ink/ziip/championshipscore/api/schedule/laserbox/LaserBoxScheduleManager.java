@@ -10,6 +10,7 @@ import ink.ziip.championshipscore.api.schedule.FormalEventMapResolver;
 import ink.ziip.championshipscore.api.schedule.FormalPairingScheduler;
 import ink.ziip.championshipscore.api.schedule.model.TwoVTwoVector;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
@@ -62,7 +63,8 @@ public final class LaserBoxScheduleManager extends BaseManager {
     public boolean startGame() {
         lastStartFailureReason = null;
         if (enabled) {
-            lastStartFailureReason = "激光方盒赛程正在运行";
+            lastStartFailureReason =
+                    MessageConfig.codeText("laser-box-schedule-manager.start-game-1");
             return false;
         }
         List<ChampionshipTeam> teams =
@@ -78,9 +80,11 @@ public final class LaserBoxScheduleManager extends BaseManager {
                 FormalPairingScheduler.roundRobin(
                         teams, FormalPairingScheduler.seededRounds(teams.size()));
         rounds.forEach(round -> FormalPairingScheduler.rememberOpponents(round, previousOpponents));
-        if (rounds.isEmpty()) return reject("至少需要两支队伍，队伍数必须为偶数");
+        if (rounds.isEmpty())
+            return reject(MessageConfig.codeText("laser-box-schedule-manager.start-game-2"));
         List<String> maps = FormalEventMapResolver.maps(plugin, GAME);
-        if (maps.isEmpty()) return reject("没有已加载的激光方盒地图");
+        if (maps.isEmpty())
+            return reject(MessageConfig.codeText("laser-box-schedule-manager.start-game-3"));
         map = maps.getFirst();
         if (plugin.getConfigurationManager().getCCConfig().formalEventMaps(GAME).isEmpty()) {
             // Automatic selection uses real registered maps and prefers one ready to start.
@@ -91,14 +95,21 @@ public final class LaserBoxScheduleManager extends BaseManager {
                             .orElse(map);
         }
         String mapFailure = plugin.getPrepareSessionManager().getStartFailureReason(GAME, map);
-        if (mapFailure != null) return reject("地图“" + map + "”" + mapFailure);
+        if (mapFailure != null)
+            return reject(
+                    MessageConfig.codeText(
+                            "laser-box-schedule-manager.start-game-4", map, mapFailure));
         var copies = plugin.getGameManager().getLaserBoxManager().getMapInstances(map);
         long available =
                 copies.stream()
                         .filter(copy -> copy.getGameStageEnum() == GameStageEnum.WAITING)
                         .count();
         if (available < teams.size() / 2)
-            return reject("需要 " + teams.size() / 2 + " 个空闲场地副本，当前只有 " + available + " 个");
+            return reject(
+                    MessageConfig.codeText(
+                            "laser-box-schedule-manager.start-game-5",
+                            teams.size() / 2,
+                            available));
         try {
             for (var copy : copies) copy.getGameConfig().validate();
         } catch (RuntimeException failure) {
@@ -114,7 +125,13 @@ public final class LaserBoxScheduleManager extends BaseManager {
     private boolean reject(String reason) {
         lastStartFailureReason = reason;
         plugin.getLogger()
-                .warning(LogText.formatGameLog(GAME, map == null ? "-" : map, "调度", "启动", reason));
+                .warning(
+                        LogText.formatGameLog(
+                                GAME,
+                                map == null ? "-" : map,
+                                MessageConfig.codeText("laser-box-schedule-manager.reject-1"),
+                                MessageConfig.codeText("laser-box-schedule-manager.reject-2"),
+                                reason));
         rounds = List.of();
         map = null;
         return false;
@@ -130,13 +147,17 @@ public final class LaserBoxScheduleManager extends BaseManager {
                             plugin.getScheduleManager()
                                     .showRoundPreparationCountdown(
                                             GAME, subRound + 1, remaining[0]);
-                            if (remaining[0] == 10)
+                            if (remaining[0] == 10) {
+                                plugin.getScheduleManager()
+                                        .announceRoundMatchups(
+                                                GAME, subRound + 1, rounds.get(subRound));
                                 CoreMessages.sendMessageToAllPlayers(
                                         firstRound
                                                 ? plugin.getScheduleManager()
                                                         .getScheduleStrings(GAME)
                                                 : CoreMessages.getMessage(
                                                         ScheduleMessageConfig.NEXT_ROUND_SOON));
+                            }
                             if (firstRound && remaining[0] == 5)
                                 CoreMessages.sendMessageToAllPlayers(
                                         plugin.getScheduleManager().getSchedulePointsStrings(GAME));
@@ -169,7 +190,16 @@ public final class LaserBoxScheduleManager extends BaseManager {
                 plugin.getGameManager()
                         .joinLaserBoxInstances(map, pairs, subRound == 1, GameRunMode.EVENT);
         if (started == null) {
-            plugin.getLogger().warning(LogText.formatGameLog(GAME, map, "调度", "中止", "本轮对阵启动失败"));
+            plugin.getLogger()
+                    .warning(
+                            LogText.formatGameLog(
+                                    GAME,
+                                    map,
+                                    MessageConfig.codeText("laser-box-schedule-manager.reject-1"),
+                                    MessageConfig.codeText(
+                                            "laser-box-schedule-manager.start-round-battle-1"),
+                                    MessageConfig.codeText(
+                                            "laser-box-schedule-manager.start-round-battle-2")));
             endSchedule();
             return;
         }
@@ -180,9 +210,13 @@ public final class LaserBoxScheduleManager extends BaseManager {
                         LogText.formatGameLog(
                                 GAME,
                                 map,
-                                "调度",
-                                "轮次",
-                                "第 " + subRound + " 轮开始，对局数=" + pairs.size()));
+                                MessageConfig.codeText("laser-box-schedule-manager.reject-1"),
+                                MessageConfig.codeText(
+                                        "laser-box-schedule-manager.start-round-battle-3"),
+                                MessageConfig.codeText(
+                                        "laser-box-schedule-manager.start-round-battle-4",
+                                        subRound,
+                                        pairs.size())));
     }
 
     public synchronized void onInstanceComplete(LaserBoxArea instance) {
@@ -235,9 +269,12 @@ public final class LaserBoxScheduleManager extends BaseManager {
                             LogText.formatGameLog(
                                     GAME,
                                     map == null ? "-" : map,
-                                    "调度",
-                                    "对阵",
-                                    "无法在不重复对手的前提下生成第 " + (subRound + 1) + " 轮"));
+                                    MessageConfig.codeText("laser-box-schedule-manager.reject-1"),
+                                    MessageConfig.codeText(
+                                            "laser-box-schedule-manager.prepare-next-round-1"),
+                                    MessageConfig.codeText(
+                                            "laser-box-schedule-manager.prepare-next-round-2",
+                                            (subRound + 1))));
             return false;
         }
         List<List<TwoVTwoVector>> updated = new ArrayList<>(rounds);

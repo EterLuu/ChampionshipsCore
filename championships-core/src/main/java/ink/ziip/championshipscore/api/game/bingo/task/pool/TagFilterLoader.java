@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.bingo.task.pool;
 
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 
 import org.bukkit.configuration.ConfigurationSection;
@@ -55,10 +56,10 @@ public final class TagFilterLoader {
                     plugin.getLogger()
                             .warning(
                                     gameLog(
-                                            "解析标签 bingo/tags/"
-                                                    + file.getName()
-                                                    + " 失败 | "
-                                                    + e.getMessage()));
+                                            MessageConfig.codeText(
+                                                    "tag-filter-loader.load-1",
+                                                    file.getName(),
+                                                    e.getMessage())));
                 }
             }
         }
@@ -79,12 +80,11 @@ public final class TagFilterLoader {
             plugin.getLogger()
                     .info(
                             gameLog(
-                                    "已加载标签="
-                                            + tagToIds.keySet()
-                                            + " 排除="
-                                            + excluded
-                                            + " 上限="
-                                            + caps));
+                                    MessageConfig.codeText(
+                                            "tag-filter-loader.load-2",
+                                            tagToIds.keySet(),
+                                            excluded,
+                                            caps)));
         }
         return filters;
     }
@@ -92,7 +92,11 @@ public final class TagFilterLoader {
     private static void ensureBundled(JavaPlugin plugin) {
         File dir = dir(plugin);
         if (!dir.exists() && !dir.mkdirs()) {
-            plugin.getLogger().warning(gameLog("无法创建目录=" + dir.getPath()));
+            plugin.getLogger()
+                    .warning(
+                            gameLog(
+                                    MessageConfig.codeText(
+                                            "tag-filter-loader.ensure-bundled-1", dir.getPath())));
             return;
         }
         for (String name : BUNDLED) {
@@ -101,10 +105,19 @@ public final class TagFilterLoader {
             try (InputStream in = plugin.getResource(RESOURCE_DIR + "/" + name + ".yml")) {
                 if (in == null) continue;
                 Files.copy(in, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                plugin.getLogger().info(gameLog("已生成 bingo/tags/" + name + ".yml"));
+                plugin.getLogger()
+                        .info(
+                                gameLog(
+                                        MessageConfig.codeText(
+                                                "tag-filter-loader.ensure-bundled-3", name)));
             } catch (IOException e) {
                 plugin.getLogger()
-                        .warning(gameLog("无法写出 bingo/tags/" + name + ".yml | " + e.getMessage()));
+                        .warning(
+                                gameLog(
+                                        MessageConfig.codeText(
+                                                "tag-filter-loader.ensure-bundled-2",
+                                                name,
+                                                e.getMessage())));
             }
         }
     }
@@ -114,6 +127,11 @@ public final class TagFilterLoader {
     }
 
     private static String gameLog(String message) {
-        return LogText.formatGameLog(GameTypeEnum.Bingo, "-", "加载", "标签", message);
+        return LogText.formatGameLog(
+                GameTypeEnum.Bingo,
+                "-",
+                MessageConfig.codeText("tag-filter-loader.game-log-1"),
+                MessageConfig.codeText("tag-filter-loader.game-log-2"),
+                message);
     }
 }

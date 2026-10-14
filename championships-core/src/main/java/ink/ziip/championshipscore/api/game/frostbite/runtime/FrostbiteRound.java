@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.frostbite.runtime;
 
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+
 import java.util.*;
 
 /** One round's authoritative roster, freeze attribution and kill ledger; server tick time only. */
@@ -22,15 +24,18 @@ public final class FrostbiteRound {
         if (selectedArenas.isEmpty()
                 || selectedArenas.stream().anyMatch(index -> index < 0 || index >= 4)
                 || new HashSet<>(selectedArenas).size() != selectedArenas.size()) {
-            throw new IllegalArgumentException("霜冻子场地编号须为 1–4 且不重复");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("frostbite-round.constructor-1"));
         }
         if (teams.size() < 2 || teams.size() > 16 || round < 0 || round > 3)
-            throw new IllegalArgumentException("需要 2–16 支队伍，轮次须为 1–4");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("frostbite-round.constructor-2"));
         Map<UUID, Seat> result = new LinkedHashMap<>();
         for (int team = 0; team < teams.size(); team++) {
             var members = teams.get(team).stream().sorted().toList();
             if (members.isEmpty() || members.size() > 4)
-                throw new IllegalArgumentException("每队需要 1–4 名参赛者");
+                throw new IllegalArgumentException(
+                        MessageConfig.codeText("frostbite-round.constructor-3"));
             for (int member = 0; member < members.size(); member++) {
                 UUID id = Objects.requireNonNull(members.get(member));
                 // GF(4) yields every opposing pairing once over four rounds for four teams.
@@ -38,7 +43,8 @@ public final class FrostbiteRound {
                         selectedArenas.get(
                                 (member ^ multiply(team % 4, round)) % selectedArenas.size());
                 if (result.put(id, new Seat(team, arena)) != null)
-                    throw new IllegalArgumentException("参赛名单包含重复玩家");
+                    throw new IllegalArgumentException(
+                            MessageConfig.codeText("frostbite-round.constructor-4"));
             }
         }
         seats = Collections.unmodifiableMap(result);

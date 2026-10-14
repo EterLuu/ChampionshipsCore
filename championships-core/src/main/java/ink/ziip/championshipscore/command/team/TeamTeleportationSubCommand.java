@@ -16,7 +16,10 @@ import java.util.List;
 
 public class TeamTeleportationSubCommand extends BaseSubCommand {
     public TeamTeleportationSubCommand() {
-        super("tphere", "将队伍传送到你所在的位置", "/cc team tphere <队伍ID|all>");
+        super(
+                "tphere",
+                MessageConfig.codeText("team-teleportation-sub-command.constructor-1"),
+                MessageConfig.codeText("team-teleportation-sub-command.constructor-2"));
     }
 
     @Override

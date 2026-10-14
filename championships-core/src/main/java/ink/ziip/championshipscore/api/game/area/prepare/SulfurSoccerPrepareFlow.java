@@ -6,6 +6,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.step.StandAndRunStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.WeSelectionStep;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.api.game.sulfursoccer.config.SulfurSoccerConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -40,7 +41,7 @@ public final class SulfurSoccerPrepareFlow extends SnapshotMapPrepareFlow {
         steps.add(
                 selection(
                         "field",
-                        "球场边界",
+                        MessageConfig.codeText("sulfur-soccer-prepare-flow.build-steps-1"),
                         Material.BEDROCK,
                         SulfurSoccerConfig::getAreaPos1,
                         SulfurSoccerConfig::getAreaPos2,
@@ -51,7 +52,7 @@ public final class SulfurSoccerPrepareFlow extends SnapshotMapPrepareFlow {
         steps.add(
                 selection(
                         "right-half",
-                        "右队半场",
+                        MessageConfig.codeText("sulfur-soccer-prepare-flow.build-steps-2"),
                         Material.RED_WOOL,
                         SulfurSoccerConfig::getRightAreaPos1,
                         SulfurSoccerConfig::getRightAreaPos2,
@@ -62,7 +63,7 @@ public final class SulfurSoccerPrepareFlow extends SnapshotMapPrepareFlow {
         steps.add(
                 selection(
                         "left-half",
-                        "左队半场",
+                        MessageConfig.codeText("sulfur-soccer-prepare-flow.build-steps-3"),
                         Material.BLUE_WOOL,
                         SulfurSoccerConfig::getLeftAreaPos1,
                         SulfurSoccerConfig::getLeftAreaPos2,
@@ -73,7 +74,7 @@ public final class SulfurSoccerPrepareFlow extends SnapshotMapPrepareFlow {
         steps.add(
                 selection(
                         "right-goal",
-                        "右队球门内部",
+                        MessageConfig.codeText("sulfur-soccer-prepare-flow.build-steps-4"),
                         Material.RED_STAINED_GLASS,
                         SulfurSoccerConfig::getRightGoalPos1,
                         SulfurSoccerConfig::getRightGoalPos2,
@@ -84,7 +85,7 @@ public final class SulfurSoccerPrepareFlow extends SnapshotMapPrepareFlow {
         steps.add(
                 selection(
                         "left-goal",
-                        "左队球门内部",
+                        MessageConfig.codeText("sulfur-soccer-prepare-flow.build-steps-5"),
                         Material.BLUE_STAINED_GLASS,
                         SulfurSoccerConfig::getLeftGoalPos1,
                         SulfurSoccerConfig::getLeftGoalPos2,
@@ -95,28 +96,28 @@ public final class SulfurSoccerPrepareFlow extends SnapshotMapPrepareFlow {
         steps.add(
                 point(
                         "ball",
-                        "中圈足球出生点",
+                        MessageConfig.codeText("sulfur-soccer-prepare-flow.build-steps-6"),
                         Material.SLIME_BALL,
                         SulfurSoccerConfig::getBallSpawnPoint,
                         SulfurSoccerConfig::setBallSpawnPoint));
         steps.add(
                 point(
                         "spectator",
-                        "球场外观战点",
+                        MessageConfig.codeText("sulfur-soccer-prepare-flow.build-steps-7"),
                         Material.ENDER_EYE,
                         SulfurSoccerConfig::getSpectatorSpawnPoint,
                         SulfurSoccerConfig::setSpectatorSpawnPoint));
         steps.add(
                 spawns(
                         "right-spawns",
-                        "右队 4 个出生点",
+                        MessageConfig.codeText("sulfur-soccer-prepare-flow.build-steps-8"),
                         Material.RED_CONCRETE,
                         SulfurSoccerConfig::getRightSpawnPoints,
                         SulfurSoccerConfig::setRightSpawnPoints));
         steps.add(
                 spawns(
                         "left-spawns",
-                        "左队 4 个出生点",
+                        MessageConfig.codeText("sulfur-soccer-prepare-flow.build-steps-9"),
                         Material.BLUE_CONCRETE,
                         SulfurSoccerConfig::getLeftSpawnPoints,
                         SulfurSoccerConfig::setLeftSpawnPoints));
@@ -133,11 +134,12 @@ public final class SulfurSoccerPrepareFlow extends SnapshotMapPrepareFlow {
         return new WeSelectionStep(
                 key,
                 LegacyText.component(name),
-                Component.text("使用 WorldEdit 选区设置；球门只选门框内的进球空间"),
+                Component.text(MessageConfig.codeText("sulfur-soccer-prepare-flow.selection-1")),
                 icon,
                 t -> first.apply(cfg(t)) != null && second.apply(cfg(t)) != null,
                 (t, v) -> setter.accept(cfg(t), v),
-                CoreMessages.formatAdminSuccess(name + "已设置"));
+                CoreMessages.formatAdminSuccess(
+                        MessageConfig.codeText("sulfur-soccer-prepare-flow.selection-2", name)));
     }
 
     private static StandAndRunStep point(
@@ -149,11 +151,12 @@ public final class SulfurSoccerPrepareFlow extends SnapshotMapPrepareFlow {
         return new StandAndRunStep(
                 key,
                 LegacyText.component(name),
-                Component.text("站在目标位置点击设置"),
+                Component.text(MessageConfig.codeText("sulfur-soccer-prepare-flow.point-1")),
                 icon,
                 t -> getter.apply(cfg(t)) != null,
                 (t, l) -> setter.accept(cfg(t), l),
-                CoreMessages.formatAdminSuccess(name + "已设置"));
+                CoreMessages.formatAdminSuccess(
+                        MessageConfig.codeText("sulfur-soccer-prepare-flow.selection-2", name)));
     }
 
     private static ListStep spawns(
@@ -165,7 +168,7 @@ public final class SulfurSoccerPrepareFlow extends SnapshotMapPrepareFlow {
         return new ListStep(
                 key,
                 LegacyText.component(name),
-                Component.text("依次设置中场 3 点及门前独立白色标记；开赛时中场三点自动均匀分布"),
+                Component.text(MessageConfig.codeText("sulfur-soccer-prepare-flow.spawns-1")),
                 icon,
                 t -> getter.apply(cfg(t)),
                 (t, list) -> setter.accept(cfg(t), list),

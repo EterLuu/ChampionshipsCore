@@ -13,6 +13,7 @@ import ink.ziip.championshipscore.api.game.buildmart.runtime.BuildMartMaterialMa
 import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.configuration.ConfigOption;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.location.LocationConfig;
 import ink.ziip.championshipscore.logging.LogText;
 
@@ -368,9 +369,11 @@ public class BuildMartConfig extends BaseGameConfig {
                             LogText.formatGameLog(
                                     GameTypeEnum.BuildMart,
                                     areaName,
-                                    "配置",
-                                    "保存",
-                                    "无法保存基地坐标 | " + exception.getMessage()));
+                                    MessageConfig.codeText("build-mart-config.set-base-location-1"),
+                                    MessageConfig.codeText("build-mart-config.set-base-location-2"),
+                                    MessageConfig.codeText(
+                                            "build-mart-config.set-base-location-3",
+                                            exception.getMessage())));
         }
     }
 
@@ -515,9 +518,12 @@ public class BuildMartConfig extends BaseGameConfig {
                                 LogText.formatGameLog(
                                         GameTypeEnum.BuildMart,
                                         areaName,
-                                        "材料区",
-                                        "保存",
-                                        "材料清单更新失败，已回滚材料区配置"));
+                                        MessageConfig.codeText(
+                                                "build-mart-config.set-material-zones-1"),
+                                        MessageConfig.codeText(
+                                                "build-mart-config.set-base-location-2"),
+                                        MessageConfig.codeText(
+                                                "build-mart-config.set-material-zones-5")));
                 return false;
             }
             return true;
@@ -531,18 +537,24 @@ public class BuildMartConfig extends BaseGameConfig {
                                 LogText.formatGameLog(
                                         GameTypeEnum.BuildMart,
                                         areaName,
-                                        "材料区",
-                                        "回滚",
-                                        "无法恢复材料区配置 | " + rollbackException.getMessage()));
+                                        MessageConfig.codeText(
+                                                "build-mart-config.set-material-zones-1"),
+                                        MessageConfig.codeText(
+                                                "build-mart-config.set-material-zones-2"),
+                                        MessageConfig.codeText(
+                                                "build-mart-config.set-material-zones-3",
+                                                rollbackException.getMessage())));
             }
             plugin.getLogger()
                     .warning(
                             LogText.formatGameLog(
                                     GameTypeEnum.BuildMart,
                                     areaName,
-                                    "配置",
-                                    "保存",
-                                    "无法保存材料区 | " + exception.getMessage()));
+                                    MessageConfig.codeText("build-mart-config.set-base-location-1"),
+                                    MessageConfig.codeText("build-mart-config.set-base-location-2"),
+                                    MessageConfig.codeText(
+                                            "build-mart-config.set-material-zones-4",
+                                            exception.getMessage())));
             return false;
         }
     }
@@ -566,9 +578,13 @@ public class BuildMartConfig extends BaseGameConfig {
                             LogText.formatGameLog(
                                     GameTypeEnum.BuildMart,
                                     areaName,
-                                    "材料区",
-                                    "删除",
-                                    "无法删除材料区快照=" + snapshot.getName()));
+                                    MessageConfig.codeText(
+                                            "build-mart-config.set-material-zones-1"),
+                                    MessageConfig.codeText(
+                                            "build-mart-config.delete-material-zone-snapshot-1"),
+                                    MessageConfig.codeText(
+                                            "build-mart-config.delete-material-zone-snapshot-2",
+                                            snapshot.getName())));
         }
     }
 

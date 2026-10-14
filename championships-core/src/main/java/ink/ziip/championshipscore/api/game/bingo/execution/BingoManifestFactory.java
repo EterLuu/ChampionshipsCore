@@ -312,6 +312,10 @@ public final class BingoManifestFactory {
                         "spectator.teleport.team",
                         "spectator.teleport.click",
                         "spectator.teleport.none",
+                        "spectator.teleport.previous",
+                        "spectator.teleport.next",
+                        "spectator.teleport.page",
+                        "spectator.teleport.close",
                         "spectator.speed.name",
                         "spectator.speed.faster",
                         "spectator.speed.slower",
@@ -336,10 +340,10 @@ public final class BingoManifestFactory {
         if (runMode == GameRunMode.DAILY) {
             messages.put(
                     "sidebar.ranking-line",
-                    "{rank.team-color}{rank.position}. {rank.team} &7({rank.tasks} 项)");
+                    MessageConfig.codeText("bingo-manifest-factory.presentation-1"));
             messages.put(
                     "sidebar.own-ranking-line",
-                    "{rank.team-color}&l▶ {rank.position}. {rank.team} &7({rank.tasks} 项)");
+                    MessageConfig.codeText("bingo-manifest-factory.presentation-2"));
         }
         return new BingoPresentation(messages);
     }

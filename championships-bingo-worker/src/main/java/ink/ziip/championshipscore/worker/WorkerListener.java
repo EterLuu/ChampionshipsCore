@@ -757,6 +757,8 @@ final class WorkerListener implements Listener {
             registry.teleportToTeammate(player, target);
             return;
         }
+        if (WorkerMenuService.navigateSpectatorTargets(
+                player, event.getView().getTopInventory(), event.getRawSlot())) return;
         UUID spectatorTarget =
                 WorkerMenuService.spectatorTarget(
                         event.getView().getTopInventory(), event.getRawSlot());

@@ -18,6 +18,7 @@ import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.api.gui.MenuInventory;
 import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
 import net.kyori.adventure.text.Component;
@@ -132,7 +133,8 @@ public final class RiptideCourseEditorGui {
                                             page.type() == null
                                                     ? ""
                                                     : page.type() == RiptideLevelType.COLOR_FLOOR
-                                                            ? "踩色"
+                                                            ? MessageConfig.codeText(
+                                                                    "riptide-course-editor-gui.open-1")
                                                             : page.type().displayName(),
                                             "name",
                                             name)));
@@ -1000,7 +1002,11 @@ public final class RiptideCourseEditorGui {
             h.session
                     .getPlugin()
                     .getLogger()
-                    .log(java.util.logging.Level.SEVERE, "激流变体建筑保存失败：" + original.id(), error);
+                    .log(
+                            java.util.logging.Level.SEVERE,
+                            MessageConfig.codeText(
+                                    "riptide-course-editor-gui.save-building-1", original.id()),
+                            error);
             throw new IllegalStateException(text("building-save-failed"), error);
         }
         RiptideWorkshop.finish(h.session);

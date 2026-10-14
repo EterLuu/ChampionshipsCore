@@ -122,7 +122,10 @@ public class PrepareSessionManager extends BaseManager {
             plugin.getLogger()
                     .warning(
                             LogText.formatModuleLog(
-                                    "Prepare", "存储", "无法创建会话目录 | " + e.getMessage()));
+                                    "Prepare",
+                                    MessageConfig.codeText("prepare-session-manager.load-1"),
+                                    MessageConfig.codeText(
+                                            "prepare-session-manager.load-2", e.getMessage())));
         }
         listener = new PrepareListener(plugin, this);
         listener.register();
@@ -467,11 +470,16 @@ public class PrepareSessionManager extends BaseManager {
             @NotNull GameTypeEnum gameType, @NotNull String mapName) {
         BaseGameInstanceManager<?> mgr = plugin.getGameManager().getAreaManager(gameType);
         var target = mgr == null ? null : mgr.getSetupTarget(gameType, mapName);
-        if (target == null) return "不存在或尚未加载";
-        if (!target.config().isPreparePublished()) return "尚未发布";
-        if (target.config().isPrepareDirty()) return "有尚未发布的修改，请重新发布";
-        if (!target.config().isPrepareReady()) return "配置未完成，请重新校验并发布";
-        if (mapLocks.containsKey(lockKey(gameType, mapName))) return "正在编辑，请先退出地图编辑模式";
+        if (target == null)
+            return MessageConfig.codeText("prepare-session-manager.get-start-failure-reason-1");
+        if (!target.config().isPreparePublished())
+            return MessageConfig.codeText("prepare-session-manager.get-start-failure-reason-2");
+        if (target.config().isPrepareDirty())
+            return MessageConfig.codeText("prepare-session-manager.get-start-failure-reason-3");
+        if (!target.config().isPrepareReady())
+            return MessageConfig.codeText("prepare-session-manager.get-start-failure-reason-4");
+        if (mapLocks.containsKey(lockKey(gameType, mapName)))
+            return MessageConfig.codeText("prepare-session-manager.get-start-failure-reason-5");
         return null;
     }
 
@@ -605,7 +613,11 @@ public class PrepareSessionManager extends BaseManager {
             plugin.getLogger()
                     .warning(
                             LogText.formatModuleLog(
-                                    "Prepare", "存储", "无法保存物品栏快照 | " + e.getMessage()));
+                                    "Prepare",
+                                    MessageConfig.codeText("prepare-session-manager.load-1"),
+                                    MessageConfig.codeText(
+                                            "prepare-session-manager.save-snapshot-file-1",
+                                            e.getMessage())));
         }
     }
 

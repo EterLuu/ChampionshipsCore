@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.sulfursoccer.geometry;
 
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+
 import org.bukkit.Location;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
@@ -30,7 +32,8 @@ public record SulfurSoccerPenaltyLayout(
         int laneMin = (int) (alongX ? goal.getMinZ() : goal.getMinX());
         int width = (int) (alongX ? goal.getWidthZ() : goal.getWidthX());
         if (width < 3 || floorY < goal.getMinY() || floorY + 1.8 > goal.getMaxY())
-            throw new IllegalArgumentException("点球球门必须至少宽 3 格，且能容纳站在球场地面的守门员");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("sulfur-soccer-penalty-layout.resolve-1"));
         double across = laneMin + width / 2.0;
         double ballDepth = Math.floor(face - direction * 5.5) + 0.5;
         Vector ball = point(alongX, ballDepth, floorY, across);
@@ -47,7 +50,8 @@ public record SulfurSoccerPenaltyLayout(
                 || goal.contains(ball)
                 || otherGoal.contains(ball)
                 || otherGoal.contains(shooter))
-            throw new IllegalArgumentException("点球球门前需要至少 8 格球场空间，用于足球与射手隔离位置");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("sulfur-soccer-penalty-layout.resolve-2"));
         // Put the temporary glass one full block outside the goal mouth.  Using floor on
         // the half-block expression is asymmetric for negative coordinates (for example,
         // floor(-25.5) == -26), which points into the negative-Z goal frame instead of the
@@ -72,7 +76,9 @@ public record SulfurSoccerPenaltyLayout(
 
     /** Left/right are from the keeper's view while facing the shooter. */
     public List<Vector> paneBlocks(int slot) {
-        if (slot < 0 || slot > 2) throw new IllegalArgumentException("守门方向必须为左、中、右");
+        if (slot < 0 || slot > 2)
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("sulfur-soccer-penalty-layout.pane-blocks-1"));
         int lane = (alongX ? direction : -direction) > 0 ? 2 - slot : slot;
         int first = laneMin + lane * laneWidth / 3;
         int end = laneMin + (lane + 1) * laneWidth / 3;

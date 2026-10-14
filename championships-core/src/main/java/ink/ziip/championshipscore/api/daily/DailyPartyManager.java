@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.daily;
 
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+
 import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -65,7 +67,7 @@ public final class DailyPartyManager {
                 || !daily.canJoinParty(target)) return null;
         DailyParty party = invite.party();
         if (daily.isPartyInSession(party)) return null;
-        daily.pauseParty(party, "小队成员发生变化");
+        daily.pauseParty(party, MessageConfig.codeText("daily-party-manager.accept-1"));
         if (!party.add(target)) return null;
         partyByPlayer.put(target, party);
         return party;
@@ -74,7 +76,7 @@ public final class DailyPartyManager {
     public synchronized boolean leave(@NotNull UUID player) {
         DailyParty party = partyByPlayer.get(player);
         if (party == null || daily.isPartyInSession(party)) return false;
-        daily.pauseParty(party, "小队成员发生变化");
+        daily.pauseParty(party, MessageConfig.codeText("daily-party-manager.accept-1"));
         partyByPlayer.remove(player, party);
         party.remove(player);
         if (party.size() == 0) removeParty(party);
@@ -84,7 +86,7 @@ public final class DailyPartyManager {
     public synchronized boolean disband(@NotNull UUID leader) {
         DailyParty party = partyByPlayer.get(leader);
         if (party == null || !party.isLeader(leader) || daily.isPartyInSession(party)) return false;
-        daily.pauseParty(party, "小队已解散");
+        daily.pauseParty(party, MessageConfig.codeText("daily-party-manager.disband-1"));
         removeParty(party);
         return true;
     }
@@ -93,7 +95,7 @@ public final class DailyPartyManager {
     synchronized void handleOffline(@NotNull UUID player) {
         DailyParty party = partyByPlayer.get(player);
         if (party == null) return;
-        daily.pauseParty(party, "有成员下线，排队已暂停");
+        daily.pauseParty(party, MessageConfig.codeText("daily-party-manager.handle-offline-1"));
         Set<UUID> members = party.members();
         UUID nextOnline =
                 members.stream()

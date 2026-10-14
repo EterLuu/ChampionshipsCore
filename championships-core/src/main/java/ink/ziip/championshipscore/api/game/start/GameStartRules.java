@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.game.start;
 
 import ink.ziip.championshipscore.api.finale.FinaleGameRegistry;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 /** Start topology belongs to gameplay ownership, independently of the command spelling. */
 public final class GameStartRules {
@@ -29,19 +30,25 @@ public final class GameStartRules {
     }
 
     public static void validateTeamCount(GameTypeEnum game, int count) {
-        if (count < 1) throw new IllegalArgumentException("没有参赛队伍");
+        if (count < 1)
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("game-start-rules.validate-team-count-1"));
         switch (topology(game)) {
             case PAIRED_FINAL -> {
-                if (count != 2) throw new IllegalArgumentException("最终对决必须指定两支不同的队伍");
+                if (count != 2)
+                    throw new IllegalArgumentException(
+                            MessageConfig.codeText("game-start-rules.validate-team-count-2"));
             }
             case PAIRED_COPIES -> {
                 if (count < 2 || count % 2 != 0) {
-                    throw new IllegalArgumentException("双队比赛需要双数队伍，每两队分配一个场地副本");
+                    throw new IllegalArgumentException(
+                            MessageConfig.codeText("game-start-rules.validate-team-count-3"));
                 }
             }
             case MULTI_TEAM -> {
                 if (game == GameTypeEnum.FrostbiteFrenzy && (count < 2 || count > 16)) {
-                    throw new IllegalArgumentException("霜冻决斗需要 2–16 支队伍");
+                    throw new IllegalArgumentException(
+                            MessageConfig.codeText("game-start-rules.validate-team-count-4"));
                 }
             }
         }

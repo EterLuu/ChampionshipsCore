@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.game.sulfursoccer.mechanics;
 
 import ink.ziip.championshipscore.api.game.sulfursoccer.config.SulfurSoccerConfig;
 import ink.ziip.championshipscore.api.game.sulfursoccer.geometry.SulfurSoccerGeometry;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -43,8 +44,15 @@ public final class SulfurSoccerSpawns {
                         rightHalf,
                         rightGoal,
                         alongX,
-                        "右队"),
-                side(world, config, config.getLeftSpawnPoints(), leftHalf, leftGoal, alongX, "左队"),
+                        MessageConfig.codeText("sulfur-soccer-spawns.resolve-1")),
+                side(
+                        world,
+                        config,
+                        config.getLeftSpawnPoints(),
+                        leftHalf,
+                        leftGoal,
+                        alongX,
+                        MessageConfig.codeText("sulfur-soccer-spawns.resolve-2")),
                 floorY);
     }
 
@@ -84,7 +92,8 @@ public final class SulfurSoccerSpawns {
                             yaw,
                             0);
             if (!half.contains(spawn.toVector()) || insideGoal(config, spawn.toVector()))
-                throw new IllegalArgumentException(name + "中场三点必须位于己方半场内、球门外");
+                throw new IllegalArgumentException(
+                        MessageConfig.codeText("sulfur-soccer-spawns.side-1", name));
             result.add(spawn);
         }
         int groundY = (int) Math.floor(floorY - 0.01);
@@ -112,9 +121,11 @@ public final class SulfurSoccerSpawns {
             }
         }
         if (keeper == null)
-            throw new IllegalArgumentException(name + "球门前未找到独立石英或白色混凝土出生点：请在禁区外保留独立白色标记，且上方两格为空");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("sulfur-soccer-spawns.side-2", name));
         if (candidates > 1 && !configuredKeeper)
-            throw new IllegalArgumentException(name + "球门前有多块独立白色标记：请在地图编辑器将第 4 个出生点设在禁区外的目标标记上");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("sulfur-soccer-spawns.side-3", name));
         result.add(keeper);
         return List.copyOf(result);
     }

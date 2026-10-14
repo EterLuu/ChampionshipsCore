@@ -4612,6 +4612,8 @@ voting:
           - 21
           - 22
           - 23
+          - 24
+          - 25
         border:
           - 0
           - 1
@@ -4715,6 +4717,12 @@ voting:
           material: BARRIER
           title: "&#ff5555关闭"
           lore: []
+        unavailable-game:
+          material: GRAY_DYE
+          title: "&#a0a0a0&l%game%"
+          lore:
+            - "&#ff6b26暂不可投票"
+            - "&#a0a0a0%reason%"
         games:
           bingo:
             material: FILLED_MAP

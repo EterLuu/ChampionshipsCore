@@ -18,7 +18,10 @@ import java.util.List;
 
 final class DodgeboltEliminateSubCommand extends BaseSubCommand {
     DodgeboltEliminateSubCommand() {
-        super("eliminate", "裁判判定一名选手出局", "/cc finale dodgebolt eliminate <场地> <玩家>");
+        super(
+                "eliminate",
+                MessageConfig.codeText("dodgebolt-eliminate-sub-command.constructor-1"),
+                MessageConfig.codeText("dodgebolt-eliminate-sub-command.constructor-2"));
     }
 
     @Override

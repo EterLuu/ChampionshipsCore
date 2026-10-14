@@ -15,7 +15,11 @@ import java.util.List;
 
 public class VoteSubCommand extends BaseSubCommand {
     public VoteSubCommand() {
-        super("vote", "打开投票菜单或直接投票", "/cc vote [游戏]", PLAYER_PERMISSION);
+        super(
+                "vote",
+                MessageConfig.codeText("vote-sub-command.constructor-1"),
+                MessageConfig.codeText("vote-sub-command.constructor-2"),
+                PLAYER_PERMISSION);
     }
 
     @Override

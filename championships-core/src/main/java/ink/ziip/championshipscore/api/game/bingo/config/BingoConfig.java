@@ -106,8 +106,8 @@ public class BingoConfig extends BaseGameConfig {
 
     /**
      * Bonus for completing one of the first {@code line-bonus-major-count} lines. Awarded to every
-     * member of the team ("队内所有成员+50"), not just the completing player. Per the design doc: first 4
-     * lines = 50 each (per member).
+     * member of the team (all team members receive +50), not just the completing player. Per the
+     * design doc: first 4 lines = 50 each (per member).
      */
     @ConfigOption(path = "line-bonus")
     private int lineBonus = 50;

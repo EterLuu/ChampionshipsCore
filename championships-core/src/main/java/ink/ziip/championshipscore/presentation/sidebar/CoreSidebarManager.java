@@ -22,6 +22,7 @@ import ink.ziip.championshipscore.api.game.parkourwarrior.runtime.ParkourWarrior
 import ink.ziip.championshipscore.api.game.riptiderush.runtime.RiptideRushArea;
 import ink.ziip.championshipscore.api.game.snowball.runtime.SnowballShowdownTeamArea;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 import ink.ziip.championshipscore.platform.bukkit.scoreboard.SharedSidebar;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
@@ -82,7 +83,11 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
                         warning ->
                                 plugin.getLogger()
                                         .warning(
-                                                LogText.formatModuleLog("Sidebar", "发包", warning)));
+                                                LogText.formatModuleLog(
+                                                        "Sidebar",
+                                                        MessageConfig.codeText(
+                                                                "core-sidebar-manager.load-1"),
+                                                        warning)));
         Bukkit.getPluginManager().registerEvents(this, plugin);
         scheduleRefresh();
         Bukkit.getOnlinePlayers().forEach(this::refresh);
@@ -111,7 +116,11 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
             if (sidebar != null && !loaded.enabled()) sidebar.hideAll();
             if (sidebar != null) scheduleRefresh();
             plugin.getLogger()
-                    .info(LogText.formatModuleLog("Sidebar", "配置", "已加载 scoreboards.yml"));
+                    .info(
+                            LogText.formatModuleLog(
+                                    "Sidebar",
+                                    MessageConfig.codeText("core-sidebar-manager.reload-1"),
+                                    MessageConfig.codeText("core-sidebar-manager.reload-3")));
             return true;
         } catch (RuntimeException exception) {
             plugin.getLogger()
@@ -119,8 +128,10 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
                             Level.SEVERE,
                             LogText.formatModuleLog(
                                     "Sidebar",
-                                    "配置",
-                                    "scoreboards.yml 无效，保留上一份有效配置 | " + exception.getMessage()),
+                                    MessageConfig.codeText("core-sidebar-manager.reload-1"),
+                                    MessageConfig.codeText(
+                                            "core-sidebar-manager.reload-2",
+                                            exception.getMessage())),
                             exception);
             return false;
         }
@@ -225,8 +236,12 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         values.put(
                 "viewer.role",
                 spectator
-                        ? config.value("game.role-spectator", "观战")
-                        : config.value("game.role-participant", "参赛"));
+                        ? config.value(
+                                "game.role-spectator",
+                                MessageConfig.codeText("core-sidebar-manager.render-game-2"))
+                        : config.value(
+                                "game.role-participant",
+                                MessageConfig.codeText("core-sidebar-manager.render-game-1")));
         // A spectator may still have a persistent team assignment from the lobby or a previous
         // round.  Treat the view as neutral so the sidebar does not highlight that stale team.
         ChampionshipTeam viewerTeam =
@@ -234,7 +249,9 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         values.put(
                 "viewer.team",
                 viewerTeam == null
-                        ? config.value("game.spectator", "&7观战者")
+                        ? config.value(
+                                "game.spectator",
+                                MessageConfig.codeText("core-sidebar-manager.render-game-3"))
                         : viewerTeam.getColoredName());
         if (instance instanceof BattleBoxArea area) {
             BattleBoxMatch match = area.currentMatch();
@@ -280,7 +297,10 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
             Map<String, String> values,
             ChampionshipTeam right,
             ChampionshipTeam left) {
-        String undecided = config.value("match.undecided", "&7待定");
+        String undecided =
+                config.value(
+                        "match.undecided",
+                        MessageConfig.codeText("core-sidebar-manager.put-matchup-1"));
         values.put("match.right", right == null ? undecided : right.getColoredName());
         values.put("match.left", left == null ? undecided : left.getColoredName());
     }
@@ -338,7 +358,12 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
             SidebarConfiguration.GameTemplate template,
             ChampionshipTeam viewerTeam) {
         BingoRound round = bingo.getRound();
-        if (round == null) return List.of(config.value("ranking.none", "&7暂无排行"));
+        if (round == null)
+            return List.of(
+                    config.value(
+                            "ranking.none",
+                            MessageConfig.codeText(
+                                    "core-sidebar-manager.render-local-bingo-ranking-1")));
         List<ChampionshipTeam> ranked = round.rankedTeams();
         List<ChampionshipTeam> selected = selectRankingRows(ranked, viewerTeam);
         List<String> result = new ArrayList<>();
@@ -349,12 +374,12 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
                             ? team.equals(viewerTeam)
                                     ? config.value(
                                             "ranking.bingo-daily-own-row",
-                                            "{rank.team-color}&l▶ {rank.position}. {rank.team}"
-                                                    + " &7({rank.tasks} 项)")
+                                            MessageConfig.codeText(
+                                                    "core-sidebar-manager.render-local-bingo-ranking-3"))
                                     : config.value(
                                             "ranking.bingo-daily-row",
-                                            "{rank.team-color}{rank.position}. {rank.team}"
-                                                    + " &7({rank.tasks} 项)")
+                                            MessageConfig.codeText(
+                                                    "core-sidebar-manager.render-local-bingo-ranking-2"))
                             : team.equals(viewerTeam)
                                     ? template.ownRankingLine()
                                     : template.rankingLine();
@@ -375,7 +400,12 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
             SnowballShowdownTeamArea snowball,
             SidebarConfiguration.GameTemplate template) {
         List<ChampionshipTeam> ranked = snowball.getRankedTeams();
-        if (ranked.isEmpty()) return List.of(config.value("ranking.none", "&7暂无排行"));
+        if (ranked.isEmpty())
+            return List.of(
+                    config.value(
+                            "ranking.none",
+                            MessageConfig.codeText(
+                                    "core-sidebar-manager.render-local-bingo-ranking-1")));
         ChampionshipTeam viewerTeam = plugin.getTeamManager().getTeamByPlayer(player);
         List<String> result = new ArrayList<>();
         for (ChampionshipTeam team : selectRankingRows(ranked, viewerTeam)) {
@@ -408,13 +438,19 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         values.put(
                 "edit.world",
                 session.getTarget().worldName().isBlank()
-                        ? config.value("map-edit.world-unbound", "&c尚未绑定")
+                        ? config.value(
+                                "map-edit.world-unbound",
+                                MessageConfig.codeText("core-sidebar-manager.render-edit-1"))
                         : session.getTarget().worldName());
         values.put(
                 "edit.world-status",
                 correctWorld
-                        ? config.value("map-edit.world-correct", "&a正确")
-                        : config.value("map-edit.world-wrong", "&c错误"));
+                        ? config.value(
+                                "map-edit.world-correct",
+                                MessageConfig.codeText("core-sidebar-manager.render-edit-3"))
+                        : config.value(
+                                "map-edit.world-wrong",
+                                MessageConfig.codeText("core-sidebar-manager.render-edit-2")));
         values.put("edit.done", Integer.toString(session.configDone()));
         values.put("edit.total", Integer.toString(session.configTotal()));
         values.put("edit.errors", Integer.toString(errors.size()));
@@ -437,15 +473,24 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         values.put(
                 "map.publish-status",
                 maps.stream().allMatch(entry -> entry.config().isPrepareReady())
-                        ? config.value("map-publish.all-ready", "&a全部已发布")
-                        : config.value("map-publish.any-unpublished", "&e存在草稿或未保存修改"));
+                        ? config.value(
+                                "map-publish.all-ready",
+                                MessageConfig.codeText("core-sidebar-manager.render-map-status-2"))
+                        : config.value(
+                                "map-publish.any-unpublished",
+                                MessageConfig.codeText(
+                                        "core-sidebar-manager.render-map-status-1")));
         values.put(
                 "map.runtime-status",
                 maps.stream()
                         .map(entry -> entry.instance().getGameStageEnum().toString())
                         .distinct()
                         .reduce((left, right) -> left + "&7 / " + right)
-                        .orElse(config.value("map-status.runtime-unknown", "&7未知")));
+                        .orElse(
+                                config.value(
+                                        "map-status.runtime-unknown",
+                                        MessageConfig.codeText(
+                                                "core-sidebar-manager.render-map-status-3"))));
         values.put(
                 "map.revision",
                 Integer.toString(
@@ -547,7 +592,11 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
     private Map<String, String> withViewerValues(Player player, Map<String, String> values) {
         ChampionshipTeam viewerTeam = plugin.getTeamManager().getTeamByPlayer(player);
         Map<String, String> effective = new LinkedHashMap<>();
-        effective.put("viewer.team", viewerTeam == null ? "&7观战者" : viewerTeam.getColoredName());
+        effective.put(
+                "viewer.team",
+                viewerTeam == null
+                        ? MessageConfig.codeText("core-sidebar-manager.render-game-3")
+                        : viewerTeam.getColoredName());
         effective.putAll(values);
         return effective;
     }
@@ -565,9 +614,17 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
     }
 
     private static String publishStatus(SidebarConfiguration sidebar, BaseGameConfig config) {
-        if (config.isPrepareReady()) return sidebar.value("map-publish.ready", "&a已发布");
-        if (config.isPreparePublished()) return sidebar.value("map-publish.published", "&e有未发布修改");
-        return sidebar.value("map-publish.unpublished", "&c尚未发布");
+        if (config.isPrepareReady())
+            return sidebar.value(
+                    "map-publish.ready",
+                    MessageConfig.codeText("core-sidebar-manager.publish-status-1"));
+        if (config.isPreparePublished())
+            return sidebar.value(
+                    "map-publish.published",
+                    MessageConfig.codeText("core-sidebar-manager.publish-status-2"));
+        return sidebar.value(
+                "map-publish.unpublished",
+                MessageConfig.codeText("core-sidebar-manager.publish-status-3"));
     }
 
     private static String editWarning(
@@ -576,11 +633,19 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
             boolean complete,
             boolean correctWorld) {
         if (!correctWorld)
-            return sidebar.value("map-edit.world-invalid", "&c&l✗ 当前不在绑定世界，无法安全捕获配置");
-        if (!complete) return sidebar.value("map-edit.incomplete", "&c&l✗ 地图配置尚未完成");
+            return sidebar.value(
+                    "map-edit.world-invalid",
+                    MessageConfig.codeText("core-sidebar-manager.edit-warning-1"));
+        if (!complete)
+            return sidebar.value(
+                    "map-edit.incomplete",
+                    MessageConfig.codeText("core-sidebar-manager.edit-warning-2"));
         if (config.isPrepareDirty())
-            return sidebar.value("map-edit.dirty", "#ff6b26&l⚠ 修改尚未发布，不能用于比赛");
-        return sidebar.value("map-edit.complete", "&a&l✓ 配置完整且已发布");
+            return sidebar.value(
+                    "map-edit.dirty",
+                    MessageConfig.codeText("core-sidebar-manager.edit-warning-3"));
+        return sidebar.value(
+                "map-edit.complete", MessageConfig.codeText("core-sidebar-manager.edit-warning-4"));
     }
 
     private static String publishGlyph(BaseGameConfig config) {

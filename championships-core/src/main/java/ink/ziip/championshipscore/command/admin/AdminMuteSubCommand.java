@@ -34,14 +34,14 @@ public final class AdminMuteSubCommand extends BaseSubCommand {
         super(
                 action.name().toLowerCase(java.util.Locale.ROOT),
                 switch (action) {
-                    case MUTE -> "永久禁言玩家的公共聊天";
-                    case TEMPMUTE -> "限时禁言玩家的公共聊天";
-                    case UNMUTE -> "解除玩家的公共聊天禁言";
+                    case MUTE -> MessageConfig.codeText("admin-mute-sub-command.constructor-1");
+                    case TEMPMUTE -> MessageConfig.codeText("admin-mute-sub-command.constructor-2");
+                    case UNMUTE -> MessageConfig.codeText("admin-mute-sub-command.constructor-3");
                 },
                 switch (action) {
-                    case MUTE -> "/cc admin mute <玩家> [原因...]";
-                    case TEMPMUTE -> "/cc admin tempmute <玩家> <时长> [原因...]";
-                    case UNMUTE -> "/cc admin unmute <玩家>";
+                    case MUTE -> MessageConfig.codeText("admin-mute-sub-command.constructor-4");
+                    case TEMPMUTE -> MessageConfig.codeText("admin-mute-sub-command.constructor-5");
+                    case UNMUTE -> MessageConfig.codeText("admin-mute-sub-command.constructor-6");
                 },
                 ADMIN_PERMISSION);
         this.action = action;

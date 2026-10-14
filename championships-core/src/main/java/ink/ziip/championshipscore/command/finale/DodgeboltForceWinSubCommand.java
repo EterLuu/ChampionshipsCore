@@ -16,7 +16,10 @@ import java.util.List;
 
 final class DodgeboltForceWinSubCommand extends BaseSubCommand {
     DodgeboltForceWinSubCommand() {
-        super("force-win", "裁判直接指定决赛冠军", "/cc finale dodgebolt force-win <场地> <队伍>");
+        super(
+                "force-win",
+                MessageConfig.codeText("dodgebolt-force-win-sub-command.constructor-1"),
+                MessageConfig.codeText("dodgebolt-force-win-sub-command.constructor-2"));
     }
 
     @Override

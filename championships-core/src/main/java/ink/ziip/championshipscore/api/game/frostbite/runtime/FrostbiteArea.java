@@ -155,7 +155,10 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
                                         t == null
                                                 || t.getMembers().isEmpty()
                                                 || t.getMembers().size() > 4)) {
-            logGame(Level.WARNING, "参赛", "霜冻决斗需要2–16支队伍，每队需要1–4人");
+            logGame(
+                    Level.WARNING,
+                    MessageConfig.codeText("frostbite-area.valid-roster-1"),
+                    MessageConfig.codeText("frostbite-area.valid-roster-2"));
             return false;
         }
         return true;
@@ -236,7 +239,10 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
                     MessageConfig.FROSTBITE_GAME_START_SUBTITLE,
                     this::begin);
         } catch (RuntimeException failure) {
-            logGame(Level.SEVERE, "准备", failure.getMessage());
+            logGame(
+                    Level.SEVERE,
+                    MessageConfig.codeText("frostbite-area.prepare-round-1"),
+                    failure.getMessage());
             abortAndReset();
         }
     }
@@ -341,7 +347,10 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
                                                             (frozen.until() - tick) / 20D))
                                             .replace(
                                                     "%campfire%",
-                                                    camp(id) != null ? " &6营火将自动返回" : "")));
+                                                    camp(id) != null
+                                                            ? MessageConfig.codeText(
+                                                                    "frostbite-area.tick-round-2")
+                                                            : "")));
                 } else {
                     collect(p);
                     String hint = supplyHints.current(id, tick);
@@ -359,7 +368,8 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
                                                     .replace(
                                                             "%heated%",
                                                             round.heated(id, tick)
-                                                                    ? " &6保温中"
+                                                                    ? MessageConfig.codeText(
+                                                                            "frostbite-area.tick-round-1")
                                                                     : "")));
                 }
             }
@@ -524,7 +534,8 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
                 selected = candidate;
             }
         }
-        if (selected == null) throw new IllegalStateException("场地没有安全重生点");
+        if (selected == null)
+            throw new IllegalStateException(MessageConfig.codeText("frostbite-area.spawn-1"));
         teleport(p, selected);
         p.setVelocity(new Vector());
         p.setFallDistance(0);
@@ -718,7 +729,7 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
         p.getInventory().setHelmet(team.getHelmet());
         p.getInventory().setChestplate(null);
         p.getInventory().setLeggings(team.getLeggings());
-        p.getInventory().setBoots(team.getBoots());
+        p.getInventory().setBoots(null);
     }
 
     private void updateHeatState(Player p) {
@@ -782,7 +793,7 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
                     case FROST_TRAP -> MessageConfig.FROSTBITE_ITEM_FROST_TRAP_TITLE;
                     case WHOABALL -> MessageConfig.FROSTBITE_ITEM_WHOABALL_TITLE;
                 };
-        return value == null ? type.title : value;
+        return value == null ? type.title() : value;
     }
 
     private static String itemDescription(FrostbiteItem type) {
@@ -804,7 +815,7 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
                     case FROST_TRAP -> MessageConfig.FROSTBITE_ITEM_FROST_TRAP_DESCRIPTION;
                     case WHOABALL -> MessageConfig.FROSTBITE_ITEM_WHOABALL_DESCRIPTION;
                 };
-        return value == null ? type.description : value;
+        return value == null ? type.description() : value;
     }
 
     private void consume(Player p) {
@@ -1081,7 +1092,7 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
                                                     true,
                                                     false),
                                             true);
-                                    effect.setParticle(Particle.ENTITY_EFFECT);
+                                    effect.setParticle(Particle.ENTITY_EFFECT, effect.getColor());
                                     effect.setPersistent(false);
                                 });
         avalancheClouds.put(cloud.getUniqueId(), new AvalancheCloud(owner, arena, cloud));
@@ -1196,7 +1207,10 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
                 if (itemCount(p) > 0) {
                     if (fullPickupHintAt.getOrDefault(p.getUniqueId(), -100) + 100 <= tick) {
                         fullPickupHintAt.put(p.getUniqueId(), tick);
-                        supplyHints.add(p.getUniqueId(), "&e已有道具，无法额外获得补给", tick);
+                        supplyHints.add(
+                                p.getUniqueId(),
+                                MessageConfig.codeText("frostbite-area.collect-1"),
+                                tick);
                     }
                     return;
                 }

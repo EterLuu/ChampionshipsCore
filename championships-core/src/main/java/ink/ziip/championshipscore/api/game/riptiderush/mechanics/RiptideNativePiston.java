@@ -3,6 +3,8 @@ package ink.ziip.championshipscore.api.game.riptiderush.mechanics;
 import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.events.PacketContainer;
 
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -24,7 +26,8 @@ final class RiptideNativePiston {
         try {
             access = new Access();
         } catch (ReflectiveOperationException failure) {
-            throw new IllegalStateException("当前服务端不支持激流侧墙的原生活塞", failure);
+            throw new IllegalStateException(
+                    MessageConfig.codeText("riptide-native-piston.prepare-1"), failure);
         }
     }
 
@@ -88,7 +91,8 @@ final class RiptideNativePiston {
                 ProtocolLibrary.getProtocolManager().sendServerPacket(player, animation);
             }
         } catch (ReflectiveOperationException failure) {
-            throw new IllegalStateException("激流原生活塞移动失败", failure);
+            throw new IllegalStateException(
+                    MessageConfig.codeText("riptide-native-piston.move-1"), failure);
         }
     }
 
@@ -99,7 +103,8 @@ final class RiptideNativePiston {
                     access.worldHandle.invoke(block.getWorld()),
                     access.position.newInstance(block.getX(), block.getY(), block.getZ()));
         } catch (ReflectiveOperationException failure) {
-            throw new IllegalStateException("清理激流原生活塞失败", failure);
+            throw new IllegalStateException(
+                    MessageConfig.codeText("riptide-native-piston.remove-1"), failure);
         }
     }
 
@@ -117,7 +122,8 @@ final class RiptideNativePiston {
             access.removeBlockEntity.invoke(level, pos);
             block.setBlockData(carried, false);
         } catch (ReflectiveOperationException failure) {
-            throw new IllegalStateException("结束激流原生活塞移动失败", failure);
+            throw new IllegalStateException(
+                    MessageConfig.codeText("riptide-native-piston.settle-1"), failure);
         }
     }
 

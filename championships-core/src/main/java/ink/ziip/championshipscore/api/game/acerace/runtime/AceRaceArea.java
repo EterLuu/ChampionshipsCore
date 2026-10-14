@@ -234,7 +234,10 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
                 Vector pos1 = section.getVector("pos1");
                 Vector pos2 = section.getVector("pos2");
                 if (pos1 == null || pos2 == null) {
-                    logGame(java.util.logging.Level.WARNING, "进度点", "跳过不完整进度点=" + key);
+                    logGame(
+                            java.util.logging.Level.WARNING,
+                            MessageConfig.codeText("ace-race-area.load-course-points-1"),
+                            MessageConfig.codeText("ace-race-area.load-course-points-2", key));
                     continue;
                 }
                 progressPoints.add(
@@ -257,13 +260,20 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
                 Location location = LocationConfig.readLocation(serialized);
                 if (location.getWorld() == null
                         || !getWorldName().equals(location.getWorld().getName())) {
-                    logGame(java.util.logging.Level.WARNING, "重生点", "跳过世界无效的重生点=" + serialized);
+                    logGame(
+                            java.util.logging.Level.WARNING,
+                            MessageConfig.codeText("ace-race-area.load-course-points-3"),
+                            MessageConfig.codeText(
+                                    "ace-race-area.load-course-points-5", serialized));
                     continue;
                 }
                 respawnPoints.add(new AceRaceRespawnPoint(location));
                 respawnPointConfigIndexes.add(configIndex);
             } catch (Exception exception) {
-                logGame(java.util.logging.Level.WARNING, "重生点", "跳过格式无效的重生点=" + serialized);
+                logGame(
+                        java.util.logging.Level.WARNING,
+                        MessageConfig.codeText("ace-race-area.load-course-points-3"),
+                        MessageConfig.codeText("ace-race-area.load-course-points-4", serialized));
             }
         }
         rebuildRespawnProgressPointBindings();
@@ -304,8 +314,10 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
             if (!boundProgressPoints.contains(index)) {
                 logGame(
                         java.util.logging.Level.WARNING,
-                        "重生点",
-                        "未能按坐标为进度点 #" + (index + 1) + " 找到绑定重生点");
+                        MessageConfig.codeText("ace-race-area.load-course-points-3"),
+                        MessageConfig.codeText(
+                                "ace-race-area.rebuild-respawn-progress-point-bindings-1",
+                                (index + 1)));
             }
         }
     }
@@ -543,7 +555,10 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
                 || getGameConfig().getStartSpawnPoint() == null
                 || !getGameConfig().hasStartLine()
                 || !getGameConfig().hasFinishLine()) {
-            logGame(java.util.logging.Level.WARNING, "启动", "赛道缺少进度点、重生点、起点出生点、起点线或终点线，已取消本场");
+            logGame(
+                    java.util.logging.Level.WARNING,
+                    MessageConfig.codeText("ace-race-area.start-game-preparation-1"),
+                    MessageConfig.codeText("ace-race-area.start-game-preparation-2"));
             endGameFinally();
             return;
         }
@@ -1963,7 +1978,10 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     private void hideRacer(@NotNull Player player) {
         disableRacerCollisions(player);
         plugin.getVisibilityManager()
-                .seeSelf(player.getUniqueId(), visibilityOwner, "Ace Race 开始后一分钟内隐藏其他玩家");
+                .seeSelf(
+                        player.getUniqueId(),
+                        visibilityOwner,
+                        MessageConfig.codeText("ace-race-area.hide-racer-1"));
         for (Player other : Bukkit.getOnlinePlayers()) {
             if (other.equals(player)) continue;
             if (gamePlayers.contains(other.getUniqueId())
@@ -2128,7 +2146,9 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
                         target.getUniqueId(),
                         visible,
                         visibilityOwner,
-                        visible ? "Ace Race 距离内玩家可见" : "Ace Race 距离或冲刺规则隐藏");
+                        visible
+                                ? MessageConfig.codeText("ace-race-area.set-racer-visible-2")
+                                : MessageConfig.codeText("ace-race-area.set-racer-visible-1"));
     }
 
     private @NotNull TextDisplay ensureRacerNameDisplay(@NotNull Player racer) {

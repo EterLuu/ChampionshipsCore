@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.riptiderush.mechanics;
 
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -50,11 +52,11 @@ public final class RiptideDodgeSchedule {
         /** The arrival side relative to the raft, rather than the mob's travel direction. */
         public String arrivalSide() {
             return switch (this) {
-                case NORTH -> "前方";
-                case SOUTH -> "后方";
-                case EAST -> "右方";
-                case WEST -> "左方";
-                case DOWN -> "上方";
+                case NORTH -> MessageConfig.codeText("riptide-dodge-schedule.arrival-side-1");
+                case SOUTH -> MessageConfig.codeText("riptide-dodge-schedule.arrival-side-2");
+                case EAST -> MessageConfig.codeText("riptide-dodge-schedule.arrival-side-3");
+                case WEST -> MessageConfig.codeText("riptide-dodge-schedule.arrival-side-4");
+                case DOWN -> MessageConfig.codeText("riptide-dodge-schedule.arrival-side-5");
             };
         }
     }

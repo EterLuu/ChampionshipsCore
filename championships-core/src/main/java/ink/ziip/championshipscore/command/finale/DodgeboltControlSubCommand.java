@@ -15,7 +15,10 @@ import java.util.List;
 
 final class DodgeboltControlSubCommand extends BaseSubCommand {
     DodgeboltControlSubCommand(String name, String description) {
-        super(name, description, "/cc finale dodgebolt " + name + " <场地>");
+        super(
+                name,
+                description,
+                MessageConfig.codeText("dodgebolt-control-sub-command.constructor-1", name));
     }
 
     @Override

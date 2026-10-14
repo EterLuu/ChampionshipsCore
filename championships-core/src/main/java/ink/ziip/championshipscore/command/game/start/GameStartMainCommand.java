@@ -6,6 +6,7 @@ import ink.ziip.championshipscore.api.game.start.GameStartRules;
 import ink.ziip.championshipscore.api.game.start.GameStartService;
 import ink.ziip.championshipscore.api.game.start.SubArenaSupport;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
 import org.bukkit.Bukkit;
@@ -23,8 +24,8 @@ public final class GameStartMainCommand extends BaseSubCommand {
     public GameStartMainCommand() {
         super(
                 "start",
-                "指定地图与参赛队伍启动单局",
-                "/cc game start <游戏> <地图|auto> [all|队伍...] [--arena all|编号]",
+                MessageConfig.codeText("game-start-main-command.constructor-1"),
+                MessageConfig.codeText("game-start-main-command.constructor-2"),
                 ADMIN_PERMISSION);
     }
 
@@ -58,9 +59,10 @@ public final class GameStartMainCommand extends BaseSubCommand {
                                                                 ? result
                                                                 : new GameStartService.Result(
                                                                         false,
-                                                                        "执行端启动失败："
-                                                                                + failure
-                                                                                        .getMessage()));
+                                                                        MessageConfig.codeText(
+                                                                                "game-start-main-command.on-command-1",
+                                                                                failure
+                                                                                        .getMessage())));
                                             });
                         });
             }

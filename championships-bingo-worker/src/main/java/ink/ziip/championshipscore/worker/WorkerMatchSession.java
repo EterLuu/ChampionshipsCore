@@ -69,6 +69,7 @@ import org.bukkit.scoreboard.Team;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -119,6 +120,9 @@ final class WorkerMatchSession {
 
     /** Last live position for a participant who disconnected during the match. */
     private final Map<UUID, Location> lastQuitLocations = new HashMap<>();
+
+    private final Map<UUID, CompletableFuture<Boolean>> spectatorTeleports =
+            new ConcurrentHashMap<>();
 
     private final Set<UUID> preparedPlayers = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private final Set<TeamCell> completedTeamCells = ConcurrentHashMap.newKeySet();
@@ -482,7 +486,9 @@ final class WorkerMatchSession {
             result.complete(false);
             return;
         }
-        player.teleportAsync(destination)
+        (snapshot.role() == ParticipantRole.SPECTATOR
+                        ? teleportSpectator(player, destination, null)
+                        : player.teleportAsync(destination))
                 .whenComplete(
                         (success, error) -> {
                             Throwable failure = error;
@@ -1305,6 +1311,7 @@ final class WorkerMatchSession {
     void playerLeft(Player player) {
         UUID playerId = player.getUniqueId();
         if (!owns(playerId)) return;
+        cancelSpectatorTeleport(playerId);
         Location quitLocation = player.getLocation().clone();
         String quitWorldName = player.getWorld() == null ? null : player.getWorld().getName();
         synchronized (this) {
@@ -1480,31 +1487,125 @@ final class WorkerMatchSession {
     }
 
     void teleportToSpectatorTarget(Player player, UUID targetId) {
-        PlayerSnapshot source = participants.get(player.getUniqueId());
+        if (targetId.equals(player.getUniqueId()) || !participants.containsKey(targetId)) return;
+        teleportSpectator(player, null, targetId);
+    }
+
+    private CompletableFuture<Boolean> teleportSpectator(
+            Player player, Location fallback, UUID selectedTarget) {
+        UUID viewer = player.getUniqueId();
+        PlayerSnapshot source = participants.get(viewer);
         if (source == null
                 || source.role() != ParticipantRole.SPECTATOR
-                || lifecycle.state().terminal()) return;
-        PlayerSnapshot snapshot = participants.get(targetId);
-        if (snapshot == null || targetId.equals(player.getUniqueId())) return;
-        Player target = Bukkit.getPlayer(targetId);
-        if (target == null || !target.isOnline()) return;
-        scheduler
-                .supplyEntity(target, target::getLocation)
-                .thenAccept(
+                || lifecycle.state().terminal()) return CompletableFuture.completedFuture(false);
+        CompletableFuture<Boolean> result = new CompletableFuture<>();
+        var previous = spectatorTeleports.put(viewer, result);
+        if (previous != null) previous.complete(false);
+        List<UUID> candidates = new ArrayList<>();
+        if (selectedTarget != null) candidates.add(selectedTarget);
+        else if (lifecycle.state() == MatchState.RUNNING) {
+            participants.values().stream()
+                    .filter(candidate -> candidate.role() == ParticipantRole.PLAYER)
+                    .map(PlayerSnapshot::uuid)
+                    .forEach(candidates::add);
+            Collections.shuffle(candidates);
+        }
+        captureSpectatorDestination(candidates, 0, fallback, selectedTarget == null)
+                .thenCompose(
                         location -> {
-                            if (location != null)
-                                scheduler.runEntity(
-                                        player,
-                                        () -> {
-                                            PlayerSnapshot current =
-                                                    participants.get(player.getUniqueId());
-                                            if (!lifecycle.state().terminal()
-                                                    && current != null
-                                                    && current.role() == ParticipantRole.SPECTATOR
-                                                    && participants.containsKey(targetId))
-                                                player.teleportAsync(location);
-                                        });
+                            if (location == null || location.getWorld() == null)
+                                return CompletableFuture.<Location>completedFuture(null);
+                            return location.getWorld()
+                                    .getChunkAtAsync(location)
+                                    .thenApply(chunk -> location);
+                        })
+                .whenComplete(
+                        (location, failure) -> {
+                            if (failure != null) result.completeExceptionally(failure);
+                            else if (location == null || !plugin.isEnabled())
+                                result.complete(false);
+                            else queueSpectatorTeleport(player, source, location, result);
                         });
+        result.whenComplete((success, error) -> spectatorTeleports.remove(viewer, result));
+        return result;
+    }
+
+    private void queueSpectatorTeleport(
+            Player player,
+            PlayerSnapshot source,
+            Location location,
+            CompletableFuture<Boolean> result) {
+        try {
+            boolean accepted =
+                    scheduler.runEntity(
+                            player,
+                            () -> applySpectatorTeleport(player, source, location, result),
+                            () -> result.complete(false));
+            if (!accepted) result.complete(false);
+        } catch (org.bukkit.plugin.IllegalPluginAccessException stopped) {
+            result.complete(false);
+        }
+    }
+
+    private void applySpectatorTeleport(
+            Player player,
+            PlayerSnapshot source,
+            Location location,
+            CompletableFuture<Boolean> result) {
+        UUID viewer = source.uuid();
+        if (result.isDone()
+                || spectatorTeleports.get(viewer) != result
+                || participants.get(viewer) != source
+                || lifecycle.state().terminal()
+                || !plugin.isEnabled()
+                || Bukkit.getPlayer(viewer) != player
+                || !player.isOnline()) {
+            result.complete(false);
+            return;
+        }
+        try {
+            player.teleportAsync(location)
+                    .whenComplete(
+                            (success, failure) -> {
+                                if (failure != null) result.completeExceptionally(failure);
+                                else result.complete(Boolean.TRUE.equals(success));
+                            });
+        } catch (RuntimeException failure) {
+            result.completeExceptionally(failure);
+        }
+    }
+
+    private CompletableFuture<Location> captureSpectatorDestination(
+            List<UUID> candidates, int index, Location fallback, boolean requireGameplay) {
+        if (index >= candidates.size()) return CompletableFuture.completedFuture(fallback);
+        UUID targetId = candidates.get(index);
+        Player target = Bukkit.getPlayer(targetId);
+        if (target == null)
+            return captureSpectatorDestination(candidates, index + 1, fallback, requireGameplay);
+        return scheduler
+                .supplyEntity(
+                        target,
+                        () -> {
+                            if (!target.isOnline()
+                                    || Bukkit.getPlayer(targetId) != target
+                                    || !participants.containsKey(targetId)) return null;
+                            if (requireGameplay
+                                    && (!isPlaying(targetId)
+                                            || target.getGameMode() == GameMode.SPECTATOR
+                                            || target.isDead())) return null;
+                            return target.getLocation();
+                        })
+                .thenCompose(
+                        location ->
+                                location != null
+                                        ? CompletableFuture.completedFuture(location)
+                                        : captureSpectatorDestination(
+                                                candidates, index + 1, fallback, requireGameplay));
+    }
+
+    private void cancelSpectatorTeleport(UUID playerId) {
+        var pending = spectatorTeleports.remove(playerId);
+        if (pending != null) pending.complete(false);
     }
 
     void teleportToTeammate(Player player, UUID targetId) {
@@ -1729,7 +1830,7 @@ final class WorkerMatchSession {
         }
         if (snapshot.role() == ParticipantRole.SPECTATOR) {
             applySpectatorState(player);
-            restoreQuitLocation(player, lastQuitLocation);
+            teleportSpectator(player, spectatorLocation(), null);
             return;
         }
         if (!roundPrepared) {
@@ -1948,6 +2049,7 @@ final class WorkerMatchSession {
     }
 
     CompletionStage<Boolean> removeSpectator(UUID playerId) {
+        cancelSpectatorTeleport(playerId);
         synchronized (this) {
             PlayerSnapshot existing = participants.get(playerId);
             if (existing == null || existing.role() != ParticipantRole.SPECTATOR) {
@@ -2138,6 +2240,8 @@ final class WorkerMatchSession {
     }
 
     private void cancelTasks() {
+        for (UUID viewer : List.copyOf(spectatorTeleports.keySet()))
+            cancelSpectatorTeleport(viewer);
         scatter.cancelPending();
         if (endTask != null) endTask.cancel();
         if (timerTask != null) timerTask.cancel();

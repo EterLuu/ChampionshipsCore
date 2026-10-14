@@ -160,7 +160,11 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
                         && base.isComplete()
                         && base.getPortalPoint() != null
                         && getGameConfig().isInBaseTemplate(base.getPortalPoint());
-        if (!configured) logGame(Level.WARNING, "启动", "地图配置尚未完成或队伍数量超出 base-count，无法开始游戏");
+        if (!configured)
+            logGame(
+                    Level.WARNING,
+                    MessageConfig.codeText("build-mart-area.can-start-configured-map-1"),
+                    MessageConfig.codeText("build-mart-area.can-start-configured-map-2"));
         return configured;
     }
 
@@ -209,7 +213,8 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
                                 getGameConfig().getConfigName()),
                         "base.schem");
         if (world == null || !schematic.isFile() || getGameConfig().getBaseCount() < 1)
-            throw new IllegalStateException("Build Mart 局部重置缺少世界、base.schem 或基地数量");
+            throw new IllegalStateException(
+                    MessageConfig.codeText("build-mart-area.restore-map-region-1"));
         try {
             ArenaPreparer.restoreCopies(
                     plugin,
@@ -233,7 +238,8 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
                         .forEach(entity -> entity.remove());
             }
         } catch (Exception exception) {
-            throw new IllegalStateException("Build Mart 地图区域重置失败", exception);
+            throw new IllegalStateException(
+                    MessageConfig.codeText("build-mart-area.restore-map-region-2"), exception);
         }
     }
 
@@ -291,7 +297,11 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
     protected void startGameProgress() {
         World world = Bukkit.getWorld(getWorldName());
         if (world == null) {
-            logGame(Level.WARNING, "世界", "世界=" + getWorldName() + " 不存在，无法开始");
+            logGame(
+                    Level.WARNING,
+                    MessageConfig.codeText("build-mart-area.start-game-progress-1"),
+                    MessageConfig.codeText(
+                            "build-mart-area.start-game-progress-2", getWorldName()));
             endGame();
             return;
         }
@@ -415,8 +425,11 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         } catch (Exception exception) {
             logGame(
                     Level.WARNING,
-                    "材料区",
-                    "无法恢复快照=" + zone.snapshotId() + " | " + exception.getMessage());
+                    MessageConfig.codeText("build-mart-area.restore-material-zone-1"),
+                    MessageConfig.codeText(
+                            "build-mart-area.restore-material-zone-2",
+                            zone.snapshotId(),
+                            exception.getMessage()));
         }
     }
 

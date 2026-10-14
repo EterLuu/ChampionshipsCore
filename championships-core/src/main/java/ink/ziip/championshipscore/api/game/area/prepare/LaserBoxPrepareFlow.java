@@ -12,6 +12,7 @@ import ink.ziip.championshipscore.api.game.laserbox.config.LaserBoxConfig;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -118,7 +119,8 @@ public final class LaserBoxPrepareFlow extends PrepareFlowDefinition {
                             cfg(a).setAreaPos1(values[0]);
                             cfg(a).setAreaPos2(values[1]);
                         },
-                        CoreMessages.formatAdminSuccess("LaserBox 对战边界已设置")));
+                        CoreMessages.formatAdminSuccess(
+                                MessageConfig.codeText("laser-box-prepare-flow.build-steps-1"))));
         steps.add(
                 new StandAndRunStep(
                         "right-spawn",
@@ -132,7 +134,7 @@ public final class LaserBoxPrepareFlow extends PrepareFlowDefinition {
                         Material.YELLOW_WOOL,
                         a -> cfg(a).getRightSpawnPoint() != null,
                         (a, location) -> cfg(a).setRightSpawnPoint(location),
-                        "§a已设置黄队出生点"));
+                        MessageConfig.codeText("laser-box-prepare-flow.build-steps-2")));
         steps.add(
                 new StandAndRunStep(
                         "left-spawn",
@@ -146,7 +148,7 @@ public final class LaserBoxPrepareFlow extends PrepareFlowDefinition {
                         Material.PURPLE_WOOL,
                         a -> cfg(a).getLeftSpawnPoint() != null,
                         (a, location) -> cfg(a).setLeftSpawnPoint(location),
-                        "§a已设置紫队出生点"));
+                        MessageConfig.codeText("laser-box-prepare-flow.build-steps-3")));
         steps.add(
                 new StandAndRunStep(
                         "spectator",
@@ -160,7 +162,7 @@ public final class LaserBoxPrepareFlow extends PrepareFlowDefinition {
                         Material.ENDER_EYE,
                         a -> cfg(a).getSpectatorSpawnPoint() != null,
                         (a, location) -> cfg(a).setSpectatorSpawnPoint(location),
-                        "§a已设置观战点"));
+                        MessageConfig.codeText("laser-box-prepare-flow.build-steps-4")));
         steps.add(
                 new ListStep(
                         "supply-points",

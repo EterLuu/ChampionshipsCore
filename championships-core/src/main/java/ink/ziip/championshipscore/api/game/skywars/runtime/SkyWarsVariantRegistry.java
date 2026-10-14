@@ -9,6 +9,7 @@ import ink.ziip.championshipscore.api.game.skywars.mechanics.SkyWarsBoundaryRule
 import ink.ziip.championshipscore.api.game.skywars.mechanics.SkyWarsRules;
 import ink.ziip.championshipscore.api.game.skywars.mechanics.SkyWarsScoring;
 import ink.ziip.championshipscore.api.game.skywars.model.SkyWarsVariant;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 
@@ -57,7 +58,10 @@ public final class SkyWarsVariantRegistry
             plugin.getLogger()
                     .log(
                             Level.SEVERE,
-                            LogText.formatModuleLog("SkyWarsVariant", "加载", "无法加载变体配置"),
+                            LogText.formatModuleLog(
+                                    "SkyWarsVariant",
+                                    MessageConfig.codeText("sky-wars-variant-registry.load-1"),
+                                    MessageConfig.codeText("sky-wars-variant-registry.load-2")),
                             exception);
         }
     }
@@ -75,9 +79,9 @@ public final class SkyWarsVariantRegistry
                         LogText.formatGameLog(
                                 ink.ziip.championshipscore.api.game.model.GameTypeEnum.SkyWars,
                                 mapConfig.getAreaName(),
-                                "配置",
-                                "变体",
-                                "找不到 variant=" + id + "，回退到 inline"));
+                                MessageConfig.codeText("sky-wars-variant-registry.resolve-1"),
+                                MessageConfig.codeText("sky-wars-variant-registry.resolve-2"),
+                                MessageConfig.codeText("sky-wars-variant-registry.resolve-3", id)));
         return mapConfig.resolveInlineVariant();
     }
 
@@ -127,7 +131,11 @@ public final class SkyWarsVariantRegistry
                     .log(
                             Level.SEVERE,
                             LogText.formatModuleLog(
-                                    "SkyWarsVariant", "加载", "文件=" + path.getFileName()),
+                                    "SkyWarsVariant",
+                                    MessageConfig.codeText("sky-wars-variant-registry.load-1"),
+                                    MessageConfig.codeText(
+                                            "sky-wars-variant-registry.load-variant-1",
+                                            path.getFileName())),
                             exception);
         }
     }

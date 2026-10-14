@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.rename;
 
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -31,8 +33,12 @@ final class MapConfigFileRename {
             @Nullable String oldWorldName,
             @Nullable String newWorldName)
             throws Exception {
-        if (!Files.isRegularFile(oldPath)) throw new IllegalStateException("原配置文件不存在：" + oldPath);
-        if (Files.exists(newPath)) throw new IllegalStateException("目标配置文件已存在：" + newPath);
+        if (!Files.isRegularFile(oldPath))
+            throw new IllegalStateException(
+                    MessageConfig.codeText("map-config-file-rename.rename-1", oldPath));
+        if (Files.exists(newPath))
+            throw new IllegalStateException(
+                    MessageConfig.codeText("map-config-file-rename.rename-2", newPath));
         byte[] original = Files.readAllBytes(oldPath);
         Path temporary =
                 oldPath.resolveSibling(

@@ -21,6 +21,7 @@ import ink.ziip.championshipscore.api.schedule.frostbite.FrostbiteScheduleHandle
 import ink.ziip.championshipscore.api.schedule.frostbite.FrostbiteScheduleManager;
 import ink.ziip.championshipscore.api.schedule.hotycodydusky.HotyCodyDuskyScheduleManager;
 import ink.ziip.championshipscore.api.schedule.laserbox.LaserBoxScheduleManager;
+import ink.ziip.championshipscore.api.schedule.model.TwoVTwoVector;
 import ink.ziip.championshipscore.api.schedule.parkourtag.ParkourTagScheduleManager;
 import ink.ziip.championshipscore.api.schedule.parkourwarrior.ParkourWarriorScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.parkourwarrior.ParkourWarriorScheduleManager;
@@ -58,6 +59,28 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 
 public class ScheduleManager extends BaseManager {
+    /** Announces the actual pairings, including rounds generated from the latest standings. */
+    public void announceRoundMatchups(GameTypeEnum game, int round, List<TwoVTwoVector> pairs) {
+        CoreMessages.sendMessageToAllPlayers(roundMatchups(game, round, pairs));
+    }
+
+    static String roundMatchups(GameTypeEnum game, int round, List<TwoVTwoVector> pairs) {
+        List<String> lines = new ArrayList<>();
+        lines.add(MessageConfig.codeText("schedule-manager.round-matchups-border"));
+        lines.add(MessageConfig.codeText("schedule-manager.round-matchups-header", game, round));
+        for (int i = 0; i < pairs.size(); i++) {
+            var pair = pairs.get(i);
+            lines.add(
+                    MessageConfig.codeText(
+                            "schedule-manager.round-matchups-pair",
+                            i + 1,
+                            pair.getTeamOne().getColoredName(),
+                            pair.getTeamTwo().getColoredName()));
+        }
+        lines.add(MessageConfig.codeText("schedule-manager.round-matchups-border"));
+        return CoreMessages.getMessage(lines);
+    }
+
     private final java.util.Map<
                     GameTypeEnum, ink.ziip.championshipscore.api.game.start.EventStartSelection>
             startSelections = new java.util.EnumMap<>(GameTypeEnum.class);
@@ -105,9 +128,13 @@ public class ScheduleManager extends BaseManager {
                             .orElseThrow(
                                     () ->
                                             new IllegalArgumentException(
-                                                    "找不到正式比赛地图：" + arguments.map()));
+                                                    MessageConfig.codeText(
+                                                            "schedule-manager.start-or-stop-formal-event-1",
+                                                            arguments.map())));
             if (!plugin.getPrepareSessionManager().canStart(game, map))
-                throw new IllegalArgumentException("地图未发布或当前不可启动：" + map);
+                throw new IllegalArgumentException(
+                        MessageConfig.codeText(
+                                "schedule-manager.start-or-stop-formal-event-2", map));
         }
         startSelections.put(
                 game,
@@ -117,7 +144,9 @@ public class ScheduleManager extends BaseManager {
         try {
             var service = new ink.ziip.championshipscore.api.game.start.GameStartService(plugin);
             var maps = FormalEventMapResolver.maps(plugin, game);
-            if (maps.isEmpty()) throw new IllegalArgumentException("没有正式比赛地图");
+            if (maps.isEmpty())
+                throw new IllegalArgumentException(
+                        MessageConfig.codeText("schedule-manager.start-or-stop-formal-event-3"));
             for (String selected : new java.util.LinkedHashSet<>(maps))
                 service.validateMap(game, selected, teams, arguments.arenas());
             action = startOrStopFormalEvent(game);
@@ -344,7 +373,14 @@ public class ScheduleManager extends BaseManager {
     public boolean abortFormalEvent(@NotNull GameTypeEnum gameTypeEnum, @NotNull String reason) {
         if (!supportsFormalEvent(gameTypeEnum) || !isFormalEventRunning(gameTypeEnum)) return false;
         endGameSchedule(gameTypeEnum);
-        plugin.getLogger().warning(LogText.formatGameLog(gameTypeEnum, "-", "调度", "中止", reason));
+        plugin.getLogger()
+                .warning(
+                        LogText.formatGameLog(
+                                gameTypeEnum,
+                                "-",
+                                MessageConfig.codeText("schedule-manager.abort-formal-event-1"),
+                                MessageConfig.codeText("schedule-manager.abort-formal-event-2"),
+                                reason));
         return true;
     }
 
@@ -475,7 +511,14 @@ public class ScheduleManager extends BaseManager {
         }
         if (instances.isEmpty()) {
             plugin.getLogger()
-                    .warning(LogText.formatGameLog(gameType, "-", "调度", "结算", "未找到等待释放的 EVENT 实例"));
+                    .warning(
+                            LogText.formatGameLog(
+                                    gameType,
+                                    "-",
+                                    MessageConfig.codeText("schedule-manager.abort-formal-event-1"),
+                                    MessageConfig.codeText("schedule-manager.settle-event-round-1"),
+                                    MessageConfig.codeText(
+                                            "schedule-manager.settle-event-round-2")));
             afterSettlement.run();
             return;
         }

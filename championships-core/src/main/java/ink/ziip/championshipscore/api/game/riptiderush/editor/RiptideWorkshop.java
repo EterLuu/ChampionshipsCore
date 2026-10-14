@@ -8,6 +8,7 @@ import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideCoursePlan;
 import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideDifficulty;
 import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideLevelType;
 import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptideColorFloorRun;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -58,7 +59,8 @@ public final class RiptideWorkshop {
             RiptideEditorPage origin,
             int step,
             boolean enableOnSave) {
-        if (ACTIVE.containsKey(session)) throw new IllegalStateException("请先保存或放弃当前建筑");
+        if (ACTIVE.containsKey(session))
+            throw new IllegalStateException(MessageConfig.codeText("riptide-workshop.begin-1"));
         ACTIVE.put(session, new Draft(player.getUniqueId(), session, origin, step, enableOnSave));
     }
 

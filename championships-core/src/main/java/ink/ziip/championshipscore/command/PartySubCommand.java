@@ -21,8 +21,8 @@ public final class PartySubCommand extends BaseSubCommand {
     public PartySubCommand() {
         super(
                 "party",
-                "管理临时小队",
-                "/cc party <invite|accept|leave|disband|info> [玩家]",
+                MessageConfig.codeText("party-sub-command.constructor-1"),
+                MessageConfig.codeText("party-sub-command.constructor-2"),
                 PLAYER_PERMISSION);
     }
 

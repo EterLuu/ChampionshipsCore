@@ -241,14 +241,18 @@ public class VoteManager extends BaseManager {
 
         if (gameTypeEnum == null
                 || FinaleGameRegistry.isRegistered(gameTypeEnum)
-                || !plugin.getGameManager().isGameEnabled(gameTypeEnum)
-                || !hasPublishedArea(gameTypeEnum)) {
+                || !plugin.getGameManager().isGameEnabled(gameTypeEnum)) {
             player.sendMessage(MessageConfig.VOTE_VOTE_FAILED_NOT_GAME);
             return;
         }
 
         if (rankManager.getGameOrder(gameTypeEnum) != -1) {
             player.sendMessage(MessageConfig.VOTE_VOTE_FAILED_ALREADY_PLAYED);
+            return;
+        }
+
+        if (!hasPublishedArea(gameTypeEnum)) {
+            player.sendMessage(MessageConfig.VOTE_VOTE_FAILED_UNPUBLISHED);
             return;
         }
 
@@ -292,11 +296,21 @@ public class VoteManager extends BaseManager {
     }
 
     public boolean canVoteFor(GameTypeEnum gameTypeEnum) {
-        return gameTypeEnum != null
-                && !FinaleGameRegistry.isRegistered(gameTypeEnum)
-                && plugin.getGameManager().isGameEnabled(gameTypeEnum)
+        return isBallotGame(gameTypeEnum)
                 && rankManager.getGameOrder(gameTypeEnum) == -1
                 && hasPublishedArea(gameTypeEnum);
+    }
+
+    boolean isBallotGame(GameTypeEnum gameType) {
+        return gameType != null
+                && !FinaleGameRegistry.isRegistered(gameType)
+                && plugin.getGameManager().isGameEnabled(gameType);
+    }
+
+    String unavailableReason(GameTypeEnum gameType) {
+        return rankManager.getGameOrder(gameType) != -1
+                ? MessageConfig.VOTE_UNAVAILABLE_PLAYED
+                : MessageConfig.VOTE_UNAVAILABLE_UNPUBLISHED;
     }
 
     private boolean hasPublishedArea(GameTypeEnum gameTypeEnum) {

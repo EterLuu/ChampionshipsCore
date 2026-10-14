@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.command.rank;
 
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -12,7 +13,10 @@ import java.util.List;
 
 public class GameWeightInfoSubCommand extends BaseSubCommand {
     public GameWeightInfoSubCommand() {
-        super("info", "查看各游戏权重信息", "/cc rank info");
+        super(
+                "info",
+                MessageConfig.codeText("game-weight-info-sub-command.constructor-1"),
+                "/cc rank info");
     }
 
     @Override

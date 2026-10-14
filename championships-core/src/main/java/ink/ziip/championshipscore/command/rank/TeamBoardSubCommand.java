@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.command.rank;
 
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -12,7 +13,10 @@ import java.util.List;
 
 public class TeamBoardSubCommand extends BaseSubCommand {
     public TeamBoardSubCommand() {
-        super("teamboard", "查看队伍积分排行榜", "/cc rank teamboard");
+        super(
+                "teamboard",
+                MessageConfig.codeText("team-board-sub-command.constructor-1"),
+                "/cc rank teamboard");
     }
 
     @Override

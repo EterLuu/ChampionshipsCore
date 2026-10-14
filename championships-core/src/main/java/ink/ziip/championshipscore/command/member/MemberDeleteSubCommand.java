@@ -15,7 +15,10 @@ import java.util.List;
 
 public class MemberDeleteSubCommand extends BaseSubCommand {
     public MemberDeleteSubCommand() {
-        super("delete", "从队伍移除成员", "/cc team member delete <队伍ID> <玩家>");
+        super(
+                "delete",
+                MessageConfig.codeText("member-delete-sub-command.constructor-1"),
+                MessageConfig.codeText("member-delete-sub-command.constructor-2"));
     }
 
     @Override

@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.game.buildmart.blueprint;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 
 import lombok.Getter;
@@ -56,12 +57,12 @@ public class BuildMartOrderPool {
                                     LogText.formatGameLog(
                                             GameTypeEnum.BuildMart,
                                             "-",
-                                            "加载",
-                                            "蓝图",
-                                            "蓝图="
-                                                    + blueprint.getId()
-                                                    + " 重复，已跳过文件="
-                                                    + file.getName()));
+                                            MessageConfig.codeText("build-mart-order-pool.load-1"),
+                                            MessageConfig.codeText("build-mart-order-pool.load-2"),
+                                            MessageConfig.codeText(
+                                                    "build-mart-order-pool.load-3",
+                                                    blueprint.getId(),
+                                                    file.getName())));
                     continue;
                 }
                 int stars = blueprint.getStars();
@@ -72,13 +73,12 @@ public class BuildMartOrderPool {
                                     LogText.formatGameLog(
                                             GameTypeEnum.BuildMart,
                                             "-",
-                                            "加载",
-                                            "蓝图",
-                                            "蓝图="
-                                                    + blueprint.getId()
-                                                    + " 星级="
-                                                    + stars
-                                                    + " 不在普通 1-5 范围，已跳过"));
+                                            MessageConfig.codeText("build-mart-order-pool.load-1"),
+                                            MessageConfig.codeText("build-mart-order-pool.load-2"),
+                                            MessageConfig.codeText(
+                                                    "build-mart-order-pool.load-4",
+                                                    blueprint.getId(),
+                                                    stars)));
                 }
             }
         }
@@ -87,9 +87,12 @@ public class BuildMartOrderPool {
                         LogText.formatGameLog(
                                 GameTypeEnum.BuildMart,
                                 "-",
-                                "加载",
-                                "蓝图",
-                                "普通=" + pool.normal.size() + " 黄金=" + pool.golden.size()));
+                                MessageConfig.codeText("build-mart-order-pool.load-1"),
+                                MessageConfig.codeText("build-mart-order-pool.load-2"),
+                                MessageConfig.codeText(
+                                        "build-mart-order-pool.load-5",
+                                        pool.normal.size(),
+                                        pool.golden.size())));
         return pool;
     }
 

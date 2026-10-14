@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.sulfursoccer.runtime;
 
 import ink.ziip.championshipscore.api.game.sulfursoccer.model.SulfurSoccerSide;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 /** Goal totals are local to the finale and never contribute leaderboard points. */
 public final class SulfurSoccerMatch {
@@ -16,7 +17,9 @@ public final class SulfurSoccerMatch {
     private SulfurSoccerSide winner;
 
     public SulfurSoccerMatch(int goalsToWin) {
-        if (goalsToWin < 1) throw new IllegalArgumentException("获胜球数必须为正数");
+        if (goalsToWin < 1)
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("sulfur-soccer-match.constructor-1"));
         this.goalsToWin = goalsToWin;
     }
 
@@ -33,7 +36,9 @@ public final class SulfurSoccerMatch {
                 || regulationStarted
                 || winner != null
                 || rightGoals != 0
-                || leftGoals != 0) throw new IllegalStateException("试踢只能在比赛开始前启动");
+                || leftGoals != 0)
+            throw new IllegalStateException(
+                    MessageConfig.codeText("sulfur-soccer-match.start-warmup-1"));
         warmupTicks = Math.multiplyExact(seconds, 20);
         playing = true;
     }

@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.database;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 
 import org.jetbrains.annotations.NotNull;
@@ -320,9 +321,10 @@ public final class DatabaseMigrationController {
                     .info(
                             LogText.formatModuleLog(
                                     "Database",
-                                    "迁移",
+                                    MessageConfig.codeText("database-migration-controller.apply-1"),
                                     String.format(
-                                            "版本=%d 名称=%s 完成，耗时=%dms",
+                                            MessageConfig.codeText(
+                                                    "database-migration-controller.apply-2"),
                                             migration.version(),
                                             migration.name(),
                                             System.currentTimeMillis() - startedAt)));
@@ -406,15 +408,12 @@ public final class DatabaseMigrationController {
                                 LogText.formatModuleLog(
                                         "Database",
                                         "IdentityIndex",
-                                        "暂未创建唯一索引="
-                                                + indexName
-                                                + "，表="
-                                                + table
-                                                + " 字段="
-                                                + column
-                                                + " 存在冲突组数="
-                                                + duplicateGroups
-                                                + "；人工消歧后需手工补建"));
+                                        MessageConfig.codeText(
+                                                "database-migration-controller.ensure-unique-index-1",
+                                                indexName,
+                                                table,
+                                                column,
+                                                duplicateGroups)));
                 return;
             }
         }

@@ -18,7 +18,10 @@ import java.util.List;
 
 public final class EventTeamImportSubCommand extends BaseSubCommand {
     public EventTeamImportSubCommand() {
-        super("import", "清空旧赛事状态并从 cc-web 导入完整阵容", "/cc event teams import <cc-web链接> --confirm");
+        super(
+                "import",
+                MessageConfig.codeText("event-team-import-sub-command.constructor-1"),
+                MessageConfig.codeText("event-team-import-sub-command.constructor-2"));
     }
 
     @Override

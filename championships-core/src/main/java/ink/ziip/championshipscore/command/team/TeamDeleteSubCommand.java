@@ -13,7 +13,10 @@ import java.util.List;
 
 public class TeamDeleteSubCommand extends BaseSubCommand {
     public TeamDeleteSubCommand() {
-        super("delete", "删除队伍", "/cc team delete <队伍ID>");
+        super(
+                "delete",
+                MessageConfig.codeText("team-delete-sub-command.constructor-1"),
+                MessageConfig.codeText("team-delete-sub-command.constructor-2"));
     }
 
     @Override
@@ -42,12 +45,14 @@ public class TeamDeleteSubCommand extends BaseSubCommand {
                                     result
                                                     == ink.ziip.championshipscore.api.team
                                                             .TeamManager.TeamDeletionResult.ACTIVE
-                                            ? "队伍正在比赛中"
+                                            ? MessageConfig.codeText(
+                                                    "team-delete-sub-command.on-command-2")
                                             : result
                                                             == ink.ziip.championshipscore.api.team
                                                                     .TeamManager.TeamDeletionResult
                                                                     .FAILED
-                                                    ? "数据库事务失败"
+                                                    ? MessageConfig.codeText(
+                                                            "team-delete-sub-command.on-command-1")
                                                     : MessageConfig.REASON_TEAM_DOES_NOT_EXIST;
                             sender.sendMessage(
                                     MessageConfig.TEAM_DELETED_FAILED

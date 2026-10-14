@@ -139,22 +139,36 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
 
     public String getStateText() {
         if (getGameStageEnum() == GameStageEnum.END)
-            return state(MessageConfig.SULFUR_SOCCER_STATE_END, "比赛结束");
-        if (paused) return state(MessageConfig.SULFUR_SOCCER_STATE_PAUSED, "等待选手重连");
+            return state(
+                    MessageConfig.SULFUR_SOCCER_STATE_END,
+                    MessageConfig.codeText("sulfur-soccer-area.get-state-text-1"));
+        if (paused)
+            return state(
+                    MessageConfig.SULFUR_SOCCER_STATE_PAUSED,
+                    MessageConfig.codeText("sulfur-soccer-area.get-state-text-2"));
         if (isWarmingUp())
             return scoreText(
-                    state(MessageConfig.SULFUR_SOCCER_STATE_WARMUP, "试踢 %time%（不计分）")
+                    state(
+                                    MessageConfig.SULFUR_SOCCER_STATE_WARMUP,
+                                    MessageConfig.codeText("sulfur-soccer-area.get-state-text-3"))
                             .replace("%time%", warmupTime()));
         if (isShootout()) {
-            String phase = shootout.preparing() ? "准备" : shootout.struck() ? "判定" : "射门";
+            String phase =
+                    shootout.preparing()
+                            ? MessageConfig.codeText("sulfur-soccer-area.get-state-text-6")
+                            : shootout.struck()
+                                    ? MessageConfig.codeText("sulfur-soccer-area.get-state-text-5")
+                                    : MessageConfig.codeText("sulfur-soccer-area.get-state-text-4");
             return penaltyText(
                             state(
                                     MessageConfig.SULFUR_SOCCER_STATE_SHOOTOUT,
-                                    "点球 %right_penalties%:%left_penalties% 第 %round% 轮 %phase%"
-                                            + " %seconds% 秒"))
+                                    MessageConfig.codeText("sulfur-soccer-area.get-state-text-7")))
                     .replace("%phase%", phase);
         }
-        return scoreText(state(MessageConfig.SULFUR_SOCCER_STATE_REGULATION, "剩余 %time%"));
+        return scoreText(
+                state(
+                        MessageConfig.SULFUR_SOCCER_STATE_REGULATION,
+                        MessageConfig.codeText("sulfur-soccer-area.get-state-text-8")));
     }
 
     private static String state(String configured, String fallback) {
@@ -215,7 +229,10 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
                     SulfurSoccerGeometry.box(
                             getGameConfig().getLeftGoalPos1(), getGameConfig().getLeftGoalPos2());
         } catch (IllegalArgumentException failure) {
-            logGame(Level.WARNING, "启动", failure.getMessage());
+            logGame(
+                    Level.WARNING,
+                    MessageConfig.codeText("sulfur-soccer-area.try-start-game-1"),
+                    failure.getMessage());
             return false;
         }
         return super.tryStartGame(right, left);
@@ -274,7 +291,10 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
         try {
             layout = SulfurSoccerSpawns.resolve(world, getGameConfig());
         } catch (IllegalArgumentException failure) {
-            logGame(Level.WARNING, "出生点", failure.getMessage());
+            logGame(
+                    Level.WARNING,
+                    MessageConfig.codeText("sulfur-soccer-area.start-game-preparation-1"),
+                    failure.getMessage());
             sendMessageToAllGamePlayers(
                     MessageConfig.SULFUR_SOCCER_START_FAILED + " " + failure.getMessage());
             abortAndReset();
@@ -303,7 +323,10 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
             validatePenaltySpace(world, rightPenalty);
             validatePenaltySpace(world, leftPenalty);
         } catch (IllegalArgumentException failure) {
-            logGame(Level.WARNING, "点球场地", failure.getMessage());
+            logGame(
+                    Level.WARNING,
+                    MessageConfig.codeText("sulfur-soccer-area.start-game-preparation-2"),
+                    failure.getMessage());
             sendMessageToAllGamePlayers(
                     MessageConfig.SULFUR_SOCCER_START_FAILED + " " + failure.getMessage());
             abortAndReset();
@@ -323,7 +346,9 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
                 colorName == null
                         ? null
                         : Material.getMaterial(colorName.toUpperCase(Locale.ROOT) + "_CONCRETE");
-        if (material == null) throw new IllegalArgumentException("无法解析参赛队伍的混凝土颜色");
+        if (material == null)
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("sulfur-soccer-area.concrete-material-1"));
         return material;
     }
 
@@ -360,7 +385,8 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
                 || goal == null
                 || concrete == null
                 || !concrete.name().endsWith("_CONCRETE"))
-            throw new IllegalArgumentException("球门换色需要有效的世界、球门选区和混凝土颜色");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("sulfur-soccer-area.apply-goal-colors-1"));
         Map<Vector, Material> original = new LinkedHashMap<>();
         BoundingBox shell = goal.clone().expand(1.0, 1.0, 1.0);
         int minX = (int) Math.floor(shell.getMinX());
@@ -646,13 +672,16 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
         for (Vector point : List.of(layout.ball(), layout.shooter(), layout.keeper())) {
             for (int y = point.getBlockY(); y <= point.getBlockY() + 1; y++)
                 if (!world.getBlockAt(point.getBlockX(), y, point.getBlockZ()).isPassable())
-                    throw new IllegalArgumentException("请清空点球足球、射手和球门内守门员位置的上方两格");
+                    throw new IllegalArgumentException(
+                            MessageConfig.codeText("sulfur-soccer-area.validate-penalty-space-1"));
         }
         for (int slot = 0; slot < 3; slot++)
             for (Vector point : layout.paneBlocks(slot))
                 if (!world.getBlockAt(point.getBlockX(), point.getBlockY(), point.getBlockZ())
                         .getType()
-                        .isAir()) throw new IllegalArgumentException("请清空球门前一格的点球玻璃板位置");
+                        .isAir())
+                    throw new IllegalArgumentException(
+                            MessageConfig.codeText("sulfur-soccer-area.validate-penalty-space-2"));
     }
 
     private SulfurSoccerPenaltyLayout penaltyLayout() {
@@ -943,12 +972,20 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
         if (isShootout()) {
             player.setCooldown(Material.ENDER_PEARL, 0);
             if (shootout.keeper().equals(player.getUniqueId())) {
-                String[] names = {"挡左", "挡中", "挡右"};
+                String[] names = {
+                    MessageConfig.codeText("sulfur-soccer-area.restore-player-1"),
+                    MessageConfig.codeText("sulfur-soccer-area.restore-player-2"),
+                    MessageConfig.codeText("sulfur-soccer-area.restore-player-3")
+                };
                 for (int slot = 0; slot < names.length; slot++) {
                     ItemStack item = new ItemStack(Material.GLASS_PANE);
                     var meta = item.getItemMeta();
                     meta.displayName(net.kyori.adventure.text.Component.text(names[slot]));
-                    meta.lore(List.of(net.kyori.adventure.text.Component.text("选择此快捷栏位置切换玻璃挡板")));
+                    meta.lore(
+                            List.of(
+                                    net.kyori.adventure.text.Component.text(
+                                            MessageConfig.codeText(
+                                                    "sulfur-soccer-area.restore-player-4"))));
                     item.setItemMeta(meta);
                     player.getInventory().setItem(slot, item);
                 }

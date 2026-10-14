@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.game.buildmart.blueprint;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.buildmart.mechanics.BuildMartCopperPolicy;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 
 import lombok.Getter;
@@ -213,9 +214,12 @@ public class BuildMartBlueprint {
                             LogText.formatGameLog(
                                     GameTypeEnum.BuildMart,
                                     "-",
-                                    "加载",
-                                    "蓝图",
-                                    "文件=" + file.getName() + " 已整张拒绝: " + exception.getMessage()));
+                                    MessageConfig.codeText("build-mart-blueprint.load-1"),
+                                    MessageConfig.codeText("build-mart-blueprint.load-2"),
+                                    MessageConfig.codeText(
+                                            "build-mart-blueprint.load-3",
+                                            file.getName(),
+                                            exception.getMessage())));
             return null;
         }
     }
@@ -224,17 +228,21 @@ public class BuildMartBlueprint {
             String id, YamlConfiguration yaml, Function<String, BlueprintBlock> parser) {
         Object rawBlocks = yaml.get("blocks");
         if (!(rawBlocks instanceof List<?> rows) || rows.isEmpty())
-            throw new IllegalArgumentException("blocks 必须为非空列表");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("build-mart-blueprint.from-yaml-1"));
         if (yaml.contains("name") && !yaml.isString("name"))
-            throw new IllegalArgumentException("name 必须为文本");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("build-mart-blueprint.from-yaml-2"));
         if (yaml.contains("stars") && !yaml.isInt("stars"))
-            throw new IllegalArgumentException("stars 必须为整数");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("build-mart-blueprint.from-yaml-3"));
         List<BlueprintBlock> blocks = new ArrayList<>();
         for (int index = 0; index < rows.size(); index++) {
             Object raw = rows.get(index);
             BlueprintBlock block = raw instanceof String text ? parser.apply(text) : null;
             if (block == null)
-                throw new IllegalArgumentException("blocks 第 " + (index + 1) + " 项格式/方块状态无效");
+                throw new IllegalArgumentException(
+                        MessageConfig.codeText("build-mart-blueprint.from-yaml-4", (index + 1)));
             blocks.add(block);
         }
         return new BuildMartBlueprint(
@@ -249,21 +257,28 @@ public class BuildMartBlueprint {
     }
 
     private static void validateBlocks(List<BlueprintBlock> blocks) {
-        if (blocks.isEmpty()) throw new IllegalArgumentException("blocks 不能为空");
+        if (blocks.isEmpty())
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("build-mart-blueprint.validate-blocks-1"));
         Set<Integer> occupied = new HashSet<>();
         for (int index = 0; index < blocks.size(); index++) {
             BlueprintBlock b = blocks.get(index);
-            String prefix = "blocks 第 " + (index + 1) + " 项";
+            String prefix =
+                    MessageConfig.codeText("build-mart-blueprint.validate-blocks-2", (index + 1));
             if (b == null || b.getBlockData() == null || isAir(b.getBlockData()))
-                throw new IllegalArgumentException(prefix + "为空气或无效方块");
+                throw new IllegalArgumentException(
+                        MessageConfig.codeText("build-mart-blueprint.validate-blocks-3", prefix));
             if (b.getX() < 0
                     || b.getX() > 6
                     || b.getY() < 0
                     || b.getY() > 6
                     || b.getZ() < 0
-                    || b.getZ() > 6) throw new IllegalArgumentException(prefix + "坐标越界，必须为 0–6");
+                    || b.getZ() > 6)
+                throw new IllegalArgumentException(
+                        MessageConfig.codeText("build-mart-blueprint.validate-blocks-4", prefix));
             if (!occupied.add(b.getX() * 49 + b.getY() * 7 + b.getZ()))
-                throw new IllegalArgumentException(prefix + "坐标重复");
+                throw new IllegalArgumentException(
+                        MessageConfig.codeText("build-mart-blueprint.validate-blocks-5", prefix));
         }
     }
 }

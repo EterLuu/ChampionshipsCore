@@ -32,8 +32,8 @@ public class WorldRenameSubCommand extends BaseSubCommand {
     public WorldRenameSubCommand() {
         super(
                 "rename",
-                "重命名世界并迁移关联地图配置",
-                "/cc admin world rename <旧世界> <新世界> [normal|nether|the_end]");
+                MessageConfig.codeText("world-rename-sub-command.constructor-1"),
+                MessageConfig.codeText("world-rename-sub-command.constructor-2"));
     }
 
     @Override

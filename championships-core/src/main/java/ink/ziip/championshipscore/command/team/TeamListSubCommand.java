@@ -20,7 +20,10 @@ import java.util.UUID;
 
 public class TeamListSubCommand extends BaseSubCommand {
     public TeamListSubCommand() {
-        super("list", "查看全部队伍名单与在线情况", "/cc team list");
+        super(
+                "list",
+                MessageConfig.codeText("team-list-sub-command.constructor-1"),
+                "/cc team list");
     }
 
     @Override
@@ -43,7 +46,7 @@ public class TeamListSubCommand extends BaseSubCommand {
         }
 
         StringBuilder message =
-                new StringBuilder("&#696969&m────────&r &#fff566全部队伍名单 &#696969&m────────");
+                new StringBuilder(MessageConfig.codeText("team-list-sub-command.on-command-1"));
         int totalMembers = 0;
         int totalOnline = 0;
 
@@ -73,26 +76,28 @@ public class TeamListSubCommand extends BaseSubCommand {
                     .append(online.size())
                     .append("/")
                     .append(online.size() + offline.size())
-                    .append(" 在线)")
-                    .append("\n  &#55ff55在线: &f")
+                    .append(MessageConfig.codeText("team-list-sub-command.on-command-4"))
+                    .append(MessageConfig.codeText("team-list-sub-command.on-command-3"))
                     .append(formatNames(online))
-                    .append("\n  &#ff6b6b离线: &f")
+                    .append(MessageConfig.codeText("team-list-sub-command.on-command-2"))
                     .append(formatNames(offline));
         }
 
-        message.append("\n&#696969共 ")
+        message.append(MessageConfig.codeText("team-list-sub-command.on-command-7"))
                 .append(teams.size())
-                .append(" 支队伍，")
+                .append(MessageConfig.codeText("team-list-sub-command.on-command-6"))
                 .append(totalOnline)
                 .append("/")
                 .append(totalMembers)
-                .append(" 名成员在线");
+                .append(MessageConfig.codeText("team-list-sub-command.on-command-5"));
         sender.sendMessage(LegacyText.translateColorCodes(message.toString()));
         return true;
     }
 
     private String formatNames(List<String> names) {
-        return names.isEmpty() ? "&#696969无" : String.join("&7, &f", names);
+        return names.isEmpty()
+                ? MessageConfig.codeText("team-list-sub-command.format-names-1")
+                : String.join("&7, &f", names);
     }
 
     @Override

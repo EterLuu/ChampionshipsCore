@@ -3,7 +3,11 @@ package ink.ziip.championshipscore.configuration.config.message;
 /** Non-button presentation atoms shared by inventory renderers. */
 public final class GuiText {
     public static final String SEPARATOR = " • ";
-    public static final String VERSUS = "对阵";
+
+    public static String versus() {
+        return MessageConfig.codeText("gui-text.versus-1");
+    }
+
     public static final String LEADER_MARK = "★ ";
     public static final String MEMBER_MARK = "• ";
 

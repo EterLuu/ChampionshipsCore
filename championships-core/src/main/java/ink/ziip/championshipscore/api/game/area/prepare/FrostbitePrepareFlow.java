@@ -8,6 +8,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.step.WeSelectionStep;
 import ink.ziip.championshipscore.api.game.frostbite.config.FrostbiteConfig;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 
 import org.bukkit.*;
@@ -43,7 +44,7 @@ public final class FrostbitePrepareFlow extends SnapshotMapPrepareFlow {
                             cfg(t).setArenaMin(points[0]);
                             cfg(t).setArenaMax(points[1]);
                         },
-                        "§a已设置第一张地图边界"),
+                        MessageConfig.codeText("frostbite-prepare-flow.build-steps-1")),
                 new StandAndRunStep(
                         "spectator",
                         LegacyText.component(
@@ -56,7 +57,7 @@ public final class FrostbitePrepareFlow extends SnapshotMapPrepareFlow {
                         Material.ENDER_EYE,
                         t -> cfg(t).getSpectatorSpawnPoint() != null,
                         (t, l) -> cfg(t).setSpectatorSpawnPoint(l),
-                        "§a已设置观战出生点"),
+                        MessageConfig.codeText("frostbite-prepare-flow.build-steps-2")),
                 points(true),
                 points(false));
     }

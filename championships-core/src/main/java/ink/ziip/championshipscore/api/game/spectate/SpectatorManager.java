@@ -689,10 +689,25 @@ public final class SpectatorManager extends BaseManager implements Listener {
         plugin.getVisibilityManager().clearManualOverrides(uuid);
     }
 
-    /**
-     * Preloads only; the actual teleport occurs on the server thread after session and request
-     * checks.
-     */
+    /** Prefers a live participant in the same instance over the arena's spectator anchor. */
+    public org.bukkit.Location defaultDestination(Player viewer, BaseGameInstance area) {
+        List<Player> targets =
+                playersInArea(area, viewer.getUniqueId()).stream()
+                        .filter(area::isGameplayParticipant)
+                        .filter(
+                                target ->
+                                        gameManager.getBasePlayerArea(target.getUniqueId()) == area)
+                        .filter(target -> !target.isDead())
+                        .toList();
+        return targets.isEmpty()
+                ? area.getSpectatorSpawnLocation()
+                : targets.get(
+                                java.util.concurrent.ThreadLocalRandom.current()
+                                        .nextInt(targets.size()))
+                        .getLocation();
+    }
+
+    /** Preloads chunks before checking the current connection, session and latest request. */
     public void teleportManaged(
             @NotNull Player player,
             BaseGameInstance expectedArea,

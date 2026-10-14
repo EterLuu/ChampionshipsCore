@@ -7,6 +7,7 @@ import ink.ziip.championshipscore.api.game.buildmart.runtime.BuildMartArea;
 import ink.ziip.championshipscore.api.game.buildmart.runtime.BuildMartMaterialManifest;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 
 import lombok.Getter;
@@ -100,9 +101,14 @@ public class BuildMartManager extends BaseGameInstanceManager<BuildMartArea> {
                                 LogText.formatGameLog(
                                         GameTypeEnum.BuildMart,
                                         "-",
-                                        "加载",
-                                        "蓝图",
-                                        "无法写出示例蓝图=" + name + " | " + e.getMessage()));
+                                        MessageConfig.codeText(
+                                                "build-mart-manager.copy-example-blueprints-1"),
+                                        MessageConfig.codeText(
+                                                "build-mart-manager.copy-example-blueprints-2"),
+                                        MessageConfig.codeText(
+                                                "build-mart-manager.copy-example-blueprints-3",
+                                                name,
+                                                e.getMessage())));
             }
         }
     }

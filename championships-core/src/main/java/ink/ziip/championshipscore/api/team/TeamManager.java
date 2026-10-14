@@ -8,6 +8,7 @@ import ink.ziip.championshipscore.api.team.entry.TeamEntry;
 import ink.ziip.championshipscore.api.team.entry.TeamImportEntry;
 import ink.ziip.championshipscore.api.team.entry.TeamMemberEntry;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.database.sync.DatabaseSyncDomain;
 import ink.ziip.championshipscore.database.team.TeamDaoImpl;
 import ink.ziip.championshipscore.logging.LogText;
@@ -63,7 +64,7 @@ public class TeamManager extends BaseManager {
             new ConcurrentHashMap<>();
 
     // ChampionshipTeam equality is display-name based. DAILY deliberately reuses colour names such
-    // as "红队" between matches, so this registry must distinguish the actual runtime objects.
+    // as "red team" between matches, so this registry must distinguish the actual runtime objects.
     private final Set<ChampionshipTeam> transientTeams = newTransientTeamRegistry();
     private final Set<String> pendingTeamNames = ConcurrentHashMap.newKeySet();
     private final Set<String> pendingTeamColors = ConcurrentHashMap.newKeySet();
@@ -402,7 +403,7 @@ public class TeamManager extends BaseManager {
     /**
      * Resolves administrator-facing team selectors by display name (case-insensitive) or numeric
      * database id. Most commands tab-complete the display name, while accepting the id keeps the
-     * historical {@code <队伍ID>} command syntax truthful.
+     * historical {@code <team-id>} command syntax truthful.
      */
     static @Nullable ChampionshipTeam findTeam(
             @NotNull Collection<ChampionshipTeam> teams, @NotNull String selector) {
@@ -617,7 +618,8 @@ public class TeamManager extends BaseManager {
                         .warning(
                                 LogText.formatModuleLog(
                                         "Daily",
-                                        "临时队伍清理",
+                                        MessageConfig.codeText(
+                                                "team-manager.remove-transient-teams-1"),
                                         team.getName() + " | " + exception.getMessage()));
             }
         }
@@ -686,11 +688,10 @@ public class TeamManager extends BaseManager {
                                 LogText.formatModuleLog(
                                         "Team",
                                         "IdentitySync",
-                                        "玩家="
-                                                + migration.username()
-                                                + " 已迁移至队伍ID="
-                                                + migration.resolvedTeamId()
-                                                + "，但当前缓存中不存在该队伍"));
+                                        MessageConfig.codeText(
+                                                "team-manager.apply-identity-migration-1",
+                                                migration.username(),
+                                                migration.resolvedTeamId())));
                 return;
             }
             resolvedTeam.addMember(migration.currentUuid(), migration.username());

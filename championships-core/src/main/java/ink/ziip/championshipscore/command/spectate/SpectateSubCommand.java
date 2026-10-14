@@ -24,8 +24,8 @@ public class SpectateSubCommand extends BaseSubCommand {
     public SpectateSubCommand() {
         super(
                 "spectate",
-                "打开观战菜单或直接选择场地实例",
-                "/cc spectate [leave | <游戏> <场地> [实例]]",
+                MessageConfig.codeText("spectate-sub-command.constructor-1"),
+                MessageConfig.codeText("spectate-sub-command.constructor-2"),
                 PLAYER_PERMISSION);
     }
 

@@ -20,7 +20,10 @@ import java.util.Set;
 
 public class WorldListSubCommand extends BaseSubCommand {
     public WorldListSubCommand() {
-        super("list", "展示已加载和未加载的世界", "/cc admin world list");
+        super(
+                "list",
+                MessageConfig.codeText("world-list-sub-command.constructor-1"),
+                "/cc admin world list");
     }
 
     @Override

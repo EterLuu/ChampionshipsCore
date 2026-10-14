@@ -188,10 +188,30 @@ final class WorkerMenuService {
 
     static void openSpectatorTargets(
             Player player, MatchManifest manifest, List<PlayerSnapshot> participants) {
+        TargetHolder holder = new TargetHolder(player.getUniqueId(), manifest, participants);
         var presentation = manifest.runtimeRules().presentation();
+        Inventory inventory =
+                Bukkit.createInventory(
+                        holder,
+                        54,
+                        WorkerPresentationService.message(
+                                        presentation, "spectator.teleport.menu_title")
+                                .decorationIfAbsent(
+                                        TextDecoration.ITALIC, TextDecoration.State.FALSE));
+        holder.inventory = inventory;
+        refreshSpectatorTargets(holder);
+        player.openInventory(inventory);
+    }
+
+    private static void refreshSpectatorTargets(TargetHolder holder) {
+        var manifest = holder.manifest;
+        var presentation = manifest.runtimeRules().presentation();
+        Inventory inventory = holder.inventory;
+        inventory.clear();
+        holder.targets.clear();
         List<PlayerSnapshot> targets =
-                participants.stream()
-                        .filter(candidate -> !candidate.uuid().equals(player.getUniqueId()))
+                holder.participants.stream()
+                        .filter(candidate -> !candidate.uuid().equals(holder.viewer))
                         .filter(
                                 candidate -> {
                                     Player online = Bukkit.getPlayer(candidate.uuid());
@@ -201,24 +221,12 @@ final class WorkerMenuService {
                                 java.util.Comparator.comparing(
                                         PlayerSnapshot::username, String.CASE_INSENSITIVE_ORDER))
                         .toList();
-        if (targets.isEmpty()) {
-            player.sendMessage(
-                    WorkerPresentationService.message(presentation, "spectator.teleport.none"));
-            return;
-        }
-        int rows = Math.max(1, Math.min(6, (targets.size() + 8) / 9));
-        TargetHolder holder = new TargetHolder();
-        Inventory inventory =
-                Bukkit.createInventory(
-                        holder,
-                        rows * 9,
-                        WorkerPresentationService.message(
-                                        presentation, "spectator.teleport.menu_title")
-                                .decorationIfAbsent(
-                                        TextDecoration.ITALIC, TextDecoration.State.FALSE));
-        holder.inventory = inventory;
-        for (int slot = 0; slot < targets.size() && slot < inventory.getSize(); slot++) {
-            PlayerSnapshot target = targets.get(slot);
+        int pages = Math.max(1, (targets.size() + 44) / 45);
+        holder.page = Math.max(0, Math.min(holder.page, pages - 1));
+        int from = holder.page * 45;
+        for (int index = from; index < Math.min(from + 45, targets.size()); index++) {
+            int slot = index - from;
+            PlayerSnapshot target = targets.get(index);
             ItemStack item = new ItemStack(Material.ENDER_PEARL);
             item.editMeta(
                     meta -> {
@@ -252,7 +260,54 @@ final class WorkerMenuService {
             inventory.setItem(slot, item);
             holder.targets.put(slot, target.uuid());
         }
-        player.openInventory(inventory);
+        if (holder.page > 0) setNavigation(inventory, 45, Material.ARROW, manifest, "previous");
+        if (holder.page + 1 < pages) setNavigation(inventory, 53, Material.ARROW, manifest, "next");
+        setNavigation(inventory, 48, Material.BARRIER, manifest, "close");
+        ItemStack page = new ItemStack(Material.PAPER);
+        page.editMeta(
+                meta ->
+                        meta.displayName(
+                                WorkerPresentationService.message(
+                                                presentation,
+                                                "spectator.teleport.page",
+                                                "%page%",
+                                                Integer.toString(holder.page + 1),
+                                                "%pages%",
+                                                Integer.toString(pages))
+                                        .decorationIfAbsent(
+                                                TextDecoration.ITALIC,
+                                                TextDecoration.State.FALSE)));
+        inventory.setItem(49, page);
+    }
+
+    private static void setNavigation(
+            Inventory inventory, int slot, Material material, MatchManifest manifest, String key) {
+        ItemStack item = new ItemStack(material);
+        item.editMeta(
+                meta ->
+                        meta.displayName(
+                                WorkerPresentationService.message(
+                                                manifest.runtimeRules().presentation(),
+                                                "spectator.teleport." + key)
+                                        .decorationIfAbsent(
+                                                TextDecoration.ITALIC,
+                                                TextDecoration.State.FALSE)));
+        inventory.setItem(slot, item);
+    }
+
+    static boolean navigateSpectatorTargets(Player player, Inventory inventory, int slot) {
+        if (!(inventory.getHolder(false) instanceof TargetHolder holder)) return false;
+        if (!holder.viewer.equals(player.getUniqueId())) return true;
+        if (slot == 48) {
+            player.closeInventory();
+            return true;
+        }
+        if ((slot == 45 || slot == 53) && inventory.getItem(slot) != null) {
+            holder.page += slot == 45 ? -1 : 1;
+            refreshSpectatorTargets(holder);
+            return true;
+        }
+        return false;
     }
 
     static boolean isReadOnly(Inventory inventory) {
@@ -434,6 +489,18 @@ final class WorkerMenuService {
     }
 
     private static final class TargetHolder implements InventoryHolder {
+        private final UUID viewer;
+        private final MatchManifest manifest;
+        private final List<PlayerSnapshot> participants;
+        private int page;
+
+        private TargetHolder(
+                UUID viewer, MatchManifest manifest, List<PlayerSnapshot> participants) {
+            this.viewer = viewer;
+            this.manifest = manifest;
+            this.participants = List.copyOf(participants);
+        }
+
         private final Map<Integer, UUID> targets = new HashMap<>();
         private Inventory inventory;
 

@@ -27,14 +27,17 @@ final class FinaleAreaControlSubCommand extends BaseSubCommand {
         super(
                 name,
                 description,
-                "/cc finale "
-                        + definition.commandName()
-                        + " "
-                        + name
-                        + " <场地>"
-                        + ("force-win".equals(name)
-                                ? " <队伍>"
-                                : "eliminate".equals(name) ? " <玩家>" : ""));
+                MessageConfig.codeText(
+                        "finale-area-control-sub-command.constructor-3",
+                        definition.commandName(),
+                        name,
+                        ("force-win".equals(name)
+                                ? MessageConfig.codeText(
+                                        "finale-area-control-sub-command.constructor-2")
+                                : "eliminate".equals(name)
+                                        ? MessageConfig.codeText(
+                                                "finale-area-control-sub-command.constructor-1")
+                                        : "")));
         this.definition = definition;
     }
 

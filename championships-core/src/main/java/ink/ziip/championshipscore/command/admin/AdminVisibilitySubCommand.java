@@ -17,7 +17,10 @@ import java.util.List;
 /** Read-only visibility diagnostics for live players. */
 public final class AdminVisibilitySubCommand extends BaseSubCommand {
     public AdminVisibilitySubCommand() {
-        super("visibility", "查看玩家实体显隐状态与原因", "/cc admin visibility [player]");
+        super(
+                "visibility",
+                MessageConfig.codeText("admin-visibility-sub-command.constructor-1"),
+                "/cc admin visibility [player]");
     }
 
     @Override

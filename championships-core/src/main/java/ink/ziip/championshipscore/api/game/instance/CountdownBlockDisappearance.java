@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.game.instance;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -56,8 +57,9 @@ public final class CountdownBlockDisappearance {
         if (volume <= 0 || volume > MAX_SELECTION_VOLUME) {
             instance.logGame(
                     java.util.logging.Level.WARNING,
-                    "倒计时方块消失",
-                    "选区体积超出限制，已跳过 | 体积=" + volume + " | 上限=" + MAX_SELECTION_VOLUME);
+                    MessageConfig.codeText("countdown-block-disappearance.start-1"),
+                    MessageConfig.codeText(
+                            "countdown-block-disappearance.start-2", volume, MAX_SELECTION_VOLUME));
             return;
         }
 

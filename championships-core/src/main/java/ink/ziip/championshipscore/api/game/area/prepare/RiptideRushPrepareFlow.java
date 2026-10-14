@@ -8,6 +8,7 @@ import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideCourseGeome
 import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideCoursePlanner;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -72,10 +73,11 @@ public final class RiptideRushPrepareFlow extends SnapshotMapPrepareFlow {
             geometry = config.resolveGeometry();
         } catch (RuntimeException exception) {
             errors.add(
-                    GuiConfig.text(
-                                    "map-editor.menus.step-list.games.riptide-rush.validation.geometry.title")
-                            + " 原因："
-                            + exception.getMessage());
+                    MessageConfig.codeText(
+                            "riptide-rush-prepare-flow.validate-for-display-1",
+                            GuiConfig.text(
+                                    "map-editor.menus.step-list.games.riptide-rush.validation.geometry.title"),
+                            exception.getMessage()));
             return errors;
         }
         int levelCount =
@@ -151,7 +153,12 @@ public final class RiptideRushPrepareFlow extends SnapshotMapPrepareFlow {
         } catch (RuntimeException exception) {
             session.getPlugin()
                     .getLogger()
-                    .log(Level.SEVERE, "激流勇进自动赛道生成失败 | map=" + session.getAreaName(), exception);
+                    .log(
+                            Level.SEVERE,
+                            MessageConfig.codeText(
+                                    "riptide-rush-prepare-flow.generate-and-save-1",
+                                    session.getAreaName()),
+                            exception);
             return CompletableFuture.completedFuture(false);
         }
     }

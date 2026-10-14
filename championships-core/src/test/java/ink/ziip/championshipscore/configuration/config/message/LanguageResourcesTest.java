@@ -62,6 +62,7 @@ class LanguageResourcesTest {
             }
             var configured = new HashSet<>(leafKeys(resource(entry.getValue())));
             configured.remove("dont-edit-this.version");
+            configured.removeIf(key -> key.startsWith("code-text."));
             assertEquals(declared, configured, entry.getValue());
         }
     }

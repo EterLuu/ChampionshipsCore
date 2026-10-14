@@ -128,7 +128,7 @@ public record PotionTask(Form form, String effect, int count, Dimension dimensio
     @Override
     public Component getName() {
         // Vanilla potion display keys, e.g. item.minecraft.splash_potion.effect.strength →
-        // "投掷型力量药水".
+        // Splash strength potion.
         return Component.text()
                 .color(NamedTextColor.YELLOW)
                 .append(

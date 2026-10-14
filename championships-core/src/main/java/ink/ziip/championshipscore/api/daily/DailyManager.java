@@ -915,7 +915,11 @@ public final class DailyManager extends BaseManager {
             teams.forEach(plugin.getTeamManager()::removeTransientTeam);
             queue.restore(selected, rules);
             plugin.getLogger()
-                    .warning(LogText.formatModuleLog("Daily", "临时队伍", exception.getMessage()));
+                    .warning(
+                            LogText.formatModuleLog(
+                                    "Daily",
+                                    MessageConfig.codeText("daily-manager.start-1"),
+                                    exception.getMessage()));
             return;
         }
 
@@ -968,7 +972,11 @@ public final class DailyManager extends BaseManager {
             plugin.getLogger()
                     .log(
                             java.util.logging.Level.SEVERE,
-                            LogText.formatModuleLog("Daily", "启动", "异步启动失败=" + queue.game()),
+                            LogText.formatModuleLog(
+                                    "Daily",
+                                    MessageConfig.codeText("daily-manager.finish-start-1"),
+                                    MessageConfig.codeText(
+                                            "daily-manager.finish-start-2", queue.game())),
                             failure);
         }
         if (started == null || started.instance() == null) {
@@ -1171,7 +1179,7 @@ public final class DailyManager extends BaseManager {
                 .info(
                         LogText.formatModuleLog(
                                 "Daily",
-                                "清理",
+                                MessageConfig.codeText("daily-manager.cleanup-1"),
                                 "game=" + session.game() + " players=" + players.size()));
         isolationService.unregister(session);
         sessionByInstance.remove(session.instance(), session);

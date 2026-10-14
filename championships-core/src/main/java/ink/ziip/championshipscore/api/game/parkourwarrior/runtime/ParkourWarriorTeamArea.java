@@ -627,7 +627,11 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
 
         for (UUID uuid : getGamePlayers())
             plugin.getVisibilityManager()
-                    .seeTeammates(uuid, visibilityOwner, "Parkour Warrior 进行中只能看见本队玩家");
+                    .seeTeammates(
+                            uuid,
+                            visibilityOwner,
+                            MessageConfig.codeText(
+                                    "parkour-warrior-team-area.start-formal-preparation-1"));
 
         plugin.getTeamManager().setCollision(false);
 
@@ -707,7 +711,10 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
         if (player != null)
             plugin.getVisibilityManager()
                     .seeTeammates(
-                            player.getUniqueId(), visibilityOwner, "Parkour Warrior 进行中只能看见本队玩家");
+                            player.getUniqueId(),
+                            visibilityOwner,
+                            MessageConfig.codeText(
+                                    "parkour-warrior-team-area.start-formal-preparation-1"));
     }
 
     public void showOnlinePlayers(Player player) {

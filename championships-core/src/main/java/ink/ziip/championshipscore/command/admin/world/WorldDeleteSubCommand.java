@@ -29,7 +29,10 @@ public class WorldDeleteSubCommand extends BaseSubCommand {
     private record PendingDelete(String worldName, long expiresAt) {}
 
     public WorldDeleteSubCommand() {
-        super("delete", "永久删除未被地图配置引用的世界", "/cc admin world delete <世界> confirm");
+        super(
+                "delete",
+                MessageConfig.codeText("world-delete-sub-command.constructor-1"),
+                MessageConfig.codeText("world-delete-sub-command.constructor-2"));
     }
 
     @Override

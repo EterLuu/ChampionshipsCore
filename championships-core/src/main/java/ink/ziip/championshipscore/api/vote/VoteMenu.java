@@ -47,7 +47,7 @@ final class VoteMenu implements Listener {
     void open(@NotNull Player player, boolean previewOnly) {
         Holder holder = new Holder(player.getUniqueId(), previewOnly);
         GuiConfig.MenuSpec menu = GuiConfig.menu(MENU_PATH, INVENTORY_SIZE, "", candidateSlots(11));
-        Inventory inventory = Bukkit.createInventory(holder, menu.size(), menu.title());
+        Inventory inventory = Bukkit.createInventory(holder, INVENTORY_SIZE, menu.title());
         holder.inventory = inventory;
         refresh(holder);
         player.openInventory(inventory);
@@ -113,9 +113,13 @@ final class VoteMenu implements Listener {
             if (slot >= 0 && slot < inventory.getSize()) inventory.setItem(slot, border);
 
         List<GameTypeEnum> candidates =
-                List.of(GameTypeEnum.values()).stream().filter(manager::canVoteFor).toList();
+                List.of(GameTypeEnum.values()).stream().filter(manager::isBallotGame).toList();
         List<Integer> slots =
-                GuiConfig.slots(MENU_PATH + ".layout.content", candidateSlots(candidates.size()));
+                ballotSlots(
+                        GuiConfig.slots(
+                                MENU_PATH + ".layout.content", candidateSlots(candidates.size())),
+                        reservedSlots(),
+                        candidates.size());
         int totalVotes = manager.getTotalVoteCount();
         int highestVotes = candidates.stream().mapToInt(manager::getVoteNums).max().orElse(0);
         GameTypeEnum selected = manager.getPlayerVote(holder.viewer);
@@ -173,6 +177,16 @@ final class VoteMenu implements Listener {
 
     private ItemStack gameItem(
             @NotNull GameTypeEnum gameType, boolean selected, int totalVotes, int highestVotes) {
+        if (!manager.canVoteFor(gameType))
+            return configured(
+                    "unavailable-game",
+                    null,
+                    Map.of(
+                            "game",
+                            gameType.toString(),
+                            "reason",
+                            manager.unavailableReason(gameType)),
+                    Material.GRAY_DYE);
         int votes = manager.getVoteNums(gameType);
         int percentage = totalVotes == 0 ? 0 : (int) Math.round(votes * 100D / totalVotes);
         boolean leading = highestVotes > 0 && votes == highestVotes;
@@ -282,14 +296,50 @@ final class VoteMenu implements Listener {
                 false);
     }
 
-    private static List<Integer> candidateSlots(int count) {
+    static List<Integer> candidateSlots(int count) {
         if (count <= 0) return List.of();
         if (count <= 7) return centeredRow(18, count);
-        int firstRow = (count + 1) / 2;
         List<Integer> slots = new ArrayList<>(count);
-        slots.addAll(centeredRow(9, firstRow));
-        slots.addAll(centeredRow(18, count - firstRow));
+        int rows = (count + 6) / 7;
+        for (int row = 0, remaining = count; row < rows; row++) {
+            int rowCount = (remaining + rows - row - 1) / (rows - row);
+            slots.addAll(centeredRow(9 + row * 9, rowCount));
+            remaining -= rowCount;
+        }
         return slots;
+    }
+
+    private static java.util.Set<Integer> reservedSlots() {
+        var reserved =
+                new java.util.HashSet<>(
+                        GuiConfig.slots(
+                                MENU_PATH + ".layout.border",
+                                List.of(
+                                        0, 1, 2, 3, 4, 5, 6, 7, 8, 45, 46, 47, 48, 49, 50, 51, 52,
+                                        53)));
+        reserved.addAll(
+                List.of(
+                        slot("time", TIME_SLOT),
+                        slot("overview", OVERVIEW_SLOT),
+                        slot("turnout", TURNOUT_SLOT),
+                        slot("my-ballot", BALLOT_SLOT),
+                        slot("close", CLOSE_SLOT)));
+        return reserved;
+    }
+
+    /** Keep configured positions, then fill missing capacity without overwriting controls. */
+    static List<Integer> ballotSlots(
+            List<Integer> configured, java.util.Set<Integer> reserved, int count) {
+        var slots = new java.util.LinkedHashSet<Integer>();
+        for (int slot : configured)
+            if (slot >= 0 && slot < INVENTORY_SIZE && !reserved.contains(slot)) slots.add(slot);
+        for (int slot : candidateSlots(count))
+            if (slot >= 0 && slot < INVENTORY_SIZE && !reserved.contains(slot)) slots.add(slot);
+        for (int slot = 9; slots.size() < count && slot < INVENTORY_SIZE; slot++)
+            if (!reserved.contains(slot)) slots.add(slot);
+        if (slots.size() < count)
+            throw new IllegalStateException("Voting layout has no room for all games");
+        return new ArrayList<>(slots).subList(0, count);
     }
 
     private static List<Integer> centeredRow(int rowStart, int count) {

@@ -8,6 +8,7 @@ import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideLevelTempla
 import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideLevelType;
 import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideStoppedAllocation;
 import ink.ziip.championshipscore.configuration.ConfigOption;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -98,12 +99,16 @@ public class RiptideRushConfig extends BaseGameConfig {
         return switch (type) {
             case COLOR_FLOOR -> colorFloorWeight;
             case DODGE -> dodgeWeight;
-            default -> throw new IllegalArgumentException("不是停船挑战子类");
+            default ->
+                    throw new IllegalArgumentException(
+                            MessageConfig.codeText("riptide-rush-config.stopped-child-weight-1"));
         };
     }
 
     public void setStoppedChildWeight(RiptideLevelType type, int weight) {
-        if (weight < 0 || weight > 100) throw new IllegalArgumentException("子类权重须为0–100");
+        if (weight < 0 || weight > 100)
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-rush-config.set-stopped-child-weight-1"));
         switch (type) {
             case COLOR_FLOOR -> {
                 RiptideStoppedAllocation.allocate(
@@ -125,12 +130,16 @@ public class RiptideRushConfig extends BaseGameConfig {
                         previewSeed);
                 dodgeWeight = weight;
             }
-            default -> throw new IllegalArgumentException("不是停船挑战子类");
+            default ->
+                    throw new IllegalArgumentException(
+                            MessageConfig.codeText("riptide-rush-config.stopped-child-weight-1"));
         }
     }
 
     public void setSideSweepWeight(int weight) {
-        if (weight < 0 || weight > 100) throw new IllegalArgumentException("子类权重须为0–100");
+        if (weight < 0 || weight > 100)
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-rush-config.set-stopped-child-weight-1"));
         RiptideStoppedAllocation.allocate(
                 stoppedCount,
                 stoppedAllocationMode,
@@ -251,10 +260,13 @@ public class RiptideRushConfig extends BaseGameConfig {
         int index = -1;
         for (int i = 0; i < rows.size(); i++)
             if (rows.get(i).id().equals(replacement.id())) index = i;
-        if (index < 0) throw new IllegalArgumentException("该变体已不存在");
+        if (index < 0)
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-rush-config.save-building-1"));
         rows.set(index, replacement);
         if (configuration == null || configurationPath == null)
-            throw new java.io.IOException("地图配置尚未加载");
+            throw new java.io.IOException(
+                    MessageConfig.codeText("riptide-rush-config.save-building-2"));
         setTemplates(rows);
         prepareDirty = true;
         configuration.set("course.pool", pool);
@@ -293,7 +305,8 @@ public class RiptideRushConfig extends BaseGameConfig {
         // than a dirty flag, also catches those replacements. Owned rows are deeply immutable.
         if (pool == resolvedPoolSource && resolvedPool != null) return resolvedPool;
         if (pool == null || pool.size() > MAX_POOL_SIZE)
-            throw new IllegalArgumentException("关卡池最多512项");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-rush-config.resolve-pool-1"));
         List<RiptideLevelTemplate> resolved =
                 pool.stream().map(RiptideLevelTemplate::parse).toList();
         setTemplates(resolved);
@@ -307,17 +320,22 @@ public class RiptideRushConfig extends BaseGameConfig {
 
     public void setPool(List<Map<String, Object>> rows) {
         if (rows == null || rows.size() > MAX_POOL_SIZE)
-            throw new IllegalArgumentException("关卡池最多512项");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-rush-config.resolve-pool-1"));
         setTemplates(rows.stream().map(RiptideLevelTemplate::parse).toList());
     }
 
     public void setTemplates(List<RiptideLevelTemplate> templates) {
         var resolved = List.copyOf(templates);
-        if (resolved.size() > MAX_POOL_SIZE) throw new IllegalArgumentException("关卡池最多512项");
+        if (resolved.size() > MAX_POOL_SIZE)
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-rush-config.resolve-pool-1"));
         var ids = new HashSet<String>();
         for (var template : resolved)
             if (!ids.add(template.id()))
-                throw new IllegalArgumentException("关卡ID重复：" + template.id());
+                throw new IllegalArgumentException(
+                        MessageConfig.codeText(
+                                "riptide-rush-config.set-templates-1", template.id()));
         // serialize() owns the row, while blueprint.serialize() and floor are already immutable.
         pool =
                 resolved.stream()
@@ -404,7 +422,10 @@ public class RiptideRushConfig extends BaseGameConfig {
         // server world here, also replacing references to a world that has since been reloaded.
         if (worldName != null && !worldName.isBlank()) {
             var world = plugin.getServer().getWorld(worldName);
-            if (world == null) throw new IllegalArgumentException("地图世界尚未加载：" + worldName);
+            if (world == null)
+                throw new IllegalArgumentException(
+                        MessageConfig.codeText(
+                                "riptide-rush-config.resolve-geometry-1", worldName));
             startPoint.setWorld(world);
             finishPoint.setWorld(world);
         }

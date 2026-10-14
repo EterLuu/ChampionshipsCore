@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.riptiderush.mechanics;
 
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -15,7 +17,13 @@ public record RiptideObservationQuestion(
         boolean correctOnLeft,
         boolean fromRight)
         implements RiptideQuestion {
-    private static final List<String> COLORS = List.of("§c红", "§b蓝", "§e黄", "§a绿", "§d紫");
+    private static final List<String> COLOR_KEYS =
+            List.of(
+                    "riptide-observation-question.colors-1",
+                    "riptide-observation-question.colors-2",
+                    "riptide-observation-question.colors-3",
+                    "riptide-observation-question.colors-4",
+                    "riptide-observation-question.colors-5");
 
     public RiptideObservationQuestion {
         clues = List.copyOf(clues);
@@ -110,7 +118,7 @@ public record RiptideObservationQuestion(
                 .map(
                         value ->
                                 variant.equals("OBSERVE_COUNT")
-                                        ? COLORS.get(value)
+                                        ? MessageConfig.codeText(COLOR_KEYS.get(value))
                                         : value.toString())
                 .collect(java.util.stream.Collectors.joining(" "));
     }
@@ -118,16 +126,29 @@ public record RiptideObservationQuestion(
     @Override
     public String prompt() {
         return switch (variant) {
-            case "OBSERVE_COUNT" -> COLORS.get(target) + "§f有几个？";
+            case "OBSERVE_COUNT" ->
+                    MessageConfig.codeText(
+                            "riptide-observation-question.prompt-1",
+                            MessageConfig.codeText(COLOR_KEYS.get(target)));
             case "OBSERVE_ORDER" ->
-                    "§f从"
-                            + (fromRight ? "右" : "左")
-                            + "数第"
-                            + (fromRight ? clues.size() - target : target + 1)
-                            + "项？";
-            case "OBSERVE_EXTREME" -> target == 1 ? "§f最大的数？" : "§f最小的数？";
-            case "OBSERVE_PARITY" -> target == 1 ? "§f奇数有几个？" : "§f偶数有几个？";
-            case "OBSERVE_UNIQUE" -> "§f只出现一次的数？";
+                    MessageConfig.codeText(
+                            "riptide-observation-question.prompt-4",
+                            (fromRight
+                                    ? MessageConfig.codeText(
+                                            "riptide-observation-question.prompt-3")
+                                    : MessageConfig.codeText(
+                                            "riptide-observation-question.prompt-2")),
+                            (fromRight ? clues.size() - target : target + 1));
+            case "OBSERVE_EXTREME" ->
+                    target == 1
+                            ? MessageConfig.codeText("riptide-observation-question.prompt-6")
+                            : MessageConfig.codeText("riptide-observation-question.prompt-5");
+            case "OBSERVE_PARITY" ->
+                    target == 1
+                            ? MessageConfig.codeText("riptide-observation-question.prompt-8")
+                            : MessageConfig.codeText("riptide-observation-question.prompt-7");
+            case "OBSERVE_UNIQUE" ->
+                    MessageConfig.codeText("riptide-observation-question.prompt-9");
             default -> throw new IllegalStateException(variant);
         };
     }

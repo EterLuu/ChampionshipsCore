@@ -23,7 +23,10 @@ public class AdminReloadSubCommand extends BaseSubCommand {
     private static final AtomicBoolean RELOAD_IN_PROGRESS = new AtomicBoolean();
 
     public AdminReloadSubCommand() {
-        super("reload", "重载插件配置", "/cc admin reload --confirm");
+        super(
+                "reload",
+                MessageConfig.codeText("admin-reload-sub-command.constructor-1"),
+                "/cc admin reload --confirm");
     }
 
     @Override

@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.game.config;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.configuration.ConfigOption;
 import ink.ziip.championshipscore.configuration.config.BaseConfigurationFile;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 
 import lombok.Getter;
@@ -92,13 +93,13 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
                             Level.SEVERE,
                             LogText.formatModuleLog(
                                     "GameConfig",
-                                    "重命名世界",
-                                    "配置文件="
-                                            + getFileName()
-                                            + " 无法更新世界="
-                                            + oldWorldName
-                                            + " -> "
-                                            + newWorld.getName()),
+                                    MessageConfig.codeText(
+                                            "base-game-config.rename-world-references-1"),
+                                    MessageConfig.codeText(
+                                            "base-game-config.rename-world-references-2",
+                                            getFileName(),
+                                            oldWorldName,
+                                            newWorld.getName())),
                             exception);
             return false;
         }
@@ -123,7 +124,9 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
                 field.setAccessible(true);
                 field.set(this, worldName);
             } catch (IllegalAccessException exception) {
-                throw new IllegalStateException("无法绑定地图世界", exception);
+                throw new IllegalStateException(
+                        MessageConfig.codeText("base-game-config.bind-configured-world-1"),
+                        exception);
             }
         }
     }
@@ -202,7 +205,11 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
                 Location location = (Location) field.get(this);
                 if (location != null && location.getWorld() == null) location.setWorld(world);
             } catch (IllegalAccessException exception) {
-                throw new IllegalStateException("无法绑定地图位置世界: " + field.getName(), exception);
+                throw new IllegalStateException(
+                        MessageConfig.codeText(
+                                "base-game-config.rebind-unresolved-location-worlds-1",
+                                field.getName()),
+                        exception);
             }
         }
     }

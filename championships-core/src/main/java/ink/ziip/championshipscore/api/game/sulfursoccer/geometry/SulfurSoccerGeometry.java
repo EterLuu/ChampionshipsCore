@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.sulfursoccer.geometry;
 
 import ink.ziip.championshipscore.api.game.sulfursoccer.model.SulfurSoccerSide;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
@@ -11,7 +12,8 @@ public final class SulfurSoccerGeometry {
 
     public static BoundingBox box(Vector first, Vector second) {
         if (!finite(first) || !finite(second))
-            throw new IllegalArgumentException("请设置有效的球场、半场和球门选区");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("sulfur-soccer-geometry.box-1"));
         return BoundingBox.of(
                 Vector.getMinimum(first, second),
                 Vector.getMaximum(first, second).add(new Vector(1, 1, 1)));

@@ -13,6 +13,7 @@ import com.sk89q.worldedit.session.ClipboardHolder;
 import ink.ziip.championshipscore.api.game.riptiderush.config.RiptideRushConfig;
 import ink.ziip.championshipscore.api.game.riptiderush.editor.RiptideWorkshop;
 import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptideColorFloorRun;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -35,10 +36,12 @@ public record RiptideBlueprint(
                 || width > 29
                 || width % 2 == 0
                 || height < 1
-                || height > 16) throw new IllegalArgumentException("关卡建筑尺寸或内容无效");
+                || height > 16)
+            throw new IllegalArgumentException(MessageConfig.codeText("riptide-blueprint.text-1"));
         Base64.getDecoder().decode(schematic);
         floor = List.copyOf(floor);
-        if (floor.size() > 225) throw new IllegalArgumentException("踩色甲板过大");
+        if (floor.size() > 225)
+            throw new IllegalArgumentException(MessageConfig.codeText("riptide-blueprint.text-2"));
     }
 
     public Map<String, Object> serialize() {
@@ -100,7 +103,8 @@ public record RiptideBlueprint(
                                     g.blockX(step + f, l), g.floorY() + y, g.blockZ(step + f, l))
                             .getType()
                             .isAir())
-                        throw new IllegalArgumentException("建筑超出施工范围：请移回橙色标记之间，并保持在允许高度内");
+                        throw new IllegalArgumentException(
+                                MessageConfig.codeText("riptide-blueprint.capture-1"));
                 }
         List<String> floor = new ArrayList<>();
         if (type == RiptideLevelType.COLOR_FLOOR) {
@@ -120,7 +124,9 @@ public record RiptideBlueprint(
             int gateSide = g.halfWidth() + 1;
             for (int y = 1; y <= 3; y++) {
                 if (world.getBlockAt(g.blockX(step, 0), g.floorY() + y, g.blockZ(step, 0))
-                        .isPassable()) throw new IllegalArgumentException("解题门中央须保留中柱；左右通道分别判定答案");
+                        .isPassable())
+                    throw new IllegalArgumentException(
+                            MessageConfig.codeText("riptide-blueprint.capture-2"));
                 if (world.getBlockAt(
                                                 g.blockX(step, gateSide),
                                                 g.floorY() + y,
@@ -133,7 +139,8 @@ public record RiptideBlueprint(
                                                 g.blockZ(step, -gateSide))
                                         .getType()
                                 != Material.LIGHT_BLUE_CONCRETE)
-                    throw new IllegalArgumentException("解题门保留左红右蓝的边柱，其余框架和装饰可以编辑");
+                    throw new IllegalArgumentException(
+                            MessageConfig.codeText("riptide-blueprint.capture-3"));
             }
         }
         boolean[][][] solid =
@@ -169,7 +176,8 @@ public record RiptideBlueprint(
             }
             validateMechanicClearance(solid, type);
             if (type == RiptideLevelType.PASS && blocks == 0)
-                throw new IllegalArgumentException("穿越变体还是空白，请先搭建障碍");
+                throw new IllegalArgumentException(
+                        MessageConfig.codeText("riptide-blueprint.capture-5"));
             var bytes = new ByteArrayOutputStream();
             try (var writer = BuiltInClipboardFormat.SPONGE_V3_SCHEMATIC.getWriter(bytes)) {
                 writer.write(clipboard);
@@ -181,7 +189,8 @@ public record RiptideBlueprint(
                     height,
                     floor);
         } catch (IOException | com.sk89q.worldedit.WorldEditException error) {
-            throw new IllegalStateException("保存关卡建筑失败", error);
+            throw new IllegalStateException(
+                    MessageConfig.codeText("riptide-blueprint.capture-4"), error);
         }
     }
 
@@ -204,13 +213,17 @@ public record RiptideBlueprint(
             for (int x = 0; x < width; x++)
                 for (int y = 0; y < 6; y++)
                     if (x != width / 2 && solid[length / 2][x][y])
-                        throw new IllegalArgumentException("解题门左右通道必须保留三格净空；请勿封堵判题通道");
+                        throw new IllegalArgumentException(
+                                MessageConfig.codeText(
+                                        "riptide-blueprint.validate-mechanic-clearance-1"));
         }
         if (type == RiptideLevelType.COLOR_FLOOR) {
             for (var slice : solid)
                 for (var column : slice)
                     if (!clear(column, 0, 6))
-                        throw new IllegalArgumentException("踩色甲板上方须保留三格净空，请将装饰放在两侧或上方");
+                        throw new IllegalArgumentException(
+                                MessageConfig.codeText(
+                                        "riptide-blueprint.validate-mechanic-clearance-2"));
             return;
         }
     }
@@ -226,9 +239,12 @@ public record RiptideBlueprint(
         for (var theme : RiptideColorFloorRun.Theme.values())
             allowed.addAll(RiptideColorFloorRun.materials(theme));
         if (floor.size() != width * length || !allowed.containsAll(floor))
-            throw new IllegalArgumentException("踩色甲板须完整铺满陶瓦、木板、石材、涂蜡铜块、矿石、原木或下界方块，不能留洞");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-blueprint.validate-floor-1"));
         var palette = new HashSet<>(floor);
-        if (palette.size() < 2) throw new IllegalArgumentException("踩色甲板至少需要两种不同方块");
+        if (palette.size() < 2)
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-blueprint.validate-floor-2"));
         for (var target : palette)
             for (int i = 0; i < floor.size(); i++) {
                 int nearest = Integer.MAX_VALUE;
@@ -240,7 +256,9 @@ public record RiptideBlueprint(
                                         (i % width - j % width) * (i % width - j % width)
                                                 + (i / width - j / width)
                                                         * (i / width - j / width));
-                if (nearest > 36) throw new IllegalArgumentException("部分目标方块过于集中，请分散铺设，确保各处都能及时踩到");
+                if (nearest > 36)
+                    throw new IllegalArgumentException(
+                            MessageConfig.codeText("riptide-blueprint.validate-floor-3"));
             }
     }
 
@@ -265,7 +283,8 @@ public record RiptideBlueprint(
                     || dimensions.y() != height
                     || (dimensions.z() != 7
                             && dimensions.z() != RiptideWorkshop.BUILDING_EXTENT * 2 + 1))
-                throw new IllegalArgumentException("关卡建筑尺寸与保存信息不符");
+                throw new IllegalArgumentException(
+                        MessageConfig.codeText("riptide-blueprint.paste-2"));
             if (math)
                 for (var position : clipboard.getRegion()) {
                     if (clipboard.getBlock(position).getBlockType()
@@ -289,7 +308,8 @@ public record RiptideBlueprint(
                             .copyEntities(false)
                             .build());
         } catch (IOException | com.sk89q.worldedit.WorldEditException error) {
-            throw new IllegalStateException("放置关卡建筑失败", error);
+            throw new IllegalStateException(
+                    MessageConfig.codeText("riptide-blueprint.paste-1"), error);
         }
     }
 }

@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.bingo.task.pool;
 
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 
 import org.bukkit.configuration.ConfigurationSection;
@@ -41,7 +42,11 @@ public final class TierlistLoader {
         String name = normalizeName(selected);
         File file = new File(dir(plugin), name + ".yml");
         if (!file.exists()) {
-            plugin.getLogger().warning(gameLog("难度", "tier list=" + name + " 不存在，使用卡池内联难度"));
+            plugin.getLogger()
+                    .warning(
+                            gameLog(
+                                    MessageConfig.codeText("tierlist-loader.load-1"),
+                                    MessageConfig.codeText("tierlist-loader.load-2", name)));
             TierlistSource.set(Tierlist.EMPTY, "");
             return Tierlist.EMPTY;
         }
@@ -55,18 +60,22 @@ public final class TierlistLoader {
             plugin.getLogger()
                     .info(
                             gameLog(
-                                    "难度",
-                                    "已加载 bingo/tierlists/"
-                                            + name
-                                            + ".yml"
-                                            + (tierlist.isEmpty() ? "，无有效规则" : "")));
+                                    MessageConfig.codeText("tierlist-loader.load-1"),
+                                    MessageConfig.codeText(
+                                            "tierlist-loader.load-5",
+                                            name,
+                                            (tierlist.isEmpty()
+                                                    ? MessageConfig.codeText(
+                                                            "tierlist-loader.load-4")
+                                                    : ""))));
             return tierlist;
         } catch (Exception e) {
             plugin.getLogger()
                     .warning(
                             gameLog(
-                                    "难度",
-                                    "解析 bingo/tierlists/" + name + ".yml 失败 | " + e.getMessage()));
+                                    MessageConfig.codeText("tierlist-loader.load-1"),
+                                    MessageConfig.codeText(
+                                            "tierlist-loader.load-3", name, e.getMessage())));
             TierlistSource.set(Tierlist.EMPTY, "");
             return Tierlist.EMPTY;
         }
@@ -75,14 +84,21 @@ public final class TierlistLoader {
     private static Tierlist parse(YamlConfiguration y, Logger log, String sourceName) {
         ConfigurationSection tiers = y.getConfigurationSection("tiers");
         if (tiers == null) {
-            log.warning(gameLog("难度", sourceName + " 缺少 tiers 段"));
+            log.warning(
+                    gameLog(
+                            MessageConfig.codeText("tierlist-loader.load-1"),
+                            MessageConfig.codeText("tierlist-loader.parse-1", sourceName)));
             return Tierlist.EMPTY;
         }
         Map<Difficulty, List<String>> map = new EnumMap<>(Difficulty.class);
         for (String key : tiers.getKeys(false)) {
             Difficulty tier = Tierlist.parseTier(key);
             if (tier == null) {
-                log.warning(gameLog("难度", sourceName + " 无效难度键=" + key + "，已跳过"));
+                log.warning(
+                        gameLog(
+                                MessageConfig.codeText("tierlist-loader.load-1"),
+                                MessageConfig.codeText(
+                                        "tierlist-loader.parse-2", sourceName, key)));
                 continue;
             }
             List<String> tokens = new ArrayList<>(tiers.getStringList(key));
@@ -94,7 +110,12 @@ public final class TierlistLoader {
     private static void ensureBundled(JavaPlugin plugin) {
         File dir = dir(plugin);
         if (!dir.exists() && !dir.mkdirs()) {
-            plugin.getLogger().warning(gameLog("难度", "无法创建目录=" + dir.getPath()));
+            plugin.getLogger()
+                    .warning(
+                            gameLog(
+                                    MessageConfig.codeText("tierlist-loader.load-1"),
+                                    MessageConfig.codeText(
+                                            "tierlist-loader.ensure-bundled-1", dir.getPath())));
             return;
         }
         for (String name : BUNDLED) {
@@ -103,16 +124,21 @@ public final class TierlistLoader {
             try (InputStream in = plugin.getResource(RESOURCE_DIR + "/" + name + ".yml")) {
                 if (in == null) continue;
                 Files.copy(in, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                plugin.getLogger().info(gameLog("难度", "已生成 bingo/tierlists/" + name + ".yml"));
+                plugin.getLogger()
+                        .info(
+                                gameLog(
+                                        MessageConfig.codeText("tierlist-loader.load-1"),
+                                        MessageConfig.codeText(
+                                                "tierlist-loader.ensure-bundled-3", name)));
             } catch (IOException e) {
                 plugin.getLogger()
                         .warning(
                                 gameLog(
-                                        "难度",
-                                        "无法写出 bingo/tierlists/"
-                                                + name
-                                                + ".yml | "
-                                                + e.getMessage()));
+                                        MessageConfig.codeText("tierlist-loader.load-1"),
+                                        MessageConfig.codeText(
+                                                "tierlist-loader.ensure-bundled-2",
+                                                name,
+                                                e.getMessage())));
             }
         }
     }
@@ -130,6 +156,11 @@ public final class TierlistLoader {
     }
 
     private static String gameLog(String event, String message) {
-        return LogText.formatGameLog(GameTypeEnum.Bingo, "-", "加载", event, message);
+        return LogText.formatGameLog(
+                GameTypeEnum.Bingo,
+                "-",
+                MessageConfig.codeText("tierlist-loader.game-log-1"),
+                event,
+                message);
     }
 }

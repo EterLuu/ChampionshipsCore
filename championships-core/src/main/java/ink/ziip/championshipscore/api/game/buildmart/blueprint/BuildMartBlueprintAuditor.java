@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.game.buildmart.blueprint;
 import ink.ziip.championshipscore.api.game.buildmart.mechanics.BuildMartCopperPolicy;
 import ink.ziip.championshipscore.api.game.buildmart.runtime.BuildMartMaterialIsland;
 import ink.ziip.championshipscore.api.game.buildmart.runtime.BuildMartMaterialManifest;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import org.bukkit.Material;
 import org.bukkit.block.data.BlockData;
@@ -207,12 +208,22 @@ public final class BuildMartBlueprintAuditor {
 
         List<String> warnings = new ArrayList<>();
         int duplicates = blocks.size() - positions.size();
-        if (duplicates > 0) warnings.add("重复坐标 " + duplicates + " 个");
-        if (outOfBounds > 0) warnings.add("7×7×7 范围外方块 " + outOfBounds + " 个");
-        if (strictConnectable > 0) warnings.add("严格自动连接方块 " + strictConnectable + " 个");
-        if (!inventory.available()) warnings.add("材料清单不存在，未检查覆盖");
-        else if (!uncovered.isEmpty()) warnings.add("材料区不能完整覆盖");
-        if (blueprint.getStars() != suggested) warnings.add("当前星级与建议星级不一致");
+        if (duplicates > 0)
+            warnings.add(
+                    MessageConfig.codeText("build-mart-blueprint-auditor.audit-1", duplicates));
+        if (outOfBounds > 0)
+            warnings.add(
+                    MessageConfig.codeText("build-mart-blueprint-auditor.audit-2", outOfBounds));
+        if (strictConnectable > 0)
+            warnings.add(
+                    MessageConfig.codeText(
+                            "build-mart-blueprint-auditor.audit-3", strictConnectable));
+        if (!inventory.available())
+            warnings.add(MessageConfig.codeText("build-mart-blueprint-auditor.audit-5"));
+        else if (!uncovered.isEmpty())
+            warnings.add(MessageConfig.codeText("build-mart-blueprint-auditor.audit-4"));
+        if (blueprint.getStars() != suggested)
+            warnings.add(MessageConfig.codeText("build-mart-blueprint-auditor.audit-6"));
 
         return new Audit(
                 blueprint.getId(),

@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.team.entry.TeamEntry;
 import ink.ziip.championshipscore.api.team.entry.TeamImportEntry;
 import ink.ziip.championshipscore.api.team.entry.TeamMemberEntry;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 
 import org.jetbrains.annotations.NotNull;
@@ -44,7 +45,9 @@ public class TeamDaoImpl implements TeamDao {
                 return Optional.of(List.copyOf(teamEntries));
             }
         } catch (SQLException exception) {
-            logFailure("查询队伍列表", exception);
+            logFailure(
+                    MessageConfig.codeText("team-dao-impl.get-team-list-if-available-1"),
+                    exception);
             return Optional.empty();
         }
     }
@@ -77,7 +80,7 @@ public class TeamDaoImpl implements TeamDao {
                 }
             }
         } catch (SQLException exception) {
-            logFailure("新增队伍", exception);
+            logFailure(MessageConfig.codeText("team-dao-impl.add-team-1"), exception);
             return -1;
         }
     }
@@ -97,7 +100,7 @@ public class TeamDaoImpl implements TeamDao {
                 statement.executeUpdate();
             }
         } catch (SQLException exception) {
-            logFailure("删除队伍", exception);
+            logFailure(MessageConfig.codeText("team-dao-impl.delete-team-1"), exception);
         }
     }
 
@@ -129,7 +132,7 @@ public class TeamDaoImpl implements TeamDao {
                 throw failure;
             }
         } catch (SQLException exception) {
-            logFailure("事务删除队伍", exception);
+            logFailure(MessageConfig.codeText("team-dao-impl.delete-team-cascade-1"), exception);
             return false;
         }
     }
@@ -167,7 +170,9 @@ public class TeamDaoImpl implements TeamDao {
                 return Optional.of(Set.copyOf(members));
             }
         } catch (SQLException exception) {
-            logFailure("查询队伍成员", exception);
+            logFailure(
+                    MessageConfig.codeText("team-dao-impl.get-team-members-if-available-1"),
+                    exception);
             return Optional.empty();
         }
     }
@@ -198,7 +203,7 @@ public class TeamDaoImpl implements TeamDao {
                 return members;
             }
         } catch (SQLException | IllegalArgumentException exception) {
-            logFailure("按名称查询队伍成员", exception);
+            logFailure(MessageConfig.codeText("team-dao-impl.get-team-members-1"), exception);
             return null;
         }
     }
@@ -218,7 +223,7 @@ public class TeamDaoImpl implements TeamDao {
                 statement.executeUpdate();
             }
         } catch (SQLException exception) {
-            logFailure("清空队伍成员", exception);
+            logFailure(MessageConfig.codeText("team-dao-impl.delete-team-members-1"), exception);
         }
     }
 
@@ -237,7 +242,7 @@ public class TeamDaoImpl implements TeamDao {
                 statement.executeUpdate();
             }
         } catch (SQLException exception) {
-            logFailure("删除队伍成员", exception);
+            logFailure(MessageConfig.codeText("team-dao-impl.delete-team-member-1"), exception);
         }
     }
 
@@ -255,7 +260,7 @@ public class TeamDaoImpl implements TeamDao {
                 return statement.executeUpdate() > 0;
             }
         } catch (SQLException exception) {
-            logFailure("按名称删除队伍成员", exception);
+            logFailure(MessageConfig.codeText("team-dao-impl.delete-team-members-2"), exception);
             return false;
         }
     }
@@ -276,7 +281,7 @@ public class TeamDaoImpl implements TeamDao {
                 return statement.executeUpdate() == 1;
             }
         } catch (SQLException exception) {
-            logFailure("新增队伍成员", exception);
+            logFailure(MessageConfig.codeText("team-dao-impl.add-team-member-1"), exception);
             return false;
         }
     }
@@ -321,7 +326,9 @@ public class TeamDaoImpl implements TeamDao {
                     insert.setString(1, uuid.toString());
                     insert.setString(2, username);
                     insert.setInt(3, teamId);
-                    if (insert.executeUpdate() != 1) throw new SQLException("队伍成员迁移未插入唯一记录");
+                    if (insert.executeUpdate() != 1)
+                        throw new SQLException(
+                                MessageConfig.codeText("team-dao-impl.move-team-member-2"));
                 }
                 connection.commit();
                 return true;
@@ -339,7 +346,7 @@ public class TeamDaoImpl implements TeamDao {
                 }
             }
         } catch (SQLException | RuntimeException exception) {
-            logFailure("迁移队伍成员", exception);
+            logFailure(MessageConfig.codeText("team-dao-impl.move-team-member-1"), exception);
             return false;
         }
     }
@@ -371,10 +378,15 @@ public class TeamDaoImpl implements TeamDao {
                     insertTeam.setString(2, imported.colorName());
                     insertTeam.setString(3, imported.colorCode());
                     if (insertTeam.executeUpdate() != 1)
-                        throw new SQLException("队伍未插入唯一记录: " + imported.name());
+                        throw new SQLException(
+                                MessageConfig.codeText(
+                                        "team-dao-impl.replace-all-teams-2", imported.name()));
                     int teamId;
                     try (ResultSet keys = insertTeam.getGeneratedKeys()) {
-                        if (!keys.next()) throw new SQLException("队伍缺少自增 ID: " + imported.name());
+                        if (!keys.next())
+                            throw new SQLException(
+                                    MessageConfig.codeText(
+                                            "team-dao-impl.replace-all-teams-3", imported.name()));
                         teamId = keys.getInt(1);
                     }
                     for (TeamImportEntry.Member member : imported.members()) {
@@ -386,7 +398,9 @@ public class TeamDaoImpl implements TeamDao {
                     int[] inserted = insertMember.executeBatch();
                     if (Arrays.stream(inserted)
                             .anyMatch(count -> count != 1 && count != Statement.SUCCESS_NO_INFO))
-                        throw new SQLException("队伍成员批量插入不完整: " + imported.name());
+                        throw new SQLException(
+                                MessageConfig.codeText(
+                                        "team-dao-impl.replace-all-teams-4", imported.name()));
                 }
                 connection.commit();
                 return true;
@@ -404,7 +418,7 @@ public class TeamDaoImpl implements TeamDao {
                 }
             }
         } catch (SQLException | RuntimeException failure) {
-            logFailure("整表导入赛事队伍", failure);
+            logFailure(MessageConfig.codeText("team-dao-impl.replace-all-teams-1"), failure);
             return false;
         }
     }
@@ -413,7 +427,10 @@ public class TeamDaoImpl implements TeamDao {
         plugin.getLogger()
                 .log(
                         Level.SEVERE,
-                        LogText.formatModuleLog("Database", "队伍", "操作=" + operation + " 失败"),
+                        LogText.formatModuleLog(
+                                "Database",
+                                MessageConfig.codeText("team-dao-impl.log-failure-1"),
+                                MessageConfig.codeText("team-dao-impl.log-failure-2", operation)),
                         exception);
     }
 }

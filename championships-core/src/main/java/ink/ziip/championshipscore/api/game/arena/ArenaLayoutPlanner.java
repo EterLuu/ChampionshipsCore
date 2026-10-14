@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.arena;
 
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
@@ -15,20 +17,24 @@ public final class ArenaLayoutPlanner {
             if (!Double.isFinite(vector.getX())
                     || !Double.isFinite(vector.getY())
                     || !Double.isFinite(vector.getZ()))
-                throw new IllegalArgumentException("场地坐标必须为有限数字");
+                throw new IllegalArgumentException(
+                        MessageConfig.codeText("arena-layout-planner.read-vector-1"));
             return vector.clone();
         }
         java.util.Map<?, ?> values;
         if (value instanceof org.bukkit.configuration.ConfigurationSection section)
             values = section.getValues(false);
         else if (value instanceof java.util.Map<?, ?> map) values = map;
-        else throw new IllegalArgumentException("场地坐标必须包含 x、y、z");
+        else
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("arena-layout-planner.read-vector-2"));
         double[] coordinates = new double[3];
         String[] axes = {"x", "y", "z"};
         for (int i = 0; i < axes.length; i++) {
             if (!(values.get(axes[i]) instanceof Number number)
                     || !Double.isFinite(number.doubleValue())) {
-                throw new IllegalArgumentException("场地坐标必须为有限数字：" + axes[i]);
+                throw new IllegalArgumentException(
+                        MessageConfig.codeText("arena-layout-planner.read-vector-3", axes[i]));
             }
             coordinates[i] = number.doubleValue();
         }

@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.util.world;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 
 import org.bukkit.entity.Ambient;
@@ -52,11 +53,11 @@ public final class ArenaWorldListener extends BaseListener {
                         Level.INFO,
                         LogText.formatModuleLog(
                                 "WorldManager",
-                                "清场",
-                                "小游戏世界="
-                                        + event.getWorld().getName()
-                                        + " 移除地图残留动物="
-                                        + leftovers.size()));
+                                MessageConfig.codeText("arena-world-listener.on-entities-load-1"),
+                                MessageConfig.codeText(
+                                        "arena-world-listener.on-entities-load-2",
+                                        event.getWorld().getName(),
+                                        leftovers.size())));
     }
 
     private boolean isLeftoverAnimal(Entity entity) {

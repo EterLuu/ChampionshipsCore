@@ -8,6 +8,77 @@ import lombok.Getter;
 
 @Getter
 public class MessageConfig extends BaseConfigurationFile {
+    private static final java.util.Map<String, String> CODE_DEFAULTS = loadCodeDefaults();
+    private static volatile java.util.Map<String, String> codeMessages = CODE_DEFAULTS;
+    private static final java.util.regex.Pattern ARGUMENT =
+            java.util.regex.Pattern.compile("%arg([1-9][0-9]*)%");
+
+    private static java.util.Map<String, String> loadCodeDefaults() {
+        try (var stream = MessageConfig.class.getResourceAsStream("/message.yml")) {
+            if (stream == null) throw new IllegalStateException("Missing message.yml resource");
+            var document = new org.bukkit.configuration.file.YamlConfiguration();
+            document.load(
+                    new java.io.InputStreamReader(stream, java.nio.charset.StandardCharsets.UTF_8));
+            var section = document.getConfigurationSection("code-text");
+            if (section == null) throw new IllegalStateException("Missing code-text defaults");
+            var defaults = new java.util.LinkedHashMap<String, String>();
+            section.getValues(true)
+                    .forEach(
+                            (key, value) -> {
+                                if (value instanceof String text) defaults.put(key, text);
+                            });
+            return java.util.Map.copyOf(defaults);
+        } catch (java.io.IOException
+                | org.bukkit.configuration.InvalidConfigurationException exception) {
+            throw new IllegalStateException("Cannot load message.yml text defaults", exception);
+        }
+    }
+
+    @Override
+    public void loadFromConfiguration(org.bukkit.configuration.file.YamlConfiguration document) {
+        var messages = new java.util.LinkedHashMap<>(CODE_DEFAULTS);
+        for (String key : CODE_DEFAULTS.keySet()) {
+            String path = "code-text." + key;
+            if (!document.isSet(path)) continue;
+            Object value = document.get(path);
+            if (!(value instanceof String text))
+                throw new IllegalArgumentException(path + " must be text");
+            messages.put(key, text);
+        }
+        super.loadFromConfiguration(document);
+        codeMessages = java.util.Map.copyOf(messages);
+    }
+
+    /** Raw templates retain each caller's existing colour conversion and work during bootstrap. */
+    public static String codeText(String key, Object... arguments) {
+        String template = codeMessages.get(key);
+        if (template == null) throw new IllegalArgumentException("Unknown message key: " + key);
+        if (arguments.length == 0) return template;
+        var matcher = ARGUMENT.matcher(template);
+        var rendered = new StringBuilder();
+        while (matcher.find()) {
+            int index = Integer.parseInt(matcher.group(1)) - 1;
+            if (index >= arguments.length)
+                throw new IllegalArgumentException("Missing argument for message: " + key);
+            String replacement = String.valueOf(arguments[index]);
+            // Match Java concatenation even when an object's toString() itself returns null.
+            if (replacement == null) replacement = "null";
+            matcher.appendReplacement(
+                    rendered, java.util.regex.Matcher.quoteReplacement(replacement));
+        }
+        matcher.appendTail(rendered);
+        return rendered.toString();
+    }
+
+    @ConfigOption(path = "vote.unavailable-played")
+    public static String VOTE_UNAVAILABLE_PLAYED;
+
+    @ConfigOption(path = "vote.unavailable-unpublished")
+    public static String VOTE_UNAVAILABLE_UNPUBLISHED;
+
+    @ConfigOption(path = "vote.vote-failed-unpublished")
+    public static String VOTE_VOTE_FAILED_UNPUBLISHED;
+
     private final String fileName = "message.yml";
     private final String resourceName = "message.yml";
 

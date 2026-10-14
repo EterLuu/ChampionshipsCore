@@ -18,9 +18,9 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Connection pool plus the single entry point for schema provisioning.
  *
- * <p><b>数据库结构变更规范：</b>所有 schema 变更必须走 {@link DatabaseMigrationController}：在 {@code MIGRATIONS}
- * 注册表中<b>追加</b>新版本迁移 （只追加，绝不修改或删除已有迁移），并同步更新 {@code database/schema.sql} 保持当前完整结构。 禁止在本类或任何 DAO
- * 里直接执行 ALTER/CREATE 等结构变更语句——旧库升级只能通过迁移控制器完成。
+ * <p>Schema changes must append a new version to DatabaseMigrationController.MIGRATIONS and update
+ * database/schema.sql. Never modify or remove historical migrations, or execute schema changes
+ * directly in this manager or a DAO.
  */
 public class DatabaseManager extends BaseManager {
     private static final String DATA_POOL_NAME = "ChampionshipsCoreHikariPool";

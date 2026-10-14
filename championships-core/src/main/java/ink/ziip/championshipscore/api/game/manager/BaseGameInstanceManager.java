@@ -9,6 +9,7 @@ import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.game.setup.MapSetupTarget;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -195,7 +196,12 @@ public abstract class BaseGameInstanceManager<T extends BaseGameInstance> extend
             detachAreaRegistration(name, representative);
             return true;
         } catch (java.io.IOException exception) {
-            plugin.getLogger().warning("无法删除地图配置 " + name + " | " + exception.getMessage());
+            plugin.getLogger()
+                    .warning(
+                            MessageConfig.codeText(
+                                    "base-game-instance-manager.delete-area-1",
+                                    name,
+                                    exception.getMessage()));
             return false;
         }
     }

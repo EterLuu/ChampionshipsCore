@@ -6,6 +6,7 @@ import ink.ziip.championshipscore.api.game.arena.ArenaLayoutPlanner;
 import ink.ziip.championshipscore.api.game.arena.RowArenaGrid;
 import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
 import ink.ziip.championshipscore.configuration.ConfigOption;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.location.ConfiguredLocation;
 
 import lombok.Getter;
@@ -143,7 +144,9 @@ public final class LaserBoxConfig extends BaseGameConfig {
 
     public static Vector parseSupplyPoint(String raw, String worldName) {
         ConfiguredLocation point = ConfiguredLocation.read(raw);
-        if (point == null) throw new IllegalArgumentException("补给点不能为空");
+        if (point == null)
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("laser-box-config.parse-supply-point-1"));
         point.requireWorld(worldName);
         return new Vector(point.x(), point.y(), point.z());
     }
@@ -167,12 +170,16 @@ public final class LaserBoxConfig extends BaseGameConfig {
                 || shieldHits > 100
                 || killPoints < 0
                 || winPoints < 0
-                || drawPoints < 0) throw new IllegalArgumentException("时长/护盾必须为正数，积分不能为负数");
+                || drawPoints < 0)
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("laser-box-config.validate-1"));
         if (!contains(bind(rightSpawnPoint))
                 || !contains(bind(leftSpawnPoint))
                 || !contains(bind(spectatorSpawnPoint)))
-            throw new IllegalArgumentException("双方出生点和观战点必须在已加载世界的边界内");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("laser-box-config.validate-2"));
         if (supplyPoints.isEmpty() || supplies().stream().anyMatch(p -> !contains(p)))
-            throw new IllegalArgumentException("请在边界内设置补给点");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("laser-box-config.validate-3"));
     }
 }

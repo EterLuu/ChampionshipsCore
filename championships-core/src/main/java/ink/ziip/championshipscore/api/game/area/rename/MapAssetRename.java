@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.rename;
 
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.jetbrains.annotations.NotNull;
@@ -42,9 +43,11 @@ final class MapAssetRename {
         for (DirectoryMove move :
                 directoryMoves(pluginFolder, game, oldRegistration, oldAssetName, newName)) {
             if (Files.exists(move.oldPath()) && !Files.isDirectory(move.oldPath()))
-                throw new IllegalStateException("地图资产路径不是目录：" + move.oldPath());
+                throw new IllegalStateException(
+                        MessageConfig.codeText("map-asset-rename.validate-1", move.oldPath()));
             if (Files.exists(move.newPath()) && !move.oldPath().equals(move.newPath()))
-                throw new IllegalStateException("目标地图资产目录已存在：" + move.newPath());
+                throw new IllegalStateException(
+                        MessageConfig.codeText("map-asset-rename.validate-2", move.newPath()));
         }
     }
 
@@ -117,7 +120,8 @@ final class MapAssetRename {
             DirectoryMove directory = directories.get(index);
             if (!directory.moved() || !Files.exists(directory.newPath())) continue;
             if (Files.exists(directory.oldPath()))
-                throw new IllegalStateException("无法回滚地图资产，原目录已重新出现：" + directory.oldPath());
+                throw new IllegalStateException(
+                        MessageConfig.codeText("map-asset-rename.rollback-1", directory.oldPath()));
             move(directory.newPath(), directory.oldPath(), false);
         }
         if (state.manifestBytes() != null) {
@@ -186,9 +190,13 @@ final class MapAssetRename {
 
     private static void validateManifest(Path oldManifest, Path newManifest) {
         if (Files.exists(oldManifest) && !Files.isRegularFile(oldManifest))
-            throw new IllegalStateException("材料清单路径不是文件：" + oldManifest.getFileName());
+            throw new IllegalStateException(
+                    MessageConfig.codeText(
+                            "map-asset-rename.validate-manifest-1", oldManifest.getFileName()));
         if (Files.exists(newManifest) && !oldManifest.equals(newManifest))
-            throw new IllegalStateException("目标材料清单已存在：" + newManifest.getFileName());
+            throw new IllegalStateException(
+                    MessageConfig.codeText(
+                            "map-asset-rename.validate-manifest-2", newManifest.getFileName()));
     }
 
     private static List<DirectoryMove> directoryMoves(

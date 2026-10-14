@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.command.admin.vote;
 
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -12,7 +13,10 @@ import java.util.List;
 
 public class AdminVoteStartSubCommand extends BaseSubCommand {
     public AdminVoteStartSubCommand() {
-        super("start", "开始游戏投票", "/cc admin vote start");
+        super(
+                "start",
+                MessageConfig.codeText("admin-vote-start-sub-command.constructor-1"),
+                "/cc admin vote start");
     }
 
     @Override

@@ -9,6 +9,7 @@ import ink.ziip.championshipscore.api.schedule.FormalEventMapResolver;
 import ink.ziip.championshipscore.api.schedule.FormalPairingScheduler;
 import ink.ziip.championshipscore.api.schedule.model.TwoVTwoVector;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
@@ -60,9 +61,13 @@ public class BattleBoxScheduleManager extends BaseManager {
                             LogText.formatGameLog(
                                     GameTypeEnum.BattleBox,
                                     "-",
-                                    "调度",
-                                    "对阵",
-                                    "队伍数=" + selectedTeams.size() + "，至少需要两支且必须为偶数"));
+                                    MessageConfig.codeText(
+                                            "battle-box-schedule-manager.cycle-generate-pairs-1"),
+                                    MessageConfig.codeText(
+                                            "battle-box-schedule-manager.cycle-generate-pairs-2"),
+                                    MessageConfig.codeText(
+                                            "battle-box-schedule-manager.cycle-generate-pairs-3",
+                                            selectedTeams.size())));
             return false;
         }
 
@@ -100,7 +105,14 @@ public class BattleBoxScheduleManager extends BaseManager {
             plugin.getLogger()
                     .warning(
                             LogText.formatGameLog(
-                                    GameTypeEnum.BattleBox, "-", "调度", "启动", "无法开始：未配置地图"));
+                                    GameTypeEnum.BattleBox,
+                                    "-",
+                                    MessageConfig.codeText(
+                                            "battle-box-schedule-manager.cycle-generate-pairs-1"),
+                                    MessageConfig.codeText(
+                                            "battle-box-schedule-manager.start-battle-box-1"),
+                                    MessageConfig.codeText(
+                                            "battle-box-schedule-manager.start-battle-box-2")));
             return;
         }
         int requiredInstances = rounds.getFirst().size();
@@ -122,12 +134,14 @@ public class BattleBoxScheduleManager extends BaseManager {
                             LogText.formatGameLog(
                                     GameTypeEnum.BattleBox,
                                     scheduledMapName,
-                                    "调度",
-                                    "启动",
-                                    "无法开始：需要实例="
-                                            + requiredInstances
-                                            + "，空闲实例="
-                                            + availableInstances));
+                                    MessageConfig.codeText(
+                                            "battle-box-schedule-manager.cycle-generate-pairs-1"),
+                                    MessageConfig.codeText(
+                                            "battle-box-schedule-manager.start-battle-box-1"),
+                                    MessageConfig.codeText(
+                                            "battle-box-schedule-manager.start-battle-box-3",
+                                            requiredInstances,
+                                            availableInstances)));
             scheduledMapName = null;
             return;
         }
@@ -146,6 +160,9 @@ public class BattleBoxScheduleManager extends BaseManager {
                                             GameTypeEnum.BattleBox, 1, timer);
 
                             if (timer == 10) {
+                                plugin.getScheduleManager()
+                                        .announceRoundMatchups(
+                                                GameTypeEnum.BattleBox, 1, rounds.getFirst());
                                 CoreMessages.sendMessageToAllPlayers(
                                         CoreMessages.getMessage(ScheduleMessageConfig.BATTLE_BOX));
                             }
@@ -184,7 +201,9 @@ public class BattleBoxScheduleManager extends BaseManager {
     private void startRoundBattle() {
         String areaName = scheduledMapName;
         if (areaName == null) {
-            abortSchedule("第 " + subRound + " 轮无法开始：地图不存在");
+            abortSchedule(
+                    MessageConfig.codeText(
+                            "battle-box-schedule-manager.start-round-battle-1", subRound));
             return;
         }
 
@@ -201,11 +220,18 @@ public class BattleBoxScheduleManager extends BaseManager {
                             LogText.formatGameLog(
                                     GameTypeEnum.BattleBox,
                                     areaName,
-                                    "调度",
-                                    "轮次",
-                                    "第 " + subRound + " 轮开始，对局数=" + pairs.size()));
+                                    MessageConfig.codeText(
+                                            "battle-box-schedule-manager.cycle-generate-pairs-1"),
+                                    MessageConfig.codeText(
+                                            "battle-box-schedule-manager.start-round-battle-3"),
+                                    MessageConfig.codeText(
+                                            "battle-box-schedule-manager.start-round-battle-4",
+                                            subRound,
+                                            pairs.size())));
         } else {
-            abortSchedule("第 " + subRound + " 轮启动失败");
+            abortSchedule(
+                    MessageConfig.codeText(
+                            "battle-box-schedule-manager.start-round-battle-2", subRound));
         }
     }
 
@@ -215,8 +241,10 @@ public class BattleBoxScheduleManager extends BaseManager {
                         LogText.formatGameLog(
                                 GameTypeEnum.BattleBox,
                                 scheduledMapName == null ? "-" : scheduledMapName,
-                                "调度",
-                                "中止",
+                                MessageConfig.codeText(
+                                        "battle-box-schedule-manager.cycle-generate-pairs-1"),
+                                MessageConfig.codeText(
+                                        "battle-box-schedule-manager.abort-schedule-1"),
                                 reason));
         if (firstStartTask != null) firstStartTask.cancel();
         if (startTask != null) startTask.cancel();
@@ -268,6 +296,11 @@ public class BattleBoxScheduleManager extends BaseManager {
                                             GameTypeEnum.BattleBox, subRound, timer);
 
                             if (timer == ROUND_TRANSITION_SECONDS) {
+                                plugin.getScheduleManager()
+                                        .announceRoundMatchups(
+                                                GameTypeEnum.BattleBox,
+                                                subRound,
+                                                rounds.get(subRound - 1));
                                 CoreMessages.sendMessageToAllPlayers(
                                         CoreMessages.getMessage(
                                                 ScheduleMessageConfig.NEXT_ROUND_SOON));
@@ -328,9 +361,13 @@ public class BattleBoxScheduleManager extends BaseManager {
                             LogText.formatGameLog(
                                     GameTypeEnum.BattleBox,
                                     scheduledMapName,
-                                    "调度",
-                                    "对阵",
-                                    "无法在不重复对手的前提下生成第 " + (subRound + 1) + " 轮"));
+                                    MessageConfig.codeText(
+                                            "battle-box-schedule-manager.cycle-generate-pairs-1"),
+                                    MessageConfig.codeText(
+                                            "battle-box-schedule-manager.cycle-generate-pairs-2"),
+                                    MessageConfig.codeText(
+                                            "battle-box-schedule-manager.prepare-next-round-1",
+                                            (subRound + 1))));
             return false;
         }
         rounds.add(next);

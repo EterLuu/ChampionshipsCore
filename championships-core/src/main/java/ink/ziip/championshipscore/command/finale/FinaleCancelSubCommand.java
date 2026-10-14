@@ -17,7 +17,10 @@ final class FinaleCancelSubCommand extends BaseSubCommand {
     private final FinaleGameDefinition definition;
 
     FinaleCancelSubCommand(FinaleGameDefinition definition) {
-        super("cancel", "取消决赛准备或强制结束正式决赛", "/cc finale " + definition.commandName() + " cancel");
+        super(
+                "cancel",
+                MessageConfig.codeText("finale-cancel-sub-command.constructor-1"),
+                "/cc finale " + definition.commandName() + " cancel");
         this.definition = definition;
     }
 

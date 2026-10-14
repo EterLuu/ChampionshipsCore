@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -32,7 +33,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class PlayerVisibilityManager extends BaseManager implements Listener {
     private static final String DEFAULT_OWNER = "system:default";
     private static final PlayerVisibilityState DEFAULT_STATE =
-            PlayerVisibilityState.all(DEFAULT_OWNER, "无显隐限制");
+            PlayerVisibilityState.all(
+                    DEFAULT_OWNER,
+                    MessageConfig.codeText("player-visibility-manager.default-state-1"));
 
     private volatile boolean loaded;
     private long generation;
@@ -229,20 +232,41 @@ public final class PlayerVisibilityManager extends BaseManager implements Listen
             else hidden++;
         }
         List<String> result = new ArrayList<>();
-        result.add("模式=" + state.mode() + " | 来源=" + state.owner());
-        result.add("原因=" + state.reason());
         result.add(
-                "身份="
-                        + (plugin.getGameManager().getSpectatorManager().isSpectatorLike(playerId)
-                                ? participant != null && spectator == null ? "旁观参赛者" : "观战者"
-                                : participant != null ? "游戏玩家" : "未加入游戏")
-                        + (forcedAll ? "（最终规则：始终可见全部）" : ""));
-        result.add("全局规则=游戏玩家看不到旁观者；旁观者看得到所有玩家；Tab 始终保留全部在线玩家");
-        if (!state.teamIds().isEmpty()) result.add("允许队伍ID=" + state.teamIds());
-        if (!state.playerIds().isEmpty()) result.add("允许玩家UUID=" + state.playerIds());
+                MessageConfig.codeText(
+                        "player-visibility-manager.describe-1", state.mode(), state.owner()));
+        result.add(MessageConfig.codeText("player-visibility-manager.describe-2", state.reason()));
+        result.add(
+                MessageConfig.codeText(
+                        "player-visibility-manager.describe-8",
+                        (plugin.getGameManager().getSpectatorManager().isSpectatorLike(playerId)
+                                ? participant != null && spectator == null
+                                        ? MessageConfig.codeText(
+                                                "player-visibility-manager.describe-6")
+                                        : MessageConfig.codeText(
+                                                "player-visibility-manager.describe-5")
+                                : participant != null
+                                        ? MessageConfig.codeText(
+                                                "player-visibility-manager.describe-4")
+                                        : MessageConfig.codeText(
+                                                "player-visibility-manager.describe-3")),
+                        (forcedAll
+                                ? MessageConfig.codeText("player-visibility-manager.describe-7")
+                                : "")));
+        result.add(MessageConfig.codeText("player-visibility-manager.describe-9"));
+        if (!state.teamIds().isEmpty())
+            result.add(
+                    MessageConfig.codeText(
+                            "player-visibility-manager.describe-10", state.teamIds()));
+        if (!state.playerIds().isEmpty())
+            result.add(
+                    MessageConfig.codeText(
+                            "player-visibility-manager.describe-11", state.playerIds()));
         UUID session = sessionByPlayer.get(playerId);
-        if (session != null) result.add("隔离会话=" + session);
-        result.add("当前在线目标：可见=" + visible + "，隐藏=" + hidden);
+        if (session != null)
+            result.add(MessageConfig.codeText("player-visibility-manager.describe-12", session));
+        result.add(
+                MessageConfig.codeText("player-visibility-manager.describe-13", visible, hidden));
         return List.copyOf(result);
     }
 

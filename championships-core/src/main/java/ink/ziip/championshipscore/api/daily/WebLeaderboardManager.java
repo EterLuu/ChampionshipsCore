@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.daily;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 
 import org.bukkit.Bukkit;
@@ -53,12 +54,18 @@ public final class WebLeaderboardManager extends BaseManager {
             plugin.getLogger()
                     .info(
                             LogText.formatModuleLog(
-                                    "WebLeaderboard", "同步", "已启用 | 周期=" + interval + "秒"));
+                                    "WebLeaderboard",
+                                    MessageConfig.codeText("web-leaderboard-manager.load-3"),
+                                    MessageConfig.codeText(
+                                            "web-leaderboard-manager.load-4", interval)));
         } catch (Exception exception) {
             plugin.getLogger()
                     .log(
                             Level.SEVERE,
-                            LogText.formatModuleLog("WebLeaderboard", "配置", "排行榜同步配置无效，同步未启用"),
+                            LogText.formatModuleLog(
+                                    "WebLeaderboard",
+                                    MessageConfig.codeText("web-leaderboard-manager.load-1"),
+                                    MessageConfig.codeText("web-leaderboard-manager.load-2")),
                             exception);
         }
     }
@@ -84,7 +91,11 @@ public final class WebLeaderboardManager extends BaseManager {
             client.submit(snapshot);
             if (consecutiveFailures != 0) {
                 plugin.getLogger()
-                        .info(LogText.formatModuleLog("WebLeaderboard", "恢复", "排行榜同步已恢复"));
+                        .info(
+                                LogText.formatModuleLog(
+                                        "WebLeaderboard",
+                                        MessageConfig.codeText("web-leaderboard-manager.send-1"),
+                                        MessageConfig.codeText("web-leaderboard-manager.send-2")));
             }
             consecutiveFailures = 0;
         } catch (Exception exception) {
@@ -101,7 +112,11 @@ public final class WebLeaderboardManager extends BaseManager {
                     .log(
                             Level.WARNING,
                             LogText.formatModuleLog(
-                                    "WebLeaderboard", "同步", "排行榜同步失败 | 次数=" + consecutiveFailures),
+                                    "WebLeaderboard",
+                                    MessageConfig.codeText("web-leaderboard-manager.load-3"),
+                                    MessageConfig.codeText(
+                                            "web-leaderboard-manager.log-failure-1",
+                                            consecutiveFailures)),
                             failure);
             return;
         }
@@ -112,8 +127,10 @@ public final class WebLeaderboardManager extends BaseManager {
                     .warning(
                             LogText.formatModuleLog(
                                     "WebLeaderboard",
-                                    "同步",
-                                    "cc-web 暂时不可用，稍后重试 | 次数=" + consecutiveFailures));
+                                    MessageConfig.codeText("web-leaderboard-manager.load-3"),
+                                    MessageConfig.codeText(
+                                            "web-leaderboard-manager.log-failure-2",
+                                            consecutiveFailures)));
         }
     }
 

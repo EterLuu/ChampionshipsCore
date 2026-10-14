@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.api.game.buildmart.config.BuildMartConfig;
 import ink.ziip.championshipscore.api.game.buildmart.mechanics.BuildMartCopperPolicy;
 import ink.ziip.championshipscore.api.game.buildmart.model.BuildMartMaterialZone;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.integration.worldedit.WorldEditManager;
 import ink.ziip.championshipscore.logging.LogText;
 
@@ -57,7 +58,10 @@ public final class BuildMartMaterialManifest {
                     warn(
                             plugin,
                             config,
-                            "无法读取材料区快照=" + snapshot.getName() + " | " + exception.getMessage());
+                            MessageConfig.codeText(
+                                    "build-mart-material-manifest.write-1",
+                                    snapshot.getName(),
+                                    exception.getMessage()));
                     return false;
                 }
             }
@@ -98,7 +102,10 @@ public final class BuildMartMaterialManifest {
         File file = config.getMaterialManifestFile();
         File parent = file.getParentFile();
         if (parent != null && !parent.isDirectory() && !parent.mkdirs() && !parent.isDirectory()) {
-            warn(plugin, config, "无法创建清单目录=" + parent);
+            warn(
+                    plugin,
+                    config,
+                    MessageConfig.codeText("build-mart-material-manifest.write-2", parent));
             return false;
         }
         Path temporary = null;
@@ -116,7 +123,13 @@ public final class BuildMartMaterialManifest {
             }
             return true;
         } catch (Exception exception) {
-            warn(plugin, config, "无法写入清单=" + file.getName() + " | " + exception.getMessage());
+            warn(
+                    plugin,
+                    config,
+                    MessageConfig.codeText(
+                            "build-mart-material-manifest.write-3",
+                            file.getName(),
+                            exception.getMessage()));
             return false;
         } finally {
             if (temporary != null) {
@@ -269,7 +282,10 @@ public final class BuildMartMaterialManifest {
                 plugin.getWorldEditManager().readSchematicBlockInventory(snapshot);
         if (scanned.volume() != zone.volume()) {
             throw new IllegalStateException(
-                    "体积不一致，配置=" + zone.volume() + "，快照=" + scanned.volume());
+                    MessageConfig.codeText(
+                            "build-mart-material-manifest.scan-snapshot-1",
+                            zone.volume(),
+                            scanned.volume()));
         }
         return new ZoneInventory(
                 zone,
@@ -390,8 +406,8 @@ public final class BuildMartMaterialManifest {
                         LogText.formatGameLog(
                                 GameTypeEnum.BuildMart,
                                 config.getAreaName(),
-                                "材料区",
-                                "清单",
+                                MessageConfig.codeText("build-mart-material-manifest.warn-1"),
+                                MessageConfig.codeText("build-mart-material-manifest.warn-2"),
                                 message));
     }
 

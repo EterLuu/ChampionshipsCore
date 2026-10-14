@@ -8,6 +8,7 @@ import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.schedule.model.TwoVTwoVector;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -40,7 +41,9 @@ public final class GameStartService {
                 var team =
                         plugin.getTeamManager()
                                 .getTeam(name.startsWith("#") ? name.substring(1) : name);
-                if (team == null) throw new IllegalArgumentException("找不到参赛队伍：" + name);
+                if (team == null)
+                    throw new IllegalArgumentException(
+                            MessageConfig.codeText("game-start-service.resolve-teams-1", name));
                 teams.add(team);
             }
         }
@@ -56,10 +59,14 @@ public final class GameStartService {
         try {
             GameTypeEnum game = arguments.game();
             if (!plugin.getGameManager().isGameEnabled(game))
-                throw new IllegalArgumentException("游戏未启用：" + game.commandName());
+                throw new IllegalArgumentException(
+                        MessageConfig.codeText(
+                                "game-start-service.start-manual-1", game.commandName()));
             List<ChampionshipTeam> teams = resolveTeams(arguments);
             var manager = plugin.getGameManager().getAreaManager(game);
-            if (manager == null) throw new IllegalArgumentException("游戏没有地图管理器");
+            if (manager == null)
+                throw new IllegalArgumentException(
+                        MessageConfig.codeText("game-start-service.start-manual-2"));
             String map;
             if (arguments.map() == null) {
                 map =
@@ -78,7 +85,11 @@ public final class GameStartService {
                                                                 teams.size(),
                                                                 arguments.arenas()))
                                 .findFirst()
-                                .orElseThrow(() -> new IllegalArgumentException("没有已发布且空闲的地图"));
+                                .orElseThrow(
+                                        () ->
+                                                new IllegalArgumentException(
+                                                        MessageConfig.codeText(
+                                                                "game-start-service.start-manual-4")));
             } else {
                 map =
                         manager.getAreaNameList().stream()
@@ -87,10 +98,13 @@ public final class GameStartService {
                                 .orElseThrow(
                                         () ->
                                                 new IllegalArgumentException(
-                                                        "找不到地图：" + arguments.map()));
+                                                        MessageConfig.codeText(
+                                                                "game-start-service.start-manual-3",
+                                                                arguments.map())));
             }
             if (!plugin.getPrepareSessionManager().canStart(game, map)) {
-                throw new IllegalArgumentException("地图未就绪：" + map);
+                throw new IllegalArgumentException(
+                        MessageConfig.codeText("game-start-service.start-manual-5", map));
             }
             if (game == GameTypeEnum.Bingo) {
                 arguments.arenas().resolve(1);
@@ -101,10 +115,14 @@ public final class GameStartService {
                                         new Result(
                                                 failure == null && Boolean.TRUE.equals(started),
                                                 failure != null
-                                                        ? "Bingo 执行端启动失败"
+                                                        ? MessageConfig.codeText(
+                                                                "game-start-service.start-manual-8")
                                                         : Boolean.TRUE.equals(started)
-                                                                ? "已启动 " + map
-                                                                : "Bingo 执行端拒绝启动"));
+                                                                ? MessageConfig.codeText(
+                                                                        "game-start-service.start-manual-7",
+                                                                        map)
+                                                                : MessageConfig.codeText(
+                                                                        "game-start-service.start-manual-6")));
             }
             boolean started;
             if (GameStartRules.topology(game) == GameStartRules.Topology.PAIRED_COPIES) {
@@ -149,7 +167,8 @@ public final class GameStartService {
                         StartTargets.forGame(game, pool, teams.size(), arguments.arenas())
                                 .getFirst();
                 if (!(selected instanceof BaseMultiTeamGameInstance multi))
-                    throw new IllegalArgumentException("地图不是多队比赛实例");
+                    throw new IllegalArgumentException(
+                            MessageConfig.codeText("game-start-service.start-manual-9"));
                 ArenaSelection selection =
                         GameStartRules.internalArenas(game)
                                 ? arguments.arenas()
@@ -167,8 +186,10 @@ public final class GameStartService {
                     new Result(
                             started,
                             started
-                                    ? "已启动 " + map + "，参赛队伍 " + teams.size() + " 支"
-                                    : "启动失败：队伍、空闲副本数量或场地状态不满足要求"));
+                                    ? MessageConfig.codeText(
+                                            "game-start-service.start-manual-11", map, teams.size())
+                                    : MessageConfig.codeText(
+                                            "game-start-service.start-manual-10")));
         } catch (IllegalArgumentException | IllegalStateException failure) {
             return CompletableFuture.completedFuture(new Result(false, failure.getMessage()));
         }
@@ -191,11 +212,13 @@ public final class GameStartService {
             GameTypeEnum game, String map, List<ChampionshipTeam> teams, ArenaSelection arenas) {
         var manager = plugin.getGameManager().getAreaManager(game);
         if (manager == null || !plugin.getPrepareSessionManager().canStart(game, map))
-            throw new IllegalArgumentException("地图未就绪：" + map);
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("game-start-service.start-manual-5", map));
         if (game == GameTypeEnum.Bingo) {
             arenas.resolve(1);
             if (!plugin.getGameManager().canStartBingoForTeams(map, true, GameRunMode.EVENT, teams))
-                throw new IllegalArgumentException("Bingo 执行端或参赛名单不可用");
+                throw new IllegalArgumentException(
+                        MessageConfig.codeText("game-start-service.validate-map-1"));
         } else {
             StartTargets.forGame(game, manager.getMapInstances(map), teams.size(), arenas);
         }

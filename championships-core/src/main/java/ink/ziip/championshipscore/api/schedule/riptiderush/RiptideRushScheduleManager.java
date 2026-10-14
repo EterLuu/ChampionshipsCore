@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.schedule.BaseSingleGameSchedule;
 import ink.ziip.championshipscore.api.schedule.FormalEventMapResolver;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 public final class RiptideRushScheduleManager extends BaseSingleGameSchedule {
     private java.util.List<String> roundMaps = java.util.List.of();
@@ -13,7 +14,10 @@ public final class RiptideRushScheduleManager extends BaseSingleGameSchedule {
         if (!enabled) {
             roundMaps = roundMaps(FormalEventMapResolver.maps(plugin, gameTypeEnum));
             if (roundMaps.isEmpty()) {
-                plugin.getLogger().warning("激流勇进正式比赛未启动：没有可用地图");
+                plugin.getLogger()
+                        .warning(
+                                MessageConfig.codeText(
+                                        "riptide-rush-schedule-manager.start-game-1"));
                 return;
             }
         }

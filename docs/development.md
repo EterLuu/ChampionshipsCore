@@ -57,6 +57,8 @@ SQL、连接池、schema 迁移和 DAO 位于 Core 的 `database/`。按 player�
 
 两端共用的玩家装备、效果、传送和 UI 行为应进入平台层，纯判题进入引擎，协议值进入 common。仅某个游戏需要的算法保留在该游戏中。通用方法按职责选择现有入口：`CoreMessages` 管理 Core 身份与消息，`LegacyText` 管理共享文本，`TeleportPositions` 管理传送位置几何，`TeamColors` 管理共享颜色，`LogText` 管理日志标签和时间，`AuthIdentity` 管理共享 UUID 校验。其账户接口校验 Bridge 的用户名规则，实际登录校验使用原版 UUID 算法，不把账户命名限制加到已经由服务器接受的登录档案上。禁止新增万能工具类或只转发到这些入口的兼容包装。
 
+Core 生产 Java 源码不包含中文，包括注释。玩家提示、命令说明、编辑器文案和日志文本放在 `message.yml`；菜单结构与按钮文案继续由 `gui.yml` 管理，地图规则由地图配置和 `schedule-message.yml` 管理。`message.yml` 的 `code-text` 按类名和调用入口分组，使用 `MessageConfig.codeText(key, arguments...)` 读取；`%arg1%`、`%arg2%` 等表示原调用的动态参数，参数只替换一次。此入口保留原始颜色编码，由调用方沿用既有颜色转换方式。缺少覆盖键时使用内置默认，显式空字符串保留；配置重载原子替换文本表，删除覆盖键会恢复默认。新增文案优先使用有明确含义的键，不在 Java 中加入中文兜底。
+
 旁观和显隐必须遵守 [旁观契约](spectator-visibility-contract.md)。UUID 是持久身份，Player/Entity 只代表当前连接；身份边界见 [UUID 契约](player-uuid-contract.md)。不要在整理包或提取方法时扩大游戏资格、隐藏策略或线程访问范围。
 
 ## 清理与兼容性

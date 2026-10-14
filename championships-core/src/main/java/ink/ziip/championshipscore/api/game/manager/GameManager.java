@@ -245,7 +245,14 @@ public class GameManager extends BaseManager {
         if (manager == null || !loadedGameManagers.add(gameTypeEnum)) return false;
         manager.load();
         plugin.getLogger()
-                .log(Level.INFO, LogText.formatGameLog(gameTypeEnum, "-", "加载", "完成", "地图管理器已加载"));
+                .log(
+                        Level.INFO,
+                        LogText.formatGameLog(
+                                gameTypeEnum,
+                                "-",
+                                MessageConfig.codeText("game-manager.load-game-manager-1"),
+                                MessageConfig.codeText("game-manager.load-game-manager-2"),
+                                MessageConfig.codeText("game-manager.load-game-manager-3")));
         return true;
     }
 
@@ -285,8 +292,11 @@ public class GameManager extends BaseManager {
                                         Level.WARNING,
                                         LogText.formatModuleLog(
                                                 "GameManager",
-                                                "配置",
-                                                "enabled-games 包含未知游戏=" + trimmed + "，已忽略"));
+                                                MessageConfig.codeText(
+                                                        "game-manager.get-enabled-games-1"),
+                                                MessageConfig.codeText(
+                                                        "game-manager.get-enabled-games-2",
+                                                        trimmed)));
                     }
                 }
             }
@@ -296,8 +306,13 @@ public class GameManager extends BaseManager {
                             Level.INFO,
                             LogText.formatModuleLog(
                                     "GameManager",
-                                    "加载",
-                                    "已启用游戏=" + (parsed.isEmpty() ? "无" : parsed)));
+                                    MessageConfig.codeText("game-manager.load-game-manager-1"),
+                                    MessageConfig.codeText(
+                                            "game-manager.get-enabled-games-4",
+                                            (parsed.isEmpty()
+                                                    ? MessageConfig.codeText(
+                                                            "game-manager.get-enabled-games-3")
+                                                    : parsed))));
         }
         return enabledGames;
     }
@@ -480,7 +495,12 @@ public class GameManager extends BaseManager {
                 plugin.getLogger()
                         .log(
                                 Level.INFO,
-                                LogText.formatGameLog(gameType, "-", "加载", "跳过", "游戏未启用，不加载场地与世界"));
+                                LogText.formatGameLog(
+                                        gameType,
+                                        "-",
+                                        MessageConfig.codeText("game-manager.load-game-manager-1"),
+                                        MessageConfig.codeText("game-manager.load-1"),
+                                        MessageConfig.codeText("game-manager.load-2")));
             }
         }
 
@@ -682,8 +702,8 @@ public class GameManager extends BaseManager {
                                     target.getGameTypeEnum(),
                                     canonicalMapName(target),
                                     stage.name(),
-                                    "管理员停止",
-                                    "正常结算入口异常"),
+                                    MessageConfig.codeText("game-manager.stop-game-instance-1"),
+                                    MessageConfig.codeText("game-manager.stop-game-instance-2")),
                             failure);
             return CompletableFuture.completedFuture(GameStopResult.FAILED);
         }
@@ -1366,7 +1386,9 @@ public class GameManager extends BaseManager {
         instance.dispose();
         if (interruptedEvent) {
             plugin.getScheduleManager()
-                    .abortFormalEvent(GameTypeEnum.Bingo, "远端执行中止，已释放 Core 侧队伍与玩家占用");
+                    .abortFormalEvent(
+                            GameTypeEnum.Bingo,
+                            MessageConfig.codeText("game-manager.abort-remote-bingo-1"));
         }
     }
 
@@ -1476,16 +1498,24 @@ public class GameManager extends BaseManager {
         Set<Integer> ids = new HashSet<>();
         Set<UUID> roster = new HashSet<>();
         for (var team : teams) {
-            if (team == null || !ids.add(team.getId())) return "参赛队伍为空或重复";
-            if (team.getMembers().isEmpty()) return "队伍没有参赛成员：" + team.getName();
-            if (teamStatus.containsKey(team)) return "队伍已经参加其他比赛：" + team.getName();
+            if (team == null || !ids.add(team.getId()))
+                return MessageConfig.codeText("game-manager.validate-start-teams-1");
+            if (team.getMembers().isEmpty())
+                return MessageConfig.codeText(
+                        "game-manager.validate-start-teams-2", team.getName());
+            if (teamStatus.containsKey(team))
+                return MessageConfig.codeText(
+                        "game-manager.validate-start-teams-3", team.getName());
             for (UUID id : team.getMembers()) {
-                if (!roster.add(id)) return "参赛队伍存在重复玩家：" + id;
+                if (!roster.add(id))
+                    return MessageConfig.codeText("game-manager.validate-start-teams-4", id);
                 if (isPlayerUnavailableForStart(id, game, introduction, mode))
-                    return "玩家目前不可参加比赛：" + id;
+                    return MessageConfig.codeText("game-manager.validate-start-teams-5", id);
             }
         }
-        return teams.isEmpty() ? "没有参赛队伍" : null;
+        return teams.isEmpty()
+                ? MessageConfig.codeText("game-manager.validate-start-teams-6")
+                : null;
     }
 
     public synchronized boolean joinLaserBoxArea(
@@ -2032,7 +2062,8 @@ public class GameManager extends BaseManager {
             Player player = org.bukkit.Bukkit.getPlayer(uuid);
             if (previous == target) {
                 if (player != null && player.isOnline())
-                    target.teleportSpectatorAsync(player, target.getSpectatorSpawnLocation());
+                    target.teleportSpectatorAsync(
+                            player, spectatorManager.defaultDestination(player, target));
                 continue;
             }
             if (player != null && player.isOnline()) {
@@ -2048,7 +2079,7 @@ public class GameManager extends BaseManager {
     }
 
     private void moveSpectatorTo(@NotNull Player player, @NotNull BaseGameInstance target) {
-        moveSpectatorTo(player, target, target.getSpectatorSpawnLocation());
+        moveSpectatorTo(player, target, spectatorManager.defaultDestination(player, target));
     }
 
     private void moveSpectatorTo(

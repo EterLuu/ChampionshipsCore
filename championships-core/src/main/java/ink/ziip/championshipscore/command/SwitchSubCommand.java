@@ -16,7 +16,11 @@ import java.util.List;
  */
 public final class SwitchSubCommand extends BaseSubCommand {
     public SwitchSubCommand() {
-        super("switch", "切换正式赛事/自由游玩", "/cc switch [championship|daily]", ADMIN_PERMISSION);
+        super(
+                "switch",
+                MessageConfig.codeText("switch-sub-command.constructor-1"),
+                "/cc switch [championship|daily]",
+                ADMIN_PERMISSION);
     }
 
     @Override

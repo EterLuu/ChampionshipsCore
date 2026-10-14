@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.game.spatial.TeleportPositions;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoWorldRules;
 
@@ -79,7 +80,12 @@ public class WorldManager extends BaseManager {
         if (lobby == null && !Bukkit.getWorlds().isEmpty()) lobby = Bukkit.getWorlds().get(0);
         if (lobby == null) {
             plugin.getLogger()
-                    .log(Level.SEVERE, LogText.formatModuleLog("WorldManager", "大厅", "大厅世界未加载"));
+                    .log(
+                            Level.SEVERE,
+                            LogText.formatModuleLog(
+                                    "WorldManager",
+                                    MessageConfig.codeText("world-manager.load-1"),
+                                    MessageConfig.codeText("world-manager.load-2")));
             return;
         }
 
@@ -100,15 +106,13 @@ public class WorldManager extends BaseManager {
                         Level.INFO,
                         LogText.formatModuleLog(
                                 "WorldManager",
-                                "大厅",
-                                "世界="
-                                        + lobby.getName()
-                                        + " 类型=服务端管理 naturalMonsters="
-                                        + lobby.getAllowMonsters()
-                                        + " naturalAnimals="
-                                        + lobby.getAllowAnimals()
-                                        + " spawnMobs="
-                                        + lobby.getGameRuleValue(GameRules.SPAWN_MOBS)));
+                                MessageConfig.codeText("world-manager.load-1"),
+                                MessageConfig.codeText(
+                                        "world-manager.load-3",
+                                        lobby.getName(),
+                                        lobby.getAllowMonsters(),
+                                        lobby.getAllowAnimals(),
+                                        lobby.getGameRuleValue(GameRules.SPAWN_MOBS))));
 
         arenaListener.register();
     }
@@ -162,7 +166,10 @@ public class WorldManager extends BaseManager {
                     .log(
                             Level.SEVERE,
                             LogText.formatModuleLog(
-                                    "WorldManager", "加载", "小游戏世界=" + worldName + " 加载失败"));
+                                    "WorldManager",
+                                    MessageConfig.codeText("world-manager.load-world-1"),
+                                    MessageConfig.codeText(
+                                            "world-manager.load-world-2", worldName)));
             return false;
         }
 
@@ -190,15 +197,13 @@ public class WorldManager extends BaseManager {
                         Level.INFO,
                         LogText.formatModuleLog(
                                 "WorldManager",
-                                "加载",
-                                "小游戏世界="
-                                        + worldName
-                                        + " 生成器=虚空 naturalMonsters="
-                                        + world.getAllowMonsters()
-                                        + " naturalAnimals="
-                                        + world.getAllowAnimals()
-                                        + " spawnMobs="
-                                        + world.getGameRuleValue(GameRules.SPAWN_MOBS)));
+                                MessageConfig.codeText("world-manager.load-world-1"),
+                                MessageConfig.codeText(
+                                        "world-manager.load-world-3",
+                                        worldName,
+                                        world.getAllowMonsters(),
+                                        world.getAllowAnimals(),
+                                        world.getGameRuleValue(GameRules.SPAWN_MOBS))));
         arenaWorlds.add(worldName);
         return true;
     }
@@ -224,9 +229,10 @@ public class WorldManager extends BaseManager {
                             LogText.formatGameLog(
                                     GameTypeEnum.Bingo,
                                     "-",
-                                    "加载",
-                                    "世界",
-                                    "世界=" + worldName + " 加载失败"));
+                                    MessageConfig.codeText("world-manager.load-world-1"),
+                                    MessageConfig.codeText("world-manager.load-bingo-world-1"),
+                                    MessageConfig.codeText(
+                                            "world-manager.load-bingo-world-2", worldName)));
             return false;
         }
 
@@ -240,18 +246,15 @@ public class WorldManager extends BaseManager {
                         LogText.formatGameLog(
                                 GameTypeEnum.Bingo,
                                 "-",
-                                "加载",
-                                "世界",
-                                "世界="
-                                        + worldName
-                                        + " 环境="
-                                        + environment
-                                        + " naturalMonsters="
-                                        + world.getAllowMonsters()
-                                        + " naturalAnimals="
-                                        + world.getAllowAnimals()
-                                        + " spawnMobs="
-                                        + world.getGameRuleValue(GameRules.SPAWN_MOBS)));
+                                MessageConfig.codeText("world-manager.load-world-1"),
+                                MessageConfig.codeText("world-manager.load-bingo-world-1"),
+                                MessageConfig.codeText(
+                                        "world-manager.load-bingo-world-3",
+                                        worldName,
+                                        environment,
+                                        world.getAllowMonsters(),
+                                        world.getAllowAnimals(),
+                                        world.getGameRuleValue(GameRules.SPAWN_MOBS))));
         return true;
     }
 
@@ -339,7 +342,12 @@ public class WorldManager extends BaseManager {
                     .log(
                             Level.SEVERE,
                             LogText.formatModuleLog(
-                                    "WorldManager", "修复", "世界=" + worldName + " 首次加载前修复失败，已取消加载"));
+                                    "WorldManager",
+                                    MessageConfig.codeText(
+                                            "world-manager.prepare-world-for-first-load-1"),
+                                    MessageConfig.codeText(
+                                            "world-manager.prepare-world-for-first-load-2",
+                                            worldName)));
             return false;
         }
 
@@ -361,7 +369,12 @@ public class WorldManager extends BaseManager {
                     .log(
                             Level.SEVERE,
                             LogText.formatModuleLog(
-                                    "WorldManager", "修复", "无法读取 " + configFile.getPath()),
+                                    "WorldManager",
+                                    MessageConfig.codeText(
+                                            "world-manager.prepare-world-for-first-load-1"),
+                                    MessageConfig.codeText(
+                                            "world-manager.repair-paper-world-configuration-1",
+                                            configFile.getPath())),
                             exception);
             return false;
         }
@@ -400,7 +413,12 @@ public class WorldManager extends BaseManager {
                     .log(
                             Level.SEVERE,
                             LogText.formatModuleLog(
-                                    "WorldManager", "修复", "备份已保留，但无法写入 " + configFile.getPath()),
+                                    "WorldManager",
+                                    MessageConfig.codeText(
+                                            "world-manager.prepare-world-for-first-load-1"),
+                                    MessageConfig.codeText(
+                                            "world-manager.repair-paper-world-configuration-2",
+                                            configFile.getPath())),
                             exception);
             return false;
         }
@@ -410,17 +428,15 @@ public class WorldManager extends BaseManager {
                         Level.WARNING,
                         LogText.formatModuleLog(
                                 "WorldManager",
-                                "修复",
-                                "世界="
-                                        + worldName
-                                        + " 来源="
-                                        + category
-                                        + " 删除失效 feature-seeds="
-                                        + staleKeys.size()
-                                        + " 备份="
-                                        + backup.getPath()
-                                        + " 键="
-                                        + String.join(",", staleKeys)));
+                                MessageConfig.codeText(
+                                        "world-manager.prepare-world-for-first-load-1"),
+                                MessageConfig.codeText(
+                                        "world-manager.repair-paper-world-configuration-3",
+                                        worldName,
+                                        category,
+                                        staleKeys.size(),
+                                        backup.getPath(),
+                                        String.join(",", staleKeys))));
         return true;
     }
 
@@ -449,8 +465,11 @@ public class WorldManager extends BaseManager {
                                 Level.WARNING,
                                 LogText.formatModuleLog(
                                         "WorldManager",
-                                        "修复",
-                                        "无法读取主世界 feature-seeds 基准=" + referenceFile.getPath()),
+                                        MessageConfig.codeText(
+                                                "world-manager.prepare-world-for-first-load-1"),
+                                        MessageConfig.codeText(
+                                                "world-manager.get-current-feature-seed-keys-1",
+                                                referenceFile.getPath())),
                                 exception);
             }
         }
@@ -460,8 +479,10 @@ public class WorldManager extends BaseManager {
                         Level.WARNING,
                         LogText.formatModuleLog(
                                 "WorldManager",
-                                "修复",
-                                "当前 Paper feature-seeds 基准不可用；遇到旧配置时将清空 features 段并由 Paper 重建"));
+                                MessageConfig.codeText(
+                                        "world-manager.prepare-world-for-first-load-1"),
+                                MessageConfig.codeText(
+                                        "world-manager.get-current-feature-seed-keys-2")));
         currentFeatureSeedKeys = null;
         return null;
     }
@@ -473,7 +494,12 @@ public class WorldManager extends BaseManager {
                     .log(
                             Level.SEVERE,
                             LogText.formatModuleLog(
-                                    "WorldManager", "备份", "拒绝覆盖已有备份=" + target.getPath()));
+                                    "WorldManager",
+                                    MessageConfig.codeText(
+                                            "world-manager.backup-world-directory-1"),
+                                    MessageConfig.codeText(
+                                            "world-manager.backup-world-directory-2",
+                                            target.getPath())));
             return false;
         }
 
@@ -510,8 +536,12 @@ public class WorldManager extends BaseManager {
                             Level.SEVERE,
                             LogText.formatModuleLog(
                                     "WorldManager",
-                                    "备份",
-                                    "世界完整备份失败，源=" + source.getPath() + " 目标=" + target.getPath()),
+                                    MessageConfig.codeText(
+                                            "world-manager.backup-world-directory-1"),
+                                    MessageConfig.codeText(
+                                            "world-manager.backup-world-directory-3",
+                                            source.getPath(),
+                                            target.getPath())),
                             exception);
             return false;
         }
@@ -562,7 +592,11 @@ public class WorldManager extends BaseManager {
             plugin.getLogger()
                     .log(
                             Level.WARNING,
-                            LogText.formatModuleLog("WorldManager", "备份", "无法清理不完整备份=" + root),
+                            LogText.formatModuleLog(
+                                    "WorldManager",
+                                    MessageConfig.codeText(
+                                            "world-manager.backup-world-directory-1"),
+                                    MessageConfig.codeText("world-manager.delete-tree-1", root)),
                             exception);
         }
     }
@@ -575,9 +609,14 @@ public class WorldManager extends BaseManager {
 
             if (source.isDirectory()) {
                 if (!target.isDirectory() && !target.mkdirs())
-                    throw new IOException("无法创建目标目录 " + target.getPath());
+                    throw new IOException(
+                            MessageConfig.codeText(
+                                    "world-manager.copy-world-files-4", target.getPath()));
                 String[] files = source.list();
-                if (files == null) throw new IOException("无法读取源目录 " + source.getPath());
+                if (files == null)
+                    throw new IOException(
+                            MessageConfig.codeText(
+                                    "world-manager.copy-world-files-5", source.getPath()));
                 for (String file : files) {
                     File srcFile = new File(source, file);
                     File destFile = new File(target, file);
@@ -598,8 +637,11 @@ public class WorldManager extends BaseManager {
                             Level.SEVERE,
                             LogText.formatModuleLog(
                                     "WorldManager",
-                                    "复制",
-                                    "源文件不存在=" + source.getPath() + " 目标=" + target.getPath()),
+                                    MessageConfig.codeText("world-manager.copy-world-files-1"),
+                                    MessageConfig.codeText(
+                                            "world-manager.copy-world-files-2",
+                                            source.getPath(),
+                                            target.getPath())),
                             e);
         } catch (IOException e) {
             plugin.getLogger()
@@ -607,8 +649,11 @@ public class WorldManager extends BaseManager {
                             Level.SEVERE,
                             LogText.formatModuleLog(
                                     "WorldManager",
-                                    "复制",
-                                    "世界文件复制失败，源=" + source.getPath() + " 目标=" + target.getPath()),
+                                    MessageConfig.codeText("world-manager.copy-world-files-1"),
+                                    MessageConfig.codeText(
+                                            "world-manager.copy-world-files-3",
+                                            source.getPath(),
+                                            target.getPath())),
                             e);
         }
         return false;
@@ -643,8 +688,11 @@ public class WorldManager extends BaseManager {
                             Level.SEVERE,
                             LogText.formatModuleLog(
                                     "WorldManager",
-                                    "重命名",
-                                    "无法移动 " + source.getPath() + " -> " + target.getPath()),
+                                    MessageConfig.codeText("world-manager.move-directory-1"),
+                                    MessageConfig.codeText(
+                                            "world-manager.move-directory-2",
+                                            source.getPath(),
+                                            target.getPath())),
                             exception);
             return false;
         }

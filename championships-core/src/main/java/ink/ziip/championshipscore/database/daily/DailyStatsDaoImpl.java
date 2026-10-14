@@ -10,6 +10,7 @@ import ink.ziip.championshipscore.api.daily.entry.DailyPkwRecordEntry;
 import ink.ziip.championshipscore.api.daily.entry.DailyRecordEntry;
 import ink.ziip.championshipscore.api.daily.entry.DailyStatEntry;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 
 import org.jetbrains.annotations.NotNull;
@@ -30,9 +31,9 @@ import java.util.logging.Level;
 /**
  * JDBC implementation following the same DAO boundary as player, team and rank persistence.
  *
- * <p><b>注意：</b>这里的语句只做数据读写。涉及结构变更（新表 / 新列 / 新索引）时，必须同时在 {@link
- * ink.ziip.championshipscore.database.DatabaseMigrationController} 的 MIGRATIONS 中 追加新版本迁移，并同步更新
- * {@code database/schema.sql}，否则已部署的旧库不会升级。
+ * <p>Schema changes must append a new version to DatabaseMigrationController.MIGRATIONS and update
+ * database/schema.sql. Never modify or remove historical migrations, or execute schema changes
+ * directly in this manager or a DAO.
  */
 public final class DailyStatsDaoImpl implements DailyStatsDao {
     private final ChampionshipsCore plugin = ChampionshipsCore.getInstance();
@@ -63,12 +64,15 @@ public final class DailyStatsDaoImpl implements DailyStatsDao {
                                     result.getLong("maxCompletedTasks"),
                                     result.getLong("updatedAt")));
                 } catch (IllegalArgumentException exception) {
-                    logFailure("解析日常统计记录", exception);
+                    logFailure(
+                            MessageConfig.codeText("daily-stats-dao-impl.get-player-stats-2"),
+                            exception);
                 }
             }
             return entries;
         } catch (SQLException exception) {
-            logFailure("查询日常统计", exception);
+            logFailure(
+                    MessageConfig.codeText("daily-stats-dao-impl.get-player-stats-1"), exception);
             return Collections.emptyList();
         }
     }
@@ -89,12 +93,15 @@ public final class DailyStatsDaoImpl implements DailyStatsDao {
                 try {
                     entries.add(readRecord(result));
                 } catch (IllegalArgumentException exception) {
-                    logFailure("解析日常纪录", exception);
+                    logFailure(
+                            MessageConfig.codeText("daily-stats-dao-impl.get-player-records-2"),
+                            exception);
                 }
             }
             return entries;
         } catch (SQLException exception) {
-            logFailure("查询日常纪录", exception);
+            logFailure(
+                    MessageConfig.codeText("daily-stats-dao-impl.get-player-records-1"), exception);
             return Collections.emptyList();
         }
     }
@@ -129,12 +136,16 @@ public final class DailyStatsDaoImpl implements DailyStatsDao {
                                     result.getLong("firstGateway"), result.getLong("maxStars"),
                                     result.getLong("finishes"), result.getLong("updatedAt")));
                 } catch (IllegalArgumentException exception) {
-                    logFailure("解析日常地图统计", exception);
+                    logFailure(
+                            MessageConfig.codeText("daily-stats-dao-impl.get-player-map-stats-2"),
+                            exception);
                 }
             }
             return entries;
         } catch (SQLException exception) {
-            logFailure("查询日常地图统计", exception);
+            logFailure(
+                    MessageConfig.codeText("daily-stats-dao-impl.get-player-map-stats-1"),
+                    exception);
             return Collections.emptyList();
         }
     }
@@ -164,12 +175,16 @@ public final class DailyStatsDaoImpl implements DailyStatsDao {
                                     UUID.fromString(result.getString("matchId")),
                                             result.getLong("achievedAt")));
                 } catch (IllegalArgumentException exception) {
-                    logFailure("解析日常跑路战士复合纪录", exception);
+                    logFailure(
+                            MessageConfig.codeText("daily-stats-dao-impl.get-player-pkw-records-2"),
+                            exception);
                 }
             }
             return entries;
         } catch (SQLException exception) {
-            logFailure("查询日常跑路战士复合纪录", exception);
+            logFailure(
+                    MessageConfig.codeText("daily-stats-dao-impl.get-player-pkw-records-1"),
+                    exception);
             return Collections.emptyList();
         }
     }
@@ -200,12 +215,18 @@ public final class DailyStatsDaoImpl implements DailyStatsDao {
                                     result.getLong("maxLines"),
                                     result.getLong("maxCompletedTasks")));
                 } catch (IllegalArgumentException exception) {
-                    logFailure("解析日常历史地图聚合", exception);
+                    logFailure(
+                            MessageConfig.codeText(
+                                    "daily-stats-dao-impl.get-match-result-map-aggregates-2"),
+                            exception);
                 }
             }
             return entries;
         } catch (SQLException exception) {
-            logFailure("查询日常历史地图聚合", exception);
+            logFailure(
+                    MessageConfig.codeText(
+                            "daily-stats-dao-impl.get-match-result-map-aggregates-1"),
+                    exception);
             return Collections.emptyList();
         }
     }
@@ -259,7 +280,7 @@ public final class DailyStatsDaoImpl implements DailyStatsDao {
                 connection.setAutoCommit(true);
             }
         } catch (SQLException exception) {
-            logFailure("保存日常比赛结果", exception);
+            logFailure(MessageConfig.codeText("daily-stats-dao-impl.save-match-1"), exception);
             return false;
         }
     }
@@ -334,7 +355,7 @@ public final class DailyStatsDaoImpl implements DailyStatsDao {
                 connection.setAutoCommit(true);
             }
         } catch (SQLException exception) {
-            logFailure("保存日常纪录", exception);
+            logFailure(MessageConfig.codeText("daily-stats-dao-impl.save-records-1"), exception);
             return false;
         }
     }
@@ -437,7 +458,7 @@ public final class DailyStatsDaoImpl implements DailyStatsDao {
             statement.executeBatch();
             return true;
         } catch (SQLException exception) {
-            logFailure("保存日常地图统计", exception);
+            logFailure(MessageConfig.codeText("daily-stats-dao-impl.save-map-stats-1"), exception);
             return false;
         }
     }
@@ -483,7 +504,8 @@ public final class DailyStatsDaoImpl implements DailyStatsDao {
             statement.executeBatch();
             return true;
         } catch (SQLException exception) {
-            logFailure("保存日常跑路战士复合纪录", exception);
+            logFailure(
+                    MessageConfig.codeText("daily-stats-dao-impl.save-pkw-records-1"), exception);
             return false;
         }
     }
@@ -507,7 +529,11 @@ public final class DailyStatsDaoImpl implements DailyStatsDao {
         plugin.getLogger()
                 .log(
                         Level.SEVERE,
-                        LogText.formatModuleLog("Database", "日常", "操作=" + operation + " 失败"),
+                        LogText.formatModuleLog(
+                                "Database",
+                                MessageConfig.codeText("daily-stats-dao-impl.log-failure-1"),
+                                MessageConfig.codeText(
+                                        "daily-stats-dao-impl.log-failure-2", operation)),
                         exception);
     }
 }

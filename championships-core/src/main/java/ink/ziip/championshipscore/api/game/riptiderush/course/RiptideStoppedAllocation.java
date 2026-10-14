@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.riptiderush.course;
 
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+
 import java.util.Random;
 
 /** Per-course allocation of the parent stopped-challenge quota among its child mechanics. */
@@ -12,24 +14,36 @@ public record RiptideStoppedAllocation(int colorFloor, int dodge, int sideSweep)
 
     public static RiptideStoppedAllocation allocate(
             int total, String mode, int floorWeight, int dodgeWeight, int sideWeight, long seed) {
-        if (total < 0 || total > 64) throw new IllegalArgumentException("停船挑战数量须为0–64");
+        if (total < 0 || total > 64)
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-stopped-allocation.allocate-1"));
         if (floorWeight < 0
                 || floorWeight > 100
                 || dodgeWeight < 0
                 || dodgeWeight > 100
                 || sideWeight < 0
-                || sideWeight > 100) throw new IllegalArgumentException("停船挑战子类权重须为0–100");
+                || sideWeight > 100)
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-stopped-allocation.allocate-2"));
         int[] weights = {floorWeight, dodgeWeight, sideWeight};
         int weightTotal = floorWeight + dodgeWeight + sideWeight;
-        if (total > 0 && weightTotal == 0) throw new IllegalArgumentException("停船挑战至少需要一个非零子类权重");
+        if (total > 0 && weightTotal == 0)
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-stopped-allocation.allocate-3"));
         if (total > SIDE_SWEEP_LIMIT && floorWeight == 0 && dodgeWeight == 0)
-            throw new IllegalArgumentException("侧向子类每轮最多分配2关，其他子类权重不能同时为0");
-        if (mode == null) throw new IllegalArgumentException("停船挑战分配模式无效");
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-stopped-allocation.allocate-4"));
+        if (mode == null)
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-stopped-allocation.allocate-5"));
         int[] quotas =
                 switch (mode.trim().toUpperCase(java.util.Locale.ROOT)) {
                     case "WEIGHTED" -> weighted(total, weights);
                     case "RANDOM" -> random(total, weights, seed);
-                    default -> throw new IllegalArgumentException("停船挑战分配模式须为WEIGHTED或RANDOM");
+                    default ->
+                            throw new IllegalArgumentException(
+                                    MessageConfig.codeText(
+                                            "riptide-stopped-allocation.allocate-6"));
                 };
         return new RiptideStoppedAllocation(quotas[0], quotas[1], quotas[2]);
     }
@@ -48,7 +62,9 @@ public record RiptideStoppedAllocation(int colorFloor, int dodge, int sideSweep)
                     selected = child;
                 }
             }
-            if (selected < 0) throw new IllegalArgumentException("当前权重无法容纳全部停船挑战配额");
+            if (selected < 0)
+                throw new IllegalArgumentException(
+                        MessageConfig.codeText("riptide-stopped-allocation.weighted-1"));
             quotas[selected]++;
         }
         return quotas;
@@ -62,7 +78,9 @@ public record RiptideStoppedAllocation(int colorFloor, int dodge, int sideSweep)
             for (int child = 0; child < weights.length; child++)
                 if (weights[child] > 0 && (child != 2 || quotas[child] < SIDE_SWEEP_LIMIT))
                     eligibleWeight += weights[child];
-            if (eligibleWeight == 0) throw new IllegalArgumentException("当前权重无法容纳全部停船挑战配额");
+            if (eligibleWeight == 0)
+                throw new IllegalArgumentException(
+                        MessageConfig.codeText("riptide-stopped-allocation.weighted-1"));
             int draw = random.nextInt(eligibleWeight);
             for (int child = 0; child < weights.length; child++) {
                 if (weights[child] == 0 || child == 2 && quotas[child] >= SIDE_SWEEP_LIMIT)
