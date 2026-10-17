@@ -74,6 +74,7 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
     private final Map<UUID, Integer> aimingUntil = new ConcurrentHashMap<>();
     private final Set<UUID> laserMovementSpeed = ConcurrentHashMap.newKeySet();
     private final Set<UUID> laserMovementSlow = ConcurrentHashMap.newKeySet();
+    private final Map<UUID, Integer> bulletSlowUntil = new ConcurrentHashMap<>();
     private final Map<List<Location>, Iterator<Location>> locationIterators =
             new IdentityHashMap<>();
     private final Map<ChampionshipTeam, Integer> teamShootTimes = new ConcurrentHashMap<>();
@@ -187,6 +188,7 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
         if (startGameProgressTask != null) startGameProgressTask.cancel();
         if (laserTickTask != null) laserTickTask.cancel();
         for (Player player : players()) clearLaserEffects(player);
+        bulletSlowUntil.clear();
         if (zoom != null) zoom.close();
         zoom = null;
         restoreNameTags();
@@ -211,6 +213,7 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
         aimingUntil.clear();
         laserMovementSpeed.clear();
         laserMovementSlow.clear();
+        bulletSlowUntil.clear();
         teamShootTimes.clear();
         playerIndividualKills.clear();
         teamRank.clear();
@@ -734,6 +737,7 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
             player.removePotionEffect(PotionEffectType.SPEED);
         if (laserMovementSlow.remove(player.getUniqueId()))
             player.removePotionEffect(PotionEffectType.SLOWNESS);
+        bulletSlowUntil.remove(player.getUniqueId());
         for (LaserGun gun : LaserGun.values()) player.setCooldown(gun.material(), 0);
     }
 
@@ -745,6 +749,9 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
                 ("ammo".equals(type(held)) || held == null || held.getType().isAir())
                         && (offHand == null || offHand.getType().isAir());
         int speed = LaserGunMechanics.speedAmplifier(gun, empty);
+        boolean bulletSlow = bulletSlowUntil.getOrDefault(id, 0) > laserTick;
+        if (!bulletSlow) bulletSlowUntil.remove(id);
+        if (bulletSlow) speed = LaserGunMechanics.hitSpeedAmplifier(speed);
         PotionEffect current = player.getPotionEffect(PotionEffectType.SPEED);
         if (speed < 0) {
             if (current != null) player.removePotionEffect(PotionEffectType.SPEED);
@@ -758,6 +765,7 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
         }
         laserMovementSpeed.add(id);
         int slow = LaserGunMechanics.slownessAmplifier(gun, aiming(player));
+        if (bulletSlow) slow = LaserGunMechanics.hitSlownessAmplifier(slow);
         PotionEffect currentSlow = player.getPotionEffect(PotionEffectType.SLOWNESS);
         if (slow >= 0) {
             if (currentSlow == null
@@ -1175,6 +1183,8 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
         ChampionshipTeam attackerTeam = plugin.getTeamManager().getTeamByPlayer(attacker);
         UUID victimId = victim.getUniqueId();
         if (playerProtectionUntil.getOrDefault(victimId, 0) > laserTick) return;
+        bulletSlowUntil.put(victimId, laserTick + 20);
+        syncMovementEffects(victim, weapon);
         lockGunSelection(victim);
         double health = playerLaserHealth.getOrDefault(victimId, 100D) - damage;
         if (health > 0) {

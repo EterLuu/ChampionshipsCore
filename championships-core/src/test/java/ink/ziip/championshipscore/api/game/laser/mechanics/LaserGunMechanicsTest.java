@@ -133,6 +133,16 @@ class LaserGunMechanicsTest {
     }
 
     @Test
+    void bulletHitLowersCurrentMovementLevelForOneTemporaryStep() {
+        assertEquals(-1, LaserGunMechanics.hitSpeedAmplifier(-1));
+        assertEquals(-1, LaserGunMechanics.hitSpeedAmplifier(0));
+        assertEquals(0, LaserGunMechanics.hitSpeedAmplifier(1));
+        assertEquals(0, LaserGunMechanics.hitSlownessAmplifier(-1));
+        assertEquals(1, LaserGunMechanics.hitSlownessAmplifier(0));
+        assertEquals(3, LaserGunMechanics.hitSlownessAmplifier(2));
+    }
+
+    @Test
     void hitRegionUsesCurrentBoundingBoxIncludingCrouchedHeight() {
         for (double height : new double[] {1.8, 1.5}) {
             Player victim =

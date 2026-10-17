@@ -77,6 +77,7 @@ public final class LaserBoxArea extends BasePairedGameInstance {
     private final Set<UUID> movementSpeed = new HashSet<>();
 
     private final Set<UUID> movementSlow = new HashSet<>();
+    private final Map<UUID, Integer> bulletSlowUntil = new HashMap<>();
     private final Map<UUID, Integer> aimingUntil = new HashMap<>();
     private LaserZoom zoom;
 
@@ -257,6 +258,7 @@ public final class LaserBoxArea extends BasePairedGameInstance {
         protection.clear();
         movementSpeed.clear();
         movementSlow.clear();
+        bulletSlowUntil.clear();
         aimingUntil.clear();
         if (zoom != null) zoom.close();
         zoom = null;
@@ -665,6 +667,9 @@ public final class LaserBoxArea extends BasePairedGameInstance {
                 (ammo || held == null || held.getType().isAir())
                         && (offHand == null || offHand.getType().isAir());
         int amplifier = LaserGunMechanics.speedAmplifier(gun, empty);
+        boolean bulletSlow = bulletSlowUntil.getOrDefault(id, 0) > round.tick();
+        if (!bulletSlow) bulletSlowUntil.remove(id);
+        if (bulletSlow) amplifier = LaserGunMechanics.hitSpeedAmplifier(amplifier);
         PotionEffect current = player.getPotionEffect(PotionEffectType.SPEED);
         if (amplifier < 0) {
             if (current != null) player.removePotionEffect(PotionEffectType.SPEED);
@@ -679,6 +684,7 @@ public final class LaserBoxArea extends BasePairedGameInstance {
                     new PotionEffect(PotionEffectType.SPEED, 40, amplifier, true, false, false));
         }
         int slowAmplifier = LaserGunMechanics.slownessAmplifier(gun, aiming(player));
+        if (bulletSlow) slowAmplifier = LaserGunMechanics.hitSlownessAmplifier(slowAmplifier);
         if (slowAmplifier >= 0) {
             PotionEffect currentSlow = player.getPotionEffect(PotionEffectType.SLOWNESS);
             if (currentSlow == null
@@ -699,6 +705,7 @@ public final class LaserBoxArea extends BasePairedGameInstance {
         UUID id = player.getUniqueId();
         if (movementSpeed.remove(id)) player.removePotionEffect(PotionEffectType.SPEED);
         if (movementSlow.remove(id)) player.removePotionEffect(PotionEffectType.SLOWNESS);
+        bulletSlowUntil.remove(id);
     }
 
     ItemStack item(String type) {
@@ -969,18 +976,28 @@ public final class LaserBoxArea extends BasePairedGameInstance {
                                                                 location.distance(
                                                                         p.getEyeLocation())),
                                                         gun,
-                                                        LaserGun.HitRegion.BODY));
+                                                        LaserGun.HitRegion.BODY,
+                                                        false));
                     }
 
                     @Override
                     public void damage(Player player, double amount, LaserGun.HitRegion region) {
-                        hit(player, owner, onRight, false, false, amount, gun, region);
+                        hit(player, owner, onRight, false, false, amount, gun, region, true);
                     }
                 });
     }
 
     private void hit(Player victim, UUID owner, boolean onRight, boolean gas, boolean strike) {
-        hit(victim, owner, onRight, gas, strike, 100.0D, null, LaserGun.HitRegion.BODY);
+        hit(
+                victim,
+                owner,
+                onRight,
+                gas,
+                strike,
+                100.0D,
+                null,
+                LaserGun.HitRegion.BODY,
+                false);
     }
 
     private void hit(
@@ -991,7 +1008,8 @@ public final class LaserBoxArea extends BasePairedGameInstance {
             boolean strike,
             double amount,
             LaserGun weapon,
-            LaserGun.HitRegion hitRegion) {
+            LaserGun.HitRegion hitRegion,
+            boolean bullet) {
         boolean introduction = isIntroductionCombat();
         if (!combatLive()
                 || notAreaPlayer(victim)
@@ -1003,6 +1021,10 @@ public final class LaserBoxArea extends BasePairedGameInstance {
         UUID id = victim.getUniqueId();
         if (round.protectedFromHits(id)) return;
         if (gas && inSmoke(victim)) return;
+        if (bullet) {
+            bulletSlowUntil.put(id, round.tick() + 20);
+            syncMovementSpeed(victim);
+        }
         consumeGunSelector(victim);
         if (strike && round.shield(id) > 0) {
             round.destroyShield(id);
@@ -1510,6 +1532,7 @@ public final class LaserBoxArea extends BasePairedGameInstance {
         }
         movementSpeed.clear();
         movementSlow.clear();
+        bulletSlowUntil.clear();
         aimingUntil.clear();
         if (zoom != null) zoom.close();
         zoom = null;

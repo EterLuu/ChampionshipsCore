@@ -51,6 +51,16 @@ public final class LaserGunMechanics {
         return gun == LaserGun.RIFLE || gun == LaserGun.MACHINE || gun == LaserGun.SNIPER ? -1 : 0;
     }
 
+    /** Lowers a speed effect by one level for the temporary bullet-hit penalty. */
+    public static int hitSpeedAmplifier(int current) {
+        return Math.max(-1, current - 1);
+    }
+
+    /** Adds one slowness level when a player has no speed effect to lower. */
+    public static int hitSlownessAmplifier(int current) {
+        return current < 0 ? 0 : current + 1;
+    }
+
     public static double combatSpread(Player player, LaserGun gun, int burstShot, boolean aiming) {
         Vector velocity = player.getVelocity();
         boolean moving =

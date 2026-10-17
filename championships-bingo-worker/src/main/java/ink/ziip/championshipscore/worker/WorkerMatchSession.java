@@ -683,7 +683,7 @@ final class WorkerMatchSession {
             abort("overworld-unavailable-before-scatter");
             return;
         }
-        world.setTime(BingoWorldRules.START_TIME);
+        BingoWorldRules.setStartTime(world);
         List<Integer> playingTeams =
                 participants.values().stream()
                         .filter(snapshot -> snapshot.role() == ParticipantRole.PLAYER)

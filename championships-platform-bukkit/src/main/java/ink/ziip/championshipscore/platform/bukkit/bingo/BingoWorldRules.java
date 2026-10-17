@@ -51,7 +51,7 @@ public final class BingoWorldRules {
         world.setGameRule(GameRules.BLOCK_DROPS, running);
         disableWanderingTraders(world);
         if (!running && resetOverworld) {
-            world.setTime(START_TIME);
+            setStartTime(world);
             world.setStorm(false);
             world.setThundering(false);
         }
@@ -67,12 +67,21 @@ public final class BingoWorldRules {
         if (night || day) {
             world.setDifficulty(night ? Difficulty.HARD : Difficulty.EASY);
             world.setGameRule(GameRules.ADVANCE_TIME, false);
-            world.setTime(night ? 18000L : 0L);
+            setTimeIfSupported(world, night ? 18000L : 0L);
         } else {
             world.setDifficulty(Difficulty.NORMAL);
             world.setGameRule(GameRules.ADVANCE_TIME, true);
-            if (world.getEnvironment() == World.Environment.NORMAL) world.setTime(START_TIME);
+            setStartTime(world);
         }
+    }
+
+    /** Sets time only for dimensions that expose the vanilla world clock. */
+    public static void setStartTime(World world) {
+        setTimeIfSupported(world, START_TIME);
+    }
+
+    private static void setTimeIfSupported(World world, long time) {
+        if (world.getEnvironment() == World.Environment.NORMAL) world.setTime(time);
     }
 
     public static void setPvp(Collection<World> worlds, boolean enabled) {
