@@ -82,7 +82,8 @@ daily:
       countdown-seconds: 60
       # Runtime copies share the same physical course and are isolated by player visibility.
       concurrent-instances: 2
-# Optional publisher for cc-web DAILY leaderboards. Use an AUTHBRIDGE_WRITER key.
+# Optional cc-web transport. It publishes DAILY leaderboards and, when an event
+# is exported, uploads the event result JSON using the same AUTHBRIDGE_WRITER key.
 leaderboard-sync:
   # Match the deployed web catalog; unsupported games would reject the entire snapshot.
   enabled-games: [Bingo, AceRace, DragonEggCarnival, ParkourWarrior]
@@ -164,6 +165,8 @@ redis:
   reconciliation-seconds: 30
 team:
   max-members: 4
+  # Event rosters may include temporary substitutes without changing the normal team limit.
+  max-event-roster-members: 16
 lobby:
   location:
     world: world

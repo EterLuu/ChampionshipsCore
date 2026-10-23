@@ -672,7 +672,8 @@ public class RankManager extends BaseManager {
                                                                                             Double
                                                                                                     ::doubleValue)
                                                                                     .sum()),
-                                                                    false,
+                                                                    team.isSubstitute(
+                                                                            member.getUuid()),
                                                                     archiveGameScores(
                                                                             games, scores)));
                                                 }));

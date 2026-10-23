@@ -70,6 +70,19 @@ public final class EventExportSubCommand extends BaseSubCommand {
             Path exported =
                     ChampionshipResultsExporter.export(
                             plugin.getDataFolder().toPath(), active, snapshot, champion);
+            if (Boolean.TRUE.equals(
+                    ink.ziip.championshipscore.configuration.config.CCConfig
+                            .WEB_LEADERBOARD_SYNC_ENABLED)) {
+                try {
+                    EventCommandSupport.webClient().submitResults(exported);
+                } catch (Exception uploadFailure) {
+                    plugin.getLogger()
+                            .log(
+                                    java.util.logging.Level.WARNING,
+                                    "Local event results export succeeded but cc-web upload failed",
+                                    uploadFailure);
+                }
+            }
             Bukkit.getScheduler()
                     .runTask(
                             plugin,

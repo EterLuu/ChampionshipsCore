@@ -29,6 +29,7 @@ class EventCommandSupportTest {
     @BeforeEach
     void configureTeamSize() {
         CCConfig.TEAM_MAX_MEMBERS = 4;
+        CCConfig.TEAM_MAX_EVENT_ROSTER_MEMBERS = 16;
     }
 
     @Test
@@ -97,7 +98,25 @@ class EventCommandSupportTest {
     }
 
     @Test
-    void rejectsAnImportThatIsNotReady() {
+    void acceptsEventRosterSubstitutesBeyondNormalTeamLimit() {
+        List<EventTeamImport.Member> members = new java.util.ArrayList<>();
+        for (int index = 0; index < 5; index++)
+            members.add(
+                    new EventTeamImport.Member(
+                            "Player" + index, UUID.randomUUID().toString(), index == 4));
+        EventTeamImport imported =
+                new EventTeamImport(
+                        event("赛事"),
+                        List.of(new EventTeamImport.Team("红队", "red", "#B02E26", members)));
+
+        var teams = EventCommandSupport.validateImport(imported);
+        assertEquals(5, teams.getFirst().members().size());
+        org.junit.jupiter.api.Assertions.assertTrue(
+                teams.getFirst().members().get(4).isSubstitute());
+    }
+
+    @Test
+    void acceptsAnImportThatIsNotReadyBecauseTheServerOwnsRuntimeState() {
         EventTeamImport.Event event =
                 new EventTeamImport.Event(
                         UUID.randomUUID().toString(),
@@ -119,8 +138,7 @@ class EventCommandSupportTest {
                                                         "PlayerOne",
                                                         UUID.randomUUID().toString())))));
 
-        assertThrows(
-                IllegalArgumentException.class, () -> EventCommandSupport.validateImport(imported));
+        assertEquals(1, EventCommandSupport.validateImport(imported).size());
     }
 
     @Test

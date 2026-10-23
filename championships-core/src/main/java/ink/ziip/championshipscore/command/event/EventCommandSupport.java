@@ -47,6 +47,8 @@ final class EventCommandSupport {
     static @NotNull WebEventApiClient webClient() {
         return new WebEventApiClient(
                 CCConfig.WEB_LEADERBOARD_SYNC_BASE_URL,
+                CCConfig.WEB_LEADERBOARD_SYNC_KEY_ID,
+                CCConfig.WEB_LEADERBOARD_SYNC_HMAC_SECRET,
                 Boolean.TRUE.equals(CCConfig.WEB_LEADERBOARD_SYNC_ALLOW_INSECURE_PRIVATE_HTTP),
                 CCConfig.WEB_LEADERBOARD_SYNC_CONNECT_TIMEOUT_SECONDS,
                 CCConfig.WEB_LEADERBOARD_SYNC_REQUEST_TIMEOUT_SECONDS);
@@ -59,8 +61,6 @@ final class EventCommandSupport {
                 || !imported.event().slug().matches("[a-z0-9][a-z0-9-]{1,31}")
                 || imported.event().title().isBlank())
             throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_INCOMPLETE);
-        if (!"READY".equals(imported.event().lifecycleStatus()))
-            throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_NOT_READY);
         if (imported.event().games() == null
                 || imported.event().games().isEmpty()
                 || imported.event().games().size() > 16)
@@ -75,9 +75,7 @@ final class EventCommandSupport {
                 throw new IllegalArgumentException(
                         MessageConfig.EVENT_IMPORT_GAME_INVALID.replace(
                                 "%game%", configured == null ? "null" : configured.key()));
-            if (configured.variantKey() == null
-                    || !configured.variantKey().matches("[a-z0-9][a-z0-9-]{0,39}")
-                    || configured.label() == null
+            if (configured.label() == null
                     || configured.label().isBlank()
                     || configured.label().length() > 80)
                 throw new IllegalArgumentException(
@@ -122,12 +120,15 @@ final class EventCommandSupport {
             if (expectedHex == null || !expectedHex.equalsIgnoreCase(team.colorHex()))
                 throw new IllegalArgumentException(
                         MessageConfig.EVENT_IMPORT_TEAM_COLOR_FIXED.replace("%color%", color));
-            if (team.members().isEmpty() || team.members().size() > CCConfig.TEAM_MAX_MEMBERS)
+            if (team.members().isEmpty()
+                    || team.members().size() > CCConfig.TEAM_MAX_EVENT_ROSTER_MEMBERS)
                 throw new IllegalArgumentException(
                         MessageConfig.EVENT_IMPORT_TEAM_SIZE_INVALID
                                 .replace("%team%", name)
                                 .replace("%min%", "1")
-                                .replace("%max%", String.valueOf(CCConfig.TEAM_MAX_MEMBERS)));
+                                .replace(
+                                        "%max%",
+                                        String.valueOf(CCConfig.TEAM_MAX_EVENT_ROSTER_MEMBERS)));
             List<TeamImportEntry.Member> members = new ArrayList<>();
             for (EventTeamImport.Member member : team.members()) {
                 if (!member.username().matches("[A-Za-z0-9_]{3,16}"))
@@ -146,7 +147,8 @@ final class EventCommandSupport {
                     throw new IllegalArgumentException(
                             MessageConfig.EVENT_IMPORT_PLAYER_DUPLICATE.replace(
                                     "%player%", member.username()));
-                members.add(new TeamImportEntry.Member(uuid, member.username()));
+                members.add(
+                        new TeamImportEntry.Member(uuid, member.username(), member.isSubstitute()));
             }
             teams.add(new TeamImportEntry(name, color, expectedHex, List.copyOf(members)));
         }

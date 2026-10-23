@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS `team_members`
     `uuid`     VARCHAR(255) NOT NULL,
     `username` VARCHAR(255) NOT NULL,
     `teamId`   INTEGER      NOT NULL,
+    `isSubstitute` BOOLEAN NOT NULL DEFAULT FALSE,
 
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_team_members_uuid` (`uuid`),

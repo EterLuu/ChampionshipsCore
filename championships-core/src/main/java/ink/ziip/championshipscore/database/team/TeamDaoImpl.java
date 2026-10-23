@@ -148,7 +148,7 @@ public class TeamDaoImpl implements TeamDao {
             try (PreparedStatement statement =
                     connection.prepareStatement(
                             """
-                            SELECT `id`, `uuid`, `username`, `teamId`
+                            SELECT `id`, `uuid`, `username`, `teamId`, `isSubstitute`
                             FROM `team_members`
                             WHERE `teamId`=?
                             """)) {
@@ -163,7 +163,12 @@ public class TeamDaoImpl implements TeamDao {
                     String username = resultSet.getString("username");
 
                     TeamMemberEntry teamMemberEntry =
-                            new TeamMemberEntry(id, uuid, username, teamId);
+                            new TeamMemberEntry(
+                                    id,
+                                    uuid,
+                                    username,
+                                    teamId,
+                                    resultSet.getBoolean("isSubstitute"));
                     members.add(teamMemberEntry);
                 }
 
@@ -184,7 +189,7 @@ public class TeamDaoImpl implements TeamDao {
             try (PreparedStatement statement =
                     connection.prepareStatement(
                             """
-                            SELECT `id`, `uuid`, `username`, `teamId`
+                            SELECT `id`, `uuid`, `username`, `teamId`, `isSubstitute`
                             FROM `team_members`
                             WHERE LOWER(`username`)=LOWER(?)
                             """)) {
@@ -197,7 +202,8 @@ public class TeamDaoImpl implements TeamDao {
                                         resultSet.getInt("id"),
                                         UUID.fromString(resultSet.getString("uuid")),
                                         resultSet.getString("username"),
-                                        resultSet.getInt("teamId")));
+                                        resultSet.getInt("teamId"),
+                                        resultSet.getBoolean("isSubstitute")));
                     }
                 }
                 return members;
@@ -365,7 +371,7 @@ public class TeamDaoImpl implements TeamDao {
                     PreparedStatement insertMember =
                             connection.prepareStatement(
                                     """
-                                    INSERT INTO `team_members` (`uuid`, `username`, `teamId`) VALUES (?,?,?)
+                                    INSERT INTO `team_members` (`uuid`, `username`, `teamId`, `isSubstitute`) VALUES (?,?,?,?)
                                     """)) {
                 // Keep the audit rows, but prevent a previous championship from contributing to
                 // this one.
@@ -393,6 +399,7 @@ public class TeamDaoImpl implements TeamDao {
                         insertMember.setString(1, member.uuid().toString());
                         insertMember.setString(2, member.username());
                         insertMember.setInt(3, teamId);
+                        insertMember.setBoolean(4, member.isSubstitute());
                         insertMember.addBatch();
                     }
                     int[] inserted = insertMember.executeBatch();

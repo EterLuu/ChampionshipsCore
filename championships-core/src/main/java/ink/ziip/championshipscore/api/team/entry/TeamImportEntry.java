@@ -10,5 +10,9 @@ public record TeamImportEntry(
         @NotNull String colorName,
         @NotNull String colorCode,
         @NotNull List<Member> members) {
-    public record Member(@NotNull UUID uuid, @NotNull String username) {}
+    public record Member(@NotNull UUID uuid, @NotNull String username, boolean isSubstitute) {
+        public Member(@NotNull UUID uuid, @NotNull String username) {
+            this(uuid, username, false);
+        }
+    }
 }

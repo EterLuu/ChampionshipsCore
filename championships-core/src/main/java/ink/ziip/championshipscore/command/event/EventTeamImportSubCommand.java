@@ -34,10 +34,6 @@ public final class EventTeamImportSubCommand extends BaseSubCommand {
             sendUsage(sender);
             return true;
         }
-        if (plugin.getScheduleManager().hasRunningFormalEvent()) {
-            CoreMessages.sendAdminError(sender, MessageConfig.EVENT_IMPORT_RUNNING);
-            return true;
-        }
         CoreMessages.sendAdminInfo(sender, MessageConfig.EVENT_IMPORT_VALIDATING);
         Bukkit.getScheduler()
                 .runTaskAsynchronously(
@@ -63,10 +59,19 @@ public final class EventTeamImportSubCommand extends BaseSubCommand {
                                                         return;
                                                     }
                                                     try {
-                                                        new EventStateStore(plugin)
-                                                                .save(imported.event());
-                                                        plugin.getRankManager()
-                                                                .reloadActiveEventScoring();
+                                                        // Team import is an auxiliary operation. If
+                                                        // a
+                                                        // formal event is already running, keep its
+                                                        // authoritative game/scoring state intact
+                                                        // and
+                                                        // only refresh the roster.
+                                                        if (!plugin.getScheduleManager()
+                                                                .hasRunningFormalEvent()) {
+                                                            new EventStateStore(plugin)
+                                                                    .save(imported.event());
+                                                            plugin.getRankManager()
+                                                                    .reloadActiveEventScoring();
+                                                        }
                                                     } catch (Exception stateFailure) {
                                                         plugin.getLogger()
                                                                 .warning(

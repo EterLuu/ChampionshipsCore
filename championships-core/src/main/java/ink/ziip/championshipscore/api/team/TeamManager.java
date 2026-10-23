@@ -81,7 +81,12 @@ public class TeamManager extends BaseManager {
     private final Scoreboard scoreboard;
 
     private record FormalTeamSnapshot(
-            int id, String name, String colorName, String colorCode, Map<UUID, String> members) {}
+            int id,
+            String name,
+            String colorName,
+            String colorCode,
+            Map<UUID, String> members,
+            Set<UUID> substitutes) {}
 
     static Set<ChampionshipTeam> newTransientTeamRegistry() {
         return Collections.synchronizedSet(Collections.newSetFromMap(new IdentityHashMap<>()));
@@ -280,6 +285,7 @@ public class TeamManager extends BaseManager {
                         for (TeamEntry entry : entries) {
                             token.check();
                             Map<UUID, String> members = new LinkedHashMap<>();
+                            Set<UUID> substitutes = new HashSet<>();
                             Set<TeamMemberEntry> queriedMembers =
                                     teamDaoImpl
                                             .getTeamMembersIfAvailable(entry.getId())
@@ -289,15 +295,18 @@ public class TeamManager extends BaseManager {
                                                                     "Unable to query members for"
                                                                             + " team "
                                                                             + entry.getId()));
-                            for (TeamMemberEntry member : queriedMembers)
+                            for (TeamMemberEntry member : queriedMembers) {
                                 members.put(member.getUuid(), member.getUsername());
+                                if (member.isSubstitute()) substitutes.add(member.getUuid());
+                            }
                             snapshots.add(
                                     new FormalTeamSnapshot(
                                             entry.getId(),
                                             entry.getName(),
                                             entry.getColorName(),
                                             entry.getColorCode(),
-                                            Map.copyOf(members)));
+                                            Map.copyOf(members),
+                                            Set.copyOf(substitutes)));
                         }
                         query.complete(List.copyOf(snapshots));
                     } catch (RuntimeException failure) {
@@ -330,7 +339,16 @@ public class TeamManager extends BaseManager {
                                                 && cached.getColorName()
                                                         .equals(snapshot.colorName())
                                                 && cached.getColorCode()
-                                                        .equals(snapshot.colorCode());
+                                                        .equals(snapshot.colorCode())
+                                                && cached.getMembers()
+                                                        .equals(snapshot.members().keySet())
+                                                && snapshot.members().keySet().stream()
+                                                        .allMatch(
+                                                                uuid ->
+                                                                        cached.isSubstitute(uuid)
+                                                                                == snapshot.substitutes()
+                                                                                        .contains(
+                                                                                                uuid));
                                 if (metadataMatches) continue;
                                 // Running games retain their exact team object until the next
                                 // reconciliation.
@@ -353,7 +371,10 @@ public class TeamManager extends BaseManager {
                                 }
                                 if (!pendingMemberTeamIds.contains(team.getId()))
                                     reconcileFormalMembers(
-                                            team, snapshot.members(), changedMembers);
+                                            team,
+                                            snapshot.members(),
+                                            snapshot.substitutes(),
+                                            changedMembers);
                             }
                         }
                         for (UUID playerId : changedMembers)
@@ -410,11 +431,15 @@ public class TeamManager extends BaseManager {
                 snapshot.colorName(),
                 snapshot.colorCode(),
                 snapshot.members(),
+                snapshot.substitutes(),
                 scoreboardTeam);
     }
 
     private void reconcileFormalMembers(
-            ChampionshipTeam team, Map<UUID, String> authoritative, Set<UUID> changedMembers) {
+            ChampionshipTeam team,
+            Map<UUID, String> authoritative,
+            Set<UUID> substitutes,
+            Set<UUID> changedMembers) {
         Set<UUID> cachedMembers = team.getMembers();
         for (UUID member : cachedMembers) {
             if (!authoritative.containsKey(member)) {
@@ -424,7 +449,8 @@ public class TeamManager extends BaseManager {
         }
         for (UUID member : authoritative.keySet()) {
             plugin.getPlayerManager().cacheKnownIdentity(authoritative.get(member), member);
-            if (team.addMember(member, authoritative.get(member))) changedMembers.add(member);
+            if (team.addMember(member, authoritative.get(member), substitutes.contains(member)))
+                changedMembers.add(member);
         }
 
         List<String> nativeEntries =

@@ -294,6 +294,9 @@ public class CCConfig extends BaseConfigurationFile {
     @ConfigOption(path = "team.max-members")
     public static int TEAM_MAX_MEMBERS;
 
+    @ConfigOption(path = "team.max-event-roster-members")
+    public static int TEAM_MAX_EVENT_ROSTER_MEMBERS;
+
     // Lobby
     @ConfigOption(path = "lobby.location")
     public static Location LOBBY_LOCATION;

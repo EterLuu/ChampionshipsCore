@@ -286,7 +286,16 @@ public final class DatabaseMigrationController {
                                             "daily_map_player_stats",
                                             column,
                                             "BIGINT NOT NULL DEFAULT 0");
-                            }));
+                            }),
+                    new DatabaseMigration(
+                            15,
+                            "event-substitute-members",
+                            connection ->
+                                    ensureColumn(
+                                            connection,
+                                            "team_members",
+                                            "isSubstitute",
+                                            "BOOLEAN NOT NULL DEFAULT FALSE")));
 
     private final ChampionshipsCore plugin;
 

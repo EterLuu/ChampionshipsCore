@@ -50,7 +50,8 @@ public final class EventStateStore {
         for (EventTeamImport.Game game : event.games()) {
             Map<String, Object> stored = new LinkedHashMap<>();
             stored.put("key", game.key());
-            stored.put("variant-key", game.variantKey());
+            if (game.variantKey() != null && !game.variantKey().isBlank())
+                stored.put("variant-key", game.variantKey());
             stored.put("label", game.label());
             games.add(stored);
         }
@@ -73,9 +74,10 @@ public final class EventStateStore {
             Object rawVariant = stored.get("variant-key");
             if (!(rawKey instanceof String key)
                     || !(rawLabel instanceof String label)
-                    || !(rawVariant instanceof String variantKey)) return null;
+                    || rawVariant != null && !(rawVariant instanceof String)) return null;
+            String variantKey = rawVariant instanceof String value ? value : "";
             GameTypeEnum type = GameTypeEnum.fromCommand(key);
-            if (type == null || variantKey.isBlank()) return null;
+            if (type == null) return null;
             games.add(new EventGame(type, variantKey, label));
         }
         List<Double> roundMultipliers = yaml.getDoubleList("event.round-multipliers");

@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ChampionshipTeam {
     private final Set<UUID> members = ConcurrentHashMap.newKeySet();
+    private final Set<UUID> substitutes = ConcurrentHashMap.newKeySet();
     private final Map<UUID, String> memberNames = new ConcurrentHashMap<>();
     @Getter private int id;
     @Getter private String name;
@@ -66,8 +67,23 @@ public class ChampionshipTeam {
             @NotNull String colorCode,
             @NotNull Map<UUID, String> members,
             Team team) {
+        this(id, name, colorName, colorCode, members, Set.of(), team);
+    }
+
+    protected ChampionshipTeam(
+            int id,
+            @NotNull String name,
+            @NotNull String colorName,
+            @NotNull String colorCode,
+            @NotNull Map<UUID, String> members,
+            @NotNull Set<UUID> substitutes,
+            Team team) {
         this(id, name, colorName, colorCode, team);
-        members.forEach(this::addMember);
+        members.forEach((uuid, username) -> addMember(uuid, username, substitutes.contains(uuid)));
+    }
+
+    public boolean isSubstitute(@NotNull UUID uuid) {
+        return substitutes.contains(uuid);
     }
 
     protected boolean addMember(@NotNull UUID uuid) {
@@ -75,7 +91,13 @@ public class ChampionshipTeam {
     }
 
     protected boolean addMember(@NotNull UUID uuid, @NotNull String username) {
+        return addMember(uuid, username, false);
+    }
+
+    protected boolean addMember(@NotNull UUID uuid, @NotNull String username, boolean substitute) {
         memberNames.put(uuid, username);
+        if (substitute) substitutes.add(uuid);
+        else substitutes.remove(uuid);
         return members.add(uuid);
     }
 
@@ -87,6 +109,7 @@ public class ChampionshipTeam {
 
     protected boolean deleteMember(@NotNull UUID uuid) {
         memberNames.remove(uuid);
+        substitutes.remove(uuid);
         return members.remove(uuid);
     }
 
