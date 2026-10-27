@@ -166,7 +166,8 @@ public enum LaserGun {
                     case LEGS -> legDamage;
                     case BODY -> bodyDamage;
                 };
-        double fraction = Math.clamp(distance / range, 0.0D, 1.0D);
+        double start = this == RIFLE ? 30.0D : 0.0D;
+        double fraction = Math.clamp((distance - start) / (range - start), 0.0D, 1.0D);
         double falloff = 1.0D - (1.0D - minimumFalloff) * fraction;
         return base * falloff;
     }

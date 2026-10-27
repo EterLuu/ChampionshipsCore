@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.authbridge;
 import fr.xephi.authme.events.LoginEvent;
 
 import ink.ziip.championshipscore.auth.AuthAdmissionOwner;
+import ink.ziip.championshipscore.auth.BanPresentation;
 import ink.ziip.championshipscore.authbridge.bridge.LocalAccessState;
 
 import org.bukkit.event.EventHandler;
@@ -17,7 +18,7 @@ public final class AccessListener implements Listener {
     private final String unavailableMessage;
     private final String uuidMismatchMessage;
     private final String unboundMessage;
-    private final String bannedMessage;
+    private final BanPresentation banPresentation;
     private final AuthAdmissionOwner admissionOwner;
 
     public AccessListener(
@@ -27,7 +28,7 @@ public final class AccessListener implements Listener {
             String unavailableMessage,
             String uuidMismatchMessage,
             String unboundMessage,
-            String bannedMessage,
+            BanPresentation banPresentation,
             AuthAdmissionOwner admissionOwner) {
         this.state = state;
         this.failClosed = failClosed;
@@ -35,7 +36,7 @@ public final class AccessListener implements Listener {
         this.unavailableMessage = unavailableMessage;
         this.uuidMismatchMessage = uuidMismatchMessage;
         this.unboundMessage = unboundMessage;
-        this.bannedMessage = bannedMessage;
+        this.banPresentation = java.util.Objects.requireNonNull(banPresentation, "banPresentation");
         this.admissionOwner = java.util.Objects.requireNonNull(admissionOwner, "admissionOwner");
     }
 
@@ -65,7 +66,7 @@ public final class AccessListener implements Listener {
             LocalAccessState.Ban ban = state.activeBan(username, java.time.Instant.now());
             if (ban != null)
                 return new AccessDecision(
-                        AccessResult.BANNED, replaceBanPlaceholders(bannedMessage, ban));
+                        AccessResult.BANNED, banPresentation.render(ban.reason(), ban.expiresAt()));
         }
         if (admissionOwner == AuthAdmissionOwner.BRIDGE) {
             if (!state.synchronizedOnce()) {
@@ -100,16 +101,4 @@ public final class AccessListener implements Listener {
     }
 
     record AccessDecision(AccessResult result, String message) {}
-
-    private static String replaceBanPlaceholders(String template, LocalAccessState.Ban ban) {
-        return (template == null ? "" : template)
-                .replace(
-                        "%reason%",
-                        ban.reason() == null || ban.reason().isBlank() ? "违反服务器规则" : ban.reason())
-                .replace(
-                        "%expires%",
-                        ban.expiresAt() == null || ban.expiresAt().isBlank()
-                                ? "请查看账号页面"
-                                : ban.expiresAt());
-    }
 }

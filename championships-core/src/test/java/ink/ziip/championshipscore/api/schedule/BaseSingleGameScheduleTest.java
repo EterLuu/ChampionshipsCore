@@ -19,6 +19,27 @@ import java.util.logging.Logger;
 
 class BaseSingleGameScheduleTest {
     @Test
+    void stoppedRoundSettlementCannotFinishOrPrepareANewSchedule() throws Exception {
+        for (int round : new int[] {1, 3}) {
+            try (var fixture = new PreparationFixture()) {
+                Owner owner = (Owner) fixture.schedule.scheduleManager;
+                owner.deferSettlement = true;
+                fixture.schedule.subRound = round;
+                fixture.schedule.nextRound();
+                Runnable previous = owner.afterSettlement;
+                assertNotNull(previous);
+                fixture.schedule.endSchedule();
+                fixture.schedule.enabled = true;
+                fixture.schedule.scheduleGeneration++;
+                previous.run();
+                assertTrue(fixture.schedule.isEnabled(), "round " + round);
+                assertNull(fixture.clock, "Old settlement prepared the new schedule");
+                assertTrue(fixture.game.starts.isEmpty());
+            }
+        }
+    }
+
+    @Test
     void readyCourseStillWaitsForTheFullTenSecondClock() throws Exception {
         try (var fixture = new PreparationFixture()) {
             fixture.schedule.nextRound();
@@ -148,6 +169,9 @@ class BaseSingleGameScheduleTest {
     }
 
     private static final class Owner extends ScheduleManager {
+        boolean deferSettlement;
+        Runnable afterSettlement;
+
         Owner(ChampionshipsCore p) {
             super(p);
         }
@@ -163,7 +187,8 @@ class BaseSingleGameScheduleTest {
 
         @Override
         public void settleEventRound(GameTypeEnum g, boolean next, Runnable after, long ticks) {
-            after.run();
+            if (deferSettlement) afterSettlement = after;
+            else after.run();
         }
     }
 

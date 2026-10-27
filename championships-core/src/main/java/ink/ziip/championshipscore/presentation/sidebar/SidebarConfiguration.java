@@ -1,7 +1,6 @@
 package ink.ziip.championshipscore.presentation.sidebar;
 
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -27,6 +26,7 @@ public final class SidebarConfiguration {
     private final Template mapEdit;
     private final Map<GameTypeEnum, GameTemplate> games;
     private final Map<String, String> values;
+    private final MapSidebarPresentation mapPresentation;
 
     private SidebarConfiguration(
             boolean enabled,
@@ -37,7 +37,8 @@ public final class SidebarConfiguration {
             Template mapStatus,
             Template mapEdit,
             Map<GameTypeEnum, GameTemplate> games,
-            Map<String, String> values) {
+            Map<String, String> values,
+            MapSidebarPresentation mapPresentation) {
         this.enabled = enabled;
         this.papiFallback = papiFallback;
         this.updateIntervalTicks = updateIntervalTicks;
@@ -47,6 +48,7 @@ public final class SidebarConfiguration {
         this.mapEdit = mapEdit;
         this.games = Map.copyOf(games);
         this.values = Map.copyOf(values);
+        this.mapPresentation = mapPresentation;
     }
 
     public static @NotNull SidebarConfiguration load(@NotNull File file) {
@@ -54,6 +56,9 @@ public final class SidebarConfiguration {
         int version = yaml.getInt("version", -1);
         if (version != 1)
             throw new IllegalArgumentException("unsupported scoreboards.yml version " + version);
+
+        YamlConfiguration defaults = bundledDefaults();
+        MapSidebarPresentation mapPresentation = MapSidebarPresentation.load(yaml, defaults);
 
         Map<String, String> styles = new LinkedHashMap<>();
         ConfigurationSection styleSection = yaml.getConfigurationSection("style");
@@ -73,23 +78,17 @@ public final class SidebarConfiguration {
         }
 
         Template lobby = template(yaml, "boards.lobby", styles, true);
+        if (yaml.isSet("boards.daily-lobby") && !yaml.isConfigurationSection("boards.daily-lobby"))
+            throw new IllegalArgumentException("boards.daily-lobby must be a section");
         Template dailyLobby = template(yaml, "boards.daily-lobby", styles, false);
-        if (dailyLobby == null)
-            dailyLobby =
-                    new Template(
-                            "&#3fb2ba[&#31e061CC&#3fb2ba]",
-                            List.of(
-                                    "&#4f4f4f&m+-------------------+",
-                                    MessageConfig.codeText("sidebar-configuration.load-1"),
-                                    MessageConfig.codeText("sidebar-configuration.load-2"),
-                                    "",
-                                    MessageConfig.codeText("sidebar-configuration.load-3"),
-                                    MessageConfig.codeText("sidebar-configuration.load-4"),
-                                    "",
-                                    MessageConfig.codeText("sidebar-configuration.load-5"),
-                                    MessageConfig.codeText("sidebar-configuration.load-6"),
-                                    "",
-                                    "&aHAMMER&f x &cRIA&f x &#ae70ffINF&f x &#036eb7&lHS"));
+        if (dailyLobby == null) {
+            var dailyStyles = new LinkedHashMap<String, String>();
+            var defaultStyles = requiredSection(defaults, "style");
+            for (String key : defaultStyles.getKeys(false))
+                dailyStyles.put(key.toLowerCase(Locale.ROOT), defaultStyles.getString(key, ""));
+            dailyStyles.putAll(styles);
+            dailyLobby = template(defaults, "boards.daily-lobby", dailyStyles, true);
+        }
         Template mapStatus = template(yaml, "boards.map-status", styles, true);
         Template mapEdit = template(yaml, "boards.map-edit", styles, true);
 
@@ -138,7 +137,25 @@ public final class SidebarConfiguration {
                 mapStatus,
                 mapEdit,
                 games,
-                values);
+                values,
+                mapPresentation);
+    }
+
+    private static YamlConfiguration bundledDefaults() {
+        try (var stream = SidebarConfiguration.class.getResourceAsStream("/scoreboards.yml")) {
+            if (stream == null) throw new IllegalStateException("Missing scoreboards.yml resource");
+            var defaults = new YamlConfiguration();
+            defaults.load(
+                    new java.io.InputStreamReader(stream, java.nio.charset.StandardCharsets.UTF_8));
+            return defaults;
+        } catch (java.io.IOException
+                | org.bukkit.configuration.InvalidConfigurationException exception) {
+            throw new IllegalStateException("Cannot load sidebar defaults", exception);
+        }
+    }
+
+    public MapSidebarPresentation mapPresentation() {
+        return mapPresentation;
     }
 
     private static Template template(

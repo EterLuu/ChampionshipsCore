@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.authbridge;
 
 import ink.ziip.championshipscore.auth.AuthAdmissionOwner;
+import ink.ziip.championshipscore.auth.BanPresentation;
 import ink.ziip.championshipscore.authbridge.authme.AuthMeHashStore;
 import ink.ziip.championshipscore.authbridge.bridge.BridgeApiClient;
 import ink.ziip.championshipscore.authbridge.bridge.BridgeSynchronizer;
@@ -47,20 +48,23 @@ public final class ChampionshipsAuthBridgePlugin extends JavaPlugin {
                         getConfig().getBoolean("api.allow-insecure-private-http", false),
                         Duration.ofSeconds(getConfig().getLong("api.connect-timeout-seconds", 5)),
                         Duration.ofSeconds(getConfig().getLong("api.request-timeout-seconds", 10)));
+        var banPresentation = BanPresentation.from(this::configuredText, "access.banned-message");
         var synchronizer =
                 new BridgeSynchronizer(
                         this,
                         client,
                         new AuthMeHashStore(),
                         state,
-                        getConfig()
-                                .getString(
-                                        "messages.username-updated",
-                                        "&#ff6b26你的 Minecraft 玩家名已修改，&#ededed请使用新名称重新登录。"),
-                        getConfig().getString("messages.access-revoked", "&#ff6b26你的服务器访问资格已被撤销。"),
+                        configuredText("messages.username-updated"),
+                        configuredText("messages.access-revoked"),
                         new BridgeUuidResolver(Duration.ofSeconds(5), Duration.ofSeconds(10)),
                         admissionOwner,
-                        getConfig().getString("access.banned-message", "&#ff6b26你已被服务器封禁。"));
+                        banPresentation);
+        String maintenanceKey =
+                !getConfig().contains("access.maintenance-message", true)
+                                && getConfig().contains("access.uuid-maintenance-message", true)
+                        ? "access.uuid-maintenance-message"
+                        : "access.maintenance-message";
         getServer()
                 .getPluginManager()
                 .registerEvents(
@@ -68,26 +72,11 @@ public final class ChampionshipsAuthBridgePlugin extends JavaPlugin {
                                 state,
                                 getConfig()
                                         .getBoolean("access.fail-closed-before-first-sync", true),
-                                getConfig()
-                                        .getString(
-                                                "access.maintenance-message",
-                                                getConfig()
-                                                        .getString(
-                                                                "access.uuid-maintenance-message",
-                                                                "&#ff6b26服务器正在维护账号资料，&#ededed请稍后重新连接。")),
-                                getConfig()
-                                        .getString(
-                                                "access.unavailable-message",
-                                                "&#ff6b26账号服务暂时不可用，&#ededed请稍后重新连接。"),
-                                getConfig()
-                                        .getString(
-                                                "access.uuid-mismatch-message",
-                                                "&#ff6b26玩家身份校验失败，&#ededed请确认通过指定代理连接。"),
-                                getConfig()
-                                        .getString(
-                                                "access.unbound-message",
-                                                "&#ff6b26你还没有绑定 Minecraft 账号。"),
-                                getConfig().getString("access.banned-message", "&#ff6b26你已被服务器封禁。"),
+                                configuredText(maintenanceKey),
+                                configuredText("access.unavailable-message"),
+                                configuredText("access.uuid-mismatch-message"),
+                                configuredText("access.unbound-message"),
+                                banPresentation,
                                 admissionOwner),
                         this);
         long period = Math.max(5L, getConfig().getLong("api.poll-seconds", 10)) * 20L;
@@ -97,6 +86,11 @@ public final class ChampionshipsAuthBridgePlugin extends JavaPlugin {
                         "Auth bridge enabled; AuthMe "
                                 + fr.xephi.authme.api.v3.AuthMeApi.getInstance()
                                         .getPluginVersion());
+    }
+
+    private String configuredText(String path) {
+        if (!getConfig().isString(path)) throw new IllegalArgumentException(path + " must be text");
+        return getConfig().getString(path);
     }
 
     private static String generateSecret() {

@@ -1,66 +1,98 @@
 package ink.ziip.championshipscore.platform.bukkit.text;
 
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.TextColor;
+import ink.ziip.championshipscore.shared.presentation.MessageTemplate;
+import ink.ziip.championshipscore.shared.presentation.PlayerTextFormat;
 
-/** Shared TAB presentation contract used by the Core server and the Bingo worker. */
+import net.kyori.adventure.text.Component;
+
+import java.util.Map;
+
+/** Shared configurable player identity, TAB and chat rendering for Core and Bukkit workers. */
 public final class ChampionshipTabText {
     private ChampionshipTabText() {}
 
     public static String bracketedPrefix(String coloredLabel) {
-        return LegacyText.translateColorCodes("&8[" + coloredLabel + "&8]&r ");
+        return bracketedPrefix(PlayerTextFormat.legacy(), coloredLabel);
     }
 
-    /**
-     * Prefix used for a player who is currently participating in a game. The game label has its own
-     * colour so it cannot inherit the participant's team colour; the player's name is rendered
-     * separately through {@link #playerNameColor(String, boolean)}.
-     */
+    public static String bracketedPrefix(PlayerTextFormat format, String coloredLabel) {
+        return text(format.prefix(), Map.of("%label%", coloredLabel));
+    }
+
     public static String gamePrefix(String gameName) {
-        return bracketedPrefix(LegacyText.translateColorCodes("&#fff566" + gameName));
+        return gamePrefix(PlayerTextFormat.legacy(), gameName);
+    }
+
+    public static String gamePrefix(PlayerTextFormat format, String gameName) {
+        return bracketedPrefix(format, text(format.gameLabel(), Map.of("%game%", gameName)));
     }
 
     public static String teamFooter(String template, String coloredTeamName, double points) {
-        return LegacyText.translateColorCodes(
-                template.replace("%team%", coloredTeamName)
-                        .replace("%points%", LegacyText.formatPoints(points)));
+        return text(
+                template,
+                Map.of("%team%", coloredTeamName, "%points%", LegacyText.formatPoints(points)));
     }
 
     public static String currentGameFooter(String template, String gameName) {
-        return LegacyText.translateColorCodes(template.replace("%game%", gameName));
+        return text(template, Map.of("%game%", gameName));
     }
 
-    /**
-     * DAILY has no championship points; its TAB footer identifies the temporary colour team only.
-     */
     public static String dailyTeamFooter(String template, String coloredTeamName) {
-        return LegacyText.translateColorCodes(template.replace("%team%", coloredTeamName));
+        return text(template, Map.of("%team%", coloredTeamName));
     }
 
-    /**
-     * Returns explicit white outside a game so scoreboard or parent-component colours cannot leak
-     * in.
-     */
     public static String playerNameColor(String teamColorCode, boolean activePlayer) {
-        if (!activePlayer || teamColorCode == null || teamColorCode.isBlank()) {
-            return LegacyText.translateColorCodes("&f");
-        }
-        return LegacyText.translateColorCodes(teamColorCode);
+        return playerNameColor(PlayerTextFormat.legacy(), teamColorCode, activePlayer);
     }
 
-    /** The exact identity shown by TAB, reusable by DAILY chat and join/quit messages. */
+    /** Team colours only apply to active participants; the inactive colour belongs to the theme. */
+    public static String playerNameColor(
+            PlayerTextFormat format, String teamColorCode, boolean activePlayer) {
+        return LegacyText.translateColorCodes(
+                !activePlayer || teamColorCode == null || teamColorCode.isBlank()
+                        ? format.inactiveNameColor()
+                        : teamColorCode);
+    }
+
     public static String playerIdentity(
             String coloredLabel, String teamColorCode, boolean activePlayer, String playerName) {
-        return bracketedPrefix(coloredLabel)
-                + playerNameColor(teamColorCode, activePlayer)
-                + playerName
-                + LegacyText.translateColorCodes("&r");
+        return playerIdentity(
+                PlayerTextFormat.legacy(), coloredLabel, teamColorCode, activePlayer, playerName);
+    }
+
+    public static String playerIdentity(
+            PlayerTextFormat format,
+            String coloredLabel,
+            String teamColorCode,
+            boolean activePlayer,
+            String playerName) {
+        return text(
+                format.identity(),
+                Map.of(
+                        "%prefix%",
+                        bracketedPrefix(format, coloredLabel),
+                        "%label%",
+                        coloredLabel,
+                        "%player%",
+                        playerNameColor(format, teamColorCode, activePlayer) + playerName,
+                        "%player_name%",
+                        playerName));
     }
 
     public static Component playerIdentityComponent(
             String coloredLabel, String teamColorCode, boolean activePlayer, String playerName) {
+        return playerIdentityComponent(
+                PlayerTextFormat.legacy(), coloredLabel, teamColorCode, activePlayer, playerName);
+    }
+
+    public static Component playerIdentityComponent(
+            PlayerTextFormat format,
+            String coloredLabel,
+            String teamColorCode,
+            boolean activePlayer,
+            String playerName) {
         return LegacyText.component(
-                playerIdentity(coloredLabel, teamColorCode, activePlayer, playerName));
+                playerIdentity(format, coloredLabel, teamColorCode, activePlayer, playerName));
     }
 
     public static Component chatLine(
@@ -69,14 +101,14 @@ public final class ChampionshipTabText {
             boolean activePlayer,
             String playerName,
             Component message) {
-        return LegacyText.component(
-                        playerNameColor(teamColorCode, activePlayer)
-                                + playerName
-                                + "&r &8<"
-                                + coloredLabel
-                                + "&8>&r")
-                .append(Component.text(" » ", TextColor.color(0x696969)))
-                .append(message.colorIfAbsent(TextColor.color(0xededed)));
+        return chatLine(
+                PlayerTextFormat.legacy(),
+                coloredLabel,
+                teamColorCode,
+                activePlayer,
+                playerName,
+                message,
+                false);
     }
 
     public static Component dailyChatLine(
@@ -85,8 +117,45 @@ public final class ChampionshipTabText {
             boolean activePlayer,
             String playerName,
             Component message) {
-        return playerIdentityComponent(coloredLabel, teamColorCode, activePlayer, playerName)
-                .append(Component.text(" » ", TextColor.color(0x696969)))
-                .append(message.colorIfAbsent(TextColor.color(0xededed)));
+        return chatLine(
+                PlayerTextFormat.legacy(),
+                coloredLabel,
+                teamColorCode,
+                activePlayer,
+                playerName,
+                message,
+                true);
+    }
+
+    public static Component chatLine(
+            PlayerTextFormat format,
+            String coloredLabel,
+            String teamColorCode,
+            boolean activePlayer,
+            String playerName,
+            Component message,
+            boolean daily) {
+        return ComponentTemplates.render(
+                daily ? format.dailyChat() : format.chat(),
+                Map.of(
+                        "%prefix%", LegacyText.component(bracketedPrefix(format, coloredLabel)),
+                        "%identity%",
+                                playerIdentityComponent(
+                                        format,
+                                        coloredLabel,
+                                        teamColorCode,
+                                        activePlayer,
+                                        playerName),
+                        "%label%", LegacyText.component(coloredLabel),
+                        "%player%",
+                                LegacyText.component(
+                                        playerNameColor(format, teamColorCode, activePlayer)
+                                                + playerName),
+                        "%player_name%", Component.text(playerName),
+                        "%message%", message));
+    }
+
+    private static String text(String template, Map<String, String> values) {
+        return LegacyText.translateColorCodes(MessageTemplate.render(template, values));
     }
 }

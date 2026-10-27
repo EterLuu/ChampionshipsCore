@@ -30,13 +30,13 @@ public interface TeamDao {
 
     void deleteTeamMember(UUID uuid);
 
-    boolean deleteTeamMembers(int teamId, @NotNull String username);
+    boolean deleteTeamMember(int teamId, @NotNull UUID uuid);
 
     boolean addTeamMember(int teamId, @NotNull UUID uuid, @NotNull String username);
 
     /**
-     * Atomically removes every alias of this player from old teams and inserts the target
-     * membership.
+     * Atomically moves this UUID. A conflicting name belonging to another UUID rejects the move;
+     * identity migration is never implicit in a roster operation.
      */
     boolean moveTeamMember(int teamId, @NotNull UUID uuid, @NotNull String username);
 

@@ -15,7 +15,6 @@ import ink.ziip.championshipscore.configuration.location.LocationConfig;
 import ink.ziip.championshipscore.platform.bukkit.scoreboard.TeamColors;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
-import ink.ziip.championshipscore.shared.presentation.DurationText;
 
 import lombok.Getter;
 
@@ -85,6 +84,8 @@ public final class DodgeboltArea extends BasePairedGameInstance {
     private BukkitTask flightMonitorTask;
     private BukkitTask shrinkTask;
     private BukkitTask championFireworksTask;
+    private BukkitTask roundTransitionTask;
+    private long roundTransitionGeneration;
 
     public DodgeboltArea(
             ChampionshipsCore plugin, DodgeboltConfig config, boolean firstTime, String areaName) {
@@ -165,6 +166,9 @@ public final class DodgeboltArea extends BasePairedGameInstance {
      * @param countdownSeconds seconds the final countdown runs before the round goes live.
      */
     private void prepareRound(int countdownSeconds) {
+        if (isDisposed()
+                || getGameStageEnum() == GameStageEnum.WAITING
+                || getGameStageEnum() == GameStageEnum.END) return;
         cleanupRoundEntities();
         restorePlatform();
         shrinkLevel = 0;
@@ -297,11 +301,16 @@ public final class DodgeboltArea extends BasePairedGameInstance {
             eliminate(hitPlayer, true);
         }
         if (getGameStageEnum() == GameStageEnum.PROGRESS && !roundWon()) {
+            long game = captureGameGeneration();
+            long transition = roundTransitionGeneration;
             scheduler.runTask(
                     plugin,
                     () -> {
-                        if (getGameStageEnum() == GameStageEnum.PROGRESS && !roundWon())
-                            spawnArrowToken(flight.destination);
+                        if (game == captureGameGeneration()
+                                && transition == roundTransitionGeneration
+                                && !isDisposed()
+                                && getGameStageEnum() == GameStageEnum.PROGRESS
+                                && !roundWon()) spawnArrowToken(flight.destination);
                     });
         }
     }
@@ -406,7 +415,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         paused = false;
         setGameStageEnum(GameStageEnum.STOPPING);
         sendMessageToAllGamePlayers(MessageConfig.DODGEBOLT_ROUND_RESTARTED);
-        scheduler.runTaskLater(plugin, () -> prepareRound(5), 20L);
+        scheduleRoundTransition(() -> prepareRound(5), 20L);
         return true;
     }
 
@@ -429,6 +438,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
 
     private void finishRound(DodgeboltSide winner) {
         if (getGameStageEnum() != GameStageEnum.PROGRESS) return;
+        roundTransitionGeneration++;
         setGameStageEnum(GameStageEnum.STOPPING);
         cleanupRoundEntities();
         shrinkQueue.clear();
@@ -452,7 +462,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
 
         if (rightWins >= WINS_TO_CHAMPION || leftWins >= WINS_TO_CHAMPION) {
             champion = rightWins >= WINS_TO_CHAMPION ? rightChampionshipTeam : leftChampionshipTeam;
-            scheduler.runTaskLater(plugin, this::finishMatch, 60L);
+            scheduleRoundTransition(this::finishMatch, 60L);
             return;
         }
 
@@ -464,7 +474,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         updateGameTimerBossBar(
                 MessageConfig.DODGEBOLT_NEXT_ROUND
                         .replace("%round%", String.valueOf(roundNumber))
-                        .replace("%time%", DurationText.bossBarSeconds(countdownSeconds)),
+                        .replace("%time%", CoreMessages.bossBarTime(countdownSeconds)),
                 countdownSeconds,
                 countdownSeconds);
     }
@@ -952,7 +962,28 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         }
     }
 
+    private void scheduleRoundTransition(Runnable action, long delay) {
+        cancelTask(roundTransitionTask);
+        long transition = ++roundTransitionGeneration;
+        long game = captureGameGeneration();
+        roundTransitionTask =
+                scheduler.runTaskLater(
+                        plugin,
+                        () -> {
+                            if (transition != roundTransitionGeneration
+                                    || game != captureGameGeneration()
+                                    || isDisposed()
+                                    || getGameStageEnum() != GameStageEnum.STOPPING) return;
+                            roundTransitionTask = null;
+                            action.run();
+                        },
+                        delay);
+    }
+
     private void cancelRoundTasks() {
+        roundTransitionGeneration++;
+        cancelTask(roundTransitionTask);
+        roundTransitionTask = null;
         cancelIntroduction();
         cancelFinalCountdown();
         cancelTask(flightMonitorTask);
@@ -1284,17 +1315,11 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         Player player = event.getEntity();
         if (getGameStageEnum() == GameStageEnum.PROGRESS && isAlive(player) && !paused)
             eliminate(player, false);
-        scheduler.runTask(
-                plugin,
+        scheduleParticipantRespawn(
+                player,
                 () -> {
-                    player.spigot().respawn();
                     teleportToSpectatorArea(player);
                 });
-    }
-
-    @Override
-    protected void applySpectatorGameMode(@NotNull Player player) {
-        super.applySpectatorGameMode(player);
     }
 
     @Override

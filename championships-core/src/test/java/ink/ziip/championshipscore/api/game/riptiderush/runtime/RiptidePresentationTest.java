@@ -17,6 +17,27 @@ import java.util.Locale;
 @ExtendWith(ConfigurationStateExtension.class)
 class RiptidePresentationTest {
     @Test
+    void customAndEmptySeparatorsKeepTargetTranslationAndFeedbackPriority() throws Exception {
+        var config = ink.ziip.championshipscore.support.MessageConfigurations.defaults();
+        var document = new org.bukkit.configuration.file.YamlConfiguration();
+        document.set("code-text.riptide-presentation.floor-separator", " &b/ ");
+        document.set("riptiderush.speed-shield-break", "speed");
+        document.set("riptiderush.shield-broken", "shield");
+        config.loadFromConfiguration(document);
+        Component target = Component.translatable("block.minecraft.red_terracotta");
+        Component rendered = RiptidePresentation.floorActionbar(target, true, true);
+        assertTrue(rendered.children().contains(target));
+        assertTrue(LegacyText.serialize(rendered).contains("/ "));
+        assertFalse(LegacyText.serialize(rendered).contains("shield"));
+        document.set("code-text.riptide-presentation.floor-separator", "");
+        config.loadFromConfiguration(document);
+        rendered = RiptidePresentation.floorActionbar(target, false, true);
+        assertTrue(rendered.children().contains(target));
+        assertFalse(LegacyText.serialize(rendered).contains("/"));
+        assertSame(target, RiptidePresentation.floorActionbar(target, false, false));
+    }
+
+    @Test
     void dodgeUsesActualArrivalDirectionAndDecimalSecondsUnderAnyServerLocale() {
         Locale original = Locale.getDefault();
         try {

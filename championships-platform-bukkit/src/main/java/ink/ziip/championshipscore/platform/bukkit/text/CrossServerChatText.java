@@ -32,11 +32,13 @@ public final class CrossServerChatText {
                 presentation.activePlayer(),
                 SERIALIZER.serialize(Objects.requireNonNull(content, "content")),
                 createdAt,
-                presentation.daily());
+                presentation.daily(),
+                SERIALIZER.serialize(presentation.chatLine(senderName, content)));
     }
 
     public static Component render(CrossServerChatMessage message) {
         Objects.requireNonNull(message, "message");
+        if (message.renderedJson() != null) return SERIALIZER.deserialize(message.renderedJson());
         Component content = SERIALIZER.deserialize(message.messageJson());
         return new PlayerPresentation(
                         message.label(),

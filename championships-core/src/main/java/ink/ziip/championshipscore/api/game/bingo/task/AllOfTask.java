@@ -6,7 +6,6 @@ import ink.ziip.championshipscore.api.game.bingo.util.MessageService;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 
 import org.bukkit.Material;
 
@@ -16,6 +15,7 @@ import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -81,11 +81,9 @@ public record AllOfTask(
                 msg.has(familyKey)
                         ? LegacyText.component(msg.tr(familyKey))
                         : BingoComponents.itemName(display);
-        return Component.text()
-                .color(NamedTextColor.YELLOW)
-                .append(msg.component("task.all_of_prefix"))
-                .append(name)
-                .build();
+        return msg.rich(
+                "task.presentation.set-name",
+                Map.of("%prefix%", msg.component("task.all_of_prefix"), "%name%", name));
     }
 
     @Override
@@ -96,11 +94,9 @@ public record AllOfTask(
         lore.add(msg.component("task.all_of_includes"));
         for (Material member : items) {
             lore.add(
-                    Component.text()
-                            .color(NamedTextColor.GRAY)
-                            .append(Component.text("- "))
-                            .append(BingoComponents.itemName(member))
-                            .build());
+                    msg.rich(
+                            "task.presentation.member-line",
+                            Map.of("%name%", BingoComponents.itemName(member))));
         }
         return lore.toArray(Component[]::new);
     }

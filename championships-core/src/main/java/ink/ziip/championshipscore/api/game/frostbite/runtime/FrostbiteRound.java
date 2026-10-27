@@ -14,6 +14,7 @@ public final class FrostbiteRound {
     private final Map<UUID, Freeze> frozen = new HashMap<>();
     private final Map<UUID, Integer> heat = new HashMap<>();
     private final Map<UUID, Integer> kills = new HashMap<>();
+    private final Set<UUID> disconnected = new HashSet<>();
     private final Set<UUID> departed = new HashSet<>();
 
     public FrostbiteRound(List<List<UUID>> teams, int round) {
@@ -65,7 +66,7 @@ public final class FrostbiteRound {
     }
 
     public boolean active(UUID id) {
-        return seats.containsKey(id) && !departed.contains(id);
+        return seats.containsKey(id) && !departed.contains(id) && !disconnected.contains(id);
     }
 
     public boolean enemies(UUID a, UUID b) {
@@ -133,8 +134,23 @@ public final class FrostbiteRound {
 
     public UUID leave(UUID id) {
         UUID killer = die(id);
+        disconnected.remove(id);
         departed.add(id);
         return killer;
+    }
+
+    /** Temporarily suspends combat admission while retaining this round's seat and kill ledger. */
+    public UUID disconnect(UUID id) {
+        if (!active(id)) return null;
+        UUID killer = frozen.containsKey(id) ? die(id) : null;
+        disconnected.add(id);
+        return killer;
+    }
+
+    public boolean reconnect(UUID id) {
+        if (!seats.containsKey(id) || departed.contains(id)) return false;
+        disconnected.remove(id);
+        return true;
     }
 
     public int kills(UUID id) {

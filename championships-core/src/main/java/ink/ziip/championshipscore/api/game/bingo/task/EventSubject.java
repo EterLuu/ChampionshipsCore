@@ -7,10 +7,8 @@ import org.bukkit.block.Biome;
 import org.bukkit.entity.EntityType;
 
 /**
- * A typed member of an {@link EventTask} subject set. The original {@code unique_collect}/{@code
- * all_collect} families only needed {@link Material}; the biome-visit and mob-family triggers need
- * non-material subjects, so the set is generalised here while the item-only {@code members} field
- * is kept for the existing triggers.
+ * Typed material, entity or biome subject for an {@link EventTask}. Collection triggers also expose
+ * the material-only {@code members} field used by inventory matching.
  */
 public record EventSubject(Kind kind, String key) {
 

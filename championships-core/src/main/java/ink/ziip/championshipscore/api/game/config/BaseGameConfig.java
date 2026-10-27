@@ -215,9 +215,9 @@ public abstract class BaseGameConfig extends BaseConfigurationFile {
     }
 
     /**
-     * Spawn point of the optional rule-introduction phase: players gather here for the 45s rules
-     * broadcast, then move to the normal preparation spawn. When empty, the spectator spawn is
-     * used.
+     * Spawn point of the optional rule-introduction phase: players gather here for the configured
+     * rules broadcast, then move to the normal preparation spawn. When empty, the spectator spawn
+     * is used.
      */
     @ConfigOption(path = "introduction-spawn-point", nullable = true)
     protected Location introductionSpawnPoint;

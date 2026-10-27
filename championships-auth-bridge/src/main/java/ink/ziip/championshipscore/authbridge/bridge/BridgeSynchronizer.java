@@ -7,6 +7,7 @@ import ink.ziip.championshipscore.api.player.event.PlayerNameChangeEvent;
 import ink.ziip.championshipscore.api.player.event.PlayerUnknownRemovalEvent;
 import ink.ziip.championshipscore.auth.AuthAdmissionOwner;
 import ink.ziip.championshipscore.auth.AuthIdentity;
+import ink.ziip.championshipscore.auth.BanPresentation;
 import ink.ziip.championshipscore.authbridge.BridgeText;
 import ink.ziip.championshipscore.authbridge.authme.AuthMeHashStore;
 import ink.ziip.championshipscore.authbridge.model.BridgeChange;
@@ -46,7 +47,7 @@ public final class BridgeSynchronizer implements Runnable {
     private final BridgeUuidResolver uuidResolver;
     private final String usernameUpdatedMessage;
     private final String accessRevokedMessage;
-    private final String bannedMessage;
+    private final BanPresentation banPresentation;
     private final AuthAdmissionOwner admissionOwner;
     private final AtomicBoolean running = new AtomicBoolean();
     private int consecutiveFailures;
@@ -58,50 +59,10 @@ public final class BridgeSynchronizer implements Runnable {
             AuthMeHashStore authMe,
             LocalAccessState state,
             String usernameUpdatedMessage,
-            String accessRevokedMessage) {
-        this(
-                plugin,
-                client,
-                authMe,
-                state,
-                usernameUpdatedMessage,
-                accessRevokedMessage,
-                new BridgeUuidResolver(
-                        java.time.Duration.ofSeconds(5), java.time.Duration.ofSeconds(10)),
-                AuthAdmissionOwner.PROXY,
-                "&#ff6b26你已被服务器封禁。");
-    }
-
-    public BridgeSynchronizer(
-            Plugin plugin,
-            BridgeApiClient client,
-            AuthMeHashStore authMe,
-            LocalAccessState state,
-            String usernameUpdatedMessage,
-            String accessRevokedMessage,
-            BridgeUuidResolver uuidResolver) {
-        this(
-                plugin,
-                client,
-                authMe,
-                state,
-                usernameUpdatedMessage,
-                accessRevokedMessage,
-                uuidResolver,
-                AuthAdmissionOwner.PROXY,
-                "&#ff6b26你已被服务器封禁。");
-    }
-
-    public BridgeSynchronizer(
-            Plugin plugin,
-            BridgeApiClient client,
-            AuthMeHashStore authMe,
-            LocalAccessState state,
-            String usernameUpdatedMessage,
             String accessRevokedMessage,
             BridgeUuidResolver uuidResolver,
             AuthAdmissionOwner admissionOwner,
-            String bannedMessage) {
+            BanPresentation banPresentation) {
         this.plugin = plugin;
         this.client = client;
         this.authMe = authMe;
@@ -110,7 +71,7 @@ public final class BridgeSynchronizer implements Runnable {
         this.usernameUpdatedMessage = usernameUpdatedMessage;
         this.accessRevokedMessage = accessRevokedMessage;
         this.admissionOwner = admissionOwner;
-        this.bannedMessage = bannedMessage;
+        this.banPresentation = java.util.Objects.requireNonNull(banPresentation, "banPresentation");
     }
 
     @Override
@@ -264,10 +225,7 @@ public final class BridgeSynchronizer implements Runnable {
                     throw new IllegalStateException("Unable to save local ban state", failure);
                 }
                 if (admissionOwner == AuthAdmissionOwner.BRIDGE) {
-                    kick(
-                            username,
-                            replaceBanPlaceholders(
-                                    bannedMessage, change.reason(), change.expiresAt()));
+                    kick(username, banPresentation.render(change.reason(), change.expiresAt()));
                 }
             }
             case "UNBANNED" -> {
@@ -464,14 +422,6 @@ public final class BridgeSynchronizer implements Runnable {
                                                         : reason));
                             }
                         });
-    }
-
-    private static String replaceBanPlaceholders(String template, String reason, String expiresAt) {
-        return (template == null ? "" : template)
-                .replace("%reason%", reason == null || reason.isBlank() ? "违反服务器规则" : reason)
-                .replace(
-                        "%expires%",
-                        expiresAt == null || expiresAt.isBlank() ? "请查看账号页面" : expiresAt);
     }
 
     private static String replacePlaceholders(

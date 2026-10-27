@@ -8,6 +8,7 @@ import ink.ziip.championshipscore.api.game.buildmart.blueprint.BuildMartBlueprin
 import ink.ziip.championshipscore.api.game.buildmart.config.BuildMartConfig;
 import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.api.gui.MenuInventory;
+import ink.ziip.championshipscore.api.gui.MenuLayout;
 import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
@@ -29,13 +30,6 @@ import java.util.Map;
 /** Blueprint selection and workshop controls share the existing map-editor session and lock. */
 public final class BuildMartBlueprintGui {
     public static final String PATH = MenuId.BUILD_MART_BLUEPRINTS.path();
-    private static final int PAGE_SIZE = 45,
-            PREVIOUS = 45,
-            NEW = 46,
-            BACK = 49,
-            SUBMIT = 50,
-            CANCEL = 51,
-            NEXT = 53;
 
     private BuildMartBlueprintGui() {}
 
@@ -43,11 +37,13 @@ public final class BuildMartBlueprintGui {
         final PrepareSession session;
         final List<BuildMartBlueprint> rows;
         final int page;
+        final MenuLayout layout;
         Inventory inventory;
 
-        Holder(PrepareSession session, List<BuildMartBlueprint> rows, int page) {
+        Holder(PrepareSession session, List<BuildMartBlueprint> rows, int page, MenuLayout layout) {
             this.session = session;
-            this.rows = rows;
+            this.rows = List.copyOf(rows);
+            this.layout = layout;
             this.page = page;
         }
 
@@ -85,19 +81,23 @@ public final class BuildMartBlueprintGui {
                         .stream()
                         .sorted(Comparator.comparing(BuildMartBlueprint::getId))
                         .toList();
-        int pages = Math.max(1, (rows.size() + PAGE_SIZE - 1) / PAGE_SIZE);
-        var holder = new Holder(session, rows, Math.max(0, Math.min(page, pages - 1)));
+        MenuLayout layout = layout();
+        int pages = layout.pageCount(rows.size());
+        var holder = new Holder(session, rows, layout.clampPage(page, rows.size()), layout);
         holder.inventory =
                 Bukkit.createInventory(
                         holder,
-                        54,
+                        layout.size(),
                         GuiConfig.component(
                                 PATH + ".title", Map.of("page", holder.page + 1, "pages", pages)));
-        for (int slot = 0; slot < 54; slot++) button(holder, slot, "filler", Map.of());
-        for (int slot = 0;
-                slot < PAGE_SIZE && holder.page * PAGE_SIZE + slot < rows.size();
-                slot++) {
-            var blueprint = rows.get(holder.page * PAGE_SIZE + slot);
+        for (int slot : layout.border()) button(holder, slot, "filler", Map.of());
+        for (int slot : layout.content()) {
+            int index = layout.index(holder.page, slot);
+            if (index >= rows.size()) {
+                button(holder, slot, "filler", Map.of());
+                continue;
+            }
+            var blueprint = rows.get(index);
             button(
                     holder,
                     slot,
@@ -112,14 +112,24 @@ public final class BuildMartBlueprintGui {
                             "blocks",
                             blueprint.blockCount()));
         }
-        if (holder.page > 0) button(holder, PREVIOUS, "previous", Map.of());
-        if (holder.page + 1 < pages) button(holder, NEXT, "next", Map.of());
-        button(holder, BACK, "back", Map.of());
+        if (holder.page > 0)
+            button(holder, holder.layout.control("previous"), "previous", Map.of());
+        if (holder.page + 1 < pages)
+            button(holder, holder.layout.control("next"), "next", Map.of());
+        button(holder, holder.layout.control("back"), "back", Map.of());
         var workshop = session.getBlueprintWorkshop();
-        if (workshop == null) button(holder, NEW, "new", Map.of());
+        if (workshop == null) button(holder, holder.layout.control("new"), "new", Map.of());
         else {
-            button(holder, SUBMIT, "submit", Map.of("name", workshop.name()));
-            button(holder, CANCEL, "cancel", Map.of("name", workshop.name()));
+            button(
+                    holder,
+                    holder.layout.control("submit"),
+                    "submit",
+                    Map.of("name", workshop.name()));
+            button(
+                    holder,
+                    holder.layout.control("cancel"),
+                    "cancel",
+                    Map.of("name", workshop.name()));
         }
         player.openInventory(holder.inventory);
     }
@@ -135,25 +145,28 @@ public final class BuildMartBlueprintGui {
         int slot = event.getRawSlot();
         var session = holder.session;
         var workshop = session.getBlueprintWorkshop();
-        if (slot == BACK) {
+        if (slot == holder.layout.control("back")) {
             if (workshop == null) StepMenuGui.open(player, session);
             else player.closeInventory();
-        } else if (slot == PREVIOUS && holder.page > 0)
+        } else if (slot == holder.layout.control("previous") && holder.page > 0)
             open(manager, player, session, holder.page - 1);
-        else if (slot == NEXT && (holder.page + 1) * PAGE_SIZE < holder.rows.size())
+        else if (slot == holder.layout.control("next")
+                && holder.page + 1 < holder.layout.pageCount(holder.rows.size()))
             open(manager, player, session, holder.page + 1);
         else if (workshop != null) {
-            if (slot == SUBMIT) {
+            if (slot == holder.layout.control("submit")) {
                 player.closeInventory();
                 workshop.submit(player);
-            } else if (slot == CANCEL) {
+            } else if (slot == holder.layout.control("cancel")) {
                 player.closeInventory();
                 workshop.cancel(player);
-            } else if (slot < PAGE_SIZE || slot == NEW)
+            } else if (holder.layout.index(holder.page, slot) >= 0
+                    || slot == holder.layout.control("new"))
                 CoreMessages.sendAdminError(player, MessageConfig.BUILD_MART_EDITOR_FINISH_FIRST);
-        } else if (slot == NEW) {
+        } else if (slot == holder.layout.control("new")) {
             AnvilInputGui.openEditorText(
                     player,
+                    session,
                     GuiConfig.text(PATH + ".input.title"),
                     "",
                     name -> {
@@ -177,10 +190,9 @@ public final class BuildMartBlueprintGui {
                             BuildMartBlueprintWorkshop.start(manager, player, session, name, null);
                     },
                     () -> open(manager, player, session, holder.page));
-        } else if (slot >= 0
-                && slot < PAGE_SIZE
-                && holder.page * PAGE_SIZE + slot < holder.rows.size()) {
-            String id = holder.rows.get(holder.page * PAGE_SIZE + slot).getId();
+        } else if (holder.layout.index(holder.page, slot) >= 0
+                && holder.layout.index(holder.page, slot) < holder.rows.size()) {
+            String id = holder.rows.get(holder.layout.index(holder.page, slot)).getId();
             var current =
                     session.getPlugin()
                             .getGameManager()
@@ -193,6 +205,28 @@ public final class BuildMartBlueprintGui {
             }
             BuildMartBlueprintWorkshop.start(manager, player, session, id, current);
         }
+    }
+
+    static MenuLayout layout() {
+        int size = GuiConfig.menu(PATH, 54, "", MenuLayout.range(0, 45)).size();
+        return MenuLayout.load(
+                PATH,
+                size,
+                MenuLayout.range(0, 45),
+                MenuLayout.range(45, size),
+                Map.of(
+                        "previous",
+                        45,
+                        "new",
+                        46,
+                        "back",
+                        49,
+                        "submit",
+                        50,
+                        "cancel",
+                        51,
+                        "next",
+                        53));
     }
 
     private static void button(Holder holder, int slot, String key, Map<String, ?> values) {

@@ -4,57 +4,52 @@ import ink.ziip.championshipscore.api.game.area.prepare.PrepareModeInventory;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
 import ink.ziip.championshipscore.api.game.area.prepare.step.CountdownBlockDisappearanceStep;
-import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
 import ink.ziip.championshipscore.api.gui.MenuId;
-import ink.ziip.championshipscore.api.gui.MenuInventory;
-import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
-import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
-
-import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /** Editor GUI for the optional opening-countdown block disappearance. */
 public final class CountdownBlockDisappearanceGui {
-    private static final String MENU_PATH = MenuId.MAP_EDITOR_COUNTDOWN_BLOCKS.path();
-    private static final int SELECTION_SLOT = 10;
-    private static final int RANDOM_SLOT = 12;
-    private static final int EAST_WEST_SLOT = 13;
-    private static final int NORTH_SOUTH_SLOT = 14;
-    private static final int VERTICAL_SLOT = 15;
-    private static final int DIRECT_SLOT = 16;
-    private static final int CLEAR_SLOT = 17;
-    private static final int BACK_SLOT = 22;
-
     private CountdownBlockDisappearanceGui() {}
 
-    public static final class Holder implements MenuInventory {
-        final PrepareSession session;
+    public static final class Holder extends PrepareMenu {
         final CountdownBlockDisappearanceStep step;
-        Inventory inventory;
+        final Map<Integer, CountdownBlockDisappearanceStep.Mode> modes = new HashMap<>();
 
-        Holder(@NotNull PrepareSession session, @NotNull CountdownBlockDisappearanceStep step) {
-            this.session = session;
+        Holder(Player player, PrepareSession session, CountdownBlockDisappearanceStep step) {
+            super(
+                    player,
+                    session,
+                    MenuId.MAP_EDITOR_COUNTDOWN_BLOCKS,
+                    27,
+                    List.of(),
+                    List.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 18, 19, 20, 21, 23, 24, 25, 26),
+                    Map.of(
+                            "selection",
+                            10,
+                            "random",
+                            12,
+                            "east-west",
+                            13,
+                            "north-south",
+                            14,
+                            "vertical",
+                            15,
+                            "direct",
+                            16,
+                            "clear",
+                            17,
+                            "back",
+                            22),
+                    Map.of());
             this.step = step;
-        }
-
-        @Override
-        public @NotNull Inventory getInventory() {
-            return inventory;
         }
     }
 
@@ -62,11 +57,29 @@ public final class CountdownBlockDisappearanceGui {
             @NotNull Player player,
             @NotNull PrepareSession session,
             @NotNull CountdownBlockDisappearanceStep step) {
-        Holder holder = new Holder(session, step);
-        GuiConfig.MenuSpec menu =
-                GuiConfig.menu(MENU_PATH, 27, GuiConfig.text(MENU_PATH + ".title"), List.of());
-        holder.inventory = Bukkit.createInventory(holder, menu.size(), menu.title());
-        refresh(holder);
+        Holder holder = new Holder(player, session, step);
+        holder.clear();
+        var config = session.getTarget().config();
+        Vector first = config.getCountdownBlockDisappearancePos1();
+        Vector second = config.getCountdownBlockDisappearancePos2();
+        boolean enabled = first != null && second != null;
+        holder.put(
+                "selection",
+                enabled ? "enabled" : "disabled",
+                Map.of("volume", enabled ? String.valueOf(volume(first, second)) : ""));
+        var current =
+                CountdownBlockDisappearanceStep.Mode.from(
+                        config.getCountdownBlockDisappearanceMode());
+        for (var mode : CountdownBlockDisappearanceStep.Mode.values()) {
+            String id = mode.itemId();
+            holder.put(
+                    id,
+                    mode == current ? "current" : "idle",
+                    Map.of("enabled", enabled ? "1" : "0"));
+            holder.modes.put(holder.layout.control(id), mode);
+        }
+        holder.put("clear", null, Map.of());
+        holder.put("back", null, Map.of());
         player.openInventory(holder.inventory);
     }
 
@@ -76,133 +89,27 @@ public final class CountdownBlockDisappearanceGui {
             @NotNull Player player,
             @NotNull Holder holder) {
         event.setCancelled(true);
-        if (event.getClickedInventory() != event.getView().getTopInventory()) return;
-        PrepareSession session = manager.getSession(player);
-        if (session == null || session != holder.session) {
-            player.closeInventory();
+        if (event.getClickedInventory() != holder.inventory || !holder.available(manager, player))
             return;
-        }
         int slot = event.getRawSlot();
-        if (slot == SELECTION_SLOT) {
-            String message = holder.step.captureSelection(session, player);
+        if (slot == holder.layout.control("selection")) {
+            String message = holder.step.captureSelection(holder.session, player);
             if (message != null) player.sendMessage(message);
-            back(player, session);
+            back(player, holder.session);
             return;
         }
-        CountdownBlockDisappearanceStep.Mode mode =
-                switch (slot) {
-                    case RANDOM_SLOT -> CountdownBlockDisappearanceStep.Mode.RANDOM;
-                    case EAST_WEST_SLOT -> CountdownBlockDisappearanceStep.Mode.DOOR_EAST_WEST;
-                    case NORTH_SOUTH_SLOT -> CountdownBlockDisappearanceStep.Mode.DOOR_NORTH_SOUTH;
-                    case VERTICAL_SLOT -> CountdownBlockDisappearanceStep.Mode.DOOR_VERTICAL;
-                    case DIRECT_SLOT -> CountdownBlockDisappearanceStep.Mode.DIRECT;
-                    default -> null;
-                };
+        var mode = holder.modes.get(slot);
         if (mode != null) {
-            player.sendMessage(holder.step.selectMode(session, mode));
-            back(player, session);
+            player.sendMessage(holder.step.selectMode(holder.session, mode));
+            back(player, holder.session);
             return;
         }
-        if (slot == CLEAR_SLOT) {
-            player.sendMessage(holder.step.clearSelection(session));
-            back(player, session);
+        if (slot == holder.layout.control("clear")) {
+            player.sendMessage(holder.step.clearSelection(holder.session));
+            back(player, holder.session);
             return;
         }
-        if (slot == BACK_SLOT) back(player, session);
-    }
-
-    private static void refresh(@NotNull Holder holder) {
-        Inventory inventory = holder.inventory;
-        inventory.clear();
-        BaseGameConfig config = holder.session.getTarget().config();
-        Vector first = config.getCountdownBlockDisappearancePos1();
-        Vector second = config.getCountdownBlockDisappearancePos2();
-        boolean enabled = first != null && second != null;
-        inventory.setItem(
-                SELECTION_SLOT,
-                configured(
-                        "selection",
-                        enabled ? "enabled" : "disabled",
-                        Map.of("volume", enabled ? String.valueOf(volume(first, second)) : "")));
-
-        CountdownBlockDisappearanceStep.Mode current =
-                CountdownBlockDisappearanceStep.Mode.from(
-                        config.getCountdownBlockDisappearanceMode());
-        inventory.setItem(
-                RANDOM_SLOT,
-                modeItem(CountdownBlockDisappearanceStep.Mode.RANDOM, current, enabled));
-        inventory.setItem(
-                EAST_WEST_SLOT,
-                modeItem(CountdownBlockDisappearanceStep.Mode.DOOR_EAST_WEST, current, enabled));
-        inventory.setItem(
-                NORTH_SOUTH_SLOT,
-                modeItem(CountdownBlockDisappearanceStep.Mode.DOOR_NORTH_SOUTH, current, enabled));
-        inventory.setItem(
-                VERTICAL_SLOT,
-                modeItem(CountdownBlockDisappearanceStep.Mode.DOOR_VERTICAL, current, enabled));
-        inventory.setItem(
-                DIRECT_SLOT,
-                modeItem(CountdownBlockDisappearanceStep.Mode.DIRECT, current, enabled));
-        inventory.setItem(CLEAR_SLOT, configured("clear", null, Map.of()));
-        inventory.setItem(BACK_SLOT, configured("back", null, Map.of()));
-        for (int slot : new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 18, 19, 20, 21, 23, 24, 25, 26})
-            inventory.setItem(slot, filler());
-    }
-
-    private static ItemStack configured(
-            @NotNull String item, String state, @NotNull Map<String, ?> placeholders) {
-        return ConfiguredGui.item(
-                MENU_PATH + ".items." + item,
-                state,
-                placeholders,
-                Material.BARRIER,
-                LegacyText.component(item),
-                List.of(),
-                false);
-    }
-
-    private static ItemStack modeItem(
-            @NotNull CountdownBlockDisappearanceStep.Mode mode,
-            @NotNull CountdownBlockDisappearanceStep.Mode current,
-            boolean enabled) {
-        String item =
-                switch (mode) {
-                    case RANDOM -> "random";
-                    case DOOR_EAST_WEST -> "east-west";
-                    case DOOR_NORTH_SOUTH -> "north-south";
-                    case DOOR_VERTICAL -> "vertical";
-                    case DIRECT -> "direct";
-                };
-        return configured(
-                item, mode == current ? "current" : "idle", Map.of("enabled", enabled ? "1" : "0"));
-    }
-
-    private static ItemStack item(
-            @NotNull Material material,
-            @NotNull String name,
-            @NotNull NamedTextColor color,
-            @NotNull String... lore) {
-        ItemStack item = new ItemStack(material);
-        List<Component> lines = new ArrayList<>();
-        for (String line : lore)
-            lines.add(
-                    LegacyText.component(line)
-                            .colorIfAbsent(NamedTextColor.GRAY)
-                            .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
-        item.editMeta(
-                meta -> {
-                    meta.displayName(
-                            LegacyText.component(name)
-                                    .colorIfAbsent(color)
-                                    .decorationIfAbsent(
-                                            TextDecoration.ITALIC, TextDecoration.State.FALSE));
-                    meta.lore(lines);
-                });
-        return item;
-    }
-
-    private static ItemStack filler() {
-        return item(Material.GRAY_STAINED_GLASS_PANE, " ", NamedTextColor.DARK_GRAY);
+        if (slot == holder.layout.control("back")) back(player, holder.session);
     }
 
     private static long volume(Vector first, Vector second) {
@@ -211,7 +118,7 @@ public final class CountdownBlockDisappearanceGui {
                 * ((long) Math.abs(first.getBlockZ() - second.getBlockZ()) + 1L);
     }
 
-    private static void back(@NotNull Player player, @NotNull PrepareSession session) {
+    private static void back(Player player, PrepareSession session) {
         player.closeInventory();
         PrepareModeInventory.refresh(player, session);
     }

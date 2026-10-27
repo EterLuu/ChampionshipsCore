@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 5
+  version: 6
 card:
   title: "&6&lBingo Card"
   win_hint: "&7Complete a full row, column, or diagonal to win"
@@ -102,6 +102,18 @@ spectator:
     slower: "Right-click: decrease speed"
     feedback: "Flight Speed: %speed%"
 task:
+  presentation:
+    item-name: "&e%name%"
+    advancement-name: "&a[%name%]"
+    advancement-description: "&3%description%"
+    statistic-name: "&d*%statistic%: %count%*"
+    subject-statistic-name: "&d*%statistic% %subject%: %count%*"
+    kill-name: "&d*%statistic%(%subject%)*"
+    killed-by-name: "&d*(%subject%)%statistic%*"
+    travel-name: "&d*%statistic%: %distance% %unit%*"
+    event-name: "&d*%action%%subject%*"
+    set-name: "&e%prefix%%name%"
+    member-line: "&7- %name%"
   collect: "&7Objective: collect this item"
   collect_potion: "&7Objective: brew or obtain this potion"
   one_of: "&7Objective: collect any one of these ({0} options)"
@@ -316,6 +328,7 @@ mode:
       - "&7at random for this round."
 
 vote:
+  option_page: Options {0} / {1}
   started: "&dBingo vote started! Choose the mode, difficulty, and winning lines within {0} seconds."
   remaining: "&7Vote ends in &e{0} &7seconds"
   cancelled-insufficient: "&cVote cancelled because too few players joined; players return to matchmaking."

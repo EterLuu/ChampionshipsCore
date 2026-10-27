@@ -179,6 +179,15 @@ public class ParkourTagMatch {
         return uuid.equals(rightAreaChaser) || uuid.equals(leftAreaChaser);
     }
 
+    /** Records only the first elimination, whether caused by a tag or a disconnect. */
+    public boolean recordElimination(UUID player, int elapsed) {
+        if (player.equals(rightAreaChaser)
+                || player.equals(leftAreaChaser)
+                || (!right.getMembers().contains(player) && !left.getMembers().contains(player)))
+            return false;
+        return playerSurviveTimes.putIfAbsent(player, elapsed) == null;
+    }
+
     public boolean isEscapee(Player player) {
         return getRightAreaEscapees().contains(player) || getLeftAreaEscapees().contains(player);
     }

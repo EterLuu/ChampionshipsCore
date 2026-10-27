@@ -6,7 +6,6 @@ import ink.ziip.championshipscore.api.game.bingo.util.MessageService;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 
 import org.bukkit.Material;
 import org.jetbrains.annotations.Nullable;
@@ -98,7 +97,14 @@ public record OneOfTask(
      * falling back to one specific head's name.
      */
     private static String[] segments(Material m) {
-        String[] raw = m.name().split("_");
+        String familyName =
+                switch (m) {
+                    case MANGROVE_PROPAGULE -> "MANGROVE_SAPLING";
+                    case AZALEA -> "AZALEA_SAPLING";
+                    case FLOWERING_AZALEA -> "FLOWERING_AZALEA_SAPLING";
+                    default -> m.name();
+                };
+        String[] raw = familyName.split("_");
         for (int i = 0; i < raw.length; i++) raw[i] = SEGMENT_SYNONYMS.getOrDefault(raw[i], raw[i]);
         return raw;
     }
@@ -142,28 +148,23 @@ public record OneOfTask(
 
     @Override
     public Component getName() {
-        if (name != null) {
-            return Component.text()
-                    .color(NamedTextColor.YELLOW)
-                    .append(LegacyText.component(name))
-                    .build();
-        }
         MessageService msg = MessageService.global();
+        if (name != null)
+            return msg.rich(
+                    "task.presentation.item-name", Map.of("%name%", LegacyText.component(name)));
         String token = familyToken();
         String familyKey = "task.family." + token;
-        if (!token.isEmpty() && msg.has(familyKey)) {
-            // Name the family, not one variant: "Any Wool".
-            return Component.text()
-                    .color(NamedTextColor.YELLOW)
-                    .append(LegacyText.component(msg.tr("task.one_of_family", msg.tr(familyKey))))
-                    .build();
-        }
-        // Irregular set with no family label: fall back to "Any: <representative item>".
-        return Component.text()
-                .color(NamedTextColor.YELLOW)
-                .append(LegacyText.component(msg.tr("task.one_of_prefix")))
-                .append(BingoComponents.itemName(display))
-                .build();
+        if (!token.isEmpty() && msg.has(familyKey))
+            return msg.rich(
+                    "task.presentation.item-name",
+                    Map.of(
+                            "%name%",
+                            LegacyText.component(msg.tr("task.one_of_family", msg.tr(familyKey)))));
+        return msg.rich(
+                "task.presentation.set-name",
+                Map.of(
+                        "%prefix%", LegacyText.component(msg.tr("task.one_of_prefix")),
+                        "%name%", BingoComponents.itemName(display)));
     }
 
     @Override

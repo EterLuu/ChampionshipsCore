@@ -6,6 +6,7 @@ import ink.ziip.championshipscore.api.game.frostbite.config.FrostbiteConfig;
 import ink.ziip.championshipscore.api.game.frostbite.mechanics.FrostbiteFrozenEquipment;
 import ink.ziip.championshipscore.api.game.frostbite.mechanics.FrostbiteSupplyHints;
 import ink.ziip.championshipscore.api.game.frostbite.model.FrostbiteItem;
+import ink.ziip.championshipscore.api.game.frostbite.presentation.FrostbiteItemPresentation;
 import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameInstance;
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
@@ -14,7 +15,6 @@ import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
-import ink.ziip.championshipscore.shared.presentation.DurationText;
 
 import org.bukkit.*;
 import org.bukkit.block.data.type.Snow;
@@ -92,9 +92,8 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
     /**
      * Viewer UUID -> players in the same arena currently highlighted after that viewer respawned.
      */
-    private final Map<UUID, Set<UUID>> respawnGlowing = new HashMap<>();
+    private ink.ziip.championshipscore.util.glow.TimedPlayerGlow respawnGlow;
 
-    private final Map<UUID, Integer> respawnGlowGeneration = new HashMap<>();
     private final FrostbiteSupplyHints supplyHints = new FrostbiteSupplyHints();
     private final Map<UUID, Boolean> collisionBefore = new HashMap<>();
     private final List<ItemDisplay> pickupDisplays = new ArrayList<>();
@@ -196,6 +195,7 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
                     gameTeams.stream()
                             .sorted(Comparator.comparingInt(ChampionshipTeam::getId))
                             .toList();
+            roundTeams = ordered;
             round =
                     new FrostbiteRound(
                             ordered.stream()
@@ -210,9 +210,9 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
             for (UUID id : round.seats().keySet()) {
                 Player player = Bukkit.getPlayer(id);
                 if (player == null) {
-                    // Preserve roster-based arena assignments while absent members sit out this
-                    // round.
-                    round.leave(id);
+                    // Formal rosters retain their assigned arena while waiting to reconnect.
+                    if (isEventRun()) round.disconnect(id);
+                    else round.leave(id);
                     continue;
                 }
                 collisionBefore.put(id, player.isCollidable());
@@ -258,7 +258,7 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
                             timer = remaining;
                             updateGameTimerBossBar(
                                     MessageConfig.FROSTBITE_BOSS_BAR.replace(
-                                            "%time%", DurationText.bossBarSeconds(remaining)),
+                                            "%time%", CoreMessages.bossBarTime(remaining)),
                                     remaining,
                                     getGameConfig().getTimer());
                         },
@@ -273,7 +273,7 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
         return getGameStageEnum() == GameStageEnum.PROGRESS
                 && round != null
                 && round.active(player.getUniqueId())
-                && player.getGameMode() != GameMode.SPECTATOR;
+                && isGameplayParticipant(player);
     }
 
     private boolean acting(Player player) {
@@ -311,8 +311,7 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
             if (!round.active(id)) continue;
             Player p = Bukkit.getPlayer(id);
             if (p == null) {
-                awardKill(round.leave(id), id);
-                cleanupPlayer(id);
+                disconnectPlayer(id);
                 continue;
             }
             if (!isGameplayParticipant(p)) continue;
@@ -419,7 +418,7 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
                     pickupDisplays.get(i).setItemStack(new ItemStack(Material.GOLD_BLOCK));
                     pickupReady[i] = 0;
                 }
-        if (round.seats().keySet().stream().noneMatch(round::active)) endGame();
+        if (!isEventRun() && round.seats().keySet().stream().noneMatch(round::active)) endGame();
     }
 
     private void awardKill(UUID killer, UUID victim) {
@@ -466,40 +465,23 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
      * seconds.
      */
     private void showRespawnGlow(UUID viewerId) {
-        clearRespawnGlow(viewerId);
         Player viewer = Bukkit.getPlayer(viewerId);
         if (viewer == null || round == null || !round.active(viewerId)) return;
-        Integer generation = respawnGlowGeneration.merge(viewerId, 1, Integer::sum);
+        if (respawnGlow == null)
+            respawnGlow = new ink.ziip.championshipscore.util.glow.TimedPlayerGlow(plugin);
         int viewerArena = arena(viewerId);
-        Set<UUID> targets = new HashSet<>();
-        for (UUID targetId : round.seats().keySet()) {
-            if (targetId.equals(viewerId)
-                    || !round.active(targetId)
-                    || arena(targetId) != viewerArena) continue;
-            Player target = Bukkit.getPlayer(targetId);
-            if (target == null || !playing(target)) continue;
-            plugin.getGlowingEntities().setGlowing(target, viewer);
-            targets.add(targetId);
-        }
-        respawnGlowing.put(viewerId, targets);
-        scheduler.runTaskLater(
-                plugin,
-                () -> {
-                    if (generation.equals(respawnGlowGeneration.get(viewerId)))
-                        clearRespawnGlow(viewerId);
-                },
-                60L);
-    }
-
-    private void clearRespawnGlow(UUID viewerId) {
-        Set<UUID> targets = respawnGlowing.remove(viewerId);
-        Player viewer = Bukkit.getPlayer(viewerId);
-        if (targets != null && viewer != null) {
-            for (UUID targetId : targets) {
-                Player target = Bukkit.getPlayer(targetId);
-                if (target != null) plugin.getGlowingEntities().unsetGlowing(target, viewer);
-            }
-        }
+        List<Player> targets =
+                round.seats().keySet().stream()
+                        .filter(
+                                id ->
+                                        !id.equals(viewerId)
+                                                && round.active(id)
+                                                && arena(id) == viewerArena)
+                        .map(Bukkit::getPlayer)
+                        .filter(Objects::nonNull)
+                        .filter(this::playing)
+                        .toList();
+        respawnGlow.show(viewer, targets, 60L);
     }
 
     private void spawn(Player p, boolean heat) {
@@ -715,12 +697,10 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
         p.removePotionEffect(PotionEffectType.INVISIBILITY);
     }
 
+    private List<ChampionshipTeam> roundTeams = List.of();
+
     private void equipTeamArmor(Player p) {
-        ChampionshipTeam team =
-                gameTeams.stream()
-                        .sorted(Comparator.comparingInt(ChampionshipTeam::getId))
-                        .toList()
-                        .get(round.seats().get(p.getUniqueId()).team());
+        ChampionshipTeam team = roundTeams.get(round.seats().get(p.getUniqueId()).team());
         p.getInventory().setHelmet(team.getHelmet());
         p.getInventory().setChestplate(null);
         p.getInventory().setLeggings(team.getLeggings());
@@ -756,63 +736,6 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
         return n;
     }
 
-    private ItemStack stack(FrostbiteItem type) {
-        ItemStack stack = new ItemStack(type.material);
-        stack.editMeta(
-                meta -> {
-                    meta.displayName(LegacyText.component("&b" + itemTitle(type)));
-                    meta.lore(List.of(LegacyText.component("&7" + itemDescription(type))));
-                    meta.setUnbreakable(true);
-                    meta.getPersistentDataContainer()
-                            .set(itemKey, PersistentDataType.STRING, type.name());
-                });
-        return stack;
-    }
-
-    private static String itemTitle(FrostbiteItem type) {
-        String value =
-                switch (type) {
-                    case AVALANCHE -> MessageConfig.FROSTBITE_ITEM_AVALANCHE_TITLE;
-                    case AXE -> MessageConfig.FROSTBITE_ITEM_AXE_TITLE;
-                    case BLAZE -> MessageConfig.FROSTBITE_ITEM_BLAZE_TITLE;
-                    case BOW -> MessageConfig.FROSTBITE_ITEM_BOW_TITLE;
-                    case BEACON -> MessageConfig.FROSTBITE_ITEM_BEACON_TITLE;
-                    case EXPLOSION -> MessageConfig.FROSTBITE_ITEM_EXPLOSION_TITLE;
-                    case GLOW -> MessageConfig.FROSTBITE_ITEM_GLOW_TITLE;
-                    case HOT_ROD -> MessageConfig.FROSTBITE_ITEM_HOT_ROD_TITLE;
-                    case ICICLE -> MessageConfig.FROSTBITE_ITEM_ICICLE_TITLE;
-                    case INVIS -> MessageConfig.FROSTBITE_ITEM_INVIS_TITLE;
-                    case MYSTERY -> MessageConfig.FROSTBITE_ITEM_MYSTERY_TITLE;
-                    case PHOENIX -> MessageConfig.FROSTBITE_ITEM_PHOENIX_TITLE;
-                    case SPEED -> MessageConfig.FROSTBITE_ITEM_SPEED_TITLE;
-                    case FROST_TRAP -> MessageConfig.FROSTBITE_ITEM_FROST_TRAP_TITLE;
-                    case WHOABALL -> MessageConfig.FROSTBITE_ITEM_WHOABALL_TITLE;
-                };
-        return value == null ? type.title() : value;
-    }
-
-    private static String itemDescription(FrostbiteItem type) {
-        String value =
-                switch (type) {
-                    case AVALANCHE -> MessageConfig.FROSTBITE_ITEM_AVALANCHE_DESCRIPTION;
-                    case AXE -> MessageConfig.FROSTBITE_ITEM_AXE_DESCRIPTION;
-                    case BLAZE -> MessageConfig.FROSTBITE_ITEM_BLAZE_DESCRIPTION;
-                    case BOW -> MessageConfig.FROSTBITE_ITEM_BOW_DESCRIPTION;
-                    case BEACON -> MessageConfig.FROSTBITE_ITEM_BEACON_DESCRIPTION;
-                    case EXPLOSION -> MessageConfig.FROSTBITE_ITEM_EXPLOSION_DESCRIPTION;
-                    case GLOW -> MessageConfig.FROSTBITE_ITEM_GLOW_DESCRIPTION;
-                    case HOT_ROD -> MessageConfig.FROSTBITE_ITEM_HOT_ROD_DESCRIPTION;
-                    case ICICLE -> MessageConfig.FROSTBITE_ITEM_ICICLE_DESCRIPTION;
-                    case INVIS -> MessageConfig.FROSTBITE_ITEM_INVIS_DESCRIPTION;
-                    case MYSTERY -> MessageConfig.FROSTBITE_ITEM_MYSTERY_DESCRIPTION;
-                    case PHOENIX -> MessageConfig.FROSTBITE_ITEM_PHOENIX_DESCRIPTION;
-                    case SPEED -> MessageConfig.FROSTBITE_ITEM_SPEED_DESCRIPTION;
-                    case FROST_TRAP -> MessageConfig.FROSTBITE_ITEM_FROST_TRAP_DESCRIPTION;
-                    case WHOABALL -> MessageConfig.FROSTBITE_ITEM_WHOABALL_DESCRIPTION;
-                };
-        return value == null ? type.description() : value;
-    }
-
     private void consume(Player p) {
         p.getInventory().setItemInMainHand(null);
     }
@@ -835,11 +758,10 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
 
     private void give(Player p, FrostbiteItem type) {
         int slot = p.getInventory().getItem(0) == null ? 0 : 1;
-        p.getInventory().setItem(slot, stack(type));
+        p.getInventory().setItem(slot, FrostbiteItemPresentation.create(type, itemKey));
         if (type == FrostbiteItem.BOW)
             p.getInventory().setItem(8, new ItemStack(Material.ARROW, 3));
-        supplyHints.add(
-                p.getUniqueId(), "&b" + itemTitle(type) + " &7" + itemDescription(type), tick);
+        supplyHints.add(p.getUniqueId(), FrostbiteItemPresentation.pickupHint(type), tick);
         p.sendActionBar(LegacyText.component(supplyHints.current(p.getUniqueId(), tick)));
         p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, .5F, 1.5F);
     }
@@ -936,15 +858,24 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
             arrow.setPickupStatus(AbstractArrow.PickupStatus.DISALLOWED);
         // The bow event runs before vanilla finishes consuming its arrow. Clearing the bow here
         // when the stack is at one causes that third projectile to be discarded on Paper.
-        if (p.getInventory().getItem(8) == null || p.getInventory().getItem(8).getAmount() <= 1)
-            scheduler.runTask(
-                    plugin,
+        if (p.getInventory().getItem(8) == null || p.getInventory().getItem(8).getAmount() <= 1) {
+            int bowSlot =
+                    e.getHand() == org.bukkit.inventory.EquipmentSlot.OFF_HAND
+                            ? 40
+                            : p.getInventory().getHeldItemSlot();
+            ItemStack firedBow = e.getBow().clone();
+            scheduleGameplayAction(
+                    p,
                     () -> {
+                        if (!acting(p) || !firedBow.isSimilar(p.getInventory().getItem(bowSlot)))
+                            return;
                         ItemStack arrows = p.getInventory().getItem(8);
                         if (arrows == null
                                 || arrows.getType() != Material.ARROW
-                                || arrows.getAmount() <= 0) consume(p);
-                    });
+                                || arrows.getAmount() <= 0) p.getInventory().setItem(bowSlot, null);
+                    },
+                    1L);
+        }
         reveal(p);
     }
 
@@ -1254,18 +1185,7 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
     }
 
     private void cleanupPlayer(UUID id) {
-        clearRespawnGlow(id);
-        respawnGlowGeneration.remove(id);
-        for (UUID viewerId : new HashSet<>(respawnGlowing.keySet())) {
-            Set<UUID> targets = respawnGlowing.get(viewerId);
-            if (targets != null && targets.remove(id)) {
-                Player viewer = Bukkit.getPlayer(viewerId);
-                Player target = Bukkit.getPlayer(id);
-                if (viewer != null && target != null)
-                    plugin.getGlowingEntities().unsetGlowing(target, viewer);
-                if (targets.isEmpty()) respawnGlowing.remove(viewerId);
-            }
-        }
+        if (respawnGlow != null) respawnGlow.clearPlayer(id);
         Player p = Bukkit.getPlayer(id);
         if (p != null) {
             clearCombat(p);
@@ -1316,8 +1236,7 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
         invisibleUntil.clear();
         supplyHints.clear();
         fullPickupHintAt.clear();
-        respawnGlowing.clear();
-        respawnGlowGeneration.clear();
+        if (respawnGlow != null) respawnGlow.clear();
     }
 
     @Override
@@ -1355,21 +1274,46 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
 
     @Override
     public void handlePlayerQuit(@NotNull PlayerQuitEvent e) {
-        if (playing(e.getPlayer()))
-            awardKill(round.leave(e.getPlayer().getUniqueId()), e.getPlayer().getUniqueId());
-        cleanupPlayer(e.getPlayer().getUniqueId());
+        UUID id = e.getPlayer().getUniqueId();
+        if (hasPreparedRound()) disconnectPlayer(id);
+        else cleanupPlayer(id);
+    }
+
+    private void disconnectPlayer(UUID id) {
+        if (isEventRun()) {
+            boolean frozen = round.freezeState(id) != null;
+            awardKill(round.disconnect(id), id);
+            // A frozen disconnect pays its death once. The normal protection deadline starts
+            // now, so repeated reconnects cannot extend it or refresh existing heat.
+            if (frozen) round.heat(id, tick + getGameConfig().getHeatSeconds() * 20);
+        } else {
+            awardKill(round.leave(id), id);
+        }
+        cleanupPlayer(id);
+    }
+
+    private boolean hasPreparedRound() {
+        return round != null
+                && (getGameStageEnum() == GameStageEnum.PREPARATION
+                        || getGameStageEnum() == GameStageEnum.COUNTDOWN
+                        || getGameStageEnum() == GameStageEnum.PROGRESS);
     }
 
     @Override
     public void handlePlayerJoin(@NotNull PlayerJoinEvent e) {
         Player p = e.getPlayer();
-        if (notAreaPlayer(p)) return;
-        if (round != null && getGameStageEnum() == GameStageEnum.PROGRESS) {
-            awardKill(round.leave(p.getUniqueId()), p.getUniqueId());
-            cleanupPlayer(p.getUniqueId());
-            plugin.getGameManager()
-                    .getSpectatorManager()
-                    .enterParticipantSpectator(p, this, getSpectatorSpawnLocation());
+        if (!isCurrentParticipantConnection(captureGameGeneration(), p)) return;
+        if (hasPreparedRound()) {
+            var spectators = plugin.getGameManager().getSpectatorManager();
+            spectators.resumeParticipant(p, this);
+            disconnectPlayer(p.getUniqueId());
+            if (isEventRun() && round.reconnect(p.getUniqueId())) {
+                collisionBefore.putIfAbsent(p.getUniqueId(), p.isCollidable());
+                p.setCollidable(false);
+                spawn(p, false);
+            } else {
+                spectators.enterParticipantSpectator(p, this, getSpectatorSpawnLocation());
+            }
         } else {
             teleport(p, getSpectatorSpawnLocation());
             p.setGameMode(GameMode.ADVENTURE);

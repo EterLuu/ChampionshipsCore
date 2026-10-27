@@ -11,13 +11,11 @@ import ink.ziip.championshipscore.api.game.parkourwarrior.model.CCSelection;
 import ink.ziip.championshipscore.api.game.parkourwarrior.model.PKWCheckPointTypeEnum;
 import ink.ziip.championshipscore.api.game.parkourwarrior.model.PKWCheckpoint;
 import ink.ziip.championshipscore.api.game.parkourwarrior.model.PKWFinalCheckPointTypeEnum;
-import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.location.LocationConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
-import ink.ziip.championshipscore.shared.presentation.DurationText;
 
 import lombok.Getter;
 
@@ -92,6 +90,7 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
 
     @Override
     public void resetGame() {
+        invalidateParticipantCallbacks();
         plugin.getVisibilityManager().releaseAll(getGamePlayers(), visibilityOwner);
         cancelIntroduction();
         cancelFinalCountdown();
@@ -488,7 +487,7 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
 
         for (UUID uuid : getGamePlayers()) {
             Map<PKWCheckpoint, Integer> singlePlayerCheckpointProgress =
-                    playerCheckpointProgress.get(uuid);
+                    playerCheckpointProgress.getOrDefault(uuid, Map.of());
             for (Map.Entry<PKWCheckpoint, Integer> entry :
                     singlePlayerCheckpointProgress.entrySet()) {
                 PKWCheckPointTypeEnum checkpointType = entry.getKey().getType();
@@ -526,6 +525,8 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
                             + (points4 == 0 ? 0 : getGameConfig().getPoints4()) * points4
                             + ascend * acc(points5 == 0 ? 0 : (points5 - 1))
                             + (points5 == 0 ? 0 : getGameConfig().getPoints5()) * points5;
+
+            if (finalPoints == 0) continue;
 
             ChampionshipTeam championshipTeam =
                     ChampionshipsCore.getInstance().getTeamManager().getTeamByPlayer(uuid);
@@ -603,7 +604,7 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
 
         // Rule-introduction phase (if configured): gather players at the introduction spawn point
         // and
-        // broadcast the rule sections in chat over 45s, then run the normal preparation below.
+        // broadcast the configured rule sections, then run the normal preparation below.
         startGameIntroduction(this::startFormalPreparation);
     }
 
@@ -684,7 +685,7 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
                                             : MessageConfig.PARKOUR_WARRIOR_ACTION_BAR_COUNT_DOWN;
                             updateGameTimerBossBar(
                                     timerTemplate.replace(
-                                            "%time%", DurationText.bossBarSeconds(timer)),
+                                            "%time%", CoreMessages.bossBarTime(timer)),
                                     timer,
                                     getGameConfig().getTimer());
                         },
@@ -695,18 +696,16 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
     }
 
     private void giveBootToAllPlayers() {
-        for (ChampionshipPlayer championshipPlayer : getOnlineCCSpectators()) {
-            Player player = championshipPlayer.getPlayer();
-            if (player != null) {
-                ChampionshipTeam championshipTeam = championshipPlayer.getChampionshipTeam();
-                if (championshipTeam != null) {
-                    championshipPlayer
-                            .getPlayer()
-                            .getInventory()
-                            .setBoots(championshipTeam.getBoots());
-                }
-            }
+        for (UUID uuid : getGamePlayers()) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player != null) giveTeamBoots(player);
         }
+    }
+
+    private void giveTeamBoots(Player player) {
+        if (!isGameplayParticipant(player)) return;
+        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
+        if (team != null) player.getInventory().setBoots(team.getBoots());
     }
 
     public void hideOnlinePlayers(Player player) {
@@ -838,8 +837,7 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
             player.setGameMode(GameMode.ADVENTURE);
             player.setFlying(false);
             player.setAllowFlight(false);
-            ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
-            if (team != null) player.getInventory().setBoots(team.getBoots());
+            giveTeamBoots(player);
             if (stage == GameStageEnum.PROGRESS) hideAndShowPlayer(player);
             return;
         }

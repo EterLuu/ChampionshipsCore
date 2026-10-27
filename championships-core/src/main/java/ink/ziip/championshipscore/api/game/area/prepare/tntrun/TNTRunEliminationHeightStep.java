@@ -66,6 +66,7 @@ final class TNTRunEliminationHeightStep extends PrepareStep {
                 };
         AnvilInputGui.openEditorText(
                 player,
+                session,
                 GuiConfig.text(PATH + ".title"),
                 String.valueOf(current),
                 text -> {

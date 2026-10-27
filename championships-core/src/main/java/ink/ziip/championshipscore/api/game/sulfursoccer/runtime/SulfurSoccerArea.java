@@ -56,6 +56,7 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
     private BukkitTask tickTask;
     private BukkitTask kickoffTask;
     private boolean paused;
+    private boolean manuallyPaused;
     private Location pausedBallLocation;
     private Vector pausedBallVelocity;
     private int ticks;
@@ -193,14 +194,18 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
 
     /** Administrative controls shared by finale commands. */
     public boolean pauseMatch() {
-        if (match == null || getGameStageEnum() != GameStageEnum.PROGRESS || paused) return false;
+        if (match == null || getGameStageEnum() != GameStageEnum.PROGRESS || manuallyPaused)
+            return false;
+        manuallyPaused = true;
         setPaused(true);
         return true;
     }
 
     public boolean resumeMatch() {
-        if (match == null || getGameStageEnum() != GameStageEnum.PROGRESS || !paused) return false;
-        setPaused(false);
+        if (match == null || getGameStageEnum() != GameStageEnum.PROGRESS || !manuallyPaused)
+            return false;
+        manuallyPaused = false;
+        refreshPauseState();
         return true;
     }
 
@@ -255,8 +260,7 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
             points.add(getGameConfig().bind(getGameConfig().parseSpawn(raw)));
         Set<Long> colorChunks = new HashSet<>();
         World world = Bukkit.getWorld(getWorldName());
-        // Keeper markers may be outside the old four landing chunks. Warm the pitch before scanning
-        // it.
+        // Preload the entire pitch, including keeper markers outside the player spawn chunks.
         for (int x = ((int) Math.floor(field.getMinX())) >> 4;
                 x <= ((int) Math.ceil(field.getMaxX()) - 1) >> 4;
                 x++)
@@ -471,7 +475,7 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
         boolean firstKickoff = openingKickoff;
         openingKickoff = false;
         match.kickOff();
-        paused = !everyoneOnline();
+        paused = manuallyPaused || !everyoneOnline();
         if (firstKickoff) startPearlCooldown();
         spawnBall();
         if (tickTask == null) tickTask = scheduler.runTaskTimer(plugin, this::tick, 1L, 1L);
@@ -487,12 +491,14 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
 
     @Override
     protected String getFinalCountdownSubtitle(String gameTitle, int seconds) {
-        return openingKickoff ? "&e" + seconds : "";
+        return openingKickoff
+                ? MessageConfig.codeText("sulfur-soccer-area.kickoff-countdown-subtitle", seconds)
+                : "";
     }
 
     private void beginWarmup() {
         match.startWarmup(WARMUP_SECONDS);
-        paused = !everyoneOnline();
+        paused = manuallyPaused || !everyoneOnline();
         resetPlayerHealthFoodEffectLevelInventory();
         for (Player player : players()) restorePlayer(player);
         startPearlCooldown();
@@ -573,7 +579,7 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
         if (match == null
                 || getGameStageEnum() == GameStageEnum.END
                 || getGameStageEnum() == GameStageEnum.WAITING) return;
-        setPaused(!everyoneOnline());
+        refreshPauseState();
         if (!paused && !isShootout() && match.tickRegulation()) {
             cancelFinalCountdown();
             if (kickoffTask != null) kickoffTask.cancel();
@@ -819,6 +825,10 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
         ball.setVelocity(new Vector());
     }
 
+    private void refreshPauseState() {
+        setPaused(manuallyPaused || !everyoneOnline());
+    }
+
     private void setPaused(boolean value) {
         if (paused == value) return;
         paused = value;
@@ -867,7 +877,7 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
         if (isShootout() && !paused) {
             sendActionBarToAllGamePlayers(
                     penaltyText(MessageConfig.SULFUR_SOCCER_PENALTY_SCORE)
-                            + " &7| "
+                            + MessageConfig.codeText("sulfur-soccer-area.penalty-separator")
                             + getStateText());
             return;
         }
@@ -917,6 +927,7 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
         pearls.put(pearl.getUniqueId(), pearl);
         player.setCooldown(Material.ENDER_PEARL, PEARL_COOLDOWN_TICKS);
         long generation = pearlGeneration;
+        long game = captureGameGeneration();
         // Vanilla consumes the item and writes its own cooldown after the launch event finishes.
         scheduler.runTask(
                 plugin,
@@ -925,6 +936,7 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
                             && isPlayPhase()
                             && !isShootout()
                             && player.isOnline()
+                            && isCurrentParticipantConnection(game, player)
                             && isGameplayParticipant(player)) givePearl(player);
                 });
     }
@@ -1021,12 +1033,11 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
         event.setKeepInventory(true);
         event.getDrops().clear();
         event.setDroppedExp(0);
-        scheduler.runTask(
-                plugin,
+        Player player = event.getEntity();
+        scheduleParticipantRespawn(
+                player,
                 () -> {
-                    Player player = event.getEntity();
-                    player.spigot().respawn();
-                    if (!notAreaPlayer(player)
+                    if (isGameplayParticipant(player)
                             && getGameStageEnum() != GameStageEnum.END
                             && getGameStageEnum() != GameStageEnum.WAITING) restorePlayer(player);
                 });
@@ -1069,6 +1080,7 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
         cleanup();
         setGameStageEnum(GameStageEnum.END);
         paused = false;
+        manuallyPaused = false;
         if (isSettlementAllowed()) {
             if (champion != null)
                 CoreMessages.sendMessageToAllPlayers(
@@ -1109,6 +1121,7 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
         leftPenalty = null;
         champion = null;
         paused = false;
+        manuallyPaused = false;
         ticks = 0;
         openingKickoff = false;
         spawns.clear();

@@ -16,7 +16,7 @@ worlds:
   nether: "bingo_nether"
   the-end: "bingo_the_end"
   seed-filter:
-    # SeedLab 26.2 is embedded in the Worker JAR; no external command is required.
+    # Samples the runtime Overworld climate without external commands or chunk loading.
     enabled: true
     required: false
     seed-file: ".bingo-seed"

@@ -161,39 +161,6 @@ public class ParkourTagHandler extends BaseListener {
         event.setCancelled(true);
     }
 
-    /* Disabled wind charge: keep the interaction handler for restoring the item later.
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerUseWindCharge(PlayerInteractEvent event) {
-        Player player = event.getPlayer();
-        if (parkourTagArea.notAreaPlayer(player)) {
-            return;
-        }
-
-        Location location = player.getLocation();
-        if (parkourTagArea.notInArea(location)) {
-            return;
-        }
-
-        if (parkourTagArea.getGameStageEnum() != GameStageEnum.PROGRESS) {
-            return;
-        }
-
-        if (event.getAction() == Action.RIGHT_CLICK_BLOCK || event.getAction() == Action.RIGHT_CLICK_AIR) {
-            ItemStack mainHandItem = player.getInventory().getItemInMainHand();
-            ItemStack offHandItem = player.getInventory().getItemInOffHand();
-            if (mainHandItem.getType() == Material.WIND_CHARGE || offHandItem.getType() == Material.WIND_CHARGE) {
-                parkourTagArea.useWindCharge(player);
-                // Consume the user's held wind charge too (useWindCharge clears slot 1 for the whole
-                // team, but the user may have moved theirs into the off-hand).
-                if (mainHandItem.getType() == Material.WIND_CHARGE) mainHandItem.setAmount(0);
-                if (offHandItem.getType() == Material.WIND_CHARGE) offHandItem.setAmount(0);
-            }
-        }
-
-        event.setCancelled(true);
-    }
-    */
-
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerDamagedByPlayer(EntityDamageByEntityEvent event) {
         if (event.getEntity() instanceof Player player) {

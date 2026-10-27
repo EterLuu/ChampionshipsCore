@@ -1,19 +1,12 @@
 package ink.ziip.championshipscore.api.daily;
 
 import ink.ziip.championshipscore.api.gui.MenuId;
-import ink.ziip.championshipscore.api.gui.MenuInventory;
-import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 
-import net.kyori.adventure.text.Component;
-
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.ItemStack;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Map;
@@ -36,7 +29,7 @@ final class DailyLobbyMenu {
 
     void open(Player player) {
         LobbyHolder holder = new LobbyHolder(player.getUniqueId());
-        GuiConfig.MenuSpec menu = GuiConfig.menu(MENU_PATH, SIZE, "", List.of(11, 13, 15, 17));
+        GuiConfig.MenuSpec menu = GuiConfig.menu(MENU_PATH, SIZE, "", List.of());
         holder.inventory = Bukkit.createInventory(holder, menu.size(), menu.title());
         refresh(holder);
         player.openInventory(holder.inventory);
@@ -54,20 +47,20 @@ final class DailyLobbyMenu {
             player.closeInventory();
             return;
         }
-        if (slot == slot("close", CLOSE_SLOT)) {
+        if (slot == holder.layout.control("close")) {
             player.closeInventory();
             return;
         }
-        if (slot == slot("statistics", STATS_SLOT)) {
+        if (slot == holder.layout.control("statistics")) {
             daily.openStatsMenu(player);
             clickSound(player, 1.15F);
-        } else if (slot == slot("matchmaking", MATCH_SLOT)) {
+        } else if (slot == holder.layout.control("matchmaking")) {
             daily.openMatchMenu(player);
             clickSound(player, 1.2F);
-        } else if (slot == slot("party", PARTY_SLOT)) {
+        } else if (slot == holder.layout.control("party")) {
             daily.openPartyMenu(player);
             clickSound(player, 1.1F);
-        } else if (slot == slot("spectate", SPECTATE_SLOT)) {
+        } else if (slot == holder.layout.control("spectate")) {
             daily.openSpectateMenu(player);
             clickSound(player, 1.3F);
         }
@@ -75,72 +68,56 @@ final class DailyLobbyMenu {
 
     private void refresh(LobbyHolder holder) {
         Inventory inventory = holder.inventory;
-        inventory.clear();
-        ItemStack border = configured("border", Map.of(), Material.BLACK_STAINED_GLASS_PANE);
-        for (int slot :
-                GuiConfig.slots(
-                        MENU_PATH + ".layout.border",
-                        List.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 18, 19, 20, 21, 22, 23, 24, 25, 26)))
-            if (slot >= 0 && slot < inventory.getSize()) inventory.setItem(slot, border);
+        holder.clear();
 
         DailyPlayerSnapshot snapshot = daily.snapshot(holder.viewer);
         inventory.setItem(
-                slot("status", 4),
-                configured(
+                holder.layout.control("status"),
+                holder.item(
                         "status",
+                        null,
                         Map.of(
                                 "queue",
                                 snapshot.queueState(),
                                 "game",
                                 snapshot.selectedGame(),
                                 "party_size",
-                                snapshot.partySize()),
-                        Material.NETHER_STAR));
+                                snapshot.partySize())));
         inventory.setItem(
-                slot("statistics", STATS_SLOT),
-                configured("statistics", Map.of(), Material.WRITABLE_BOOK));
+                holder.layout.control("statistics"), holder.item("statistics", null, Map.of()));
         inventory.setItem(
-                slot("matchmaking", MATCH_SLOT),
-                configured("matchmaking", Map.of(), Material.COMPASS));
+                holder.layout.control("matchmaking"), holder.item("matchmaking", null, Map.of()));
+        inventory.setItem(holder.layout.control("party"), holder.item("party", null, Map.of()));
         inventory.setItem(
-                slot("party", PARTY_SLOT), configured("party", Map.of(), Material.PLAYER_HEAD));
-        inventory.setItem(
-                slot("spectate", SPECTATE_SLOT),
-                configured("spectate", Map.of(), Material.SPYGLASS));
-        inventory.setItem(
-                slot("close", CLOSE_SLOT), configured("close", Map.of(), Material.BARRIER));
-    }
-
-    private static int slot(String item, int fallback) {
-        return ConfiguredGui.slot(MENU_PATH + ".items." + item, fallback);
-    }
-
-    private static ItemStack configured(
-            String key, Map<String, ?> placeholders, Material material) {
-        return ConfiguredGui.item(
-                MENU_PATH + ".items." + key,
-                placeholders,
-                material,
-                Component.empty(),
-                List.of(),
-                false);
+                holder.layout.control("spectate"), holder.item("spectate", null, Map.of()));
+        inventory.setItem(holder.layout.control("close"), holder.item("close", null, Map.of()));
     }
 
     private static void clickSound(Player player, float pitch) {
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.7F, pitch);
     }
 
-    static final class LobbyHolder implements MenuInventory {
-        private final UUID viewer;
-        private Inventory inventory;
-
+    static final class LobbyHolder extends DailyMenuPage {
         private LobbyHolder(UUID viewer) {
-            this.viewer = viewer;
-        }
-
-        @Override
-        public @NotNull Inventory getInventory() {
-            return inventory;
+            super(
+                    viewer,
+                    MenuId.DAILY_LOBBY,
+                    SIZE,
+                    List.of(),
+                    List.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 18, 19, 20, 21, 22, 23, 24, 25, 26),
+                    Map.of(
+                            "status",
+                            4,
+                            "statistics",
+                            STATS_SLOT,
+                            "matchmaking",
+                            MATCH_SLOT,
+                            "party",
+                            PARTY_SLOT,
+                            "spectate",
+                            SPECTATE_SLOT,
+                            "close",
+                            CLOSE_SLOT));
         }
     }
 }

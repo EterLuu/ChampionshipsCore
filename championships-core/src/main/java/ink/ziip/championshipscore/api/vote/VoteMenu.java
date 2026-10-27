@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.vote;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.api.gui.MenuInventory;
+import ink.ziip.championshipscore.api.gui.MenuLayout;
 import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
@@ -30,14 +31,6 @@ import java.util.Map;
 /** Live voting inventory backed directly by {@link VoteManager}. */
 final class VoteMenu implements Listener {
     private static final String MENU_PATH = MenuId.VOTING_BALLOT.path();
-    private static final int INVENTORY_SIZE = 54;
-    private static final int TIME_SLOT = 1;
-    private static final int OVERVIEW_SLOT = 4;
-    private static final int TURNOUT_SLOT = 7;
-    private static final int BALLOT_SLOT = 40;
-    private static final int CLOSE_SLOT = 49;
-    private static final int VOTE_BAR_LENGTH = 8;
-
     private final VoteManager manager;
 
     VoteMenu(@NotNull VoteManager manager) {
@@ -45,9 +38,10 @@ final class VoteMenu implements Listener {
     }
 
     void open(@NotNull Player player, boolean previewOnly) {
-        Holder holder = new Holder(player.getUniqueId(), previewOnly);
-        GuiConfig.MenuSpec menu = GuiConfig.menu(MENU_PATH, INVENTORY_SIZE, "", candidateSlots(11));
-        Inventory inventory = Bukkit.createInventory(holder, INVENTORY_SIZE, menu.title());
+        if (!player.isOnline() || Bukkit.getPlayer(player.getUniqueId()) != player) return;
+        var menu = GuiConfig.menu(MENU_PATH, 54, "", candidateSlots(14));
+        Holder holder = new Holder(this, player, previewOnly, layout(menu.size()));
+        Inventory inventory = Bukkit.createInventory(holder, holder.layout.size(), menu.title());
         holder.inventory = inventory;
         refresh(holder);
         player.openInventory(inventory);
@@ -55,31 +49,39 @@ final class VoteMenu implements Listener {
 
     void refreshOpenMenus() {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player.getOpenInventory().getTopInventory().getHolder() instanceof Holder holder)
-                refresh(holder);
+            if (player.getOpenInventory().getTopInventory().getHolder() instanceof Holder holder
+                    && owns(holder, player)) refresh(holder);
         }
     }
 
     void closeAll() {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player.getOpenInventory().getTopInventory().getHolder() instanceof Holder)
-                player.closeInventory();
+            if (player.getOpenInventory().getTopInventory().getHolder() instanceof Holder holder
+                    && holder.owner == this) player.closeInventory();
         }
     }
 
     @EventHandler
     public void onInventoryClick(@NotNull InventoryClickEvent event) {
         Inventory top = event.getView().getTopInventory();
-        if (!(top.getHolder() instanceof Holder holder)) return;
+        if (!(top.getHolder() instanceof Holder holder) || holder.owner != this) return;
         event.setCancelled(true);
         if (!(event.getWhoClicked() instanceof Player player) || event.getClickedInventory() != top)
             return;
-        if (!holder.viewer.equals(player.getUniqueId())) {
+        if (!owns(holder, player)) return;
+        if (event.getRawSlot() == holder.layout.control("close")) {
             player.closeInventory();
             return;
         }
-        if (event.getRawSlot() == slot("close", CLOSE_SLOT)) {
-            player.closeInventory();
+        int slot = event.getRawSlot();
+        if (slot == holder.layout.control("previous") && holder.page > 0) {
+            holder.page--;
+            refresh(holder);
+            return;
+        }
+        if (slot == holder.layout.control("next") && holder.page + 1 < holder.pages) {
+            holder.page++;
+            refresh(holder);
             return;
         }
         GameTypeEnum gameType = holder.gamesBySlot.get(event.getRawSlot());
@@ -97,8 +99,8 @@ final class VoteMenu implements Listener {
 
     @EventHandler
     public void onInventoryDrag(@NotNull InventoryDragEvent event) {
-        if (event.getView().getTopInventory().getHolder() instanceof Holder)
-            event.setCancelled(true);
+        if (event.getView().getTopInventory().getHolder() instanceof Holder holder
+                && holder.owner == this) event.setCancelled(true);
     }
 
     private void refresh(@NotNull Holder holder) {
@@ -106,34 +108,29 @@ final class VoteMenu implements Listener {
         inventory.clear();
         holder.gamesBySlot.clear();
         ItemStack border = configured("border", null, Map.of(), Material.BLACK_STAINED_GLASS_PANE);
-        for (int slot :
-                GuiConfig.slots(
-                        MENU_PATH + ".layout.border",
-                        List.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 45, 46, 47, 48, 49, 50, 51, 52, 53)))
-            if (slot >= 0 && slot < inventory.getSize()) inventory.setItem(slot, border);
+        for (int slot : holder.layout.border()) inventory.setItem(slot, border);
 
         List<GameTypeEnum> candidates =
                 List.of(GameTypeEnum.values()).stream().filter(manager::isBallotGame).toList();
-        List<Integer> slots =
-                ballotSlots(
-                        GuiConfig.slots(
-                                MENU_PATH + ".layout.content", candidateSlots(candidates.size())),
-                        reservedSlots(),
-                        candidates.size());
+        holder.page = holder.layout.clampPage(holder.page, candidates.size());
+        holder.pages = holder.layout.pageCount(candidates.size());
+        List<Integer> slots = holder.layout.pageSlots(holder.page, candidates.size());
+        int first = holder.page * holder.layout.content().size();
         int totalVotes = manager.getTotalVoteCount();
         int highestVotes = candidates.stream().mapToInt(manager::getVoteNums).max().orElse(0);
         GameTypeEnum selected = manager.getPlayerVote(holder.viewer);
 
         for (int index = 0; index < candidates.size() && index < slots.size(); index++) {
-            GameTypeEnum gameType = candidates.get(index);
+            GameTypeEnum gameType = candidates.get(first + index);
             int slot = slots.get(index);
             inventory.setItem(
-                    slot, gameItem(gameType, selected == gameType, totalVotes, highestVotes));
+                    slot,
+                    gameItem(gameType, selected == gameType, totalVotes, highestVotes, holder.bar));
             holder.gamesBySlot.put(slot, gameType);
         }
         if (candidates.isEmpty())
             inventory.setItem(
-                    slot("empty", 22), configured("empty", null, Map.of(), Material.GRAY_DYE));
+                    holder.emptySlot, configured("empty", null, Map.of(), Material.GRAY_DYE));
 
         int eligible = manager.getEligibleVoterCount();
         int turnoutPercentage = eligible == 0 ? 0 : (int) Math.round(totalVotes * 100D / eligible);
@@ -144,13 +141,13 @@ final class VoteMenu implements Listener {
                         manager.getRemainingSeconds() / 60,
                         Math.max(0, manager.getRemainingSeconds()) % 60);
         inventory.setItem(
-                slot("time", TIME_SLOT),
+                holder.layout.control("time"),
                 configured("time", null, Map.of("time", remainingText), Material.CLOCK));
         inventory.setItem(
-                slot("overview", OVERVIEW_SLOT),
+                holder.layout.control("overview"),
                 overviewItem(candidates, totalVotes, highestVotes));
         inventory.setItem(
-                slot("turnout", TURNOUT_SLOT),
+                holder.layout.control("turnout"),
                 configured(
                         "turnout",
                         null,
@@ -162,21 +159,39 @@ final class VoteMenu implements Listener {
                                 "percentage",
                                 turnoutPercentage,
                                 "bar",
-                                voteBar(totalVotes, eligible)),
+                                holder.bar.render(totalVotes, eligible)),
                         Material.NAME_TAG));
         inventory.setItem(
-                slot("my-ballot", BALLOT_SLOT),
+                holder.layout.control("my-ballot"),
                 configured(
                         "my-ballot",
                         selected == null ? "empty" : "selected",
                         Map.of("game", selected == null ? "" : selected.toString()),
                         Material.WRITABLE_BOOK));
         inventory.setItem(
-                slot("close", CLOSE_SLOT), configured("close", null, Map.of(), Material.BARRIER));
+                holder.layout.control("close"),
+                configured("close", null, Map.of(), Material.BARRIER));
+        if (holder.page > 0) put(holder, "previous", Map.of());
+        if (holder.page + 1 < holder.pages) put(holder, "next", Map.of());
+        if (holder.pages > 1)
+            put(
+                    holder,
+                    "page",
+                    Map.of(
+                            "page",
+                            holder.page + 1,
+                            "pages",
+                            holder.pages,
+                            "count",
+                            candidates.size()));
     }
 
     private ItemStack gameItem(
-            @NotNull GameTypeEnum gameType, boolean selected, int totalVotes, int highestVotes) {
+            @NotNull GameTypeEnum gameType,
+            boolean selected,
+            int totalVotes,
+            int highestVotes,
+            VoteBar bar) {
         if (!manager.canVoteFor(gameType))
             return configured(
                     "unavailable-game",
@@ -202,7 +217,7 @@ final class VoteMenu implements Listener {
                         "percentage",
                         percentage,
                         "bar",
-                        voteBar(votes, Math.max(1, totalVotes))),
+                        bar.render(votes, Math.max(1, totalVotes))),
                 styleMaterial(gameType),
                 Component.text(gameType.toString()),
                 List.of(),
@@ -230,14 +245,66 @@ final class VoteMenu implements Listener {
         return configured("overview", null, placeholders, Material.NETHER_STAR);
     }
 
-    private String voteBar(int votes, int total) {
-        int filled =
-                total == 0
-                        ? 0
-                        : Math.min(
-                                VOTE_BAR_LENGTH,
-                                (int) Math.round(votes * VOTE_BAR_LENGTH / (double) total));
-        return "■".repeat(filled) + "□".repeat(VOTE_BAR_LENGTH - filled);
+    private void put(Holder holder, String item, Map<String, ?> parameters) {
+        holder.inventory.setItem(
+                holder.layout.control(item), configured(item, null, parameters, Material.PAPER));
+    }
+
+    private boolean owns(Holder holder, Player player) {
+        return holder.owner == this
+                && holder.connection == player
+                && holder.viewer.equals(player.getUniqueId())
+                && player.isOnline()
+                && Bukkit.getPlayer(holder.viewer) == player
+                && player.getOpenInventory().getTopInventory() == holder.inventory;
+    }
+
+    static MenuLayout layout(int size) {
+        return MenuLayout.load(
+                MENU_PATH,
+                size,
+                candidateSlots(14),
+                java.util.stream.Stream.concat(
+                                MenuLayout.range(0, 9).stream(), MenuLayout.range(45, 54).stream())
+                        .toList(),
+                Map.of(
+                        "time",
+                        1,
+                        "overview",
+                        4,
+                        "turnout",
+                        7,
+                        "my-ballot",
+                        40,
+                        "close",
+                        49,
+                        "previous",
+                        45,
+                        "page",
+                        48,
+                        "next",
+                        53));
+    }
+
+    record VoteBar(int length, String filled, String empty) {
+        static VoteBar load() {
+            return new VoteBar(
+                    GuiConfig.integer(MENU_PATH + ".presentation.bar-length", 8),
+                    GuiConfig.text(MENU_PATH + ".presentation.bar-filled"),
+                    GuiConfig.text(MENU_PATH + ".presentation.bar-empty"));
+        }
+
+        String render(int votes, int total) {
+            int count =
+                    total <= 0
+                            ? 0
+                            : Math.max(
+                                    0,
+                                    Math.min(
+                                            length,
+                                            (int) Math.round(votes * (double) length / total)));
+            return filled.repeat(count) + empty.repeat(length - count);
+        }
     }
 
     private static String gameId(GameTypeEnum game) {
@@ -280,10 +347,6 @@ final class VoteMenu implements Listener {
         };
     }
 
-    private static int slot(String item, int fallback) {
-        return ConfiguredGui.slot(MENU_PATH + ".items." + item, fallback);
-    }
-
     private static ItemStack configured(
             String item, String state, Map<String, ?> placeholders, Material material) {
         return ConfiguredGui.item(
@@ -309,39 +372,6 @@ final class VoteMenu implements Listener {
         return slots;
     }
 
-    private static java.util.Set<Integer> reservedSlots() {
-        var reserved =
-                new java.util.HashSet<>(
-                        GuiConfig.slots(
-                                MENU_PATH + ".layout.border",
-                                List.of(
-                                        0, 1, 2, 3, 4, 5, 6, 7, 8, 45, 46, 47, 48, 49, 50, 51, 52,
-                                        53)));
-        reserved.addAll(
-                List.of(
-                        slot("time", TIME_SLOT),
-                        slot("overview", OVERVIEW_SLOT),
-                        slot("turnout", TURNOUT_SLOT),
-                        slot("my-ballot", BALLOT_SLOT),
-                        slot("close", CLOSE_SLOT)));
-        return reserved;
-    }
-
-    /** Keep configured positions, then fill missing capacity without overwriting controls. */
-    static List<Integer> ballotSlots(
-            List<Integer> configured, java.util.Set<Integer> reserved, int count) {
-        var slots = new java.util.LinkedHashSet<Integer>();
-        for (int slot : configured)
-            if (slot >= 0 && slot < INVENTORY_SIZE && !reserved.contains(slot)) slots.add(slot);
-        for (int slot : candidateSlots(count))
-            if (slot >= 0 && slot < INVENTORY_SIZE && !reserved.contains(slot)) slots.add(slot);
-        for (int slot = 9; slots.size() < count && slot < INVENTORY_SIZE; slot++)
-            if (!reserved.contains(slot)) slots.add(slot);
-        if (slots.size() < count)
-            throw new IllegalStateException("Voting layout has no room for all games");
-        return new ArrayList<>(slots).subList(0, count);
-    }
-
     private static List<Integer> centeredRow(int rowStart, int count) {
         int firstSlot = rowStart + (9 - count) / 2;
         List<Integer> slots = new ArrayList<>(count);
@@ -350,14 +380,28 @@ final class VoteMenu implements Listener {
     }
 
     private static final class Holder implements MenuInventory {
+        private final VoteMenu owner;
+        private final Player connection;
         private final java.util.UUID viewer;
+        private final MenuLayout layout;
+        private final VoteBar bar = VoteBar.load();
+        private final int emptySlot;
+        private int page;
+        private int pages = 1;
         private final boolean previewOnly;
         private final Map<Integer, GameTypeEnum> gamesBySlot = new HashMap<>();
         private Inventory inventory;
 
-        private Holder(java.util.UUID viewer, boolean previewOnly) {
-            this.viewer = viewer;
+        private Holder(VoteMenu owner, Player player, boolean previewOnly, MenuLayout layout) {
+            this.owner = owner;
+            this.connection = player;
+            this.viewer = player.getUniqueId();
             this.previewOnly = previewOnly;
+            this.layout = layout;
+            emptySlot =
+                    GuiConfig.slot(
+                            MENU_PATH + ".layout.overlay.empty",
+                            GuiConfig.slot(MENU_PATH + ".items.empty.slot", 22));
         }
 
         @Override

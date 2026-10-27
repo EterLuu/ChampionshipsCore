@@ -1,7 +1,9 @@
 package ink.ziip.championshipscore.api.game.bingo.util;
 
 import ink.ziip.championshipscore.configuration.config.BaseConfigurationFile;
+import ink.ziip.championshipscore.platform.bukkit.text.ComponentTemplates;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+import ink.ziip.championshipscore.shared.presentation.MessageTemplate;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -16,7 +18,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 /**
@@ -102,6 +106,11 @@ public final class MessageService {
                 .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE);
     }
 
+    /** Named rich arguments retain their translations, styles and literal placeholder text. */
+    public Component rich(String key, Map<String, Component> arguments) {
+        return ComponentTemplates.render(tr(key), arguments);
+    }
+
     public void broadcast(String key, Object... args) {
         String text = tr(key, args);
         if (!text.isEmpty()) Bukkit.broadcast(LEGACY.deserialize(prefix + text));
@@ -127,11 +136,11 @@ public final class MessageService {
     }
 
     static String format(String raw, Object... args) {
-        String out = raw;
+        var replacements = new HashMap<String, String>();
         for (int i = 0; args != null && i < args.length; i++) {
-            out = out.replace("{" + i + "}", String.valueOf(args[i]));
+            replacements.put("{" + i + "}", String.valueOf(args[i]));
         }
-        return color(out);
+        return color(MessageTemplate.render(raw, replacements));
     }
 
     private String getRaw(String key) {
@@ -149,6 +158,7 @@ public final class MessageService {
                     disk.getInt("dont-edit-this.version", -1),
                     base.getInt("dont-edit-this.version", -1),
                     file.getName());
+            disk.setDefaults(base);
             return disk;
         }
         return base;

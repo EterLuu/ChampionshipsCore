@@ -15,7 +15,8 @@ public final class SubArenaSupport {
     public static int count(BaseGameInstance instance) {
         if (instance instanceof TNTRunTeamArea tnt)
             return tnt.getGameConfig().getPlayerSpawnPoints().size();
-        if (instance instanceof LaserShowdownTeamArea lasershowdown) return lasershowdown.getArenaCount();
+        if (instance instanceof LaserShowdownTeamArea lasershowdown)
+            return lasershowdown.getArenaCount();
         if (instance instanceof FrostbiteArea) return 4;
         if (instance instanceof HotyCodyDuskyTeamArea hoty) return hoty.getGameConfig().getCopies();
         return 1;

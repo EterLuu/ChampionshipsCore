@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.game.area.prepare;
 
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.gui.MenuId;
+import ink.ziip.championshipscore.api.gui.MenuLayout;
 import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
@@ -47,14 +48,15 @@ public final class PrepareModeInventory {
      */
     public static void refresh(@NotNull Player player, @NotNull PrepareSession session) {
         PlayerInventory inv = player.getInventory();
-        inv.setItem(slot("status", 0), statusItem(player, session));
-        inv.setItem(slot("teleport", 1), teleportItem(session));
-        inv.setItem(slot("steps", 2), stepsItem(session));
-        inv.setItem(slot("validate", 3), validateItem());
-        inv.setItem(slot("publish", 4), publishItem(session));
-        if (session.requiresWorldEdit()) inv.setItem(slot("wand", 5), wandItem());
-        inv.setItem(slot("save-draft", 6), saveDraftItem());
-        inv.setItem(slot("exit", 8), exitItem());
+        inv.setItem(session.getHotbarLayout().control("status"), statusItem(player, session));
+        inv.setItem(session.getHotbarLayout().control("teleport"), teleportItem(session));
+        inv.setItem(session.getHotbarLayout().control("steps"), stepsItem(session));
+        inv.setItem(session.getHotbarLayout().control("validate"), validateItem());
+        inv.setItem(session.getHotbarLayout().control("publish"), publishItem(session));
+        if (session.requiresWorldEdit())
+            inv.setItem(session.getHotbarLayout().control("wand"), wandItem());
+        inv.setItem(session.getHotbarLayout().control("save-draft"), saveDraftItem());
+        inv.setItem(session.getHotbarLayout().control("exit"), exitItem());
         var workshop = session.getBlueprintWorkshop();
         if (workshop != null) {
             String path = MenuId.BUILD_MART_BLUEPRINTS.path() + ".items.";
@@ -65,7 +67,7 @@ public final class PrepareModeInventory {
                             Map.of("name", workshop.name()),
                             new ItemStack(Material.EMERALD_BLOCK));
             PrepareKeys.setAction(submit, "save-draft");
-            inv.setItem(slot("save-draft", 6), submit);
+            inv.setItem(session.getHotbarLayout().control("save-draft"), submit);
             ItemStack cancel =
                     ConfiguredGui.item(
                             path + "cancel",
@@ -73,7 +75,7 @@ public final class PrepareModeInventory {
                             Map.of("name", workshop.name()),
                             new ItemStack(Material.BARRIER));
             PrepareKeys.setAction(cancel, "exit");
-            inv.setItem(slot("exit", 8), cancel);
+            inv.setItem(session.getHotbarLayout().control("exit"), cancel);
         }
     }
 
@@ -81,14 +83,14 @@ public final class PrepareModeInventory {
      * Slots reserved for prepare controls and therefore never valid creative pick-block targets.
      */
     public static boolean isControlSlot(@NotNull PrepareSession session, int slot) {
-        return slot == slot("status", 0)
-                || slot == slot("teleport", 1)
-                || slot == slot("steps", 2)
-                || slot == slot("validate", 3)
-                || slot == slot("publish", 4)
-                || slot == slot("save-draft", 6)
-                || slot == slot("exit", 8)
-                || session.requiresWorldEdit() && slot == slot("wand", 5);
+        return slot == session.getHotbarLayout().control("status")
+                || slot == session.getHotbarLayout().control("teleport")
+                || slot == session.getHotbarLayout().control("steps")
+                || slot == session.getHotbarLayout().control("validate")
+                || slot == session.getHotbarLayout().control("publish")
+                || slot == session.getHotbarLayout().control("save-draft")
+                || slot == session.getHotbarLayout().control("exit")
+                || session.requiresWorldEdit() && slot == session.getHotbarLayout().control("wand");
     }
 
     /**
@@ -108,7 +110,6 @@ public final class PrepareModeInventory {
 
     private static ItemStack statusItem(@NotNull Player player, @NotNull PrepareSession session) {
         GameTypeEnum game = session.getGameType();
-        boolean inWorld = session.getFlow().isInCorrectWorld(player, session.getTarget());
         String readiness =
                 session.getTarget().config().isPrepareReady()
                         ? GuiConfig.text(
@@ -143,13 +144,15 @@ public final class PrepareModeInventory {
                         LegacyText.component(
                                 GuiConfig.text(
                                         "map-editor.menus.prepare-toolbar.items.status.states.pending.title")));
-                for (String pendingStep : pending)
-                    lore.add(
-                            LegacyText.component(
-                                    GuiConfig.line(
-                                            "map-editor.menus.prepare-toolbar.items.status.states.pending-entry.lore",
-                                            0,
-                                            Map.of("step", pendingStep))));
+                for (String pendingStep : pending) {
+                    lore.addAll(
+                            GuiConfig.lines(
+                                            MENU_PATH + ".items.status.states.pending-entry.lore",
+                                            Map.of("step", pendingStep))
+                                    .stream()
+                                    .map(LegacyText::component)
+                                    .toList());
+                }
             }
             meta.lore(lore);
             item.setItemMeta(meta);
@@ -207,8 +210,27 @@ public final class PrepareModeInventory {
         return configured("wand", Map.of());
     }
 
-    private static int slot(String item, int fallback) {
-        return ConfiguredGui.slot(MENU_PATH + ".items." + item, fallback);
+    /** Capture once per editing session so refresh and creative protection share the same slots. */
+    static MenuLayout layout() {
+        Map<String, Integer> defaults =
+                Map.of(
+                        "status",
+                        0,
+                        "teleport",
+                        1,
+                        "steps",
+                        2,
+                        "validate",
+                        3,
+                        "publish",
+                        4,
+                        "wand",
+                        5,
+                        "save-draft",
+                        6,
+                        "exit",
+                        8);
+        return MenuLayout.load(MENU_PATH, 9, List.of(), List.of(), defaults);
     }
 
     private static ItemStack configured(String item, Map<String, ?> placeholders) {

@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.game.bingo;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.bingo.config.BingoConfig;
+import ink.ziip.championshipscore.api.game.bingo.config.DailyVoteSettings;
 import ink.ziip.championshipscore.api.game.bingo.execution.BingoExecutionMode;
 import ink.ziip.championshipscore.api.game.bingo.execution.RemoteBingoContent;
 import ink.ziip.championshipscore.api.game.bingo.gui.CardItemListener;
@@ -60,9 +61,8 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
     private final Map<String, BingoConfig> remoteAreaConfigs = new ConcurrentHashMap<>();
     private volatile boolean taskPoolReady;
     private BingoExecutionMode configuredExecutionMode;
-    private volatile int dailyVoteSeconds = 20;
-    private volatile boolean dailyRemixEnabled = true;
-    private volatile double dailyRemixChance = 0.05D;
+    private volatile DailyVoteSettings dailyVoteSettings =
+            DailyVoteSettings.from(new YamlConfiguration());
 
     public BingoManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -76,9 +76,7 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
         bingoDir.mkdirs();
         YamlConfiguration config = loadGlobalConfig(bingoDir);
         if (config == null) return;
-        dailyVoteSeconds = Math.max(5, config.getInt("daily-vote.seconds", 20));
-        dailyRemixEnabled = config.getBoolean("remix.enabled", true);
-        dailyRemixChance = Math.clamp(config.getDouble("remix.chance", 0.05D), 0D, 1D);
+        dailyVoteSettings = DailyVoteSettings.from(config);
 
         // Localisation must exist before any area renders task names.
         messageService =
@@ -178,7 +176,7 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
             spec = RemoteBingoContent.filter(spec);
             plugin.getLogger()
                     .info(
-                            "Remote Bingo content baseline=26.2; kept="
+                            "Remote Bingo content baseline=26.3; kept="
                                     + spec.entries().size()
                                     + "; excluded="
                                     + (total - spec.entries().size()));
@@ -187,6 +185,7 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
         TaskGenerator.setDifficultyWeights(readDifficultyWeights(config));
         TaskGenerator.setKitFilter(BingoStarterKit::trivialises);
         boolean ready = !spec.isEmpty();
+        if (ready) dailyVoteSettings = DailyVoteSettings.from(config);
         taskPoolReady = ready;
         return ready;
     }
@@ -220,15 +219,23 @@ public class BingoManager extends BaseGameInstanceManager<BingoArea> {
     }
 
     public int dailyVoteSeconds() {
-        return dailyVoteSeconds;
+        return dailyVoteSettings.seconds();
+    }
+
+    public int dailyGenesisSeconds() {
+        return dailyVoteSettings.genesisSeconds();
+    }
+
+    public int dailyGenesisOptions() {
+        return dailyVoteSettings.genesisOptions();
     }
 
     public boolean dailyRemixEnabled() {
-        return dailyRemixEnabled;
+        return dailyVoteSettings.remixEnabled();
     }
 
     public double dailyRemixChance() {
-        return dailyRemixChance;
+        return dailyVoteSettings.remixChance();
     }
 
     public BingoConfig getRemoteConfig(String area) {

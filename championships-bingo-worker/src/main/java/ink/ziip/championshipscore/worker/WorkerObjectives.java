@@ -66,7 +66,7 @@ final class WorkerObjectives {
     synchronized void replace(List<BingoTaskSpec> specs) {
         List<Objective> parsed = new ArrayList<>(specs.size());
         for (BingoTaskSpec spec : specs) {
-            BingoContentCatalog.worker26_2().requireSupported(spec);
+            BingoContentCatalog.worker().requireSupported(spec);
             parsed.add(parse(spec));
         }
         this.objectives = List.copyOf(parsed);

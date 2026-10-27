@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ink.ziip.championshipscore.auth.BanPresentation;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -12,6 +14,22 @@ import java.nio.file.Path;
 
 class ChampionshipsAuthProxyPluginTest {
     @TempDir Path tempDirectory;
+
+    @Test
+    void olderConfigurationInheritsNewDefaultsAndPreservesExplicitMessages() throws Exception {
+        Path file = tempDirectory.resolve("config.yml");
+        String original = "messages:\n  banned: '&c%reason%/%expires%'\n  not-bound: ''\n";
+        Files.writeString(file, original);
+        try (var defaults = getClass().getResourceAsStream("/config.yml")) {
+            var config = ChampionshipsAuthProxyPlugin.loadConfiguration(file.toFile(), defaults);
+            assertEquals("&c%reason%/%expires%", config.getString("messages.banned"));
+            assertEquals("", config.getString("messages.not-bound"));
+            var presentation = BanPresentation.from(config::getString, "messages.banned");
+            assertEquals("&c违反服务器规则/请查看账号页面", presentation.render(null, null));
+            assertTrue(config.getString("messages.unavailable").contains("账号服务"));
+            assertEquals(original, Files.readString(file));
+        }
+    }
 
     @Test
     void migratesLegacyStateFileWithoutLosingContent() throws Exception {

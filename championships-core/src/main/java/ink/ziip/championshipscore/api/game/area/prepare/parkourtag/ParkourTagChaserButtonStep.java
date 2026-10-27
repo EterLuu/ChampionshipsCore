@@ -6,12 +6,9 @@ import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
 import ink.ziip.championshipscore.api.game.parkourtag.config.ParkourTagConfig;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 
 import org.bukkit.Bukkit;
 import org.bukkit.DyeColor;
@@ -169,14 +166,14 @@ final class ParkourTagChaserButtonStep extends PrepareStep {
         front.line(0, Component.empty());
         front.line(
                 1,
-                LegacyText.component(MessageConfig.MAP_EDITOR_TAG_SIGN_CLICK, NamedTextColor.YELLOW)
-                        .decorate(TextDecoration.BOLD));
+                CoreMessages.styled(
+                        "parkour-tag-chaser-button-step.sign-click",
+                        MessageConfig.MAP_EDITOR_TAG_SIGN_CLICK));
         front.line(
                 2,
-                LegacyText.component(
-                                MessageConfig.MAP_EDITOR_TAG_SIGN_BECOME,
-                                NamedTextColor.LIGHT_PURPLE)
-                        .decorate(TextDecoration.BOLD));
+                CoreMessages.styled(
+                        "parkour-tag-chaser-button-step.sign-become",
+                        MessageConfig.MAP_EDITOR_TAG_SIGN_BECOME));
         front.line(3, Component.empty());
         front.setColor(DyeColor.PURPLE);
         front.setGlowingText(true);

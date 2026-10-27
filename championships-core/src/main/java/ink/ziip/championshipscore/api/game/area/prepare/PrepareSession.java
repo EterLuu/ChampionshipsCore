@@ -7,6 +7,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.step.StandAndRunStep;
 import ink.ziip.championshipscore.api.game.area.prepare.step.ToggleStep;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
+import ink.ziip.championshipscore.api.gui.MenuLayout;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
@@ -33,6 +34,7 @@ public class PrepareSession {
     private final SetupTarget target;
     private final PrepareFlowDefinition flow;
     private final List<PrepareStep> steps;
+    private final MenuLayout hotbarLayout;
     private boolean worldConfirmed;
     private boolean stamped;
     private BuildMartBlueprintWorkshop blueprintWorkshop;
@@ -56,6 +58,7 @@ public class PrepareSession {
         this.areaName = areaName;
         this.target = target;
         this.flow = flow;
+        this.hotbarLayout = PrepareModeInventory.layout();
         this.steps = new ArrayList<>(flow.buildSteps(target));
         addCommonIntroductionSpawnStep();
         this.stamped = target.config().isPrepareWorldBuilt();
@@ -145,6 +148,10 @@ public class PrepareSession {
 
     public PrepareFlowDefinition getFlow() {
         return flow;
+    }
+
+    public MenuLayout getHotbarLayout() {
+        return hotbarLayout;
     }
 
     public List<PrepareStep> getSteps() {

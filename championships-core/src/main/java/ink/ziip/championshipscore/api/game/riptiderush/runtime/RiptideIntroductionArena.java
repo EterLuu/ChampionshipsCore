@@ -11,7 +11,6 @@ import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.entity.Display;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -161,8 +160,11 @@ public final class RiptideIntroductionArena implements AutoCloseable {
                                     TextDisplay.class,
                                     text -> {
                                         text.text(LegacyText.component(label));
-                                        text.setBillboard(Display.Billboard.CENTER);
-                                        text.setLineWidth(250);
+                                        MessageConfig.worldTextStyle(
+                                                        ink.ziip.championshipscore.presentation
+                                                                .display.WorldTextStyles.Profile
+                                                                .RIPTIDE_INSTRUCTION)
+                                                .apply(text);
                                         text.setPersistent(false);
                                         text.addScoreboardTag("cc_riptide_introduction");
                                     });

@@ -95,14 +95,14 @@ public final class BingoLoadTestPlugin extends JavaPlugin {
         return switch (args[0].toLowerCase(java.util.Locale.ROOT)) {
             case "start" -> {
                 sender.sendMessage(
-                        controller.start()
-                                ? "Chunk stress test started"
-                                : "Chunk stress test is busy");
+                        getConfig()
+                                .getString(
+                                        controller.start() ? "messages.started" : "messages.busy"));
                 yield true;
             }
             case "stop" -> {
                 controller.stop("command", true);
-                sender.sendMessage("Chunk stress test stopping");
+                sender.sendMessage(getConfig().getString("messages.stopping"));
                 yield true;
             }
             case "status" -> {

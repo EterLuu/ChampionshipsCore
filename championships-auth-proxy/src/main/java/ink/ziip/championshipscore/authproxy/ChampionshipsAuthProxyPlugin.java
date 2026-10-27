@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.authproxy;
 
+import ink.ziip.championshipscore.auth.BanPresentation;
+
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.event.PreLoginEvent;
@@ -19,9 +21,6 @@ import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -36,7 +35,7 @@ public final class ChampionshipsAuthProxyPlugin extends Plugin implements Listen
     private ProxyIdentityClient identities;
     private ProxyLoginResolver loginResolver;
     private String notBoundMessage;
-    private String bannedMessage;
+    private BanPresentation banPresentation;
     private String revokedMessage;
     private String unavailableMessage;
     private String maintenanceMessage;
@@ -56,7 +55,7 @@ public final class ChampionshipsAuthProxyPlugin extends Plugin implements Listen
                             Duration.ofSeconds(config.getLong("api.connect-timeout-seconds", 3)),
                             Duration.ofSeconds(config.getLong("api.request-timeout-seconds", 5)));
             notBoundMessage = config.getString("messages.not-bound");
-            bannedMessage = config.getString("messages.banned");
+            banPresentation = BanPresentation.from(config::getString, "messages.banned");
             revokedMessage = config.getString("messages.revoked");
             unavailableMessage = config.getString("messages.unavailable");
             maintenanceMessage = config.getString("messages.maintenance");
@@ -133,7 +132,7 @@ public final class ChampionshipsAuthProxyPlugin extends Plugin implements Listen
                                 event,
                                 "BANNED",
                                 banLogReason(profile.reason, profile.expiresAt),
-                                bannedMessage(profile.reason, profile.expiresAt));
+                                banPresentation.render(profile.reason, profile.expiresAt));
                 case "REVOKED" ->
                         reject(event, "REVOKED", "Server access has been revoked", revokedMessage);
                 case "MAINTENANCE" ->
@@ -171,7 +170,15 @@ public final class ChampionshipsAuthProxyPlugin extends Plugin implements Listen
                 Files.copy(input, file.toPath());
             }
         }
-        return ConfigurationProvider.getProvider(YamlConfiguration.class).load(file);
+        try (InputStream defaults = getResourceAsStream("config.yml")) {
+            return loadConfiguration(file, defaults);
+        }
+    }
+
+    static Configuration loadConfiguration(File file, InputStream defaults) throws IOException {
+        if (defaults == null) throw new IllegalStateException("Missing bundled config.yml");
+        var provider = ConfigurationProvider.getProvider(YamlConfiguration.class);
+        return provider.load(file, provider.load(defaults));
     }
 
     static boolean migrateLegacyStateFile(File dataDirectory) throws IOException {
@@ -229,7 +236,7 @@ public final class ChampionshipsAuthProxyPlugin extends Plugin implements Listen
     }
 
     private void disconnectBannedPlayer(String username, String reason, String expiresAt) {
-        String message = bannedMessage(reason, expiresAt);
+        String message = banPresentation.render(reason, expiresAt);
         for (ProxiedPlayer player : getProxy().getPlayers()) {
             if (player.isConnected() && player.getName().equalsIgnoreCase(username)) {
                 getLogger()
@@ -240,37 +247,6 @@ public final class ChampionshipsAuthProxyPlugin extends Plugin implements Listen
                                         + banLogReason(reason, expiresAt));
                 player.disconnect(TextComponent.fromLegacyText(ProxyText.format(message)));
             }
-        }
-    }
-
-    private String bannedMessage(String reason, String expiresAt) {
-        return applyPlaceholders(
-                bannedMessage,
-                "reason",
-                reason == null || reason.isBlank() ? "违反服务器规则" : reason,
-                "expires",
-                formatExpiry(expiresAt));
-    }
-
-    private static String applyPlaceholders(
-            String template,
-            String firstKey,
-            String firstValue,
-            String secondKey,
-            String secondValue) {
-        return (template == null ? "" : template)
-                .replace("%" + firstKey + "%", firstValue == null ? "" : firstValue)
-                .replace("%" + secondKey + "%", secondValue == null ? "" : secondValue);
-    }
-
-    private static String formatExpiry(String value) {
-        if (value == null || value.isBlank()) return "请查看账号页面";
-        try {
-            return DateTimeFormatter.ofPattern("yyyy年MM月dd日 HH:mm")
-                    .withZone(ZoneId.systemDefault())
-                    .format(Instant.parse(value));
-        } catch (Exception ignored) {
-            return "请查看账号页面";
         }
     }
 }

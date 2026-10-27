@@ -94,7 +94,6 @@ class RiptideHitwCatalogTest {
         var copy = RiptideEditorModel.duplicate(c, RiptideLevelType.PASS, templates.getLast().id());
         assertEquals(templates.getLast().blueprint(), copy.blueprint());
         assertNotEquals(templates.getLast().id(), copy.id());
-        assertEquals(9, RiptideEditorModel.clampPage(99, templates.size(), 36));
     }
 
     @Test

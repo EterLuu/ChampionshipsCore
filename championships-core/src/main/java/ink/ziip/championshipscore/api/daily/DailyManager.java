@@ -21,7 +21,6 @@ import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
-import ink.ziip.championshipscore.shared.presentation.DurationText;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -105,7 +104,7 @@ public final class DailyManager extends BaseManager {
         matchMenu = new DailyGameMenu(plugin, this);
         statsMenu = new DailyStatsMenu(this);
         partyMenu = new DailyPartyMenu(this);
-        leaderboardMenu = new DailyLeaderboardMenu(plugin, this, statsManager);
+        leaderboardMenu = new DailyLeaderboardMenu(this, statsManager);
         listener = new DailyListener(plugin, this);
         this.statsManager = statsManager;
         isolationService = new PlayerIsolationService(plugin);
@@ -705,7 +704,7 @@ public final class DailyManager extends BaseManager {
 
     static boolean isDailyMenuHolder(Object holder) {
         return holder instanceof DailyLobbyMenu.LobbyHolder
-                || holder instanceof DailyBingoVoteController.VoteHolder
+                || holder instanceof DailyBingoVoteMenu
                 || holder instanceof DailyGameMenu.MenuHolder
                 || holder instanceof DailyStatsMenu.StatsHolder
                 || holder instanceof DailyStatsMenu.DetailHolder
@@ -1364,7 +1363,7 @@ public final class DailyManager extends BaseManager {
                             "%game%",
                             queue.game().toString(),
                             "%time%",
-                            DurationText.bossBarSeconds(countdown));
+                            CoreMessages.bossBarTime(countdown));
             progress = countdown / (double) Math.max(1, rules.countdownSeconds());
         } else {
             title =

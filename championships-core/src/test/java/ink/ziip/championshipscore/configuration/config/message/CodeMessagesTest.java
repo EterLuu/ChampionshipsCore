@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideLevelType;
 import ink.ziip.championshipscore.configuration.ConfigurationStateExtension;
+import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
@@ -19,6 +20,23 @@ import java.util.regex.Pattern;
 
 @ExtendWith(ConfigurationStateExtension.class)
 class CodeMessagesTest {
+    @Test
+    void bossBarDurationTemplatesFollowReloadsAndDeletionRestoresBundledUnits() throws Exception {
+        var config = config();
+        var document = defaults();
+        config.loadFromConfiguration(document);
+        assertEquals("60秒", CoreMessages.bossBarTime(60));
+        assertEquals("1分1秒", CoreMessages.bossBarTime(61));
+        document.set("code-text.duration.seconds", "%seconds%s");
+        document.set("code-text.duration.minutes-seconds", "%minutes%m %seconds%s");
+        config.loadFromConfiguration(document);
+        assertEquals("60s", CoreMessages.bossBarTime(60));
+        assertEquals("1m 1s", CoreMessages.bossBarTime(61));
+        document.set("code-text.duration", null);
+        config.loadFromConfiguration(document);
+        assertEquals("1分1秒", CoreMessages.bossBarTime(61));
+    }
+
     private static final String KEY = "core-messages.format-admin-info-1";
 
     private static MessageConfig config() throws Exception {

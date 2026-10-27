@@ -5,10 +5,10 @@ import ink.ziip.championshipscore.api.game.bingo.util.BingoComponents;
 import ink.ziip.championshipscore.api.game.bingo.util.MessageService;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 
 import org.bukkit.Material;
 
+import java.util.Map;
 import java.util.Objects;
 
 /** Collect {@code count} of {@code itemType}. */
@@ -40,10 +40,10 @@ public record ItemTask(Material itemType, int count, Dimension dimension) implem
 
     @Override
     public Component getName() {
-        return Component.text()
-                .color(NamedTextColor.YELLOW)
-                .append(BingoComponents.itemName(itemType))
-                .build();
+        return MessageService.global()
+                .rich(
+                        "task.presentation.item-name",
+                        Map.of("%name%", BingoComponents.itemName(itemType)));
     }
 
     @Override

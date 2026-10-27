@@ -39,10 +39,7 @@ final class LaserBoxIntroductionRun implements AutoCloseable {
     }
 
     boolean current() {
-        return !closed
-                && plugin.isLoaded()
-                && arena.ownedBy(area)
-                && area.isIntroductionPhase();
+        return !closed && plugin.isLoaded() && arena.ownedBy(area) && area.isIntroductionPhase();
     }
 
     boolean admitted(Player player) {

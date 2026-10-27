@@ -426,7 +426,15 @@ public final class TaskPoolLoader {
             Object paramObj = raw.get("param");
             if (paramObj instanceof List<?> list) {
                 for (Object o : list) {
-                    if (o != null) members.add(String.valueOf(o).trim().toUpperCase(Locale.ROOT));
+                    if (o == null) continue;
+                    String token = String.valueOf(o).trim().toUpperCase(Locale.ROOT);
+                    if (isGlob(token)
+                            && Set.of("unique_collect", "all_collect", "eat_all")
+                                    .contains(trigger)) {
+                        members.addAll(globKeys(PoolEntrySpec.Kind.ITEM, token));
+                    } else {
+                        members.add(token);
+                    }
                 }
             } else if (paramObj != null) {
                 String token = String.valueOf(paramObj).trim().toUpperCase(Locale.ROOT);

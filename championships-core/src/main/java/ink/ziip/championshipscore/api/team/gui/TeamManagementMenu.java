@@ -2,122 +2,163 @@ package ink.ziip.championshipscore.api.team.gui;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.ChampionshipPermissions;
+import ink.ziip.championshipscore.api.gui.AnvilInputMenu;
 import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.api.gui.MenuInventory;
+import ink.ziip.championshipscore.api.gui.MenuLayout;
 import ink.ziip.championshipscore.api.player.entry.PlayerEntry;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.api.team.TeamManager;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
-import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.GuiText;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-import ink.ziip.championshipscore.platform.bukkit.scoreboard.NativeTeamService;
 import ink.ziip.championshipscore.platform.bukkit.scoreboard.TeamColors;
-import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextColor;
-import net.kyori.adventure.text.format.TextDecoration;
-
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
-import org.bukkit.event.inventory.PrepareAnvilEvent;
-import org.bukkit.inventory.AnvilInventory;
+import org.bukkit.event.inventory.InventoryOpenEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.server.PluginDisableEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.MenuType;
-import org.bukkit.inventory.meta.SkullMeta;
-import org.bukkit.inventory.view.AnvilView;
+import org.bukkit.plugin.IllegalPluginAccessException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiConsumer;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 
 /** Native administrator UI for every operation exposed below {@code /cc team}. */
 public final class TeamManagementMenu implements Listener {
-    private static final String OVERVIEW_PATH = MenuId.TEAMS_OVERVIEW.path();
-    private static final String TEAM_PATH = MenuId.TEAMS_MEMBERS.path();
-    private static final int INVENTORY_SIZE = 54;
     private static final int PAGE_SIZE = 36;
-    private static final int BACK_SLOT = 45;
-    private static final int PREVIOUS_SLOT = 47;
-    private static final int REFRESH_SLOT = 48;
-    private static final int PAGE_SLOT = 49;
-    private static final int NEXT_SLOT = 50;
-    private static final int CLOSE_SLOT = 53;
-    private static final int CREATE_SLOT = 45;
-    private static final int QUICK_ASSIGN_SLOT = 46;
-    private static final int TELEPORT_ALL_SLOT = 52;
-    private static final int ADD_ONLINE_SLOT = 45;
-    private static final int ADD_HISTORY_SLOT = 46;
-    private static final int MANUAL_INPUT_SLOT = 45;
-    private static final int HISTORY_BACK_SLOT = 46;
-    private static final int TELEPORT_TEAM_SLOT = 51;
-    private static final int DELETE_TEAM_SLOT = 52;
-    private static final int CONFIRM_SLOT = 11;
-    private static final int CANCEL_SLOT = 15;
     private static final List<Integer> COLOR_SLOTS =
             List.of(10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29);
-    private static final Map<String, String> COLOR_HEX = createColorHex();
-    private static final Map<String, String> COLOR_LABELS = createColorLabels();
 
     private final ChampionshipsCore plugin;
-    private final Map<UUID, InputSession> inputs = new HashMap<>();
+    private final Map<UUID, UiRequest> requests = new ConcurrentHashMap<>();
+    private volatile boolean closed;
+
+    private record TeamCreation(boolean created, ChampionshipTeam team) {}
+
+    private boolean admitted(Player player) {
+        return !closed
+                && plugin.isEnabled()
+                && player.isOnline()
+                && Bukkit.getPlayer(player.getUniqueId()) == player
+                && player.hasPermission(ChampionshipPermissions.ADMIN);
+    }
+
+    private static final class UiRequest {
+        final Player player;
+        final Inventory inventory;
+        final BooleanSupplier context;
+
+        UiRequest(Player player, BooleanSupplier context) {
+            this.player = player;
+            this.inventory = player.getOpenInventory().getTopInventory();
+            this.context = context;
+        }
+    }
+
+    /** The service owns accepted mutations; this ticket owns only their pending UI response. */
+    private <T> BiConsumer<T, Throwable> guarded(
+            Player player, BooleanSupplier context, T failed, Consumer<T> result) {
+        UiRequest request = new UiRequest(player, context);
+        requests.put(player.getUniqueId(), request);
+        return (value, failure) -> {
+            if (closed || !plugin.isEnabled()) {
+                requests.remove(player.getUniqueId(), request);
+                return;
+            }
+            try {
+                var task =
+                        player.getScheduler()
+                                .run(
+                                        plugin,
+                                        ignored -> {
+                                            if (!requests.remove(player.getUniqueId(), request)
+                                                    || !admitted(player)
+                                                    || player.getOpenInventory().getTopInventory()
+                                                            != request.inventory
+                                                    || !request.context.getAsBoolean()) return;
+                                            result.accept(failure == null ? value : failed);
+                                        },
+                                        () -> requests.remove(player.getUniqueId(), request));
+                if (task == null) requests.remove(player.getUniqueId(), request);
+            } catch (IllegalPluginAccessException stopped) {
+                requests.remove(player.getUniqueId(), request);
+            }
+        };
+    }
+
+    private void invalidate(Player player) {
+        UiRequest request = requests.get(player.getUniqueId());
+        if (request != null && request.player == player)
+            requests.remove(player.getUniqueId(), request);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onInventoryOpen(InventoryOpenEvent event) {
+        if (event.getPlayer() instanceof Player player) invalidate(player);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onInventoryClose(InventoryCloseEvent event) {
+        if (!(event.getPlayer() instanceof Player player)) return;
+        UiRequest request = requests.get(player.getUniqueId());
+        if (request != null
+                && request.player == player
+                && request.inventory == event.getInventory())
+            requests.remove(player.getUniqueId(), request);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onQuit(PlayerQuitEvent event) {
+        invalidate(event.getPlayer());
+    }
+
+    @EventHandler
+    public void onDisable(PluginDisableEvent event) {
+        if (event.getPlugin() != plugin) return;
+        closed = true;
+        requests.clear();
+        plugin.getAnvilInputMenu().closeOwner(this);
+    }
 
     public TeamManagementMenu(@NotNull ChampionshipsCore plugin) {
         this.plugin = plugin;
         Bukkit.getPluginManager().registerEvents(this, plugin);
     }
 
-    public void openOverview(@NotNull Player player, int requestedPage) {
+    public void openOverview(Player player, int requestedPage) {
+        if (!admitted(player)) return;
         List<ChampionshipTeam> teams = sortedTeams();
-        int pages = pageCount(teams.size());
-        int page = Math.max(0, Math.min(requestedPage, pages - 1));
-        MenuHolder holder = new MenuHolder(player.getUniqueId(), Screen.OVERVIEW, null, page);
-        GuiConfig.MenuSpec menu =
-                GuiConfig.menu(
-                        OVERVIEW_PATH,
-                        INVENTORY_SIZE,
-                        title(GuiConfig.text("teams.menus.overview.title"), NamedTextColor.GOLD),
-                        contentSlots());
-        Inventory inventory = Bukkit.createInventory(holder, menu.size(), menu.title());
-        holder.inventory = inventory;
-        fillOverview(holder, teams, pages);
-        player.openInventory(inventory);
-    }
-
-    private void fillOverview(
-            @NotNull MenuHolder holder, @NotNull List<ChampionshipTeam> teams, int pages) {
-        Inventory inventory = holder.inventory;
-        inventory.clear();
-        holder.targets.clear();
-        int from = holder.page * PAGE_SIZE;
-        int to = Math.min(from + PAGE_SIZE, teams.size());
-        List<Integer> slots = GuiConfig.slots(OVERVIEW_PATH + ".layout.content", contentSlots());
-        for (int index = from; index < to && index - from < slots.size(); index++) {
-            ChampionshipTeam team = teams.get(index);
-            int slot = slots.get(index - from);
-            inventory.setItem(
+        MenuHolder holder =
+                page(player, Screen.OVERVIEW, null, requestedPage, teams.size(), Map.of());
+        List<Integer> slots = holder.layout.pageSlots(holder.page, teams.size());
+        int first = holder.page * holder.layout.content().size();
+        for (int i = 0; i < slots.size(); i++) {
+            ChampionshipTeam team = teams.get(first + i);
+            int slot = slots.get(i);
+            holder.inventory.setItem(
                     slot,
-                    configured(
-                            OVERVIEW_PATH,
+                    TeamMenuItems.team(
+                            holder.screen.id,
                             "team",
                             null,
                             Map.of(
@@ -126,148 +167,23 @@ public final class TeamManagementMenu implements Listener {
                                     "online",
                                     team.getOnlinePlayers().size(),
                                     "members",
-                                    team.getMembers().size()),
-                            teamItem(team)));
+                                    team.getMembers().size(),
+                                    "id",
+                                    team.getId(),
+                                    "color",
+                                    TeamMenuItems.colorLabel(team.getColorName())),
+                            team.getColorName()));
             holder.targets.put(slot, team.getName());
         }
-        if (teams.isEmpty()) {
-            inventory.setItem(
-                    22,
-                    configured(
-                            OVERVIEW_PATH,
-                            "empty",
-                            null,
-                            Map.of(),
-                            item(
-                                    Material.GRAY_DYE,
-                                    LegacyText.component(
-                                            GuiConfig.text(
-                                                    "teams.menus.overview.items.empty.title"),
-                                            NamedTextColor.GRAY),
-                                    List.of(
-                                            LegacyText.component(
-                                                    loreLine("teams.menus.overview.items.empty", 0),
-                                                    NamedTextColor.DARK_GRAY)),
-                                    false)));
-        }
-
-        fillFooter(inventory, OVERVIEW_PATH);
-        inventory.setItem(
-                CREATE_SLOT,
-                configured(
-                        OVERVIEW_PATH,
-                        "create",
-                        null,
-                        Map.of(),
-                        item(
-                                Material.EMERALD,
-                                LegacyText.component(
-                                                GuiConfig.text(
-                                                        "teams.menus.overview.items.create.title"),
-                                                NamedTextColor.GREEN)
-                                        .decorate(TextDecoration.BOLD),
-                                List.of(
-                                        LegacyText.component(
-                                                loreLine("teams.menus.overview.items.create", 0),
-                                                NamedTextColor.GRAY)),
-                                false)));
-        inventory.setItem(
-                QUICK_ASSIGN_SLOT,
-                configured(
-                        OVERVIEW_PATH,
-                        "quick-assign",
-                        null,
-                        Map.of(),
-                        item(
-                                Material.PLAYER_HEAD,
-                                LegacyText.component(
-                                                GuiConfig.text(
-                                                        "teams.menus.overview.items.quick-assign.title"),
-                                                NamedTextColor.AQUA)
-                                        .decorate(TextDecoration.BOLD),
-                                List.of(
-                                        LegacyText.component(
-                                                loreLine(
-                                                        "teams.menus.overview.items.quick-assign",
-                                                        0),
-                                                NamedTextColor.GRAY),
-                                        LegacyText.component(
-                                                loreLine(
-                                                        "teams.menus.overview.items.quick-assign",
-                                                        1),
-                                                NamedTextColor.DARK_GRAY)),
-                                false)));
-        inventory.setItem(
-                REFRESH_SLOT,
-                configured(
-                        OVERVIEW_PATH,
-                        "refresh",
-                        null,
-                        Map.of(),
-                        item(
-                                Material.SUNFLOWER,
-                                LegacyText.component(
-                                        GuiConfig.text("teams.menus.overview.items.refresh.title"),
-                                        NamedTextColor.YELLOW),
-                                List.of(),
-                                false)));
-        inventory.setItem(
-                PAGE_SLOT,
-                configured(
-                        OVERVIEW_PATH,
-                        "page",
-                        null,
-                        Map.of("page", holder.page + 1, "pages", pages, "count", teams.size()),
-                        pageItem(holder.page, pages, teams.size())));
-        if (holder.page > 0)
-            inventory.setItem(
-                    PREVIOUS_SLOT,
-                    configured(
-                            OVERVIEW_PATH,
-                            "previous",
-                            null,
-                            Map.of(),
-                            navigationItem(GuiConfig.text("buttons.previous.title"))));
-        if (holder.page + 1 < pages)
-            inventory.setItem(
-                    NEXT_SLOT,
-                    configured(
-                            OVERVIEW_PATH,
-                            "next",
-                            null,
-                            Map.of(),
-                            navigationItem(GuiConfig.text("buttons.next.title"))));
-        inventory.setItem(
-                TELEPORT_ALL_SLOT,
-                configured(
-                        OVERVIEW_PATH,
-                        "teleport-all",
-                        null,
-                        Map.of(),
-                        item(
-                                Material.ENDER_EYE,
-                                LegacyText.component(
-                                        GuiConfig.text(
-                                                "teams.menus.overview.items.teleport-all.title"),
-                                        NamedTextColor.LIGHT_PURPLE),
-                                List.of(
-                                        LegacyText.component(
-                                                loreLine(
-                                                        "teams.menus.overview.items.teleport-all",
-                                                        0),
-                                                NamedTextColor.GRAY),
-                                        Component.empty(),
-                                        LegacyText.component(
-                                                loreLine(
-                                                        "teams.menus.overview.items.teleport-all",
-                                                        2),
-                                                NamedTextColor.YELLOW)),
-                                false)));
-        inventory.setItem(
-                CLOSE_SLOT, configured(OVERVIEW_PATH, "close", null, Map.of(), closeItem()));
+        empty(holder, teams.size());
+        for (String id : List.of("create", "quick-assign", "refresh", "teleport-all"))
+            control(holder, id, null, Map.of());
+        navigation(holder);
+        player.openInventory(holder.inventory);
     }
 
-    private void openTeam(@NotNull Player player, @NotNull String teamName, int requestedPage) {
+    private void openTeam(Player player, String teamName, int requestedPage) {
+        if (!admitted(player)) return;
         ChampionshipTeam team = plugin.getTeamManager().getTeam(teamName);
         if (team == null) {
             CoreMessages.sendAdminError(
@@ -276,245 +192,51 @@ public final class TeamManagementMenu implements Listener {
             openOverview(player, 0);
             return;
         }
-
         List<MemberView> members = members(team);
-        int pages = pageCount(members.size());
-        int page = Math.max(0, Math.min(requestedPage, pages - 1));
-        MenuHolder holder = new MenuHolder(player.getUniqueId(), Screen.TEAM, team.getName(), page);
-        GuiConfig.MenuSpec menu =
-                GuiConfig.menu(
-                        TEAM_PATH,
-                        INVENTORY_SIZE,
-                        teamTitle(team, GuiConfig.text("teams.menus.members.title")),
-                        contentSlots());
-        Inventory inventory = Bukkit.createInventory(holder, menu.size(), menu.title());
-        holder.inventory = inventory;
-        fillTeam(holder, team, members, pages);
-        player.openInventory(inventory);
-    }
-
-    private void fillTeam(
-            @NotNull MenuHolder holder,
-            @NotNull ChampionshipTeam team,
-            @NotNull List<MemberView> members,
-            int pages) {
-        Inventory inventory = holder.inventory;
-        inventory.clear();
-        holder.targets.clear();
-        int from = holder.page * PAGE_SIZE;
-        int to = Math.min(from + PAGE_SIZE, members.size());
-        List<Integer> slots = GuiConfig.slots(TEAM_PATH + ".layout.content", contentSlots());
-        for (int index = from; index < to && index - from < slots.size(); index++) {
-            MemberView member = members.get(index);
-            int slot = slots.get(index - from);
-            inventory.setItem(
+        Map<String, Object> values =
+                Map.of(
+                        "team",
+                        team.getName(),
+                        "members",
+                        members.size(),
+                        "max",
+                        CCConfig.TEAM_MAX_MEMBERS,
+                        "online",
+                        team.getOnlinePlayers().size(),
+                        "member-unit",
+                        GuiConfig.text(MenuId.TEAMS_MEMBERS.item("member-count-unit") + ".title"));
+        MenuHolder holder =
+                page(player, Screen.TEAM, teamName, requestedPage, members.size(), values);
+        List<Integer> slots = holder.layout.pageSlots(holder.page, members.size());
+        int first = holder.page * holder.layout.content().size();
+        for (int i = 0; i < slots.size(); i++) {
+            MemberView member = members.get(first + i);
+            int slot = slots.get(i);
+            holder.inventory.setItem(
                     slot,
-                    configured(
-                            TEAM_PATH,
+                    TeamMenuItems.player(
+                            holder.screen.id,
                             "member",
                             member.online ? "online" : "offline",
                             Map.of("player", member.name),
-                            memberItem(member)));
-            holder.targets.put(slot, member.name());
+                            member.uuid,
+                            member.name));
+            holder.targets.put(slot, member.name);
+            holder.playerTargets.put(slot, member.uuid);
         }
-        if (members.isEmpty()) {
-            inventory.setItem(
-                    22,
-                    configured(
-                            TEAM_PATH,
-                            "empty",
-                            null,
-                            Map.of(),
-                            item(
-                                    Material.PLAYER_HEAD,
-                                    LegacyText.component(
-                                            GuiConfig.text("teams.menus.members.items.empty.title"),
-                                            NamedTextColor.GRAY),
-                                    List.of(
-                                            LegacyText.component(
-                                                    loreLine("teams.menus.members.items.empty", 0),
-                                                    NamedTextColor.DARK_GRAY)),
-                                    false)));
-        }
-
-        fillFooter(inventory, TEAM_PATH);
+        empty(holder, members.size());
         boolean full = members.size() >= CCConfig.TEAM_MAX_MEMBERS;
-        if (full) {
-            inventory.setItem(
-                    ADD_ONLINE_SLOT,
-                    configured(
-                            TEAM_PATH,
-                            "add-player",
-                            "full",
-                            Map.of("members", members.size(), "max", CCConfig.TEAM_MAX_MEMBERS),
-                            item(
-                                    Material.RED_DYE,
-                                    LegacyText.component(
-                                                    GuiConfig.text(
-                                                            "teams.menus.members.items.add-player.states.full.title"),
-                                                    NamedTextColor.RED)
-                                            .decorate(TextDecoration.BOLD),
-                                    List.of(
-                                            LegacyText.component(
-                                                    GuiConfig.line(
-                                                            "teams.menus.members.items.add-player.states.full.lore",
-                                                            0,
-                                                            Map.of(
-                                                                    "members",
-                                                                    members.size(),
-                                                                    "max",
-                                                                    CCConfig.TEAM_MAX_MEMBERS)),
-                                                    NamedTextColor.GRAY),
-                                            LegacyText.component(
-                                                    loreLine(
-                                                            "teams.menus.members.items.add-player.states.full",
-                                                            1),
-                                                    NamedTextColor.DARK_GRAY)),
-                                    false)));
-        } else {
-            inventory.setItem(
-                    ADD_ONLINE_SLOT,
-                    configured(
-                            TEAM_PATH,
-                            "add-player",
-                            "available",
-                            Map.of(),
-                            item(
-                                    Material.LIME_DYE,
-                                    LegacyText.component(
-                                                    GuiConfig.text(
-                                                            "teams.menus.members.items.add-player.states.available.title"),
-                                                    NamedTextColor.GREEN)
-                                            .decorate(TextDecoration.BOLD),
-                                    List.of(
-                                            LegacyText.component(
-                                                    loreLine(
-                                                            "teams.menus.members.items.add-player.states.available",
-                                                            0),
-                                                    NamedTextColor.GRAY)),
-                                    false)));
-            inventory.setItem(
-                    ADD_HISTORY_SLOT,
-                    configured(
-                            TEAM_PATH,
-                            "history",
-                            null,
-                            Map.of(),
-                            item(
-                                    Material.BOOK,
-                                    LegacyText.component(
-                                            GuiConfig.text(
-                                                    "teams.menus.members.items.history.title"),
-                                            NamedTextColor.AQUA),
-                                    List.of(
-                                            LegacyText.component(
-                                                    loreLine(
-                                                            "teams.menus.members.items.history", 0),
-                                                    NamedTextColor.GRAY),
-                                            LegacyText.component(
-                                                    loreLine(
-                                                            "teams.menus.members.items.history", 1),
-                                                    NamedTextColor.DARK_GRAY)),
-                                    false)));
-        }
-        inventory.setItem(
-                PREVIOUS_SLOT,
-                configured(
-                        TEAM_PATH,
-                        holder.page > 0 ? "previous" : "back",
-                        null,
-                        Map.of(),
-                        holder.page > 0
-                                ? navigationItem(GuiConfig.text("buttons.previous.title"))
-                                : item(
-                                        Material.ARROW,
-                                        LegacyText.component(
-                                                GuiConfig.text(
-                                                        "teams.menus.members.items.back.title"),
-                                                NamedTextColor.WHITE),
-                                        List.of(),
-                                        false)));
-        inventory.setItem(
-                REFRESH_SLOT,
-                configured(
-                        TEAM_PATH,
-                        "refresh",
-                        null,
-                        Map.of(),
-                        item(
-                                Material.SUNFLOWER,
-                                LegacyText.component(
-                                        GuiConfig.text("teams.menus.overview.items.refresh.title"),
-                                        NamedTextColor.YELLOW),
-                                List.of(),
-                                false)));
-        inventory.setItem(
-                PAGE_SLOT,
-                configured(
-                        TEAM_PATH,
-                        "page",
-                        null,
-                        Map.of("page", holder.page + 1, "pages", pages, "count", members.size()),
-                        pageItem(holder.page, pages, members.size())));
-        if (holder.page + 1 < pages)
-            inventory.setItem(
-                    NEXT_SLOT,
-                    configured(
-                            TEAM_PATH,
-                            "next",
-                            null,
-                            Map.of(),
-                            navigationItem(GuiConfig.text("buttons.next.title"))));
-        inventory.setItem(
-                TELEPORT_TEAM_SLOT,
-                configured(
-                        TEAM_PATH,
-                        "teleport",
-                        null,
-                        Map.of("online", team.getOnlinePlayers().size()),
-                        item(
-                                Material.ENDER_PEARL,
-                                LegacyText.component(
-                                        GuiConfig.text("teams.menus.members.items.teleport.title"),
-                                        NamedTextColor.LIGHT_PURPLE),
-                                List.of(
-                                        LegacyText.component(
-                                                GuiConfig.line(
-                                                        "teams.menus.members.items.teleport.lore",
-                                                        0,
-                                                        Map.of(
-                                                                "online",
-                                                                team.getOnlinePlayers().size())),
-                                                NamedTextColor.GRAY)),
-                                false)));
-        inventory.setItem(
-                DELETE_TEAM_SLOT,
-                configured(
-                        TEAM_PATH,
-                        "delete",
-                        null,
-                        Map.of(),
-                        item(
-                                Material.TNT,
-                                LegacyText.component(
-                                        GuiConfig.text("teams.menus.members.items.delete.title"),
-                                        NamedTextColor.RED),
-                                List.of(
-                                        LegacyText.component(
-                                                loreLine("teams.menus.members.items.delete", 0),
-                                                NamedTextColor.GRAY),
-                                        Component.empty(),
-                                        LegacyText.component(
-                                                loreLine(
-                                                        "teams.menus.overview.items.teleport-all",
-                                                        2),
-                                                NamedTextColor.YELLOW)),
-                                false)));
-        inventory.setItem(CLOSE_SLOT, configured(TEAM_PATH, "close", null, Map.of(), closeItem()));
+        control(holder, "add-player", full ? "full" : "available", values);
+        if (!full) control(holder, "history", null, values);
+        if (holder.page == 0) control(holder, "back", null, values);
+        for (String id : List.of("refresh", "teleport", "delete"))
+            control(holder, id, null, values);
+        navigation(holder);
+        player.openInventory(holder.inventory);
     }
 
-    private void openAddPlayer(
-            @NotNull Player player, @NotNull String teamName, int requestedPage) {
+    private void openAddPlayer(Player player, String teamName, int requestedPage) {
+        if (!admitted(player)) return;
         ChampionshipTeam team = plugin.getTeamManager().getTeam(teamName);
         if (team == null) {
             openOverview(player, 0);
@@ -529,7 +251,7 @@ public final class TeamManagementMenu implements Listener {
             openTeam(player, teamName, 0);
             return;
         }
-        List<? extends Player> candidates =
+        var candidates =
                 Bukkit.getOnlinePlayers().stream()
                         .filter(
                                 candidate ->
@@ -538,306 +260,176 @@ public final class TeamManagementMenu implements Listener {
                                 Comparator.comparing(
                                         Player::getName, String.CASE_INSENSITIVE_ORDER))
                         .toList();
-        int pages = pageCount(candidates.size());
-        int page = Math.max(0, Math.min(requestedPage, pages - 1));
         MenuHolder holder =
-                new MenuHolder(player.getUniqueId(), Screen.ADD_PLAYER, team.getName(), page);
-        Inventory inventory =
-                Bukkit.createInventory(
-                        holder,
-                        INVENTORY_SIZE,
-                        teamTitle(team, GuiConfig.text("teams.menus.add-player.title")));
-        holder.inventory = inventory;
-        int from = page * PAGE_SIZE;
-        int to = Math.min(from + PAGE_SIZE, candidates.size());
-        for (int index = from; index < to; index++) {
-            Player candidate = candidates.get(index);
-            int slot = index - from;
-            ItemStack fallback =
-                    playerHead(
-                            candidate.getUniqueId(),
-                            candidate.getName(),
-                            LegacyText.component(candidate.getName(), NamedTextColor.GREEN),
-                            List.of(Component.text(" ", teamColor(team))));
-            inventory.setItem(
+                page(
+                        player,
+                        Screen.ADD_PLAYER,
+                        teamName,
+                        requestedPage,
+                        candidates.size(),
+                        Map.of("team", team.getName()));
+        List<Integer> slots = holder.layout.pageSlots(holder.page, candidates.size());
+        int first = holder.page * holder.layout.content().size();
+        for (int i = 0; i < slots.size(); i++) {
+            Player candidate = candidates.get(first + i);
+            int slot = slots.get(i);
+            holder.inventory.setItem(
                     slot,
-                    ConfiguredGui.item(
-                            "teams.menus.add-player.items.candidate",
+                    TeamMenuItems.player(
+                            holder.screen.id,
+                            "candidate",
                             "candidate",
                             Map.of("player", candidate.getName(), "team", team.getName()),
-                            fallback));
+                            candidate.getUniqueId(),
+                            candidate.getName()));
             holder.targets.put(slot, candidate.getName());
+            holder.playerTargets.put(slot, candidate.getUniqueId());
         }
-        if (candidates.isEmpty()) {
-            inventory.setItem(
-                    22,
-                    item(
-                            Material.GRAY_DYE,
-                            LegacyText.component(
-                                    GuiConfig.text("teams.menus.add-player.items.empty.title"),
-                                    NamedTextColor.GRAY),
-                            List.of(
-                                    LegacyText.component(
-                                            loreLine("teams.menus.add-player.items.empty", 0),
-                                            NamedTextColor.DARK_GRAY)),
-                            false));
-        }
-        fillFooter(inventory);
-        inventory.setItem(
-                BACK_SLOT,
-                item(
-                        Material.ARROW,
-                        LegacyText.component(
-                                GuiConfig.text("teams.menus.add-player.items.back.title"),
-                                NamedTextColor.WHITE),
-                        List.of(),
-                        false));
-        if (page > 0)
-            inventory.setItem(
-                    PREVIOUS_SLOT, navigationItem(GuiConfig.text("buttons.previous.title")));
-        inventory.setItem(PAGE_SLOT, pageItem(page, pages, candidates.size()));
-        if (page + 1 < pages)
-            inventory.setItem(NEXT_SLOT, navigationItem(GuiConfig.text("buttons.next.title")));
-        inventory.setItem(CLOSE_SLOT, closeItem());
-        player.openInventory(inventory);
+        empty(holder, candidates.size());
+        control(holder, "back", null, Map.of());
+        navigation(holder);
+        player.openInventory(holder.inventory);
     }
 
-    private void openColorPicker(@NotNull Player player, @NotNull String newTeamName) {
-        MenuHolder holder = new MenuHolder(player.getUniqueId(), Screen.COLOR, newTeamName, 0);
-        Inventory inventory =
-                Bukkit.createInventory(
-                        holder,
-                        36,
-                        title(
-                                GuiConfig.text("teams.menus.color-picker.title"),
-                                NamedTextColor.GOLD));
-        holder.inventory = inventory;
+    private void openColorPicker(Player player, String newTeamName) {
+        openColorPicker(player, newTeamName, 0);
+    }
+
+    private void openColorPicker(Player player, String newTeamName, int requestedPage) {
+        if (!admitted(player)) return;
         List<String> colors = List.of(TeamColors.names());
-        for (int index = 0; index < colors.size(); index++) {
-            String color = colors.get(index);
-            ChampionshipTeam usedBy =
+        MenuHolder holder =
+                page(
+                        player,
+                        Screen.COLOR,
+                        newTeamName,
+                        requestedPage,
+                        colors.size(),
+                        Map.of("team", newTeamName));
+        List<Integer> slots = holder.layout.pageSlots(holder.page, colors.size());
+        int first = holder.page * holder.layout.content().size();
+        for (int i = 0; i < slots.size(); i++) {
+            String color = colors.get(first + i);
+            ChampionshipTeam used =
                     sortedTeams().stream()
                             .filter(team -> team.getColorName().equalsIgnoreCase(color))
                             .findFirst()
                             .orElse(null);
-            Material material = material(color + "_WOOL", Material.WHITE_WOOL);
-            String availability =
-                    usedBy == null
-                            ? GuiConfig.line("teams.menus.color-picker.items.available.lore", 0)
-                            : GuiConfig.line(
-                                    "teams.menus.color-picker.items.in-use.lore",
-                                    0,
-                                    Map.of("team", usedBy.getName()));
-            Map<String, String> placeholders =
-                    Map.of(
-                            "label",
-                            COLOR_LABELS.getOrDefault(color, color),
-                            "name",
-                            color,
-                            "hex",
-                            COLOR_HEX.getOrDefault(color, ""),
-                            "availability",
-                            availability);
-            int slot = COLOR_SLOTS.get(index);
-            inventory.setItem(
-                    slot,
-                    ConfiguredGui.item(
-                            "teams.menus.color-picker.items.color",
-                            color,
-                            placeholders,
-                            item(
-                                    usedBy == null ? material : Material.GRAY_DYE,
-                                    LegacyText.component(
-                                                    COLOR_LABELS.get(color),
-                                                    usedBy == null
-                                                            ? color(color)
-                                                            : NamedTextColor.DARK_GRAY)
-                                            .decorate(TextDecoration.BOLD),
-                                    List.of(
-                                            LegacyText.component(
-                                                    availability,
-                                                    usedBy == null
-                                                            ? NamedTextColor.GREEN
-                                                            : NamedTextColor.RED)),
-                                    false)));
-            if (usedBy == null) holder.targets.put(slot, color);
+            int slot = slots.get(i);
+            holder.inventory.setItem(
+                    slot, TeamMenuItems.color(color, used == null ? null : used.getName()));
+            if (used == null) holder.targets.put(slot, color);
         }
-        inventory.setItem(
-                31,
-                item(
-                        Material.ARROW,
-                        LegacyText.component(
-                                GuiConfig.text("teams.menus.members.items.back.title"),
-                                NamedTextColor.WHITE),
-                        List.of(),
-                        false));
-        player.openInventory(inventory);
+        control(holder, "back", null, Map.of());
+        navigation(holder);
+        player.openInventory(holder.inventory);
     }
 
-    private void openQuickPlayers(@NotNull Player player, int requestedPage) {
-        List<? extends Player> players =
+    private void openQuickPlayers(Player player, int requestedPage) {
+        if (!admitted(player)) return;
+        var players =
                 Bukkit.getOnlinePlayers().stream()
                         .sorted(
                                 Comparator.comparing(
                                         Player::getName, String.CASE_INSENSITIVE_ORDER))
                         .toList();
-        int pages = pageCount(players.size());
-        int page = Math.max(0, Math.min(requestedPage, pages - 1));
-        MenuHolder holder = new MenuHolder(player.getUniqueId(), Screen.QUICK_PLAYER, null, page);
-        Inventory inventory =
-                Bukkit.createInventory(
-                        holder,
-                        INVENTORY_SIZE,
-                        title(
-                                GuiConfig.text("teams.menus.quick-assign.title"),
-                                NamedTextColor.AQUA));
-        holder.inventory = inventory;
-        int from = page * PAGE_SIZE;
-        int to = Math.min(from + PAGE_SIZE, players.size());
-        for (int index = from; index < to; index++) {
-            Player candidate = players.get(index);
-            ChampionshipTeam current = plugin.getTeamManager().getTeamByPlayer(candidate);
-            Map<String, String> placeholders =
-                    Map.of(
-                            "player",
-                            candidate.getName(),
-                            "team",
-                            current == null ? "" : current.getName());
-            int slot = index - from;
-            ItemStack fallback =
-                    playerHead(
-                            candidate.getUniqueId(),
-                            candidate.getName(),
-                            LegacyText.component(candidate.getName(), NamedTextColor.GREEN)
-                                    .decorate(TextDecoration.BOLD),
-                            List.of());
-            inventory.setItem(
+        MenuHolder holder =
+                page(player, Screen.QUICK_PLAYER, null, requestedPage, players.size(), Map.of());
+        List<Integer> slots = holder.layout.pageSlots(holder.page, players.size());
+        int first = holder.page * holder.layout.content().size();
+        for (int i = 0; i < slots.size(); i++) {
+            Player candidate = players.get(first + i);
+            ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(candidate);
+            int slot = slots.get(i);
+            holder.inventory.setItem(
                     slot,
-                    ConfiguredGui.item(
-                            "teams.menus.quick-assign.items.player",
-                            current == null ? "unassigned" : "assigned",
-                            placeholders,
-                            fallback));
-            holder.playerTargets.put(slot, candidate.getUniqueId());
+                    TeamMenuItems.player(
+                            holder.screen.id,
+                            "player",
+                            team == null ? "unassigned" : "assigned",
+                            Map.of(
+                                    "player",
+                                    candidate.getName(),
+                                    "team",
+                                    team == null ? "" : team.getName()),
+                            candidate.getUniqueId(),
+                            candidate.getName()));
             holder.targets.put(slot, candidate.getName());
+            holder.playerTargets.put(slot, candidate.getUniqueId());
         }
-        fillFooter(inventory);
-        inventory.setItem(
-                BACK_SLOT,
-                item(
-                        Material.ARROW,
-                        LegacyText.component(
-                                GuiConfig.text("teams.menus.members.items.back.title"),
-                                NamedTextColor.WHITE),
-                        List.of(),
-                        false));
-        if (page > 0)
-            inventory.setItem(
-                    PREVIOUS_SLOT, navigationItem(GuiConfig.text("buttons.previous.title")));
-        inventory.setItem(PAGE_SLOT, pageItem(page, pages, players.size()));
-        if (page + 1 < pages)
-            inventory.setItem(NEXT_SLOT, navigationItem(GuiConfig.text("buttons.next.title")));
-        inventory.setItem(CLOSE_SLOT, closeItem());
-        player.openInventory(inventory);
+        empty(holder, players.size());
+        control(holder, "back", null, Map.of());
+        navigation(holder);
+        player.openInventory(holder.inventory);
+    }
+
+    private void openTargetTeams(Player player, UUID uuid, String name, int returnPage) {
+        openTargetTeams(player, uuid, name, returnPage, 0);
     }
 
     private void openTargetTeams(
-            @NotNull Player player,
-            @NotNull UUID selectedUuid,
-            @NotNull String selectedName,
-            int returnPage) {
+            Player player, UUID uuid, String name, int returnPage, int requestedPage) {
+        if (!admitted(player)) return;
+        Player selected = Bukkit.getPlayer(uuid);
+        if (selected == null || !selected.getName().equalsIgnoreCase(name)) {
+            openQuickPlayers(player, returnPage);
+            return;
+        }
         List<ChampionshipTeam> teams = sortedTeams();
-        ChampionshipTeam current = plugin.getTeamManager().getTeamByPlayer(selectedUuid);
+        ChampionshipTeam current = plugin.getTeamManager().getTeamByPlayer(uuid);
         MenuHolder holder =
-                new MenuHolder(player.getUniqueId(), Screen.TARGET_TEAM, null, returnPage);
-        holder.selectedPlayerUuid = selectedUuid;
-        holder.memberName = selectedName;
-        Inventory inventory =
-                Bukkit.createInventory(
-                        holder,
-                        INVENTORY_SIZE,
-                        title(
-                                GuiConfig.text(
-                                        "teams.menus.target-team.title",
-                                        Map.of("player", selectedName)),
-                                NamedTextColor.GOLD));
-        holder.inventory = inventory;
-        for (int index = 0; index < Math.min(PAGE_SIZE, teams.size()); index++) {
-            ChampionshipTeam team = teams.get(index);
-            boolean same = current != null && current.equals(team);
-            boolean full = team.getMembers().size() >= CCConfig.TEAM_MAX_MEMBERS;
-            Map<String, Object> placeholders =
-                    Map.of(
-                            "team",
-                            team.getName(),
-                            "members",
-                            team.getMembers().size(),
-                            "max",
-                            CCConfig.TEAM_MAX_MEMBERS);
-            String state = same ? "current" : full ? "full" : current == null ? "join" : "move";
-            Material wool = material(team.getColorName() + "_WOOL", Material.WHITE_WOOL);
-            ItemStack fallback =
-                    item(
-                            wool,
-                            LegacyText.component(
-                                            team.getName(),
-                                            same || full
-                                                    ? NamedTextColor.DARK_GRAY
-                                                    : teamColor(team))
-                                    .decorate(TextDecoration.BOLD),
-                            List.of(),
-                            same);
-            inventory.setItem(
-                    index,
-                    ConfiguredGui.item(
-                            "teams.menus.target-team.items.team", state, placeholders, fallback));
-            if (!same && !full) holder.targets.put(index, team.getName());
-        }
-        if (teams.isEmpty()) {
-            inventory.setItem(
-                    22,
-                    ConfiguredGui.item(
-                            "teams.menus.target-team.items.empty",
-                            null,
-                            Map.of(),
-                            item(
-                                    Material.GRAY_DYE,
-                                    Component.text(" ", NamedTextColor.GRAY),
-                                    List.of(),
-                                    false)));
-        }
-        fillFooter(inventory);
-        inventory.setItem(
-                BACK_SLOT,
-                ConfiguredGui.item(
-                        "teams.menus.target-team.items.back",
+                page(
+                        player,
+                        Screen.TARGET_TEAM,
                         null,
-                        Map.of(),
-                        item(
-                                Material.ARROW,
-                                Component.text(" ", NamedTextColor.WHITE),
-                                List.of(),
-                                false)));
-        Map<String, String> selectedPlaceholders =
-                Map.of("player", selectedName, "team", current == null ? "" : current.getName());
-        inventory.setItem(
-                49,
-                ConfiguredGui.item(
-                        "teams.menus.target-team.items.selected-player",
+                        requestedPage,
+                        teams.size(),
+                        Map.of("player", name));
+        holder.returnPage = returnPage;
+        holder.selectedPlayerUuid = uuid;
+        holder.memberName = name;
+        List<Integer> slots = holder.layout.pageSlots(holder.page, teams.size());
+        int first = holder.page * holder.layout.content().size();
+        for (int i = 0; i < slots.size(); i++) {
+            ChampionshipTeam team = teams.get(first + i);
+            boolean same = current == team,
+                    full = team.getMembers().size() >= CCConfig.TEAM_MAX_MEMBERS;
+            String state = same ? "current" : full ? "full" : current == null ? "join" : "move";
+            int slot = slots.get(i);
+            holder.inventory.setItem(
+                    slot,
+                    TeamMenuItems.team(
+                            holder.screen.id,
+                            "team",
+                            state,
+                            Map.of(
+                                    "team",
+                                    team.getName(),
+                                    "members",
+                                    team.getMembers().size(),
+                                    "max",
+                                    CCConfig.TEAM_MAX_MEMBERS),
+                            team.getColorName()));
+            if (!same && !full) holder.targets.put(slot, team.getName());
+        }
+        empty(holder, teams.size());
+        control(holder, "back", null, Map.of());
+        holder.inventory.setItem(
+                holder.layout.control("selected-player"),
+                TeamMenuItems.player(
+                        holder.screen.id,
+                        "selected-player",
                         current == null ? "unassigned" : "assigned",
-                        selectedPlaceholders,
-                        playerHead(
-                                selectedUuid,
-                                selectedName,
-                                LegacyText.component(selectedName, NamedTextColor.AQUA)
-                                        .decorate(TextDecoration.BOLD),
-                                List.of())));
-        inventory.setItem(CLOSE_SLOT, closeItem());
-        player.openInventory(inventory);
+                        Map.of("player", name, "team", current == null ? "" : current.getName()),
+                        uuid,
+                        name));
+        navigation(holder);
+        player.openInventory(holder.inventory);
     }
 
     private void openKnownPlayers(
             @NotNull Player player, @NotNull String teamName, int requestedPage) {
+        if (!admitted(player)) return;
         ChampionshipTeam team = plugin.getTeamManager().getTeam(teamName);
         if (team == null) {
             openOverview(player, 0);
@@ -855,150 +447,85 @@ public final class TeamManagementMenu implements Listener {
         plugin.getPlayerManager()
                 .getKnownPlayersAsync()
                 .whenComplete(
-                        (knownPlayers, failure) ->
-                                plugin.getServer()
-                                        .getScheduler()
-                                        .runTask(
-                                                plugin,
-                                                () -> {
-                                                    if (!player.isOnline()) return;
-                                                    ChampionshipTeam currentTeam =
-                                                            plugin.getTeamManager()
-                                                                    .getTeam(teamName);
-                                                    if (failure != null || currentTeam == null) {
-                                                        CoreMessages.sendAdminError(
-                                                                player,
-                                                                MessageConfig
-                                                                        .TEAM_GUI_UNABLE_TO_READ_PLAYER_HISTORY);
-                                                        openTeam(player, teamName, 0);
-                                                        return;
-                                                    }
-                                                    renderKnownPlayers(
-                                                            player,
-                                                            currentTeam,
-                                                            requestedPage,
-                                                            knownPlayers);
-                                                }));
+                        guarded(
+                                player,
+                                () -> plugin.getTeamManager().getTeam(teamName) == team,
+                                null,
+                                knownPlayers -> {
+                                    if (knownPlayers == null) {
+                                        CoreMessages.sendAdminError(
+                                                player,
+                                                MessageConfig
+                                                        .TEAM_GUI_UNABLE_TO_READ_PLAYER_HISTORY);
+                                        openTeam(player, teamName, 0);
+                                        return;
+                                    }
+                                    renderKnownPlayers(player, team, requestedPage, knownPlayers);
+                                }));
     }
 
     private void renderKnownPlayers(
-            @NotNull Player player,
-            @NotNull ChampionshipTeam team,
+            Player player,
+            ChampionshipTeam team,
             int requestedPage,
-            @NotNull List<PlayerEntry> knownPlayers) {
-        String teamName = team.getName();
+            List<PlayerEntry> knownPlayers) {
+        if (!admitted(player)) return;
         List<PlayerEntry> candidates =
                 knownPlayers.stream()
-                        .filter(entry -> Bukkit.getPlayer(entry.getUuid()) == null)
+                        .filter(candidate -> Bukkit.getPlayer(candidate.getUuid()) == null)
                         .filter(
-                                entry ->
-                                        plugin.getTeamManager().getTeamByPlayer(entry.getUuid())
+                                candidate ->
+                                        plugin.getTeamManager().getTeamByPlayer(candidate.getUuid())
                                                 == null)
                         .sorted(
                                 Comparator.comparing(
                                         PlayerEntry::getName, String.CASE_INSENSITIVE_ORDER))
                         .toList();
-        int pages = pageCount(candidates.size());
-        int page = Math.max(0, Math.min(requestedPage, pages - 1));
         MenuHolder holder =
-                new MenuHolder(player.getUniqueId(), Screen.KNOWN_PLAYER, teamName, page);
-        Inventory inventory =
-                Bukkit.createInventory(
-                        holder,
-                        INVENTORY_SIZE,
-                        teamTitle(team, GuiConfig.text("teams.menus.members.items.history.title")));
-        holder.inventory = inventory;
-        int from = page * PAGE_SIZE;
-        int to = Math.min(from + PAGE_SIZE, candidates.size());
-        for (int index = from; index < to; index++) {
-            PlayerEntry candidate = candidates.get(index);
-            int slot = index - from;
-            Map<String, String> placeholders =
-                    Map.of("player", candidate.getName(), "team", team.getName());
-            ItemStack fallback =
-                    playerHead(
-                            candidate.getUuid(),
-                            candidate.getName(),
-                            LegacyText.component(candidate.getName(), NamedTextColor.GRAY)
-                                    .decorate(TextDecoration.BOLD),
-                            List.of());
-            inventory.setItem(
+                page(
+                        player,
+                        Screen.KNOWN_PLAYER,
+                        team.getName(),
+                        requestedPage,
+                        candidates.size(),
+                        Map.of("team", team.getName()));
+        List<Integer> slots = holder.layout.pageSlots(holder.page, candidates.size());
+        int first = holder.page * holder.layout.content().size();
+        for (int i = 0; i < slots.size(); i++) {
+            PlayerEntry candidate = candidates.get(first + i);
+            int slot = slots.get(i);
+            holder.inventory.setItem(
                     slot,
-                    ConfiguredGui.item(
-                            "teams.menus.known-player.items.candidate",
+                    TeamMenuItems.player(
+                            holder.screen.id,
                             "candidate",
-                            placeholders,
-                            fallback));
-            holder.playerTargets.put(slot, candidate.getUuid());
+                            "candidate",
+                            Map.of("player", candidate.getName(), "team", team.getName()),
+                            candidate.getUuid(),
+                            candidate.getName()));
             holder.targets.put(slot, candidate.getName());
+            holder.playerTargets.put(slot, candidate.getUuid());
         }
-        if (candidates.isEmpty()) {
-            inventory.setItem(
-                    22,
-                    item(
-                            Material.GRAY_DYE,
-                            LegacyText.component(
-                                    GuiConfig.text("teams.menus.known-player.items.empty.title"),
-                                    NamedTextColor.GRAY),
-                            List.of(
-                                    LegacyText.component(
-                                            loreLine("teams.menus.known-player.items.empty", 0),
-                                            NamedTextColor.DARK_GRAY)),
-                            false));
-        }
-        fillFooter(inventory);
-        inventory.setItem(
-                MANUAL_INPUT_SLOT,
-                item(
-                        Material.NAME_TAG,
-                        LegacyText.component(
-                                GuiConfig.text("teams.menus.known-player.items.manual-input.title"),
-                                NamedTextColor.AQUA),
-                        List.of(
-                                LegacyText.component(
-                                        loreLine("teams.menus.known-player.items.manual-input", 0),
-                                        NamedTextColor.GRAY),
-                                LegacyText.component(
-                                        loreLine("teams.menus.known-player.items.manual-input", 1),
-                                        NamedTextColor.YELLOW)),
-                        false));
-        inventory.setItem(
-                HISTORY_BACK_SLOT,
-                item(
-                        Material.ARROW,
-                        LegacyText.component(
-                                GuiConfig.text("teams.menus.add-player.items.back.title"),
-                                NamedTextColor.WHITE),
-                        List.of(),
-                        false));
-        if (page > 0)
-            inventory.setItem(
-                    PREVIOUS_SLOT, navigationItem(GuiConfig.text("buttons.previous.title")));
-        inventory.setItem(PAGE_SLOT, pageItem(page, pages, candidates.size()));
-        if (page + 1 < pages)
-            inventory.setItem(NEXT_SLOT, navigationItem(GuiConfig.text("buttons.next.title")));
-        inventory.setItem(CLOSE_SLOT, closeItem());
-        player.openInventory(inventory);
+        empty(holder, candidates.size());
+        control(holder, "manual-input", null, Map.of());
+        control(holder, "back", null, Map.of());
+        navigation(holder);
+        player.openInventory(holder.inventory);
     }
 
     private void openConfirmation(
-            @NotNull Player player,
-            @NotNull Confirmation action,
-            @Nullable String teamName,
-            @Nullable String memberName,
-            @Nullable UUID selectedPlayerUuid,
+            Player player,
+            Confirmation action,
+            String teamName,
+            String memberName,
+            UUID selectedUuid,
             int returnPage) {
-        MenuHolder holder =
-                new MenuHolder(player.getUniqueId(), Screen.CONFIRM, teamName, returnPage);
+        if (!admitted(player)) return;
+        MenuHolder holder = page(player, Screen.CONFIRM, teamName, 0, 0, Map.of());
         holder.confirmation = action;
         holder.memberName = memberName;
-        holder.selectedPlayerUuid = selectedPlayerUuid;
-        Inventory inventory =
-                Bukkit.createInventory(
-                        holder,
-                        27,
-                        title(GuiConfig.text("teams.menus.confirm.title"), NamedTextColor.RED));
-        holder.inventory = inventory;
+        holder.selectedPlayerUuid = selectedUuid;
+        holder.returnPage = returnPage;
         String state =
                 switch (action) {
                     case DELETE_TEAM -> "delete";
@@ -1006,104 +533,133 @@ public final class TeamManagementMenu implements Listener {
                     case TELEPORT_ALL -> "teleport-all";
                     case MOVE_MEMBER -> "move";
                 };
-        Material subjectMaterial =
-                switch (action) {
-                    case DELETE_TEAM -> Material.TNT;
-                    case REMOVE_MEMBER -> Material.RED_DYE;
-                    case TELEPORT_ALL -> Material.ENDER_EYE;
-                    case MOVE_MEMBER -> Material.COMPASS;
-                };
-        Map<String, String> placeholders =
-                Map.of(
-                        "player", memberName == null ? "" : memberName,
-                        "team", teamName == null ? "" : teamName);
-        inventory.setItem(
-                13,
-                ConfiguredGui.item(
-                        "teams.menus.confirm.items.action",
+        holder.inventory.setItem(
+                holder.layout.control("action"),
+                TeamMenuItems.item(
+                        holder.screen.id,
+                        "action",
                         state,
-                        placeholders,
-                        item(
-                                subjectMaterial,
-                                Component.text(" ", NamedTextColor.RED)
-                                        .decorate(TextDecoration.BOLD),
-                                List.of(
-                                        LegacyText.component(
-                                                GuiConfig.line(
-                                                        "teams.menus.confirm.items.action.lore", 0),
-                                                NamedTextColor.GRAY)),
-                                false)));
-        inventory.setItem(
-                CONFIRM_SLOT,
-                item(
-                        Material.LIME_CONCRETE,
-                        LegacyText.component(
-                                        GuiConfig.text("teams.menus.confirm.items.confirm.title"),
-                                        NamedTextColor.GREEN)
-                                .decorate(TextDecoration.BOLD),
-                        List.of(),
-                        false));
-        inventory.setItem(
-                CANCEL_SLOT,
-                item(
-                        Material.RED_CONCRETE,
-                        LegacyText.component(
-                                GuiConfig.text("teams.menus.confirm.items.cancel.title"),
-                                NamedTextColor.RED),
-                        List.of(),
-                        false));
-        player.openInventory(inventory);
+                        Map.of(
+                                "team",
+                                teamName == null ? "" : teamName,
+                                "player",
+                                memberName == null ? "" : memberName)));
+        control(holder, "confirm", null, Map.of());
+        control(holder, "cancel", null, Map.of());
+        player.openInventory(holder.inventory);
     }
 
-    private void openTextInput(
-            @NotNull Player player, @NotNull InputPurpose purpose, @Nullable String teamName) {
-        String prompt =
-                purpose == InputPurpose.CREATE_TEAM
-                        ? GuiConfig.text("teams.menus.input.items.team-name.title")
-                        : GuiConfig.text("teams.menus.input.items.player-name.title");
-        InputSession previous = inputs.remove(player.getUniqueId());
-        if (previous != null) previous.inventory.clear();
-        AnvilView view = MenuType.ANVIL.create(player, LegacyText.plainComponent(prompt));
-        AnvilInventory inventory = view.getTopInventory();
-        InputSession session = new InputSession(purpose, teamName, inventory);
-        inputs.put(player.getUniqueId(), session);
-        inventory.setFirstItem(
-                item(
-                        Material.PAPER,
-                        LegacyText.plainComponent(prompt),
-                        List.of(
-                                LegacyText.plainComponent(
-                                        GuiConfig.text("teams.menus.input.items.hint.title"))),
-                        false));
-        player.openInventory(view);
-        view.setMaximumRepairCost(0);
-        view.setRepairCost(0);
+    private MenuHolder page(
+            Player player,
+            Screen screen,
+            String team,
+            int requestedPage,
+            int count,
+            Map<String, ?> values) {
+        MenuHolder holder = new MenuHolder(player, screen, team, requestedPage);
+        holder.page = screen == Screen.CONFIRM ? 0 : holder.layout.clampPage(requestedPage, count);
+        holder.pageCount = screen == Screen.CONFIRM ? 1 : holder.layout.pageCount(count);
+        holder.count = count;
+        var titleValues = new HashMap<String, Object>();
+        titleValues.putAll(values);
+        if (holder.team != null) titleValues.put("team", TeamMenuItems.teamName(holder.team));
+        holder.inventory =
+                Bukkit.createInventory(
+                        holder, holder.layout.size(), TeamMenuItems.title(screen.id, titleValues));
+        if (!holder.layout.border().isEmpty()) {
+            ItemStack border = TeamMenuItems.item(screen.id, "border", null, Map.of());
+            for (int slot : holder.layout.border()) holder.inventory.setItem(slot, border);
+        }
+        return holder;
+    }
+
+    private static void empty(MenuHolder holder, int count) {
+        if (count == 0)
+            holder.inventory.setItem(
+                    holder.emptySlot,
+                    TeamMenuItems.item(holder.screen.id, "empty", null, Map.of()));
+    }
+
+    private static void control(MenuHolder holder, String id, String state, Map<String, ?> values) {
+        var context = new HashMap<String, Object>();
+        context.putAll(values);
+        context.put(
+                "page", (holder.screen == Screen.CONFIRM ? holder.returnPage : holder.page) + 1);
+        context.put("return-page", holder.returnPage + 1);
+        context.put("pages", holder.pageCount);
+        context.put("count", holder.count);
+        if (id.equals("page"))
+            context.put("unit", GuiConfig.text(holder.screen.id.item("page-unit") + ".title"));
+        int slot = holder.layout.control(id);
+        holder.inventory.setItem(slot, TeamMenuItems.item(holder.screen.id, id, state, context));
+        holder.controls.put(slot, id);
+    }
+
+    private static void navigation(MenuHolder holder) {
+        if (holder.layout.controls().containsKey("previous") && holder.page > 0)
+            control(holder, "previous", null, Map.of());
+        if (holder.layout.controls().containsKey("next") && holder.page + 1 < holder.pageCount)
+            control(holder, "next", null, Map.of());
+        if (holder.layout.controls().containsKey("page")) control(holder, "page", null, Map.of());
+        if (holder.layout.controls().containsKey("close")) control(holder, "close", null, Map.of());
+    }
+
+    private void openTextInput(Player player, InputPurpose purpose, String teamName) {
+        if (!admitted(player)) return;
+        ChampionshipTeam team = teamName == null ? null : plugin.getTeamManager().getTeam(teamName);
+        if (purpose == InputPurpose.ADD_MEMBER && team == null) return;
+        String path =
+                MenuId.TEAMS_INPUT.item(
+                        purpose == InputPurpose.CREATE_TEAM ? "team-name" : "player-name");
+        String prompt = GuiConfig.text(path + ".title");
+        plugin.getAnvilInputMenu()
+                .open(
+                        this,
+                        player,
+                        AnvilInputMenu.Prompt.configured(
+                                path,
+                                prompt,
+                                prompt,
+                                GuiConfig.component(MenuId.TEAMS_INPUT.item("hint") + ".title")),
+                        new AnvilInputMenu.Callbacks(
+                                () ->
+                                        admitted(player)
+                                                && (team == null
+                                                        || plugin.getTeamManager().getTeam(teamName)
+                                                                == team),
+                                text -> validateInput(purpose, text),
+                                text -> {
+                                    if (purpose == InputPurpose.CREATE_TEAM)
+                                        openColorPicker(player, text);
+                                    else addMember(player, teamName, text, null, false, 0);
+                                },
+                                error -> CoreMessages.sendAdminError(player, error),
+                                () -> {
+                                    if (team == null) openOverview(player, 0);
+                                    else openTeam(player, teamName, 0);
+                                },
+                                () -> {
+                                    if (!player.hasPermission(ChampionshipPermissions.ADMIN)) {
+                                        CoreMessages.sendAdminError(
+                                                player,
+                                                MessageConfig
+                                                        .TEAM_GUI_YOU_NO_LONGER_HAVE_PERMISSION_TO_USE_THE_TEAM_MANAGEMENT_INTERFACE);
+                                    }
+                                }));
     }
 
     @EventHandler
     public void onInventoryClick(@NotNull InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
         Inventory top = event.getView().getTopInventory();
-        InputSession input = inputs.get(player.getUniqueId());
-        if (input != null && input.inventory == top) {
-            event.setCancelled(true);
-            if (!player.hasPermission(ChampionshipPermissions.ADMIN)) {
-                finishInput(player, input);
-                player.closeInventory();
-                CoreMessages.sendAdminError(
-                        player,
-                        MessageConfig
-                                .TEAM_GUI_YOU_NO_LONGER_HAVE_PERMISSION_TO_USE_THE_TEAM_MANAGEMENT_INTERFACE);
-                return;
-            }
-            if (event.getRawSlot() == 2) submitInput(player, input, (AnvilView) event.getView());
-            return;
-        }
         if (!(top.getHolder() instanceof MenuHolder holder)) return;
         event.setCancelled(true);
-        if (!holder.viewer.equals(player.getUniqueId()) || event.getClickedInventory() != top)
-            return;
-        if (!player.hasPermission(ChampionshipPermissions.ADMIN)) {
+        if (holder.owner != this
+                || holder.player != player
+                || Bukkit.getPlayer(player.getUniqueId()) != player
+                || player.getOpenInventory().getTopInventory() != top
+                || event.getClickedInventory() != top) return;
+        if (!admitted(player)) {
             player.closeInventory();
             CoreMessages.sendAdminError(
                     player,
@@ -1111,51 +667,32 @@ public final class TeamManagementMenu implements Listener {
                             .TEAM_GUI_YOU_NO_LONGER_HAVE_PERMISSION_TO_USE_THE_TEAM_MANAGEMENT_INTERFACE);
             return;
         }
+        if (!holder.currentTeam()) {
+            openOverview(player, 0);
+            return;
+        }
+        String selected = holder.targets.get(event.getRawSlot());
+        if (selected != null
+                && !holder.playerTargets.containsKey(event.getRawSlot())
+                && holder.teamSnapshot.containsKey(selected)
+                && plugin.getTeamManager().getTeam(selected) != holder.teamSnapshot.get(selected)) {
+            openOverview(player, 0);
+            return;
+        }
+        if (!holder.targets.containsKey(event.getRawSlot())
+                && !holder.controls.containsKey(event.getRawSlot())) return;
         handleMenuClick(player, holder, event.getRawSlot());
     }
 
     @EventHandler
-    public void onInventoryDrag(@NotNull InventoryDragEvent event) {
-        if (event.getView().getTopInventory().getHolder() instanceof MenuHolder) {
+    public void onInventoryDrag(InventoryDragEvent event) {
+        if (event.getView().getTopInventory().getHolder() instanceof MenuHolder)
             event.setCancelled(true);
-            return;
-        }
-        if (event.getWhoClicked() instanceof Player player) {
-            InputSession input = inputs.get(player.getUniqueId());
-            if (input != null && input.inventory == event.getView().getTopInventory())
-                event.setCancelled(true);
-        }
-    }
-
-    @EventHandler
-    public void onPrepareAnvil(@NotNull PrepareAnvilEvent event) {
-        if (!(event.getView().getPlayer() instanceof Player player)) return;
-        InputSession input = inputs.get(player.getUniqueId());
-        if (input == null || input.inventory != event.getInventory()) return;
-        event.getView().setRepairCost(0);
-        event.getView().setMaximumRepairCost(0);
-    }
-
-    @EventHandler
-    public void onInventoryClose(@NotNull InventoryCloseEvent event) {
-        if (!(event.getPlayer() instanceof Player player)) return;
-        InputSession input = inputs.get(player.getUniqueId());
-        if (input == null || input.inventory != event.getInventory()) return;
-        inputs.remove(player.getUniqueId());
-        input.inventory.clear();
-        if (!plugin.isEnabled()) return;
-        Bukkit.getScheduler()
-                .runTask(
-                        plugin,
-                        () -> {
-                            if (!player.isOnline()) return;
-                            if (input.teamName == null) openOverview(player, 0);
-                            else openTeam(player, input.teamName, 0);
-                        });
     }
 
     private void handleMenuClick(@NotNull Player player, @NotNull MenuHolder holder, int slot) {
-        if (slot == CLOSE_SLOT) {
+        if (holder.layout.controls().containsKey("close")
+                && slot == holder.layout.control("close")) {
             player.closeInventory();
             return;
         }
@@ -1178,25 +715,34 @@ public final class TeamManagementMenu implements Listener {
             openTeam(player, team, 0);
             return;
         }
-        if (slot == CREATE_SLOT) openTextInput(player, InputPurpose.CREATE_TEAM, null);
-        else if (slot == REFRESH_SLOT) openOverview(player, holder.page);
-        else if (slot == PREVIOUS_SLOT && holder.page > 0) openOverview(player, holder.page - 1);
-        else if (slot == NEXT_SLOT) openOverview(player, holder.page + 1);
-        else if (slot == TELEPORT_ALL_SLOT)
+        if (slot == holder.layout.control("create"))
+            openTextInput(player, InputPurpose.CREATE_TEAM, null);
+        else if (slot == holder.layout.control("refresh")) openOverview(player, holder.page);
+        else if (slot == holder.layout.control("previous") && holder.page > 0)
+            openOverview(player, holder.page - 1);
+        else if (slot == holder.layout.control("next")) openOverview(player, holder.page + 1);
+        else if (slot == holder.layout.control("teleport-all"))
             openConfirmation(player, Confirmation.TELEPORT_ALL, null, null, null, holder.page);
-        else if (slot == QUICK_ASSIGN_SLOT) openQuickPlayers(player, 0);
+        else if (slot == holder.layout.control("quick-assign")) openQuickPlayers(player, 0);
     }
 
     private void handleTeamClick(@NotNull Player player, @NotNull MenuHolder holder, int slot) {
         String member = holder.targets.get(slot);
         if (member != null) {
+            UUID uuid = holder.playerTargets.get(slot);
+            if (uuid == null || !holder.team.getMembers().contains(uuid)) {
+                openTeam(player, holder.teamName, holder.page);
+                return;
+            }
             openConfirmation(
-                    player, Confirmation.REMOVE_MEMBER, holder.teamName, member, null, holder.page);
+                    player, Confirmation.REMOVE_MEMBER, holder.teamName, member, uuid, holder.page);
             return;
         }
         ChampionshipTeam team = plugin.getTeamManager().getTeam(holder.teamName);
         boolean full = team == null || team.getMembers().size() >= CCConfig.TEAM_MAX_MEMBERS;
-        if ((slot == ADD_ONLINE_SLOT || slot == ADD_HISTORY_SLOT) && full) {
+        if ((slot == holder.layout.control("add-player")
+                        || slot == holder.layout.control("history"))
+                && full) {
             CoreMessages.sendAdminError(
                     player,
                     team == null
@@ -1205,15 +751,19 @@ public final class TeamManagementMenu implements Listener {
                                     .TEAM_GUI_THE_NUMBER_OF_PEOPLE_IN_THE_TEAM_HAS_REACHED_THE_UPPER_LIMIT
                                     .replace("%limit%", String.valueOf(CCConfig.TEAM_MAX_MEMBERS)));
             openTeam(player, holder.teamName, holder.page);
-        } else if (slot == ADD_ONLINE_SLOT) openAddPlayer(player, holder.teamName, 0);
-        else if (slot == ADD_HISTORY_SLOT) openKnownPlayers(player, holder.teamName, 0);
-        else if (slot == REFRESH_SLOT) openTeam(player, holder.teamName, holder.page);
-        else if (slot == PREVIOUS_SLOT && holder.page > 0)
+        } else if (slot == holder.layout.control("add-player"))
+            openAddPlayer(player, holder.teamName, 0);
+        else if (slot == holder.layout.control("history"))
+            openKnownPlayers(player, holder.teamName, 0);
+        else if (slot == holder.layout.control("refresh"))
+            openTeam(player, holder.teamName, holder.page);
+        else if (slot == holder.layout.control("previous") && holder.page > 0)
             openTeam(player, holder.teamName, holder.page - 1);
-        else if (slot == PREVIOUS_SLOT) openOverview(player, 0);
-        else if (slot == NEXT_SLOT) openTeam(player, holder.teamName, holder.page + 1);
-        else if (slot == TELEPORT_TEAM_SLOT) teleportTeam(player, holder.teamName);
-        else if (slot == DELETE_TEAM_SLOT)
+        else if (slot == holder.layout.control("back") && holder.page == 0) openOverview(player, 0);
+        else if (slot == holder.layout.control("next"))
+            openTeam(player, holder.teamName, holder.page + 1);
+        else if (slot == holder.layout.control("teleport")) teleportTeam(player, holder.teamName);
+        else if (slot == holder.layout.control("delete"))
             openConfirmation(
                     player, Confirmation.DELETE_TEAM, holder.teamName, null, null, holder.page);
     }
@@ -1222,28 +772,38 @@ public final class TeamManagementMenu implements Listener {
             @NotNull Player player, @NotNull MenuHolder holder, int slot) {
         String member = holder.targets.get(slot);
         if (member != null) {
-            addMember(player, holder.teamName, member, true, holder.page);
+            UUID uuid = holder.playerTargets.get(slot);
+            Player selected = uuid == null ? null : Bukkit.getPlayer(uuid);
+            if (selected == null || !selected.getName().equalsIgnoreCase(member)) {
+                openAddPlayer(player, holder.teamName, holder.page);
+                return;
+            }
+            addMember(player, holder.teamName, member, uuid, true, holder.page);
             return;
         }
-        if (slot == BACK_SLOT) openTeam(player, holder.teamName, 0);
-        else if (slot == PREVIOUS_SLOT && holder.page > 0)
+        if (slot == holder.layout.control("back")) openTeam(player, holder.teamName, 0);
+        else if (slot == holder.layout.control("previous") && holder.page > 0)
             openAddPlayer(player, holder.teamName, holder.page - 1);
-        else if (slot == NEXT_SLOT) openAddPlayer(player, holder.teamName, holder.page + 1);
+        else if (slot == holder.layout.control("next"))
+            openAddPlayer(player, holder.teamName, holder.page + 1);
     }
 
     private void handleKnownPlayerClick(
             @NotNull Player player, @NotNull MenuHolder holder, int slot) {
         String member = holder.targets.get(slot);
         if (member != null) {
-            addKnownMember(player, holder.teamName, member, holder.page);
+            UUID uuid = holder.playerTargets.get(slot);
+            if (uuid == null) return;
+            addKnownMember(player, holder.teamName, member, uuid, holder.page);
             return;
         }
-        if (slot == MANUAL_INPUT_SLOT)
+        if (slot == holder.layout.control("manual-input"))
             openTextInput(player, InputPurpose.ADD_MEMBER, holder.teamName);
-        else if (slot == HISTORY_BACK_SLOT) openTeam(player, holder.teamName, 0);
-        else if (slot == PREVIOUS_SLOT && holder.page > 0)
+        else if (slot == holder.layout.control("back")) openTeam(player, holder.teamName, 0);
+        else if (slot == holder.layout.control("previous") && holder.page > 0)
             openKnownPlayers(player, holder.teamName, holder.page - 1);
-        else if (slot == NEXT_SLOT) openKnownPlayers(player, holder.teamName, holder.page + 1);
+        else if (slot == holder.layout.control("next"))
+            openKnownPlayers(player, holder.teamName, holder.page + 1);
     }
 
     private void handleQuickPlayerClick(
@@ -1254,16 +814,34 @@ public final class TeamManagementMenu implements Listener {
             openTargetTeams(player, selectedUuid, selectedName, holder.page);
             return;
         }
-        if (slot == BACK_SLOT) openOverview(player, 0);
-        else if (slot == PREVIOUS_SLOT && holder.page > 0)
+        if (slot == holder.layout.control("back")) openOverview(player, 0);
+        else if (slot == holder.layout.control("previous") && holder.page > 0)
             openQuickPlayers(player, holder.page - 1);
-        else if (slot == NEXT_SLOT) openQuickPlayers(player, holder.page + 1);
+        else if (slot == holder.layout.control("next")) openQuickPlayers(player, holder.page + 1);
     }
 
     private void handleTargetTeamClick(
             @NotNull Player player, @NotNull MenuHolder holder, int slot) {
-        if (slot == BACK_SLOT) {
-            openQuickPlayers(player, holder.page);
+        if (slot == holder.layout.control("back")) {
+            openQuickPlayers(player, holder.returnPage);
+            return;
+        }
+        if (slot == holder.layout.control("previous") && holder.page > 0) {
+            openTargetTeams(
+                    player,
+                    holder.selectedPlayerUuid,
+                    holder.memberName,
+                    holder.returnPage,
+                    holder.page - 1);
+            return;
+        }
+        if (slot == holder.layout.control("next")) {
+            openTargetTeams(
+                    player,
+                    holder.selectedPlayerUuid,
+                    holder.memberName,
+                    holder.returnPage,
+                    holder.page + 1);
             return;
         }
         String targetTeam = holder.targets.get(slot);
@@ -1272,7 +850,11 @@ public final class TeamManagementMenu implements Listener {
                 plugin.getTeamManager().getTeamByPlayer(holder.selectedPlayerUuid);
         if (current == null) {
             moveMember(
-                    player, holder.selectedPlayerUuid, holder.memberName, targetTeam, holder.page);
+                    player,
+                    holder.selectedPlayerUuid,
+                    holder.memberName,
+                    targetTeam,
+                    holder.returnPage);
         } else {
             openConfirmation(
                     player,
@@ -1280,11 +862,19 @@ public final class TeamManagementMenu implements Listener {
                     targetTeam,
                     holder.memberName,
                     holder.selectedPlayerUuid,
-                    holder.page);
+                    holder.returnPage);
         }
     }
 
     private void handleColorClick(@NotNull Player player, @NotNull MenuHolder holder, int slot) {
+        if (slot == holder.layout.control("previous") && holder.page > 0) {
+            openColorPicker(player, holder.teamName, holder.page - 1);
+            return;
+        }
+        if (slot == holder.layout.control("next")) {
+            openColorPicker(player, holder.teamName, holder.page + 1);
+            return;
+        }
         String selectedColor = holder.targets.get(slot);
         if (selectedColor != null) {
             if (plugin.getTeamManager().getTeam(holder.teamName) != null) {
@@ -1306,40 +896,61 @@ public final class TeamManagementMenu implements Listener {
                 openColorPicker(player, holder.teamName);
                 return;
             }
+            if (holder.pending) return;
+            holder.pending = true;
             plugin.getTeamManager()
-                    .addTeam(holder.teamName, selectedColor, COLOR_HEX.get(selectedColor))
-                    .thenAccept(
-                            created -> {
-                                if (!player.isOnline()) return;
-                                if (created) {
-                                    CoreMessages.sendAdminSuccess(
-                                            player,
-                                            MessageConfig.TEAM_GUI_TEAM_CREATED
-                                                    .replace(
-                                                            "%color%",
-                                                            COLOR_HEX.getOrDefault(
-                                                                    selectedColor, ""))
-                                                    .replace("%team%", holder.teamName));
-                                    success(player);
-                                    openTeam(player, holder.teamName, 0);
-                                } else {
-                                    CoreMessages.sendAdminError(
-                                            player,
-                                            MessageConfig
-                                                    .TEAM_GUI_FAILED_TO_CREATE_TEAM_NAME_OR_COLOR_MAY_ALREADY_BE_TAKEN);
-                                    openOverview(player, 0);
-                                }
-                            });
-        } else if (slot == 31) openOverview(player, 0);
+                    .addTeam(holder.teamName, selectedColor, TeamMenuItems.colorHex(selectedColor))
+                    .thenApply(
+                            created ->
+                                    new TeamCreation(
+                                            created,
+                                            created
+                                                    ? plugin.getTeamManager()
+                                                            .getTeam(holder.teamName)
+                                                    : null))
+                    .whenComplete(
+                            guarded(
+                                    player,
+                                    () -> true,
+                                    new TeamCreation(false, null),
+                                    outcome -> {
+                                        if (outcome.created()
+                                                && (outcome.team() == null
+                                                        || plugin.getTeamManager()
+                                                                        .getTeam(holder.teamName)
+                                                                != outcome.team())) return;
+                                        boolean created = outcome.created();
+
+                                        if (created) {
+                                            CoreMessages.sendAdminSuccess(
+                                                    player,
+                                                    MessageConfig.TEAM_GUI_TEAM_CREATED
+                                                            .replace(
+                                                                    "%color%",
+                                                                    TeamMenuItems.colorHex(
+                                                                            selectedColor))
+                                                            .replace("%team%", holder.teamName));
+                                            success(player);
+                                            openTeam(player, holder.teamName, 0);
+                                        } else {
+                                            CoreMessages.sendAdminError(
+                                                    player,
+                                                    MessageConfig
+                                                            .TEAM_GUI_FAILED_TO_CREATE_TEAM_NAME_OR_COLOR_MAY_ALREADY_BE_TAKEN);
+                                            openOverview(player, 0);
+                                        }
+                                    }));
+        } else if (slot == holder.layout.control("back")) openOverview(player, 0);
     }
 
     private void handleConfirmationClick(
             @NotNull Player player, @NotNull MenuHolder holder, int slot) {
-        if (slot == CANCEL_SLOT) {
+        if (slot == holder.layout.control("cancel")) {
             returnFromConfirmation(player, holder);
             return;
         }
-        if (slot != CONFIRM_SLOT) return;
+        if (slot != holder.layout.control("confirm") || holder.pending) return;
+        holder.pending = true;
         switch (holder.confirmation) {
             case DELETE_TEAM -> {
                 if (plugin.getTeamManager().getTeam(holder.teamName) == null) {
@@ -1350,50 +961,71 @@ public final class TeamManagementMenu implements Listener {
                 } else {
                     plugin.getTeamManager()
                             .deleteTeam(holder.teamName)
-                            .thenAccept(
-                                    result -> {
-                                        if (!player.isOnline()) return;
-                                        if (result
-                                                == ink.ziip.championshipscore.api.team.TeamManager
-                                                        .TeamDeletionResult.DELETED) {
-                                            CoreMessages.sendAdminSuccess(
-                                                    player,
-                                                    MessageConfig.TEAM_GUI_TEAM_DELETED.replace(
-                                                            "%team%", holder.teamName));
-                                            success(player);
-                                        } else {
-                                            CoreMessages.sendAdminError(
-                                                    player,
-                                                    MessageConfig
-                                                            .TEAM_GUI_UNABLE_TO_DELETE_TEAM_TEAM_MAY_BE_IN_GAME);
-                                        }
-                                        openOverview(player, 0);
-                                    });
+                            .whenComplete(
+                                    guarded(
+                                            player,
+                                            () ->
+                                                    plugin.getTeamManager().getTeam(holder.teamName)
+                                                                    == null
+                                                            || plugin.getTeamManager()
+                                                                            .getTeam(
+                                                                                    holder.teamName)
+                                                                    == holder.team,
+                                            TeamManager.TeamDeletionResult.FAILED,
+                                            result -> {
+                                                if (result
+                                                        == ink.ziip.championshipscore.api.team
+                                                                .TeamManager.TeamDeletionResult
+                                                                .DELETED) {
+                                                    CoreMessages.sendAdminSuccess(
+                                                            player,
+                                                            MessageConfig.TEAM_GUI_TEAM_DELETED
+                                                                    .replace(
+                                                                            "%team%",
+                                                                            holder.teamName));
+                                                    success(player);
+                                                } else {
+                                                    CoreMessages.sendAdminError(
+                                                            player,
+                                                            MessageConfig
+                                                                    .TEAM_GUI_UNABLE_TO_DELETE_TEAM_TEAM_MAY_BE_IN_GAME);
+                                                }
+                                                openOverview(player, 0);
+                                            }));
                     return;
                 }
                 openOverview(player, 0);
             }
             case REMOVE_MEMBER -> {
+                if (holder.selectedPlayerUuid == null) {
+                    openTeam(player, holder.teamName, holder.returnPage);
+                    return;
+                }
                 plugin.getTeamManager()
-                        .deleteTeamMember(holder.memberName, holder.teamName)
-                        .thenAccept(
-                                deleted -> {
-                                    if (!player.isOnline()) return;
-                                    if (deleted) {
-                                        CoreMessages.sendAdminSuccess(
-                                                player,
-                                                MessageConfig.TEAM_GUI_MEMBER_REMOVED
-                                                        .replace("%team%", holder.teamName)
-                                                        .replace("%player%", holder.memberName));
-                                        success(player);
-                                    } else {
-                                        CoreMessages.sendAdminError(
-                                                player,
-                                                MessageConfig
-                                                        .TEAM_GUI_REMOVAL_FAILED_TEAM_OR_MEMBER_STATUS_MAY_HAVE_CHANGED);
-                                    }
-                                    openTeam(player, holder.teamName, holder.page);
-                                });
+                        .deleteTeamMember(holder.selectedPlayerUuid, holder.team)
+                        .whenComplete(
+                                guarded(
+                                        player,
+                                        holder::currentTeam,
+                                        false,
+                                        deleted -> {
+                                            if (deleted) {
+                                                CoreMessages.sendAdminSuccess(
+                                                        player,
+                                                        MessageConfig.TEAM_GUI_MEMBER_REMOVED
+                                                                .replace("%team%", holder.teamName)
+                                                                .replace(
+                                                                        "%player%",
+                                                                        holder.memberName));
+                                                success(player);
+                                            } else {
+                                                CoreMessages.sendAdminError(
+                                                        player,
+                                                        MessageConfig
+                                                                .TEAM_GUI_REMOVAL_FAILED_TEAM_OR_MEMBER_STATUS_MAY_HAVE_CHANGED);
+                                            }
+                                            openTeam(player, holder.teamName, holder.returnPage);
+                                        }));
                 return;
             }
             case TELEPORT_ALL -> {
@@ -1407,7 +1039,7 @@ public final class TeamManagementMenu implements Listener {
                         MessageConfig.TEAM_GUI_ALL_TEAMS_TELEPORTED.replace(
                                 "%count%", String.valueOf(players)));
                 success(player);
-                openOverview(player, holder.page);
+                openOverview(player, holder.returnPage);
             }
             case MOVE_MEMBER ->
                     moveMember(
@@ -1415,62 +1047,36 @@ public final class TeamManagementMenu implements Listener {
                             holder.selectedPlayerUuid,
                             holder.memberName,
                             holder.teamName,
-                            holder.page);
+                            holder.returnPage);
         }
     }
 
-    private void submitInput(
-            @NotNull Player player, @NotNull InputSession input, @NotNull AnvilView view) {
-        String renameText = view.getRenameText();
-        String text = renameText == null ? "" : renameText.trim();
-        if (input.purpose == InputPurpose.CREATE_TEAM) {
-            if (text.isBlank()) {
-                CoreMessages.sendAdminError(
-                        player, MessageConfig.TEAM_GUI_TEAM_NAME_CANNOT_BE_EMPTY);
-                return;
-            }
+    private String validateInput(InputPurpose purpose, String text) {
+        if (purpose == InputPurpose.CREATE_TEAM) {
+            if (text.isBlank()) return MessageConfig.TEAM_GUI_TEAM_NAME_CANNOT_BE_EMPTY;
             if (text.length() > 64 || text.chars().anyMatch(Character::isISOControl)) {
-                CoreMessages.sendAdminError(
-                        player,
-                        MessageConfig
-                                .TEAM_GUI_TEAM_NAMES_CANNOT_EXCEED_64_CHARACTERS_AND_CANNOT_CONTAIN_CONTROL_CHARACTERS);
-                return;
+                return MessageConfig
+                        .TEAM_GUI_TEAM_NAMES_CANNOT_EXCEED_64_CHARACTERS_AND_CANNOT_CONTAIN_CONTROL_CHARACTERS;
             }
-            boolean exists =
-                    plugin.getTeamManager().getTeamList().stream()
-                            .anyMatch(team -> team.getName().equalsIgnoreCase(text));
-            if (exists) {
-                CoreMessages.sendAdminError(
-                        player,
-                        MessageConfig.TEAM_GUI_TEAM_NAME_ALREADY_EXISTS.replace("%team%", text));
-                return;
+            if (plugin.getTeamManager().getTeamList().stream()
+                    .anyMatch(team -> team.getName().equalsIgnoreCase(text))) {
+                return MessageConfig.TEAM_GUI_TEAM_NAME_ALREADY_EXISTS.replace("%team%", text);
             }
-            finishInput(player, input);
-            openColorPicker(player, text);
-            return;
+            return null;
         }
-
-        if (!text.matches("[A-Za-z0-9_]{3,16}")) {
-            CoreMessages.sendAdminError(
-                    player, MessageConfig.TEAM_GUI_PLEASE_ENTER_A_VALID_MINECRAFT_PLAYER_NAME);
-            return;
-        }
-        String teamName = input.teamName;
-        finishInput(player, input);
-        addMember(player, teamName, text, false, 0);
-    }
-
-    private void finishInput(@NotNull Player player, @NotNull InputSession input) {
-        inputs.remove(player.getUniqueId(), input);
-        input.inventory.clear();
+        return text.matches("[A-Za-z0-9_]{3,16}")
+                ? null
+                : MessageConfig.TEAM_GUI_PLEASE_ENTER_A_VALID_MINECRAFT_PLAYER_NAME;
     }
 
     private void addMember(
             @NotNull Player admin,
             @NotNull String teamName,
             @NotNull String memberName,
+            @Nullable UUID selectedUuid,
             boolean keepSelectorOpen,
             int selectorPage) {
+        if (!admitted(admin)) return;
         ChampionshipTeam team = plugin.getTeamManager().getTeam(teamName);
         if (team == null) {
             CoreMessages.sendAdminError(
@@ -1486,11 +1092,16 @@ public final class TeamManagementMenu implements Listener {
                             .TEAM_GUI_THE_NUMBER_OF_PEOPLE_IN_THE_TEAM_HAS_REACHED_THE_UPPER_LIMIT
                             .replace("%limit%", String.valueOf(CCConfig.TEAM_MAX_MEMBERS)));
         } else {
-            plugin.getTeamManager()
-                    .addTeamMember(memberName, team)
-                    .thenAccept(
+            var operation =
+                    selectedUuid == null
+                            ? plugin.getTeamManager().addTeamMember(memberName, team)
+                            : plugin.getTeamManager().addTeamMember(selectedUuid, memberName, team);
+            operation.whenComplete(
+                    guarded(
+                            admin,
+                            () -> plugin.getTeamManager().getTeam(teamName) == team,
+                            TeamManager.MemberAddResult.DATABASE_ERROR,
                             result -> {
-                                if (!admin.isOnline()) return;
                                 boolean added = result == TeamManager.MemberAddResult.ADDED;
                                 if (added) {
                                     CoreMessages.sendAdminSuccess(
@@ -1508,7 +1119,7 @@ public final class TeamManagementMenu implements Listener {
                                         && team.getMembers().size() < CCConfig.TEAM_MAX_MEMBERS)
                                     openAddPlayer(admin, teamName, added ? selectorPage : 0);
                                 else openTeam(admin, teamName, 0);
-                            });
+                            }));
             return;
         }
         openTeam(admin, teamName, 0);
@@ -1518,7 +1129,9 @@ public final class TeamManagementMenu implements Listener {
             @NotNull Player admin,
             @NotNull String teamName,
             @NotNull String memberName,
+            @NotNull UUID selectedUuid,
             int selectorPage) {
+        if (!admitted(admin)) return;
         ChampionshipTeam team = plugin.getTeamManager().getTeam(teamName);
         if (team == null) {
             openOverview(admin, 0);
@@ -1533,28 +1146,32 @@ public final class TeamManagementMenu implements Listener {
             openTeam(admin, teamName, 0);
         } else {
             plugin.getTeamManager()
-                    .addTeamMember(memberName, team)
-                    .thenAccept(
-                            result -> {
-                                if (!admin.isOnline()) return;
-                                boolean added = result == TeamManager.MemberAddResult.ADDED;
-                                if (added) {
-                                    CoreMessages.sendAdminSuccess(
-                                            admin,
-                                            MessageConfig.TEAM_GUI_OFFLINE_PLAYER_JOINED
-                                                    .replace("%player%", memberName)
-                                                    .replace("%color%", team.getColorCode())
-                                                    .replace("%team%", team.getName()));
-                                    success(admin);
-                                    if (team.getMembers().size() < CCConfig.TEAM_MAX_MEMBERS)
-                                        openKnownPlayers(admin, teamName, selectorPage);
-                                    else openTeam(admin, teamName, 0);
-                                } else {
-                                    CoreMessages.sendAdminError(
-                                            admin, memberAddFailureText(result));
-                                    openKnownPlayers(admin, teamName, selectorPage);
-                                }
-                            });
+                    .addTeamMember(selectedUuid, memberName, team)
+                    .whenComplete(
+                            guarded(
+                                    admin,
+                                    () -> plugin.getTeamManager().getTeam(teamName) == team,
+                                    TeamManager.MemberAddResult.DATABASE_ERROR,
+                                    result -> {
+                                        boolean added = result == TeamManager.MemberAddResult.ADDED;
+                                        if (added) {
+                                            CoreMessages.sendAdminSuccess(
+                                                    admin,
+                                                    MessageConfig.TEAM_GUI_OFFLINE_PLAYER_JOINED
+                                                            .replace("%player%", memberName)
+                                                            .replace("%color%", team.getColorCode())
+                                                            .replace("%team%", team.getName()));
+                                            success(admin);
+                                            if (team.getMembers().size()
+                                                    < CCConfig.TEAM_MAX_MEMBERS)
+                                                openKnownPlayers(admin, teamName, selectorPage);
+                                            else openTeam(admin, teamName, 0);
+                                        } else {
+                                            CoreMessages.sendAdminError(
+                                                    admin, memberAddFailureText(result));
+                                            openKnownPlayers(admin, teamName, selectorPage);
+                                        }
+                                    }));
         }
     }
 
@@ -1580,6 +1197,7 @@ public final class TeamManagementMenu implements Listener {
             @NotNull String memberName,
             @NotNull String targetTeamName,
             int returnPage) {
+        if (!admitted(admin)) return;
         ChampionshipTeam target = plugin.getTeamManager().getTeam(targetTeamName);
         if (target == null) {
             CoreMessages.sendAdminError(
@@ -1591,51 +1209,58 @@ public final class TeamManagementMenu implements Listener {
         }
         plugin.getTeamManager()
                 .moveTeamMember(uuid, memberName, target)
-                .thenAccept(
-                        result -> {
-                            if (!admin.isOnline()) return;
-                            switch (result) {
-                                case SUCCESS -> {
-                                    CoreMessages.sendAdminSuccess(
-                                            admin,
-                                            MessageConfig.TEAM_GUI_PLAYER_MOVED
-                                                    .replace("%player%", memberName)
-                                                    .replace("%color%", target.getColorCode())
-                                                    .replace("%team%", target.getName()));
-                                    success(admin);
-                                    openQuickPlayers(admin, returnPage);
-                                }
-                                case SAME_TEAM -> {
-                                    CoreMessages.sendAdminError(
-                                            admin,
-                                            MessageConfig
-                                                    .TEAM_GUI_THE_PLAYER_IS_ALREADY_ON_THE_TEAM);
-                                    openTargetTeams(admin, uuid, memberName, returnPage);
-                                }
-                                case TARGET_FULL -> {
-                                    CoreMessages.sendAdminError(
-                                            admin, MessageConfig.TEAM_GUI_THE_TARGET_TEAM_IS_FULL);
-                                    openTargetTeams(admin, uuid, memberName, returnPage);
-                                }
-                                case TEAM_ACTIVE -> {
-                                    CoreMessages.sendAdminError(
-                                            admin,
-                                            MessageConfig
-                                                    .TEAM_GUI_THE_PLAYER_S_CURRENT_TEAM_OR_TARGET_TEAM_IS_CURRENTLY_IN_THE_GAME_CANNOT_CHANGE_TEAMS);
-                                    openTargetTeams(admin, uuid, memberName, returnPage);
-                                }
-                                case INVALID_PLAYER, FAILED -> {
-                                    CoreMessages.sendAdminError(
-                                            admin,
-                                            MessageConfig
-                                                    .TEAM_GUI_TEAM_TRANSFER_FAILED_DATABASE_OR_PLAYER_STATUS_MAY_HAVE_CHANGED);
-                                    openTargetTeams(admin, uuid, memberName, returnPage);
-                                }
-                            }
-                        });
+                .whenComplete(
+                        guarded(
+                                admin,
+                                () -> plugin.getTeamManager().getTeam(targetTeamName) == target,
+                                TeamManager.MemberMoveResult.FAILED,
+                                result -> {
+                                    switch (result) {
+                                        case SUCCESS -> {
+                                            CoreMessages.sendAdminSuccess(
+                                                    admin,
+                                                    MessageConfig.TEAM_GUI_PLAYER_MOVED
+                                                            .replace("%player%", memberName)
+                                                            .replace(
+                                                                    "%color%",
+                                                                    target.getColorCode())
+                                                            .replace("%team%", target.getName()));
+                                            success(admin);
+                                            openQuickPlayers(admin, returnPage);
+                                        }
+                                        case SAME_TEAM -> {
+                                            CoreMessages.sendAdminError(
+                                                    admin,
+                                                    MessageConfig
+                                                            .TEAM_GUI_THE_PLAYER_IS_ALREADY_ON_THE_TEAM);
+                                            openTargetTeams(admin, uuid, memberName, returnPage);
+                                        }
+                                        case TARGET_FULL -> {
+                                            CoreMessages.sendAdminError(
+                                                    admin,
+                                                    MessageConfig.TEAM_GUI_THE_TARGET_TEAM_IS_FULL);
+                                            openTargetTeams(admin, uuid, memberName, returnPage);
+                                        }
+                                        case TEAM_ACTIVE -> {
+                                            CoreMessages.sendAdminError(
+                                                    admin,
+                                                    MessageConfig
+                                                            .TEAM_GUI_THE_PLAYER_S_CURRENT_TEAM_OR_TARGET_TEAM_IS_CURRENTLY_IN_THE_GAME_CANNOT_CHANGE_TEAMS);
+                                            openTargetTeams(admin, uuid, memberName, returnPage);
+                                        }
+                                        case INVALID_PLAYER, FAILED -> {
+                                            CoreMessages.sendAdminError(
+                                                    admin,
+                                                    MessageConfig
+                                                            .TEAM_GUI_TEAM_TRANSFER_FAILED_DATABASE_OR_PLAYER_STATUS_MAY_HAVE_CHANGED);
+                                            openTargetTeams(admin, uuid, memberName, returnPage);
+                                        }
+                                    }
+                                }));
     }
 
     private void teleportTeam(@NotNull Player admin, @NotNull String teamName) {
+        if (!admitted(admin)) return;
         ChampionshipTeam team = plugin.getTeamManager().getTeam(teamName);
         if (team == null) {
             openOverview(admin, 0);
@@ -1654,10 +1279,12 @@ public final class TeamManagementMenu implements Listener {
     }
 
     private void returnFromConfirmation(@NotNull Player player, @NotNull MenuHolder holder) {
-        if (holder.confirmation == Confirmation.TELEPORT_ALL) openOverview(player, holder.page);
+        if (holder.confirmation == Confirmation.TELEPORT_ALL)
+            openOverview(player, holder.returnPage);
         else if (holder.confirmation == Confirmation.MOVE_MEMBER)
-            openTargetTeams(player, holder.selectedPlayerUuid, holder.memberName, holder.page);
-        else openTeam(player, holder.teamName, holder.page);
+            openTargetTeams(
+                    player, holder.selectedPlayerUuid, holder.memberName, holder.returnPage);
+        else openTeam(player, holder.teamName, holder.returnPage);
     }
 
     private List<ChampionshipTeam> sortedTeams() {
@@ -1683,189 +1310,8 @@ public final class TeamManagementMenu implements Listener {
                 .toList();
     }
 
-    private ItemStack teamItem(@NotNull ChampionshipTeam team) {
-        int online = team.getOnlinePlayers().size();
-        int members = team.getMembers().size();
-        List<Component> lore = new ArrayList<>();
-        lore.add(
-                LegacyText.component(
-                        GuiConfig.line(
-                                "teams.menus.overview.items.team.lore",
-                                0,
-                                Map.of("online", online, "members", members))));
-        lore.add(
-                LegacyText.component(
-                        GuiConfig.line(
-                                "teams.menus.overview.items.team.lore",
-                                1,
-                                Map.of(
-                                        "id",
-                                        team.getId(),
-                                        "color",
-                                        COLOR_LABELS.getOrDefault(
-                                                team.getColorName().toLowerCase(Locale.ROOT),
-                                                team.getColorName())))));
-        lore.add(Component.empty());
-        lore.add(
-                LegacyText.component(
-                        loreLine("teams.menus.overview.items.team", 2), NamedTextColor.YELLOW));
-        return item(
-                material(team.getColorName() + "_WOOL", Material.WHITE_WOOL),
-                LegacyText.component(team.getName(), teamColor(team)).decorate(TextDecoration.BOLD),
-                lore,
-                false);
-    }
-
-    private ItemStack memberItem(@NotNull MemberView member) {
-        NamedTextColor status = member.online ? NamedTextColor.GREEN : NamedTextColor.GRAY;
-        return playerHead(
-                member.uuid,
-                member.name,
-                LegacyText.component(member.name, status).decorate(TextDecoration.BOLD),
-                List.of(
-                        LegacyText.component(
-                                member.online
-                                        ? loreLine(
-                                                "teams.menus.members.items.member.states.online", 0)
-                                        : loreLine(
-                                                "teams.menus.members.items.member.states.offline",
-                                                0),
-                                status),
-                        Component.empty(),
-                        LegacyText.component(
-                                loreLine("teams.menus.members.items.member.states.online", 0),
-                                NamedTextColor.RED)));
-    }
-
-    private static ItemStack playerHead(
-            @NotNull UUID uuid,
-            @NotNull String profileName,
-            @NotNull Component name,
-            @NotNull List<Component> lore) {
-        ItemStack stack =
-                ink.ziip.championshipscore.api.gui.GuiMenu.playerHead(uuid, name, lore, false);
-        if (stack.getItemMeta() instanceof SkullMeta skull) {
-            skull.setPlayerProfile(Bukkit.createProfile(uuid, profileName));
-            stack.setItemMeta(skull);
-        }
-        return stack;
-    }
-
-    private static void fillFooter(@NotNull Inventory inventory) {
-        ItemStack border =
-                item(Material.BLACK_STAINED_GLASS_PANE, Component.text(" "), List.of(), false);
-        for (int slot = 36; slot < inventory.getSize(); slot++) inventory.setItem(slot, border);
-    }
-
-    private static void fillFooter(@NotNull Inventory inventory, @NotNull String menuPath) {
-        ItemStack border =
-                configured(
-                        menuPath,
-                        "border",
-                        null,
-                        Map.of(),
-                        item(
-                                Material.BLACK_STAINED_GLASS_PANE,
-                                Component.text(" "),
-                                List.of(),
-                                false));
-        for (int slot :
-                GuiConfig.slots(
-                        menuPath + ".layout.border",
-                        List.of(
-                                36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52,
-                                53)))
-            if (slot >= 0 && slot < inventory.getSize()) inventory.setItem(slot, border);
-    }
-
     private static List<Integer> contentSlots() {
-        List<Integer> slots = new ArrayList<>(PAGE_SIZE);
-        for (int slot = 0; slot < PAGE_SIZE; slot++) slots.add(slot);
-        return slots;
-    }
-
-    private static ItemStack configured(
-            @NotNull String menuPath,
-            @NotNull String item,
-            @Nullable String state,
-            @NotNull Map<String, ?> placeholders,
-            @NotNull ItemStack fallback) {
-        return ConfiguredGui.item(menuPath + ".items." + item, state, placeholders, fallback);
-    }
-
-    private static String loreLine(@NotNull String path, int index) {
-        List<String> lines = GuiConfig.lines(path);
-        return index >= 0 && index < lines.size() ? lines.get(index) : "";
-    }
-
-    private static ItemStack pageItem(int page, int pages, int count) {
-        Map<String, Object> placeholders = Map.of("page", page + 1, "pages", pages, "count", count);
-        return ConfiguredGui.item(
-                "buttons.page",
-                null,
-                placeholders,
-                item(
-                        Material.PAPER,
-                        Component.text(" ", NamedTextColor.AQUA),
-                        List.of(Component.text(" ", NamedTextColor.GRAY)),
-                        false));
-    }
-
-    private static ItemStack navigationItem(@NotNull String label) {
-        return item(
-                Material.ARROW,
-                LegacyText.component(label, NamedTextColor.WHITE),
-                List.of(),
-                false);
-    }
-
-    private static ItemStack closeItem() {
-        return item(
-                Material.BARRIER,
-                LegacyText.component(GuiConfig.text("buttons.close.title"), NamedTextColor.RED),
-                List.of(),
-                false);
-    }
-
-    private static ItemStack item(
-            @NotNull Material material,
-            @NotNull Component name,
-            @NotNull List<Component> lore,
-            boolean glint) {
-        return ink.ziip.championshipscore.api.gui.GuiMenu.item(material, name, lore, glint);
-    }
-
-    private static Component title(@NotNull String text, @NotNull TextColor color) {
-        return LegacyText.component(text, color)
-                .decorate(TextDecoration.BOLD)
-                .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE);
-    }
-
-    private static Component teamTitle(@NotNull ChampionshipTeam team, @NotNull String suffix) {
-        return LegacyText.component(team.getName(), teamColor(team))
-                .append(LegacyText.component(GuiText.SEPARATOR, NamedTextColor.WHITE))
-                .append(LegacyText.component(suffix, NamedTextColor.WHITE))
-                .decorate(TextDecoration.BOLD)
-                .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE);
-    }
-
-    private static TextColor teamColor(@NotNull ChampionshipTeam team) {
-        TextColor hex = TextColor.fromHexString(team.getColorCode());
-        return hex == null ? NativeTeamService.resolveNamedColor(team.getColorName()) : hex;
-    }
-
-    private static TextColor color(@NotNull String colorName) {
-        TextColor hex = TextColor.fromHexString(COLOR_HEX.get(colorName));
-        return hex == null ? NamedTextColor.WHITE : hex;
-    }
-
-    private static Material material(@NotNull String name, @NotNull Material fallback) {
-        Material material = Material.matchMaterial(name.toUpperCase(Locale.ROOT));
-        return material == null ? fallback : material;
-    }
-
-    private static int pageCount(int entries) {
-        return Math.max(1, (entries + PAGE_SIZE - 1) / PAGE_SIZE);
+        return MenuLayout.range(0, PAGE_SIZE);
     }
 
     private static void click(@NotNull Player player) {
@@ -1876,92 +1322,102 @@ public final class TeamManagementMenu implements Listener {
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.65F, 1.25F);
     }
 
-    private static Map<String, String> createColorHex() {
-        Map<String, String> colors = new LinkedHashMap<>();
-        colors.put("white", "#F9FFFE");
-        colors.put("orange", "#F9801D");
-        colors.put("magenta", "#C74EBD");
-        colors.put("light_blue", "#3AB3DA");
-        colors.put("yellow", "#FED83D");
-        colors.put("lime", "#80C71F");
-        colors.put("pink", "#F38BAA");
-        colors.put("gray", "#474F52");
-        colors.put("light_gray", "#9D9D97");
-        colors.put("cyan", "#169C9C");
-        colors.put("purple", "#8932B8");
-        colors.put("blue", "#3C44AA");
-        colors.put("brown", "#835432");
-        colors.put("green", "#5E7C16");
-        colors.put("red", "#B02E26");
-        colors.put("black", "#1D1D21");
-        return Map.copyOf(colors);
+    enum Screen {
+        OVERVIEW(MenuId.TEAMS_OVERVIEW),
+        TEAM(MenuId.TEAMS_MEMBERS),
+        ADD_PLAYER(MenuId.TEAMS_ADD_PLAYER),
+        KNOWN_PLAYER(MenuId.TEAMS_KNOWN_PLAYER),
+        QUICK_PLAYER(MenuId.TEAMS_QUICK_ASSIGN),
+        TARGET_TEAM(MenuId.TEAMS_TARGET_TEAM),
+        COLOR(MenuId.TEAMS_COLOR_PICKER),
+        CONFIRM(MenuId.TEAMS_CONFIRM);
+
+        final MenuId id;
+
+        Screen(MenuId id) {
+            this.id = id;
+        }
     }
 
-    private static Map<String, String> createColorLabels() {
-        return Map.ofEntries(
-                Map.entry(
-                        "white",
-                        GuiConfig.text("teams.menus.color-picker.items.color.states.white.title")),
-                Map.entry(
-                        "orange",
-                        GuiConfig.text("teams.menus.color-picker.items.color.states.orange.title")),
-                Map.entry(
-                        "magenta",
-                        GuiConfig.text(
-                                "teams.menus.color-picker.items.color.states.magenta.title")),
-                Map.entry(
-                        "light_blue",
-                        GuiConfig.text(
-                                "teams.menus.color-picker.items.color.states.light-blue.title")),
-                Map.entry(
-                        "yellow",
-                        GuiConfig.text("teams.menus.color-picker.items.color.states.yellow.title")),
-                Map.entry(
-                        "lime",
-                        GuiConfig.text(
-                                "teams.menus.color-picker.items.color.states.yellow-green.title")),
-                Map.entry(
-                        "pink",
-                        GuiConfig.text("teams.menus.color-picker.items.color.states.pink.title")),
-                Map.entry(
-                        "gray",
-                        GuiConfig.text("teams.menus.color-picker.items.color.states.gray.title")),
-                Map.entry(
-                        "light_gray",
-                        GuiConfig.text(
-                                "teams.menus.color-picker.items.color.states.light-gray.title")),
-                Map.entry(
-                        "cyan",
-                        GuiConfig.text("teams.menus.color-picker.items.color.states.cyan.title")),
-                Map.entry(
-                        "purple",
-                        GuiConfig.text("teams.menus.color-picker.items.color.states.purple.title")),
-                Map.entry(
-                        "blue",
-                        GuiConfig.text("teams.menus.color-picker.items.color.states.blue.title")),
-                Map.entry(
-                        "brown",
-                        GuiConfig.text("teams.menus.color-picker.items.color.states.brown.title")),
-                Map.entry(
-                        "green",
-                        GuiConfig.text("teams.menus.color-picker.items.color.states.green.title")),
-                Map.entry(
-                        "red",
-                        GuiConfig.text("teams.menus.color-picker.items.color.states.red.title")),
-                Map.entry(
-                        "black",
-                        GuiConfig.text("teams.menus.color-picker.items.color.states.black.title")));
-    }
-
-    private enum Screen {
-        OVERVIEW,
-        TEAM,
-        ADD_PLAYER,
-        KNOWN_PLAYER,
-        QUICK_PLAYER,
-        TARGET_TEAM,
-        COLOR,
-        CONFIRM
+    static MenuLayout layout(Screen screen) {
+        int minimumSize = screen == Screen.COLOR ? 36 : screen == Screen.CONFIRM ? 27 : 54;
+        List<Integer> content =
+                screen == Screen.COLOR
+                        ? COLOR_SLOTS
+                        : screen == Screen.CONFIRM ? List.of() : contentSlots();
+        int size = GuiConfig.menu(screen.id.path(), minimumSize, "", content).size();
+        Map<String, Integer> controls =
+                switch (screen) {
+                    case OVERVIEW ->
+                            Map.ofEntries(
+                                    Map.entry("create", 45),
+                                    Map.entry("quick-assign", 46),
+                                    Map.entry("previous", 47),
+                                    Map.entry("refresh", 48),
+                                    Map.entry("page", 49),
+                                    Map.entry("next", 50),
+                                    Map.entry("teleport-all", 52),
+                                    Map.entry("close", 53));
+                    case TEAM ->
+                            Map.ofEntries(
+                                    Map.entry("add-player", 45),
+                                    Map.entry("history", 46),
+                                    Map.entry("previous", 47),
+                                    Map.entry("back", 47),
+                                    Map.entry("refresh", 48),
+                                    Map.entry("page", 49),
+                                    Map.entry("next", 50),
+                                    Map.entry("teleport", 51),
+                                    Map.entry("delete", 52),
+                                    Map.entry("close", 53));
+                    case ADD_PLAYER ->
+                            Map.ofEntries(
+                                    Map.entry("back", 45),
+                                    Map.entry("previous", 47),
+                                    Map.entry("page", 49),
+                                    Map.entry("next", 50),
+                                    Map.entry("close", 53));
+                    case KNOWN_PLAYER ->
+                            Map.ofEntries(
+                                    Map.entry("manual-input", 45),
+                                    Map.entry("back", 46),
+                                    Map.entry("previous", 47),
+                                    Map.entry("page", 49),
+                                    Map.entry("next", 50),
+                                    Map.entry("close", 53));
+                    case QUICK_PLAYER ->
+                            Map.ofEntries(
+                                    Map.entry("back", 45),
+                                    Map.entry("previous", 47),
+                                    Map.entry("page", 49),
+                                    Map.entry("next", 50),
+                                    Map.entry("close", 53));
+                    case TARGET_TEAM ->
+                            Map.ofEntries(
+                                    Map.entry("back", 45),
+                                    Map.entry("previous", 47),
+                                    Map.entry("selected-player", 49),
+                                    Map.entry("next", 50),
+                                    Map.entry("close", 53));
+                    case COLOR ->
+                            Map.ofEntries(
+                                    Map.entry("previous", 27),
+                                    Map.entry("back", 31),
+                                    Map.entry("next", 35));
+                    case CONFIRM ->
+                            Map.ofEntries(
+                                    Map.entry("confirm", 11),
+                                    Map.entry("action", 13),
+                                    Map.entry("cancel", 15));
+                };
+        return MenuLayout.load(
+                screen.id.path(),
+                size,
+                content,
+                screen == Screen.COLOR || screen == Screen.CONFIRM
+                        ? List.of()
+                        : MenuLayout.range(36, size),
+                controls);
     }
 
     private enum Confirmation {
@@ -1978,13 +1434,21 @@ public final class TeamManagementMenu implements Listener {
 
     private record MemberView(UUID uuid, String name, boolean online) {}
 
-    private record InputSession(InputPurpose purpose, String teamName, AnvilInventory inventory) {}
-
-    private static final class MenuHolder implements MenuInventory {
-        private final UUID viewer;
+    private final class MenuHolder implements MenuInventory {
+        private final TeamManagementMenu owner = TeamManagementMenu.this;
+        private final Player player;
+        private final ChampionshipTeam team;
+        private final Map<String, ChampionshipTeam> teamSnapshot = new HashMap<>();
+        private boolean pending;
         private final Screen screen;
         private final String teamName;
-        private final int page;
+        private int page;
+        private int pageCount;
+        private int count;
+        private final int emptySlot;
+        private final Map<Integer, String> controls = new HashMap<>();
+        private final MenuLayout layout;
+        private int returnPage;
         private final Map<Integer, String> targets = new HashMap<>();
         private final Map<Integer, UUID> playerTargets = new HashMap<>();
         private Inventory inventory;
@@ -1992,11 +1456,28 @@ public final class TeamManagementMenu implements Listener {
         private String memberName;
         private UUID selectedPlayerUuid;
 
-        private MenuHolder(UUID viewer, Screen screen, String teamName, int page) {
-            this.viewer = viewer;
+        private MenuHolder(Player player, Screen screen, String teamName, int page) {
+            this.player = player;
+            this.team =
+                    screen == Screen.COLOR || teamName == null
+                            ? null
+                            : plugin.getTeamManager().getTeam(teamName);
+            for (ChampionshipTeam entry : plugin.getTeamManager().getTeamList())
+                teamSnapshot.put(entry.getName(), entry);
             this.screen = screen;
             this.teamName = teamName;
             this.page = page;
+            this.layout = layout(screen);
+            this.emptySlot =
+                    GuiConfig.slot(
+                            screen.id.layout("overlay.empty"),
+                            GuiConfig.slot(screen.id.item("empty") + ".slot", 22));
+        }
+
+        private boolean currentTeam() {
+            return teamName == null
+                    || screen == Screen.COLOR
+                    || (team != null && plugin.getTeamManager().getTeam(teamName) == team);
         }
 
         @Override

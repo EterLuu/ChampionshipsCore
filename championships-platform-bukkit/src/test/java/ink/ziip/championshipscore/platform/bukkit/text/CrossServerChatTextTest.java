@@ -14,6 +14,48 @@ import org.junit.jupiter.api.Test;
 import java.util.*;
 
 class CrossServerChatTextTest {
+    @Test
+    void senderFreezesCustomRichFormatAndLegacyMessagesStillRender() {
+        var format =
+                new ink.ziip.championshipscore.shared.presentation.PlayerTextFormat(
+                        "",
+                        "",
+                        "&7",
+                        "%player_name%",
+                        "custom %message% from %player_name%",
+                        "%message%");
+        var rich =
+                Component.translatable("item.minecraft.diamond")
+                        .color(net.kyori.adventure.text.format.NamedTextColor.GREEN)
+                        .clickEvent(
+                                net.kyori.adventure.text.event.ClickEvent.suggestCommand("/help"))
+                        .hoverEvent(Component.text("%player_name%"));
+        var presentation = new PlayerPresentation("", null, false, false, format);
+        var sent =
+                CrossServerChatText.message(
+                        "core", UUID.randomUUID(), "Alice", presentation, rich, 123L);
+        var received = CrossServerChatMessage.parse(sent.fields());
+        assertNotNull(received.renderedJson());
+        var json = net.kyori.adventure.text.serializer.gson.GsonComponentSerializer.gson();
+        assertEquals(
+                json.serialize(presentation.chatLine("Alice", rich)),
+                json.serialize(CrossServerChatText.render(received)));
+        var legacy = new java.util.HashMap<>(sent.fields());
+        legacy.remove("renderedJson");
+        legacy.put("label", "Viewers");
+        assertNull(CrossServerChatMessage.parse(legacy).renderedJson());
+        assertTrue(
+                PlainTextComponentSerializer.plainText()
+                        .serialize(CrossServerChatText.render(CrossServerChatMessage.parse(legacy)))
+                        .startsWith("Alice <Viewers> » "));
+        var invalid = new java.util.HashMap<>(sent.fields());
+        invalid.put("renderedJson", "{");
+        assertThrows(
+                RuntimeException.class,
+                () -> CrossServerChatText.render(CrossServerChatMessage.parse(invalid)));
+        invalid.put("renderedJson", " ");
+        assertThrows(IllegalArgumentException.class, () -> CrossServerChatMessage.parse(invalid));
+    }
 
     @Test
     void roundTripKeepsPresentationSenderModeAndFormattedComponents() {
@@ -31,7 +73,12 @@ class CrossServerChatTextTest {
             assertEquals(presentation.activePlayer(), received.activePlayer());
             assertEquals(daily, received.daily());
             Component rendered = CrossServerChatText.render(received);
-            assertEquals(presentation.chatLine("Alice", message), rendered, "daily=" + daily);
+            assertEquals(
+                    net.kyori.adventure.text.serializer.gson.GsonComponentSerializer.gson()
+                            .serialize(presentation.chatLine("Alice", message)),
+                    net.kyori.adventure.text.serializer.gson.GsonComponentSerializer.gson()
+                            .serialize(rendered),
+                    "daily=" + daily);
             assertEquals(
                     daily ? "[红队] Alice » hello" : "Alice <红队> » hello",
                     PlainTextComponentSerializer.plainText().serialize(rendered),

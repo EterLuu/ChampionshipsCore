@@ -17,14 +17,45 @@ import java.util.UUID;
 public final class RiptideEditorModel {
     private RiptideEditorModel() {}
 
-    public static final int CATEGORY_PAGE_SIZE = 36;
-
     public static List<RiptideLevelTemplate> rows(RiptideRushConfig config, RiptideLevelType type) {
         return config.resolvePool().stream().filter(t -> t.type() == type).toList();
     }
 
-    public static int clampPage(int page, int count, int size) {
-        return Math.max(0, Math.min(page, Math.max(0, (count - 1) / size)));
+    /** Immutable values shown or consumed by the editor; no second mutable draft is created. */
+    static List<?> snapshot(RiptideRushConfig c) {
+        return java.util.Collections.unmodifiableList(
+                java.util.Arrays.asList(
+                        List.copyOf(c.resolvePool()),
+                        c.getPreviewSeed(),
+                        c.getFixedSeed(),
+                        c.getPassCount(),
+                        c.getMathCount(),
+                        c.getStoppedCount(),
+                        c.getRhythmCount(),
+                        c.getStoppedAllocationMode(),
+                        c.getColorFloorWeight(),
+                        c.getDodgeWeight(),
+                        c.getSideSweepWeight(),
+                        c.isWallGroups(),
+                        c.getMinimumOperand(),
+                        c.getMaximumOperand(),
+                        c.getMathPreviewBlocks(),
+                        c.getWorldName(),
+                        c.getTimer(),
+                        c.getStartPoint() == null ? null : c.getStartPoint().clone(),
+                        c.getFinishPoint() == null ? null : c.getFinishPoint().clone(),
+                        c.getRaftWidth(),
+                        c.getRaftLength(),
+                        c.getObstacleMargin(),
+                        c.getClearHeight(),
+                        c.getMinimumLevelSpacing(),
+                        c.getRaftMaterial(),
+                        c.getObstacleMaterial(),
+                        c.getBaseSpeed(),
+                        c.getFinalSpeed(),
+                        c.getHorizontalPadding(),
+                        c.getFallDistance(),
+                        c.getTrailMaterial()));
     }
 
     public static RiptideLevelTemplate find(

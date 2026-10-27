@@ -75,9 +75,7 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         reload();
         SidebarConfiguration config = configuration;
         Component initialTitle =
-                config == null
-                        ? Component.text("CC")
-                        : LegacyText.component(config.lobby().title());
+                config == null ? Component.empty() : LegacyText.component(config.lobby().title());
         sidebar =
                 new SharedSidebar(
                         "cc_sidebar",
@@ -465,8 +463,8 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         values.put("edit.done", Integer.toString(session.configDone()));
         values.put("edit.total", Integer.toString(session.configTotal()));
         values.put("edit.errors", Integer.toString(errors.size()));
-        values.put("edit.progress-color", complete ? "&a" : "&e");
-        values.put("edit.error-color", complete ? "&a" : "&c");
+        values.put("edit.progress-color", config.mapPresentation().progressColor(complete));
+        values.put("edit.error-color", config.mapPresentation().errorColor(complete));
         values.put(
                 "edit.revision",
                 Integer.toString(Objects.requireNonNullElse(map.getPrepareRevision(), 0)));
@@ -496,7 +494,9 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
                 maps.stream()
                         .map(entry -> entry.instance().getGameStageEnum().toString())
                         .distinct()
-                        .reduce((left, right) -> left + "&7 / " + right)
+                        .reduce(
+                                (left, right) ->
+                                        left + config.mapPresentation().runtimeSeparator() + right)
                         .orElse(
                                 config.value(
                                         "map-status.runtime-unknown",
@@ -513,13 +513,12 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
                 for (MapDescriptor descriptor : maps.stream().limit(4).toList()) {
                     lines.add(
                             LegacyText.component(
-                                    "  "
-                                            + gameColor(descriptor.game())
-                                            + descriptor.game()
-                                            + " &8/ "
-                                            + publishGlyph(descriptor.config())
-                                            + "&f"
-                                            + descriptor.mapName()));
+                                    config.mapPresentation()
+                                            .mapEntry(
+                                                    descriptor.game(),
+                                                    descriptor.mapName(),
+                                                    descriptor.config().isPrepareReady(),
+                                                    descriptor.config().isPreparePublished())));
                 }
                 continue;
             }
@@ -675,21 +674,6 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
                     MessageConfig.codeText("core-sidebar-manager.edit-warning-3"));
         return sidebar.value(
                 "map-edit.complete", MessageConfig.codeText("core-sidebar-manager.edit-warning-4"));
-    }
-
-    private static String publishGlyph(BaseGameConfig config) {
-        return config.isPrepareReady() ? "&a✓ " : config.isPreparePublished() ? "&e⚠ " : "&c✗ ";
-    }
-
-    private static String gameColor(GameTypeEnum game) {
-        return switch (game.ordinal() % 6) {
-            case 0 -> "#ff7373";
-            case 1 -> "#64b5f6";
-            case 2 -> "#81c784";
-            case 3 -> "#ba68c8";
-            case 4 -> "#ffb74d";
-            default -> "#4dd0e1";
-        };
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

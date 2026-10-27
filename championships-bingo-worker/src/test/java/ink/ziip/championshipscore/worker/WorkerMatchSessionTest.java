@@ -13,6 +13,194 @@ import java.lang.reflect.Field;
 import java.util.*;
 
 class WorkerMatchSessionTest {
+    @Test
+    void spectatorTemplateArgumentsPreserveFrozenPrefixAsLiteralText() throws Exception {
+        var session = allocate(WorkerMatchSession.class);
+        set(
+                session,
+                "manifest",
+                presentationManifest(
+                        MatchRunMode.DAILY,
+                        Map.of("prefix", "&dPrefix %speed% "),
+                        List.of(),
+                        List.of()));
+        var player =
+                (org.bukkit.entity.Player)
+                        java.lang.reflect.Proxy.newProxyInstance(
+                                org.bukkit.entity.Player.class.getClassLoader(),
+                                new Class<?>[] {org.bukkit.entity.Player.class},
+                                (proxy, method, args) -> {
+                                    if (method.getName().equals("getFlySpeed")) return .15F;
+                                    throw new AssertionError(method.getName());
+                                });
+        var method =
+                WorkerMatchSession.class.getDeclaredMethod(
+                        "spectatorControlValues", org.bukkit.entity.Player.class);
+        method.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        var values = (Map<String, String>) method.invoke(session, player);
+        assertEquals(
+                "&dPrefix %speed% 15%",
+                ink.ziip.championshipscore.shared.presentation.MessageTemplate.render(
+                        "%prefix%%speed%", values));
+    }
+
+    @Test
+    void partialSpectatorControlsFailBeforeWorldAndPlayerSetup() {
+        var manifest =
+                presentationManifest(
+                        MatchRunMode.DAILY,
+                        Map.of("gui.spectator-controls.speed.title", "broken"),
+                        List.of(),
+                        List.of());
+        var error =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () ->
+                                new WorkerMatchSession(
+                                        null, null, manifest, null, null, null, null, null));
+        assertTrue(error.getMessage().contains("gui.spectator-controls.version"));
+    }
+
+    @Test
+    void legacyRootStylesMatchOldOverridesAndPreserveChildColors() throws Exception {
+        var method =
+                WorkerMatchSession.class.getDeclaredMethod(
+                        "legacyControlStyle",
+                        net.kyori.adventure.text.Component.class,
+                        String.class);
+        method.setAccessible(true);
+        var text =
+                ink.ziip.championshipscore.platform.bukkit.text.LegacyText.component(
+                                "&dRoot &bChild")
+                        .decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false);
+        var expected =
+                text.color(net.kyori.adventure.text.format.NamedTextColor.GREEN)
+                        .decorate(net.kyori.adventure.text.format.TextDecoration.BOLD);
+        assertEquals(expected, method.invoke(null, text, "teleport.title"));
+        assertEquals(
+                text.color(net.kyori.adventure.text.format.NamedTextColor.GRAY),
+                method.invoke(null, text, "teleport.hint"));
+    }
+
+    @Test
+    void sessionAndWaitingRegistryUseFrozenFormatsAndConfiguredSpectatorGameLabel()
+            throws Exception {
+        var format =
+                new ink.ziip.championshipscore.shared.presentation.PlayerTextFormat(
+                        "{%label%}", "%game%", "&7", "%player_name%", "%message%", "%message%");
+        var messages = new HashMap<>(format.attributes());
+        messages.put("game.name", "Bingo %game%");
+        messages.put("presentation.daily-game", "watching %game%");
+        messages.put("papi.spectator", "Viewers");
+        UUID player = UUID.randomUUID(), viewer = UUID.randomUUID();
+        var playing = new PlayerSnapshot(player, "Alice", ParticipantRole.PLAYER, 1);
+        var watching = new PlayerSnapshot(viewer, "Bob", ParticipantRole.SPECTATOR, null);
+        var team = new TeamSnapshot(1, "Red", "red", "&c", List.of(player), 0);
+        for (var mode : MatchRunMode.values()) {
+            var manifest =
+                    presentationManifest(mode, messages, List.of(team), List.of(playing, watching));
+            var session = allocate(WorkerMatchSession.class);
+            set(session, "manifest", manifest);
+            set(session, "participants", Map.of(player, playing, viewer, watching));
+            set(session, "teams", Map.of(1, team));
+            assertEquals(format, session.playerPresentation(player).format());
+            assertTrue(session.playerPresentation(player).activePlayer());
+            assertEquals("&cRed", session.playerPresentation(player).label());
+            assertFalse(session.playerPresentation(viewer).activePlayer());
+            assertEquals(
+                    mode == MatchRunMode.DAILY ? "watching Bingo %game%" : "Viewers",
+                    session.playerPresentation(viewer).label());
+        }
+        var registry = allocate(WorkerMatchRegistry.class);
+        set(registry, "latestPresentation", new BingoPresentation(messages));
+        set(registry, "latestDaily", true);
+        assertEquals(format, registry.playerPresentation(viewer).format());
+        assertEquals("Viewers", registry.playerPresentation(viewer).label());
+    }
+
+    @Test
+    void preparationRejectsPartialPlayerTextBeforeWorldOrInventoryWork() {
+        var manifest =
+                presentationManifest(
+                        MatchRunMode.DAILY,
+                        Map.of("presentation.player.prefix", "broken"),
+                        List.of(),
+                        List.of());
+        var error =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () ->
+                                new WorkerMatchSession(
+                                        null, null, manifest, null, null, null, null, null));
+        assertTrue(error.getMessage().contains("presentation.player.version"));
+    }
+
+    @Test
+    void preparationRejectsCorruptFrozenTaskTextBeforeWorldOrInventoryWork() {
+        var manifest =
+                presentationManifest(
+                        MatchRunMode.DAILY,
+                        Map.of(),
+                        List.of(),
+                        List.of(),
+                        Map.of(
+                                "material",
+                                "STONE",
+                                "display.text-version",
+                                "1",
+                                "display.name",
+                                "{",
+                                "display.lore-size",
+                                "0"));
+        var error =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () ->
+                                new WorkerMatchSession(
+                                        null, null, manifest, null, null, null, null, null));
+        assertTrue(error.getMessage().contains("frozen Bingo task text"));
+    }
+
+    private static MatchManifest presentationManifest(
+            MatchRunMode mode,
+            Map<String, String> messages,
+            List<TeamSnapshot> teams,
+            List<PlayerSnapshot> players) {
+        return presentationManifest(mode, messages, teams, players, Map.of("material", "STONE"));
+    }
+
+    private static MatchManifest presentationManifest(
+            MatchRunMode mode,
+            Map<String, String> messages,
+            List<TeamSnapshot> teams,
+            List<PlayerSnapshot> players,
+            Map<String, String> taskAttributes) {
+        return new MatchManifest(
+                ProtocolVersion.CURRENT,
+                UUID.randomUUID(),
+                1,
+                1,
+                "worker",
+                mode,
+                60,
+                1,
+                "config",
+                new BingoScoringRules(1, List.of(1), 0, 0, 0),
+                new BingoRuntimeRules(
+                        90,
+                        100,
+                        10,
+                        130,
+                        List.of(),
+                        false,
+                        45,
+                        List.of(),
+                        new BingoPresentation(messages)),
+                List.of(new BingoTaskSpec(0, "stone", "item", taskAttributes)),
+                teams,
+                players);
+    }
 
     @Test
     void createsStablePortableIdsForProtocolTeams() {

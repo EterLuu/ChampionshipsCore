@@ -8,8 +8,12 @@ import ink.ziip.championshipscore.platform.bukkit.bingo.BingoPermanentEffectServ
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoRidingTravel;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoStarterKitService;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoWorldRules;
+import ink.ziip.championshipscore.platform.bukkit.bingo.FrozenBingoTaskText;
 import ink.ziip.championshipscore.platform.bukkit.bingo.map.TaskImageAtlas;
+import ink.ziip.championshipscore.platform.bukkit.gui.BingoTaskItems;
+import ink.ziip.championshipscore.platform.bukkit.gui.InventoryItems;
 import ink.ziip.championshipscore.platform.bukkit.player.PlayerStateService;
+import ink.ziip.championshipscore.platform.bukkit.player.PlayerTargetTeleports;
 import ink.ziip.championshipscore.platform.bukkit.player.SpectatorStateService;
 import ink.ziip.championshipscore.platform.bukkit.scheduler.PlatformScheduler;
 import ink.ziip.championshipscore.platform.bukkit.scoreboard.NativeTeamOverlay;
@@ -35,7 +39,10 @@ import ink.ziip.championshipscore.protocol.MatchStateMachine;
 import ink.ziip.championshipscore.protocol.ParticipantRole;
 import ink.ziip.championshipscore.protocol.PlayerSnapshot;
 import ink.ziip.championshipscore.protocol.TeamSnapshot;
-import ink.ziip.championshipscore.shared.presentation.DurationText;
+import ink.ziip.championshipscore.shared.presentation.BingoCardPresentation;
+import ink.ziip.championshipscore.shared.presentation.BingoTaskPresentation;
+import ink.ziip.championshipscore.shared.presentation.PlayerListPresentation;
+import ink.ziip.championshipscore.shared.presentation.SpectatorControlsPresentation;
 
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 
@@ -94,6 +101,7 @@ final class WorkerMatchSession {
     private final NativeTeamService nativeTeams;
     private final Runnable worldReset;
     private final PlatformScheduler scheduler;
+    private final PlayerTargetTeleports teammateTeleports;
     private final NamespacedKey cardKey;
     private final NamespacedKey spectatorControlKey;
     private final WorkerTeamScatterService scatter;
@@ -126,7 +134,7 @@ final class WorkerMatchSession {
 
     private final Set<UUID> preparedPlayers = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private final Set<TeamCell> completedTeamCells = ConcurrentHashMap.newKeySet();
-    private final Map<Integer, List<Integer>> completionTeamsByCell = new HashMap<>();
+    private final Map<Integer, List<WorkerTaskCompletion>> completionsByCell = new HashMap<>();
     private final Map<Integer, MapView> cardViews = new HashMap<>();
     private final Map<UUID, MapView> playerCardViews = new HashMap<>();
     private MapView spectatorCardView;
@@ -164,6 +172,31 @@ final class WorkerMatchSession {
         this.plugin = plugin;
         this.config = config;
         this.manifest = manifest;
+        manifest.tasks().forEach(task -> FrozenBingoTaskText.from(task.attributes()));
+        ink.ziip.championshipscore.shared.presentation.PlayerTextFormat.from(
+                manifest.runtimeRules().presentation().messages());
+        spectatorControls().items().values().forEach(InventoryItems::material);
+        var cardMenu = BingoCardPresentation.from(manifest.runtimeRules().presentation());
+        cardMenu.layout(manifest.scoring().cardWidth());
+        InventoryItems.material(cardMenu.info());
+        BingoTaskItems.validate(BingoTaskPresentation.from(manifest.runtimeRules().presentation()));
+        if (manifest.runtimeRules().presentation().messages().keySet().stream()
+                .anyMatch(
+                        key ->
+                                key.startsWith(
+                                        ink.ziip.championshipscore.shared.presentation
+                                                .PlayerListPresentation.SPECTATOR_PREFIX)))
+            ink.ziip.championshipscore.shared.presentation.PlayerListPresentation.spectator(
+                            manifest.runtimeRules().presentation())
+                    .items()
+                    .values()
+                    .forEach(InventoryItems::material);
+        if (manifest.runtimeRules().presentation().messages().keySet().stream()
+                .anyMatch(key -> key.startsWith(PlayerListPresentation.TEAMMATE_PREFIX)))
+            PlayerListPresentation.teammates(manifest.runtimeRules().presentation())
+                    .items()
+                    .values()
+                    .forEach(InventoryItems::material);
         this.events = events;
         this.returnRouter = returnRouter;
         this.worlds = worlds;
@@ -172,6 +205,7 @@ final class WorkerMatchSession {
         this.nativeTeamOverlay = nativeTeams.newOverlay();
         this.worldReset = worldReset;
         this.scheduler = new PlatformScheduler(plugin);
+        this.teammateTeleports = new PlayerTargetTeleports(plugin);
         this.cardKey = new NamespacedKey(plugin, "bingo_card");
         this.spectatorControlKey = new NamespacedKey(plugin, "spectator_control");
         this.scatter = new WorkerTeamScatterService(plugin);
@@ -263,7 +297,14 @@ final class WorkerMatchSession {
         String spectator = manifest.runtimeRules().presentation().message("papi.spectator");
         String label =
                 team == null
-                        ? manifest.runMode() == MatchRunMode.DAILY ? "&6" + gameName() : spectator
+                        ? manifest.runMode() == MatchRunMode.DAILY
+                                ? ink.ziip.championshipscore.shared.presentation.MessageTemplate
+                                        .render(
+                                                manifest.runtimeRules()
+                                                        .presentation()
+                                                        .message("presentation.daily-game"),
+                                                Map.of("%game%", gameName()))
+                                : spectator
                         : team.colorCode() + team.name();
         boolean activePlayer =
                 participant != null && participant.role() == ParticipantRole.PLAYER && team != null;
@@ -271,7 +312,9 @@ final class WorkerMatchSession {
                 label,
                 team == null ? null : team.colorCode(),
                 activePlayer,
-                manifest.runMode() == MatchRunMode.DAILY);
+                manifest.runMode() == MatchRunMode.DAILY,
+                ink.ziip.championshipscore.shared.presentation.PlayerTextFormat.from(
+                        manifest.runtimeRules().presentation().messages()));
     }
 
     boolean sendTeamMessage(Player sender, Component message) {
@@ -622,7 +665,8 @@ final class WorkerMatchSession {
                         "%game%",
                         gameName(),
                         "%time%",
-                        DurationText.bossBarSeconds(remaining));
+                        WorkerPresentationService.bossBarTime(
+                                manifest.runtimeRules().presentation(), remaining));
         updateTimerBossBar(preparation, remaining, duration);
         scheduler.runGlobalLater(() -> introductionTick(elapsedSeconds + 1), 20L);
     }
@@ -668,7 +712,8 @@ final class WorkerMatchSession {
                         "%game%",
                         gameName(),
                         "%time%",
-                        DurationText.bossBarSeconds(remaining));
+                        WorkerPresentationService.bossBarTime(
+                                manifest.runtimeRules().presentation(), remaining));
         updateTimerBossBar(preparation, remaining, manifest.runtimeRules().preparationSeconds());
         scheduler.runGlobalLater(() -> preparationTick(remaining - 1), 20L);
     }
@@ -934,7 +979,8 @@ final class WorkerMatchSession {
         ScoringDecision decision;
         long outgoingEventSeq;
         synchronized (this) {
-            if (lifecycle.state() != MatchState.RUNNING) return;
+            if (!isRunningPlayer(player.uuid()) || participants.get(player.uuid()) != player)
+                return;
             if (!canAttempt(player.teamId(), cellIndex)) return;
             TeamCell completionKey = new TeamCell(player.teamId(), cellIndex);
             if (!completedTeamCells.add(completionKey)) return;
@@ -954,18 +1000,9 @@ final class WorkerMatchSession {
                         "Locally validated Bingo completion was rejected: "
                                 + decision.rejectionReason());
             }
-            completionTeamsByCell
-                    .computeIfAbsent(cellIndex, ignored -> new ArrayList<>())
-                    .add(player.teamId());
+            recordTaskCompletion(player, observation);
             hiddenCells.remove(cellIndex);
             settleParallax(player.teamId(), cellIndex);
-            if (manifest.scoring().variant().remix() == BingoRemix.COOP) {
-                for (int teamId : teams.keySet()) {
-                    completedTeamCells.add(new TeamCell(teamId, cellIndex));
-                    List<Integer> completedTeams = completionTeamsByCell.get(cellIndex);
-                    if (!completedTeams.contains(teamId)) completedTeams.add(teamId);
-                }
-            }
             outgoingEventSeq = ++eventSeq;
         }
         MatchEvent event =
@@ -1018,11 +1055,45 @@ final class WorkerMatchSession {
         }
     }
 
+    /** Called under the session lock only after scoring accepts the observation. */
+    private void recordTaskCompletion(PlayerSnapshot player, CompletionObservation observation) {
+        var identity =
+                BingoTaskItems.playerName(
+                        BingoTaskPresentation.from(manifest.runtimeRules().presentation()),
+                        player.username(),
+                        LegacyText.component(
+                                teams.get(player.teamId()).name(),
+                                teamColor(teams.get(player.teamId()))));
+        var completion =
+                new WorkerTaskCompletion(
+                        player.teamId(),
+                        player.uuid(),
+                        identity,
+                        observation.observedGameTick() / 20);
+        completionsByCell
+                .computeIfAbsent(observation.cellIndex(), ignored -> new ArrayList<>())
+                .add(completion);
+        if (manifest.scoring().variant().remix() == BingoRemix.COOP) {
+            for (TeamSnapshot creditedTeam : manifest.teams()) {
+                int teamId = creditedTeam.id();
+                completedTeamCells.add(new TeamCell(teamId, observation.cellIndex()));
+                var completed = completionsByCell.get(observation.cellIndex());
+                if (completed.stream().noneMatch(value -> value.teamId() == teamId))
+                    completed.add(
+                            new WorkerTaskCompletion(
+                                    teamId,
+                                    completion.playerId(),
+                                    completion.playerName(),
+                                    completion.seconds()));
+            }
+        }
+    }
+
     private synchronized boolean canAttempt(int teamId, int cellIndex) {
         if (lockedCells.contains(cellIndex)) return false;
         if (completedTeamCells.contains(new TeamCell(teamId, cellIndex))) return false;
         if (manifest.scoring().variant().mode().locksCells()
-                && completionTeamsByCell.containsKey(cellIndex)) return false;
+                && completionsByCell.containsKey(cellIndex)) return false;
         if (manifest.scoring().variant().remix() != BingoRemix.CHAIN) return true;
         boolean hasCompletion =
                 completedTeamCells.stream().anyMatch(cell -> cell.teamId() == teamId);
@@ -1312,6 +1383,7 @@ final class WorkerMatchSession {
         UUID playerId = player.getUniqueId();
         if (!owns(playerId)) return;
         cancelSpectatorTeleport(playerId);
+        teammateTeleports.cancelPlayer(playerId);
         Location quitLocation = player.getLocation().clone();
         String quitWorldName = player.getWorld() == null ? null : player.getWorld().getName();
         synchronized (this) {
@@ -1331,6 +1403,7 @@ final class WorkerMatchSession {
 
     void requestVoluntaryLeave(Player player) {
         if (!isPlaying(player.getUniqueId())) return;
+        teammateTeleports.cancelPlayer(player.getUniqueId());
         player.sendMessage(message("worker.play.leave.started"));
         emit(
                 MatchEventType.PLAYER_LEFT,
@@ -1339,6 +1412,7 @@ final class WorkerMatchSession {
 
     CompletionStage<Boolean> removeParticipants(Set<UUID> playerIds) {
         if (playerIds.isEmpty()) return CompletableFuture.completedFuture(true);
+        playerIds.forEach(teammateTeleports::cancelPlayer);
         removeNativeParticipants(playerIds);
         synchronized (this) {
             for (UUID playerId : playerIds) {
@@ -1396,6 +1470,7 @@ final class WorkerMatchSession {
         PlayerSnapshot snapshot;
         Set<Integer> own = new HashSet<>();
         Map<Integer, List<Integer>> all = new HashMap<>();
+        Map<Integer, List<WorkerTaskCompletion>> details = new HashMap<>();
         synchronized (this) {
             snapshot = participants.get(player.getUniqueId());
             if (snapshot == null || lifecycle.state().terminal()) return;
@@ -1412,7 +1487,11 @@ final class WorkerMatchSession {
                     if (completed.teamId() == viewedTeam) own.add(completed.cellIndex());
                 }
             }
-            completionTeamsByCell.forEach((cell, teams) -> all.put(cell, List.copyOf(teams)));
+            completionsByCell.forEach(
+                    (cell, values) -> {
+                        details.put(cell, List.copyOf(values));
+                        all.put(cell, values.stream().map(WorkerTaskCompletion::teamId).toList());
+                    });
         }
         boolean aggregate =
                 snapshot.role() == ParticipantRole.SPECTATOR
@@ -1434,7 +1513,10 @@ final class WorkerMatchSession {
                 hiddenSnapshot(),
                 lockedSnapshot(),
                 aggregate ? null : displayOrder(viewedTeam),
-                aggregate);
+                aggregate,
+                aggregate ? message("card.spectator_map_name") : cardTitle(viewedTeam),
+                Map.copyOf(details),
+                aggregate ? null : viewedTeam);
     }
 
     boolean isSpectatorCard(ItemStack item) {
@@ -1466,15 +1548,49 @@ final class WorkerMatchSession {
     }
 
     void openTeammates(Player player) {
-        PlayerSnapshot snapshot;
-        synchronized (this) {
-            snapshot = participants.get(player.getUniqueId());
-            if (snapshot == null || snapshot.teamId() == null || lifecycle.state().terminal())
-                return;
-        }
-        TeamSnapshot team = teams.get(snapshot.teamId());
-        if (team != null)
-            WorkerMenuService.openTeammates(player, manifest, team, manifest.participants());
+        var source = participants.get(player.getUniqueId());
+        if (!canUseTeammateCompass(player, source)) return;
+        WorkerMenuService.openTeammates(
+                player,
+                manifest,
+                this,
+                () -> canUseTeammateCompass(player, source),
+                () -> teammates(source),
+                target -> teleportToTeammate(player, source, target));
+    }
+
+    private synchronized boolean currentTeammates(PlayerSnapshot source, PlayerSnapshot target) {
+        return source != null
+                && lifecycle.state() == MatchState.RUNNING
+                && plugin.isEnabled()
+                && participants.get(source.uuid()) == source
+                && source.role() == ParticipantRole.PLAYER
+                && source.teamId() != null
+                && (target == null
+                        || participants.get(target.uuid()) == target
+                                && target.role() == ParticipantRole.PLAYER
+                                && source.teamId().equals(target.teamId()));
+    }
+
+    private boolean canUseTeammateCompass(Player player, PlayerSnapshot expected) {
+        return currentTeammates(expected, null)
+                && player.isOnline()
+                && Bukkit.getPlayer(expected.uuid()) == player
+                && !player.isDead()
+                && player.getGameMode() != GameMode.SPECTATOR
+                && isBingoWorldName(player.getWorld().getName());
+    }
+
+    private List<PlayerSnapshot> teammates(PlayerSnapshot source) {
+        return participants.values().stream()
+                .filter(target -> !target.uuid().equals(source.uuid()))
+                .filter(target -> currentTeammates(source, target))
+                .filter(
+                        target -> {
+                            Player online = Bukkit.getPlayer(target.uuid());
+                            return online != null && online.isOnline();
+                        })
+                .toList();
     }
 
     void openSpectatorTargets(Player player) {
@@ -1483,19 +1599,37 @@ final class WorkerMatchSession {
                 || snapshot.role() != ParticipantRole.SPECTATOR
                 || lifecycle.state().terminal()) return;
         WorkerMenuService.openSpectatorTargets(
-                player, manifest, List.copyOf(participants.values()));
+                player,
+                manifest,
+                this,
+                () -> currentSpectator(snapshot),
+                () -> List.copyOf(participants.values()),
+                targetId -> {
+                    if (!targetId.equals(player.getUniqueId())
+                            && participants.containsKey(targetId)
+                            && currentSpectator(snapshot))
+                        teleportSpectator(player, null, targetId, snapshot);
+                });
     }
 
-    void teleportToSpectatorTarget(Player player, UUID targetId) {
-        if (targetId.equals(player.getUniqueId()) || !participants.containsKey(targetId)) return;
-        teleportSpectator(player, null, targetId);
+    private synchronized boolean currentSpectator(PlayerSnapshot expected) {
+        return plugin.isEnabled()
+                && participants.get(expected.uuid()) == expected
+                && expected.role() == ParticipantRole.SPECTATOR
+                && !lifecycle.state().terminal();
     }
 
     private CompletableFuture<Boolean> teleportSpectator(
             Player player, Location fallback, UUID selectedTarget) {
+        return teleportSpectator(
+                player, fallback, selectedTarget, participants.get(player.getUniqueId()));
+    }
+
+    private CompletableFuture<Boolean> teleportSpectator(
+            Player player, Location fallback, UUID selectedTarget, PlayerSnapshot source) {
         UUID viewer = player.getUniqueId();
-        PlayerSnapshot source = participants.get(viewer);
         if (source == null
+                || participants.get(viewer) != source
                 || source.role() != ParticipantRole.SPECTATOR
                 || lifecycle.state().terminal()) return CompletableFuture.completedFuture(false);
         CompletableFuture<Boolean> result = new CompletableFuture<>();
@@ -1608,65 +1742,62 @@ final class WorkerMatchSession {
         if (pending != null) pending.complete(false);
     }
 
-    void teleportToTeammate(Player player, UUID targetId) {
-        PlayerSnapshot source;
-        PlayerSnapshot target;
-        synchronized (this) {
-            if (lifecycle.state() != MatchState.RUNNING) return;
-            source = participants.get(player.getUniqueId());
-            target = participants.get(targetId);
-            if (source == null
-                    || target == null
-                    || source.teamId() == null
-                    || !source.teamId().equals(target.teamId())) return;
-        }
-        Player onlineTarget = plugin.getServer().getPlayer(targetId);
-        if (onlineTarget == null) {
+    void cancelTeammateTeleports(UUID player) {
+        teammateTeleports.cancelPlayer(player);
+    }
+
+    private void teleportToTeammate(Player player, PlayerSnapshot source, UUID targetId) {
+        if (!canUseTeammateCompass(player, source)) return;
+        teammateTeleports.cancel(player.getUniqueId());
+        PlayerSnapshot target = participants.get(targetId);
+        if (target == null || targetId.equals(source.uuid()) || !currentTeammates(source, target))
+            return;
+        if (Bukkit.getPlayer(targetId) == null) {
             player.sendMessage(message("compass.target_offline"));
             return;
         }
-        scheduler
-                .supplyEntity(onlineTarget, onlineTarget::getLocation)
-                .thenAccept(
-                        location -> {
-                            if (location == null) return;
-                            scheduler.runEntity(
-                                    player,
-                                    () ->
-                                            player.teleportAsync(location)
-                                                    .thenAccept(
-                                                            success -> {
-                                                                if (!success) return;
-                                                                Component confirmation =
-                                                                        message(
-                                                                                        "compass.teleport_success")
-                                                                                .replaceText(
-                                                                                        builder ->
-                                                                                                builder.matchLiteral(
-                                                                                                                "{0}")
-                                                                                                        .replacement(
-                                                                                                                Component
-                                                                                                                        .text(
-                                                                                                                                target
-                                                                                                                                        .username(),
-                                                                                                                                teamColor(
-                                                                                                                                        teams
-                                                                                                                                                .get(
-                                                                                                                                                        target
-                                                                                                                                                                .teamId())))));
-                                                                scheduler.runEntity(
-                                                                        player,
-                                                                        () ->
-                                                                                player.sendMessage(
-                                                                                        confirmation));
-                                                            }));
+        teammateTeleports
+                .request(
+                        player,
+                        targetId,
+                        () -> canUseTeammateCompass(player, source),
+                        online ->
+                                currentTeammates(source, target)
+                                        && canUseTeammateCompass(online, target),
+                        () -> currentTeammates(source, target),
+                        () ->
+                                player.sendMessage(
+                                        message("compass.teleport_success")
+                                                .replaceText(
+                                                        builder ->
+                                                                builder.matchLiteral("{0}")
+                                                                        .replacement(
+                                                                                Component.text(
+                                                                                        target
+                                                                                                .username(),
+                                                                                        teamColor(
+                                                                                                teams
+                                                                                                        .get(
+                                                                                                                target
+                                                                                                                        .teamId())))))))
+                .exceptionally(
+                        failure -> {
+                            plugin.getLogger()
+                                    .log(
+                                            Level.WARNING,
+                                            "Unable to teleport Bingo teammate",
+                                            failure);
+                            return false;
                         });
     }
 
     synchronized Map<Integer, List<Integer>> completionSnapshot() {
         Map<Integer, List<Integer>> snapshot = new HashMap<>();
-        completionTeamsByCell.forEach(
-                (cell, completedTeams) -> snapshot.put(cell, List.copyOf(completedTeams)));
+        completionsByCell.forEach(
+                (cell, completed) ->
+                        snapshot.put(
+                                cell,
+                                completed.stream().map(WorkerTaskCompletion::teamId).toList()));
         return Map.copyOf(snapshot);
     }
 
@@ -1728,6 +1859,11 @@ final class WorkerMatchSession {
             player.getWorld().dropItemNaturally(player.getLocation(), card);
     }
 
+    private Component cardTitle(int teamId) {
+        TeamSnapshot team = teams.get(teamId);
+        return message("card.map_name", "{0}", team == null ? "" : team.name());
+    }
+
     private ItemStack cardItem(int teamId) {
         return cardItem(teamId, null);
     }
@@ -1743,9 +1879,8 @@ final class WorkerMatchSession {
                 MapMeta.class,
                 meta -> {
                     meta.setMapView(view);
-                    TeamSnapshot team = teams.get(teamId);
                     meta.displayName(
-                            message("card.map_name", "{0}", team == null ? "" : team.name())
+                            cardTitle(teamId)
                                     .decoration(
                                             net.kyori.adventure.text.format.TextDecoration.ITALIC,
                                             false));
@@ -1796,10 +1931,11 @@ final class WorkerMatchSession {
     private void ensureSpectatorCards(Player player) {
         removeBoundCards(player);
         ItemStack card = spectatorCardItem();
-        // Keep the read-only card in its dedicated slot.  addItem() may choose the spectator
+        // Keep the read-only card in its configured dedicated slot. addItem() may choose the
+        // spectator
         // controls slot (or any other hotbar slot), so repeated presentation refreshes could
         // overwrite controls and appear to duplicate cards.
-        if (card != null) player.getInventory().setItem(1, card);
+        if (card != null) player.getInventory().setItem(spectatorControls().cardSlot(), card);
         player.updateInventory();
     }
 
@@ -1979,44 +2115,84 @@ final class WorkerMatchSession {
                             MIN_SPECTATOR_SPEED,
                             Math.min(MAX_SPECTATOR_SPEED, player.getFlySpeed() + delta)));
             applySpectatorControls(player);
-            spectatorFeedback(
-                    player,
-                    message("spectator.speed.feedback", "%speed%", spectatorSpeed(player)),
-                    NamedTextColor.YELLOW,
-                    delta > 0 ? 1.25F : 0.8F);
+            var controls = spectatorControls();
+            Component feedback =
+                    InventoryItems.text(controls.speedFeedback(), spectatorControlValues(player));
+            if (legacySpectatorControls())
+                feedback =
+                        legacyControlStyle(
+                                message(
+                                        "spectator.speed.feedback",
+                                        "%speed%",
+                                        spectatorSpeed(player)),
+                                "speed.feedback");
+            spectatorFeedback(player, feedback, delta > 0 ? 1.25F : 0.8F);
             return true;
         }
         return false;
     }
 
+    private SpectatorControlsPresentation spectatorControls() {
+        return SpectatorControlsPresentation.from(manifest.runtimeRules().presentation());
+    }
+
+    private boolean legacySpectatorControls() {
+        return !manifest.runtimeRules()
+                .presentation()
+                .messages()
+                .containsKey(SpectatorControlsPresentation.PREFIX + "version");
+    }
+
+    private static Component legacyControlStyle(Component text, String style) {
+        return text.style(
+                text.style()
+                        .merge(
+                                LegacyText.component(
+                                                SpectatorControlsPresentation.legacyStyle(style))
+                                        .style(),
+                                net.kyori.adventure.text.format.Style.Merge.Strategy.ALWAYS));
+    }
+
     private void applySpectatorControls(Player player) {
-        // Slot 1 is reserved for the Bingo card.
-        player.getInventory()
-                .setItem(
-                        0,
-                        spectatorControl(
-                                Material.COMPASS,
-                                "teleport",
-                                message("spectator.teleport.name")
-                                        .color(NamedTextColor.GREEN)
-                                        .decorate(TextDecoration.BOLD),
-                                List.of(
-                                        message("spectator.teleport.hint")
-                                                .color(NamedTextColor.GRAY))));
-        player.getInventory()
-                .setItem(
-                        7,
-                        spectatorControl(
-                                Material.FEATHER,
-                                "speed",
-                                message("spectator.speed.name", "%speed%", spectatorSpeed(player))
-                                        .color(NamedTextColor.YELLOW)
-                                        .decorate(TextDecoration.BOLD),
-                                List.of(
-                                        message("spectator.speed.faster")
-                                                .color(NamedTextColor.GREEN),
-                                        message("spectator.speed.slower")
-                                                .color(NamedTextColor.RED))));
+        var controls = spectatorControls();
+        var values = spectatorControlValues(player);
+        for (String action : SpectatorControlsPresentation.CONTROLS) {
+            ItemStack item;
+            if (legacySpectatorControls()) {
+                var template = controls.items().get(action);
+                var name =
+                        legacyControlStyle(
+                                action.equals("speed")
+                                        ? message(
+                                                "spectator.speed.name",
+                                                "%speed%",
+                                                spectatorSpeed(player))
+                                        : message("spectator.teleport.name"),
+                                action + ".title");
+                List<Component> lore =
+                        action.equals("teleport")
+                                ? List.of(
+                                        legacyControlStyle(
+                                                message("spectator.teleport.hint"),
+                                                "teleport.hint"))
+                                : List.of(
+                                        legacyControlStyle(
+                                                message("spectator.speed.faster"), "speed.faster"),
+                                        legacyControlStyle(
+                                                message("spectator.speed.slower"), "speed.slower"));
+                item = spectatorControl(InventoryItems.material(template), action, name, lore);
+            } else {
+                item = InventoryItems.render(controls.items().get(action), values);
+                item.editMeta(
+                        meta ->
+                                meta.getPersistentDataContainer()
+                                        .set(
+                                                spectatorControlKey,
+                                                PersistentDataType.STRING,
+                                                action));
+            }
+            player.getInventory().setItem(controls.slots().get(action), item);
+        }
     }
 
     private ItemStack spectatorControl(
@@ -2042,14 +2218,24 @@ final class WorkerMatchSession {
         return Math.round(player.getFlySpeed() * 100F) + "%";
     }
 
-    private static void spectatorFeedback(
-            Player player, Component message, NamedTextColor color, float pitch) {
-        player.sendActionBar(message.color(color).decorate(TextDecoration.BOLD));
+    private Map<String, String> spectatorControlValues(Player player) {
+        return Map.of(
+                "%speed%", spectatorSpeed(player),
+                "%prefix%",
+                        manifest.runtimeRules()
+                                .presentation()
+                                .messages()
+                                .getOrDefault("prefix", ""));
+    }
+
+    private static void spectatorFeedback(Player player, Component message, float pitch) {
+        player.sendActionBar(message);
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.7F, pitch);
     }
 
     CompletionStage<Boolean> removeSpectator(UUID playerId) {
         cancelSpectatorTeleport(playerId);
+        teammateTeleports.cancelPlayer(playerId);
         synchronized (this) {
             PlayerSnapshot existing = participants.get(playerId);
             if (existing == null || existing.role() != ParticipantRole.SPECTATOR) {
@@ -2240,6 +2426,7 @@ final class WorkerMatchSession {
     }
 
     private void cancelTasks() {
+        teammateTeleports.close();
         for (UUID viewer : List.copyOf(spectatorTeleports.keySet()))
             cancelSpectatorTeleport(viewer);
         scatter.cancelPending();
@@ -2290,15 +2477,11 @@ final class WorkerMatchSession {
                         manifest.runtimeRules().pvpGraceSeconds()
                                 - (manifest.durationSeconds() - remaining));
         Component title =
-                message("bingo.timer", "%time%", DurationText.bossBarSeconds(remaining))
-                        .append(WorkerPresentationService.component(" &#bababa• "))
-                        .append(
-                                pvpEnabled
-                                        ? message("bingo.pvp-active")
-                                        : message(
-                                                "bingo.pvp-protection",
-                                                "%time%",
-                                                DurationText.bossBarSeconds(graceRemaining)));
+                WorkerPresentationService.timerTitle(
+                        manifest.runtimeRules().presentation(),
+                        pvpEnabled,
+                        remaining,
+                        graceRemaining);
         updateTimerBossBar(title, remaining, manifest.durationSeconds());
         if (!pvpEnabled && graceRemaining >= 1 && graceRemaining <= 10) {
             Component warning =
@@ -2438,7 +2621,7 @@ final class WorkerMatchSession {
                         .messages()
                         .getOrDefault(
                                 "sidebar.ranking-line",
-                                "{rank.team-color}{rank.position}. {rank.team} &f{rank.score}");
+                                WorkerPresentationService.legacyText("sidebar.ranking-line"));
         String own = presentation.messages().getOrDefault("sidebar.own-ranking-line", normal);
         for (WorkerSidebarRanking.Entry entry :
                 WorkerSidebarRanking.select(result, teams, viewerTeamId)) {

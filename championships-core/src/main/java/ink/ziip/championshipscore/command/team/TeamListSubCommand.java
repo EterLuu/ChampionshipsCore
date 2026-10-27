@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+import ink.ziip.championshipscore.shared.presentation.MessageTemplate;
 
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -16,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public class TeamListSubCommand extends BaseSubCommand {
@@ -46,7 +48,7 @@ public class TeamListSubCommand extends BaseSubCommand {
         }
 
         StringBuilder message =
-                new StringBuilder(MessageConfig.codeText("team-list-sub-command.on-command-1"));
+                new StringBuilder(MessageConfig.codeText("team-list-sub-command.header"));
         int totalMembers = 0;
         int totalOnline = 0;
 
@@ -69,35 +71,39 @@ public class TeamListSubCommand extends BaseSubCommand {
             totalMembers += online.size() + offline.size();
             totalOnline += online.size();
 
-            message.append("\n&r")
-                    .append(team.getColorCode())
-                    .append(team.getName())
-                    .append(" &#696969(")
-                    .append(online.size())
-                    .append("/")
-                    .append(online.size() + offline.size())
-                    .append(MessageConfig.codeText("team-list-sub-command.on-command-4"))
-                    .append(MessageConfig.codeText("team-list-sub-command.on-command-3"))
-                    .append(formatNames(online))
-                    .append(MessageConfig.codeText("team-list-sub-command.on-command-2"))
-                    .append(formatNames(offline));
+            message.append(formatTeam(team.getColorCode() + team.getName(), online, offline));
         }
 
-        message.append(MessageConfig.codeText("team-list-sub-command.on-command-7"))
-                .append(teams.size())
-                .append(MessageConfig.codeText("team-list-sub-command.on-command-6"))
-                .append(totalOnline)
-                .append("/")
-                .append(totalMembers)
-                .append(MessageConfig.codeText("team-list-sub-command.on-command-5"));
+        message.append(formatSummary(teams.size(), totalOnline, totalMembers));
         sender.sendMessage(LegacyText.translateColorCodes(message.toString()));
         return true;
     }
 
-    private String formatNames(List<String> names) {
+    static String formatTeam(String coloredName, List<String> online, List<String> offline) {
+        return MessageTemplate.render(
+                MessageConfig.codeText("team-list-sub-command.row"),
+                Map.of(
+                        "%team%", coloredName,
+                        "%online-count%", Integer.toString(online.size()),
+                        "%member-count%", Integer.toString(online.size() + offline.size()),
+                        "%online-names%", formatNames(online),
+                        "%offline-names%", formatNames(offline)));
+    }
+
+    static String formatSummary(int teams, int online, int members) {
+        return MessageTemplate.render(
+                MessageConfig.codeText("team-list-sub-command.summary"),
+                Map.of(
+                        "%teams%", Integer.toString(teams),
+                        "%online%", Integer.toString(online),
+                        "%members%", Integer.toString(members)));
+    }
+
+    private static String formatNames(List<String> names) {
         return names.isEmpty()
-                ? MessageConfig.codeText("team-list-sub-command.format-names-1")
-                : String.join("&7, &f", names);
+                ? MessageConfig.codeText("team-list-sub-command.empty")
+                : String.join(
+                        MessageConfig.codeText("team-list-sub-command.names-separator"), names);
     }
 
     @Override

@@ -1,6 +1,6 @@
 package ink.ziip.championshipscore.platform.bukkit.text;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
@@ -8,6 +8,62 @@ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.junit.jupiter.api.Test;
 
 class ChampionshipTabTextTest {
+    private static Component messageNode(Component node) {
+        if (node instanceof net.kyori.adventure.text.TextComponent text
+                && text.content().equals("hello")) return node;
+        for (Component child : node.children()) {
+            Component found = messageNode(child);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
+    @Test
+    void configurableFormatsPreserveLiteralParametersAndExplicitEmptyTemplates() {
+        var format =
+                new ink.ziip.championshipscore.shared.presentation.PlayerTextFormat(
+                        "[%label%] ",
+                        "Game %game%",
+                        "&7",
+                        "%prefix%%player%",
+                        "%player_name% says %message%",
+                        "%identity% / %message%");
+        assertEquals("[Game %label%] ", ChampionshipTabText.gamePrefix(format, "%label%"));
+        assertEquals(
+                "[%player%] §7Alice",
+                ChampionshipTabText.playerIdentity(format, "%player%", null, false, "Alice"));
+        assertEquals(
+                "%points% / 4", ChampionshipTabText.teamFooter("%team% / %points%", "%points%", 4));
+        var line =
+                ChampionshipTabText.chatLine(
+                        format,
+                        "ignored",
+                        "&c",
+                        true,
+                        "Alice",
+                        Component.text("%player_name%"),
+                        false);
+        assertEquals(
+                "Alice says %player_name%",
+                PlainTextComponentSerializer.plainText().serialize(line));
+        var empty =
+                new ink.ziip.championshipscore.shared.presentation.PlayerTextFormat(
+                        "", "", "", "", "", "");
+        assertEquals("", ChampionshipTabText.playerIdentity(empty, "team", null, false, "Alice"));
+        assertEquals(
+                "",
+                PlainTextComponentSerializer.plainText()
+                        .serialize(
+                                ChampionshipTabText.chatLine(
+                                        empty,
+                                        "team",
+                                        null,
+                                        false,
+                                        "Alice",
+                                        Component.text("content"),
+                                        false)));
+    }
+
     @Test
     void rendersTheSharedCoreAndWorkerFooterContract() {
         assertEquals(
@@ -48,7 +104,7 @@ class ChampionshipTabTextTest {
                 ChampionshipTabText.chatLine("&#ff5555红队", "&#ff5555", true, "Player", message);
         assertEquals(
                 "Player <红队> » hello", PlainTextComponentSerializer.plainText().serialize(chat));
-        assertEquals(message, chat.children().getLast());
+        assertEquals(message.color(), messageNode(chat).color());
         assertEquals(
                 "Viewer <旁观> » hello",
                 PlainTextComponentSerializer.plainText()
@@ -67,7 +123,7 @@ class ChampionshipTabTextTest {
             assertEquals(
                     "[" + label + "] Player » hello",
                     PlainTextComponentSerializer.plainText().serialize(chat));
-            assertEquals(message, chat.children().getLast());
+            assertEquals(message.color(), messageNode(chat).color());
         }
     }
 }

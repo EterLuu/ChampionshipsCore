@@ -58,6 +58,15 @@ class WorkerTaskDisplayTest {
                     WorkerTaskDisplay.amount(example.task()),
                     example.task().attributes().toString());
         }
+        assertFalse(
+                WorkerTaskDisplay.glows(
+                        new BingoTaskSpec(0, "event", "event", Map.of("display.glow", "false"))));
+        assertTrue(
+                WorkerTaskDisplay.glows(
+                        new BingoTaskSpec(0, "item", "item", Map.of("display.glow", "true"))));
+        assertTrue(
+                WorkerTaskDisplay.glows(
+                        new BingoTaskSpec(0, "advancement", "advancement", Map.of())));
         assertEquals(
                 "minecraft:rabbit_foot",
                 WorkerTaskDisplay.statisticSubject(examples.getFirst().task()).asString());

@@ -1,8 +1,8 @@
 package ink.ziip.championshipscore.integration.papi;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.game.lasershowdown.runtime.LaserShowdownTeamArea;
+import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import org.bukkit.OfflinePlayer;

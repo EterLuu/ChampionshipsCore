@@ -12,6 +12,33 @@ import org.junit.jupiter.api.Test;
 import java.util.*;
 
 class WorkerChampionshipPlaceholderValuesTest {
+    @Test
+    void frozenCustomPlayerFormatsApplyToBothDailyAndChampionshipRoles() {
+        var format =
+                new ink.ziip.championshipscore.shared.presentation.PlayerTextFormat(
+                        "<%label%> ", "Game %game%", "&7", "%player%", "%message%", "%message%");
+        var values = new HashMap<>(PRESENTATION.messages());
+        values.putAll(format.attributes());
+        var frozen = new BingoPresentation(values);
+        values.put("presentation.player.prefix", "changed");
+        assertEquals(
+                "<Game 宾果时速> ",
+                WorkerChampionshipPlaceholderValues.resolve(
+                        PLAYER, TEAM, frozen, "tab_prefix", true));
+        assertEquals(
+                "<§x§f§f§f§5§6§6金队> ",
+                WorkerChampionshipPlaceholderValues.resolve(
+                        PLAYER, TEAM, frozen, "tab_prefix", false));
+        assertEquals(
+                "§7",
+                WorkerChampionshipPlaceholderValues.resolve(
+                        null, null, frozen, "tab_name_color", true));
+        assertEquals(
+                "§x§f§f§f§5§6§6",
+                WorkerChampionshipPlaceholderValues.resolve(
+                        PLAYER, TEAM, frozen, "tab_name_color", true));
+    }
+
     private static final UUID PLAYER_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
     private static final BingoPresentation PRESENTATION =
             new BingoPresentation(

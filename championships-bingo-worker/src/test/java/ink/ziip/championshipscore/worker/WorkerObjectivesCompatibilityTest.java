@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.worker;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -12,7 +13,25 @@ import java.util.Map;
 
 class WorkerObjectivesCompatibilityTest {
     @Test
-    void rejectsNewMaterialsBeforeResolvingServerRegistries() {
+    void acceptsMaterialsAndStatisticsAvailableOnTheDeployedWorker() {
+        assertDoesNotThrow(
+                () ->
+                        new WorkerObjectives(
+                                List.of(
+                                        new BingoTaskSpec(
+                                                0,
+                                                "straw-bed",
+                                                "item",
+                                                Map.of("material", "STRAW_BED")),
+                                        new BingoTaskSpec(
+                                                1,
+                                                "straw-sleep",
+                                                "statistic",
+                                                Map.of("statistic", "SLEEP_IN_STRAW_BED")))));
+    }
+
+    @Test
+    void rejectsUnknownMaterialsBeforeResolvingServerRegistries() {
         var failure =
                 assertThrows(
                         IllegalArgumentException.class,
@@ -23,12 +42,12 @@ class WorkerObjectivesCompatibilityTest {
                                                         0,
                                                         "straw-bed",
                                                         "item",
-                                                        Map.of("material", "STRAW_BED")))));
-        assertTrue(failure.getMessage().contains("26.2 worker content baseline"));
+                                                        Map.of("material", "UNKNOWN_MATERIAL")))));
+        assertTrue(failure.getMessage().contains("26.3 worker content baseline"));
     }
 
     @Test
-    void rejectsNewStatisticsBeforeReadingPlayerProgress() {
+    void rejectsUnknownStatisticsBeforeReadingPlayerProgress() {
         var failure =
                 assertThrows(
                         IllegalArgumentException.class,
@@ -41,7 +60,7 @@ class WorkerObjectivesCompatibilityTest {
                                                         "statistic",
                                                         Map.of(
                                                                 "statistic",
-                                                                "SLEEP_IN_STRAW_BED")))));
-        assertTrue(failure.getMessage().contains("26.2 worker content baseline"));
+                                                                "UNKNOWN_STATISTIC")))));
+        assertTrue(failure.getMessage().contains("26.3 worker content baseline"));
     }
 }

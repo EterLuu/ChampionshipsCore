@@ -7,6 +7,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.tgttos.TGTTOSAreaTypeSte
 import ink.ziip.championshipscore.api.game.tgttos.config.TGTTOSConfig;
 import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.api.gui.MenuInventory;
+import ink.ziip.championshipscore.api.gui.MenuLayout;
 import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 
@@ -21,16 +22,11 @@ import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.Locale;
 
 /** Paged selector for the TGTTOS map equipment/game-mode profile. */
 public final class TGTTOSAreaTypeGui {
     private static final String MENU_PATH = MenuId.TGTTOS_AREA_TYPE.path();
-    private static final int OPTION_FIRST_SLOT = 0;
-    private static final int OPTION_LAST_SLOT = 44;
-    private static final int PAGE_SIZE = 45;
-    private static final int PREVIOUS_SLOT = 45;
-    private static final int BACK_SLOT = 49;
-    private static final int NEXT_SLOT = 53;
 
     private TGTTOSAreaTypeGui() {}
 
@@ -39,6 +35,7 @@ public final class TGTTOSAreaTypeGui {
         final TGTTOSAreaTypeStep step;
         int page;
         Inventory inventory;
+        MenuLayout layout;
 
         Holder(@NotNull PrepareSession session, @NotNull TGTTOSAreaTypeStep step) {
             this.session = session;
@@ -56,7 +53,8 @@ public final class TGTTOSAreaTypeGui {
             @NotNull PrepareSession session,
             @NotNull TGTTOSAreaTypeStep step) {
         Holder holder = new Holder(session, step);
-        GuiConfig.MenuSpec menu = GuiConfig.menu(MENU_PATH, 54, "", List.of());
+        GuiConfig.MenuSpec menu = GuiConfig.menu(MENU_PATH, 54, "", MenuLayout.range(0, 45));
+        holder.layout = layout(menu.size());
         holder.inventory = Bukkit.createInventory(holder, menu.size(), menu.title());
         refresh(holder);
         player.openInventory(holder.inventory);
@@ -75,28 +73,27 @@ public final class TGTTOSAreaTypeGui {
             return;
         }
         int slot = event.getRawSlot();
-        if (slot == PREVIOUS_SLOT) {
+        if (slot == holder.layout.control("previous")) {
             if (holder.page > 0) {
                 holder.page--;
                 refresh(holder);
             }
             return;
         }
-        if (slot == NEXT_SLOT) {
-            if (holder.page + 1 < pageCount()) {
+        if (slot == holder.layout.control("next")) {
+            if (holder.page + 1 < holder.layout.pageCount(TGTTOSAreaTypeStep.options().size())) {
                 holder.page++;
                 refresh(holder);
             }
             return;
         }
-        if (slot == BACK_SLOT) {
+        if (slot == holder.layout.control("back")) {
             back(player, session);
             return;
         }
-        if (slot < OPTION_FIRST_SLOT || slot > OPTION_LAST_SLOT) return;
-        int index = holder.page * PAGE_SIZE + slot;
+        int index = holder.layout.index(holder.page, slot);
         List<TGTTOSAreaTypeStep.Option> options = TGTTOSAreaTypeStep.options();
-        if (index >= options.size()) return;
+        if (index < 0 || index >= options.size()) return;
         String message = holder.step.select(session, options.get(index));
         if (message != null) player.sendMessage(message);
         back(player, session);
@@ -105,17 +102,32 @@ public final class TGTTOSAreaTypeGui {
     private static void refresh(@NotNull Holder holder) {
         Inventory inventory = holder.inventory;
         inventory.clear();
+        for (int slot : holder.layout.border()) inventory.setItem(slot, filler());
         List<TGTTOSAreaTypeStep.Option> options = TGTTOSAreaTypeStep.options();
         String current = ((TGTTOSConfig) holder.session.getTarget().config()).getAreaType();
-        for (int slot = OPTION_FIRST_SLOT; slot <= OPTION_LAST_SLOT; slot++) {
-            int index = holder.page * PAGE_SIZE + slot;
+        for (int slot : holder.layout.content()) {
+            int index = holder.layout.index(holder.page, slot);
             inventory.setItem(
                     slot, index < options.size() ? option(options.get(index), current) : filler());
         }
-        inventory.setItem(PREVIOUS_SLOT, holder.page > 0 ? configured("previous", null) : filler());
-        inventory.setItem(BACK_SLOT, configured("back", null));
         inventory.setItem(
-                NEXT_SLOT, holder.page + 1 < pageCount() ? configured("next", null) : filler());
+                holder.layout.control("previous"),
+                holder.page > 0 ? configured("previous", null) : filler());
+        inventory.setItem(holder.layout.control("back"), configured("back", null));
+        inventory.setItem(
+                holder.layout.control("next"),
+                holder.page + 1 < holder.layout.pageCount(TGTTOSAreaTypeStep.options().size())
+                        ? configured("next", null)
+                        : filler());
+    }
+
+    static MenuLayout layout(int size) {
+        return MenuLayout.load(
+                MENU_PATH,
+                size,
+                MenuLayout.range(0, 45),
+                List.of(),
+                java.util.Map.of("previous", 45, "back", 49, "next", 53));
     }
 
     private static ItemStack configured(@NotNull String item, String state) {
@@ -129,15 +141,10 @@ public final class TGTTOSAreaTypeGui {
                 false);
     }
 
-    private static int pageCount() {
-        return Math.max(1, (TGTTOSAreaTypeStep.options().size() + PAGE_SIZE - 1) / PAGE_SIZE);
-    }
-
     private static ItemStack option(@NotNull TGTTOSAreaTypeStep.Option option, String current) {
-        ItemStack item = new ItemStack(option.icon());
         boolean selected = option.value().equalsIgnoreCase(current == null ? "" : current);
         return ConfiguredGui.item(
-                MENU_PATH + ".items.option." + option.value().toLowerCase(),
+                MENU_PATH + ".items.option." + option.value().toLowerCase(Locale.ROOT),
                 selected ? "selected" : "idle",
                 java.util.Map.of(),
                 option.icon(),
@@ -147,7 +154,14 @@ public final class TGTTOSAreaTypeGui {
     }
 
     private static ItemStack filler() {
-        return new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
+        return ConfiguredGui.item(
+                MENU_PATH + ".items.border",
+                null,
+                java.util.Map.of(),
+                Material.GRAY_STAINED_GLASS_PANE,
+                net.kyori.adventure.text.Component.text(" "),
+                List.of(),
+                false);
     }
 
     private static void back(@NotNull Player player, @NotNull PrepareSession session) {

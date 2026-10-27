@@ -6,12 +6,11 @@ import ink.ziip.championshipscore.api.game.bingo.util.MessageService;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TextComponent;
-import net.kyori.adventure.text.format.NamedTextColor;
 
 import org.bukkit.Material;
 import org.bukkit.Statistic;
 
+import java.util.Map;
 import java.util.Objects;
 
 /** Reach {@code count} of the given statistic. */
@@ -63,63 +62,66 @@ public record StatisticTask(StatisticHandle statistic, int count, Dimension dime
 
     @Override
     public Component getName() {
-        // Special override: FISH_CAUGHT uses a friendlier display name from the lang file.
-        if (statistic.statisticType() == Statistic.FISH_CAUGHT) {
-            MessageService msg = MessageService.global();
-            return Component.text()
-                    .color(NamedTextColor.LIGHT_PURPLE)
-                    .append(Component.text("*"))
-                    .append(LegacyText.component(msg.tr("task.fish_caught_name")))
-                    .append(Component.text(": "))
-                    .append(Component.text(count))
-                    .append(Component.text("*"))
-                    .build();
-        }
-
+        var msg = MessageService.global();
         Component amount = Component.text(count);
-        TextComponent.Builder builder =
-                Component.text().append(Component.text("*")).color(NamedTextColor.LIGHT_PURPLE);
-
-        switch (StatisticCategories.of(statistic.statisticType())) {
+        if (statistic.statisticType() == Statistic.FISH_CAUGHT)
+            return msg.rich(
+                    "task.presentation.statistic-name",
+                    Map.of(
+                            "%statistic%",
+                            LegacyText.component(msg.tr("task.fish_caught_name")),
+                            "%count%",
+                            amount));
+        return switch (StatisticCategories.of(statistic.statisticType())) {
             case ROOT_STATISTIC -> {
-                if (statistic.statisticType().equals(Statistic.KILL_ENTITY)) {
-                    Component entityName = BingoComponents.entityName(statistic.entityType());
-                    Component[] inPlace = new Component[] {amount, Component.empty()};
-                    builder.append(BingoComponents.statistic(statistic, inPlace))
-                            .append(Component.text("("))
-                            .append(entityName)
-                            .append(Component.text(")"));
-                } else if (statistic.statisticType().equals(Statistic.ENTITY_KILLED_BY)) {
-                    Component entityName = BingoComponents.entityName(statistic.entityType());
-                    Component[] inPlace =
-                            new Component[] {Component.empty(), amount, Component.empty()};
-                    builder.append(Component.text("("))
-                            .append(entityName)
-                            .append(Component.text(")"))
-                            .append(BingoComponents.statistic(statistic, inPlace));
-                } else {
-                    builder.append(BingoComponents.statistic(statistic))
-                            .append(Component.text(" "))
-                            .append(BingoComponents.itemName(statistic.itemType()))
-                            .append(Component.text(": "))
-                            .append(amount);
-                }
+                if (statistic.statisticType() == Statistic.KILL_ENTITY)
+                    yield msg.rich(
+                            "task.presentation.kill-name",
+                            Map.of(
+                                    "%statistic%",
+                                            BingoComponents.statistic(
+                                                    statistic, amount, Component.empty()),
+                                    "%subject%",
+                                            BingoComponents.entityName(statistic.entityType())));
+                if (statistic.statisticType() == Statistic.ENTITY_KILLED_BY)
+                    yield msg.rich(
+                            "task.presentation.killed-by-name",
+                            Map.of(
+                                    "%statistic%",
+                                            BingoComponents.statistic(
+                                                    statistic,
+                                                    Component.empty(),
+                                                    amount,
+                                                    Component.empty()),
+                                    "%subject%",
+                                            BingoComponents.entityName(statistic.entityType())));
+                yield msg.rich(
+                        "task.presentation.subject-statistic-name",
+                        Map.of(
+                                "%statistic%",
+                                BingoComponents.statistic(statistic),
+                                "%subject%",
+                                BingoComponents.itemName(statistic.itemType()),
+                                "%count%",
+                                amount));
             }
             case TRAVEL ->
-                    builder.append(BingoComponents.statistic(statistic))
-                            .append(Component.text(": "))
-                            .append(Component.text(count * 10))
-                            .append(Component.text(" "))
-                            .append(
-                                    LegacyText.component(
-                                            MessageService.global().tr("task.blocks_unit")));
+                    msg.rich(
+                            "task.presentation.travel-name",
+                            Map.of(
+                                    "%statistic%",
+                                    BingoComponents.statistic(statistic),
+                                    "%distance%",
+                                    Component.text(count * 10),
+                                    "%unit%",
+                                    LegacyText.component(msg.tr("task.blocks_unit"))));
             default ->
-                    builder.append(BingoComponents.statistic(statistic))
-                            .append(Component.text(": "))
-                            .append(amount);
-        }
-        builder.append(Component.text("*"));
-        return builder.build();
+                    msg.rich(
+                            "task.presentation.statistic-name",
+                            Map.of(
+                                    "%statistic%",
+                                    BingoComponents.statistic(statistic), "%count%", amount));
+        };
     }
 
     @Override

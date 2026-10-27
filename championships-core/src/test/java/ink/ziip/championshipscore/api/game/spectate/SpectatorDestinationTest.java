@@ -4,9 +4,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
+import ink.ziip.championshipscore.api.game.lasershowdown.runtime.LaserShowdownTeamArea;
 import ink.ziip.championshipscore.api.game.manager.GameManager;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
-import ink.ziip.championshipscore.api.game.lasershowdown.runtime.LaserShowdownTeamArea;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;

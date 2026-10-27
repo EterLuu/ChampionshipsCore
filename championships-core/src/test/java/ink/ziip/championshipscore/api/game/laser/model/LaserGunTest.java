@@ -7,6 +7,19 @@ import org.junit.jupiter.api.Test;
 
 class LaserGunTest {
     @Test
+    void rifleKeepsThreeBodyHitsThroughMidrangeAndFallsOffBeyondIt() {
+        for (double distance : new double[] {0, 15, 16, 30}) {
+            assertEquals(34D, LaserGun.RIFLE.damage(LaserGun.HitRegion.BODY, distance));
+            assertEquals(
+                    3D, Math.ceil(100 / LaserGun.RIFLE.damage(LaserGun.HitRegion.BODY, distance)));
+        }
+        assertEquals(3D, Math.ceil(100 / LaserGun.RIFLE.damage(LaserGun.HitRegion.BODY, 39)));
+        assertEquals(4D, Math.ceil(100 / LaserGun.RIFLE.damage(LaserGun.HitRegion.BODY, 40)));
+        assertEquals(30.6D, LaserGun.RIFLE.damage(LaserGun.HitRegion.BODY, 80), 1e-9);
+        assertEquals(99D, LaserGun.RIFLE.damage(LaserGun.HitRegion.HEAD, 80), 1e-9);
+    }
+
+    @Test
     void weaponsExposeTransportRolesAndRequestedMagazineTimings() {
         assertEquals(Material.GOLDEN_SHOVEL, LaserGun.SNIPER.material());
         assertEquals(2, LaserGun.SNIPER.magazine());

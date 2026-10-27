@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.game.lasershowdown.runtime;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
+import ink.ziip.championshipscore.api.game.laser.presentation.LaserGunMenu;
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 
 import io.papermc.paper.event.entity.EntityLungeEvent;
@@ -18,7 +19,6 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.EquipmentSlot;
-import org.bukkit.inventory.InventoryHolder;
 
 /** Event boundary for the laser implementation of Laser Showdown. */
 public final class LaserShowdownHandler extends BaseListener {
@@ -133,28 +133,21 @@ public final class LaserShowdownHandler extends BaseListener {
 
     @EventHandler
     public void click(InventoryClickEvent event) {
-        InventoryHolder holder = event.getView().getTopInventory().getHolder();
-        if (holder instanceof LaserShowdownGunMenuHolder menu && menu.area() == area) {
+        if (LaserGunMenu.handleClick(area, event)) return;
+        if (event.getWhoClicked() instanceof org.bukkit.entity.Player player && participant(player))
             event.setCancelled(true);
-            if (event.getWhoClicked() instanceof org.bukkit.entity.Player player)
-                area.selectGunFromMenu(player, event);
-        } else if (event.getWhoClicked() instanceof org.bukkit.entity.Player player
-                && participant(player)) event.setCancelled(true);
     }
 
     @EventHandler
     public void close(InventoryCloseEvent event) {
-        if (event.getInventory().getHolder() instanceof LaserShowdownGunMenuHolder holder
-                && holder.area() == area
-                && event.getPlayer() instanceof org.bukkit.entity.Player player)
-            area.closeGunMenu(player, holder);
+        LaserGunMenu.handleClose(area, event);
     }
 
     @EventHandler
     public void drag(InventoryDragEvent event) {
-        if (event.getView().getTopInventory().getHolder() instanceof LaserShowdownGunMenuHolder
-                || event.getWhoClicked() instanceof org.bukkit.entity.Player player
-                        && participant(player)) event.setCancelled(true);
+        if (LaserGunMenu.handleDrag(area, event)) return;
+        if (event.getWhoClicked() instanceof org.bukkit.entity.Player player && participant(player))
+            event.setCancelled(true);
     }
 
     @EventHandler
@@ -197,7 +190,7 @@ public final class LaserShowdownHandler extends BaseListener {
                     || area.getGameStageEnum() == GameStageEnum.COUNTDOWN)
                 area.teleportPlayerToSpawnLocation(player);
             else if (area.getGameStageEnum() == GameStageEnum.PROGRESS
-                    && player.getGameMode() == GameMode.ADVENTURE) area.respawnPlayer(player);
+                    && player.getGameMode() == GameMode.ADVENTURE) area.returnToArena(player);
         }
     }
 }

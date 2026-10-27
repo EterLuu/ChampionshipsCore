@@ -8,6 +8,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
 import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.api.gui.MenuInventory;
+import ink.ziip.championshipscore.api.gui.MenuLayout;
 import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 
@@ -30,12 +31,6 @@ import java.util.Map;
  */
 public final class StepMenuGui {
     private static final String MENU_PATH = MenuId.MAP_EDITOR_STEP_LIST.path();
-    private static final int PAGE_SIZE = 45;
-    private static final int PREVIOUS_SLOT = 45;
-    private static final int BACK_SLOT = 49;
-    private static final int NEXT_SLOT = 53;
-    private static final int FIRST_STEP_SLOT = 0;
-    private static final int LAST_STEP_SLOT = 44;
 
     private StepMenuGui() {}
 
@@ -43,6 +38,7 @@ public final class StepMenuGui {
         final PrepareSession session;
         int page;
         Inventory inventory;
+        MenuLayout layout;
 
         Holder(@NotNull PrepareSession session) {
             this.session = session;
@@ -57,7 +53,12 @@ public final class StepMenuGui {
     public static void open(@NotNull Player player, @NotNull PrepareSession session) {
         Holder holder = new Holder(session);
         GuiConfig.MenuSpec menu =
-                GuiConfig.menu(MENU_PATH, 54, GuiConfig.text(MENU_PATH + ".title"), List.of());
+                GuiConfig.menu(
+                        MENU_PATH,
+                        54,
+                        GuiConfig.text(MENU_PATH + ".title"),
+                        MenuLayout.range(0, 45));
+        holder.layout = layout(menu.size());
         Inventory inventory = Bukkit.createInventory(holder, menu.size(), menu.title());
         holder.inventory = inventory;
         refresh(holder);
@@ -68,12 +69,12 @@ public final class StepMenuGui {
         PrepareSession session = holder.session;
         Inventory inventory = holder.inventory;
         inventory.clear();
-        int pageCount = pageCount(session);
+        for (int slot : holder.layout.border()) inventory.setItem(slot, filler());
+        int pageCount = holder.layout.pageCount(session.getSteps().size());
         holder.page = Math.max(0, Math.min(holder.page, pageCount - 1));
-        int first = holder.page * PAGE_SIZE;
 
-        for (int slot = FIRST_STEP_SLOT; slot <= LAST_STEP_SLOT; slot++) {
-            int index = first + slot;
+        for (int slot : holder.layout.content()) {
+            int index = holder.layout.index(holder.page, slot);
             if (index < session.getSteps().size()) {
                 inventory.setItem(
                         slot, stepItem(session, session.getSteps().get(index), index + 1));
@@ -85,7 +86,7 @@ public final class StepMenuGui {
         boolean hasPrev = holder.page > 0;
         boolean hasNext = holder.page + 1 < pageCount;
         inventory.setItem(
-                PREVIOUS_SLOT,
+                holder.layout.control("previous"),
                 configured(
                         "previous",
                         hasPrev ? null : "disabled",
@@ -96,13 +97,22 @@ public final class StepMenuGui {
                                 pageCount,
                                 "total",
                                 session.getSteps().size())));
-        inventory.setItem(BACK_SLOT, configured("back", null, Map.of()));
+        inventory.setItem(holder.layout.control("back"), configured("back", null, Map.of()));
         inventory.setItem(
-                NEXT_SLOT,
+                holder.layout.control("next"),
                 configured(
                         "next",
                         hasNext ? null : "disabled",
                         Map.of("page", holder.page + 2, "pages", pageCount)));
+    }
+
+    static MenuLayout layout(int size) {
+        return MenuLayout.load(
+                MENU_PATH,
+                size,
+                MenuLayout.range(0, 45),
+                List.of(),
+                java.util.Map.of("previous", 45, "back", 49, "next", 53));
     }
 
     private static ItemStack configured(
@@ -130,8 +140,8 @@ public final class StepMenuGui {
             return;
         }
         int slot = event.getRawSlot();
-        int pageCount = pageCount(session);
-        if (slot == PREVIOUS_SLOT) {
+        int pageCount = holder.layout.pageCount(session.getSteps().size());
+        if (slot == holder.layout.control("previous")) {
             if (holder.page > 0) {
                 holder.page--;
                 refresh(holder);
@@ -140,20 +150,19 @@ public final class StepMenuGui {
             }
             return;
         }
-        if (slot == NEXT_SLOT) {
+        if (slot == holder.layout.control("next")) {
             if (holder.page + 1 < pageCount) {
                 holder.page++;
                 refresh(holder);
             }
             return;
         }
-        if (slot == BACK_SLOT) {
+        if (slot == holder.layout.control("back")) {
             back(player, session);
             return;
         }
-        if (slot < FIRST_STEP_SLOT || slot > LAST_STEP_SLOT) return;
-        int index = holder.page * PAGE_SIZE + slot;
-        if (index >= session.getSteps().size()) return;
+        int index = holder.layout.index(holder.page, slot);
+        if (index < 0 || index >= session.getSteps().size()) return;
         manager.handleStepClick(player, session, session.getSteps().get(index).key());
         if (player.getOpenInventory().getTopInventory().getHolder() == holder) {
             refresh(holder);
@@ -163,10 +172,6 @@ public final class StepMenuGui {
     private static void back(@NotNull Player player, @NotNull PrepareSession session) {
         player.closeInventory();
         PrepareModeInventory.refresh(player, session);
-    }
-
-    private static int pageCount(@NotNull PrepareSession session) {
-        return Math.max(1, (session.getSteps().size() + PAGE_SIZE - 1) / PAGE_SIZE);
     }
 
     private static ItemStack stepItem(
@@ -216,6 +221,13 @@ public final class StepMenuGui {
     }
 
     private static ItemStack filler() {
-        return PrepareKeys.item(Material.GRAY_STAINED_GLASS_PANE, Component.text(" "), List.of());
+        return ConfiguredGui.item(
+                MENU_PATH + ".items.border",
+                null,
+                java.util.Map.of(),
+                Material.GRAY_STAINED_GLASS_PANE,
+                net.kyori.adventure.text.Component.text(" "),
+                List.of(),
+                false);
     }
 }

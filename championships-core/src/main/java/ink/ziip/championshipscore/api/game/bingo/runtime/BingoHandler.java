@@ -127,20 +127,11 @@ public class BingoHandler extends BaseListener {
         return bingoArea != null && bingoArea.getGameStageEnum() == GameStageEnum.PROGRESS;
     }
 
-    /**
-     * Inventory events fire before the item lands; re-scan one tick later once the inventory
-     * settles.
-     */
-    private void scheduleProgressCheck(Player player) {
-        if (player == null || bingoArea == null) return;
-        platformScheduler.runEntityLater(player, () -> bingoArea.checkPlayerProgress(player), 1L);
-    }
-
     @EventHandler
     public void onPickup(EntityPickupItemEvent event) {
         if (!running()) return;
         if (event.getEntity() instanceof Player player && !bingoArea.notAreaPlayer(player)) {
-            scheduleProgressCheck(player);
+            bingoArea.requestProgressCheck(player);
         }
     }
 
@@ -154,7 +145,7 @@ public class BingoHandler extends BaseListener {
                     bingoArea.recordEventDistinct(player, "craft_unique", result.name());
                 }
             }
-            scheduleProgressCheck(player);
+            bingoArea.requestProgressCheck(player);
         }
     }
 
@@ -373,7 +364,7 @@ public class BingoHandler extends BaseListener {
     public void onInventoryClick(InventoryClickEvent event) {
         if (!running()) return;
         if (event.getWhoClicked() instanceof Player player && !bingoArea.notAreaPlayer(player)) {
-            scheduleProgressCheck(player);
+            bingoArea.requestProgressCheck(player);
         }
     }
 

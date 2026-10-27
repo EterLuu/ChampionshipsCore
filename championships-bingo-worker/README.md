@@ -4,7 +4,7 @@ Bingo Worker 在独立 Folia 服务端执行 ChampionshipsCore 的远程 Bingo�
 
 ## 要求
 
-- Java 25、Folia 26.2 与 PacketEvents 2.14.0。
+- Java 25、Folia 26.3 与 PacketEvents 2.14.0。
 - 配套版本的 Core、双方可访问的 Redis。
 - BungeeCord，或启用 BungeeCord 兼容 channel 的 Velocity。
 - 已加载的主世界、下界和末地，三个维度位于同一主世界目录下。
@@ -12,7 +12,7 @@ Bingo Worker 在独立 Folia 服务端执行 ChampionshipsCore 的远程 Bingo�
 
 PlaceholderAPI 可选；FastBoard、Redis 客户端和内部共享模块已包含在 Worker JAR 中。服务端与插件版本以当前 POM 和插件描述为准。
 
-远程任务内容限定为 Minecraft 26.2：Core 在通配展开后、抽卡前过滤新版本注册项，冻结 manifest 和 Worker 编译任务时再次校验。物品集合、事件主体、统计、成就和显示物品均须兼容该基线；Core 升级到 26.3 不会向 Folia 26.2 下发新增任务。本地 Bingo 使用所在服务器的任务池。
+远程任务内容使用从 Folia 26.3 原生注册表导出的共同基线：Core 在通配展开后、抽卡前过滤不支持的注册项，冻结 manifest 和 Worker 编译任务时再次校验。物品集合、事件主体、统计、成就和显示物品均须符合该基线；两端支持 26.3 新增内容。本地 Bingo 使用所在服务器的任务池。
 
 ## 构建与安装
 
@@ -54,9 +54,9 @@ worlds:
 | `redis.reclaim-idle-ms` / `redis.max-deliveries` | pending 接管与 DLQ 投递阈值 |
 | `proxy.return-server` | 代理注册的 Core 服务名，需替换生成模板中的默认值 |
 | `worlds.allow-reuse-without-reset` | 正式比赛保持 `false`；`true` 仅供允许复用世界的开发场景 |
-| `worlds.seed-filter.*` | 内嵌 SeedLab 群系筛选，不需要外部程序或网络服务 |
+| `worlds.seed-filter.*` | 原生群系采样筛选，不创建测试世界或加载区块 |
 
-SeedLab 默认半径 2000 格、采样步长 32 格、最多 128 个候选、时间窗 14000 毫秒；实际完成数量取决于资源预算。筛选仅在插件发现需要创建新世界时运行，不会改写已由 Folia 启动加载的世界 seed；Folia 部署应在外部世界准备流程中明确选择 seed。在该创建路径中预测器不可用时，`required: false` 可回退随机 seed，`required: true` 拒绝启动。许可见 [第三方声明](THIRD-PARTY-NOTICES.md)。
+群系筛选默认半径 2000 格、采样步长 32 格、最多 128 个候选、时间窗 14000 毫秒；实际完成数量取决于资源预算。筛选仅在插件发现需要创建新世界时运行，不会改写已由 Folia 启动加载的世界 seed；Folia 部署应在外部世界准备流程中明确选择 seed。筛选器在初始化时捕获内核的冻结注册表，再为每个候选种子创建独立的原生噪声采样器。在该创建路径中采样器不可用时，`required: false` 可回退随机 seed，`required: true` 拒绝启动。
 
 任务、计分、倒计时、PvP、效果、语言和 `scoreboards.yml` 模板由 Core 冻结到 manifest。修改 Core 配置影响新比赛，当前比赛继续使用已有快照。
 

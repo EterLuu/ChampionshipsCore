@@ -23,7 +23,6 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -186,10 +185,8 @@ public class GlowingEntities implements Listener {
                 return;
             }
         }
-        // This update didn't carry the flags byte; append it so the glow still shows.
-        List<WrappedDataValue> updated = new ArrayList<>(values);
-        updated.add(new WrappedDataValue(SHARED_FLAGS_INDEX, byteSerializer(), forcedFlags));
-        packet.getDataValueCollectionModifier().write(0, updated);
+        // Partial metadata updates retain the client's last flags. An invented flags byte here
+        // would erase real invisibility, swimming, sprinting and other unrelated entity state.
     }
 
     private byte forcedFlags(@NotNull UUID receiver, int entityId) {

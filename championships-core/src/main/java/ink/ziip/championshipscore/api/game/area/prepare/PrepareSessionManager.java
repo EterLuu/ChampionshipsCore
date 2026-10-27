@@ -140,7 +140,7 @@ public class PrepareSessionManager extends BaseManager {
             if (session != null) session.getFlow().onSessionExit(session);
             Player p = Bukkit.getPlayer(id);
             if (p != null) {
-                AnvilInputGui.close(p);
+                AnvilInputGui.close(this, p);
                 restoreSnapshot(p);
                 deleteSnapshotFile(id);
             }
@@ -150,7 +150,7 @@ public class PrepareSessionManager extends BaseManager {
         sessions.clear();
         mapLocks.clear();
         snapshots.clear();
-        AnvilInputGui.closeAll();
+        AnvilInputGui.closeAll(this);
         if (listener != null) listener.unRegister();
     }
 
@@ -260,7 +260,7 @@ public class PrepareSessionManager extends BaseManager {
         session.getFlow().onSessionExit(session);
         mapLocks.remove(
                 lockKey(session.getGameType(), session.getAreaName()), player.getUniqueId());
-        AnvilInputGui.close(player);
+        AnvilInputGui.close(this, player);
         restoreSnapshot(player);
         snapshots.remove(player.getUniqueId());
         deleteSnapshotFile(player.getUniqueId());
@@ -309,7 +309,19 @@ public class PrepareSessionManager extends BaseManager {
             case STAMP ->
                     AnvilInputGui.openNumber(
                             player,
+                            session,
                             count -> {
+                                if (!player.isOnline()
+                                        || Bukkit.getPlayer(player.getUniqueId()) != player
+                                        || getSession(player) != session
+                                        || !player.hasPermission("cc.admin")) return;
+                                if (session.getTarget().config()
+                                                instanceof
+                                                ink.ziip.championshipscore.api.game.riptiderush
+                                                        .config.RiptideRushConfig
+                                        && !ink.ziip.championshipscore.api.game.area.prepare.gui
+                                                .RiptideCourseEditorGui.available(
+                                                this, player, session)) return;
                                 String msg = step.stamp(session, player, count);
                                 if (msg != null) player.sendMessage(msg);
                                 PrepareModeInventory.refresh(player, session);

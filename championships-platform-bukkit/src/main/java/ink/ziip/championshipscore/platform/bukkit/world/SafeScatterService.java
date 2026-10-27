@@ -19,6 +19,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
  * Finds safe scatter locations without synchronously loading chunks. Block inspection is executed
@@ -46,8 +47,17 @@ public final class SafeScatterService {
     private final PlatformScheduler scheduler;
     private final java.util.logging.Logger logger;
     private volatile boolean cancelled;
+    private final Plugin plugin;
+    private final Predicate<Player> eligible;
 
     public SafeScatterService(Plugin plugin) {
+        this(plugin, player -> true);
+    }
+
+    /** The admission predicate runs on the player's entity thread immediately before teleport. */
+    public SafeScatterService(Plugin plugin, Predicate<Player> eligible) {
+        this.plugin = plugin;
+        this.eligible = java.util.Objects.requireNonNull(eligible);
         this.scheduler = new PlatformScheduler(plugin);
         this.logger = plugin.getLogger();
     }
@@ -386,12 +396,27 @@ public final class SafeScatterService {
 
     private CompletableFuture<Void> teleportReset(Player player, Location location) {
         if (cancelled) return CompletableFuture.completedFuture(null);
-        return player.teleportAsync(location)
+        return location.getWorld()
+                .getChunkAtAsync(location)
+                .thenCompose(
+                        chunk ->
+                                scheduler.supplyEntity(
+                                        player,
+                                        () ->
+                                                admitted(player)
+                                                        ? player.teleportAsync(location)
+                                                        : CompletableFuture.completedFuture(false)))
+                .thenCompose(
+                        teleport ->
+                                teleport == null
+                                        ? CompletableFuture.completedFuture(false)
+                                        : teleport)
                 .thenCompose(
                         success ->
                                 scheduler.runEntityFuture(
                                         player,
                                         () -> {
+                                            if (!admitted(player)) return;
                                             if (!Boolean.TRUE.equals(success)) {
                                                 logger.warning(
                                                         "Bingo scatter teleport rejected: player="
@@ -420,6 +445,14 @@ public final class SafeScatterService {
                                     error);
                             return null;
                         });
+    }
+
+    private boolean admitted(Player player) {
+        return !cancelled
+                && plugin.isEnabled()
+                && player.isOnline()
+                && plugin.getServer().getPlayer(player.getUniqueId()) == player
+                && eligible.test(player);
     }
 
     private boolean isClearSpace(Material material) {

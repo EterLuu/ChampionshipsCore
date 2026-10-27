@@ -834,6 +834,13 @@ public class TeamManager extends BaseManager {
 
     public CompletionStage<MemberAddResult> addTeamMember(
             @NotNull String username, @NotNull String teamName) {
+        return addTeamMember(username, getTeam(teamName), null);
+    }
+
+    private CompletionStage<MemberAddResult> addTeamMember(
+            @NotNull String username,
+            @Nullable ChampionshipTeam targetTeam,
+            @Nullable UUID expectedUuid) {
         LifecycleTasks.Token token;
         try {
             token = teamTasks.token();
@@ -843,9 +850,8 @@ public class TeamManager extends BaseManager {
 
         if (!username.matches("[A-Za-z0-9_]{3,16}"))
             return CompletableFuture.completedFuture(MemberAddResult.INVALID_PLAYER_NAME);
-        ChampionshipTeam targetTeam = getTeam(teamName);
         String normalizedName = username.toLowerCase(Locale.ROOT);
-        if (targetTeam == null)
+        if (targetTeam == null || getTeam(targetTeam.getName()) != targetTeam)
             return CompletableFuture.completedFuture(MemberAddResult.TEAM_NOT_FOUND);
         if (targetTeam.getMembers().size() >= CCConfig.TEAM_MAX_MEMBERS)
             return CompletableFuture.completedFuture(MemberAddResult.TEAM_FULL);
@@ -868,7 +874,7 @@ public class TeamManager extends BaseManager {
                     }
                 });
         plugin.getPlayerManager()
-                .resolvePlayerUUID(username)
+                .resolvePlayerUUID(username, expectedUuid)
                 .whenComplete(
                         (uuid, identityFailure) ->
                                 dispatchMain(
@@ -974,7 +980,14 @@ public class TeamManager extends BaseManager {
 
     public CompletionStage<MemberAddResult> addTeamMember(
             @NotNull String username, @NotNull ChampionshipTeam championshipTeam) {
-        return addTeamMember(username, championshipTeam.getName());
+        return addTeamMember(username, championshipTeam, null);
+    }
+
+    public CompletionStage<MemberAddResult> addTeamMember(
+            @NotNull UUID selectedUuid,
+            @NotNull String username,
+            @NotNull ChampionshipTeam championshipTeam) {
+        return addTeamMember(username, championshipTeam, selectedUuid);
     }
 
     private static MemberAddResult memberAddFailure(@Nullable Throwable failure) {
@@ -1004,6 +1017,11 @@ public class TeamManager extends BaseManager {
 
         if (!username.matches("[A-Za-z0-9_]{1,16}"))
             return CompletableFuture.completedFuture(MemberMoveResult.INVALID_PLAYER);
+        Player selected = Bukkit.getPlayer(uuid);
+        if (selected == null || !selected.getName().equalsIgnoreCase(username))
+            return CompletableFuture.completedFuture(MemberMoveResult.INVALID_PLAYER);
+        if (getTeam(targetTeam.getName()) != targetTeam)
+            return CompletableFuture.completedFuture(MemberMoveResult.FAILED);
         ChampionshipTeam currentTeam = getFormalTeamByPlayer(uuid);
         if (currentTeam == targetTeam)
             return CompletableFuture.completedFuture(MemberMoveResult.SAME_TEAM);
@@ -1057,8 +1075,15 @@ public class TeamManager extends BaseManager {
                             () -> {
                                 if (persisted) {
                                     for (ChampionshipTeam team : cachedTeams.values()) {
+                                        team.getTeamMemberEntries().stream()
+                                                .filter(member -> member.getUuid().equals(uuid))
+                                                .forEach(
+                                                        member ->
+                                                                team.getTeam()
+                                                                        .removeEntry(
+                                                                                member
+                                                                                        .getUsername()));
                                         team.deleteMember(uuid);
-                                        team.getTeam().removeEntry(username);
                                     }
                                     targetTeam.addMember(uuid, username);
                                     targetTeam.getTeam().addEntry(username);
@@ -1086,6 +1111,18 @@ public class TeamManager extends BaseManager {
 
     public CompletionStage<Boolean> deleteTeamMember(
             @NotNull String username, @NotNull String teamName) {
+        ChampionshipTeam team = getTeam(teamName);
+        if (team == null) return CompletableFuture.completedFuture(false);
+        var matches =
+                team.getTeamMemberEntries().stream()
+                        .filter(member -> member.getUsername().equalsIgnoreCase(username))
+                        .toList();
+        if (matches.size() != 1) return CompletableFuture.completedFuture(false);
+        return deleteTeamMember(matches.getFirst().getUuid(), team);
+    }
+
+    public CompletionStage<Boolean> deleteTeamMember(
+            @NotNull UUID uuid, @NotNull ChampionshipTeam championshipTeam) {
         LifecycleTasks.Token token;
         try {
             token = teamTasks.token();
@@ -1093,15 +1130,18 @@ public class TeamManager extends BaseManager {
             return CompletableFuture.failedFuture(failure);
         }
 
-        ChampionshipTeam championshipTeam = getTeam(teamName);
-        if (championshipTeam == null) return CompletableFuture.completedFuture(false);
-        Set<TeamMemberEntry> matchingMembers =
+        if (getTeam(championshipTeam.getName()) != championshipTeam)
+            return CompletableFuture.completedFuture(false);
+        TeamMemberEntry member =
                 championshipTeam.getTeamMemberEntries().stream()
-                        .filter(member -> member.getUsername().equalsIgnoreCase(username))
-                        .collect(java.util.stream.Collectors.toSet());
+                        .filter(entry -> entry.getUuid().equals(uuid))
+                        .findFirst()
+                        .orElse(null);
+        if (member == null) return CompletableFuture.completedFuture(false);
+        String username = member.getUsername();
         String normalizedName = username.toLowerCase(Locale.ROOT);
         Set<Integer> teamIds = Set.of(championshipTeam.getId());
-        if (matchingMembers.isEmpty() || !reserveMemberMutation(normalizedName, teamIds))
+        if (!reserveMemberMutation(normalizedName, teamIds))
             return CompletableFuture.completedFuture(false);
 
         CompletableFuture<Boolean> result = token.future();
@@ -1124,7 +1164,7 @@ public class TeamManager extends BaseManager {
                 () -> {
                     boolean deleted = false;
                     try {
-                        deleted = teamDaoImpl.deleteTeamMembers(championshipTeam.getId(), username);
+                        deleted = teamDaoImpl.deleteTeamMember(championshipTeam.getId(), uuid);
                     } catch (RuntimeException failure) {
                         plugin.getLogger()
                                 .log(
@@ -1138,11 +1178,8 @@ public class TeamManager extends BaseManager {
                             result,
                             () -> {
                                 if (persisted) {
-                                    for (TeamMemberEntry member : matchingMembers) {
-                                        championshipTeam.deleteMember(member.getUuid());
-                                        plugin.getVisibilityManager()
-                                                .reconcilePlayer(member.getUuid());
-                                    }
+                                    championshipTeam.deleteMember(uuid);
+                                    plugin.getVisibilityManager().reconcilePlayer(uuid);
                                     championshipTeam.getTeam().removeEntry(username);
                                     publishTeamChange("team-member-deleted");
                                 }
@@ -1192,14 +1229,19 @@ public class TeamManager extends BaseManager {
     public String getTeamInfo(ChampionshipTeam championshipTeam) {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder
-                .append("&r========")
-                .append(championshipTeam.getColorCode())
-                .append(championshipTeam.getName())
-                .append("&r========")
+                .append(
+                        MessageConfig.codeText(
+                                "team-manager.info-header",
+                                championshipTeam.getColorCode(),
+                                championshipTeam.getName()))
                 .append("\n");
 
         for (TeamMemberEntry teamMemberEntry : championshipTeam.getTeamMemberEntries()) {
-            stringBuilder.append(teamMemberEntry.getUsername()).append("\n");
+            stringBuilder
+                    .append(
+                            MessageConfig.codeText(
+                                    "team-manager.info-member", teamMemberEntry.getUsername()))
+                    .append("\n");
         }
 
         return LegacyText.translateColorCodes(stringBuilder.toString());

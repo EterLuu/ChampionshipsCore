@@ -27,6 +27,8 @@ filters:
 
 # 仅用于 CC 的 DAILY 自由游玩；正式赛与管理员手动开局仍使用场地原有固定积分规则。
 daily-vote:
+  genesis-seconds: 30
+  genesis-options: 9
   # All pages share this single countdown.
   seconds: 20
 

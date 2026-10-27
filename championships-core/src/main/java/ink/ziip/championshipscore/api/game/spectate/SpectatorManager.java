@@ -6,17 +6,16 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.manager.GameManager;
-import ink.ziip.championshipscore.api.gui.MenuInventory;
+import ink.ziip.championshipscore.api.gui.PlayerListMenuConfig;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.platform.bukkit.gui.PlayerListMenu;
 import ink.ziip.championshipscore.platform.bukkit.player.SpectatorStateService;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 
 import io.papermc.paper.event.entity.EntityInsideBlockEvent;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -78,7 +77,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -91,7 +89,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class SpectatorManager extends BaseManager implements Listener {
     public static final String OWNER = "spectator:controls";
-    private static final int MAIN_SIZE = 9;
     private static final float MIN_SPEED = 0.05F;
     private static final float MAX_SPEED = 1.0F;
 
@@ -140,7 +137,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
                 sessions.remove(player.getUniqueId(), session);
                 clearPresentation(player, session.external());
             }
-            if (player.getOpenInventory().getTopInventory().getHolder() instanceof ControlHolder)
+            if (PlayerListMenu.owns(player.getOpenInventory().getTopInventory(), this))
                 player.closeInventory();
         }
         for (SpectatorSession session : sessions.values()) {
@@ -489,17 +486,19 @@ public final class SpectatorManager extends BaseManager implements Listener {
         boolean rightClick = action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK;
         if (!session.external()) {
             if (slot == hotbarSlot("participant-controls", 8)) {
-                Bukkit.getScheduler().runTask(plugin, () -> openPlayerTeleportMenu(player));
+                Bukkit.getScheduler()
+                        .runTask(plugin, () -> openPlayerTeleportMenu(player, session));
             }
             return;
         }
         if (slot == hotbarSlot("night-vision", 0)) toggleNightVision(player, session);
         else if (slot == hotbarSlot("player-teleport", 1)) {
             if (rightClick)
-                Bukkit.getScheduler().runTask(plugin, () -> openPlayerTeleportMenu(player));
+                Bukkit.getScheduler()
+                        .runTask(plugin, () -> openPlayerTeleportMenu(player, session));
         } else if (slot == hotbarSlot("leave", 5)) {
             if (gameManager.leaveSpectating(player))
-                feedback(player, MessageConfig.SPECTATOR_LEFT, NamedTextColor.RED, 0.8F);
+                feedback(player, MessageConfig.SPECTATOR_LEFT, "left", 0.8F);
         } else if (slot == hotbarSlot("flight-speed", 7)) {
             adjustFlySpeed(player, rightClick ? -.05F : .05F);
         } else if (slot == hotbarSlot("venue-selector", 8)) {
@@ -674,10 +673,10 @@ public final class SpectatorManager extends BaseManager implements Listener {
     public void onInventoryClick(@NotNull InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
         Inventory top = event.getView().getTopInventory();
-        if (top.getHolder() instanceof ControlHolder holder) {
+        if (PlayerListMenu.owns(top)) {
             event.setCancelled(true);
-            if (holder.viewer.equals(player.getUniqueId()) && event.getClickedInventory() == top)
-                clickControl(player, holder, event.getRawSlot());
+            if (PlayerListMenu.owns(top, this) && event.getClickedInventory() == top)
+                PlayerListMenu.click(player, top, event.getRawSlot());
             return;
         }
         if (isSpectatorLike(player.getUniqueId())) {
@@ -694,6 +693,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onInventoryDrag(@NotNull InventoryDragEvent event) {
+        if (PlayerListMenu.owns(event.getView().getTopInventory())) event.setCancelled(true);
         if (event.getWhoClicked() instanceof Player player
                 && isSpectatorLike(player.getUniqueId())) {
             event.setCancelled(true);
@@ -938,17 +938,63 @@ public final class SpectatorManager extends BaseManager implements Listener {
                 enabled
                         ? MessageConfig.SPECTATOR_NIGHT_VISION_ENABLED
                         : MessageConfig.SPECTATOR_NIGHT_VISION_DISABLED,
-                enabled ? NamedTextColor.GREEN : NamedTextColor.RED,
+                enabled ? "night-vision-enabled" : "night-vision-disabled",
                 enabled ? 1.2F : 0.8F);
     }
 
     private void openPlayerTeleportMenu(@NotNull Player player) {
-        String menuName = "player-teleport-selector";
-        ControlHolder holder = new ControlHolder(player.getUniqueId());
-        GuiConfig.MenuSpec menu = controlMenu(menuName);
-        holder.inventory = Bukkit.createInventory(holder, menu.size(), menu.title());
-        refresh(holder);
-        player.openInventory(holder.inventory);
+        openPlayerTeleportMenu(player, sessions.get(player.getUniqueId()));
+    }
+
+    private boolean currentSession(SpectatorSession expected) {
+        SpectatorSession current = expected == null ? null : sessions.get(expected.uuid());
+        return loaded
+                && plugin.isEnabled()
+                && current != null
+                && current.token().equals(expected.token());
+    }
+
+    private void openPlayerTeleportMenu(Player player, SpectatorSession expected) {
+        if (!currentSession(expected)) return;
+        PlayerListMenu.open(
+                player,
+                this,
+                PlayerListMenuConfig.spectatorPlayers(),
+                () -> currentSession(expected),
+                () ->
+                        playersInArea(expected.area(), player.getUniqueId()).stream()
+                                .map(
+                                        target ->
+                                                new PlayerListMenu.Target(
+                                                        target.getUniqueId(),
+                                                        Map.of("%player%", target.getName())))
+                                .toList(),
+                targetId -> selectPlayerTarget(player, expected, targetId));
+    }
+
+    private void selectPlayerTarget(Player player, SpectatorSession expected, UUID targetId) {
+        if (!currentSession(expected)) return;
+        BaseGameInstance area = expected.area();
+        Player target =
+                playersInArea(area, player.getUniqueId()).stream()
+                        .filter(candidate -> candidate.getUniqueId().equals(targetId))
+                        .findFirst()
+                        .orElse(null);
+        if (target == null) return;
+        String name = target.getName();
+        teleportManaged(
+                player,
+                area,
+                target.getLocation(),
+                success -> {
+                    if (success)
+                        feedback(
+                                player,
+                                MessageConfig.SPECTATOR_TELEPORTED_TO_PLAYER.replace(
+                                        "%player%", name),
+                                "teleported",
+                                1.2F);
+                });
     }
 
     private void adjustFlySpeed(@NotNull Player player, float delta) {
@@ -959,7 +1005,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
         feedback(
                 player,
                 MessageConfig.SPECTATOR_FLIGHT_SPEED.replace("%speed%", speedText(player)),
-                NamedTextColor.YELLOW,
+                "speed",
                 delta > 0 ? 1.25F : 0.8F);
     }
 
@@ -968,11 +1014,11 @@ public final class SpectatorManager extends BaseManager implements Listener {
     }
 
     private static void feedback(
-            @NotNull Player player,
-            @NotNull String message,
-            @NotNull NamedTextColor color,
-            float pitch) {
-        player.sendActionBar(LegacyText.component(message, color).decorate(TextDecoration.BOLD));
+            @NotNull Player player, @NotNull String message, @NotNull String style, float pitch) {
+        player.sendActionBar(
+                ink.ziip.championshipscore.platform.bukkit.text.ComponentTemplates.render(
+                        GuiConfig.text("spectator.feedback." + style),
+                        Map.of("%message%", LegacyText.component(message))));
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.7F, pitch);
     }
 
@@ -985,79 +1031,6 @@ public final class SpectatorManager extends BaseManager implements Listener {
         if (!(entity instanceof Projectile projectile)) return false;
         return projectile.getShooter() instanceof Player player
                 && isSpectatorLike(player.getUniqueId());
-    }
-
-    private void refresh(@NotNull ControlHolder holder) {
-        holder.inventory.clear();
-        SpectatorSession session = sessions.get(holder.viewer);
-        if (session == null) return;
-        holder.targets.clear();
-        String screen = "player-teleport-selector";
-        GuiConfig.MenuSpec menu = controlMenu(screen);
-        List<Player> targets = playersInArea(session.area(), holder.viewer);
-        int pageSize = menu.contentSlots().size();
-        int pageCount = Math.max(1, (targets.size() + pageSize - 1) / pageSize);
-        holder.page = Math.min(holder.page, pageCount - 1);
-        int from = holder.page * pageSize;
-        for (int i = from; i < Math.min(from + pageSize, targets.size()); i++) {
-            Player target = targets.get(i);
-            int slot = menu.contentSlots().get(i - from);
-            holder.inventory.setItem(
-                    slot,
-                    configuredMenuItem(
-                            screen, "player", Map.of("player", target.getName()), null, null));
-            holder.targets.put(slot, target.getUniqueId());
-        }
-        setMenuItem(holder.inventory, screen, "close", Map.of(), null);
-        if (holder.page > 0) setMenuItem(holder.inventory, screen, "previous", Map.of(), null);
-        setMenuItem(
-                holder.inventory,
-                screen,
-                "page",
-                Map.of("page", holder.page + 1, "pages", pageCount),
-                null);
-        if (holder.page + 1 < pageCount)
-            setMenuItem(holder.inventory, screen, "next", Map.of(), null);
-    }
-
-    private void clickControl(@NotNull Player player, @NotNull ControlHolder holder, int slot) {
-        SpectatorSession session = sessions.get(player.getUniqueId());
-        if (session == null) return;
-        String screen = "player-teleport-selector";
-        if (slot == menuItemSlot(screen, "close", 48)) {
-            player.closeInventory();
-            return;
-        }
-        if (slot == menuItemSlot(screen, "previous", 45) && holder.page > 0) {
-            holder.page--;
-            refresh(holder);
-            return;
-        }
-        if (slot == menuItemSlot(screen, "next", 53)) {
-            holder.page++;
-            refresh(holder);
-            return;
-        }
-        UUID targetId = holder.targets.get(slot);
-        Player target = targetId == null ? null : Bukkit.getPlayer(targetId);
-        if (target != null
-                && playersInArea(session.area(), player.getUniqueId()).stream()
-                        .anyMatch(candidate -> candidate.getUniqueId().equals(targetId))) {
-            teleportManaged(
-                    player,
-                    session.area(),
-                    target.getLocation(),
-                    success -> {
-                        if (success)
-                            feedback(
-                                    player,
-                                    MessageConfig.SPECTATOR_TELEPORTED_TO_PLAYER.replace(
-                                            "%player%", target.getName()),
-                                    NamedTextColor.LIGHT_PURPLE,
-                                    1.2F);
-                    });
-            player.closeInventory();
-        }
     }
 
     private List<Player> playersInArea(BaseGameInstance area, UUID viewerId) {
@@ -1077,55 +1050,9 @@ public final class SpectatorManager extends BaseManager implements Listener {
                 .toList();
     }
 
-    private static GuiConfig.MenuSpec controlMenu(String screen) {
-        return GuiConfig.menu(
-                "spectator.menus." + screen,
-                MAIN_SIZE,
-                screen,
-                java.util.stream.IntStream.range(0, MAIN_SIZE).boxed().toList());
-    }
-
-    private static int menuItemSlot(String screen, String key, int fallback) {
-        int slot = GuiConfig.item("spectator.menus." + screen + ".items." + key, Map.of()).slot();
-        return slot < 0 ? fallback : slot;
-    }
-
     private static int hotbarSlot(String key, int fallback) {
         int slot = GuiConfig.item("spectator.hotbar." + key, Map.of()).slot();
         return slot < 0 ? fallback : slot;
-    }
-
-    private static ItemStack configuredMenuItem(
-            String screen,
-            String key,
-            Map<String, ?> placeholders,
-            String state,
-            Material materialOverride) {
-        GuiConfig.ItemSpec configured =
-                GuiConfig.item("spectator.menus." + screen + ".items." + key, state, placeholders);
-        return item(
-                materialOverride == null ? configured.material() : materialOverride,
-                configured.title(),
-                configured.lore(),
-                configured.glint());
-    }
-
-    private static void setMenuItem(
-            Inventory inventory,
-            String screen,
-            String key,
-            Map<String, ?> placeholders,
-            String state) {
-        GuiConfig.ItemSpec configured =
-                GuiConfig.item("spectator.menus." + screen + ".items." + key, state, placeholders);
-        if (configured.slot() >= 0 && configured.slot() < inventory.getSize())
-            inventory.setItem(
-                    configured.slot(),
-                    item(
-                            configured.material(),
-                            configured.title(),
-                            configured.lore(),
-                            configured.glint()));
     }
 
     private static void setHotbarItem(
@@ -1145,22 +1072,6 @@ public final class SpectatorManager extends BaseManager implements Listener {
     private static ItemStack item(
             Material material, Component name, List<Component> lore, boolean glint) {
         return ink.ziip.championshipscore.api.gui.GuiMenu.item(material, name, lore, glint);
-    }
-
-    private static final class ControlHolder implements MenuInventory {
-        private final UUID viewer;
-        private int page;
-        private final Map<Integer, UUID> targets = new HashMap<>();
-        private Inventory inventory;
-
-        private ControlHolder(UUID viewer) {
-            this.viewer = viewer;
-        }
-
-        @Override
-        public @NotNull Inventory getInventory() {
-            return inventory;
-        }
     }
 
     private record SpectatorSession(

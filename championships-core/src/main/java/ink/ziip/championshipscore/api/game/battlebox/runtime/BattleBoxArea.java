@@ -15,7 +15,6 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
-import ink.ziip.championshipscore.shared.presentation.DurationText;
 
 import lombok.Getter;
 
@@ -38,7 +37,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -179,7 +177,7 @@ public class BattleBoxArea extends BasePairedGameInstance {
 
         // Rule-introduction phase (if configured): gather players at the introduction spawn point
         // and
-        // broadcast the rule sections in chat over 45s, then run the normal preparation below.
+        // broadcast the configured rule sections, then run the normal preparation below.
         startGameIntroduction(this::startFormalPreparation);
     }
 
@@ -241,7 +239,7 @@ public class BattleBoxArea extends BasePairedGameInstance {
                             timer = seconds;
                             updateGameTimerBossBar(
                                     MessageConfig.BATTLE_BOX_ACTION_BAR_COUNT_DOWN.replace(
-                                            "%time%", DurationText.bossBarSeconds(timer)),
+                                            "%time%", CoreMessages.bossBarTime(timer)),
                                     timer,
                                     getGameConfig().getTimer());
                         },
@@ -254,13 +252,7 @@ public class BattleBoxArea extends BasePairedGameInstance {
                             if (getGameStageEnum() != GameStageEnum.PROGRESS) return;
 
                             if (match == null || match.isFinished()) return;
-                            HashMap<Material, Integer> blockCount = match.countWool();
-                            int rightWool =
-                                    blockCount.getOrDefault(
-                                            match.getRight().getWool().getType(), 0);
-                            int leftWool =
-                                    blockCount.getOrDefault(match.getLeft().getWool().getType(), 0);
-                            if (rightWool == 9 || leftWool == 9) {
+                            if (match.countWool().complete()) {
                                 finishMatch();
                                 endGame();
                                 if (woolCheckerTask != null) woolCheckerTask.cancel();
@@ -322,11 +314,11 @@ public class BattleBoxArea extends BasePairedGameInstance {
      * teams.
      */
     private void calculatePoints(BattleBoxMatch match) {
-        HashMap<Material, Integer> blockCount = match.countWool();
+        BattleBoxMatch.WoolCount blockCount = match.countWool();
         ChampionshipTeam right = match.getRight();
         ChampionshipTeam left = match.getLeft();
-        int rightWool = blockCount.getOrDefault(right.getWool().getType(), 0);
-        int leftWool = blockCount.getOrDefault(left.getWool().getType(), 0);
+        int rightWool = blockCount.right();
+        int leftWool = blockCount.left();
 
         String message;
         if (rightWool > leftWool) {

@@ -3,11 +3,13 @@ package ink.ziip.championshipscore.api.game.buildmart.mechanics;
 import ink.ziip.championshipscore.api.game.buildmart.blueprint.BlueprintBlock;
 import ink.ziip.championshipscore.api.game.buildmart.blueprint.BuildMartBlueprint;
 import ink.ziip.championshipscore.api.game.buildmart.state.BuildSlot;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.platform.bukkit.text.ComponentTemplates;
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+import ink.ziip.championshipscore.presentation.display.WorldTextStyles.Profile;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 
-import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.data.Bisected;
@@ -16,7 +18,6 @@ import org.bukkit.block.data.type.Bed;
 import org.bukkit.block.data.type.Slab;
 import org.bukkit.block.data.type.Stairs;
 import org.bukkit.block.data.type.TrapDoor;
-import org.bukkit.entity.Display;
 import org.bukkit.entity.TextDisplay;
 
 import java.util.Comparator;
@@ -51,15 +52,8 @@ public final class BuildMartMaterialDisplays {
                                     location,
                                     TextDisplay.class,
                                     spawned -> {
-                                        spawned.setBillboard(Display.Billboard.CENTER);
-                                        spawned.setAlignment(TextDisplay.TextAlignment.CENTER);
-                                        spawned.setLineWidth(
-                                                4096); // Only the explicit two-material rows may
-                                        // wrap.
-                                        spawned.setShadowed(true);
-                                        spawned.setDefaultBackground(false);
-                                        spawned.setBackgroundColor(Color.fromARGB(96, 0, 0, 0));
-                                        spawned.setBrightness(new Display.Brightness(15, 15));
+                                        MessageConfig.worldTextStyle(Profile.BUILD_MART_MATERIALS)
+                                                .apply(spawned);
                                         spawned.setDisplayWidth(16f);
                                         spawned.setDisplayHeight(16f);
                                         spawned.setPersistent(false);
@@ -69,6 +63,7 @@ public final class BuildMartMaterialDisplays {
                                     });
             displays.put(slot, display);
         } else {
+            MessageConfig.worldTextStyle(Profile.BUILD_MART_MATERIALS).apply(display);
             display.text(text);
         }
     }
@@ -116,17 +111,29 @@ public final class BuildMartMaterialDisplays {
     }
 
     static Component text(BuildMartBlueprint blueprint) {
-        Component text = Component.empty().color(NamedTextColor.WHITE);
+        var format = MessageConfig.materialDisplayFormat();
+        Component text = LegacyText.component(format.style());
         var materials =
                 materials(blueprint).entrySet().stream()
                         .sorted(Map.Entry.comparingByKey(Comparator.comparing(Material::name)))
                         .toList();
         for (int index = 0; index < materials.size(); index++) {
-            if (index > 0) text = text.append(Component.text(index % 2 == 0 ? "\n" : "  "));
+            if (index > 0)
+                text =
+                        text.append(
+                                index % format.columns() == 0
+                                        ? Component.newline()
+                                        : LegacyText.component(format.separator()));
             var entry = materials.get(index);
             text =
-                    text.append(Component.translatable(entry.getKey().translationKey()))
-                            .append(Component.text(" × " + entry.getValue()));
+                    text.append(
+                            ComponentTemplates.render(
+                                    format.entry(),
+                                    Map.of(
+                                            "%material%",
+                                                    Component.translatable(
+                                                            entry.getKey().translationKey()),
+                                            "%count%", Component.text(entry.getValue()))));
         }
         return text;
     }

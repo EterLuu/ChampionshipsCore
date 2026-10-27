@@ -114,27 +114,25 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
 
     public void endSchedule() {
         scheduleGeneration++;
-        plugin.getScheduleManager().clearStartSelection(gameTypeEnum);
         if (firstStartTask != null) firstStartTask.cancel();
         if (startTask != null) startTask.cancel();
 
         enabled = false;
 
         handler.unRegister();
-        scheduleManager.clearRoundPreparationCountdown();
-        plugin.getGameManager().releaseEventSpectatorsForGame(gameTypeEnum);
-        plugin.getGameManager().releaseRoundTransitionHolds(gameTypeEnum);
+        scheduleManager.releaseSchedule(gameTypeEnum);
     }
 
     public void nextRound() {
         if (!enabled) return;
 
         boolean hasNextRound = subRound < getTotalRounds();
+        long generation = scheduleGeneration;
         scheduleManager.settleEventRound(
                 gameTypeEnum,
                 hasNextRound,
                 () -> {
-                    if (!enabled) return;
+                    if (!enabled || generation != scheduleGeneration) return;
                     if (!hasNextRound) {
                         endSchedule();
                         return;

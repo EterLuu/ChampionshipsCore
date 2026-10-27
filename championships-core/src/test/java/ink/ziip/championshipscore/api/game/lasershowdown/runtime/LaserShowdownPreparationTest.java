@@ -41,7 +41,6 @@ class LaserShowdownPreparationTest {
         set(area, "areaLocations", new ArrayList<>(List.of(new ArrayList<>())));
         set(area, "gameTeams", List.of());
         set(area, "gamePlayers", List.of());
-        set(area, "locationIterators", new HashMap<>());
         set(area, "playerRespawnLocations", new HashMap<>());
         set(area, "playerSpawnLocation", new HashMap<>());
         Map<UUID, LaserGun> guns = new HashMap<>();
@@ -75,7 +74,6 @@ class LaserShowdownPreparationTest {
                             List.of("laser:5:20:5:0:0", "laser:6:20:5:0:0"));
                     config.setPlayerSpawnPoints(doc.getConfigurationSection("player-spawn-points"));
                     set(fixture.area, "gameTeams", List.of());
-                    set(fixture.area, "locationIterators", new HashMap<>());
                     set(fixture.area, "playerRespawnLocations", new HashMap<>());
                     set(fixture.area, "playerSpawnLocation", new HashMap<>());
                     set(fixture.area, "areaLocations", new ArrayList<>());
@@ -153,8 +151,7 @@ class LaserShowdownPreparationTest {
     }
 
     @Test
-    void leavingTheArenaStillReturnsPlayersDuringCountdownAndRespawnsThemDuringCombat()
-            throws Exception {
+    void leavingTheArenaReturnsPlayersWithoutRespawningDuringCombat() throws Exception {
         withFixture(
                 fixture -> {
                     var event =
@@ -290,7 +287,7 @@ class LaserShowdownPreparationTest {
         }
 
         @Override
-        public void respawnPlayer(Player player) {
+        public void returnToArena(Player player) {
             respawns++;
         }
     }

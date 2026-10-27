@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 45
+  version: 63
 map-editor:
   games:
     four-arena:
@@ -91,19 +91,25 @@ map-editor:
     ace-race:
       menus:
         equipment:
+          layout:
+            border: []
           title: 选择下一赛段的装备
           size: 9
           items:
             none:
+              use: ace-race-equipment
               slot: 1
               material: BARRIER
             elytra:
+              use: ace-race-equipment
               slot: 3
               material: ELYTRA
             trident:
+              use: ace-race-equipment
               slot: 5
               material: TRIDENT
             dolphins:
+              use: ace-race-equipment
               slot: 7
               material: HEART_OF_THE_SEA
         respawn-binding:
@@ -157,6 +163,8 @@ map-editor:
               - 43
               - 44
           items:
+            border:
+              use: border
             previous:
               slot: 45
               material: ARROW
@@ -220,32 +228,207 @@ map-editor:
             category-state:
               title: "已启用 %count% 个变体 • 每局 %quota% 关"
           workshop:
+            layout:
+              border: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26 ]
+              footer:
+                summary: 4
+                continue-building: 11
+                save-building: 13
+                discard-building: 15
+                floor-building-help: 22
+                math-building-help: 22
+                pass-building-help: 22
+                back: 26
+            size: 27
             title: "施工中 • %name%"
           stopped:
+            layout:
+              border: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26 ]
+              footer:
+                stopped-summary: 4
+                stopped-floor: 11
+                stopped-dodge: 13
+                stopped-side: 15
+                stopped-mode: 22
+                back: 26
+            size: 27
             title: "停船挑战 • 子类"
           side:
+            layout:
+              border: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26 ]
+              footer:
+                side-quota: 4
+                side-pool: 11
+                side-weight: 13
+                preview: 15
+                back: 26
+            size: 27
             title: "停船挑战 • 侧向"
           side-pool:
+            layout:
+              border: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53 ]
+              content: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35 ]
+              overlay:
+                empty: 13
+              footer:
+                side-rules: 37
+                add: 46
+                category-summary: 50
+                previous: 45
+                next: 53
+                back: 49
+            size: 54
             title: "侧向 • 共用穿越建筑池"
           abandon:
+            layout:
+              border: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26 ]
+              footer:
+                confirm-discard-building: 11
+                continue-building: 15
+                back: 26
+            size: 27
             title: "放弃未保存的建筑修改？"
           category:
+            layout:
+              border: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53 ]
+              content: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35 ]
+              overlay:
+                empty: 13
+              footer:
+                quota: 37
+                stopped-child-weight: 37
+                minimum: 39
+                floor-timing: 39
+                maximum: 41
+                add: 46
+                category-summary: 50
+                previous: 45
+                next: 53
+                back: 49
+            size: 54
             title: "%type%关卡 • 变体与设置"
           entry:
+            layout:
+              border: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26 ]
+              footer:
+                summary: 4
+                name: 10
+                operation: 11
+                enabled: 12
+                weight: 13
+                max-uses: 14
+                difficulty: 15
+                duplicate: 16
+                try-template: 18
+                edit-building: 20
+                delete: 22
+                back: 26
+            size: 27
             title: "编辑变体 • %name%"
           add:
+            layout:
+              border: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53 ]
+              content: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35 ]
+              footer:
+                new-rhythm: 46
+                new-dodge: 46
+                blank-building: 46
+                previous: 45
+                next: 53
+                back: 49
+            size: 54
             title: "新增%type%变体 • 复制或空白"
           choice:
+            layout:
+              border: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26 ]
+              content:
+                "1": [ 13 ]
+                "2": [ 12, 13 ]
+                "3": [ 12, 13, 14 ]
+                "4": [ 11, 12, 13, 14 ]
+                "5": [ 11, 12, 13, 14, 15 ]
+                "6": [ 10, 11, 12, 13, 14, 15 ]
+                "7": [ 10, 11, 12, 13, 14, 15, 16 ]
+                "8": [ 9, 10, 11, 12, 13, 14, 15, 16 ]
+                "9": [ 9, 10, 11, 12, 13, 14, 15, 16, 17 ]
+                "10": [ 2, 3, 4, 5, 6, 11, 12, 13, 14, 15 ]
+                "11": [ 1, 2, 3, 4, 5, 6, 11, 12, 13, 14, 15 ]
+                "12": [ 1, 2, 3, 4, 5, 6, 10, 11, 12, 13, 14, 15 ]
+                "13": [ 1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15 ]
+                "14": [ 1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 16 ]
+                "15": [ 0, 1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 16 ]
+                "16": [ 0, 1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16 ]
+                "17": [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 ]
+                "18": [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17 ]
+                "19": [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 ]
+                "20": [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 ]
+                "21": [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 ]
+                "22": [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21 ]
+                "23": [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22 ]
+                "24": [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23 ]
+                "25": [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24 ]
+                "26": [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25 ]
+              footer:
+                previous: 18
+                next: 20
+                back: 26
+            size: 27
             title: "%name% • 选择属性"
           delete:
+            layout:
+              border: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26 ]
+              footer:
+                summary: 4
+                confirm-delete: 11
+                cancel: 15
+                back: 26
+            size: 27
             title: "确认删除 • %name%"
           course:
+            layout:
+              border: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26 ]
+              footer:
+                course-summary: 4
+                automatic-layout: 10
+                preview: 12
+                seed: 14
+                fixed: 16
+                constraints: 22
+                back: 26
+            size: 27
             title: "激流勇进 • 赛道设置与预览"
           preview:
+            layout:
+              border: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53 ]
+              content: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44 ]
+              overlay:
+                invalid: 22
+              footer:
+                previous: 45
+                reroll: 46
+                build: 47
+                play: 48
+                back: 49
+                seed-info: 50
+                duration: 51
+                next: 53
+            size: 54
             title: "激流勇进 • 赛道预览"
           placement:
+            layout:
+              border: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26 ]
+              footer:
+                summary: 4
+                inspect: 11
+                try-placement: 15
+                back: 26
+            size: 27
             title: "激流勇进 • 预览关卡"
           items:
+            list-separator:
+              title: " / "
+            stale:
+              title: "&#fff566内容已更新，请重新选择"
             copy-source:
               title: "&#ededed复制 %name%"
               lore: ["&#a0a0a0复制此变体的建筑及全部属性", "&#a0a0a0新名称：%name%副本；创建后可独立编辑"]
@@ -865,7 +1048,9 @@ map-editor:
               material: "GLOWSTONE_DUST"
             floor-timing:
               title: "&#ededed阶段停船时长：%value% 秒"
-              lore: ["&#a0a0a0五段依次32/28/24/20/16秒，每关固定七轮", "&#a0a0a0方块种类随阶段为5/6/7/8种；每关七轮，原地停船"]
+              lore:
+                - "&#a0a0a0五段依次%value%秒，每关固定%rounds%轮"
+                - "&#a0a0a0方块种类随阶段为%materials%种；每关%rounds%轮，原地停船"
               material: "CLOCK"
             add:
               title: "&#ededed新增%type%变体"
@@ -1045,6 +1230,8 @@ map-editor:
               - 43
               - 44
           items:
+            border:
+              use: border
             previous:
               slot: 45
               material: ARROW
@@ -1113,6 +1300,64 @@ map-editor:
     build-mart:
       menus:
         blueprints:
+          layout:
+            content:
+              - 0
+              - 1
+              - 2
+              - 3
+              - 4
+              - 5
+              - 6
+              - 7
+              - 8
+              - 9
+              - 10
+              - 11
+              - 12
+              - 13
+              - 14
+              - 15
+              - 16
+              - 17
+              - 18
+              - 19
+              - 20
+              - 21
+              - 22
+              - 23
+              - 24
+              - 25
+              - 26
+              - 27
+              - 28
+              - 29
+              - 30
+              - 31
+              - 32
+              - 33
+              - 34
+              - 35
+              - 36
+              - 37
+              - 38
+              - 39
+              - 40
+              - 41
+              - 42
+              - 43
+              - 44
+            border:
+              - 45
+              - 46
+              - 47
+              - 48
+              - 49
+              - 50
+              - 51
+              - 52
+              - 53
+          size: 54
           steps:
             title: "小建筑修改与新建"
             lore:
@@ -1132,39 +1377,133 @@ map-editor:
                 - "&#a0a0a0%stars%星 • %blocks%个方块"
                 - "&#a0a0a0点击前往场地0修改"
             new:
+              slot: 46
               material: LIME_CONCRETE
               title: "&#55ff55新建小建筑"
               lore:
                 - "&#a0a0a0输入名称后前往场地0建造"
                 - "&#a0a0a0提交时自动评星"
             submit:
+              slot: 50
               material: EMERALD_BLOCK
               title: "&#55ff55提交 %name%"
               lore:
                 - "&#a0a0a0检查材料及六面遮挡方块后保存"
                 - "&#a0a0a0也可点击建筑区的实体提交按钮"
             cancel:
+              slot: 51
               material: BARRIER
               title: "&#ff5555取消修改 %name%"
               lore:
                 - "&#a0a0a0放弃本次修改，返回主大厅传送门"
             back:
+              slot: 49
               material: ARROW
               title: "&#ededed返回"
               lore:
                 - "&#a0a0a0返回编辑步骤；修改中则继续建造"
             previous:
+              slot: 45
               material: ARROW
               title: "&#ededed上一页"
               lore: []
             next:
+              slot: 53
               material: ARROW
               title: "&#ededed下一页"
               lore: []
         material-zones:
+          layout:
+            content:
+              - 0
+              - 1
+              - 2
+              - 3
+              - 4
+              - 5
+              - 6
+              - 7
+              - 8
+              - 9
+              - 10
+              - 11
+              - 12
+              - 13
+              - 14
+              - 15
+              - 16
+              - 17
+              - 18
+              - 19
+              - 20
+              - 21
+              - 22
+              - 23
+              - 24
+              - 25
+              - 26
+              - 27
+              - 28
+              - 29
+              - 30
+              - 31
+              - 32
+              - 33
+              - 34
+              - 35
+              - 36
+              - 37
+              - 38
+              - 39
+              - 40
+              - 41
+              - 42
+              - 43
+              - 44
+            border: []
+          size: 54
           title: "&#55ffff材料补给区"
           items:
+            range-format:
+              title: "%min-x%, %min-y%, %min-z% → %max-x%, %max-y%, %max-z%"
+            coordinate-format:
+              title: "%x%, %y%, %z%"
+            island-summary:
+              title: "%name%"
+              lore:
+                - "&#a0a0a0中心：%center%"
+              states:
+                unconfigured:
+                  lore:
+                    - "&#ff5555中心尚未配置"
+            border:
+              use: border
+            next:
+              slot: 52
+              material: ARROW
+              title: 下一页
+              lore:
+                - 第 %page% / %pages% 页
+              states:
+                disabled:
+                  material: GRAY_STAINED_GLASS_PANE
+                  title: 已是最后一页
+                  lore:
+                    - 没有更多步骤
+            previous:
+              slot: 46
+              material: ARROW
+              title: 上一页
+              lore:
+                - 第 %page% 页
+              states:
+                disabled:
+                  material: GRAY_STAINED_GLASS_PANE
+                  title: 准备步骤
+                  lore:
+                    - 共 %total% 项
             save:
+              slot: 45
               material: GOLDEN_AXE
               title: "&#fff566保存当前WorldEdit选区"
               lore:
@@ -1173,22 +1512,35 @@ map-editor:
                 - "&#a0a0a0范围与已有材料区完全相同时更新原快照"
                 - "&#a0a0a0同时更新材料清单"
             clear:
+              slot: 48
               material: RED_WOOL
               title: "&#ff5555清空全部材料区"
               lore:
-                - "&#a0a0a0删除24个材料岛上的全部补给区"
+                - "&#a0a0a0删除%islands%个材料岛上的全部补给区"
             page:
+              states:
+                detail:
+                  material: PAPER
+                  lore:
+                    - "%island%"
+                    - "&#a0a0a0共 %count% 个材料区"
+              slot: 49
               material: COMPASS
               title: "&#55ffff材料岛 • 第 %page% / %pages% 页"
               lore:
                 - "&#a0a0a0共 %count% 个材料区"
             back:
+              states:
+                overview:
+                  title: 返回地图准备工具栏
+                  lore:
+                    - 返回地图准备工具栏
+              slot: 53
               material: ARROW
               title: "&#ededed返回岛屿列表"
               lore:
-                - "&#a0a0a0查看全部24个材料岛"
+                - "&#a0a0a0查看全部%islands%个材料岛"
             island:
-              material: STRUCTURE_BLOCK
               title: "&#ededed第 %order% 项 • %name%"
               states:
                 white:
@@ -1251,7 +1603,6 @@ map-editor:
             uncategorized:
               title: "&#ff5555未分类"
             zone:
-              material: STRUCTURE_BLOCK
               title: "&#ededed第 %order% 项 • "
               lore:
                 - "&#a0a0a0范围：%range%"
@@ -1339,17 +1690,43 @@ map-editor:
     input:
       items:
         name:
+          use: editor-input
           material: PAPER
           title: "&#fff566输入场地名"
         number:
+          use: editor-input
           material: PAPER
           title: "&#fff566输入份数"
         hint:
-          material: PAPER
           title: "&#a0a0a0在上方输入内容，然后点击右侧结果栏确认"
     area-list:
+      layout:
+        content: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44 ]
+        border: [ 45, 46, 47, 48, 49, 50, 51, 52, 53 ]
+        overlay:
+          empty: 22
+        footer:
+          previous: 45
+          new: 47
+          page: 49
+          next: 51
+          close: 53
+      size: 54
       title: "&#ededed%game% &#696969• &#55ffff场地列表"
       items:
+        empty:
+          material: GRAY_DYE
+          title: "&#a0a0a0暂无场地"
+          lore:
+            - "&#696969点击新建地图开始配置"
+        border:
+          use: border
+        page:
+          use: page
+        next:
+          use: next
+        previous:
+          use: previous
         area:
           material: PAPER
           title: "&#ededed%name%"
@@ -1379,9 +1756,13 @@ map-editor:
           lore:
             - "&#a0a0a0点击关闭"
     countdown-blocks:
+      layout:
+        border: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 18, 19, 20, 21, 23, 24, 25, 26 ]
       title: "&#ffaa00&l开赛倒计时方块效果"
       size: 27
       items:
+        border:
+          use: border
         selection:
           slot: 10
           material: GOLDEN_AXE
@@ -1490,7 +1871,85 @@ map-editor:
           lore:
             - "&#a0a0a0返回准备步骤"
     list-editor:
+      presentation:
+        detail-row: "&7%message%"
+      screens:
+        manage:
+          size: 9
+          layout:
+            border: []
+            footer:
+              add: 0
+              view: 1
+              info: 4
+              back: 8
+        entries:
+          size: 54
+          layout:
+            content:
+              - 0
+              - 1
+              - 2
+              - 3
+              - 4
+              - 5
+              - 6
+              - 7
+              - 8
+              - 9
+              - 10
+              - 11
+              - 12
+              - 13
+              - 14
+              - 15
+              - 16
+              - 17
+              - 18
+              - 19
+              - 20
+              - 21
+              - 22
+              - 23
+              - 24
+              - 25
+              - 26
+              - 27
+              - 28
+              - 29
+              - 30
+              - 31
+              - 32
+              - 33
+              - 34
+              - 35
+              - 36
+              - 37
+              - 38
+              - 39
+              - 40
+              - 41
+              - 42
+              - 43
+              - 44
+            border: []
+            footer:
+              previous: 45
+              entry-back: 49
+              next: 53
+        edit:
+          size: 9
+          layout:
+            border: []
+            footer:
+              order: 0
+              binding: 2
+              actual: 4
+              delete: 6
+              return: 8
       items:
+        border:
+          use: border
         add:
           slot: 0
           material: LIME_WOOL
@@ -1551,11 +2010,13 @@ map-editor:
         editor:
           title: "&#55ffff&l编辑第 %number% 项"
         order:
+          slot: 0
           material: NAME_TAG
           title: "&#fff566&l编辑序号"
           lore:
             - "&#a0a0a0调整此项在列表中的顺序"
         binding:
+          slot: 2
           material: IRON_BARS
           states:
             level-type:
@@ -1576,16 +2037,19 @@ map-editor:
                 - "&#a0a0a0%equipment%"
                 - "&#696969只更换装备，不改进度线和坠落高度"
         actual:
+          slot: 4
           material: COMPASS
           title: "&#55ffff&l重新设置位置或范围"
           lore:
             - "&#a0a0a0用当前位置或当前选区重新设置"
         delete:
+          slot: 6
           material: RED_WOOL
           title: "&#ff5555&l删除此项"
           lore:
             - "&#696969只删除当前这一项"
         return:
+          slot: 8
           material: ARROW
           title: "&#ededed返回列表"
           lore: []
@@ -1641,6 +2105,8 @@ map-editor:
           - 43
           - 44
       items:
+        border:
+          use: border
         previous:
           slot: 45
           material: ARROW
@@ -2261,6 +2727,75 @@ map-editor:
               lore:
                 - "&#a0a0a0站到0号模板赛道的玩家出生位置后点击"
 spectator:
+  feedback:
+    left: "&c&l%message%"
+    night-vision-enabled: "&a&l%message%"
+    night-vision-disabled: "&c&l%message%"
+    teleported: "&d&l%message%"
+    speed: "&e&l%message%"
+  presentation:
+    separator: " • "
+  styles:
+    games:
+      bingo:
+        material: FILLED_MAP
+        color: "&#ff55ff"
+      parkourtag:
+        material: GOLDEN_CARROT
+        color: "&#55ffff"
+      battlebox:
+        material: WHITE_WOOL
+        color: "&#ffaa00"
+      tntrun:
+        material: TNT
+        color: "&#ff5555"
+      lasershowdown:
+        material: CROSSBOW
+        color: "&#ffffff"
+      skywars:
+        material: GRASS_BLOCK
+        color: "&#ffff55"
+      tgttos:
+        material: FEATHER
+        color: "&#ff55ff"
+      dragoneggcarnival:
+        material: DRAGON_EGG
+        color: "&#aa00aa"
+      parkourwarrior:
+        material: IRON_BOOTS
+        color: "&#ffffff"
+      hotycodydusky:
+        material: COD
+        color: "&#55ffff"
+      buildmart:
+        material: CRAFTING_TABLE
+        color: "&#ffaa00"
+      dodgebolt:
+        material: ARROW
+        color: "&#ff5555"
+      sulfursoccer:
+        material: SLIME_BALL
+        color: "&#ffff55"
+      acerace:
+        material: ELYTRA
+        color: "&#55ff55"
+      riptide:
+        material: OAK_BOAT
+        color: "&#55ffff"
+      frostbite:
+        material: BLUE_ICE
+        color: "&#55ffff"
+      laserbox:
+        material: ENDER_EYE
+        color: "&#ffffff"
+    stages:
+      waiting: "&#aaaaaa"
+      loading: "&#ffff55"
+      preparation: "&#ffaa00"
+      countdown: "&#ff55ff"
+      progress: "&#55ff55"
+      stopping: "&#aaaaaa"
+      end: "&#aaaaaa"
   menus:
     venue-selector:
       title: "&#55ffff&l选择观战场地"
@@ -2337,16 +2872,21 @@ spectator:
                 - "&#a0a0a0进行中场地：&#55ff55%count%"
                 - "&#a0a0a0当前观战：&#55ffff%game% &#696969• &#ededed%venue%"
         match:
-          material: ENDER_EYE
           title: "%game_color%&l%game% &#696969• &#ededed%venue%"
           lore:
             - "&#a0a0a0场地：&#ededed%venue%"
             - "&#a0a0a0阶段：%stage_color%%stage%"
             - "&#a0a0a0观战者：&#55ffff%audience%"
+            - ""
+            - "%teams%"
           states:
             watching:
               glint: true
               lore:
+                - "&#55ff55&l✓ 正在观战"
+                - ""
+                - "%teams%"
+                - ""
                 - "&#55ff55&l✓ 正在观战"
             paired:
               title: "&#ffaa00本场对战："
@@ -2358,6 +2898,8 @@ spectator:
               title: "&#696969等待队伍数据"
             undecided:
               title: "&#696969待定"
+            team-line:
+              title: "%left%&#555555%separator%%right%"
         empty:
           slot: 22
           material: GRAY_DYE
@@ -2458,12 +3000,10 @@ spectator:
           lore: []
         summary:
           slot: 4
-          material: ENDER_EYE
           title: "%game_color%&l%game% &#696969• &#ededed%venue%"
           lore:
             - "&#a0a0a0请选择要前往的比赛分区"
         destination:
-          material: ENDER_EYE
           title: "&#ededed&l%name%"
           lore:
             - "&#a0a0a0点击前往该分区的比赛出生点"
@@ -2572,7 +3112,6 @@ spectator:
           lore:
             - "&#a0a0a0公共材料区"
         team-base:
-          material: WHITE_WOOL
           title: "%team_color%&l%team%&#ededed的基地"
           lore:
             - "&#a0a0a0队伍建筑区"
@@ -2737,6 +3276,8 @@ teams:
       title: "&#ffaa00&l队伍管理"
       size: 54
       layout:
+        overlay:
+          empty: 22
         content:
           - 0
           - 1
@@ -2810,34 +3351,41 @@ teams:
           lore:
             - "&#a0a0a0点击左下角创建第一支队伍"
         create:
+          slot: 45
           material: EMERALD
           title: "&#55ff55&l创建队伍"
           lore:
             - "&#a0a0a0先输入队伍ID，再选择显示颜色"
         quick-assign:
+          slot: 46
           material: PLAYER_HEAD
           title: "&#55ffff&l快速更换队伍"
           lore:
             - "&#a0a0a0选择在线玩家，再选择目标队伍"
             - "&#a0a0a0移动已入队玩家前需要再次确认"
         previous:
+          slot: 47
           material: ARROW
           title: "&#ededed上一页"
           lore: []
         refresh:
+          slot: 48
           material: SUNFLOWER
           title: "&#fff566刷新"
           lore: []
         page:
+          slot: 49
           material: PAPER
           title: "&#55ffff第 %page% / %pages% 页"
           lore:
             - "&#a0a0a0共 %count% 支队伍"
         next:
+          slot: 50
           material: ARROW
           title: "&#ededed下一页"
           lore: []
         teleport-all:
+          slot: 52
           material: ENDER_EYE
           title: "&#ff55ff传送全部队伍到这里"
           lore:
@@ -2845,6 +3393,7 @@ teams:
             - ""
             - "&#fff566点击后需要确认"
         close:
+          slot: 53
           material: BARRIER
           title: "&#ff5555关闭"
           lore: []
@@ -2854,6 +3403,8 @@ teams:
       title: "&#ffaa00&l%team% • 成员管理"
       size: 54
       layout:
+        overlay:
+          empty: 22
         content:
           - 0
           - 1
@@ -2935,6 +3486,7 @@ teams:
           lore:
             - "&#a0a0a0从左下角添加在线玩家或输入玩家名"
         add-player:
+          slot: 45
           states:
             available:
               material: LIME_DYE
@@ -2948,33 +3500,40 @@ teams:
                 - "&#a0a0a0%members% / %max%"
                 - "&#a0a0a0移除成员后才能继续添加"
         history:
+          slot: 46
           material: BOOK
           title: "&#55ffff历史离线玩家"
           lore:
             - "&#a0a0a0从服务器记录中选择尚未入队的离线玩家"
         back:
+          slot: 47
           material: ARROW
           title: "&#ededed返回队伍总览"
           lore: []
         refresh:
+          slot: 48
           material: SUNFLOWER
           title: "&#fff566刷新"
           lore: []
         page:
+          slot: 49
           material: PAPER
           title: "&#55ffff第 %page% / %pages% 页"
           lore:
             - "&#a0a0a0共 %count% 名成员"
         next:
+          slot: 50
           material: ARROW
           title: "&#ededed下一页"
           lore: []
         teleport:
+          slot: 51
           material: ENDER_PEARL
           title: "&#ff55ff传送本队到这里"
           lore:
             - "&#a0a0a0%online%名在线成员将被传送"
         delete:
+          slot: 52
           material: TNT
           title: "&#ff5555删除队伍"
           lore:
@@ -2982,6 +3541,7 @@ teams:
             - ""
             - "&#fff566点击后需要确认"
         close:
+          slot: 53
           material: BARRIER
           title: "&#ff5555关闭"
           lore: []
@@ -2989,10 +3549,15 @@ teams:
           title: 名成员
         member-count-unit:
           title: 名成员
+        previous:
+          slot: 47
+          use: previous
     add-player:
       title: "&#55ffff&l%team% • 选择新成员"
       size: 54
       layout:
+        overlay:
+          empty: 22
         content:
           - 0
           - 1
@@ -3050,6 +3615,8 @@ teams:
           - 52
           - 53
       items:
+        page-unit:
+          title: 名可选玩家
         border:
           material: BLACK_STAINED_GLASS_PANE
           title: " "
@@ -3064,23 +3631,28 @@ teams:
           lore:
             - "&#a0a0a0也可以返回后手动输入玩家名"
         back:
+          slot: 45
           material: ARROW
           title: "&#ededed返回成员管理"
           lore: []
         previous:
+          slot: 47
           material: ARROW
           title: "&#ededed上一页"
           lore: []
         page:
+          slot: 49
           material: PAPER
           title: "&#55ffff第 %page% / %pages% 页"
           lore:
             - "&#a0a0a0共 %count% 名可选玩家"
         next:
+          slot: 50
           material: ARROW
           title: "&#ededed下一页"
           lore: []
         close:
+          slot: 53
           material: BARRIER
           title: "&#ff5555关闭"
           lore: []
@@ -3137,16 +3709,26 @@ teams:
           lore:
             - "&#55ff55点击创建队伍"
         in-use:
+          material: GRAY_DYE
           lore:
             - "&#ff5555已被 %team% 使用"
         back:
+          slot: 31
           material: ARROW
           title: "&#ededed返回队伍总览"
           lore: []
+        previous:
+          slot: 27
+          use: previous
+        next:
+          slot: 35
+          use: next
     quick-assign:
       title: "&#55ffff&l快速换队 • 选择玩家"
       size: 54
       layout:
+        overlay:
+          empty: 22
         content:
           - 0
           - 1
@@ -3204,6 +3786,12 @@ teams:
           - 52
           - 53
       items:
+        empty:
+          material: GRAY_DYE
+          title: "&#a0a0a0没有在线玩家"
+          lore: []
+        page-unit:
+          title: 名在线玩家
         border:
           material: BLACK_STAINED_GLASS_PANE
           title: " "
@@ -3222,23 +3810,28 @@ teams:
                 - ""
                 - "&#fff566点击选择目标队伍"
         back:
+          slot: 45
           material: ARROW
           title: "&#ededed返回队伍总览"
           lore: []
         previous:
+          slot: 47
           material: ARROW
           title: "&#ededed上一页"
           lore: []
         page:
+          slot: 49
           material: PAPER
           title: "&#55ffff第 %page% / %pages% 页"
           lore:
             - "&#a0a0a0共 %count% 名在线玩家"
         next:
+          slot: 50
           material: ARROW
           title: "&#ededed下一页"
           lore: []
         close:
+          slot: 53
           material: BARRIER
           title: "&#ff5555关闭"
           lore: []
@@ -3246,6 +3839,8 @@ teams:
       title: "&#ffaa00&l%player% • 选择目标队伍"
       size: 54
       layout:
+        overlay:
+          empty: 22
         content:
           - 0
           - 1
@@ -3334,10 +3929,12 @@ teams:
           title: "&#a0a0a0还没有可选队伍"
           lore: []
         back:
+          slot: 45
           material: ARROW
           title: "&#ededed返回在线玩家"
           lore: []
         selected-player:
+          slot: 49
           title: "&#55ffff&l%player%"
           states:
             unassigned:
@@ -3347,13 +3944,22 @@ teams:
               lore:
                 - "&#a0a0a0当前队伍：&#ededed%team%"
         close:
+          slot: 53
           material: BARRIER
           title: "&#ff5555关闭"
           lore: []
+        previous:
+          slot: 47
+          use: previous
+        next:
+          slot: 50
+          use: next
     known-player:
       title: "&#55ffff&l%team% • 选择历史玩家"
       size: 54
       layout:
+        overlay:
+          empty: 22
         content:
           - 0
           - 1
@@ -3411,6 +4017,8 @@ teams:
           - 52
           - 53
       items:
+        page-unit:
+          title: 名离线玩家
         border:
           material: BLACK_STAINED_GLASS_PANE
           title: " "
@@ -3427,29 +4035,35 @@ teams:
           lore:
             - "&#a0a0a0可以使用左下角手动输入玩家名"
         manual-input:
+          slot: 45
           material: NAME_TAG
           title: "&#55ffff手动输入玩家名"
           lore:
             - "&#a0a0a0仅在历史列表中找不到玩家时使用"
             - "&#a0a0a0请仔细核对拼写"
         back:
+          slot: 46
           material: ARROW
           title: "&#ededed返回成员管理"
           lore: []
         previous:
+          slot: 47
           material: ARROW
           title: "&#ededed上一页"
           lore: []
         page:
+          slot: 49
           material: PAPER
           title: "&#55ffff第 %page% / %pages% 页"
           lore:
             - "&#a0a0a0共 %count% 名离线玩家"
         next:
+          slot: 50
           material: ARROW
           title: "&#ededed下一页"
           lore: []
         close:
+          slot: 53
           material: BARRIER
           title: "&#ff5555关闭"
           lore: []
@@ -3483,7 +4097,12 @@ teams:
           - 25
           - 26
       items:
+        border:
+          material: BLACK_STAINED_GLASS_PANE
+          title: " "
+          lore: []
         action:
+          slot: 13
           lore:
             - "&#a0a0a0确认后才会执行"
           states:
@@ -3508,18 +4127,26 @@ teams:
               lore:
                 - "&#a0a0a0此操作会更换玩家的当前队伍"
         confirm:
+          slot: 11
           material: LIME_CONCRETE
           title: "&#55ff55&l确认"
           lore: []
         cancel:
+          slot: 15
           material: RED_CONCRETE
           title: "&#ff5555&l取消"
           lore: []
     input:
       items:
         team-name:
+          use: editor-input
+          material: PAPER
+          glint: false
           title: "&#fff566输入队伍内部名称"
         player-name:
+          use: editor-input
+          material: PAPER
+          glint: false
           title: "&#fff566输入要添加的玩家名"
         hint:
           title: "&#a0a0a0在上方重命名栏输入，再点击右侧结果格"
@@ -3537,15 +4164,257 @@ teams:
 
 daily:
   menus:
+    bingo-vote:
+      presentation:
+        description-row: "&7%message%"
+      screens:
+        mode:
+          size: 27
+          title: "%title%"
+          layout:
+            content:
+              - 11
+              - 12
+              - 13
+              - 14
+              - 15
+            border:
+              - 0
+              - 1
+              - 2
+              - 3
+              - 4
+              - 5
+              - 6
+              - 7
+              - 8
+              - 9
+              - 10
+              - 11
+              - 12
+              - 13
+              - 14
+              - 15
+              - 16
+              - 17
+              - 18
+              - 19
+              - 20
+              - 21
+              - 22
+              - 23
+              - 24
+              - 25
+              - 26
+            footer: &a1
+              previous: 18
+              page: 22
+              close: 24
+              next: 26
+              options-previous: 19
+              options-page: 20
+              options-next: 21
+        difficulty:
+          size: 27
+          title: "%title%"
+          layout:
+            content:
+              - 11
+              - 12
+              - 13
+              - 14
+              - 15
+            border:
+              - 0
+              - 1
+              - 2
+              - 3
+              - 4
+              - 5
+              - 6
+              - 7
+              - 8
+              - 9
+              - 10
+              - 11
+              - 12
+              - 13
+              - 14
+              - 15
+              - 16
+              - 17
+              - 18
+              - 19
+              - 20
+              - 21
+              - 22
+              - 23
+              - 24
+              - 25
+              - 26
+            footer: *a1
+        lines:
+          size: 27
+          title: "%title%"
+          layout:
+            content:
+              - 11
+              - 12
+              - 13
+              - 14
+              - 15
+            border:
+              - 0
+              - 1
+              - 2
+              - 3
+              - 4
+              - 5
+              - 6
+              - 7
+              - 8
+              - 9
+              - 10
+              - 11
+              - 12
+              - 13
+              - 14
+              - 15
+              - 16
+              - 17
+              - 18
+              - 19
+              - 20
+              - 21
+              - 22
+              - 23
+              - 24
+              - 25
+              - 26
+            footer: *a1
+        genesis:
+          size: 27
+          title: "%title%"
+          layout:
+            content:
+              - 9
+              - 10
+              - 11
+              - 12
+              - 13
+              - 14
+              - 15
+              - 16
+              - 17
+            border:
+              - 0
+              - 1
+              - 2
+              - 3
+              - 4
+              - 5
+              - 6
+              - 7
+              - 8
+              - 9
+              - 10
+              - 11
+              - 12
+              - 13
+              - 14
+              - 15
+              - 16
+              - 17
+              - 18
+              - 19
+              - 20
+              - 21
+              - 22
+              - 23
+              - 24
+              - 25
+              - 26
+            footer:
+              options-previous: 19
+              options-page: 20
+              options-next: 21
+      items:
+        modes:
+          domination:
+            use: daily-bingo-vote-option
+            material: GRASS_BLOCK
+          speedrun:
+            use: daily-bingo-vote-option
+            material: FEATHER
+          quantity:
+            use: daily-bingo-vote-option
+            material: GOLD_INGOT
+          points:
+            use: daily-bingo-vote-option
+            material: SUNFLOWER
+            states:
+              locked:
+                material: BARRIER
+          random:
+            use: daily-bingo-vote-option
+            material: NETHER_STAR
+        difficulties:
+          easy:
+            use: daily-bingo-vote-option
+            material: GRASS_BLOCK
+          lite:
+            use: daily-bingo-vote-option
+            material: OAK_LOG
+          normal:
+            use: daily-bingo-vote-option
+            material: IRON_INGOT
+          hard:
+            use: daily-bingo-vote-option
+            material: DIAMOND
+          extreme:
+            use: daily-bingo-vote-option
+            material: NETHERITE_INGOT
+            states:
+              locked:
+                material: BARRIER
+        lines:
+          use: daily-bingo-vote-option
+          material: LIGHT
+        genesis:
+          use: daily-bingo-vote-option
+          title: "&d%name%"
+          lore:
+            - "%hint%"
+        border:
+          use: border
+        previous:
+          use: previous
+          title: "&f%name%"
+        next:
+          use: next
+          title: "&f%name%"
+        page:
+          use: page
+          title: "&b%name%"
+          lore:
+            - "&7%navigation%"
+        close:
+          use: close
+          title: "&c%name%"
+        options-previous:
+          use: previous
+          title: "&f%name%"
+        options-next:
+          use: next
+          title: "&f%name%"
+        options-page:
+          use: page
+          title: "&b%name%"
+          lore: []
     lobby-screen:
       title: "&#00aaaa&l游戏大厅"
       size: 27
       layout:
-        content:
-          - 11
-          - 13
-          - 15
-          - 17
         border:
           - 0
           - 1
@@ -3622,9 +4491,17 @@ daily:
           title: "&#ff5555关闭"
           lore: []
     game-selection-screen:
+      presentation:
+        map-preview-limit: 3
       title: "&#55ffff&l选择游戏 &#696969• &#ededed自由游玩"
       size: 54
       layout:
+        footer:
+          previous: 48
+          page: 50
+          next: 52
+        overlay:
+          empty: 22
         content:
           - 10
           - 11
@@ -3653,6 +4530,19 @@ daily:
           - 50
           - 52
       items:
+        map-separator:
+          title: 、
+        unavailable:
+          title: "-"
+        page:
+          material: PAPER
+          title: "&#ededed第 %page% / %pages% 页"
+          lore:
+            - "&#a0a0a0共 %count% 项"
+        next:
+          use: next
+        previous:
+          use: previous
         border:
           material: BLACK_STAINED_GLASS_PANE
           title: " "
@@ -3669,6 +4559,7 @@ daily:
                 - "&#a0a0a0人数：&#ededed%size%人"
                 - ""
                 - "&#ffaa00小队成员"
+                - "%members%"
             solo:
               material: PLAYER_HEAD
               lore:
@@ -3695,7 +4586,6 @@ daily:
             - "&#a0a0a0场次：&#ededed%games%场"
             - "&#696969每局单独记录成绩，不计入锦标赛积分"
         empty:
-          slot: 22
           material: GRAY_DYE
           title: "&#a0a0a0暂无开放游戏"
           lore:
@@ -4151,36 +5041,229 @@ daily:
                   - "&#696969有场地空闲后会自动继续匹配"
                 glint: true
     leaderboard-screen:
+      screens:
+        overview:
+          size: 54
+          layout:
+            content:
+              "1": [ 22 ]
+              "2": [ 21, 23 ]
+              "3": [ 20, 22, 24 ]
+              "4": [ 21, 23, 30, 32 ]
+              "5": [ 20, 22, 24, 30, 32 ]
+              "6": [ 20, 22, 24, 29, 31, 33 ]
+              "7": [ 19, 21, 23, 25, 29, 31, 33 ]
+              "8": [ 19, 21, 23, 25, 28, 30, 32, 34 ]
+              "9": [ 18, 20, 22, 24, 26, 28, 30, 32, 34 ]
+              "10": [ 18, 20, 22, 24, 26, 27, 29, 31, 33, 35 ]
+            border: [ 0, 2, 3, 5, 6, 8, 45, 46, 47, 51 ]
+            footer: &a1
+              back: 45
+              previous: 48
+              refresh: 49
+              page: 50
+              next: 52
+              close: 53
+              player: 1
+              overview: 4
+              records: 7
+        detail:
+          size: 54
+          layout:
+            content:
+              "1": [ 31 ]
+              "2": [ 30, 31 ]
+              "3": [ 30, 31, 32 ]
+              "4": [ 29, 30, 31, 32 ]
+              "5": [ 29, 30, 31, 32, 33 ]
+              "6": [ 28, 29, 30, 31, 32, 33 ]
+              "7": [ 28, 29, 30, 31, 32, 33, 34 ]
+              "8": [ 20, 21, 22, 23, 29, 30, 31, 32 ]
+              "9": [ 20, 21, 22, 23, 24, 29, 30, 31, 32 ]
+              "10": [ 20, 21, 22, 23, 24, 29, 30, 31, 32, 33 ]
+              "11": [ 19, 20, 21, 22, 23, 24, 29, 30, 31, 32, 33 ]
+              "12": [ 19, 20, 21, 22, 23, 24, 28, 29, 30, 31, 32, 33 ]
+              "13": [ 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33 ]
+              "14": [ 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34 ]
+              "15": [ 20, 21, 22, 23, 24, 29, 30, 31, 32, 33, 38, 39, 40, 41, 42 ]
+              "16":
+                [
+                  19,
+                  20,
+                  21,
+                  22,
+                  23,
+                  24,
+                  29,
+                  30,
+                  31,
+                  32,
+                  33,
+                  38,
+                  39,
+                  40,
+                  41,
+                  42
+                ]
+              "17":
+                [
+                  19,
+                  20,
+                  21,
+                  22,
+                  23,
+                  24,
+                  28,
+                  29,
+                  30,
+                  31,
+                  32,
+                  33,
+                  38,
+                  39,
+                  40,
+                  41,
+                  42
+                ]
+              "18":
+                [
+                  19,
+                  20,
+                  21,
+                  22,
+                  23,
+                  24,
+                  28,
+                  29,
+                  30,
+                  31,
+                  32,
+                  33,
+                  37,
+                  38,
+                  39,
+                  40,
+                  41,
+                  42
+                ]
+              "19":
+                [
+                  19,
+                  20,
+                  21,
+                  22,
+                  23,
+                  24,
+                  25,
+                  28,
+                  29,
+                  30,
+                  31,
+                  32,
+                  33,
+                  37,
+                  38,
+                  39,
+                  40,
+                  41,
+                  42
+                ]
+              "20":
+                [
+                  19,
+                  20,
+                  21,
+                  22,
+                  23,
+                  24,
+                  25,
+                  28,
+                  29,
+                  30,
+                  31,
+                  32,
+                  33,
+                  34,
+                  37,
+                  38,
+                  39,
+                  40,
+                  41,
+                  42
+                ]
+              "21":
+                [
+                  19,
+                  20,
+                  21,
+                  22,
+                  23,
+                  24,
+                  25,
+                  28,
+                  29,
+                  30,
+                  31,
+                  32,
+                  33,
+                  34,
+                  37,
+                  38,
+                  39,
+                  40,
+                  41,
+                  42,
+                  43
+                ]
+            border: [ 0, 2, 3, 5, 6, 8, 45, 46, 47, 51 ]
+            footer: *a1
       title: "&#ffaa00&l排行榜"
-      size: 54
-      layout:
-        content:
-          - 10
-          - 11
-          - 12
-          - 13
-          - 14
-          - 15
-          - 16
-          - 19
-          - 20
-          - 21
-          - 22
-          - 23
-          - 24
-          - 25
-        border:
-          - 0
-          - 2
-          - 3
-          - 5
-          - 6
-          - 8
-          - 45
-          - 46
-          - 47
-          - 51
       items:
+        board-summary:
+          use: daily-record
+          lore:
+            - "&#a0a0a0每张地图显示各指标前三名"
+            - "&#ededed%maps%张地图"
+        map:
+          use: daily-record
+          lore:
+            - "%records%"
+            - ""
+            - "&#696969率类榜单需至少5场才会上榜"
+        personal-metric:
+          lore:
+            - "&7%label%&f%value%"
+          states:
+            TIME:
+              lore:
+                - "&7%label%&b%value%"
+            DAMAGE:
+              lore:
+                - "&7%label%&c%value%"
+            DECIMAL:
+              lore:
+                - "&7%label%&c%value%"
+            WEAPON:
+              lore:
+                - "&7%label%&b%value%"
+            PERCENT:
+              lore:
+                - "&7%label%&a%value%"
+            COUNT:
+              lore:
+                - "&7%label%&6%value%"
+            COMPOSITE:
+              lore:
+                - "&7%label%&d%value%"
+        metric-title:
+          lore:
+            - "&7%label%"
+        metric-empty:
+          lore:
+            - "  &#a0a0a0暂无上榜记录"
+        metric-leader:
+          lore:
+            - "  &#a0a0a0榜首：&#ffaa00%leader% &#696969• &#ededed%value%"
         border:
           material: BLACK_STAINED_GLASS_PANE
           title: " "
@@ -4191,6 +5274,7 @@ daily:
           title: "&#55ffff&l我的榜单名片"
           lore:
             - "&#a0a0a0选择下方分类查看详细名次"
+            - ""
             - "&#696969计时纪录始终按游戏地图区分"
         overview:
           slot: 4
@@ -4200,36 +5284,36 @@ daily:
             - "&#ededed%games%个榜单分类 &#696969• &#a0a0a0%entries%条上榜成绩"
             - "&#696969各游戏的具体数据与竞速纪录彼此独立"
             - "&#fff566计时纪录始终按游戏地图区分"
-          states:
-            board:
-              lore:
-                - "&#a0a0a0每张地图显示各指标前三名"
-                - "&#ededed%maps%张地图"
         records:
           slot: 7
           material: CLOCK
           title: "&#ff55ff&l我的计时纪录"
           lore:
+            - "%records%"
+            - ""
             - "&#fff566不同地图的时间不会混合排名"
           states:
             empty:
               lore:
                 - "&#a0a0a0尚未上榜"
         category:
-          material: PAPER
-          title: "&#ededed%board%"
+          use: daily-record
+          states:
+            detail:
+              title: "&#ededed%board%"
           lore:
-            - "  &#a0a0a0榜首：&#ffaa00%leader% &#696969• &#ededed%value%"
-            - "  &#a0a0a0暂无上榜记录"
-            - "&#55ff55&l点击查看完整榜单"
+            - "%records%"
+            - ""
             - "&#a0a0a0%maps%张地图可查看前三榜单"
-            - "&#696969率类榜单需至少5场才会上榜"
+            - ""
+            - "&#55ff55&l点击查看完整榜单"
         row:
-          material: PLAYER_HEAD
-          title: "&#a0a0a0第 %rank% 名 &#ededed%player%"
           lore:
             - "  &#a0a0a0第%rank%名 &#ededed%player% &#696969• &#ffaa00%value%"
         empty:
+          states:
+            detail:
+              slot: 22
           slot: 22
           material: GRAY_DYE
           title: "&#a0a0a0暂无上榜记录"
@@ -4255,6 +5339,10 @@ daily:
           lore:
             - "&#696969排行榜使用缓存数据，不会影响游戏流畅度"
         page:
+          states:
+            selection:
+              lore:
+                - "&#a0a0a0%games%个游戏分类"
           slot: 50
           material: PAPER
           title: "&#55ffff第 %page% / %pages% 页"
@@ -4274,6 +5362,12 @@ daily:
       title: "&#55ffff&l小队管理"
       size: 54
       layout:
+        footer:
+          previous: 46
+          page: 48
+          next: 50
+        overlay:
+          empty: 22
         content:
           - 18
           - 19
@@ -4316,6 +5410,17 @@ daily:
           - 51
           - 52
       items:
+        unavailable:
+          title: "-"
+        page:
+          material: PAPER
+          title: "&#ededed第 %page% / %pages% 页"
+          lore:
+            - "&#a0a0a0共 %count% 项"
+        next:
+          use: next
+        previous:
+          use: previous
         border:
           material: BLACK_STAINED_GLASS_PANE
           title: " "
@@ -4338,6 +5443,7 @@ daily:
                 - "&#a0a0a0人数：&#ededed%size%人"
                 - "&#a0a0a0选择：&#fff566%game%"
                 - ""
+                - "%members%"
         invitation:
           slot: 7
           states:
@@ -4457,41 +5563,194 @@ daily:
           title: "&#ff5555关闭"
           lore: []
         empty:
-          slot: 22
           material: GRAY_DYE
           title: "&#a0a0a0暂无其他在线玩家"
           lore:
             - "&#696969在线玩家会在这里显示队伍状态"
     statistics-screen:
+      screens:
+        overview:
+          size: 54
+          layout:
+            content:
+              "1": [ 22 ]
+              "2": [ 21, 23 ]
+              "3": [ 20, 22, 24 ]
+              "4": [ 21, 23, 30, 32 ]
+              "5": [ 20, 22, 24, 30, 32 ]
+              "6": [ 20, 22, 24, 29, 31, 33 ]
+              "7": [ 19, 21, 23, 25, 29, 31, 33 ]
+              "8": [ 19, 21, 23, 25, 28, 30, 32, 34 ]
+              "9": [ 18, 20, 22, 24, 26, 28, 30, 32, 34 ]
+              "10": [ 18, 20, 22, 24, 26, 27, 29, 31, 33, 35 ]
+            border: [ 0, 1, 2, 3, 5, 6, 7, 8, 45, 46, 48, 51, 52 ]
+            footer: &a1
+              back: 45
+              previous: 48
+              refresh: 49
+              page: 50
+              next: 52
+              close: 53
+              summary: 4
+              leaderboard: 47
+        detail:
+          size: 54
+          layout:
+            content:
+              "1": [ 31 ]
+              "2": [ 30, 31 ]
+              "3": [ 30, 31, 32 ]
+              "4": [ 29, 30, 31, 32 ]
+              "5": [ 29, 30, 31, 32, 33 ]
+              "6": [ 28, 29, 30, 31, 32, 33 ]
+              "7": [ 28, 29, 30, 31, 32, 33, 34 ]
+              "8": [ 20, 21, 22, 23, 29, 30, 31, 32 ]
+              "9": [ 20, 21, 22, 23, 24, 29, 30, 31, 32 ]
+              "10": [ 20, 21, 22, 23, 24, 29, 30, 31, 32, 33 ]
+              "11": [ 19, 20, 21, 22, 23, 24, 29, 30, 31, 32, 33 ]
+              "12": [ 19, 20, 21, 22, 23, 24, 28, 29, 30, 31, 32, 33 ]
+              "13": [ 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33 ]
+              "14": [ 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34 ]
+              "15": [ 20, 21, 22, 23, 24, 29, 30, 31, 32, 33, 38, 39, 40, 41, 42 ]
+              "16":
+                [
+                  19,
+                  20,
+                  21,
+                  22,
+                  23,
+                  24,
+                  29,
+                  30,
+                  31,
+                  32,
+                  33,
+                  38,
+                  39,
+                  40,
+                  41,
+                  42
+                ]
+              "17":
+                [
+                  19,
+                  20,
+                  21,
+                  22,
+                  23,
+                  24,
+                  28,
+                  29,
+                  30,
+                  31,
+                  32,
+                  33,
+                  38,
+                  39,
+                  40,
+                  41,
+                  42
+                ]
+              "18":
+                [
+                  19,
+                  20,
+                  21,
+                  22,
+                  23,
+                  24,
+                  28,
+                  29,
+                  30,
+                  31,
+                  32,
+                  33,
+                  37,
+                  38,
+                  39,
+                  40,
+                  41,
+                  42
+                ]
+              "19":
+                [
+                  19,
+                  20,
+                  21,
+                  22,
+                  23,
+                  24,
+                  25,
+                  28,
+                  29,
+                  30,
+                  31,
+                  32,
+                  33,
+                  37,
+                  38,
+                  39,
+                  40,
+                  41,
+                  42
+                ]
+              "20":
+                [
+                  19,
+                  20,
+                  21,
+                  22,
+                  23,
+                  24,
+                  25,
+                  28,
+                  29,
+                  30,
+                  31,
+                  32,
+                  33,
+                  34,
+                  37,
+                  38,
+                  39,
+                  40,
+                  41,
+                  42
+                ]
+              "21":
+                [
+                  19,
+                  20,
+                  21,
+                  22,
+                  23,
+                  24,
+                  25,
+                  28,
+                  29,
+                  30,
+                  31,
+                  32,
+                  33,
+                  34,
+                  37,
+                  38,
+                  39,
+                  40,
+                  41,
+                  42,
+                  43
+                ]
+            border: [ 0, 1, 2, 3, 5, 6, 7, 8, 45, 46, 48, 51, 52 ]
+            footer: *a1
       title: "&#55ffff&l个人战绩"
-      size: 54
-      layout:
-        content:
-          - 20
-          - 21
-          - 22
-          - 23
-          - 24
-          - 29
-          - 30
-          - 31
-          - 32
-          - 33
-        border:
-          - 0
-          - 1
-          - 2
-          - 3
-          - 5
-          - 6
-          - 7
-          - 8
-          - 45
-          - 46
-          - 48
-          - 51
-          - 52
       items:
+        game-summary:
+          use: daily-record
+          lore:
+            - "&#a0a0a0参与场次：&#ededed%games%"
+            - ""
+            - "%maps%张地图可查看分图明细"
         border:
           material: BLACK_STAINED_GLASS_PANE
           title: " "
@@ -4505,9 +5764,9 @@ daily:
             - ""
             - "&#a0a0a0按游戏分类，点击卡片查看分图明细"
         game:
-          material: PAPER
-          title: "&#ededed&l%game%"
+          use: daily-record
           lore:
+            - "%records%"
             - "&#a0a0a0参与场次：&#ededed%games%"
             - ""
             - "%maps%张地图可查看分图明细"
@@ -4570,13 +5829,16 @@ daily:
             acerace-fastest-three-laps-best3:
               title: 第三最快完整三圈
         map:
-          material: PAPER
-          title: "&#ededed&l%map%"
+          use: daily-record
           lore:
+            - "%records%"
             - "&#a0a0a0参与场次：&#ededed%games%"
             - ""
             - "&#696969按地图独立记录"
         empty:
+          states:
+            detail:
+              slot: 31
           slot: 22
           material: GRAY_DYE
           title: "&#a0a0a0暂无开放游戏"
@@ -4608,6 +5870,10 @@ daily:
           lore:
             - "&#a0a0a0更新当前游戏的详细记录"
         page:
+          states:
+            selection:
+              lore:
+                - "&#a0a0a0%games%个游戏分类"
           slot: 50
           material: PAPER
           title: "&#55ffff第 %page% / %pages% 页"
@@ -4631,6 +5897,26 @@ daily:
         - "&#a0a0a0右键打开大厅菜单"
 games:
   bingo:
+    hotbar:
+      spectator:
+        card:
+          slot: 1
+        teleport:
+          slot: 0
+          material: COMPASS
+          title: "&a&l%name%"
+          lore:
+            - "&7%hint%"
+          glint: false
+        speed:
+          slot: 7
+          material: FEATHER
+          title: "&e&l%name%"
+          lore:
+            - "&a%faster%"
+            - "&c%slower%"
+          glint: false
+          feedback: "&e&l%message%"
     menus:
       teammate-teleport:
         title: "&#55ffff&l传送至队友"
@@ -4682,34 +5968,39 @@ games:
             - 42
             - 43
             - 44
-            - 45
-            - 46
-            - 47
-            - 48
-            - 49
-            - 50
-            - 51
-            - 52
-            - 53
+          footer:
+            previous: 45
+            close: 48
+            page: 49
+            next: 53
         items:
           teammate:
             material: ENDER_PEARL
             title: "&#ededed&l%player%"
             lore:
               - "&#a0a0a0点击传送到这名队友"
+          previous:
+            use: previous
+          close:
+            use: close
+          page:
+            use: page
+          next:
+            use: next
+
       card:
         title: "&#ff55ff&l宾果卡片"
-        layout:
-          content:
-            - 0
-            - 1
-            - 2
-            - 3
-            - 4
-            - 5
-            - 6
-            - 7
-            - 8
+        task-presentation:
+          fallback-material: PAPER
+          separator: "&7, "
+          player: "&f%player% &7<%team%&7>"
+          completion-summary:
+            - ""
+            - "%completed-by%%completions%"
+          time:
+            unknown: --:--
+            short: "%minutes-padded%:%seconds-padded%"
+            long: "%hours%:%minutes-padded%:%seconds-padded%"
         items:
           info:
             slot: 0
@@ -4717,11 +6008,113 @@ games:
             title: "&#ff55ff&l宾果卡片"
             lore:
               - "&#a0a0a0率先完成连线或整张卡片即可获胜"
+          task:
+            material: TASK
+            title: "%task%"
+            lore:
+              - "%description%"
+              - "%completion-summary%"
+            glint: true
+            states:
+              hidden:
+                material: BEDROCK
+                title: "&8?"
+                lore: []
+                glint: false
+              locked:
+                material: BEDROCK
+                title: "&8?"
+                lore: []
+                glint: false
+              completed:
+                material: BARRIER
+                title: "&7&m%task%"
+                lore:
+                  - "%completed-by%%player%"
+                  - "%completed-at%"
+                  - "%completion-summary%"
+                glint: true
+              occupied:
+                material: BARRIER
+                title: "%task%"
+                lore:
+                  - "%occupied-by%"
+                  - "%completed-by%%player%"
+                  - "%completion-summary%"
+                glint: true
+        screens:
+          x3:
+            size: 27
+            layout:
+              content:
+                - 3
+                - 4
+                - 5
+                - 12
+                - 13
+                - 14
+                - 21
+                - 22
+                - 23
+          x4:
+            size: 36
+            layout:
+              content:
+                - 2
+                - 3
+                - 4
+                - 5
+                - 11
+                - 12
+                - 13
+                - 14
+                - 20
+                - 21
+                - 22
+                - 23
+                - 29
+                - 30
+                - 31
+                - 32
+          x5:
+            size: 45
+            layout:
+              content:
+                - 2
+                - 3
+                - 4
+                - 5
+                - 6
+                - 11
+                - 12
+                - 13
+                - 14
+                - 15
+                - 20
+                - 21
+                - 22
+                - 23
+                - 24
+                - 29
+                - 30
+                - 31
+                - 32
+                - 33
+                - 38
+                - 39
+                - 40
+                - 41
+                - 42
+
 voting:
   menus:
     ballot:
       title: "&#ffaa00&l锦标赛投票 &#ededed• 下一场"
       size: 54
+      presentation:
+        bar-length: 8
+        bar-filled: "■"
+        bar-empty: "□"
       layout:
         content:
           - 10
@@ -4847,6 +6240,21 @@ voting:
           lore:
             - "&#ff6b26暂不可投票"
             - "&#a0a0a0%reason%"
+        previous:
+          slot: 45
+          material: ARROW
+          title: "上一页"
+          lore: []
+        page:
+          slot: 48
+          material: PAPER
+          title: "第 %page% / %pages% 页"
+          lore: ["共 %count% 个候选游戏"]
+        next:
+          slot: 53
+          material: ARROW
+          title: "下一页"
+          lore: []
         games:
           bingo:
             material: FILLED_MAP
@@ -5352,6 +6760,65 @@ voting:
                   - "&#ffaa00&l★ 当前领跑"
                   - "&#fff566点击投给这个游戏"
 buttons:
+  editor-input:
+    lore:
+      - "%hint%"
+  ace-race-equipment:
+    material: PAPER
+    title: "&b%name%"
+    states:
+      idle:
+        lore:
+          - "&7点击选择"
+      selected:
+        lore:
+          - "&a当前选择"
+  daily-party-member:
+    material: PAPER
+    states:
+      plain-leader:
+        title: ★ %player%
+      plain-member:
+        title: • %player%
+      colored-leader:
+        title: "&6★ %player%"
+      colored-member:
+        title: "&7• %player%"
+  daily-record:
+    material: PAPER
+    title: "&f&l%name%"
+    states:
+      Bingo:
+        material: FILLED_MAP
+        title: "&d&l%name%"
+      AceRace:
+        material: ELYTRA
+        title: "&b&l%name%"
+      DragonEggCarnival:
+        material: DRAGON_EGG
+        title: "&6&l%name%"
+      LaserShowdown:
+        material: DIAMOND_HORSE_ARMOR
+        title: "&c&l%name%"
+  daily-bingo-vote-option:
+    title: "&e%name%"
+    lore:
+      - "%description%"
+      - ""
+      - "%count-text%"
+      - "%hint%"
+    glint: false
+    states:
+      selected:
+        glint: true
+      locked:
+        material: BARRIER
+        title: "&c%name%"
+        lore:
+          - "%description%"
+          - ""
+          - "%locked-text%"
+        glint: false
   previous:
     material: ARROW
     title: "&#ededed上一页"
@@ -5392,3 +6859,127 @@ buttons:
     material: GRAY_DYE
     title: "&#a0a0a0暂无内容"
     lore: []
+
+  laser-gun:
+    title: "%name%"
+    lore:
+      - "%description%"
+      - "%controls%"
+      - "%magazine-summary%"
+      - "%fire-rate-summary%"
+    glint: false
+    states:
+      selected:
+        lore:
+          - "%description%"
+          - "%controls%"
+          - "%magazine-summary%"
+          - "%fire-rate-summary%"
+          - "%selected-label%"
+laser:
+  menus:
+    gun-selection:
+      size: 27
+      title: "%title%"
+      layout:
+        content:
+          - 10
+          - 11
+          - 12
+          - 13
+          - 14
+        border: []
+        footer:
+          previous: 18
+          page: 22
+          next: 26
+      items:
+        guns:
+          sniper:
+            use: laser-gun
+            material: GOLDEN_SHOVEL
+          rifle:
+            use: laser-gun
+            material: COPPER_HOE
+          smg:
+            use: laser-gun
+            material: IRON_SPEAR
+          machine:
+            use: laser-gun
+            material: STONE_SPEAR
+          shotgun:
+            use: laser-gun
+            material: DIAMOND_AXE
+        previous:
+          use: previous
+        page:
+          use: page
+        next:
+          use: next
+        border:
+          use: border
+  equipment:
+    guns:
+      sniper:
+        use: laser-gun
+        material: GOLDEN_SHOVEL
+      rifle:
+        use: laser-gun
+        material: COPPER_HOE
+      smg:
+        use: laser-gun
+        material: IRON_SPEAR
+      machine:
+        use: laser-gun
+        material: STONE_SPEAR
+      shotgun:
+        use: laser-gun
+        material: DIAMOND_AXE
+    ammo:
+      material: SPECTRAL_ARROW
+      title: "%name%"
+      lore: []
+      glint: false
+    laserbox:
+      gun-selector:
+        material: COMPASS
+        title: "&b%name%"
+        lore:
+          - "&e右键使用"
+          - "&7出生后8秒内可换枪，开火或受伤立即锁定"
+        glint: false
+      grenade:
+        material: SLIME_BALL
+        title: "&b%name%"
+        lore:
+          - "&e右键使用"
+          - "&7生成烟幕"
+        glint: false
+      strike:
+        material: BLAZE_ROD
+        title: "&b%name%"
+        lore:
+          - "&e右键使用"
+          - "&7打击敌人"
+        glint: false
+      reveal:
+        material: ENDER_EYE
+        title: "&b%name%"
+        lore:
+          - "&e右键使用"
+          - "&7显示敌方位置"
+        glint: false
+      shield:
+        material: PRISMARINE_SHARD
+        title: "&b%name%"
+        lore:
+          - "&e拾取即生效"
+          - "&7抵挡一次攻击"
+        glint: false
+    lasershowdown:
+      gun-selector:
+        material: COMPASS
+        title: "&b%name%"
+        lore:
+          - "&7出生后8秒内可换枪，开火或受伤立即锁定"
+        glint: false

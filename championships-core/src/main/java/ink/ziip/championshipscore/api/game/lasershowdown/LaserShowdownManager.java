@@ -1,9 +1,9 @@
 package ink.ziip.championshipscore.api.game.lasershowdown;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.game.lasershowdown.config.LaserShowdownConfig;
 import ink.ziip.championshipscore.api.game.lasershowdown.runtime.LaserShowdownTeamArea;
+import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 
 import java.io.File;
 
@@ -38,8 +38,7 @@ public class LaserShowdownManager extends BaseGameInstanceManager<LaserShowdownT
         laserShowdownConfig.saveOptions();
 
         LaserShowdownTeamArea laserShowdownTeamArea =
-                areas.putIfAbsent(
-                        name, new LaserShowdownTeamArea(plugin, laserShowdownConfig));
+                areas.putIfAbsent(name, new LaserShowdownTeamArea(plugin, laserShowdownConfig));
 
         return laserShowdownTeamArea == null;
     }

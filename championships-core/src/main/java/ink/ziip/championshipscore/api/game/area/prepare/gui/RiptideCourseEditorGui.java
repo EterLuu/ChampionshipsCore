@@ -45,31 +45,20 @@ import java.util.function.IntConsumer;
  */
 public final class RiptideCourseEditorGui {
     public static final String PATH = MenuId.RIPTIDE_RUSH_EDITOR.path();
-    private static final int PREVIOUS = 45, NEXT = 53, BACK_LIST = 49, BACK_DETAIL = 26;
 
     private RiptideCourseEditorGui() {}
 
-    static int[] choiceSlots(int count) {
-        if (count < 1 || count > 26)
-            throw new IllegalArgumentException("choice count must fit the chooser");
-        // The 27th slot is reserved for Back. A rhythm pool can contain 26
-        // concrete variants, so use the first 26 cells when it outgrows two rows.
-        if (count > 18) return java.util.stream.IntStream.range(0, count).toArray();
-        if (count > 9) {
-            int first = (count + 1) / 2, second = count - first;
-            return java.util.stream.IntStream.concat(
-                            java.util.stream.IntStream.range(
-                                    (9 - first) / 2, (9 - first) / 2 + first),
-                            java.util.stream.IntStream.range(
-                                    9 + (9 - second) / 2, 9 + (9 - second) / 2 + second))
-                    .toArray();
-        }
-        int start = 9 + (9 - count) / 2;
-        return java.util.stream.IntStream.range(start, start + count).toArray();
-    }
-
     public static final class Holder implements MenuInventory {
         final PrepareSession session;
+        final ink.ziip.championshipscore.api.gui.MenuLayout layout;
+        final List<?> snapshot;
+        final RiptideWorkshop.Draft draft;
+        final int emptySlot;
+        final Map<Integer, String> actions = new java.util.HashMap<>();
+        final Map<Integer, RiptideLevelTemplate> rowTargets = new java.util.HashMap<>();
+        final Map<Integer, String> choiceTargets = new java.util.HashMap<>();
+        final Map<Integer, Integer> placementTargets = new java.util.HashMap<>();
+        final List<String> options;
         RiptideEditorPage page;
         List<RiptideLevelTemplate> rows = List.of();
         RiptideCoursePlan plan;
@@ -78,6 +67,16 @@ public final class RiptideCourseEditorGui {
         Holder(PrepareSession session, RiptideEditorPage page) {
             this.session = session;
             this.page = page;
+            this.options = page.screen() == CHOICE ? choices(page) : List.of();
+            this.layout = RiptideEditorLayout.load(page, options.size());
+            this.snapshot = RiptideEditorModel.snapshot(config(session));
+            this.draft = RiptideWorkshop.get(session);
+            this.emptySlot =
+                    GuiConfig.slot(
+                            RiptideEditorLayout.menu(page).path()
+                                    + ".layout.overlay."
+                                    + (page.screen() == PREVIEW ? "invalid" : "empty"),
+                            page.screen() == PREVIEW ? 22 : 13);
         }
 
         @Override
@@ -88,16 +87,6 @@ public final class RiptideCourseEditorGui {
 
     private static RiptideRushConfig config(PrepareSession s) {
         return (RiptideRushConfig) s.getTarget().config();
-    }
-
-    private static String screen(RiptideEditorPage page) {
-        if (page.isSidePool()) return "side-pool";
-        if (page.screen() == STOPPED_CHALLENGES) return "stopped";
-        return page.screen().name().toLowerCase(Locale.ROOT);
-    }
-
-    private static boolean list(RiptideEditorPage page) {
-        return page.screen() == CATEGORY || page.screen() == ADD || page.screen() == PREVIEW;
     }
 
     private static String text(String key, Map<String, ?> values) {
@@ -113,19 +102,29 @@ public final class RiptideCourseEditorGui {
             Player player,
             PrepareSession session,
             RiptideEditorPage page) {
+        open(manager, player, session, page, null);
+    }
+
+    private static void open(
+            PrepareSessionManager manager,
+            Player player,
+            PrepareSession session,
+            RiptideEditorPage page,
+            RiptideCoursePlan previewPlan) {
         if (!available(manager, player, session)) return;
         try {
             var draft = RiptideWorkshop.get(session);
             if (draft != null && page.screen() != WORKSHOP && page.screen() != ABANDON)
                 page = draft.origin().child(WORKSHOP, draft.origin().id(), null);
             var h = new Holder(session, page);
+            h.plan = previewPlan;
             var c = config(session);
             String name = page.id() != null && page.screen() != PLACEMENT ? entry(h).name() : "";
-            String titlePath = PATH + "." + screen(page) + ".title";
+            String titlePath = RiptideEditorLayout.menu(page).path() + ".title";
             h.inventory =
                     Bukkit.createInventory(
                             h,
-                            list(page) ? 54 : 27,
+                            h.layout.size(),
                             GuiConfig.component(
                                     titlePath,
                                     Map.of(
@@ -138,14 +137,14 @@ public final class RiptideCourseEditorGui {
                                                             : page.type().displayName(),
                                             "name",
                                             name)));
-            for (int slot = 0; slot < h.inventory.getSize(); slot++) button(h, slot, "filler");
+            for (int slot : h.layout.border())
+                h.inventory.setItem(slot, item("filler", null, Map.of()));
             switch (page.screen()) {
                 case STOPPED_CHALLENGES -> {
                     var allocation = c.previewStoppedAllocation();
-                    button(h, 4, "stopped-summary", null, Map.of("quota", c.getStoppedCount()));
+                    button(h, "stopped-summary", null, Map.of("quota", c.getStoppedCount()));
                     button(
                             h,
-                            11,
                             "stopped-floor",
                             null,
                             Map.of(
@@ -155,13 +154,11 @@ public final class RiptideCourseEditorGui {
                                     c.getColorFloorWeight()));
                     button(
                             h,
-                            13,
                             "stopped-dodge",
                             null,
                             Map.of("quota", allocation.dodge(), "weight", c.getDodgeWeight()));
                     button(
                             h,
-                            15,
                             "stopped-side",
                             null,
                             Map.of(
@@ -171,7 +168,6 @@ public final class RiptideCourseEditorGui {
                                     c.getSideSweepWeight()));
                     button(
                             h,
-                            22,
                             "stopped-mode",
                             c.getStoppedAllocationMode().toLowerCase(Locale.ROOT),
                             Map.of());
@@ -179,48 +175,40 @@ public final class RiptideCourseEditorGui {
                 case SIDE -> {
                     button(
                             h,
-                            4,
                             "side-quota",
                             null,
                             Map.of("quota", c.previewStoppedAllocation().sideSweep()));
-                    value(h, 13, "side-weight", c.getSideSweepWeight());
-                    button(h, 11, "side-pool");
-                    button(h, 15, "preview");
+                    value(h, "side-weight", c.getSideSweepWeight());
+                    button(h, "side-pool");
+                    button(h, "preview");
                 }
                 case CATEGORY -> category(h);
                 case ENTRY -> {
                     var t = entry(h);
-                    h.inventory.setItem(4, template(t, false));
-                    value(h, 10, "name", t.name());
+                    h.inventory.setItem(h.layout.control("summary"), template(t, false));
+                    value(h, "name", t.name());
                     if (t.type() == RiptideLevelType.MATH || t.type() == RiptideLevelType.RHYTHM)
-                        value(h, 11, "operation", RiptideLevelTemplate.variantName(t.variant()));
+                        value(h, "operation", RiptideLevelTemplate.variantName(t.variant()));
                     if (t.type() == RiptideLevelType.PASS
                             || t.type() == RiptideLevelType.MATH
-                            || t.type() == RiptideLevelType.COLOR_FLOOR)
-                        button(h, 20, "edit-building");
-                    button(h, 12, "enabled", t.enabled() ? "on" : "off", Map.of());
-                    value(h, 13, "weight", t.weight());
-                    if (t.type() != RiptideLevelType.PASS) value(h, 14, "max-uses", t.maxUses());
-                    value(h, 15, "difficulty", t.difficulty());
-                    button(h, 16, "duplicate");
-                    button(h, 18, "try-template");
-                    button(h, 22, "delete");
+                            || t.type() == RiptideLevelType.COLOR_FLOOR) button(h, "edit-building");
+                    button(h, "enabled", t.enabled() ? "on" : "off", Map.of());
+                    value(h, "weight", t.weight());
+                    if (t.type() != RiptideLevelType.PASS) value(h, "max-uses", t.maxUses());
+                    value(h, "difficulty", t.difficulty());
+                    button(h, "duplicate");
+                    button(h, "try-template");
+                    button(h, "delete");
                 }
                 case ADD -> {
                     h.rows = RiptideEditorModel.rows(c, page.type());
-                    h.page =
-                            page.atPage(
-                                    RiptideEditorModel.clampPage(
-                                            page.page(),
-                                            h.rows.size(),
-                                            RiptideEditorModel.CATEGORY_PAGE_SIZE));
-                    int first = h.page.page() * RiptideEditorModel.CATEGORY_PAGE_SIZE;
-                    for (int i = 0;
-                            i < RiptideEditorModel.CATEGORY_PAGE_SIZE && first + i < h.rows.size();
-                            i++) {
-                        var source = h.rows.get(first + i);
+                    int from = paginate(h, h.rows.size());
+                    List<Integer> slots = h.layout.pageSlots(h.page.page(), h.rows.size());
+                    for (int offset = 0; offset < slots.size(); offset++) {
+                        var source = h.rows.get(from + offset);
+                        int slot = slots.get(offset);
                         h.inventory.setItem(
-                                i,
+                                slot,
                                 ConfiguredGui.item(
                                         PATH + ".items.copy-source",
                                         null,
@@ -229,48 +217,46 @@ public final class RiptideCourseEditorGui {
                                         Component.empty(),
                                         List.of(),
                                         false));
+                        h.rowTargets.put(slot, source);
                     }
                     button(
                             h,
-                            46,
                             page.type() == RiptideLevelType.RHYTHM
                                     ? "new-rhythm"
                                     : page.type() == RiptideLevelType.DODGE
                                             ? "new-dodge"
                                             : "blank-building");
-                    pages(h, h.rows.size(), RiptideEditorModel.CATEGORY_PAGE_SIZE);
+                    pages(h, h.rows.size());
                 }
                 case CHOICE -> {
-                    List<String> options =
-                            "difficulty".equals(page.field())
-                                    ? List.of("1", "2", "3")
-                                    : concreteVariants(page.type());
                     String selected =
                             "difficulty".equals(page.field())
                                     ? Integer.toString(entry(h).difficulty())
                                     : entry(h).variant();
-                    int[] slots = choiceSlots(options.size());
-                    for (int i = 0; i < options.size(); i++) {
-                        String option = options.get(i);
-                        button(
-                                h,
-                                slots[i],
+                    int from = paginate(h, h.options.size());
+                    List<Integer> slots = h.layout.pageSlots(h.page.page(), h.options.size());
+                    for (int offset = 0; offset < slots.size(); offset++) {
+                        String option = h.options.get(from + offset);
+                        int slot = slots.get(offset);
+                        String key =
                                 "difficulty".equals(page.field())
                                         ? "difficulty-" + option
                                         : "option-"
-                                                + option.toLowerCase(Locale.ROOT).replace('_', '-'),
-                                selected.equals(option) ? "selected" : null,
-                                Map.of());
+                                                + option.toLowerCase(Locale.ROOT).replace('_', '-');
+                        h.inventory.setItem(
+                                slot,
+                                item(key, selected.equals(option) ? "selected" : null, Map.of()));
+                        h.choiceTargets.put(slot, option);
                     }
+                    pages(h, h.options.size());
                 }
                 case WORKSHOP -> {
-                    h.inventory.setItem(4, template(entry(h), false));
-                    button(h, 11, "continue-building");
-                    button(h, 13, "save-building");
-                    button(h, 15, "discard-building");
+                    h.inventory.setItem(h.layout.control("summary"), template(entry(h), false));
+                    button(h, "continue-building");
+                    button(h, "save-building");
+                    button(h, "discard-building");
                     button(
                             h,
-                            22,
                             h.page.type() == RiptideLevelType.COLOR_FLOOR
                                     ? "floor-building-help"
                                     : h.page.type() == RiptideLevelType.MATH
@@ -280,18 +266,17 @@ public final class RiptideCourseEditorGui {
                             RiptideWorkshop.dimensions(c));
                 }
                 case ABANDON -> {
-                    button(h, 11, "confirm-discard-building");
-                    button(h, 15, "continue-building");
+                    button(h, "confirm-discard-building");
+                    button(h, "continue-building");
                 }
                 case DELETE -> {
-                    h.inventory.setItem(4, template(entry(h), false));
-                    button(h, 11, "confirm-delete");
-                    button(h, 15, "cancel");
+                    h.inventory.setItem(h.layout.control("summary"), template(entry(h), false));
+                    button(h, "confirm-delete");
+                    button(h, "cancel");
                 }
                 case COURSE -> {
                     button(
                             h,
-                            4,
                             "course-summary",
                             null,
                             Map.of(
@@ -303,30 +288,31 @@ public final class RiptideCourseEditorGui {
                                     c.getStoppedCount(),
                                     "rhythm",
                                     c.getRhythmCount()));
-                    button(h, 10, "automatic-layout");
-                    button(h, 12, "preview");
-                    value(h, 14, "seed", c.getPreviewSeed());
+                    button(h, "automatic-layout");
+                    button(h, "preview");
+                    value(h, "seed", c.getPreviewSeed());
                     button(
                             h,
-                            16,
                             "fixed",
                             c.getFixedSeed().isBlank() ? "random" : "fixed",
                             Map.of("value", c.getFixedSeed()));
-                    button(h, 22, "constraints");
+                    button(h, "constraints");
                 }
                 case PREVIEW -> preview(h);
                 case PLACEMENT -> {
-                    h.plan = RiptideCoursePlanner.plan(c, c.getPreviewSeed());
+                    if (h.plan == null) h.plan = RiptideCoursePlanner.plan(c, c.getPreviewSeed());
                     var level = h.plan.levels().get(Integer.parseInt(page.id()));
-                    h.inventory.setItem(4, placement(level));
-                    button(h, 11, "inspect");
-                    button(h, 15, "try-placement");
+                    h.inventory.setItem(h.layout.control("summary"), placement(level));
+                    button(h, "inspect");
+                    button(h, "try-placement");
                 }
             }
-            button(
+            controlButton(
                     h,
-                    list(page) ? BACK_LIST : BACK_DETAIL,
-                    page.screen() == WORKSHOP ? "continue-building" : "back");
+                    "back",
+                    page.screen() == WORKSHOP ? "continue-building" : "back",
+                    null,
+                    Map.of());
             player.openInventory(h.inventory);
         } catch (RuntimeException error) {
             CoreMessages.sendAdminError(player, error.getMessage());
@@ -336,24 +322,22 @@ public final class RiptideCourseEditorGui {
     private static void category(Holder h) {
         var c = config(h.session);
         h.rows = RiptideEditorModel.rows(c, h.page.type());
-        h.page =
-                h.page.atPage(
-                        RiptideEditorModel.clampPage(
-                                h.page.page(),
-                                h.rows.size(),
-                                RiptideEditorModel.CATEGORY_PAGE_SIZE));
-        int first = h.page.page() * RiptideEditorModel.CATEGORY_PAGE_SIZE;
-        for (int slot = 0;
-                slot < RiptideEditorModel.CATEGORY_PAGE_SIZE && first + slot < h.rows.size();
-                slot++) h.inventory.setItem(slot, template(h.rows.get(first + slot), true));
+        int first = paginate(h, h.rows.size());
+        List<Integer> slots = h.layout.pageSlots(h.page.page(), h.rows.size());
+        for (int offset = 0; offset < slots.size(); offset++) {
+            var row = h.rows.get(first + offset);
+            int slot = slots.get(offset);
+            h.inventory.setItem(slot, template(row, true));
+            h.rowTargets.put(slot, row);
+        }
         if (h.rows.isEmpty())
-            button(h, 13, "empty", null, Map.of("type", h.page.type().displayName()));
-        if (h.page.isSidePool()) button(h, 37, "side-rules");
+            h.inventory.setItem(
+                    h.emptySlot, item("empty", null, Map.of("type", h.page.type().displayName())));
+        if (h.page.isSidePool()) button(h, "side-rules");
         else if (h.page.type() == RiptideLevelType.COLOR_FLOOR
                 || h.page.type() == RiptideLevelType.DODGE)
             button(
                     h,
-                    37,
                     "stopped-child-weight",
                     null,
                     Map.of(
@@ -363,16 +347,15 @@ public final class RiptideCourseEditorGui {
                             h.page.type() == RiptideLevelType.COLOR_FLOOR
                                     ? c.previewStoppedAllocation().colorFloor()
                                     : c.previewStoppedAllocation().dodge()));
-        else value(h, 37, "quota", RiptideCoursePlanner.quota(c, h.page.type()));
+        else value(h, "quota", RiptideCoursePlanner.quota(c, h.page.type()));
         if (h.page.type() == RiptideLevelType.MATH) {
-            value(h, 39, "minimum", c.getMinimumOperand());
-            value(h, 41, "maximum", c.getMaximumOperand());
+            value(h, "minimum", c.getMinimumOperand());
+            value(h, "maximum", c.getMaximumOperand());
         } else if (h.page.type() == RiptideLevelType.COLOR_FLOOR)
-            value(h, 39, "floor-timing", "32 / 28 / 24 / 20 / 16");
-        button(h, 46, "add", null, Map.of("type", h.page.type().displayName()));
+            button(h, "floor-timing", null, floorTiming());
+        button(h, "add", null, Map.of("type", h.page.type().displayName()));
         button(
                 h,
-                50,
                 "category-summary",
                 null,
                 Map.of(
@@ -380,35 +363,31 @@ public final class RiptideCourseEditorGui {
                         h.rows.size(),
                         "enabled",
                         h.rows.stream().filter(RiptideLevelTemplate::enabled).count()));
-        pages(h, h.rows.size(), RiptideEditorModel.CATEGORY_PAGE_SIZE);
+        pages(h, h.rows.size());
     }
 
     private static void preview(Holder h) {
         var c = config(h.session);
         try {
             h.plan = RiptideCoursePlanner.plan(c, c.getPreviewSeed());
-            h.page =
-                    h.page.atPage(
-                            RiptideEditorModel.clampPage(
-                                    h.page.page(), h.plan.levels().size(), 45));
-            for (int slot = 0;
-                    slot < 45 && h.page.page() * 45 + slot < h.plan.levels().size();
-                    slot++)
-                h.inventory.setItem(
-                        slot, placement(h.plan.levels().get(h.page.page() * 45 + slot)));
-            value(
-                    h,
-                    51,
-                    "duration",
-                    String.format(Locale.ROOT, "%.2f", h.plan.estimatedTicks() / 20D));
-            pages(h, h.plan.levels().size(), 45);
+            int first = paginate(h, h.plan.levels().size());
+            List<Integer> slots = h.layout.pageSlots(h.page.page(), h.plan.levels().size());
+            for (int offset = 0; offset < slots.size(); offset++) {
+                int index = first + offset;
+                int slot = slots.get(offset);
+                h.inventory.setItem(slot, placement(h.plan.levels().get(index)));
+                h.placementTargets.put(slot, index);
+            }
+            value(h, "duration", String.format(Locale.ROOT, "%.2f", h.plan.estimatedTicks() / 20D));
+            pages(h, h.plan.levels().size());
         } catch (IllegalArgumentException error) {
-            button(h, 22, "invalid", null, Map.of("error", error.getMessage()));
+            h.inventory.setItem(
+                    h.emptySlot, item("invalid", null, Map.of("error", error.getMessage())));
         }
-        button(h, 46, "reroll");
-        button(h, 47, "build");
-        button(h, 48, "play");
-        value(h, 50, "seed-info", c.getPreviewSeed());
+        button(h, "reroll");
+        button(h, "build");
+        button(h, "play");
+        value(h, "seed-info", c.getPreviewSeed());
     }
 
     public static boolean available(
@@ -433,6 +412,7 @@ public final class RiptideCourseEditorGui {
         if (event.getClickedInventory() != event.getView().getTopInventory()
                 || !available(manager, player, h.session)) return;
         int slot = event.getRawSlot();
+        String action = h.actions.getOrDefault(slot, "");
         var construction = RiptideWorkshop.get(h.session);
         if (construction != null && h.page.screen() != WORKSHOP && h.page.screen() != ABANDON) {
             open(
@@ -443,26 +423,29 @@ public final class RiptideCourseEditorGui {
             return;
         }
         try {
-            if (slot == (list(h.page) ? BACK_LIST : BACK_DETAIL)) {
+            if (action.equals("back")) {
                 back(manager, player, h);
                 return;
             }
-            if (list(h.page) && (slot == PREVIOUS || slot == NEXT)) {
+            if (RiptideEditorLayout.paged(h.page)
+                    && (action.equals("previous") || action.equals("next"))) {
                 int count =
-                        h.page.screen() != PREVIEW
-                                ? h.rows.size()
-                                : h.plan == null ? 0 : h.plan.levels().size();
-                int size = h.page.screen() != PREVIEW ? RiptideEditorModel.CATEGORY_PAGE_SIZE : 45;
+                        h.page.screen() == CHOICE
+                                ? h.options.size()
+                                : h.page.screen() == PREVIEW
+                                        ? h.plan == null ? 0 : h.plan.levels().size()
+                                        : h.rows.size();
                 int target =
-                        RiptideEditorModel.clampPage(
-                                h.page.page() + (slot == PREVIOUS ? -1 : 1), count, size);
+                        h.layout.clampPage(
+                                h.page.page() + (action.equals("previous") ? -1 : 1), count);
                 open(manager, player, h.session, h.page.atPage(target));
                 return;
             }
+            if (!current(manager, player, h)) return;
             switch (h.page.screen()) {
                 case STOPPED_CHALLENGES -> {
                     var c = config(h.session);
-                    if (slot == 4)
+                    if (action.equals("stopped-summary"))
                         number(
                                 manager,
                                 player,
@@ -472,21 +455,21 @@ public final class RiptideCourseEditorGui {
                                 0,
                                 64,
                                 c::setStoppedCount);
-                    else if (slot == 11)
+                    else if (action.equals("stopped-floor"))
                         open(
                                 manager,
                                 player,
                                 h.session,
                                 RiptideEditorPage.category(RiptideLevelType.COLOR_FLOOR));
-                    else if (slot == 13)
+                    else if (action.equals("stopped-dodge"))
                         open(
                                 manager,
                                 player,
                                 h.session,
                                 RiptideEditorPage.category(RiptideLevelType.DODGE));
-                    else if (slot == 15)
+                    else if (action.equals("stopped-side"))
                         open(manager, player, h.session, h.page.child(SIDE, null, null));
-                    else if (slot == 22) {
+                    else if (action.equals("stopped-mode")) {
                         c.setStoppedAllocationMode(
                                 c.getStoppedAllocationMode().equalsIgnoreCase("WEIGHTED")
                                         ? "RANDOM"
@@ -496,10 +479,11 @@ public final class RiptideCourseEditorGui {
                     }
                 }
                 case SIDE -> {
-                    if (slot == 11) open(manager, player, h.session, h.page.sidePool());
-                    else if (slot == 15)
+                    if (action.equals("side-pool"))
+                        open(manager, player, h.session, h.page.sidePool());
+                    else if (action.equals("preview"))
                         open(manager, player, h.session, h.page.child(PREVIEW, null, null));
-                    else if (slot == 13)
+                    else if (action.equals("side-weight"))
                         number(
                                 manager,
                                 player,
@@ -510,34 +494,34 @@ public final class RiptideCourseEditorGui {
                                 100,
                                 config(h.session)::setSideSweepWeight);
                 }
-                case CATEGORY -> categoryClick(manager, player, h, slot);
-                case ENTRY -> entryClick(manager, player, h, slot);
-                case ADD -> addClick(manager, player, h, slot);
+                case CATEGORY -> categoryClick(manager, player, h, slot, action);
+                case ENTRY -> entryClick(manager, player, h, action);
+                case ADD -> addClick(manager, player, h, slot, action);
                 case CHOICE -> choiceClick(manager, player, h, slot);
                 case WORKSHOP -> {
-                    if (slot == 11) continueBuilding(player, h);
-                    else if (slot == 13) saveBuilding(manager, player, h);
-                    else if (slot == 15)
+                    if (action.equals("continue-building")) continueBuilding(player, h);
+                    else if (action.equals("save-building")) saveBuilding(manager, player, h);
+                    else if (action.equals("discard-building"))
                         open(manager, player, h.session, h.page.child(ABANDON, h.page.id(), null));
                 }
                 case ABANDON -> {
-                    if (slot == 15) continueBuilding(player, h);
-                    else if (slot == 11) {
+                    if (action.equals("continue-building")) continueBuilding(player, h);
+                    else if (action.equals("confirm-discard-building")) {
                         var draft = RiptideWorkshop.finish(h.session);
                         open(manager, player, h.session, draft.origin());
                     }
                 }
                 case DELETE -> {
-                    if (slot == 15) back(manager, player, h);
-                    else if (slot == 11) {
+                    if (action.equals("cancel")) back(manager, player, h);
+                    else if (action.equals("confirm-delete")) {
                         RiptideEditorModel.remove(config(h.session), h.page.type(), h.page.id());
                         changed(h);
                         open(manager, player, h.session, h.page.parent().parent());
                     }
                 }
-                case COURSE -> courseClick(manager, player, h, slot);
+                case COURSE -> courseClick(manager, player, h, action);
                 case PREVIEW -> {
-                    if (slot == 46) {
+                    if (action.equals("reroll")) {
                         config(h.session)
                                 .setPreviewSeed(
                                         java.util.concurrent.ThreadLocalRandom.current()
@@ -545,29 +529,28 @@ public final class RiptideCourseEditorGui {
                         changed(h);
                         reopen(manager, player, h);
                     } else if (h.plan != null) {
-                        if (slot == 47 || slot == 48)
-                            generate(manager, player, h, h.plan, slot == 48, null);
-                        else if (slot >= 0
-                                && slot < 45
-                                && h.page.page() * 45 + slot < h.plan.levels().size())
+                        if (action.equals("build") || action.equals("play"))
+                            generate(manager, player, h, h.plan, action.equals("play"), null);
+                        else if (h.placementTargets.containsKey(slot))
                             open(
                                     manager,
                                     player,
                                     h.session,
                                     h.page.child(
                                             PLACEMENT,
-                                            Integer.toString(h.page.page() * 45 + slot),
-                                            null));
+                                            Integer.toString(h.placementTargets.get(slot)),
+                                            null),
+                                    h.plan);
                     }
                 }
                 case PLACEMENT -> {
-                    if (slot == 11 || slot == 15)
+                    if (action.equals("inspect") || action.equals("try-placement"))
                         generate(
                                 manager,
                                 player,
                                 h,
                                 h.plan,
-                                slot == 15,
+                                action.equals("try-placement"),
                                 h.plan.levels().get(Integer.parseInt(h.page.id())));
                 }
             }
@@ -577,16 +560,16 @@ public final class RiptideCourseEditorGui {
     }
 
     private static void categoryClick(
-            PrepareSessionManager manager, Player player, Holder h, int slot) {
+            PrepareSessionManager manager, Player player, Holder h, int slot, String action) {
         var c = config(h.session);
-        int index = h.page.page() * RiptideEditorModel.CATEGORY_PAGE_SIZE + slot;
-        if (slot >= 0 && slot < RiptideEditorModel.CATEGORY_PAGE_SIZE && index < h.rows.size()) {
-            open(manager, player, h.session, h.page.child(ENTRY, h.rows.get(index).id(), null));
+        var target = h.rowTargets.get(slot);
+        if (target != null) {
+            open(manager, player, h.session, h.page.child(ENTRY, target.id(), null));
             return;
         }
-        switch (slot) {
-            case 46 -> open(manager, player, h.session, h.page.child(ADD, null, null));
-            case 37 -> {
+        switch (action) {
+            case "add" -> open(manager, player, h.session, h.page.child(ADD, null, null));
+            case "quota", "stopped-child-weight" -> {
                 if (h.page.type() == RiptideLevelType.COLOR_FLOOR
                         || h.page.type() == RiptideLevelType.DODGE)
                     number(
@@ -609,7 +592,7 @@ public final class RiptideCourseEditorGui {
                             64,
                             value -> RiptideEditorModel.quota(c, h.page.type(), value));
             }
-            case 39 -> {
+            case "minimum" -> {
                 if (h.page.type() == RiptideLevelType.MATH)
                     number(
                             manager,
@@ -621,7 +604,7 @@ public final class RiptideCourseEditorGui {
                             c.getMaximumOperand(),
                             c::setMinimumOperand);
             }
-            case 41 -> {
+            case "maximum" -> {
                 if (h.page.type() == RiptideLevelType.MATH)
                     number(
                             manager,
@@ -638,11 +621,11 @@ public final class RiptideCourseEditorGui {
     }
 
     private static void entryClick(
-            PrepareSessionManager manager, Player player, Holder h, int slot) {
+            PrepareSessionManager manager, Player player, Holder h, String action) {
         var c = config(h.session);
         var t = entry(h);
-        switch (slot) {
-            case 10 ->
+        switch (action) {
+            case "name" ->
                     input(
                             manager,
                             player,
@@ -656,22 +639,22 @@ public final class RiptideCourseEditorGui {
                                 return null;
                             },
                             value -> update(h, "name", value));
-            case 11 -> {
+            case "operation" -> {
                 if (t.type() == RiptideLevelType.MATH || t.type() == RiptideLevelType.RHYTHM)
                     open(manager, player, h.session, h.page.child(CHOICE, t.id(), "variant"));
             }
-            case 20 -> {
+            case "edit-building" -> {
                 if (t.type() == RiptideLevelType.PASS
                         || t.type() == RiptideLevelType.MATH
                         || t.type() == RiptideLevelType.COLOR_FLOOR)
                     startBuilding(manager, player, h, false, false);
             }
-            case 12 -> {
+            case "enabled" -> {
                 update(h, "enabled", !t.enabled());
                 changed(h);
                 reopen(manager, player, h);
             }
-            case 13 ->
+            case "weight" ->
                     number(
                             manager,
                             player,
@@ -681,7 +664,7 @@ public final class RiptideCourseEditorGui {
                             1,
                             100,
                             value -> update(h, "weight", value));
-            case 14 -> {
+            case "max-uses" -> {
                 if (t.type() != RiptideLevelType.PASS)
                     number(
                             manager,
@@ -693,59 +676,51 @@ public final class RiptideCourseEditorGui {
                             64,
                             value -> update(h, "max-uses", value));
             }
-            case 15 -> open(manager, player, h.session, h.page.child(CHOICE, t.id(), "difficulty"));
-            case 16 -> {
+            case "difficulty" ->
+                    open(manager, player, h.session, h.page.child(CHOICE, t.id(), "difficulty"));
+            case "duplicate" -> {
                 var copy = RiptideEditorModel.duplicate(c, h.page.type(), t.id());
                 changed(h);
                 openNew(manager, player, h, copy);
             }
-            case 18 -> {
+            case "try-template" -> {
                 var plan = RiptideCoursePlanner.templatePreview(c, t, c.getPreviewSeed());
                 generate(manager, player, h, plan, true, plan.levels().getFirst());
             }
-            case 22 -> open(manager, player, h.session, h.page.child(DELETE, t.id(), null));
+            case "delete" -> open(manager, player, h.session, h.page.child(DELETE, t.id(), null));
             default -> {}
         }
     }
 
-    private static void addClick(PrepareSessionManager manager, Player player, Holder h, int slot) {
-        if (slot == 46 && h.page.type() == RiptideLevelType.RHYTHM) {
+    private static void addClick(
+            PrepareSessionManager manager, Player player, Holder h, int slot, String action) {
+        if (action.equals("new-rhythm")) {
             var template = RiptideEditorModel.add(config(h.session), h.page.type(), "SHUTTER");
             changed(h);
             openNew(manager, player, h, template);
             return;
         }
-        if (slot == 46 && h.page.type() == RiptideLevelType.DODGE) {
+        if (action.equals("new-dodge")) {
             var template = RiptideEditorModel.add(config(h.session), h.page.type(), "ZOMBIE");
             changed(h);
             openNew(manager, player, h, template);
             return;
         }
-        if (slot == 46) {
+        if (action.equals("blank-building")) {
             createBuilding(manager, player, h);
             return;
         }
-        int index = h.page.page() * RiptideEditorModel.CATEGORY_PAGE_SIZE + slot;
-        if (slot < 0 || slot >= RiptideEditorModel.CATEGORY_PAGE_SIZE || index >= h.rows.size())
-            return;
-        var copy =
-                RiptideEditorModel.duplicate(
-                        config(h.session), h.page.type(), h.rows.get(index).id());
+        var target = h.rowTargets.get(slot);
+        if (target == null) return;
+        var copy = RiptideEditorModel.duplicate(config(h.session), h.page.type(), target.id());
         changed(h);
         openNew(manager, player, h, copy);
     }
 
     private static void choiceClick(
             PrepareSessionManager manager, Player player, Holder h, int slot) {
-        int selected = -1;
-        var options =
-                "difficulty".equals(h.page.field())
-                        ? List.of("1", "2", "3")
-                        : concreteVariants(h.page.type());
-        int[] slots = choiceSlots(options.size());
-        for (int i = 0; i < slots.length; i++) if (slot == slots[i]) selected = i;
-        if (selected < 0 || selected >= options.size()) return;
-        String value = options.get(selected);
+        String value = h.choiceTargets.get(slot);
+        if (value == null) return;
         update(
                 h,
                 h.page.field(),
@@ -755,11 +730,11 @@ public final class RiptideCourseEditorGui {
     }
 
     private static void courseClick(
-            PrepareSessionManager manager, Player player, Holder h, int slot) {
+            PrepareSessionManager manager, Player player, Holder h, String action) {
         var c = config(h.session);
-        switch (slot) {
-            case 12 -> open(manager, player, h.session, h.page.child(PREVIEW, null, null));
-            case 14 ->
+        switch (action) {
+            case "preview" -> open(manager, player, h.session, h.page.child(PREVIEW, null, null));
+            case "seed" ->
                     input(
                             manager,
                             player,
@@ -771,7 +746,7 @@ public final class RiptideCourseEditorGui {
                                 return null;
                             },
                             value -> c.setPreviewSeed(Long.parseLong(value)));
-            case 16 -> {
+            case "fixed" -> {
                 c.setFixedSeed(c.getFixedSeed().isBlank() ? Long.toString(c.getPreviewSeed()) : "");
                 changed(h);
                 reopen(manager, player, h);
@@ -790,10 +765,12 @@ public final class RiptideCourseEditorGui {
             Consumer<String> setter) {
         AnvilInputGui.openEditorText(
                 player,
+                h.session,
                 text(key, Map.of("value", initial)),
                 initial,
                 value -> {
                     if (!available(manager, player, h.session)) return text("expired");
+                    if (!isCurrent(h)) return text("stale");
                     try {
                         return validate.apply(value);
                     } catch (NumberFormatException error) {
@@ -803,7 +780,8 @@ public final class RiptideCourseEditorGui {
                     }
                 },
                 value -> {
-                    if (!available(manager, player, h.session)) return;
+                    if (!available(manager, player, h.session) || !current(manager, player, h))
+                        return;
                     try {
                         setter.accept(value);
                         changed(h);
@@ -813,7 +791,7 @@ public final class RiptideCourseEditorGui {
                         reopen(manager, player, h);
                     }
                 },
-                () -> later(manager, player, h, true));
+                () -> reopen(manager, player, h));
     }
 
     private static void number(
@@ -868,8 +846,10 @@ public final class RiptideCourseEditorGui {
     private static void openNew(
             PrepareSessionManager manager, Player player, Holder h, RiptideLevelTemplate t) {
         int last =
-                (RiptideEditorModel.rows(config(h.session), t.type()).size() - 1)
-                        / RiptideEditorModel.CATEGORY_PAGE_SIZE;
+                RiptideEditorLayout.load(h.page.categoryOrigin(), 0)
+                        .clampPage(
+                                Integer.MAX_VALUE,
+                                RiptideEditorModel.rows(config(h.session), t.type()).size());
         var category = h.page.categoryOrigin().atPage(last);
         open(manager, player, h.session, category.child(ENTRY, t.id(), null));
     }
@@ -898,8 +878,10 @@ public final class RiptideCourseEditorGui {
         var t = RiptideEditorModel.addBlank(config(h.session), h.page.type());
         changed(h);
         int last =
-                (RiptideEditorModel.rows(config(h.session), t.type()).size() - 1)
-                        / RiptideEditorModel.CATEGORY_PAGE_SIZE;
+                RiptideEditorLayout.load(h.page.categoryOrigin(), 0)
+                        .clampPage(
+                                Integer.MAX_VALUE,
+                                RiptideEditorModel.rows(config(h.session), t.type()).size());
         var origin = h.page.categoryOrigin().atPage(last).child(ENTRY, t.id(), null);
         startBuilding(manager, player, new Holder(h.session, origin), true, true);
     }
@@ -1073,34 +1055,111 @@ public final class RiptideCourseEditorGui {
                 plan.seed(), plan.algorithmVersion(), 0, plan.trialLevels(level));
     }
 
-    private static void pages(Holder h, int count, int size) {
-        int pages = Math.max(1, (count + size - 1) / size);
+    private static int paginate(Holder h, int count) {
+        h.page = h.page.atPage(h.layout.clampPage(h.page.page(), count));
+        return h.page.page() * h.layout.content().size();
+    }
+
+    private static void pages(Holder h, int count) {
+        int pages = h.layout.pageCount(count);
         if (h.page.page() > 0)
-            button(h, PREVIOUS, "previous", null, Map.of("page", h.page.page(), "pages", pages));
+            button(h, "previous", null, Map.of("page", h.page.page(), "pages", pages));
         if (h.page.page() + 1 < pages)
-            button(h, NEXT, "next", null, Map.of("page", h.page.page() + 2, "pages", pages));
+            button(h, "next", null, Map.of("page", h.page.page() + 2, "pages", pages));
     }
 
-    private static void value(Holder h, int slot, String key, Object value) {
-        button(h, slot, key, null, Map.of("value", value));
+    private static void value(Holder h, String key, Object value) {
+        button(h, key, null, Map.of("value", value));
     }
 
-    private static void button(Holder h, int slot, String key) {
-        button(h, slot, key, null, Map.of());
+    private static void button(Holder h, String key) {
+        button(h, key, null, Map.of());
     }
 
-    private static void button(
-            Holder h, int slot, String key, String state, Map<String, ?> values) {
-        h.inventory.setItem(
-                slot,
-                ConfiguredGui.item(
-                        PATH + ".items." + key,
-                        state,
-                        values,
-                        Material.PAPER,
-                        Component.empty(),
-                        List.of(),
-                        false));
+    private static void button(Holder h, String key, String state, Map<String, ?> values) {
+        controlButton(h, key, key, state, values);
+    }
+
+    private static void controlButton(
+            Holder h, String control, String key, String state, Map<String, ?> values) {
+        int slot = h.layout.control(control);
+        h.inventory.setItem(slot, item(key, state, values));
+        h.actions.put(slot, control);
+    }
+
+    private static ItemStack item(String key, String state, Map<String, ?> values) {
+        return ConfiguredGui.item(
+                PATH + ".items." + key,
+                state,
+                values,
+                Material.PAPER,
+                Component.empty(),
+                List.of(),
+                false);
+    }
+
+    private static List<String> choices(RiptideEditorPage page) {
+        return "difficulty".equals(page.field())
+                ? List.of("1", "2", "3")
+                : concreteVariants(page.type());
+    }
+
+    private static boolean isCurrent(Holder h) {
+        return h.draft == RiptideWorkshop.get(h.session)
+                && h.snapshot.equals(RiptideEditorModel.snapshot(config(h.session)));
+    }
+
+    private static boolean current(PrepareSessionManager manager, Player player, Holder h) {
+        if (isCurrent(h)) return true;
+        CoreMessages.sendAdminInfo(player, text("stale"));
+        RiptideEditorPage target = h.page;
+        var draft = RiptideWorkshop.get(h.session);
+        if (draft != h.draft)
+            target =
+                    draft != null
+                            ? draft.origin().child(WORKSHOP, draft.origin().id(), null)
+                            : h.draft.origin();
+        else if (target.screen() == PLACEMENT) target = target.parent();
+        else if (target.id() != null
+                && RiptideEditorModel.rows(config(h.session), target.type()).stream()
+                        .noneMatch(t -> t.id().equals(h.page.id())))
+            target = target.categoryOrigin();
+        open(manager, player, h.session, target);
+        return false;
+    }
+
+    static Map<String, ?> floorTiming() {
+        int stages =
+                ink.ziip.championshipscore.api.game.riptiderush.course.RiptideDifficulty
+                        .stageCount();
+        String separator = text("list-separator");
+        String durations =
+                java.util.stream.IntStream.range(0, stages)
+                        .map(
+                                stage ->
+                                        ink.ziip.championshipscore.api.game.riptiderush.course
+                                                        .RiptideDifficulty.floorTicks(stage, stages)
+                                                / 20)
+                        .mapToObj(Integer::toString)
+                        .collect(java.util.stream.Collectors.joining(separator));
+        String materials =
+                java.util.stream.IntStream.range(0, stages)
+                        .map(
+                                stage ->
+                                        ink.ziip.championshipscore.api.game.riptiderush.course
+                                                .RiptideDifficulty.floorMaterials(stage, stages))
+                        .distinct()
+                        .mapToObj(Integer::toString)
+                        .collect(java.util.stream.Collectors.joining(separator));
+        return Map.of(
+                "value",
+                durations,
+                "materials",
+                materials,
+                "rounds",
+                ink.ziip.championshipscore.api.game.riptiderush.course.RiptideDifficulty
+                        .floorRoundTicks(0, stages)
+                        .size());
     }
 
     private static ItemStack template(RiptideLevelTemplate t, boolean clickable) {
@@ -1149,7 +1208,9 @@ public final class RiptideCourseEditorGui {
                                 ? RiptideLevelTemplate.variantName(level.variant())
                                 : level.sideWalls().stream()
                                         .map(w -> w.template().name())
-                                        .collect(java.util.stream.Collectors.joining(" / ")),
+                                        .collect(
+                                                java.util.stream.Collectors.joining(
+                                                        text("list-separator"))),
                         "step",
                         level.step()),
                 level.type().icon(),

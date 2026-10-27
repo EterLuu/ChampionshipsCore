@@ -4,7 +4,6 @@ import ink.ziip.championshipscore.api.game.bingo.task.pool.Dimension;
 import ink.ziip.championshipscore.api.game.bingo.util.MessageService;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 
 import org.bukkit.Material;
 import org.bukkit.potion.PotionType;
@@ -12,6 +11,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -127,14 +127,13 @@ public record PotionTask(Form form, String effect, int count, Dimension dimensio
 
     @Override
     public Component getName() {
-        // Vanilla potion display keys, e.g. item.minecraft.splash_potion.effect.strength →
-        // Splash strength potion.
-        return Component.text()
-                .color(NamedTextColor.YELLOW)
-                .append(
-                        Component.translatable(
-                                "item.minecraft." + form.infix + ".effect." + effect))
-                .build();
+        return MessageService.global()
+                .rich(
+                        "task.presentation.item-name",
+                        Map.of(
+                                "%name%",
+                                Component.translatable(
+                                        "item.minecraft." + form.infix + ".effect." + effect)));
     }
 
     @Override

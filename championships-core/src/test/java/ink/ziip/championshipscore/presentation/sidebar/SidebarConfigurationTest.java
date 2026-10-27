@@ -15,6 +15,53 @@ import java.util.List;
 
 class SidebarConfigurationTest {
     @Test
+    void missingDailyBoardUsesBundledContentWithRuntimeStyles(
+            @org.junit.jupiter.api.io.TempDir java.nio.file.Path directory) throws Exception {
+        var document =
+                org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(
+                        new File(requireResource().toURI()));
+        document.set("style.title", "&aCustom title");
+        document.set("style.footer", "Custom footer");
+        var file = directory.resolve("scoreboards.yml").toFile();
+        document.save(file);
+        var control = SidebarConfiguration.load(file);
+        document.set("boards.daily-lobby", null);
+        document.save(file);
+        var result = SidebarConfiguration.load(file);
+        var bundled = SidebarConfiguration.load(new File(requireResource().toURI()));
+        assertEquals("&aCustom title", result.dailyLobby().title());
+        assertEquals("Custom footer", result.dailyLobby().lines().getLast());
+        assertEquals(
+                bundled.dailyLobby().lines().subList(0, bundled.dailyLobby().lines().size() - 1),
+                result.dailyLobby().lines().subList(0, result.dailyLobby().lines().size() - 1));
+        assertEquals(control.bingoWorkerFields(), result.bingoWorkerFields());
+        document.set("style", null);
+        document.save(file);
+        assertEquals(bundled.dailyLobby(), SidebarConfiguration.load(file).dailyLobby());
+    }
+
+    @Test
+    void explicitDailyBoardIsNotReplacedByDefaults(
+            @org.junit.jupiter.api.io.TempDir java.nio.file.Path directory) throws Exception {
+        var document =
+                org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(
+                        new File(requireResource().toURI()));
+        document.set("boards.daily-lobby.title", "Custom");
+        document.set("boards.daily-lobby.lines", List.of("", "own line"));
+        var file = directory.resolve("scoreboards.yml").toFile();
+        document.save(file);
+        assertEquals(List.of("", "own line"), SidebarConfiguration.load(file).dailyLobby().lines());
+        document.set("boards.daily-lobby.title", "");
+        document.save(file);
+        org.junit.jupiter.api.Assertions.assertThrows(
+                IllegalArgumentException.class, () -> SidebarConfiguration.load(file));
+        document.set("boards.daily-lobby", "invalid section");
+        document.save(file);
+        org.junit.jupiter.api.Assertions.assertThrows(
+                IllegalArgumentException.class, () -> SidebarConfiguration.load(file));
+    }
+
+    @Test
     void selectsTopEightAndAppendsOutOfRangeViewerLikeBingo() {
         List<Integer> ranked = List.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
 

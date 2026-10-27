@@ -82,7 +82,8 @@ class LaserShowdownArenaSelectionTest {
             set(area, "areaLocations", arenas);
             set(area, "gamePlayers", new ArrayList<>(List.of(id)));
             set(area, "playerRespawnLocations", new HashMap<>());
-            set(area, "locationIterators", new IdentityHashMap<>());
+            set(area, "playerRespawnTick", new HashMap<>());
+            set(area, "playerLives", new HashMap<>());
             set(game, "playerStatus", new ConcurrentHashMap<>(Map.of(id, area)));
             Server server =
                     proxy(
@@ -128,6 +129,8 @@ class LaserShowdownArenaSelectionTest {
                     area.getSelectedArenaIndices(4),
                     "formal events retain their explicit arena choice");
             set(area, "playerRespawnLocations", new HashMap<>());
+            set(area, "playerRespawnTick", new HashMap<>());
+            set(area, "playerLives", new HashMap<>());
             spectator.set(true);
             area.teleportPlayerToSpawnLocation(player);
             set(area, "gameStageEnum", GameStageEnum.PROGRESS);
@@ -183,7 +186,6 @@ class LaserShowdownArenaSelectionTest {
         Map<UUID, Location> spawns = new HashMap<>();
         set(area, "playerRespawnLocations", respawns);
         set(area, "playerSpawnLocation", spawns);
-        set(area, "locationIterators", new IdentityHashMap<>());
         List<ChampionshipTeam> teams = new ArrayList<>();
         for (int team = 0; team < 16; team++) {
             var roster = new HashSet<UUID>();

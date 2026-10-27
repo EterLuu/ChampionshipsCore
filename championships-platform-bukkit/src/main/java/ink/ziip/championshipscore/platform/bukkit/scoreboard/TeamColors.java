@@ -9,13 +9,13 @@ public final class TeamColors {
     public static Color fromHex(String hexColor) {
         try {
             String value = hexColor.startsWith("#") ? hexColor.substring(1) : hexColor;
-            if (value.length() != 6) throw new IllegalArgumentException("颜色必须为六位十六进制值");
+            if (value.length() != 6) return Color.BLACK;
             return Color.fromRGB(
                     Integer.parseInt(value.substring(0, 2), 16),
                     Integer.parseInt(value.substring(2, 4), 16),
                     Integer.parseInt(value.substring(4, 6), 16));
         } catch (Exception ignored) {
-            return Color.fromBGR(0, 0, 0);
+            return Color.BLACK;
         }
     }
 

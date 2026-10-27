@@ -31,7 +31,7 @@ ChampionshipsCore 是用于 Minecraft 团队锦标赛的 Paper 插件，统一�
 | 必需插件 | PacketEvents 2.14.0、支持 26.3 的 ProtocolLib 5.5.0 开发构建、PlaceholderAPI 2.12.3、FastAsyncWorldEdit 2.16.1 |
 | 构建工具 | Maven；依赖版本与仓库地址由根目录和各模块的 `pom.xml` 定义 |
 
-ProtocolLib 编译接口仍为 5.4.0，运行时须安装修复 26.3 协议映射的 5.5.0 开发构建。FAWE 的 Bukkit 与 Core API 使用同一版本。Core 的插件描述未声明 Folia 支持；远程 Bingo 使用单独的 [Folia Worker](championships-bingo-worker/README.md)，仍兼容 Folia 26.2。单服 `LOCAL` 模式无需 Redis、代理或身份平台。
+ProtocolLib 编译接口仍为 5.4.0，运行时须安装修复 26.3 协议映射的 5.5.0 开发构建。FAWE 的 Bukkit 与 Core API 使用同一版本。Core 的插件描述未声明 Folia 支持；远程 Bingo 使用单独的 [Folia Worker](championships-bingo-worker/README.md)，使用 Folia 26.3。单服 `LOCAL` 模式无需 Redis、代理或身份平台。
 
 ## 快速开始
 
@@ -136,4 +136,4 @@ Core 的配置位于 `plugins/ChampionshipsCore/`：
 
 贡献前阅读 [开发指南](docs/development.md)。提交时说明问题、影响模块和验证结果；共享功能需要同时检查 Core 与 Worker。
 
-项目使用 [MIT License](LICENSE)。Bingo 任务机制与图像资源参考上游 [MineBingo](https://gitee.com/chancelethay/minebingo)；任务图像的来源记录见 [SOURCES.md](championships-core/src/main/resources/bingo/taskimages/SOURCES.md)，Worker 内嵌代码的许可见 [第三方声明](championships-bingo-worker/THIRD-PARTY-NOTICES.md)。
+项目使用 [MIT License](LICENSE)。Bingo 任务机制与图像资源参考上游 [MineBingo](https://gitee.com/chancelethay/minebingo)；任务图像的来源记录见 [SOURCES.md](championships-core/src/main/resources/bingo/taskimages/SOURCES.md)。

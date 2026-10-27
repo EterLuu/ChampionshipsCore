@@ -16,7 +16,8 @@ public record CrossServerChatMessage(
         boolean activePlayer,
         String messageJson,
         long createdAt,
-        boolean daily) {
+        boolean daily,
+        String renderedJson) {
     public CrossServerChatMessage(
             UUID messageId,
             String sourceInstance,
@@ -40,14 +41,42 @@ public record CrossServerChatMessage(
                 false);
     }
 
+    /** Older senders carry metadata/content only; current senders also freeze the rendered line. */
+    public CrossServerChatMessage(
+            UUID messageId,
+            String sourceInstance,
+            UUID senderId,
+            String senderName,
+            String label,
+            String teamColorCode,
+            boolean activePlayer,
+            String messageJson,
+            long createdAt,
+            boolean daily) {
+        this(
+                messageId,
+                sourceInstance,
+                senderId,
+                senderName,
+                label,
+                teamColorCode,
+                activePlayer,
+                messageJson,
+                createdAt,
+                daily,
+                null);
+    }
+
     public CrossServerChatMessage {
         Objects.requireNonNull(messageId, "messageId");
         sourceInstance = text(sourceInstance, "sourceInstance", 128);
         Objects.requireNonNull(senderId, "senderId");
         senderName = text(senderName, "senderName", 64);
-        label = text(label, "label", 256);
+        Objects.requireNonNull(label, "label");
+        if (label.length() > 256) throw new IllegalArgumentException("label is too long");
         teamColorCode = optionalText(teamColorCode, "teamColorCode", 16);
         messageJson = text(messageJson, "messageJson", 8_192);
+        if (renderedJson != null) renderedJson = text(renderedJson, "renderedJson", 32_768);
         if (createdAt < 1) throw new IllegalArgumentException("createdAt must be positive");
     }
 
@@ -62,6 +91,7 @@ public record CrossServerChatMessage(
         fields.put("activePlayer", Boolean.toString(activePlayer));
         fields.put("daily", Boolean.toString(daily));
         fields.put("messageJson", messageJson);
+        if (renderedJson != null) fields.put("renderedJson", renderedJson);
         fields.put("createdAt", Long.toString(createdAt));
         return Map.copyOf(fields);
     }
@@ -73,6 +103,8 @@ public record CrossServerChatMessage(
             throw new IllegalArgumentException("activePlayer must be true or false");
         }
         String color = fields.get("teamColorCode");
+        String label = fields.get("label");
+        if (label == null) throw new IllegalArgumentException("Missing field label");
         String daily = fields.getOrDefault("daily", "false");
         if (!daily.equals("true") && !daily.equals("false")) {
             throw new IllegalArgumentException("daily must be true or false");
@@ -82,12 +114,13 @@ public record CrossServerChatMessage(
                 required(fields, "sourceInstance"),
                 UUID.fromString(required(fields, "senderId")),
                 required(fields, "senderName"),
-                required(fields, "label"),
+                label,
                 color == null || color.isBlank() ? null : color,
                 Boolean.parseBoolean(active),
                 required(fields, "messageJson"),
                 Long.parseLong(required(fields, "createdAt")),
-                Boolean.parseBoolean(daily));
+                Boolean.parseBoolean(daily),
+                fields.get("renderedJson"));
     }
 
     private static String required(Map<String, String> fields, String key) {

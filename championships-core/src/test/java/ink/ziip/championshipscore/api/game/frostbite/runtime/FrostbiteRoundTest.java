@@ -189,8 +189,66 @@ class FrostbiteRoundTest {
         assertNull(g.leave(b));
         assertEquals(1, g.kills(a));
         assertFalse(g.active(b));
+        assertFalse(g.reconnect(b));
         assertFalse(g.freeze(a, b, 101, 100));
         assertTrue(new FrostbiteRound(t, 1).active(b));
+    }
+
+    @Test
+    void reconnectRestoresBothAttackDirectionsAndKeepsArenaAndKills() {
+        var roster = teams(4);
+        var round = new FrostbiteRound(roster, 2);
+        UUID player = roster.get(0).get(0);
+        UUID opponent =
+                roster.get(1).stream()
+                        .filter(id -> round.enemies(player, id))
+                        .findFirst()
+                        .orElseThrow();
+        var seat = round.seats().get(player);
+        assertEquals(player, round.instantKill(player, opponent, 0));
+
+        assertNull(round.disconnect(player));
+        assertFalse(round.active(player));
+        assertFalse(round.freeze(player, opponent, 1, 20));
+        assertFalse(round.freeze(opponent, player, 1, 20));
+        assertTrue(round.reconnect(player));
+        assertEquals(seat, round.seats().get(player));
+        assertEquals(1, round.kills(player));
+        assertTrue(round.freeze(player, opponent, 2, 20));
+        round.thaw(opponent);
+        assertTrue(round.freeze(opponent, player, 3, 20));
+    }
+
+    @Test
+    void frozenDisconnectAwardsOnceAndReconnectHasNoStaleFreeze() {
+        var roster = teams(2);
+        var round = new FrostbiteRound(roster, 0);
+        UUID attacker = roster.get(0).get(0), victim = roster.get(1).get(0);
+        assertTrue(round.freeze(attacker, victim, 10, 100));
+        assertEquals(attacker, round.disconnect(victim));
+        assertNull(round.disconnect(victim));
+        assertNull(round.freezeState(victim));
+        assertTrue(round.expired(110).isEmpty());
+        assertEquals(1, round.kills(attacker));
+        assertTrue(round.reconnect(victim));
+        assertTrue(round.canAct(victim));
+        assertNull(round.disconnect(victim));
+        assertEquals(1, round.kills(attacker));
+    }
+
+    @Test
+    void repeatedReconnectPreservesHeatDeadlineAndCannotAddAnUnknownPlayer() {
+        var roster = teams(2);
+        var round = new FrostbiteRound(roster, 0);
+        UUID player = roster.get(0).get(0);
+        round.heat(player, 60);
+        for (int attempt = 0; attempt < 3; attempt++) {
+            assertNull(round.disconnect(player));
+            assertTrue(round.reconnect(player));
+            assertTrue(round.heated(player, 59));
+            assertFalse(round.heated(player, 60));
+        }
+        assertFalse(round.reconnect(UUID.randomUUID()));
     }
 
     @Test

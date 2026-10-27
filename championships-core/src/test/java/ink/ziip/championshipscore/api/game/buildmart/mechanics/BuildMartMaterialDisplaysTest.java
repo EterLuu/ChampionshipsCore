@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import ink.ziip.championshipscore.api.game.buildmart.blueprint.BlueprintBlock;
 import ink.ziip.championshipscore.api.game.buildmart.blueprint.BuildMartBlueprint;
 import ink.ziip.championshipscore.api.game.buildmart.state.BuildSlot;
+import ink.ziip.championshipscore.configuration.ConfigurationStateExtension;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
@@ -19,11 +20,13 @@ import org.bukkit.block.data.type.Bed;
 import org.bukkit.block.data.type.Slab;
 import org.bukkit.block.data.type.Stairs;
 import org.bukkit.block.data.type.TrapDoor;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.inventory.ItemType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Proxy;
@@ -34,12 +37,15 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+@ExtendWith(ConfigurationStateExtension.class)
 class BuildMartMaterialDisplaysTest {
     private final Map<Material, Object> originalItemTypes = new EnumMap<>(Material.class);
     private Field itemTypeField;
 
     @BeforeEach
     void installMaterialNames() throws Exception {
+        ink.ziip.championshipscore.support.MessageConfigurations.defaults()
+                .loadFromConfiguration(new YamlConfiguration());
         itemTypeField = Material.class.getDeclaredField("itemType");
         itemTypeField.setAccessible(true);
         for (Material material :
@@ -183,9 +189,42 @@ class BuildMartMaterialDisplaysTest {
                 "block.minecraft.cut_copper_slab × 1  block.minecraft.oak_planks × 2\n"
                         + "block.minecraft.stone × 1",
                 flatten(text));
+        assertEquals(3, translationCount(text));
+    }
+
+    @Test
+    void configurableRowsKeepTranslationNodesAndReadTheLatestAcceptedFormat() throws Exception {
+        var config = ink.ziip.championshipscore.support.MessageConfigurations.defaults();
+        var document = new YamlConfiguration();
+        document.set("buildmart.material-display.columns", 1);
+        document.set("buildmart.material-display.style", "&6");
+        document.set("buildmart.material-display.entry", "%count% of &b%material%");
+        config.loadFromConfiguration(document);
+        var blueprint = blueprint(data(Material.STONE), data(Material.OAK_PLANKS));
+        var text = BuildMartMaterialDisplays.text(blueprint);
+        assertEquals("1 of block.minecraft.oak_planks\n1 of block.minecraft.stone", flatten(text));
+        assertEquals(2, translationCount(text));
+        document.set("buildmart.material-display.columns", 3);
+        document.set("buildmart.material-display.separator", " | ");
+        config.loadFromConfiguration(document);
         assertEquals(
-                3,
-                text.children().stream().filter(TranslatableComponent.class::isInstance).count());
+                "1 of block.minecraft.oak_planks | 1 of block.minecraft.stone",
+                flatten(BuildMartMaterialDisplays.text(blueprint)));
+        document.set("buildmart.material-display.entry", "");
+        document.set("buildmart.material-display.separator", "");
+        config.loadFromConfiguration(document);
+        assertEquals("", flatten(BuildMartMaterialDisplays.text(blueprint)));
+        config.loadFromConfiguration(new YamlConfiguration());
+        assertEquals(
+                "block.minecraft.oak_planks × 1  block.minecraft.stone × 1",
+                flatten(BuildMartMaterialDisplays.text(blueprint)));
+    }
+
+    private static long translationCount(Component component) {
+        return (component instanceof TranslatableComponent ? 1 : 0)
+                + component.children().stream()
+                        .mapToLong(BuildMartMaterialDisplaysTest::translationCount)
+                        .sum();
     }
 
     @Test

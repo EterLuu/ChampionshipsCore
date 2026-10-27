@@ -7,6 +7,8 @@ import ink.ziip.championshipscore.api.game.laserbox.runtime.LaserBoxIntroduction
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 
+import lombok.Getter;
+
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.jetbrains.annotations.NotNull;
 
@@ -15,8 +17,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import lombok.Getter;
 
 /** Loads configured LaserBox maps and exposes their arena copies as paired-game instances. */
 public final class LaserBoxManager extends BaseGameInstanceManager<LaserBoxArea> {

@@ -64,6 +64,8 @@ final class WorkerTaskDisplay {
     }
 
     static boolean glows(BingoTaskSpec task) {
+        String frozen = task.attributes().get("display.glow");
+        if (frozen != null) return Boolean.parseBoolean(frozen);
         return "advancement".equalsIgnoreCase(task.taskType())
                 || "statistic".equalsIgnoreCase(task.taskType())
                 || "event".equalsIgnoreCase(task.taskType());

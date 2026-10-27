@@ -8,7 +8,7 @@ import ink.ziip.championshipscore.protocol.BingoTaskSpec;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/** Filters expanded pool definitions before sampling a card for the Folia 26.2 worker. */
+/** Filters expanded pool definitions before sampling a card for the supported Folia worker. */
 public final class RemoteBingoContent {
     private RemoteBingoContent() {}
 
@@ -27,7 +27,7 @@ public final class RemoteBingoContent {
                 entry.kind() == PoolEntrySpec.Kind.EVENT
                         && entry.key().startsWith("unique_collect:");
         if (!oneOf && !uniqueCollect) return entry;
-        var catalog = BingoContentCatalog.worker26_2();
+        var catalog = BingoContentCatalog.worker();
         var members =
                 entry.members().stream()
                         .filter(member -> catalog.contains("materials", member))
@@ -109,7 +109,7 @@ public final class RemoteBingoContent {
                         yield "event";
                     }
                 };
-        return BingoContentCatalog.worker26_2()
+        return BingoContentCatalog.worker()
                 .supports(new BingoTaskSpec(0, entry.objectiveId(), type, attributes));
     }
 }

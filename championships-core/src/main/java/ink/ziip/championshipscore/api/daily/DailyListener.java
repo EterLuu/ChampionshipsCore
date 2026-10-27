@@ -42,7 +42,7 @@ final class DailyListener extends BaseListener {
         Player player = MenuInventory.clickedPlayer(event);
         if (player == null) return;
         int slot = event.getRawSlot();
-        if (holder instanceof DailyBingoVoteController.VoteHolder vote) {
+        if (holder instanceof DailyBingoVoteMenu vote) {
             daily.bingoVote().click(player, slot, vote);
             return;
         }

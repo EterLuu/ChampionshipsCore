@@ -85,6 +85,20 @@ class RiptidePlayerStateTest {
                                     .allocateInstance(RiptideRushArea.class);
             var g = RiptideTestFixtures.config().resolveGeometry();
             UUID id = UUID.randomUUID();
+            var plugin =
+                    ink.ziip.championshipscore.support.TestObjects.allocate(
+                            ink.ziip.championshipscore.ChampionshipsCore.class);
+            var manager =
+                    ink.ziip.championshipscore.support.TestObjects.allocate(
+                            ink.ziip.championshipscore.api.game.manager.GameManager.class);
+            set(manager, "playerSpectatorStatus", new java.util.HashMap<>());
+            set(
+                    manager,
+                    "spectatorManager",
+                    new ink.ziip.championshipscore.api.game.spectate.SpectatorManager(
+                            plugin, manager));
+            set(plugin, "gameManager", manager);
+            set(area, "plugin", plugin);
             set(area, "gamePlayers", List.of(id));
             set(area, "eliminatedPlayers", Set.of());
             set(area, "gameStageEnum", GameStageEnum.PROGRESS);
@@ -99,21 +113,38 @@ class RiptidePlayerStateTest {
                                     new Class[] {Player.class},
                                     (proxy, method, args) -> {
                                         if (method.getName().equals("getUniqueId")) return id;
+                                        if (method.getName().equals("getGameMode"))
+                                            return org.bukkit.GameMode.ADVENTURE;
                                         throw new AssertionError(
                                                 "Movement must not probe player fall state: "
                                                         + method.getName());
                                     });
-            var handler = new RiptideRushHandler(null);
-            handler.setArea(area);
-            for (int packet = 0; packet < 100; packet++) {
-                var event =
-                        new PlayerMoveEvent(player, g.centerAt(0), g.centerAt(0).add(10, -1, 0));
-                handler.onAcceptedMathMovement(event);
-                assertFalse(event.isCancelled());
+            var serverField =
+                    ink.ziip.championshipscore.support.TestObjects.field(
+                            org.bukkit.Bukkit.class, "server");
+            Object previousServer = serverField.get(null);
+            serverField.set(
+                    null,
+                    ink.ziip.championshipscore.support.TestObjects.proxy(
+                            org.bukkit.Server.class,
+                            (server, method, args) ->
+                                    method.getName().equals("getPlayer") ? player : null));
+            try {
+                var handler = new RiptideRushHandler(null);
+                handler.setArea(area);
+                for (int packet = 0; packet < 100; packet++) {
+                    var event =
+                            new PlayerMoveEvent(
+                                    player, g.centerAt(0), g.centerAt(0).add(10, -1, 0));
+                    handler.onAcceptedMathMovement(event);
+                    assertFalse(event.isCancelled());
+                }
+                assertTrue(
+                        checks.isEmpty(),
+                        "Only the course tick may create or advance fall confirmations");
+            } finally {
+                serverField.set(null, previousServer);
             }
-            assertTrue(
-                    checks.isEmpty(),
-                    "Only the course tick may create or advance fall confirmations");
         }
 
         private static void set(Object target, String name, Object value) throws Exception {

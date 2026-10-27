@@ -3,6 +3,8 @@ package ink.ziip.championshipscore.authbridge.bridge;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import ink.ziip.championshipscore.auth.AuthAdmissionOwner;
+import ink.ziip.championshipscore.auth.BanPresentation;
 import ink.ziip.championshipscore.authbridge.model.BridgeControlPlayer;
 
 import org.junit.jupiter.api.Test;
@@ -21,7 +23,9 @@ class BridgeSynchronizerAllowlistTest {
                 null,
                 "",
                 "",
-                new BridgeUuidResolver(Duration.ofSeconds(1), Duration.ofSeconds(1)));
+                new BridgeUuidResolver(Duration.ofSeconds(1), Duration.ofSeconds(1)),
+                AuthAdmissionOwner.PROXY,
+                new BanPresentation("", "", "", "raw", "UTC"));
     }
 
     @Test

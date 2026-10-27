@@ -29,7 +29,6 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
-import ink.ziip.championshipscore.shared.presentation.DurationText;
 
 import lombok.Getter;
 
@@ -999,7 +998,7 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
                 MessageConfig.RIPTIDE_RUSH_BOSS_BAR
                         .replace("%alive%", String.valueOf(getSurvivedPlayerNums()))
                         .replace("%total%", String.valueOf(gamePlayers.size()))
-                        .replace("%time%", DurationText.bossBarSeconds(timer))
+                        .replace("%time%", CoreMessages.bossBarTime(timer))
                         .replace(
                                 "%speed%",
                                 String.format(java.util.Locale.ROOT, "%.1f", currentSpeed()));
@@ -1077,6 +1076,7 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
 
     /** MONITOR only records; all feedback and elimination happen in the following course tick. */
     public void recordMathMovement(Player player, Location from, Location to) {
+        if (!isGameplayParticipant(player)) return;
         if (getGameStageEnum() != GameStageEnum.PROGRESS
                 || eliminatedPlayers.contains(player.getUniqueId())) return;
         RiptideMathRun run = mathRuns.get(player.getUniqueId());
@@ -1272,6 +1272,7 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
 
     @Override
     public void resetGame() {
+        invalidateParticipantCallbacks();
         cancelTasks();
         cancelIntroduction();
         cancelFinalCountdown();
@@ -1411,11 +1412,9 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
             eliminateBatch(
                     List.of(player.getUniqueId()), MessageConfig.RIPTIDE_RUSH_REASON_FELL, true);
         long epoch = generationEpoch;
-        scheduler.runTask(
-                plugin,
+        scheduleParticipantRespawn(
+                player,
                 () -> {
-                    if (!player.isOnline()) return;
-                    player.spigot().respawn();
                     if (generationEpoch != epoch) return;
                     GameStageEnum current = getGameStageEnum();
                     if (current == GameStageEnum.PREPARATION

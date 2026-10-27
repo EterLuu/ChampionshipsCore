@@ -80,6 +80,7 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
                         "%fall%", String.valueOf(defaultFallY)));
         AnvilInputGui.openInteger(
                 player,
+                session,
                 GuiConfig.text(
                         "map-editor.menus.step-list.games.ace-race.items.progress-fall-height.title"),
                 defaultFallY,
@@ -178,6 +179,7 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
                         "%fall%", String.valueOf(defaultFallY)));
         AnvilInputGui.openInteger(
                 player,
+                session,
                 GuiConfig.text(
                         "map-editor.menus.step-list.games.ace-race.items.progress-fall-height.title"),
                 defaultFallY,

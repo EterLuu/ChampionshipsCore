@@ -129,7 +129,7 @@ event:
 auth:
   identity-verification-failed: "&c无法验证玩家身份，请确认服务器 UUID 模式与登录代理配置一致。"
 dont-edit-this:
-  version: 62
+  version: 73
 no-permission: "&#bababa[&#ff6b26管理&#bababa]&#ededed 权限不足"
 server-mode-switched: "服务器游玩方式已切换为&#fff566%mode%&#ededed。"
 server-full: 服务器成员数已达上限！
@@ -286,6 +286,38 @@ rank:
   game-weight-bar: "&#bababa━━━━━━━━ &#fff566&l游戏权重 &#bababa━━━━━━━━"
   game-weight-row: "&#ededed%game%&#fff566×%weight% &#bababa•&#ff6b26 %total_point%原始分"
 presentation:
+  world-text:
+    defaults:
+      billboard: CENTER
+      alignment: CENTER
+      line-width: 200
+      shadowed: false
+      see-through: false
+      default-background: false
+      background: native
+      text-opacity: 255
+      block-light: -1
+      sky-light: -1
+    profiles:
+      ace-race-name:
+        shadowed: true
+        background: "#00000000"
+      build-mart-materials:
+        line-width: 4096
+        shadowed: true
+        background: "#60000000"
+        block-light: 15
+        sky-light: 15
+      riptide-instruction:
+        line-width: 250
+      riptide-color-target: {}
+  player:
+    prefix: "&8[%label%&8]&r "
+    game-label: "&#fff566%game%"
+    inactive-name-color: "&f"
+    identity: "%prefix%%player%&r"
+    chat: "%player%&r &8<%label%&8>&r&#696969 » &#ededed%message%"
+    daily-chat: "%identity%&#696969 » &#ededed%message%"
   daily-lobby: "&a大厅"
   daily-game: "&6%game%"
   tab:
@@ -358,6 +390,7 @@ laserbox:
   game-start-subtitle: "&#ededed击倒对手得分，阵亡后 4 秒重生"
   boss-bar: "&#fff566激光方盒 &#bababa•&#ededed %right_team% &#ff6b26%right% &#bababa: &#ff6b26%left% %left_team% &#bababa•&#ededed &#ff6b26%time%"
   hit: "&e%attacker% &7击倒了 &f%victim%"
+  special-attack-name: "Special Attack"
   headshot: "&e%attacker% &7爆头击倒了 &f%victim%"
   respawn-title: "&e重新出发"
   respawn-subtitle: "&e%seconds% 秒后重生"
@@ -365,10 +398,10 @@ laserbox:
   draw: "&e本轮平局"
   end-title: "&e&l本轮结束"
   end-subtitle: "&f%right% : %left%"
-  item-shield: "护盾 · 抵挡一次攻击"
-  item-grenade: "烟幕弹 · 右键使用"
-  item-strike: "定点爆破 · 右键使用"
-  item-reveal: "追踪脉冲 · 右键使用"
+  item-shield: "&e护盾 · 抵挡一次攻击"
+  item-grenade: "&e烟幕弹 · 右键使用"
+  item-strike: "&e定点爆破 · 右键使用"
+  item-reveal: "&e追踪脉冲 · 右键使用"
   gun-selection-title: "&#fff566选择装备"
   gun-selection-subtitle: "&#ededed选择一件武器"
   gun-selection-chosen: "&#a8ff78已装备 %gun%"
@@ -387,7 +420,7 @@ laserbox:
       description: "&#ededed精准点射 · 爆头致命，开镜更稳"
     rifle:
       name: "&#d9b38c戍卫 · 步枪"
-      description: "&#ededed中远距离点射 · 稳定精准"
+      description: "&#ededed中距精准点射 · 30格内身体三枪击倒"
     smg:
       name: "&#c0c0c0骇灵 · 冲锋枪"
       description: "&#ededed近距连射 · 轻装快速推进"
@@ -398,6 +431,9 @@ laserbox:
       name: "&#b9f2ff判官 · 霰弹枪"
       description: "&#ededed近距霰弹 · 快速连续爆发"
 frostbite:
+  item-presentation:
+    lore:
+      - "&7%description%"
   start-preparation: "&#bff6ff霜冻决斗 &#bababa•&#ededed 三轮乱斗，冻结敌人并争夺补给"
   start-preparation-title: "&#bff6ff&l霜冻决斗"
   start-preparation-subtitle: "&#ededed确认场地与补给，准备开始乱斗"
@@ -600,6 +636,11 @@ bingo:
   task-completed: "&#bababa[&#fff566宾果飞速&#bababa]&#ededed %player%&#ff6b26完成&#fff566%task%&#696969（+%points%）"
   game-winner: "&#bababa[&#fff566宾果飞速&#bababa] %team%&#fff566获胜&#696969（%points%分）"
 buildmart:
+  material-display:
+    columns: 2
+    style: "&f"
+    entry: "%material% × %count%"
+    separator: "  "
   bossbar:
     title: "&#fff566匹配赛建 &#696969|&#ededed 剩余&#fff566%timer% &#696969|&#ededed %golden%"
     golden-none: "&#696969黄金：&#ededed无"
@@ -819,7 +860,7 @@ map-editor-input:
   name-invalid: 场地名包含无效字符。
   name-already-exists: 场地&#fff566%name%&#ededed已存在。
 map-editor-area:
-  delete-confirmation: 请在30秒内再次右键确认；只删除配置，不会删除地图世界
+  delete-confirmation: 地图 %game%/%map%：请在%seconds%秒内再次右键确认；只删除配置，不会删除地图世界
 map-editor-session:
   game-unavailable: 该游戏不可用。
   create-conflict: 无法创建地图草稿；请确认名称未被占用。
@@ -1216,12 +1257,35 @@ sulfursoccer:
 
 # Text extracted from Java; %argN% preserves each dynamic argument.
 code-text:
-  laser-showdown-team-area:
-    gun-selector-lore: "出生后6秒内可换枪，开火或受击立即锁定"
+  area-list-gui:
+    delete-confirmation: "&c%message%"
+  parkour-tag-chaser-button-step:
+    sign-click: "&e&l%message%"
+    sign-become: "&d&l%message%"
+  bingo-compass-listener:
+    no-teammates: "&e%message%"
+  bingo-placeholder:
+    rank-entry: "%arg1%&f: %arg2%"
+  laser-equipment:
+    gun-selector: 枪械选择器
+    grenade: 烟幕弹
+    strike: 定点爆破
+    reveal: 追踪脉冲
+    shield: 护盾
+  laser-gun-controls:
+    single: 右键开火 · F 换弹
+    sniper: 左键开火 · 右键瞄准
+    automatic: 按住右键连射
+  duration:
+    seconds: "%seconds%秒"
+    minutes-seconds: "%minutes%分%seconds%秒"
+  laser-combat:
+    protection: " &#bababa• &#a8ff78重生保护 %arg1% 秒"
   riptide-introduction-arena:
     load-failed: 'Riptide 教学场地加载失败，将使用原规则介绍地点。'
     run-failed: 'Riptide 教学体验失败，正在中止并恢复本次场地。'
   riptide-introduction-run:
+    color-target: "&e%block%"
     welcome: '&b欢迎来到激流训练营！&f每人有一次护盾，可试着离筏；练习失误会被救回。'
     follow: '&e跟上木筏！&f木筏会前进，请自己向前跑，别被落下。'
     pass: '&e穿过洞口！&f提前观察下一面墙，移动到洞口的一侧。'
@@ -1271,6 +1335,7 @@ code-text:
     trident-1: "三叉戟"
     dolphins-grace-1: "海豚的恩惠"
   ace-race-area:
+    racer-name: "&f%player%"
     load-course-points-1: "进度点"
     load-course-points-2: "跳过不完整进度点=%arg1%"
     load-course-points-3: "重生点"
@@ -1404,6 +1469,8 @@ code-text:
     parse-1: "加载"
     parse-2: "配置"
   bingo-area:
+    unreachable: "&e%message%"
+    sent-to: "&b%message%"
     start-game-progress-1: "世界"
     start-game-progress-2: "世界=%arg1% 不存在，无法开始"
     start-timed-remix-1: "&8✦ 终曲：一项任务被锁定"
@@ -1577,6 +1644,8 @@ code-text:
     validate-4: "需要 16–128 个重生点和 1–128 个补给点"
     validate-5: "坐标无效或超出地图：%arg1%"
   frostbite-item:
+    display-name: "&b%arg1%"
+    pickup-hint: "&b%arg1% &7%arg2%"
     avalanche-1: "雪崩"
     avalanche-2: "右键投出一个雪球，落地生成持续减速的药水云"
     axe-1: "冰镐"
@@ -1638,6 +1707,7 @@ code-text:
     add-team-death-player-1: "淘汰"
     add-team-death-player-2: "队伍=%arg1% 已淘汰人数=%arg2%"
   base-game-instance:
+    points-actionbar: "&e[+] %arg1%"
     reset-game-1: "流程"
     reset-game-2: "场地已重置，等待下一场"
     start-game-preparation-after-preload-1: "区块"
@@ -1700,27 +1770,7 @@ code-text:
     validate-3: "请在边界内设置补给点"
   laser-box-area:
     try-start-game-1: "启动"
-    item-1: "激光枪"
-    item-2: "烟幕弹"
-    item-3: "定点爆破"
-    item-4: "追踪脉冲"
-    item-5: "护盾"
-    item-6: "右键使用"
-    item-7: "拾取即生效"
-    item-8: "右键开火 · F 换弹"
-    item-9: "生成烟幕"
-    item-10: "打击敌人"
-    item-11: "显示敌方位置"
-    item-12: "抵挡一次攻击"
-    item-13: "枪械选择器"
-    item-14: "开火或受击后消失"
-    item-15: "左键开火 · 右键瞄准"
-    item-16: "按住右键连射"
     hit-1: "场地"
-    item-hint-1: "获得烟幕弹 · 右键使用"
-    item-hint-2: "获得定点爆破 · 右键使用"
-    item-hint-3: "获得追踪脉冲 · 右键使用"
-    item-hint-4: "护盾 · 抵挡一次攻击"
   base-game-instance-manager:
     delete-area-1: "无法删除地图配置 %arg1% | %arg2%"
   game-manager:
@@ -2027,6 +2077,8 @@ code-text:
     side-2: "%arg1%球门前未找到独立石英或白色混凝土出生点：请在禁区外保留独立白色标记，且上方两格为空"
     side-3: "%arg1%球门前有多块独立白色标记：请在地图编辑器将第 4 个出生点设在禁区外的目标标记上"
   sulfur-soccer-area:
+    penalty-separator: " &7| "
+    kickoff-countdown-subtitle: "&e%arg1%"
     get-state-text-1: "比赛结束"
     get-state-text-2: "等待选手重连"
     get-state-text-3: "试踢 %time%（不计分）"
@@ -2146,6 +2198,8 @@ code-text:
   riptide-rush-schedule-manager:
     start-game-1: "激流勇进正式比赛未启动：没有可用地图"
   team-manager:
+    info-header: "&r========%arg1%%arg2%&r========"
+    info-member: "%arg1%"
     remove-transient-teams-1: "临时队伍清理"
     apply-identity-migration-1: "玩家=%arg1% 已迁移至队伍ID=%arg2%，但当前缓存中不存在该队伍"
   player-visibility-manager:
@@ -2406,14 +2460,11 @@ code-text:
     constructor-2: "/cc team info <队伍ID>"
   team-list-sub-command:
     constructor-1: "查看全部队伍名单与在线情况"
-    on-command-1: "&#696969&m────────&r &#fff566全部队伍名单 &#696969&m────────"
-    on-command-2: "\n  &#ff6b6b离线: &f"
-    on-command-3: "\n  &#55ff55在线: &f"
-    on-command-4: " 在线)"
-    on-command-5: " 名成员在线"
-    on-command-6: " 支队伍，"
-    on-command-7: "\n&#696969共 "
-    format-names-1: "&#696969无"
+    header: "&#696969&m────────&r &#fff566全部队伍名单 &#696969&m────────"
+    row: "\n&r%team% &#696969(%online-count%/%member-count% 在线)\n  &#55ff55在线: &f%online-names%\n  &#ff6b6b离线: &f%offline-names%"
+    summary: "\n&#696969共 %teams% 支队伍，%online%/%members% 名成员在线"
+    empty: "&#696969无"
+    names-separator: "&7, &f"
   team-main-command:
     constructor-1: "队伍与成员管理"
   team-teleportation-sub-command:
@@ -2428,7 +2479,13 @@ code-text:
     coerce-location-section-1: "世界"
     coerce-location-section-2: "配置文件=%arg1% 路径=%arg2% 世界=%arg3% 不存在；已加载世界=%arg4%，相关传送将失败"
     validate-version-1: "配置文件 %arg1% 版本 %arg2% 与当前版本 %arg3% 不一致；请直接更新配置文件"
+  riptide-presentation:
+    floor-separator: " §7| "
+  daily-bingo-vote-controller:
+    remix-title: "&d%title%"
+    remix-subtitle: "&7%name%&7 • %description%"
   gui-text:
+    coordinate: "%arg1%, %arg2%, %arg3%"
     versus-1: "对阵"
   database-migration-controller:
     apply-1: "迁移"
@@ -2529,6 +2586,8 @@ code-text:
     load-5: "&#4287f5等候人数: &#ff6e26{daily.queue-players}"
     load-6: "&#4287f5启程倒计时: &#ff6e26{daily.countdown}"
   core-messages:
+    player-with-team: "&f%arg1% &7<%arg2%&7>"
+    player-name: "&f%arg1%"
     format-admin-success-1: "&#bababa[&#fff566管理&#bababa] &#ededed%arg1%"
     format-admin-info-1: "&#bababa[&#fff566管理&#bababa] &#bababa%arg1%"
     format-admin-error-1: "&#bababa[&#ff6b26管理&#bababa] &#ededed%arg1%"

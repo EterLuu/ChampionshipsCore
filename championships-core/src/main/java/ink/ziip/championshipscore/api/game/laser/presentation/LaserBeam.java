@@ -17,18 +17,34 @@ public final class LaserBeam {
 
     private LaserBeam() {}
 
-    public static void draw(
+    /** Capture the nearby audience once per shot, including viewers near its far endpoint. */
+    public static List<Player> viewers(
             World world,
             Location eye,
             Vector direction,
-            double distance,
-            Collection<Player> viewers) {
-        List<Player> recipients =
-                viewers.stream().filter(player -> player.getWorld().equals(world)).toList();
-        for (double d = 0; d <= distance; d += 1.0D)
+            double range,
+            Collection<Player> candidates) {
+        Vector start = eye.toVector();
+        Vector forward = direction.clone().normalize();
+        return candidates.stream()
+                .filter(player -> player.getWorld().equals(world))
+                .filter(
+                        player -> {
+                            Vector offset = player.getLocation().toVector().subtract(start);
+                            double along = Math.clamp(offset.dot(forward), 0.0D, range);
+                            return offset.subtract(forward.clone().multiply(along)).lengthSquared()
+                                    <= 64 * 64;
+                        })
+                .toList();
+    }
+
+    public static void draw(
+            World world, Location eye, Vector direction, double distance, List<Player> viewers) {
+        if (viewers.isEmpty()) return;
+        for (double d = 0; d <= distance; d += d < 24.0D ? 1.0D : 2.0D)
             world.spawnParticle(
                     Particle.DUST,
-                    recipients,
+                    viewers,
                     null,
                     eye.getX() + direction.getX() * d,
                     eye.getY() + direction.getY() * d,

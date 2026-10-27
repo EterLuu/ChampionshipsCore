@@ -19,7 +19,7 @@ import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 import ink.ziip.championshipscore.platform.bukkit.player.PlayerStateService;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
-import ink.ziip.championshipscore.shared.presentation.DurationText;
+import ink.ziip.championshipscore.presentation.text.CoreMessages;
 import ink.ziip.championshipscore.shared.presentation.RuleIntroductionTimeline;
 
 import org.bukkit.*;
@@ -75,6 +75,7 @@ public abstract class BaseGameInstance {
     private CompletableFuture<Boolean> activeMapLoad = CompletableFuture.completedFuture(true);
     private long mapLoadGeneration;
     private volatile boolean disposed;
+    private ParticipantCallbacks participantCallbacks;
 
     /**
      * Duration (seconds) of the optional rule-introduction phase preceding the normal preparation.
@@ -128,7 +129,7 @@ public abstract class BaseGameInstance {
     }
 
     public void resetGame() {
-        startGeneration++;
+        invalidateParticipantCallbacks();
         if (startPreloadFuture != null && !startPreloadFuture.isDone())
             startPreloadFuture.complete(null);
         coordinatedStartGate = null;
@@ -174,7 +175,7 @@ public abstract class BaseGameInstance {
 
     /** Permanently releases listeners and UI owned by this instance when its manager unloads it. */
     public void dispose() {
-        startGeneration++;
+        invalidateParticipantCallbacks();
         if (startPreloadFuture != null && !startPreloadFuture.isDone())
             startPreloadFuture.complete(null);
         arenaSelection = ArenaSelection.all();
@@ -342,7 +343,9 @@ public abstract class BaseGameInstance {
                         uuid,
                         formatPointChange(points)));
         ChampionshipPlayer championshipPlayer = plugin.getPlayerManager().getPlayer(uuid);
-        if (championshipPlayer != null) championshipPlayer.sendActionBar("&e[+] " + points);
+        if (championshipPlayer != null)
+            championshipPlayer.sendActionBar(
+                    MessageConfig.codeText("base-game-instance.points-actionbar", points));
         Player online = Bukkit.getPlayer(uuid);
         if (online != null && plugin.getSidebarManager() != null)
             plugin.getSidebarManager().invalidate(online);
@@ -1115,6 +1118,7 @@ public abstract class BaseGameInstance {
 
     /** Opens the result-display phase without releasing players or rebuilding the arena. */
     protected final void beginPostGameSettlement() {
+        cancelParticipantCallbacks();
         cancelPostGameRouting();
         postGamePending = true;
         roundTransitionPending = false;
@@ -1418,7 +1422,7 @@ public abstract class BaseGameInstance {
         updateGameTimerBossBar(
                 MessageConfig.GAME_PREPARATION_COUNT_DOWN
                         .replace("%game%", gameTypeEnum.toString())
-                        .replace("%time%", DurationText.bossBarSeconds(remaining)),
+                        .replace("%time%", CoreMessages.bossBarTime(remaining)),
                 remaining,
                 preparationCountdownDuration);
     }
@@ -1696,6 +1700,44 @@ public abstract class BaseGameInstance {
     /** Recovery callbacks may restore an eliminated participant, but only in their original run. */
     public final long captureGameGeneration() {
         return startGeneration;
+    }
+
+    /** Recovery may restore an eliminated roster member while the same run still owns them. */
+    public final BukkitTask scheduleParticipantRecovery(
+            Player player, Runnable action, long ticks) {
+        return participantCallbacks().schedule(player, action, ticks, false);
+    }
+
+    /** Respawn can synchronously invoke listeners, so validate ownership again before recovery. */
+    public final BukkitTask scheduleParticipantRespawn(Player player, Runnable afterRespawn) {
+        long generation = captureGameGeneration();
+        return scheduleParticipantRecovery(
+                player,
+                () -> {
+                    player.spigot().respawn();
+                    if (isCurrentParticipantConnection(generation, player)) afterRespawn.run();
+                },
+                1L);
+    }
+
+    /** Delayed gameplay also rechecks the shared spectator admission rule before changing state. */
+    public final BukkitTask scheduleGameplayAction(Player player, Runnable action, long ticks) {
+        return participantCallbacks().schedule(player, action, ticks, true);
+    }
+
+    private ParticipantCallbacks participantCallbacks() {
+        if (participantCallbacks == null)
+            participantCallbacks = new ParticipantCallbacks(this, plugin, scheduler);
+        return participantCallbacks;
+    }
+
+    protected final void invalidateParticipantCallbacks() {
+        cancelParticipantCallbacks();
+        startGeneration++;
+    }
+
+    private void cancelParticipantCallbacks() {
+        if (participantCallbacks != null) participantCallbacks.cancel();
     }
 
     public final boolean isCurrentParticipantConnection(long generation, Player player) {

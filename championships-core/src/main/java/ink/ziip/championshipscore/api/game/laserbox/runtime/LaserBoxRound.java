@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.laserbox.runtime;
 
 import ink.ziip.championshipscore.api.game.laser.model.LaserGun;
+import ink.ziip.championshipscore.api.game.laser.runtime.LaserWeaponSelection;
 import ink.ziip.championshipscore.api.game.laser.runtime.LaserWeaponState;
 
 import java.util.HashMap;
@@ -17,6 +18,7 @@ final class LaserBoxRound {
     private int tick;
     private boolean finished;
     private final LaserWeaponState weapons = new LaserWeaponState();
+    private final Map<UUID, LaserWeaponSelection> selections = new HashMap<>();
     private final Map<UUID, Double> health = new HashMap<>();
     private final Map<UUID, Integer> respawns = new HashMap<>();
     private final Map<UUID, Integer> shields = new HashMap<>();
@@ -63,6 +65,8 @@ final class LaserBoxRound {
         if (finished) return false;
         finished = true;
         weapons.close();
+        selections.values().forEach(LaserWeaponSelection::lock);
+        selections.clear();
         return true;
     }
 
@@ -71,7 +75,23 @@ final class LaserBoxRound {
     }
 
     LaserWeaponState.FireResult shoot(UUID player, LaserGun gun) {
-        return weapons.shoot(player, gun, tick, ready(player));
+        var result = weapons.shoot(player, gun, tick, ready(player));
+        if (result == LaserWeaponState.FireResult.FIRED) lockSelection(player);
+        return result;
+    }
+
+    void beginLife(UUID player) {
+        if (ready(player))
+            selections.computeIfAbsent(player, ignored -> new LaserWeaponSelection(tick));
+    }
+
+    LaserWeaponSelection selection(UUID player) {
+        return selections.get(player);
+    }
+
+    private void lockSelection(UUID player) {
+        LaserWeaponSelection selection = selections.get(player);
+        if (selection != null) selection.lock();
     }
 
     double spreadDegrees(UUID player, LaserGun gun) {
@@ -138,6 +158,7 @@ final class LaserBoxRound {
             else shields.put(victim, shield - 1);
             return DamageResult.SHIELD;
         }
+        if (amount > 0) lockSelection(victim);
         double remaining = health(victim) - Math.max(0.0D, amount);
         if (remaining > 0.0D) {
             health.put(victim, remaining);
@@ -200,6 +221,7 @@ final class LaserBoxRound {
     boolean respawn(UUID player) {
         if (finished || !respawning(player) || respawnRemaining(player) > 0) return false;
         respawns.remove(player);
+        selections.put(player, new LaserWeaponSelection(tick));
         weapons.forget(player);
         health.remove(player);
         protect(player);
@@ -207,6 +229,7 @@ final class LaserBoxRound {
     }
 
     void disconnect(UUID player) {
+        lockSelection(player);
         shields.remove(player);
         weapons.forget(player);
         health.remove(player);

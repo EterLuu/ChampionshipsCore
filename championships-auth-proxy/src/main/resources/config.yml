@@ -50,3 +50,8 @@ messages:
     &#ededed账号服务暂时不可用
     &#bababa请稍后重新连接；如果问题持续，请联系管理员。
     &#696969&m--------------------------------
+ban-presentation:
+  default-reason: "违反服务器规则"
+  unknown-expiry: "请查看账号页面"
+  expiry-format: "yyyy年MM月dd日 HH:mm"
+  expiry-zone: system

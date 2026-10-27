@@ -12,6 +12,10 @@ public final class RiptideDifficulty {
 
     private RiptideDifficulty() {}
 
+    public static int stageCount() {
+        return FLOOR_ROUNDS.size();
+    }
+
     public static int stage(int step, int totalSteps) {
         return Math.min(4, Math.max(0, (int) ((long) step * 5 / totalSteps)));
     }

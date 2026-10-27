@@ -18,6 +18,7 @@ import org.bukkit.scheduler.BukkitTask;
 import java.util.*;
 
 public class HotyCodyDuskyScheduleManager extends BaseManager {
+    private long scheduleGeneration;
     private static final int ROUND_TRANSITION_SECONDS = 10;
     private final int hotyCodyDuskyRounds = 3;
     private final BukkitScheduler scheduler;
@@ -55,6 +56,7 @@ public class HotyCodyDuskyScheduleManager extends BaseManager {
         }
 
         plugin.getScheduleManager().addRound(GameTypeEnum.HotyCodyDusky);
+        scheduleGeneration++;
         enabled = true;
         timer = 10;
         subRound = 0;
@@ -123,15 +125,14 @@ public class HotyCodyDuskyScheduleManager extends BaseManager {
     }
 
     public void endSchedule() {
-        plugin.getScheduleManager().clearStartSelection(GameTypeEnum.HotyCodyDusky);
+        scheduleGeneration++;
         if (firstStartTask != null) firstStartTask.cancel();
         if (startTask != null) startTask.cancel();
 
         enabled = false;
 
         handler.unRegister();
-        plugin.getScheduleManager().clearRoundPreparationCountdown();
-        plugin.getGameManager().releaseEventSpectatorsForGame(GameTypeEnum.HotyCodyDusky);
+        plugin.getScheduleManager().releaseSchedule(GameTypeEnum.HotyCodyDusky);
     }
 
     public void nextHotyCodyDuskyRound() {
@@ -178,12 +179,13 @@ public class HotyCodyDuskyScheduleManager extends BaseManager {
 
         if (activeAreaCount > 0 && completedAreaNum == activeAreaCount) {
             boolean hasNextRound = hasNextRound();
+            long generation = scheduleGeneration;
             plugin.getScheduleManager()
                     .settleEventRound(
                             GameTypeEnum.HotyCodyDusky,
                             hasNextRound,
                             () -> {
-                                if (!enabled) return;
+                                if (!enabled || generation != scheduleGeneration) return;
                                 if (hasNextRound) nextHotyCodyDuskyRound();
                                 else endSchedule();
                             });

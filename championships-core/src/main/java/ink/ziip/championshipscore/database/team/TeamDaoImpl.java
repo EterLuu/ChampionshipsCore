@@ -253,16 +253,16 @@ public class TeamDaoImpl implements TeamDao {
     }
 
     @Override
-    public boolean deleteTeamMembers(int teamId, @NotNull String username) {
+    public boolean deleteTeamMember(int teamId, @NotNull UUID uuid) {
         try (Connection connection = plugin.getDatabaseManager().getConnection()) {
             try (PreparedStatement statement =
                     connection.prepareStatement(
                             """
                             DELETE FROM `team_members`
-                            WHERE `teamId`=? AND LOWER(`username`)=LOWER(?)
+                            WHERE `teamId`=? AND `uuid`=?
                             """)) {
                 statement.setInt(1, teamId);
-                statement.setString(2, username);
+                statement.setString(2, uuid.toString());
                 return statement.executeUpdate() > 0;
             }
         } catch (SQLException exception) {
@@ -300,16 +300,19 @@ public class TeamDaoImpl implements TeamDao {
                 try (PreparedStatement lock =
                         connection.prepareStatement(
                                 """
-                                SELECT `id`
+                                SELECT `uuid`
                                 FROM `team_members`
                                 WHERE `uuid`=? OR LOWER(`username`)=LOWER(?)
                                 FOR UPDATE
                                 """)) {
                     lock.setString(1, uuid.toString());
                     lock.setString(2, username);
-                    try (ResultSet ignored = lock.executeQuery()) {
-                        while (ignored.next()) {
-                            // Lock every matching identity row until the replacement has committed.
+                    try (ResultSet identities = lock.executeQuery()) {
+                        while (identities.next()) {
+                            if (!uuid.toString().equalsIgnoreCase(identities.getString("uuid"))) {
+                                connection.rollback();
+                                return false;
+                            }
                         }
                     }
                 }
@@ -317,10 +320,9 @@ public class TeamDaoImpl implements TeamDao {
                         connection.prepareStatement(
                                 """
                                 DELETE FROM `team_members`
-                                WHERE `uuid`=? OR LOWER(`username`)=LOWER(?)
+                                WHERE `uuid`=?
                                 """)) {
                     delete.setString(1, uuid.toString());
-                    delete.setString(2, username);
                     delete.executeUpdate();
                 }
                 try (PreparedStatement insert =

@@ -10,7 +10,7 @@ import java.util.List;
 
 class RemoteBingoContentTest {
     @Test
-    void filtersExpandedAndExplicitNewObjectivesBeforeSampling() {
+    void retainsSupportedExpandedObjectivesAndFiltersUnknownContentBeforeSampling() {
         PoolEntrySpec oldBed = entry(PoolEntrySpec.Kind.ITEM, "RED_BED");
         PoolEntrySpec oldStatistic = entry(PoolEntrySpec.Kind.STAT, "SLEEP_IN_BED");
         TaskPoolSpec source =
@@ -30,15 +30,23 @@ class RemoteBingoContentTest {
                                         Difficulty.MEDIUM,
                                         Dimension.OVERWORLD,
                                         "beds")));
-        assertEquals(List.of(oldBed, oldStatistic), RemoteBingoContent.filter(source).entries());
+        assertEquals(
+                List.of(
+                        source.entries().get(0),
+                        source.entries().get(1),
+                        source.entries().get(2),
+                        source.entries().get(3),
+                        source.entries().get(4),
+                        source.entries().get(6)),
+                RemoteBingoContent.filter(source).entries());
         assertEquals(7, source.entries().size());
     }
 
     @Test
-    void retainsOldMembersOfExpandedAnyCollections() {
+    void retainsEverySupportedMemberOfExpandedAnyCollections() {
         PoolEntrySpec source =
                 PoolEntrySpec.oneOf(
-                        List.of("RED_BED", "STRAW_BED"),
+                        List.of("RED_BED", "STRAW_BED", "UNKNOWN_MATERIAL"),
                         "RED_BED",
                         "beds",
                         1,
@@ -47,7 +55,7 @@ class RemoteBingoContentTest {
                         "beds");
         PoolEntrySpec expected =
                 PoolEntrySpec.oneOf(
-                        List.of("RED_BED"),
+                        List.of("RED_BED", "STRAW_BED"),
                         "RED_BED",
                         "beds",
                         1,

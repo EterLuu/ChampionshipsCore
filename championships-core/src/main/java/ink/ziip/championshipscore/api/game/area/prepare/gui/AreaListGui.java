@@ -1,63 +1,55 @@
 package ink.ziip.championshipscore.api.game.area.prepare.gui;
 
-import ink.ziip.championshipscore.api.game.area.prepare.PrepareFlowDefinition;
-import ink.ziip.championshipscore.api.game.area.prepare.PrepareKeys;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
+import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.gui.MenuId;
-import ink.ziip.championshipscore.api.gui.MenuInventory;
-import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
+import ink.ziip.championshipscore.api.gui.MenuLayout;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+import ink.ziip.championshipscore.presentation.text.CoreMessages;
+import ink.ziip.championshipscore.shared.presentation.MessageTemplate;
 
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-
-import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * The entry chest GUI: lists every existing area of a game (with a config-completion badge), plus
- * "new area" and "close" buttons. Clicking an area enters an edit session; "new" opens an anvil to
- * read a name.
- */
+/** Paged map definitions; editing and deletion always use the definition actually displayed. */
 public final class AreaListGui {
     private static final String MENU_PATH = MenuId.MAP_EDITOR_AREA_LIST.path();
+    private static final long DELETE_CONFIRMATION_SECONDS = 30;
 
     private AreaListGui() {}
 
-    public static final class Holder implements MenuInventory {
+    private record Entry(String name, BaseGameConfig config) {}
+
+    public static final class Holder extends PrepareMenu {
         private final GameTypeEnum gameType;
-        private final Map<Integer, String> slotToArea = new HashMap<>();
-        private String deleteConfirmation;
+        private final Map<Integer, Entry> slotToArea = new HashMap<>();
+        private Entry deleteConfirmation;
         private long deleteConfirmationExpiresAt;
-        private int newSlot = -1;
-        private int closeSlot = -1;
-        private Inventory inventory;
+        private int page;
+        private int pageCount;
+        private final int emptySlot;
 
-        public Holder(GameTypeEnum gameType) {
+        Holder(Player player, PrepareSessionManager manager, GameTypeEnum gameType) {
+            super(
+                    player,
+                    manager.getSession(player),
+                    MenuId.MAP_EDITOR_AREA_LIST,
+                    54,
+                    MenuLayout.range(0, 45),
+                    MenuLayout.range(45, 54),
+                    Map.of("previous", 45, "new", 47, "page", 49, "next", 51, "close", 53),
+                    Map.of("game", gameType));
             this.gameType = gameType;
-        }
-
-        void setInventory(Inventory inventory) {
-            this.inventory = inventory;
-        }
-
-        @Override
-        public @NotNull Inventory getInventory() {
-            return inventory;
+            emptySlot = GuiConfig.slot(MENU_PATH + ".layout.overlay.empty", 22);
         }
 
         public GameTypeEnum gameType() {
@@ -69,63 +61,69 @@ public final class AreaListGui {
             @NotNull PrepareSessionManager manager,
             @NotNull Player player,
             @NotNull GameTypeEnum gameType) {
-        PrepareFlowDefinition flow = manager.flow(gameType);
-        BaseGameInstanceManager<?> areaManager =
-                manager.getPlugin().getGameManager().getAreaManager(gameType);
-        List<String> names = areaManager == null ? List.of() : areaManager.getAreaNameList();
+        if (!player.hasPermission("cc.admin")) return;
+        Holder holder = new Holder(player, manager, gameType);
+        refresh(manager, holder);
+        player.openInventory(holder.inventory);
+    }
 
-        int needed = names.size() + 2; // areas + new + close
-        int rows = Math.max(3, Math.min(6, (needed + 8) / 9));
-        Holder holder = new Holder(gameType);
-        Inventory inv =
-                Bukkit.createInventory(
-                        holder,
-                        rows * 9,
-                        GuiConfig.component(MENU_PATH + ".title", Map.of("game", gameType)));
-        holder.setInventory(inv);
+    private static BaseGameInstanceManager<?> areaManager(
+            PrepareSessionManager manager, Holder holder) {
+        return manager.getPlugin().getGameManager().getAreaManager(holder.gameType);
+    }
 
-        int slot = 0;
-        for (String name : names) {
-            var target = areaManager.getSetupTarget(gameType, name);
+    private static void refresh(PrepareSessionManager manager, Holder holder) {
+        holder.clear();
+        holder.slotToArea.clear();
+        holder.deleteConfirmation = null;
+        var areas = areaManager(manager, holder);
+        List<String> names =
+                areas == null
+                        ? List.of()
+                        : areas.getAreaNameList().stream()
+                                .sorted(String.CASE_INSENSITIVE_ORDER)
+                                .toList();
+        holder.page = holder.layout.clampPage(holder.page, names.size());
+        holder.pageCount = holder.layout.pageCount(names.size());
+        int offset = holder.page * holder.layout.content().size();
+        var flow = manager.flow(holder.gameType);
+        for (int slot : holder.layout.pageSlots(holder.page, names.size())) {
+            String name = names.get(offset++);
+            var target = areas.getSetupTarget(holder.gameType, name);
+            if (target == null) continue;
             int done = 0, total = 0;
-            if (flow != null && target != null) {
-                PrepareSession preview =
-                        new PrepareSession(manager.getPlugin(), gameType, name, target, flow);
+            if (flow != null) {
+                var preview =
+                        new PrepareSession(
+                                manager.getPlugin(), holder.gameType, name, target, flow);
                 done = preview.configDone();
                 total = preview.configTotal();
             }
-            boolean published = target != null && target.config().isPrepareReady();
-            ItemStack blank = PrepareKeys.item(Material.PAPER, Component.empty(), List.of());
-            ItemStack item =
-                    ConfiguredGui.item(
-                            MENU_PATH + ".items.area",
-                            published ? "published" : "draft",
-                            Map.of("name", name, "done", done, "total", total),
-                            blank);
-            inv.setItem(slot, item);
-            holder.slotToArea.put(slot, name);
-            slot++;
+            holder.inventory.setItem(
+                    slot,
+                    holder.item(
+                            "area",
+                            target.config().isPrepareReady() ? "published" : "draft",
+                            Map.of("name", name, "done", done, "total", total)));
+            holder.slotToArea.put(slot, new Entry(name, target.config()));
         }
-
-        holder.newSlot = slot;
-        inv.setItem(
-                slot,
-                ConfiguredGui.item(
-                        MENU_PATH + ".items.new",
-                        null,
-                        Map.of(),
-                        PrepareKeys.item(Material.EMERALD, Component.empty(), List.of())));
-
-        holder.closeSlot = rows * 9 - 1;
-        inv.setItem(
-                holder.closeSlot,
-                ConfiguredGui.item(
-                        MENU_PATH + ".items.close",
-                        null,
-                        Map.of(),
-                        PrepareKeys.item(Material.BARRIER, Component.empty(), List.of())));
-
-        player.openInventory(inv);
+        holder.put("new", null, Map.of());
+        holder.put("close", null, Map.of());
+        if (holder.page > 0) holder.put("previous", null, Map.of());
+        if (holder.page + 1 < holder.pageCount) holder.put("next", null, Map.of());
+        if (holder.pageCount > 1)
+            holder.put(
+                    "page",
+                    null,
+                    Map.of(
+                            "page",
+                            holder.page + 1,
+                            "pages",
+                            holder.pageCount,
+                            "count",
+                            names.size()));
+        if (names.isEmpty())
+            holder.inventory.setItem(holder.emptySlot, holder.item("empty", null, Map.of()));
     }
 
     public static void handleClick(
@@ -134,38 +132,59 @@ public final class AreaListGui {
             @NotNull Player player,
             @NotNull Holder holder) {
         event.setCancelled(true);
-        Inventory top = event.getView().getTopInventory();
-        if (event.getClickedInventory() != top) return;
+        if (event.getClickedInventory() != holder.inventory || !holder.available(manager, player))
+            return;
         int slot = event.getRawSlot();
-
-        String areaName = holder.slotToArea.get(slot);
-        if (areaName != null) {
-            if (event.isRightClick()) {
-                if (!areaName.equals(holder.deleteConfirmation)
-                        || holder.deleteConfirmationExpiresAt < System.currentTimeMillis()) {
-                    holder.deleteConfirmation = areaName;
-                    holder.deleteConfirmationExpiresAt = System.currentTimeMillis() + 30_000L;
-                    player.sendMessage(
-                            LegacyText.component(MessageConfig.MAP_EDITOR_AREA_DELETE_CONFIRMATION)
-                                    .colorIfAbsent(NamedTextColor.RED));
-                    return;
-                }
-                if (manager.deleteArea(player, holder.gameType, areaName)) {
-                    open(manager, player, holder.gameType);
-                }
+        if (slot == holder.layout.control("close")) {
+            player.closeInventory();
+            return;
+        }
+        if (slot == holder.layout.control("new")) {
+            AnvilInputGui.openName(player, manager, holder.gameType);
+            return;
+        }
+        if (slot == holder.layout.control("previous") && holder.page > 0) {
+            holder.page--;
+            refresh(manager, holder);
+            return;
+        }
+        if (slot == holder.layout.control("next") && holder.page + 1 < holder.pageCount) {
+            holder.page++;
+            refresh(manager, holder);
+            return;
+        }
+        Entry entry = holder.slotToArea.get(slot);
+        if (entry == null) return;
+        var areas = areaManager(manager, holder);
+        var current = areas == null ? null : areas.getSetupTarget(holder.gameType, entry.name());
+        if (current == null || current.config() != entry.config()) {
+            refresh(manager, holder);
+            return;
+        }
+        if (event.isRightClick()) {
+            if (!entry.equals(holder.deleteConfirmation)
+                    || holder.deleteConfirmationExpiresAt < System.currentTimeMillis()) {
+                holder.deleteConfirmation = entry;
+                holder.deleteConfirmationExpiresAt =
+                        System.currentTimeMillis() + DELETE_CONFIRMATION_SECONDS * 1000;
+                player.sendMessage(
+                        CoreMessages.styled(
+                                "area-list-gui.delete-confirmation",
+                                MessageTemplate.render(
+                                        MessageConfig.MAP_EDITOR_AREA_DELETE_CONFIRMATION,
+                                        Map.of(
+                                                "%map%",
+                                                entry.name(),
+                                                "%game%",
+                                                holder.gameType.toString(),
+                                                "%seconds%",
+                                                String.valueOf(DELETE_CONFIRMATION_SECONDS)))));
                 return;
             }
-            player.closeInventory();
-            manager.enterSession(player, holder.gameType, areaName);
+            if (manager.deleteArea(player, holder.gameType, entry.name())) refresh(manager, holder);
             return;
         }
-        if (slot == holder.newSlot) {
-            ink.ziip.championshipscore.api.game.area.prepare.gui.AnvilInputGui.openName(
-                    player, manager, holder.gameType);
-            return;
-        }
-        if (slot == holder.closeSlot) {
-            player.closeInventory();
-        }
+        player.closeInventory();
+        manager.enterSession(player, holder.gameType, entry.name());
     }
 }

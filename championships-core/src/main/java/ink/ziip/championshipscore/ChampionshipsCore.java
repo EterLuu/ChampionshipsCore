@@ -8,6 +8,7 @@ import ink.ziip.championshipscore.api.daily.WebLeaderboardManager;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
 import ink.ziip.championshipscore.api.game.bingo.execution.RemoteBingoManager;
 import ink.ziip.championshipscore.api.game.manager.GameManager;
+import ink.ziip.championshipscore.api.gui.AnvilInputMenu;
 import ink.ziip.championshipscore.api.player.PlayerManager;
 import ink.ziip.championshipscore.api.player.event.PlayerIdentityMigrationEvent;
 import ink.ziip.championshipscore.api.player.event.PlayerNameChangeEvent;
@@ -75,6 +76,7 @@ public final class ChampionshipsCore extends JavaPlugin {
     private VoteManager voteManager;
     private ScheduleManager scheduleManager;
     private PrepareSessionManager prepareSessionManager;
+    private AnvilInputMenu anvilInputMenu;
     private CoreSidebarManager sidebarManager;
     private DailyManager dailyManager;
     private DailyStatsManager dailyStatsManager;
@@ -147,6 +149,7 @@ public final class ChampionshipsCore extends JavaPlugin {
         loadManager(configurationManager);
         databaseManager = new DatabaseManager(this);
         redisManager = new RedisManager(this);
+        anvilInputMenu = new AnvilInputMenu(this);
         playerManager = new PlayerManager(this);
         publicChatMuteManager = new PublicChatMuteManager(this);
         listenerManager = new ListenerManager(this);
@@ -280,6 +283,7 @@ public final class ChampionshipsCore extends JavaPlugin {
         bootstrapReady = false;
         pendingNameChanges.clear();
         bootstrapGeneration++;
+        if (anvilInputMenu != null) anvilInputMenu.close();
         // Plugin shutdown logic
         unloadManager(sidebarManager);
         unloadManager(webLeaderboardManager);

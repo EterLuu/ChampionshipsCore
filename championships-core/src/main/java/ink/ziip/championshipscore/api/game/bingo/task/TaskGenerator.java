@@ -31,8 +31,8 @@ import java.util.function.Predicate;
  * selection. Category-aware means each generated card carries at most one task from any given
  * category, so a small family can't crowd out the rest of the tier.
  *
- * <p>CC runs a single fixed points mode: difficulty comes straight from each entry's tier, and only
- * the static tag layer plus per-round dimension excludes/caps apply.
+ * <p>Round settings select difficulty weights, dimension/tag limits, seed tasks and colorful
+ * sampling while preserving each pool entry's tier and category.
  */
 public final class TaskGenerator {
     public record GeneratorSettings(

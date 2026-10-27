@@ -25,7 +25,6 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.location.LocationConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
-import ink.ziip.championshipscore.shared.presentation.DurationText;
 
 import lombok.Getter;
 
@@ -101,6 +100,7 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
 
     @Override
     public void resetGame() {
+        invalidateParticipantCallbacks();
         cancelIntroduction();
         cancelFinalCountdown();
         resetBaseArea();
@@ -218,7 +218,7 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
 
         // Rule-introduction phase (if configured): gather players at the introduction spawn point
         // and
-        // broadcast the rule sections in chat over 45s, then run the normal preparation below.
+        // broadcast the configured rule sections, then run the normal preparation below.
         startGameIntroduction(this::startFormalPreparation);
     }
 
@@ -380,25 +380,24 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
         boolean drain = timer <= variant().rules().disableHealthRegainAtRemainingSeconds();
         if (shrink && drain) {
             return MessageConfig.SKY_WARS_BOSS_BAR_SHRINK_DRAIN
-                    .replace("%time%", DurationText.bossBarSeconds(timer))
+                    .replace("%time%", CoreMessages.bossBarTime(timer))
                     .replace(
                             "%shrink-time%",
-                            DurationText.bossBarSeconds(
+                            CoreMessages.bossBarTime(
                                     Math.max(0, timer - activeShrink().getEndTime())));
         }
         if (shrink) {
             return MessageConfig.SKY_WARS_BOSS_BAR_SHRINK
-                    .replace("%time%", DurationText.bossBarSeconds(timer))
+                    .replace("%time%", CoreMessages.bossBarTime(timer))
                     .replace(
                             "%shrink-time%",
-                            DurationText.bossBarSeconds(
+                            CoreMessages.bossBarTime(
                                     Math.max(0, timer - activeShrink().getEndTime())));
         }
         if (drain)
             return MessageConfig.SKY_WARS_BOSS_BAR_DRAIN.replace(
-                    "%time%", DurationText.bossBarSeconds(timer));
-        return MessageConfig.SKY_WARS_BOSS_BAR.replace(
-                "%time%", DurationText.bossBarSeconds(timer));
+                    "%time%", CoreMessages.bossBarTime(timer));
+        return MessageConfig.SKY_WARS_BOSS_BAR.replace("%time%", CoreMessages.bossBarTime(timer));
     }
 
     private void announceUpcomingTimedEvent() {
@@ -698,9 +697,11 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
         }
 
         lastTeamEndCheckScheduled = true;
+        long generation = captureGameGeneration();
         scheduler.runTask(
                 plugin,
                 () -> {
+                    if (generation != captureGameGeneration() || isDisposed()) return;
                     lastTeamEndCheckScheduled = false;
                     if (getGameStageEnum() == GameStageEnum.PROGRESS
                             && countSurvivingTeams() <= 1) {
@@ -732,10 +733,10 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
         }
 
         if (getGameStageEnum() == GameStageEnum.PREPARATION) {
-            scheduler.runTask(
-                    plugin,
+            scheduleParticipantRespawn(
+                    player,
                     () -> {
-                        event.getEntity().spigot().respawn();
+                        if (!isGameplayParticipant(player)) return;
                         if (!restoreSharedPreGameParticipant(event.getEntity())) {
                             teleportPlayerToAssignedTeamSpawn(event.getEntity());
                             event.getEntity().setGameMode(GameMode.ADVENTURE);
@@ -744,10 +745,9 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
             return;
         }
 
-        scheduler.runTask(
-                plugin,
+        scheduleParticipantRespawn(
+                player,
                 () -> {
-                    event.getEntity().spigot().respawn();
                     plugin.getGameManager()
                             .getSpectatorManager()
                             .enterParticipantSpectator(
@@ -911,8 +911,7 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
             }
 
             world.getBlockAt(location).setType(Material.CHEST);
-            // Death handling already runs on the server thread. Keep this Bukkit world call
-            // synchronous; the previous async submission raced respawn/chunk updates.
+            // The death event owns the remaining drops if the chest cannot hold everything.
             world.spawnParticle(
                     Particle.DUST,
                     location.clone().add(0.5, 0.5, 0.5),
@@ -920,13 +919,15 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
                     new Particle.DustOptions(Color.fromRGB(0xff0000), 1));
 
             Chest chest = (Chest) world.getBlockAt(location).getState();
+            List<ItemStack> overflow = new ArrayList<>();
             for (ItemStack item : items) {
                 if (item != null && item.getType() != Material.AIR) {
-                    chest.getInventory().addItem(item);
+                    overflow.addAll(chest.getBlockInventory().addItem(item.clone()).values());
                 }
             }
 
             items.clear();
+            items.addAll(overflow);
         }
     }
 

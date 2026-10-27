@@ -17,15 +17,23 @@ class DurationTextTest {
                 (seconds, expected) ->
                         assertEquals(
                                 expected,
-                                DurationText.bossBarSeconds(seconds),
+                                DurationText.bossBarSeconds(
+                                        seconds, "%seconds%秒", "%minutes%分%seconds%秒"),
                                 seconds.toString()));
     }
 
     @Test
     void bossBarsClampNegativeDurationsAndSupportLongElapsedClocksWithoutOverflow() {
-        assertEquals("0秒", DurationText.bossBarSeconds(Long.MIN_VALUE));
-        assertEquals("35791394分7秒", DurationText.bossBarSeconds(Integer.MAX_VALUE));
-        assertEquals("153722867280912930分7秒", DurationText.bossBarSeconds(Long.MAX_VALUE));
+        assertEquals(
+                "0秒",
+                DurationText.bossBarSeconds(Long.MIN_VALUE, "%seconds%秒", "%minutes%分%seconds%秒"));
+        assertEquals(
+                "35791394分7秒",
+                DurationText.bossBarSeconds(
+                        Integer.MAX_VALUE, "%seconds%秒", "%minutes%分%seconds%秒"));
+        assertEquals(
+                "153722867280912930分7秒",
+                DurationText.bossBarSeconds(Long.MAX_VALUE, "%seconds%秒", "%minutes%分%seconds%秒"));
     }
 
     @Test

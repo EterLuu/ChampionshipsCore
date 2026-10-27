@@ -26,7 +26,6 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
-import ink.ziip.championshipscore.shared.presentation.DurationText;
 import ink.ziip.championshipscore.util.Enchants;
 
 import io.papermc.paper.registry.keys.EnchantmentKeys;
@@ -271,7 +270,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
 
         // Rule-introduction phase (if configured): gather players at the introduction spawn point
         // and
-        // broadcast the rule sections in chat over 45s, then run the normal preparation below.
+        // broadcast the configured rule sections, then run the normal preparation below.
         startGameIntroduction(this::startFormalPreparation);
     }
 
@@ -600,9 +599,9 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
                                 .replace("%blueprint%", currentGolden.getDisplayName())
                                 .replace(
                                         "%seconds%",
-                                        DurationText.bossBarSeconds(goldenSecondsRemaining()));
+                                        CoreMessages.bossBarTime(goldenSecondsRemaining()));
         return MessageConfig.BUILD_MART_BOSSBAR_TITLE
-                .replace("%timer%", DurationText.bossBarSeconds(timer))
+                .replace("%timer%", CoreMessages.bossBarTime(timer))
                 .replace("%golden%", golden);
     }
 
@@ -832,7 +831,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
     public void submitSlot(Player player, String slotId) {
         if (getGameStageEnum() != GameStageEnum.PROGRESS || player == null || slotId == null)
             return;
-        if (notAreaPlayer(player)) return;
+        if (!isGameplayParticipant(player)) return;
         ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
         if (team == null) return;
         TeamBuildState state = teamStates.get(team);
@@ -1301,17 +1300,21 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         event.setKeepLevel(true);
         event.setDroppedExp(0);
         event.getDrops().clear();
-        scheduler.runTask(
-                plugin,
+        long generation = captureGameGeneration();
+        scheduleParticipantRecovery(
+                player,
                 () -> {
                     player.spigot().respawn();
+                    if (!isCurrentParticipantConnection(generation, player)
+                            || !isGameplayParticipant(player)) return;
                     Location target =
                             getGameStageEnum() == GameStageEnum.PREPARATION
                                             || getGameStageEnum() == GameStageEnum.COUNTDOWN
                                     ? teamBaseSpawn(plugin.getTeamManager().getTeamByPlayer(player))
                                     : getGameConfig().getHubPortalPoint();
                     if (target != null) player.teleport(target);
-                });
+                },
+                1L);
     }
 
     @Override

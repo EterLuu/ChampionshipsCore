@@ -8,7 +8,6 @@ import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 
 import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
@@ -330,12 +329,7 @@ public record EventTask(
     @Override
     public Component getName() {
         MessageService msg = MessageService.global();
-        // All event tasks keep the *…* + LIGHT_PURPLE statistic-style title in the chest GUI. Only
-        // OneOfTask/AllOfTask item-set cells get the yellow name; the ANY card template for
-        // stat/event
-        // tasks is a map-cell presentation and doesn't change the GUI name colour.
-        var b = Component.text().color(NamedTextColor.LIGHT_PURPLE);
-        b.append(Component.text("*")); // same *…* wrapper as StatisticTask
+        Component action = Component.empty();
         String prefixKey = "task.event." + trigger;
         // Same trigger, different mechanic -> different wording: CHAIN is "wear any piece", the
         // other
@@ -349,15 +343,17 @@ public record EventTask(
             prefixKey = "task.event.break_single";
         }
         if (msg.has(prefixKey)) {
-            b.append(
+            action =
                     COUNT_LABEL_TRIGGERS.contains(trigger)
                             ? msg.component(prefixKey, count)
-                            : msg.component(prefixKey));
+                            : msg.component(prefixKey);
         }
         Component paramPart = paramComponent(msg);
-        if (paramPart != null) b.append(paramPart);
-        b.append(Component.text("*"));
-        return b.build();
+        return msg.rich(
+                "task.presentation.event-name",
+                Map.of(
+                        "%action%",
+                        action, "%subject%", paramPart == null ? Component.empty() : paramPart));
     }
 
     private @Nullable Component paramComponent(MessageService msg) {

@@ -231,22 +231,18 @@ public class BuildMartHandler extends BaseListener {
     }
 
     private void triggerPortal(Player player, Location target) {
+        long generation = buildMartArea.captureGameGeneration();
         lastPortal.put(player.getUniqueId(), System.currentTimeMillis());
         long cooldownMillis =
                 Math.max(50L, buildMartArea.getGameConfig().getPortalCooldownMillis());
         player.setPortalCooldown((int) Math.min(Integer.MAX_VALUE, (cooldownMillis + 49L) / 50L));
         player.teleport(target);
+        if (!buildMartArea.isCurrentParticipantConnection(generation, player)) return;
         // Re-evaluate flight at the destination on the next tick (after the teleport settles).
-        plugin.getServer()
-                .getScheduler()
-                .runTaskLater(
-                        plugin,
-                        () ->
-                                applyFlight(
-                                        player,
-                                        buildMartArea.getGameConfig(),
-                                        player.getLocation()),
-                        1L);
+        buildMartArea.scheduleGameplayAction(
+                player,
+                () -> applyFlight(player, buildMartArea.getGameConfig(), player.getLocation()),
+                1L);
     }
 
     // ── physical submit buttons ────────────────────────────────────────────────────────────────

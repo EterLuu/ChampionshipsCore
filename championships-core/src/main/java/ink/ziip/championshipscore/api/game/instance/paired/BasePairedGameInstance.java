@@ -66,9 +66,7 @@ public abstract class BasePairedGameInstance extends BaseGameInstance {
     @Override
     public void addPlayerPointsToDatabase() {
         if (!isEventRun()) return;
-        // The base implementation owns the abort/settlement guard and the ordinary single-team
-        // path.
-        // Paired games build rival-aware rows below, so expose the same guard through this helper.
+        // Rival-aware point submissions require the same settlement admission as other games.
         if (!isSettlementAllowed()) return;
         List<ink.ziip.championshipscore.api.rank.RankManager.PointSubmission> submissions =
                 new ArrayList<>();

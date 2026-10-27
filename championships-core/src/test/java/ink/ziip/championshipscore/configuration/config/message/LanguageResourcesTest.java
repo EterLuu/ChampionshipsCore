@@ -60,6 +60,33 @@ class LanguageResourcesTest {
                 var option = field.getAnnotation(ConfigOption.class);
                 if (option != null) declared.add(option.path());
             }
+            if (entry.getKey() == MessageConfig.class) {
+                var styles = resource("message.yml");
+                String root = ink.ziip.championshipscore.presentation.display.WorldTextStyles.PATH;
+                var keys = ink.ziip.championshipscore.presentation.display.TextDisplayStyle.KEYS;
+                keys.forEach(key -> declared.add(root + ".defaults." + key));
+                for (var profile :
+                        ink.ziip.championshipscore.presentation.display.WorldTextStyles.Profile
+                                .values()) {
+                    var section = styles.getConfigurationSection(profile.path());
+                    assertNotNull(section, profile.path());
+                    for (String key : section.getKeys(false)) {
+                        assertTrue(keys.contains(key), profile.path() + "." + key);
+                        declared.add(profile.path() + "." + key);
+                    }
+                }
+                for (String key : List.of("columns", "style", "entry", "separator"))
+                    declared.add(
+                            ink.ziip.championshipscore.api.game.buildmart.presentation
+                                            .MaterialDisplayFormat.PATH
+                                    + key);
+                ink.ziip.championshipscore.shared.presentation.PlayerTextFormat.KEYS.forEach(
+                        key ->
+                                declared.add(
+                                        ink.ziip.championshipscore.shared.presentation
+                                                        .PlayerTextFormat.PREFIX
+                                                + key));
+            }
             var configured = new HashSet<>(leafKeys(resource(entry.getValue())));
             configured.remove("dont-edit-this.version");
             configured.removeIf(key -> key.startsWith("code-text."));

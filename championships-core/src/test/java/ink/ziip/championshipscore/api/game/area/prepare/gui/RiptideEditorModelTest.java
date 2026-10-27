@@ -181,12 +181,25 @@ class RiptideEditorModelTest {
         var returned = confirm.parent().parent();
         assertEquals(PASS, returned.type());
         assertEquals(1, returned.page());
-        assertEquals(
-                0,
-                RiptideEditorModel.clampPage(
-                        returned.page(), RiptideEditorModel.rows(c, PASS).size(), 36));
-        assertEquals(0, RiptideEditorModel.clampPage(4, 0, 36));
-        assertEquals(1, RiptideEditorModel.clampPage(4, 37, 36));
+        assertEquals(36, RiptideEditorModel.rows(c, PASS).size());
+    }
+
+    @Test
+    void editorSnapshotsNoticeChangedInputsAndDoNotShareMutableLocations() throws Exception {
+        var c = config();
+        c.setStartPoint(new org.bukkit.Location(null, 1, 2, 3));
+        var before = RiptideEditorModel.snapshot(c);
+        assertEquals(before, RiptideEditorModel.snapshot(c));
+        c.getStartPoint().setX(9);
+        assertNotEquals(before, RiptideEditorModel.snapshot(c));
+        c.getStartPoint().setX(1);
+        assertEquals(before, RiptideEditorModel.snapshot(c));
+        c.setMinimumOperand(c.getMinimumOperand() + 1);
+        assertNotEquals(before, RiptideEditorModel.snapshot(c));
+        c.setMinimumOperand(c.getMinimumOperand() - 1);
+        assertEquals(before, RiptideEditorModel.snapshot(c));
+        RiptideEditorModel.update(c, PASS, "pass", "weight", 43);
+        assertNotEquals(before, RiptideEditorModel.snapshot(c));
     }
 
     @Test

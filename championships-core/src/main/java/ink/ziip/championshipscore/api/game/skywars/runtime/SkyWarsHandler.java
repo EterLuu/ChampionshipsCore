@@ -11,7 +11,6 @@ import lombok.Getter;
 import lombok.Setter;
 
 import org.bukkit.*;
-import org.bukkit.damage.DamageType;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -20,7 +19,6 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.player.*;
 import org.bukkit.event.world.PortalCreateEvent;
-import org.bukkit.projectiles.ProjectileSource;
 
 import java.util.UUID;
 
@@ -202,10 +200,10 @@ public class SkyWarsHandler extends BaseListener {
         CoreMessages.sendActionBar(player, MessageConfig.SKYWARS_WRONG_TEAM_GHAST);
     }
 
-    @EventHandler(priority = EventPriority.LOWEST)
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onPlayerDamagePlayer(EntityDamageByEntityEvent event) {
         if (event.getEntity() instanceof Player player) {
-            if (skyWarsArea.notAreaPlayer(player)) {
+            if (!skyWarsArea.isGameplayParticipant(player)) {
                 return;
             }
 
@@ -218,29 +216,26 @@ public class SkyWarsHandler extends BaseListener {
                 return;
             }
 
-            if (event.getDamager() instanceof Snowball projectile) {
-                ProjectileSource projectileSource = projectile.getShooter();
-                if (!(projectileSource instanceof Player)) return;
-
+            Player attacker =
+                    event.getDamager() instanceof Player direct
+                            ? direct
+                            : event.getDamager() instanceof Projectile projectile
+                                            && projectile.getShooter() instanceof Player shooter
+                                    ? shooter
+                                    : null;
+            if (attacker == null || !skyWarsArea.isGameplayParticipant(attacker)) return;
+            if (event.getDamager() instanceof Snowball) {
                 event.setDamage(0.0001);
+                return;
             }
-
-            if (event.getDamager() instanceof Player damager) {
-                Material material = damager.getInventory().getItemInMainHand().getType();
-                String name = material.toString();
-                if (name.contains("AXE")) {
-                    if (event.getDamage() > 7) {
-                        event.setDamage(7);
-                    }
-                }
-                if (event.getDamageSource().getDamageType() == DamageType.TRIDENT) {
-                    event.setDamage(7);
-                }
-                if (event.getDamageSource().getDamageType() == DamageType.ARROW) {
-                    if (event.getDamage() > 7) {
-                        event.setDamage(7);
-                    }
-                }
+            if (event.getDamager() instanceof AbstractArrow
+                    || event.getDamager() instanceof Player
+                            && attacker.getInventory()
+                                    .getItemInMainHand()
+                                    .getType()
+                                    .name()
+                                    .endsWith("_AXE")) {
+                event.setDamage(Math.min(7, event.getDamage()));
             }
         }
     }

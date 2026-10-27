@@ -7,12 +7,13 @@ import ink.ziip.championshipscore.api.game.bingo.util.MessageService;
 import io.papermc.paper.advancement.AdvancementDisplay;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 
 import org.bukkit.Material;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Map;
 
 /** Complete the given {@link Advancement}. */
 public record AdvancementTask(Advancement advancement, Dimension dimension) implements TaskData {
@@ -37,14 +38,12 @@ public record AdvancementTask(Advancement advancement, Dimension dimension) impl
 
     @Override
     public Component getName() {
-        var builder = Component.text().append(Component.text("[")).color(NamedTextColor.GREEN);
-        if (advancement == null) {
-            builder.append(MessageService.global().component("task.unknown_advancement"));
-        } else {
-            builder.append(BingoComponents.advancementTitle(advancement));
-        }
-        builder.append(Component.text("]"));
-        return builder.build();
+        var msg = MessageService.global();
+        Component name =
+                advancement == null
+                        ? msg.component("task.unknown_advancement")
+                        : BingoComponents.advancementTitle(advancement);
+        return msg.rich("task.presentation.advancement-name", Map.of("%name%", name));
     }
 
     @Override
@@ -56,12 +55,14 @@ public record AdvancementTask(Advancement advancement, Dimension dimension) impl
     // names/lore.
     @Override
     public Component getChatDescription() {
-        if (advancement == null) {
-            return MessageService.global()
-                    .component("task.unknown_advancement")
-                    .color(NamedTextColor.DARK_AQUA);
-        }
-        return BingoComponents.advancementDescription(advancement).color(NamedTextColor.DARK_AQUA);
+        var msg = MessageService.global();
+        Component description =
+                advancement == null
+                        ? msg.component("task.unknown_advancement")
+                        : BingoComponents.advancementDescription(advancement);
+        return msg.rich(
+                "task.presentation.advancement-description",
+                Map.of("%description%", description.color(null)));
     }
 
     @Override

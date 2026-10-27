@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ink.ziip.championshipscore.auth.AuthAdmissionOwner;
+import ink.ziip.championshipscore.auth.BanPresentation;
 import ink.ziip.championshipscore.authbridge.bridge.LocalAccessState;
 
 import org.junit.jupiter.api.Test;
@@ -65,6 +66,27 @@ class AccessListenerTest {
         state.ban("BannedPlayer", "rule", null);
         assertEquals(
                 AccessListener.AccessResult.BANNED, bridge.accessDecision("BannedPlayer").result());
+    }
+
+    @Test
+    void backendAdmissionUsesConfiguredBanPresentation() throws Exception {
+        var state = synchronizedState();
+        state.recordIdentity("BannedPlayer", PLAYER_UUID);
+        state.ban("BannedPlayer", "reason %expires%", null);
+        var listener =
+                new AccessListener(
+                        state,
+                        true,
+                        MAINTENANCE,
+                        UNAVAILABLE,
+                        UUID_MISMATCH,
+                        "unbound",
+                        new BanPresentation(
+                                "%reason% | %expires%", "rule", "account", "raw", "UTC"),
+                        AuthAdmissionOwner.BRIDGE);
+        var decision = listener.accessDecision("BannedPlayer");
+        assertEquals(AccessListener.AccessResult.BANNED, decision.result());
+        assertEquals("reason %expires% | account", decision.message());
     }
 
     @Test
@@ -190,13 +212,20 @@ class AccessListenerTest {
                 UNAVAILABLE,
                 UUID_MISMATCH,
                 "unbound",
-                "banned",
+                new BanPresentation("banned", "rule", "account", "raw", "UTC"),
                 owner);
     }
 
     private static AccessListener explicitListener(
             LocalAccessState state, AuthAdmissionOwner owner) {
         return new AccessListener(
-                state, true, MAINTENANCE, UNAVAILABLE, UUID_MISMATCH, "unbound", "banned", owner);
+                state,
+                true,
+                MAINTENANCE,
+                UNAVAILABLE,
+                UUID_MISMATCH,
+                "unbound",
+                new BanPresentation("banned", "rule", "account", "raw", "UTC"),
+                owner);
     }
 }

@@ -23,9 +23,7 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
-import org.bukkit.event.inventory.PrepareAnvilEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -34,14 +32,12 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.view.AnvilView;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Single listener that routes every interaction in the prepare subsystem: sub-GUI clicks (area list
- * / anvil / list-step), prepare-mode inventory clicks and right-click-in-hand use, and the safety
- * events (drop/pickup/quit/join/death) that keep the saved inventory safe and the prepare inventory
- * clean.
+ * / list-step), prepare-mode inventory clicks and right-click-in-hand use, and the safety events
+ * (drop/pickup/quit/join/death) that keep the saved inventory safe and the prepare inventory clean.
  */
 public class PrepareListener extends BaseListener {
     private final PrepareSessionManager manager;
@@ -55,6 +51,10 @@ public class PrepareListener extends BaseListener {
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
         Inventory top = event.getView().getTopInventory();
+        if (manager.getPlugin().getAnvilInputMenu().owns(top)) {
+            event.setCancelled(true);
+            return;
+        }
         InventoryHolder holder = top.getHolder();
         if (holder instanceof MenuInventory && MenuInventory.clickedPlayer(event) == null) return;
 
@@ -74,11 +74,6 @@ public class PrepareListener extends BaseListener {
 
         if (holder instanceof AreaListGui.Holder h) {
             AreaListGui.handleClick(manager, event, player, h);
-            return;
-        }
-        AnvilInputGui.Holder anvilHolder = AnvilInputGui.getHolder(player, top);
-        if (anvilHolder != null) {
-            AnvilInputGui.handleClick(manager, event, player, anvilHolder);
             return;
         }
         if (holder instanceof ListStepGui.Holder h) {
@@ -159,8 +154,7 @@ public class PrepareListener extends BaseListener {
 
     @EventHandler
     public void onInventoryDrag(InventoryDragEvent event) {
-        if (event.getWhoClicked() instanceof Player player
-                && AnvilInputGui.getHolder(player, event.getView().getTopInventory()) != null) {
+        if (manager.getPlugin().getAnvilInputMenu().owns(event.getView().getTopInventory())) {
             event.setCancelled(true);
             return;
         }
@@ -321,7 +315,7 @@ public class PrepareListener extends BaseListener {
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
-        AnvilInputGui.close(event.getPlayer());
+        AnvilInputGui.close(manager, event.getPlayer());
         if (manager.getSession(event.getPlayer()) != null) {
             manager.exitSession(event.getPlayer());
         }
@@ -337,23 +331,6 @@ public class PrepareListener extends BaseListener {
         if (manager.getSession(event.getEntity()) != null) {
             event.setKeepInventory(true);
             event.getDrops().clear();
-        }
-    }
-
-    @EventHandler
-    public void onPrepareAnvil(@NotNull PrepareAnvilEvent event) {
-        if (event.getView().getPlayer() instanceof Player player
-                && AnvilInputGui.getHolder(player, event.getView().getTopInventory()) != null) {
-            AnvilView view = event.getView();
-            view.setRepairCost(0);
-            view.setMaximumRepairCost(0);
-        }
-    }
-
-    @EventHandler
-    public void onInventoryClose(@NotNull InventoryCloseEvent event) {
-        if (event.getPlayer() instanceof Player player) {
-            AnvilInputGui.clear(player, event.getInventory());
         }
     }
 }

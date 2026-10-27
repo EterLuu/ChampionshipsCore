@@ -23,6 +23,7 @@ import org.bukkit.scheduler.BukkitTask;
 import java.util.*;
 
 public class BattleBoxScheduleManager extends BaseManager {
+    private long scheduleGeneration;
     private static final int ROUND_TRANSITION_SECONDS = 10;
     private final BukkitScheduler scheduler;
     private final BattleBoxScheduleHandler handler;
@@ -147,6 +148,7 @@ public class BattleBoxScheduleManager extends BaseManager {
         }
 
         plugin.getScheduleManager().addRound(GameTypeEnum.BattleBox);
+        scheduleGeneration++;
         enabled = true;
         timer = 10;
         subRound = 0;
@@ -246,18 +248,11 @@ public class BattleBoxScheduleManager extends BaseManager {
                                 MessageConfig.codeText(
                                         "battle-box-schedule-manager.abort-schedule-1"),
                                 reason));
-        if (firstStartTask != null) firstStartTask.cancel();
-        if (startTask != null) startTask.cancel();
-        enabled = false;
-        activeRoundInstances.clear();
-        scheduledMapName = null;
-        handler.unRegister();
-        plugin.getGameManager().releaseEventSpectatorsForGame(GameTypeEnum.BattleBox);
-        plugin.getScheduleManager().clearRoundPreparationCountdown();
+        endSchedule();
     }
 
     public void endSchedule() {
-        plugin.getScheduleManager().clearStartSelection(GameTypeEnum.BattleBox);
+        scheduleGeneration++;
         if (firstStartTask != null) firstStartTask.cancel();
         if (startTask != null) startTask.cancel();
 
@@ -266,8 +261,7 @@ public class BattleBoxScheduleManager extends BaseManager {
         scheduledMapName = null;
 
         handler.unRegister();
-        plugin.getScheduleManager().clearRoundPreparationCountdown();
-        plugin.getGameManager().releaseEventSpectatorsForGame(GameTypeEnum.BattleBox);
+        plugin.getScheduleManager().releaseSchedule(GameTypeEnum.BattleBox);
         rounds.clear();
         teams = List.of();
         standings.clear();
@@ -335,12 +329,13 @@ public class BattleBoxScheduleManager extends BaseManager {
         if (!activeRoundInstances.isEmpty()) return;
 
         boolean hasNextRound = prepareNextRound();
+        long generation = scheduleGeneration;
         plugin.getScheduleManager()
                 .settleEventRound(
                         GameTypeEnum.BattleBox,
                         hasNextRound,
                         () -> {
-                            if (!enabled) return;
+                            if (!enabled || generation != scheduleGeneration) return;
                             if (hasNextRound) nextBattleBoxRound();
                             else endSchedule();
                         });

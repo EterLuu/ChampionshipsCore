@@ -3,8 +3,6 @@ package ink.ziip.championshipscore.api.game.manager;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.ChampionshipPermissions;
-import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
-import ink.ziip.championshipscore.api.event.TeamGameEndEvent;
 import ink.ziip.championshipscore.api.game.acerace.AceRaceManager;
 import ink.ziip.championshipscore.api.game.battlebox.BattleBoxManager;
 import ink.ziip.championshipscore.api.game.battlebox.runtime.BattleBoxArea;
@@ -26,6 +24,7 @@ import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameI
 import ink.ziip.championshipscore.api.game.instance.paired.BasePairedGameInstance;
 import ink.ziip.championshipscore.api.game.laserbox.LaserBoxManager;
 import ink.ziip.championshipscore.api.game.laserbox.runtime.LaserBoxArea;
+import ink.ziip.championshipscore.api.game.lasershowdown.LaserShowdownManager;
 import ink.ziip.championshipscore.api.game.model.GameRunMode;
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
@@ -34,7 +33,6 @@ import ink.ziip.championshipscore.api.game.parkourtag.runtime.ParkourTagArea;
 import ink.ziip.championshipscore.api.game.parkourwarrior.ParkourWarriorManager;
 import ink.ziip.championshipscore.api.game.riptiderush.RiptideRushManager;
 import ink.ziip.championshipscore.api.game.skywars.SkyWarsManager;
-import ink.ziip.championshipscore.api.game.lasershowdown.LaserShowdownManager;
 import ink.ziip.championshipscore.api.game.spectate.SpectateMenu;
 import ink.ziip.championshipscore.api.game.spectate.SpectatorManager;
 import ink.ziip.championshipscore.api.game.start.ArenaSelection;
@@ -1706,15 +1704,7 @@ public class GameManager extends BaseManager {
         return true;
     }
 
-    public void teamGameEndHandler(TeamGameEndEvent event) {
-        // Participant ownership is retained through the visible settlement phase.
-    }
-
-    public void singleTeamGameEndHandler(SingleGameEndEvent event) {
-        // Participant ownership is retained through the visible settlement phase.
-    }
-
-    /** Clears only mappings owned by the instance being finalized. */
+    /** Releases finalized ownership after settlement without changing newer arena mappings. */
     public void releaseInstanceParticipants(@NotNull BaseGameInstance instance) {
         if (!instance.isRoundTransitionPending()
                 || !instance.retainsParticipantSpectatorsForNextRound())

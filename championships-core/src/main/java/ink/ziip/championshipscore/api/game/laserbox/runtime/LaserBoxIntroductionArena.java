@@ -19,8 +19,8 @@ import java.util.Set;
 /**
  * Owns the fixed LaserBox rule-lesson copy of the four Laser Showdown sub-arenas.
  *
- * <p>The blocks are copied into the LaserBox world at the fixed origin below. The Laser Showdown YAML is
- * used only as the source of the authored spawn coordinates; no player is sent to, or made
+ * <p>The blocks are copied into the LaserBox world at the fixed origin below. The Laser Showdown
+ * YAML is used only as the source of the authored spawn coordinates; no player is sent to, or made
  * dependent on, the Laser Showdown world at runtime.
  */
 public final class LaserBoxIntroductionArena implements AutoCloseable {
@@ -29,8 +29,10 @@ public final class LaserBoxIntroductionArena implements AutoCloseable {
     private static final int SOURCE_MIN_X = -214;
     private static final int SOURCE_MIN_Y = -37;
     private static final int SOURCE_MIN_Z = -268;
+
     /** Minimum block of the copied lesson area in the LaserBox world. */
     private static final int LOCAL_MIN_X = 4096;
+
     private static final int LOCAL_MIN_Y = -37;
     private static final int LOCAL_MIN_Z = -268;
     private static final int SOURCE_TO_LOCAL_X = LOCAL_MIN_X - SOURCE_MIN_X;
@@ -60,7 +62,8 @@ public final class LaserBoxIntroductionArena implements AutoCloseable {
         if (localWorld == null) {
             lanes = List.of();
             spectatorSpawn = null;
-            plugin.getLogger().warning("LaserBox rule-introduction disabled: LaserBox world is unavailable");
+            plugin.getLogger()
+                    .warning("LaserBox rule-introduction disabled: LaserBox world is unavailable");
             return;
         }
 
@@ -68,12 +71,14 @@ public final class LaserBoxIntroductionArena implements AutoCloseable {
         // available even when Laser Showdown is disabled, without loading or registering its world.
         File directory = new File(plugin.getDataFolder(), "lasershowdown");
         if (directory.isDirectory()) {
-            File[] files = directory.listFiles(file -> file.isFile() && file.getName().endsWith(".yml"));
+            File[] files =
+                    directory.listFiles(file -> file.isFile() && file.getName().endsWith(".yml"));
             if (files != null) {
                 java.util.Arrays.sort(files, java.util.Comparator.comparing(File::getName));
                 for (File file : files) {
                     String mapName = file.getName().substring(0, file.getName().length() - 4);
-                    if (useConfig(mapName, YamlConfiguration.loadConfiguration(file), localWorld)) return;
+                    if (useConfig(mapName, YamlConfiguration.loadConfiguration(file), localWorld))
+                        return;
                 }
             }
         }
@@ -88,14 +93,16 @@ public final class LaserBoxIntroductionArena implements AutoCloseable {
     private boolean useConfig(String mapName, YamlConfiguration config, World localWorld) {
         List<Lane> candidate = readLanes(config, localWorld);
         if (candidate.size() < REQUIRED_LANES) return false;
-        ConfiguredLocation configuredSpectator = ConfiguredLocation.read(config.get("spectator-spawn-point"));
+        ConfiguredLocation configuredSpectator =
+                ConfiguredLocation.read(config.get("spectator-spawn-point"));
         Location spectator = toLocal(configuredSpectator, localWorld);
         if (spectator == null) return false;
         lanes = List.copyOf(candidate.subList(0, REQUIRED_LANES));
         spectatorSpawn = spectator.clone();
         plugin.getLogger()
                 .info(
-                        "LaserBox rule-introduction uses the local LaserBox copy of Laser Showdown map "
+                        "LaserBox rule-introduction uses the local LaserBox copy of Laser Showdown"
+                                + " map "
                                 + mapName
                                 + " sub-arenas "
                                 + lanes.size()
@@ -116,7 +123,8 @@ public final class LaserBoxIntroductionArena implements AutoCloseable {
         try {
             File worldFolder = plugin.getWorldManager().getWorldFolder(LOCAL_WORLD_NAME);
             if (worldFolder.isDirectory())
-                plugin.getWorldManager().loadWorld(LOCAL_WORLD_NAME, World.Environment.NORMAL, false);
+                plugin.getWorldManager()
+                        .loadWorld(LOCAL_WORLD_NAME, World.Environment.NORMAL, false);
         } catch (RuntimeException ignored) {
             // The normal LaserBox map loader will report a missing world separately.
         }
@@ -127,9 +135,8 @@ public final class LaserBoxIntroductionArena implements AutoCloseable {
         ConfigurationSection groups = config.getConfigurationSection("player-spawn-points");
         if (groups == null) return List.of();
         List<Lane> result = new ArrayList<>();
-        for (String key : groups.getKeys(false).stream()
-                .sorted(String.CASE_INSENSITIVE_ORDER)
-                .toList()) {
+        for (String key :
+                groups.getKeys(false).stream().sorted(String.CASE_INSENSITIVE_ORDER).toList()) {
             List<Location> spawns = new ArrayList<>();
             for (String serialized : groups.getStringList(key)) {
                 Location location = toLocal(ConfiguredLocation.read(serialized), localWorld);
@@ -212,7 +219,10 @@ public final class LaserBoxIntroductionArena implements AutoCloseable {
     }
 
     Location leastPopulatedSpawn(
-            int lane, LaserBoxArea area, Set<java.util.UUID> assignedPlayers, java.util.UUID excluded) {
+            int lane,
+            LaserBoxArea area,
+            Set<java.util.UUID> assignedPlayers,
+            java.util.UUID excluded) {
         if (lane < 0 || lane >= lanes.size()) return spectatorSpawn();
         List<Location> spawns = lanes.get(lane).spawns();
         List<Player> players = new ArrayList<>();

@@ -52,3 +52,8 @@ messages:
     &#ededed你的服务器准入资格已被撤销
     &#bababa请加入 QQ 群 785674678，申请恢复准入资格。
     &#696969&m--------------------------------
+ban-presentation:
+  default-reason: "违反服务器规则"
+  unknown-expiry: "请查看账号页面"
+  expiry-format: "raw"
+  expiry-zone: system

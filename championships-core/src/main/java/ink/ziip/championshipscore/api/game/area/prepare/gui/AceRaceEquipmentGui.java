@@ -5,45 +5,35 @@ import ink.ziip.championshipscore.api.game.area.prepare.PrepareModeInventory;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
 import ink.ziip.championshipscore.api.gui.MenuId;
-import ink.ziip.championshipscore.api.gui.MenuInventory;
-import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
-import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
-
-import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 /** Selects the equipment available from one Ace Race checkpoint to the next. */
 public final class AceRaceEquipmentGui {
-    private static final String MENU_PATH = MenuId.ACE_RACE_EQUIPMENT.path();
-
     private AceRaceEquipmentGui() {}
 
-    public static final class Holder implements MenuInventory {
-        final PrepareSession session;
+    public static final class Holder extends PrepareMenu {
         final Consumer<AceRaceEquipment> callback;
-        Inventory inventory;
+        final Map<Integer, AceRaceEquipment> options = new HashMap<>();
 
-        Holder(@NotNull PrepareSession session, @NotNull Consumer<AceRaceEquipment> callback) {
-            this.session = session;
+        Holder(Player player, PrepareSession session, Consumer<AceRaceEquipment> callback) {
+            super(
+                    player,
+                    session,
+                    MenuId.ACE_RACE_EQUIPMENT,
+                    9,
+                    List.of(),
+                    List.of(),
+                    Map.of("none", 1, "elytra", 3, "trident", 5, "dolphins", 7),
+                    Map.of());
             this.callback = callback;
-        }
-
-        @Override
-        public @NotNull Inventory getInventory() {
-            return inventory;
         }
     }
 
@@ -52,23 +42,20 @@ public final class AceRaceEquipmentGui {
             @NotNull PrepareSession session,
             @NotNull AceRaceEquipment current,
             @NotNull Consumer<AceRaceEquipment> callback) {
-        Holder holder = new Holder(session, callback);
-        GuiConfig.MenuSpec menu =
-                GuiConfig.menu(MENU_PATH, 9, GuiConfig.component(MENU_PATH), List.of());
-        holder.inventory = Bukkit.createInventory(holder, menu.size(), menu.title());
-        holder.inventory.setItem(
-                1, option(Material.BARRIER, AceRaceEquipment.NONE, current, "none"));
-        holder.inventory.setItem(
-                3, option(Material.ELYTRA, AceRaceEquipment.ELYTRA, current, "elytra"));
-        holder.inventory.setItem(
-                5, option(Material.TRIDENT, AceRaceEquipment.TRIDENT, current, "trident"));
-        holder.inventory.setItem(
-                7,
-                option(
-                        Material.HEART_OF_THE_SEA,
-                        AceRaceEquipment.DOLPHINS_GRACE,
-                        current,
-                        "dolphins"));
+        Holder holder = new Holder(player, session, callback);
+        holder.clear();
+        for (AceRaceEquipment equipment : AceRaceEquipment.values()) {
+            String id =
+                    equipment == AceRaceEquipment.DOLPHINS_GRACE
+                            ? "dolphins"
+                            : equipment.configValue();
+            int slot = holder.layout.control(id);
+            holder.put(
+                    id,
+                    equipment == current ? "selected" : "idle",
+                    Map.of("name", equipment.displayName()));
+            holder.options.put(slot, equipment);
+        }
         player.openInventory(holder.inventory);
     }
 
@@ -78,58 +65,12 @@ public final class AceRaceEquipmentGui {
             @NotNull Player player,
             @NotNull Holder holder) {
         event.setCancelled(true);
-        if (event.getClickedInventory() != event.getView().getTopInventory()) return;
-        PrepareSession session = manager.getSession(player);
-        if (session == null || session != holder.session) {
-            player.closeInventory();
+        if (event.getClickedInventory() != holder.inventory || !holder.available(manager, player))
             return;
-        }
-        AceRaceEquipment equipment =
-                switch (event.getRawSlot()) {
-                    case 1 -> AceRaceEquipment.NONE;
-                    case 3 -> AceRaceEquipment.ELYTRA;
-                    case 5 -> AceRaceEquipment.TRIDENT;
-                    case 7 -> AceRaceEquipment.DOLPHINS_GRACE;
-                    default -> null;
-                };
+        AceRaceEquipment equipment = holder.options.get(event.getRawSlot());
         if (equipment == null) return;
         player.closeInventory();
         holder.callback.accept(equipment);
-        PrepareModeInventory.refresh(player, session);
-    }
-
-    private static @NotNull ItemStack option(
-            @NotNull Material material,
-            @NotNull AceRaceEquipment equipment,
-            @NotNull AceRaceEquipment current,
-            @NotNull String itemKey) {
-        ItemStack fallback = new ItemStack(material);
-        fallback.editMeta(
-                meta -> {
-                    meta.displayName(
-                            Component.text(equipment.displayName())
-                                    .color(NamedTextColor.AQUA)
-                                    .decorationIfAbsent(
-                                            TextDecoration.ITALIC, TextDecoration.State.FALSE));
-                    meta.lore(
-                            List.of(
-                                    LegacyText.component(
-                                                    equipment == current
-                                                            ? GuiConfig.line(
-                                                                    "map-editor.menus.step-list.items.option.states.selected.lore",
-                                                                    0)
-                                                            : GuiConfig.line(
-                                                                    "map-editor.menus.step-list.items.option.lore",
-                                                                    0))
-                                            .colorIfAbsent(
-                                                    equipment == current
-                                                            ? NamedTextColor.GREEN
-                                                            : NamedTextColor.GRAY)
-                                            .decorationIfAbsent(
-                                                    TextDecoration.ITALIC,
-                                                    TextDecoration.State.FALSE)));
-                });
-        return ConfiguredGui.item(
-                MENU_PATH + ".items." + itemKey, null, java.util.Map.of(), fallback);
+        PrepareModeInventory.refresh(player, holder.session);
     }
 }

@@ -7,12 +7,12 @@ import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameI
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.game.tntrun.config.TNTRunConfig;
+import ink.ziip.championshipscore.api.game.tntrun.geometry.TNTRunRainPattern;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.location.LocationConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
-import ink.ziip.championshipscore.shared.presentation.DurationText;
 import ink.ziip.championshipscore.util.Enchants;
 
 import io.papermc.paper.registry.keys.EnchantmentKeys;
@@ -21,7 +21,6 @@ import lombok.Getter;
 
 import org.bukkit.*;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TNTPrimed;
@@ -29,9 +28,10 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.IllegalPluginAccessException;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.BoundingBox;
-import org.bukkit.util.NumberConversions;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
@@ -40,6 +40,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
 public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
@@ -48,13 +49,14 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
     private static final int[] TNT_RAIN_START_TIMES = {120, 60, 20};
     @Getter private final Map<UUID, Location> playerSpawnLocations = new ConcurrentHashMap<>();
     @Getter private final List<UUID> deathPlayer = new CopyOnWriteArrayList<>();
-    private final Map<Block, Integer> pendingBlockRemovals = new ConcurrentHashMap<>();
     @Getter private int timer;
     private BukkitTask startGameProgressTask;
-    private BukkitTask handlePlayerMoveTask;
+    private TNTRunFloorTracker floorTracker;
     private BukkitTask tntGeneratorTask;
-    private int tntTimer;
-    private volatile int terrainGeneration;
+    private final Set<TNTPrimed> rainTnt = new HashSet<>();
+    private BukkitTask rainTntTracker;
+    private AtomicBoolean rainActive;
+    private int terrainGeneration;
 
     public TNTRunTeamArea(
             ChampionshipsCore plugin,
@@ -94,18 +96,33 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
                 if (location != null) locations.add(location);
             }
         }
+        World world = Bukkit.getWorld(getWorldName());
+        List<BoundingBox> boxes = getGameConfig().getCopyBoxes();
+        if (world != null && !boxes.isEmpty()) {
+            // The base preloader owns and releases these tickets, including its edge margin.
+            for (int index : getSelectedArenaIndices(boxes.size())) {
+                BoundingBox box = boxes.get(index);
+                int minX = (int) Math.floor(box.getMinX()) >> 4;
+                int maxX = (int) Math.floor(Math.nextDown(box.getMaxX())) >> 4;
+                int minZ = (int) Math.floor(box.getMinZ()) >> 4;
+                int maxZ = (int) Math.floor(Math.nextDown(box.getMaxZ())) >> 4;
+                for (int x = minX; x <= maxX; x++) {
+                    for (int z = minZ; z <= maxZ; z++) {
+                        locations.add(new Location(world, x * 16 + 8, box.getMinY(), z * 16 + 8));
+                    }
+                }
+            }
+        }
         return locations;
     }
 
     @Override
     public void resetArea() {
-        terrainGeneration++;
+        cancelTerrainTasks();
         playerSpawnLocations.clear();
         deathPlayer.clear();
-        pendingBlockRemovals.clear();
 
         startGameProgressTask = null;
-        handlePlayerMoveTask = null;
         tntGeneratorTask = null;
 
         // Restore only this map's copies. Unloading the physical world would interrupt other maps
@@ -146,6 +163,7 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
 
     @Override
     public void resetGame() {
+        invalidateParticipantCallbacks();
         cancelIntroduction();
         cancelFinalCountdown();
         playerPoints.clear();
@@ -205,7 +223,7 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
 
         // Rule-introduction phase (if configured): gather players at the introduction spawn point
         // and
-        // broadcast the rule sections in chat over 45s, then run the normal preparation below.
+        // broadcast the configured rule sections, then run the normal preparation below.
         startGameIntroduction(this::startFormalPreparation);
     }
 
@@ -296,148 +314,178 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
                             if (isTntRainStart(timer)) {
                                 sendActionBarToAllGamePlayers(MessageConfig.TNT_RUN_TNT_RAIN);
 
-                                tntTimer = 9;
-
-                                // Candidate selection stays off the game thread. Entity creation
-                                // and tracking are
-                                // dispatched back below, matching the path proven under 64-player
-                                // formal events.
-                                final int tntRainGeneration = terrainGeneration;
-                                tntGeneratorTask =
-                                        scheduler.runTaskTimerAsynchronously(
-                                                plugin,
-                                                () -> {
-                                                    int i = 0;
-                                                    Iterator<String> locationIterator =
-                                                            selectedSpawnPoints().iterator();
-
-                                                    while (i < 12) {
-                                                        if (!locationIterator.hasNext())
-                                                            locationIterator =
-                                                                    selectedSpawnPoints()
-                                                                            .iterator();
-
-                                                        Location location =
-                                                                LocationConfig.readLocation(
-                                                                        locationIterator.next());
-                                                        Location tntLocation = location.clone();
-                                                        tntLocation.add(
-                                                                ThreadLocalRandom.current()
-                                                                        .nextInt(-30, 30),
-                                                                15,
-                                                                ThreadLocalRandom.current()
-                                                                        .nextInt(-30, 30));
-
-                                                        while (notInArea(tntLocation)) {
-                                                            tntLocation = location.clone();
-                                                            tntLocation.add(
-                                                                    ThreadLocalRandom.current()
-                                                                            .nextInt(-30, 30),
-                                                                    15,
-                                                                    ThreadLocalRandom.current()
-                                                                            .nextInt(-30, 30));
-                                                        }
-
-                                                        final Location finalTntLocation =
-                                                                tntLocation;
-                                                        scheduler.runTaskLater(
-                                                                plugin,
-                                                                () -> {
-                                                                    if (tntRainGeneration
-                                                                                    != terrainGeneration
-                                                                            || getGameStageEnum()
-                                                                                    != GameStageEnum
-                                                                                            .PROGRESS)
-                                                                        return;
-                                                                    World world =
-                                                                            finalTntLocation
-                                                                                    .getWorld();
-                                                                    if (world != null) {
-                                                                        TNTPrimed tntPrimed =
-                                                                                (TNTPrimed)
-                                                                                        world
-                                                                                                .spawnEntity(
-                                                                                                        finalTntLocation,
-                                                                                                        EntityType
-                                                                                                                .TNT);
-                                                                        tntPrimed.setFuseTicks(200);
-                                                                        scheduler.runTaskTimer(
-                                                                                plugin,
-                                                                                (task) -> {
-                                                                                    if (!tntPrimed
-                                                                                                    .isValid()
-                                                                                            || tntPrimed
-                                                                                                            .getFuseTicks()
-                                                                                                    <= 0) {
-                                                                                        task
-                                                                                                .cancel();
-                                                                                        return;
-                                                                                    }
-
-                                                                                    Location
-                                                                                            tntTraceLocation =
-                                                                                                    tntPrimed
-                                                                                                            .getLocation();
-                                                                                    if (getBlockUnderLocation(
-                                                                                                            tntTraceLocation,
-                                                                                                            0.8)
-                                                                                                    != null
-                                                                                            || notInArea(
-                                                                                                    tntTraceLocation)) {
-                                                                                        tntPrimed
-                                                                                                .setFuseTicks(
-                                                                                                        0);
-                                                                                    }
-                                                                                },
-                                                                                0,
-                                                                                1L);
-                                                                    }
-                                                                },
-                                                                0L);
-                                                        i++;
-                                                    }
-
-                                                    if (tntTimer == 0) {
-                                                        if (tntGeneratorTask != null)
-                                                            tntGeneratorTask.cancel();
-                                                    }
-
-                                                    tntTimer--;
-                                                },
-                                                0,
-                                                20L);
+                                startTntRain();
                             }
                         },
                         this::endGame);
 
-        // This validated high-player-count path keeps repeated foot-block probing off the game
-        // thread; delayed world mutation remains on the server thread.
-        final List<UUID> gamePlayersCopy = new ArrayList<>(gamePlayers);
-        handlePlayerMoveTask =
-                scheduler.runTaskTimerAsynchronously(
+        if (floorTracker != null) floorTracker.close();
+        long generation = captureGameGeneration();
+        int terrain = terrainGeneration;
+        final List<UUID> participants = List.copyOf(gamePlayers);
+        floorTracker =
+                new TNTRunFloorTracker(
                         plugin,
                         () ->
-                                gamePlayersCopy.forEach(
-                                        uuid -> {
-                                            Player player = Bukkit.getPlayer(uuid);
-                                            if (player != null
-                                                    && !deathPlayer.contains(uuid)
-                                                    && isGameplayParticipant(player)) {
-                                                handlePlayerMove(player);
-                                            }
-                                        }),
-                        0,
-                        1L);
+                                participants.stream()
+                                        .map(Bukkit::getPlayer)
+                                        .filter(Objects::nonNull)
+                                        .toList(),
+                        player ->
+                                !deathPlayer.contains(player.getUniqueId())
+                                        && isGameplayParticipant(player),
+                        () ->
+                                generation == captureGameGeneration()
+                                        && terrain == terrainGeneration
+                                        && !isDisposed()
+                                        && getGameStageEnum() == GameStageEnum.PROGRESS);
+        floorTracker.start();
+    }
+
+    private void startTntRain() {
+        String worldName = getWorldName();
+        List<TNTRunRainPattern.Point> origins =
+                selectedSpawnPoints().stream()
+                        .map(LocationConfig::readLocation)
+                        .filter(
+                                location ->
+                                        location != null
+                                                && location.getWorld() != null
+                                                && worldName.equals(location.getWorld().getName()))
+                        .map(
+                                location ->
+                                        new TNTRunRainPattern.Point(
+                                                location.getX(), location.getY(), location.getZ()))
+                        .toList();
+        List<BoundingBox> boxes = getGameConfig().getCopyBoxes();
+        List<TNTRunRainPattern.Bounds> bounds =
+                getSelectedArenaIndices(boxes.size()).stream()
+                        .map(boxes::get)
+                        .map(
+                                box ->
+                                        new TNTRunRainPattern.Bounds(
+                                                box.getMinX(),
+                                                box.getMinY(),
+                                                box.getMinZ(),
+                                                box.getMaxX(),
+                                                box.getMaxY(),
+                                                box.getMaxZ()))
+                        .toList();
+        if (origins.isEmpty() || bounds.isEmpty()) return;
+        if (rainActive != null) rainActive.set(false);
+        if (tntGeneratorTask != null) tntGeneratorTask.cancel();
+        AtomicBoolean active = new AtomicBoolean(true);
+        rainActive = active;
+        int generation = terrainGeneration;
+        tntGeneratorTask =
+                new BukkitRunnable() {
+                    private int remainingWaves = TNT_RAIN_DURATION_SECONDS;
+
+                    @Override
+                    public synchronized void run() {
+                        if (!active.get()) {
+                            cancel();
+                            return;
+                        }
+                        // Only coordinate values cross this boundary; entities and worlds stay on
+                        // Paper's tick thread.
+                        List<TNTRunRainPattern.Point> wave =
+                                TNTRunRainPattern.select(
+                                        origins, bounds, ThreadLocalRandom.current());
+                        try {
+                            scheduler.runTask(
+                                    plugin,
+                                    () -> {
+                                        if (!active.get()
+                                                || generation != terrainGeneration
+                                                || isDisposed()
+                                                || getGameStageEnum() != GameStageEnum.PROGRESS)
+                                            return;
+                                        World world = Bukkit.getWorld(worldName);
+                                        if (world == null) return;
+                                        for (TNTRunRainPattern.Point point : wave) {
+                                            spawnRainTnt(
+                                                    new Location(
+                                                            world, point.x(), point.y(), point.z()),
+                                                    generation);
+                                        }
+                                    });
+                        } catch (IllegalPluginAccessException stopping) {
+                            active.set(false);
+                            cancel();
+                            return;
+                        }
+                        if (--remainingWaves == 0) cancel();
+                    }
+                }.runTaskTimerAsynchronously(plugin, 0L, 20L);
+    }
+
+    private void spawnRainTnt(Location location, int generation) {
+        World world = location.getWorld();
+        if (world == null) return;
+        TNTPrimed tnt = (TNTPrimed) world.spawnEntity(location, EntityType.TNT);
+        tnt.setFuseTicks(200);
+        rainTnt.add(tnt);
+        if (rainTntTracker != null) return;
+        rainTntTracker =
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        if (generation != terrainGeneration
+                                || isDisposed()
+                                || getGameStageEnum() != GameStageEnum.PROGRESS) {
+                            cancel();
+                            return;
+                        }
+                        Iterator<TNTPrimed> iterator = rainTnt.iterator();
+                        while (iterator.hasNext()) {
+                            TNTPrimed currentTnt = iterator.next();
+                            if (!currentTnt.isValid()) {
+                                iterator.remove();
+                                continue;
+                            }
+                            Location current = currentTnt.getLocation();
+                            if (currentTnt.getFuseTicks() > 0
+                                    && (getBlockUnderLocation(current, 0.8) != null
+                                            || notInArea(current))) {
+                                currentTnt.setFuseTicks(0);
+                            }
+                        }
+                        if (rainTnt.isEmpty()) {
+                            rainTntTracker = null;
+                            cancel();
+                        }
+                    }
+                }.runTaskTimer(plugin, 0L, 1L);
+    }
+
+    private void cancelTerrainTasks() {
+        terrainGeneration++;
+        if (startGameProgressTask != null) startGameProgressTask.cancel();
+        if (floorTracker != null) floorTracker.close();
+        floorTracker = null;
+        if (tntGeneratorTask != null) tntGeneratorTask.cancel();
+        if (rainActive != null) rainActive.set(false);
+        if (rainTntTracker != null) rainTntTracker.cancel();
+        rainTntTracker = null;
+        rainTnt.forEach(TNTPrimed::remove);
+        rainTnt.clear();
+    }
+
+    @Override
+    public void dispose() {
+        cancelTerrainTasks();
+        super.dispose();
     }
 
     private String tntRunBossBarTitle() {
         int activeSeconds = activeTntRainSeconds();
         if (activeSeconds > 0) {
             return MessageConfig.TNT_RUN_BOSS_BAR_TNT_RAIN
-                    .replace("%time%", DurationText.bossBarSeconds(timer))
-                    .replace("%rain-time%", DurationText.bossBarSeconds(activeSeconds));
+                    .replace("%time%", CoreMessages.bossBarTime(timer))
+                    .replace("%rain-time%", CoreMessages.bossBarTime(activeSeconds));
         }
-        return MessageConfig.TNT_RUN_BOSS_BAR.replace("%time%", DurationText.bossBarSeconds(timer));
+        return MessageConfig.TNT_RUN_BOSS_BAR.replace("%time%", CoreMessages.bossBarTime(timer));
     }
 
     private int tntRainWarningSeconds() {
@@ -463,11 +511,6 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
         return false;
     }
 
-    void handlePlayerMove(@NotNull Player player) {
-        if (!isGameplayParticipant(player)) return;
-        destroyBlock(player.getLocation());
-    }
-
     private void giveElytraToAllPlayers() {
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
@@ -487,67 +530,8 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
     }
 
     public Block getBlockUnderLocation(Location location, double bias) {
-        World world = location.getWorld();
-        double x = location.getX();
-        double y = location.getY();
-        double z = location.getZ();
-        if (world == null) return null;
-
-        for (int i = 0; i <= 1; i++) {
-            Block block1 =
-                    world.getBlockAt(
-                            NumberConversions.floor(x + bias),
-                            NumberConversions.floor(y - i),
-                            NumberConversions.floor(z - bias));
-            Material block1Type = block1.getType();
-            if (block1Type != Material.AIR && block1Type != Material.LIGHT) return block1;
-            Block block2 =
-                    world.getBlockAt(
-                            NumberConversions.floor(x - bias),
-                            NumberConversions.floor(y - i),
-                            NumberConversions.floor(z + bias));
-            Material block2Type = block2.getType();
-            if (block2Type != Material.AIR && block2Type != Material.LIGHT) return block2;
-            Block block3 =
-                    world.getBlockAt(
-                            NumberConversions.floor(x + bias),
-                            NumberConversions.floor(y - i),
-                            NumberConversions.floor(z + bias));
-            Material block3Type = block3.getType();
-            if (block3Type != Material.AIR && block3Type != Material.LIGHT) return block3;
-            Block block4 =
-                    world.getBlockAt(
-                            NumberConversions.floor(x - bias),
-                            NumberConversions.floor(y - i),
-                            NumberConversions.floor(z - bias));
-            Material block4Type = block4.getType();
-            if (block4Type != Material.AIR && block4Type != Material.LIGHT) return block4;
-        }
-
-        return null;
-    }
-
-    private void destroyBlock(Location location) {
-        World world = location.getWorld();
-        if (world == null) return;
-
-        Block block = getBlockUnderLocation(location, 0.3);
-
-        final int generation = terrainGeneration;
-        if (block != null && pendingBlockRemovals.putIfAbsent(block, generation) == null) {
-            scheduler.runTaskLater(
-                    plugin,
-                    () -> {
-                        if (pendingBlockRemovals.remove(block, generation)
-                                && generation == terrainGeneration
-                                && getGameStageEnum() == GameStageEnum.PROGRESS) {
-                            world.playSound(location, Sound.BLOCK_SAND_BREAK, 3, 1);
-                            block.setType(Material.AIR);
-                            block.getRelative(BlockFace.DOWN).setType(Material.AIR);
-                        }
-                    },
-                    8);
-        }
+        TNTRunBlockProbe.Hit hit = TNTRunBlockProbe.find(location, bias);
+        return hit == null ? null : hit.block();
     }
 
     @Override
@@ -555,9 +539,7 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
         if (getGameStageEnum() == GameStageEnum.WAITING || getGameStageEnum() == GameStageEnum.END)
             return;
 
-        if (startGameProgressTask != null) startGameProgressTask.cancel();
-        if (handlePlayerMoveTask != null) handlePlayerMoveTask.cancel();
-        if (tntGeneratorTask != null) tntGeneratorTask.cancel();
+        cancelTerrainTasks();
 
         if (isSettlementAllowed()) calculatePoints();
 

@@ -20,7 +20,6 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
-import org.bukkit.entity.Display;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.inventory.ItemStack;
@@ -222,7 +221,11 @@ final class RiptideIntroductionRun implements AutoCloseable {
                                 geometry.centerAt(step).add(0, 1.45, 6),
                                 TextDisplay.class,
                                 display -> {
-                                    display.setBillboard(Display.Billboard.CENTER);
+                                    MessageConfig.worldTextStyle(
+                                                    ink.ziip.championshipscore.presentation.display
+                                                            .WorldTextStyles.Profile
+                                                            .RIPTIDE_COLOR_TARGET)
+                                            .apply(display);
                                     display.setPersistent(false);
                                 });
         showColor();
@@ -239,10 +242,15 @@ final class RiptideIntroductionRun implements AutoCloseable {
         targetDisplay.text(
                 LegacyText.component(text("color-prompt"))
                         .append(
-                                Component.translatable(colors.target().translationKey())
-                                        .color(
-                                                net.kyori.adventure.text.format.NamedTextColor
-                                                        .YELLOW)));
+                                ink.ziip.championshipscore.platform.bukkit.text.ComponentTemplates
+                                        .render(
+                                                MessageConfig.codeText(
+                                                        "riptide-introduction-run.color-target"),
+                                                Map.of(
+                                                        "%block%",
+                                                        Component.translatable(
+                                                                colors.target()
+                                                                        .translationKey())))));
         area.playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_PLING, .8F, 1.4F);
     }
 

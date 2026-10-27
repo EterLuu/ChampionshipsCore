@@ -41,7 +41,6 @@ import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageCo
 import ink.ziip.championshipscore.logging.LogText;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
-import ink.ziip.championshipscore.shared.presentation.DurationText;
 
 import lombok.Getter;
 
@@ -108,6 +107,20 @@ public class ScheduleManager extends BaseManager {
 
     public void clearStartSelection(GameTypeEnum game) {
         if (startSelections != null) startSelections.remove(game);
+    }
+
+    /** Releases every schedule-owned hold after its listeners and clocks have stopped. */
+    public void releaseSchedule(GameTypeEnum game) {
+        cancelRoundSettlement(game);
+        clearStartSelection(game);
+        clearRoundPreparationCountdown();
+        plugin.getGameManager().releaseEventSpectatorsForGame(game);
+        plugin.getGameManager().releaseRoundTransitionHolds(game);
+    }
+
+    private void cancelRoundSettlement(GameTypeEnum game) {
+        EventRoundSettlement settlement = roundSettlements.remove(game);
+        if (settlement != null) settlement.cancel();
     }
 
     public EventAction startOrStopFormalEvent(
@@ -195,6 +208,8 @@ public class ScheduleManager extends BaseManager {
     private BossBar roundPreparationBar;
     private final Map<GameTypeEnum, Set<BaseGameInstance>> pendingEventInstances =
             new EnumMap<>(GameTypeEnum.class);
+    private final Map<GameTypeEnum, EventRoundSettlement> roundSettlements =
+            new EnumMap<>(GameTypeEnum.class);
 
     public ScheduleManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -246,6 +261,8 @@ public class ScheduleManager extends BaseManager {
 
     @Override
     public void unload() {
+        roundSettlements.values().forEach(EventRoundSettlement::cancel);
+        roundSettlements.clear();
         if (dodgeboltTransitionTask != null) dodgeboltTransitionTask.cancel();
         if (dragonEggCarnivalTransitionTask != null) dragonEggCarnivalTransitionTask.cancel();
         if (sulfurSoccerTransitionTask != null) sulfurSoccerTransitionTask.cancel();
@@ -536,22 +553,21 @@ public class ScheduleManager extends BaseManager {
         // leaderboard may be slow, but leaving participantStatus owned by an END instance would
         // reject every subsequent game start. Reserve the result-display window immediately;
         // ranking output is scheduled independently below.
-        Runnable release =
-                () ->
-                        scheduler.runTaskLater(
-                                plugin,
-                                () -> {
-                                    for (BaseGameInstance instance : instances)
-                                        instance.completePostGame(
-                                                hasNextRound && isFormalEventRunning(gameType));
-                                    afterSettlement.run();
-                                },
-                                Math.max(0L, resultDisplayTicks));
+        cancelRoundSettlement(gameType);
+        EventRoundSettlement settlement = new EventRoundSettlement(instances);
+        roundSettlements.put(gameType, settlement);
+        settlement.attach(
+                scheduler.runTaskLater(
+                        plugin,
+                        () -> {
+                            if (!roundSettlements.remove(gameType, settlement)) return;
+                            settlement.complete(
+                                    hasNextRound && isFormalEventRunning(gameType),
+                                    afterSettlement);
+                        },
+                        Math.max(0L, resultDisplayTicks)));
 
-        if (hasNextRound) {
-            release.run();
-            return;
-        }
+        if (hasNextRound) return;
 
         CoreMessages.playSoundToAllPlayers(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1F);
         CoreMessages.sendTitleToAllPlayers(
@@ -559,7 +575,6 @@ public class ScheduleManager extends BaseManager {
                 MessageConfig.GAME_ROUND_END_SUBTITLE,
                 60);
         plugin.getRankManager().broadcastFinalRankings(gameType, () -> {});
-        release.run();
     }
 
     /** Shows a global round-transition countdown in one persistent boss bar. */
@@ -569,7 +584,7 @@ public class ScheduleManager extends BaseManager {
             return;
         }
         String roundValue = String.valueOf(Math.max(1, round));
-        String secondsValue = DurationText.bossBarSeconds(seconds);
+        String secondsValue = CoreMessages.bossBarTime(seconds);
         String title =
                 LegacyText.translateColorCodes(
                         MessageConfig.GAME_ROUND_PREPARATION_ACTION_BAR
@@ -600,6 +615,7 @@ public class ScheduleManager extends BaseManager {
      * by endGame doesn't advance the schedule via nextRound().
      */
     public void endGameSchedule(GameTypeEnum gameTypeEnum) {
+        cancelRoundSettlement(gameTypeEnum);
         switch (gameTypeEnum) {
             case LaserShowdown -> {
                 if (laserShowdownScheduleManager.isEnabled())

@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Map;
 
 class BingoContentCatalogTest {
-    private final BingoContentCatalog catalog = BingoContentCatalog.worker26_2();
+    private final BingoContentCatalog catalog = BingoContentCatalog.worker();
 
     @Test
     void retainsExistingTasksAcrossRegistryKinds() {
@@ -26,11 +26,11 @@ class BingoContentCatalogTest {
     }
 
     @Test
-    void rejectsNewMaterialsStatisticsBiomesAndAdvancements() {
-        assertFalse(supports("item", Map.of("material", "STRAW_BED")));
-        assertFalse(supports("item", Map.of("material", "POPLAR_PLANKS")));
-        assertFalse(supports("statistic", Map.of("statistic", "SLEEP_IN_STRAW_BED")));
-        assertFalse(
+    void acceptsTheDeployedWorkerRegistriesAndRejectsUnknownObjectives() {
+        assertTrue(supports("item", Map.of("material", "STRAW_BED")));
+        assertTrue(supports("item", Map.of("material", "POPLAR_PLANKS")));
+        assertTrue(supports("statistic", Map.of("statistic", "SLEEP_IN_STRAW_BED")));
+        assertTrue(
                 supports(
                         "event",
                         Map.of("trigger", "visit_biomes", "subjects", "BIOME=DAPPLED_FOREST")));
@@ -41,19 +41,22 @@ class BingoContentCatalogTest {
     void checksEveryMemberAndPresentationReference() {
         for (String type : new String[] {"item_set", "all_of"}) {
             assertTrue(supports(type, Map.of("materials", "RED_BED,BLUE_BED")));
-            assertFalse(supports(type, Map.of("materials", "RED_BED,STRAW_BED")));
+            assertFalse(supports(type, Map.of("materials", "RED_BED,UNKNOWN_MATERIAL")));
         }
-        assertFalse(supports("item", Map.of("material", "DIRT", "display.material", "STRAW_BED")));
-        assertFalse(supports("event", Map.of("trigger", "eat", "param", "STRAW_BED")));
+        assertFalse(
+                supports(
+                        "item",
+                        Map.of("material", "DIRT", "display.material", "UNKNOWN_MATERIAL")));
+        assertFalse(supports("event", Map.of("trigger", "eat", "param", "UNKNOWN_MATERIAL")));
         assertThrows(
                 IllegalArgumentException.class,
                 () ->
                         catalog.requireSupported(
                                 new BingoTaskSpec(
                                         0,
-                                        "new-statistic",
+                                        "unknown-statistic",
                                         "statistic",
-                                        Map.of("statistic", "SLEEP_IN_STRAW_BED"))));
+                                        Map.of("statistic", "UNKNOWN_STATISTIC"))));
     }
 
     private boolean supports(String type, Map<String, String> attributes) {

@@ -7,6 +7,8 @@ import ink.ziip.championshipscore.api.game.acerace.config.AceRaceConfig;
 import ink.ziip.championshipscore.api.game.acerace.geometry.AceRaceRespawnBindings;
 import ink.ziip.championshipscore.api.game.acerace.mechanics.AceRaceEquipment;
 import ink.ziip.championshipscore.api.game.acerace.model.AceRaceLine;
+import ink.ziip.championshipscore.api.game.acerace.model.AceRaceProgress;
+import ink.ziip.championshipscore.api.game.acerace.model.AceRaceProgress.PlacementRange;
 import ink.ziip.championshipscore.api.game.acerace.model.AceRaceProgressPoint;
 import ink.ziip.championshipscore.api.game.acerace.model.AceRaceRespawnPoint;
 import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameInstance;
@@ -17,7 +19,9 @@ import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.location.LocationConfig;
 import ink.ziip.championshipscore.platform.bukkit.scoreboard.NativeTeamService;
+import ink.ziip.championshipscore.platform.bukkit.text.ComponentTemplates;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+import ink.ziip.championshipscore.presentation.display.WorldTextStyles.Profile;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 import ink.ziip.championshipscore.shared.presentation.DurationText;
 import ink.ziip.championshipscore.util.Enchants;
@@ -39,7 +43,6 @@ import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.entity.Display;
 import org.bukkit.entity.EnderCrystal;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -163,9 +166,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     private final List<EnderCrystal> mapEditPreviewCrystals = new ArrayList<>();
     private final NamespacedKey mapEditPreviewMarkerKey;
     private final NamespacedKey mapEditPreviewAreaKey;
-    @Getter private final List<UUID> finishedPlayers = new ArrayList<>();
-    private final Map<UUID, Integer> nextProgressPoint = new HashMap<>();
-    private final Map<UUID, Integer> completedLaps = new HashMap<>();
+    private final AceRaceProgress raceProgress = new AceRaceProgress();
     private final Map<UUID, Long> lapStartedNanos = new HashMap<>();
 
     /** Completed lap durations in milliseconds, retained for the entire match for the sidebar. */
@@ -533,9 +534,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         restoreAllRacerVisibility();
         cancelAllPendingLaunchPads();
         stopLaunchEnforcement();
-        finishedPlayers.clear();
-        nextProgressPoint.clear();
-        completedLaps.clear();
+        raceProgress.reset();
         lapStartedNanos.clear();
         lapDurationsMillis.clear();
         raceStartedNanos.clear();
@@ -581,9 +580,8 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
 
     private void startGameProgress() {
         Location start = getGameConfig().getStartSpawnPoint();
+        raceProgress.reset();
         for (UUID uuid : gamePlayers) {
-            nextProgressPoint.put(uuid, 0);
-            completedLaps.put(uuid, 0);
             lapStartedNanos.remove(uuid);
             lapDurationsMillis.put(uuid, new ArrayList<>());
             raceStartedNanos.remove(uuid);
@@ -650,11 +648,10 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
             bossBar.setTitle(
                     LegacyText.translateColorCodes(
                             MessageConfig.ACE_RACE_ACTION_BAR_COUNT_DOWN
-                                    .replace(
-                                            "%time%", DurationText.bossBarSeconds(remainingSeconds))
+                                    .replace("%time%", CoreMessages.bossBarTime(remainingSeconds))
                                     .replace(
                                             "%lap-time%",
-                                            DurationText.bossBarSeconds(
+                                            CoreMessages.bossBarTime(
                                                     currentLapElapsedSeconds(uuid, now)))
                                     .replace("%lap%", String.valueOf(currentLapNumber(uuid)))));
             bossBar.setProgress(Math.max(0D, Math.min(1D, progress)));
@@ -670,12 +667,12 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     }
 
     private int currentLapNumber(@NotNull UUID uuid) {
-        return Math.min(getGameConfig().getLaps(), completedLaps.getOrDefault(uuid, 0) + 1);
+        return Math.min(getGameConfig().getLaps(), raceProgress.completedLaps(uuid) + 1);
     }
 
     private long currentLapElapsedSeconds(@NotNull UUID uuid, long nowNanos) {
         List<Long> completed = lapDurationsMillis.get(uuid);
-        if (finishedPlayers.contains(uuid) && completed != null && !completed.isEmpty())
+        if (raceProgress.isFinished(uuid) && completed != null && !completed.isEmpty())
             return completed.getLast() / 1_000L;
         Long started = lapStartedNanos.get(uuid);
         return started == null ? 0L : Math.max(0L, (nowNanos - started) / 1_000_000_000L);
@@ -683,8 +680,9 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
 
     public void handlePlayerMove(@NotNull PlayerMoveEvent event) {
         Player player = event.getPlayer();
+        if (!isGameplayParticipant(player)) return;
         if (getGameStageEnum() != GameStageEnum.PROGRESS
-                || finishedPlayers.contains(player.getUniqueId())) return;
+                || raceProgress.isFinished(player.getUniqueId())) return;
         UUID uuid = player.getUniqueId();
         Location current = event.getTo();
         if (current == null) return;
@@ -712,7 +710,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     public void handlePlayerJump(@NotNull Player player) {
         UUID uuid = player.getUniqueId();
         if (getGameStageEnum() != GameStageEnum.PROGRESS
-                || finishedPlayers.contains(uuid)
+                || raceProgress.isFinished(uuid)
                 || !pendingLaunchPadTasks.containsKey(uuid)) return;
         cancelPendingLaunchTask(uuid);
         featureContacts.remove(uuid);
@@ -720,7 +718,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
 
     private void handleProgressPoint(
             @NotNull Player player, @NotNull Location previous, @NotNull Location current) {
-        int expected = nextProgressPoint.getOrDefault(player.getUniqueId(), 0);
+        int expected = raceProgress.nextPoint(player.getUniqueId());
         // A fast riptide/elytra movement event can cross several gates before Bukkit emits the next
         // movement event. Consume every consecutive gate intersected by this same trajectory
         // instead
@@ -735,7 +733,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     private void advanceProgressPoint(@NotNull Player player, int progressIndex) {
         AceRaceProgressPoint progressPoint = progressPoints.get(progressIndex);
         activeFallHeights.put(player.getUniqueId(), progressPoint.fallY());
-        nextProgressPoint.put(player.getUniqueId(), progressIndex + 1);
+        raceProgress.reachPoint(player.getUniqueId(), progressIndex + 1);
         applyProgressPointEquipment(player, progressPoint.equipment());
         announceProgressPointEquipment(player, progressPoint.equipment());
         player.playSound(player.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 0.7F, 1F);
@@ -765,7 +763,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
                     index < respawnProgressPointBindings.size()
                             ? respawnProgressPointBindings.get(index)
                             : -1;
-            int expected = nextProgressPoint.getOrDefault(uuid, 0);
+            int expected = raceProgress.nextPoint(uuid);
             // A marker may repair exactly one missed gate. Later-course markers cannot be used to
             // shortcut several gates, and markers from an older segment cannot move respawn
             // backward.
@@ -795,11 +793,10 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
             }
             return;
         }
-        if (nextProgressPoint.getOrDefault(uuid, 0) < progressPoints.size()
+        if (raceProgress.nextPoint(uuid) < progressPoints.size()
                 || !crossedFinishForward(finishLine, previous, current, startLine)) return;
 
-        int lap = completedLaps.getOrDefault(player.getUniqueId(), 0) + 1;
-        completedLaps.put(player.getUniqueId(), lap);
+        int lap = raceProgress.completeLap(uuid);
         long completedAt = System.nanoTime();
         // The next lap starts only when the racer crosses the start line again. Do not carry the
         // just-completed timestamp through the reset, otherwise time spent turning around at the
@@ -849,7 +846,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
      */
     private void resetLapProgress(@NotNull Player player, @NotNull Location movementBaseline) {
         UUID uuid = player.getUniqueId();
-        nextProgressPoint.put(uuid, 0);
+        raceProgress.reachPoint(uuid, 0);
         cancelPendingLaunchPad(uuid);
         player.removePotionEffect(PotionEffectType.SPEED);
         handleEnvironmentalEffects(player);
@@ -1210,7 +1207,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         Player player = event.getPlayer();
         if (getGameStageEnum() != GameStageEnum.PROGRESS
                 || notAreaPlayer(player)
-                || finishedPlayers.contains(player.getUniqueId())) return;
+                || raceProgress.isFinished(player.getUniqueId())) return;
         if (event.getItem().getEnchantmentLevel(Enchants.get(EnchantmentKeys.RIPTIDE)) != 1) return;
 
         // Paper fires this event immediately before adding the vanilla riptide vector. Keep only a
@@ -1273,7 +1270,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     private void restoreRacerEquipment(@NotNull Player player) {
         player.getInventory().clear();
         giveTeamArmor(player);
-        int reached = nextProgressPoint.getOrDefault(player.getUniqueId(), 0) - 1;
+        int reached = raceProgress.nextPoint(player.getUniqueId()) - 1;
         applyProgressPointEquipment(
                 player,
                 reached >= 0 && reached < progressPoints.size()
@@ -1460,7 +1457,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
             // them.
             if (player == null
                     || !player.isOnline()
-                    || finishedPlayers.contains(entry.getKey())
+                    || raceProgress.isFinished(entry.getKey())
                     || isManagedSpectator(player)
                     || player.isRiptiding()
                     || player.isGliding()) {
@@ -1602,7 +1599,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
                         () -> {
                             pendingLaunchPadTasks.remove(uuid);
                             boolean progress = getGameStageEnum() == GameStageEnum.PROGRESS;
-                            boolean finished = finishedPlayers.contains(uuid);
+                            boolean finished = raceProgress.isFinished(uuid);
                             boolean online = player.isOnline();
                             Block pad = findTrackFeatureBlock(player.getLocation());
                             boolean onPad = pad != null && pad.getType() == padMaterial;
@@ -1656,10 +1653,9 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
 
     private void finishPlayer(@NotNull Player player) {
         UUID uuid = player.getUniqueId();
-        if (finishedPlayers.contains(uuid)) return;
+        if (raceProgress.isFinished(uuid)) return;
         cancelPendingLaunchPad(uuid);
-        finishedPlayers.add(uuid);
-        int place = finishedPlayers.size();
+        int place = raceProgress.finish(uuid);
         int points =
                 Math.max(
                                 getGameConfig().getMinimumFinishPoints(),
@@ -1688,7 +1684,8 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
                                 .filter(participantId -> Bukkit.getPlayer(participantId) != null)
                                 .toList()
                         : gamePlayers;
-        if (allParticipantsFinished(requiredParticipants, finishedPlayers)) endGame();
+        if (allParticipantsFinished(requiredParticipants, raceProgress.finishedPlayers()))
+            endGame();
     }
 
     /**
@@ -1701,8 +1698,9 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     }
 
     public void returnToLatestRespawnPoint(@NotNull Player player) {
+        if (!isGameplayParticipant(player)) return;
         if (getGameStageEnum() != GameStageEnum.PROGRESS
-                || finishedPlayers.contains(player.getUniqueId())) return;
+                || raceProgress.isFinished(player.getUniqueId())) return;
         cancelPendingLaunchPad(player.getUniqueId());
         Location destination =
                 latestRespawnLocations.getOrDefault(
@@ -1730,30 +1728,17 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     }
 
     private @NotNull PlacementRange getPlayerPlacementRange(@NotNull UUID uuid) {
-        if (!gamePlayers.contains(uuid)) return new PlacementRange(0, 0);
-        int finishedIndex = finishedPlayers.indexOf(uuid);
-        if (finishedIndex >= 0) {
-            int place = finishedIndex + 1;
-            return new PlacementRange(place, place);
-        }
+        return raceProgress.placement(uuid, gamePlayers, progressPoints.size());
+    }
 
-        int progress = playerProgress(uuid);
-        int ahead = finishedPlayers.size();
-        int tied = 0;
-        for (UUID other : gamePlayers) {
-            if (finishedPlayers.contains(other)) continue;
-            int otherProgress = playerProgress(other);
-            if (otherProgress > progress) ahead++;
-            else if (otherProgress == progress) tied++;
-        }
-        int first = ahead + 1;
-        return new PlacementRange(first, first + Math.max(1, tied) - 1);
+    public List<UUID> getFinishedPlayers() {
+        return raceProgress.finishedPlayers();
     }
 
     public int getCurrentLap(@NotNull UUID uuid) {
         if (!gamePlayers.contains(uuid)) return 0;
-        if (finishedPlayers.contains(uuid)) return getGameConfig().getLaps();
-        return Math.min(getGameConfig().getLaps(), completedLaps.getOrDefault(uuid, 0) + 1);
+        if (raceProgress.isFinished(uuid)) return getGameConfig().getLaps();
+        return Math.min(getGameConfig().getLaps(), raceProgress.completedLaps(uuid) + 1);
     }
 
     /** Returns a completed lap duration in the same mm:ss format used by the live clocks. */
@@ -1778,12 +1763,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     }
 
     public int getReachedProgressPoint(@NotNull UUID uuid) {
-        return gamePlayers.contains(uuid) ? nextProgressPoint.getOrDefault(uuid, 0) : 0;
-    }
-
-    private int playerProgress(@NotNull UUID uuid) {
-        return completedLaps.getOrDefault(uuid, 0) * progressPoints.size()
-                + nextProgressPoint.getOrDefault(uuid, 0);
+        return gamePlayers.contains(uuid) ? raceProgress.nextPoint(uuid) : 0;
     }
 
     @Override
@@ -1814,11 +1794,11 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         if (notAreaPlayer(player)) return;
         event.setKeepInventory(true);
         event.getDrops().clear();
-        scheduler.runTask(
-                plugin,
+        scheduleParticipantRespawn(
+                player,
                 () -> {
-                    player.spigot().respawn();
-                    if (getGameStageEnum() == GameStageEnum.PROGRESS) {
+                    if (getGameStageEnum() == GameStageEnum.PROGRESS
+                            && isGameplayParticipant(player)) {
                         player.setGameMode(GameMode.ADVENTURE);
                         returnToLatestRespawnPoint(player);
                         restoreRacerEquipment(player);
@@ -1841,7 +1821,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     public void handlePlayerJoin(@NotNull PlayerJoinEvent event) {
         Player player = event.getPlayer();
         if (notAreaPlayer(player)) return;
-        if (!finishedPlayers.contains(player.getUniqueId())) {
+        if (!raceProgress.isFinished(player.getUniqueId())) {
             visibleRacerPairs.removeIf(pair -> pair.contains(player.getUniqueId()));
             hideRacer(player);
             refreshRacerVisibility();
@@ -1851,7 +1831,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
             player.setGameMode(GameMode.ADVENTURE);
         } else if (getGameStageEnum() == GameStageEnum.COUNTDOWN
                 || getGameStageEnum() == GameStageEnum.PROGRESS) {
-            if (finishedPlayers.contains(player.getUniqueId())) {
+            if (raceProgress.isFinished(player.getUniqueId())) {
                 plugin.getGameManager()
                         .getSpectatorManager()
                         .enterParticipantSpectator(player, this, getSpectatorSpawnLocation());
@@ -1927,7 +1907,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         if (stage == GameStageEnum.WAITING || stage == GameStageEnum.END) return;
         List<Player> racers = new ArrayList<>();
         for (UUID uuid : gamePlayers) {
-            if (finishedPlayers.contains(uuid)) continue;
+            if (raceProgress.isFinished(uuid)) continue;
             Player racer = Bukkit.getPlayer(uuid);
             if (racer == null || !isGameplayParticipant(racer)) continue;
             disableRacerCollisions(racer);
@@ -1988,7 +1968,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         for (Player other : Bukkit.getOnlinePlayers()) {
             if (other.equals(player)) continue;
             if (gamePlayers.contains(other.getUniqueId())
-                    && !finishedPlayers.contains(other.getUniqueId())) {
+                    && !raceProgress.isFinished(other.getUniqueId())) {
                 setRacerVisible(other, player, false);
                 disableRacerCollisions(other);
             }
@@ -2006,7 +1986,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         for (Player other : Bukkit.getOnlinePlayers()) {
             if (other.equals(player)) continue;
             if (gamePlayers.contains(other.getUniqueId())
-                    && !finishedPlayers.contains(other.getUniqueId()))
+                    && !raceProgress.isFinished(other.getUniqueId()))
                 setRacerVisible(other, player, false);
         }
     }
@@ -2047,10 +2027,10 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         // GameManagerHandler separately restores reconnecting participants. Do not overwrite its
         // distance-based result if this MONITOR join hook happens to run afterwards.
         if (gamePlayers.contains(joining.getUniqueId())
-                && !finishedPlayers.contains(joining.getUniqueId())) return;
+                && !raceProgress.isFinished(joining.getUniqueId())) return;
         for (UUID uuid : gamePlayers) {
             Player racer = Bukkit.getPlayer(uuid);
-            if (racer != null && !racer.equals(joining) && !finishedPlayers.contains(uuid))
+            if (racer != null && !racer.equals(joining) && !raceProgress.isFinished(uuid))
                 setRacerVisible(racer, joining, false);
         }
     }
@@ -2075,7 +2055,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         enforcedLaunches.remove(player.getUniqueId());
         riptideViewerGraceTicks.put(player.getUniqueId(), 3);
         for (UUID uuid : gamePlayers) {
-            if (uuid.equals(player.getUniqueId()) || finishedPlayers.contains(uuid)) continue;
+            if (uuid.equals(player.getUniqueId()) || raceProgress.isFinished(uuid)) continue;
             Player target = Bukkit.getPlayer(uuid);
             if (target == null) continue;
             RacerView view = new RacerView(player.getUniqueId(), target.getUniqueId());
@@ -2084,7 +2064,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
                 setRacerVisible(player, target, false);
             }
         }
-        scheduler.runTask(plugin, () -> restoreAuthoritativeRiptideState(player));
+        scheduleGameplayAction(player, () -> restoreAuthoritativeRiptideState(player), 1L);
     }
 
     private void restoreAuthoritativeRiptideState(@NotNull Player player) {
@@ -2166,19 +2146,19 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
                                 TextDisplay.class,
                                 spawned -> {
                                     spawned.text(
-                                            net.kyori.adventure.text.Component.text(
-                                                    racer.getName(),
-                                                    team == null
-                                                            ? net.kyori.adventure.text.format
-                                                                    .NamedTextColor.WHITE
-                                                            : team.getTeam().color()));
-                                    spawned.setBillboard(Display.Billboard.CENTER);
-                                    spawned.setShadowed(true);
-                                    spawned.setSeeThrough(false);
-                                    spawned.setDefaultBackground(false);
-                                    spawned.setBackgroundColor(
-                                            org.bukkit.Color.fromARGB(0, 0, 0, 0));
-                                    spawned.setAlignment(TextDisplay.TextAlignment.CENTER);
+                                            ComponentTemplates.render(
+                                                    MessageConfig.codeText(
+                                                            "ace-race-area.racer-name"),
+                                                    Map.of(
+                                                            "%player%",
+                                                            net.kyori.adventure.text.Component.text(
+                                                                    racer.getName(),
+                                                                    team == null
+                                                                            ? null
+                                                                            : team.getTeam()
+                                                                                    .color()))));
+                                    MessageConfig.worldTextStyle(Profile.ACE_RACE_NAME)
+                                            .apply(spawned);
                                     spawned.setTeleportDuration(1);
                                     spawned.setInterpolationDuration(1);
                                     spawned.setVisibleByDefault(false);
@@ -2278,8 +2258,6 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         restoreAllRacerVisibility();
         super.dispose();
     }
-
-    private record PlacementRange(int first, int last) {}
 
     private record RacerPair(@NotNull UUID first, @NotNull UUID second) {
         private static @NotNull RacerPair of(@NotNull UUID first, @NotNull UUID second) {

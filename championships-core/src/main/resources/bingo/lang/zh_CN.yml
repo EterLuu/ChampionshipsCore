@@ -1,5 +1,5 @@
 dont-edit-this:
-  version: 5
+  version: 6
 card:
   title: "&6&l宾果卡"
   win_hint: "&7连成一行、一列或一条对角线即可获胜"
@@ -102,6 +102,18 @@ spectator:
     slower: "右键：降低速度"
     feedback: "飞行速度：%speed%"
 task:
+  presentation:
+    item-name: "&e%name%"
+    advancement-name: "&a[%name%]"
+    advancement-description: "&3%description%"
+    statistic-name: "&d*%statistic%: %count%*"
+    subject-statistic-name: "&d*%statistic% %subject%: %count%*"
+    kill-name: "&d*%statistic%(%subject%)*"
+    killed-by-name: "&d*(%subject%)%statistic%*"
+    travel-name: "&d*%statistic%: %distance% %unit%*"
+    event-name: "&d*%action%%subject%*"
+    set-name: "&e%prefix%%name%"
+    member-line: "&7- %name%"
   collect: "&7目标：收集此物品"
   collect_potion: "&7目标：酿造或获得此药水"
   one_of: "&7目标：收集其中任意一种（共{0}种）"
@@ -316,6 +328,7 @@ mode:
       - "&7作为本场的游戏模式。"
 
 vote:
+  option_page: 选项第 {0} / {1} 页
   started: "&d宾果飞速投票开始！请在 {0} 秒内选择模式、难度和胜利线数。"
   remaining: "&7投票剩余 &e{0} &7秒"
   cancelled-insufficient: "&c投票因参与人数不足而取消，玩家将返回匹配队列。"

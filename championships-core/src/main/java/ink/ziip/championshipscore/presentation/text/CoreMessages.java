@@ -3,7 +3,10 @@ package ink.ziip.championshipscore.presentation.text;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.platform.bukkit.text.ComponentTemplates;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+import ink.ziip.championshipscore.shared.presentation.DurationText;
+import ink.ziip.championshipscore.shared.presentation.MessageTemplate;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.title.Title;
@@ -16,16 +19,33 @@ import org.jetbrains.annotations.Nullable;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /** Configured Core messages, player identity and server broadcasts. */
 public final class CoreMessages {
     private CoreMessages() {}
 
+    /** Applies a configured wrapper while preserving explicit styles in the original message. */
+    public static Component styled(String key, String message) {
+        return ComponentTemplates.render(
+                MessageConfig.codeText(key), Map.of("%message%", LegacyText.component(message)));
+    }
+
+    public static String bossBarTime(long seconds) {
+        return DurationText.bossBarSeconds(
+                seconds,
+                MessageConfig.codeText("duration.seconds"),
+                MessageConfig.codeText("duration.minutes-seconds"));
+    }
+
     public static String dailyMessage(String message) {
-        return MessageConfig.DAILY_PREFIXED
-                .replace("%message%", message)
-                .replace("%prefix%", MessageConfig.DAILY_PREFIX);
+        // Existing DAILY templates may put the prefix token inside the selected message.
+        // Keep that explicit compatibility expansion separate from wrapper interpolation.
+        String prefixedMessage = message.replace("%prefix%", MessageConfig.DAILY_PREFIX);
+        return MessageTemplate.render(
+                MessageConfig.DAILY_PREFIXED,
+                Map.of("%message%", prefixedMessage, "%prefix%", MessageConfig.DAILY_PREFIX));
     }
 
     /**
@@ -69,14 +89,17 @@ public final class CoreMessages {
 
     /** Formats a known player/team pair without applying the team colour to the player's name. */
     public static String formatPlayerName(@NotNull String name, @Nullable ChampionshipTeam team) {
-        String identity = "&f" + name;
-        if (team != null) identity += " &7<" + team.getColoredName() + "&7>";
-        return LegacyText.translateColorCodes(identity);
+        return team == null
+                ? formatPlayerNameOnly(name)
+                : LegacyText.translateColorCodes(
+                        MessageConfig.codeText(
+                                "core-messages.player-with-team", name, team.getColoredName()));
     }
 
     /** Neutral player name for messages which already display the team separately. */
     public static String formatPlayerNameOnly(@NotNull String name) {
-        return LegacyText.translateColorCodes("&f" + name);
+        return LegacyText.translateColorCodes(
+                MessageConfig.codeText("core-messages.player-name", name));
     }
 
     public static String getMessage(List<String> messages) {

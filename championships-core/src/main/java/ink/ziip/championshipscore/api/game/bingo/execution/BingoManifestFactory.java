@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.game.bingo.execution;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.daily.DailyManager;
 import ink.ziip.championshipscore.api.game.bingo.card.CardSize;
+import ink.ziip.championshipscore.api.game.bingo.config.BingoCardMenuConfig;
 import ink.ziip.championshipscore.api.game.bingo.config.BingoConfig;
 import ink.ziip.championshipscore.api.game.bingo.game.BingoRound;
 import ink.ziip.championshipscore.api.game.bingo.task.TaskData;
@@ -194,7 +195,7 @@ public final class BingoManifestFactory {
                 runMode == GameRunMode.DAILY
                         ? variant.durationSeconds(config.getTimer())
                         : config.getTimer();
-        tasks.forEach(BingoContentCatalog.worker26_2()::requireSupported);
+        tasks.forEach(BingoContentCatalog.worker()::requireSupported);
         String configHash =
                 BingoManifestHasher.hash(duration, cardSeed, scoring, runtimeRules, tasks);
 
@@ -222,6 +223,25 @@ public final class BingoManifestFactory {
     private BingoPresentation presentation(GameRunMode runMode) {
         MessageService lang = MessageService.global();
         Map<String, String> messages = new java.util.LinkedHashMap<>();
+        messages.put("duration.seconds", MessageConfig.codeText("duration.seconds"));
+        messages.put(
+                "duration.minutes-seconds", MessageConfig.codeText("duration.minutes-seconds"));
+        messages.putAll(
+                ink.ziip.championshipscore.api.gui.PlayerListMenuConfig.teammates()
+                        .attributes(
+                                ink.ziip.championshipscore.shared.presentation
+                                        .PlayerListPresentation.TEAMMATE_PREFIX));
+        messages.putAll(
+                ink.ziip.championshipscore.api.game.bingo.config.BingoSpectatorControlsConfig
+                        .snapshot()
+                        .attributes());
+        messages.putAll(BingoCardMenuConfig.snapshot().attributes());
+        messages.putAll(BingoCardMenuConfig.taskSnapshot().attributes());
+        messages.putAll(
+                ink.ziip.championshipscore.api.gui.PlayerListMenuConfig.spectatorPlayers()
+                        .attributes(
+                                ink.ziip.championshipscore.shared.presentation
+                                        .PlayerListPresentation.SPECTATOR_PREFIX));
         messages.put("game.name", GameTypeEnum.Bingo.toString());
         messages.put("game.preparation-countdown", MessageConfig.GAME_PREPARATION_COUNT_DOWN);
         messages.put("game.introduction-title", MessageConfig.GAME_INTRODUCTION_TITLE);
@@ -249,6 +269,9 @@ public final class BingoManifestFactory {
         messages.put("bingo.game-end-title", MessageConfig.BINGO_GAME_END_TITLE);
         messages.put("bingo.game-end-subtitle", MessageConfig.BINGO_GAME_END_SUBTITLE);
         messages.put("bingo.timer", MessageConfig.BINGO_ACTION_BAR_COUNT_DOWN);
+        messages.put("bingo.timer-pvp", MessageConfig.BINGO_ACTION_BAR_COUNT_DOWN_PVP);
+        messages.put(
+                "bingo.timer-protection", MessageConfig.BINGO_ACTION_BAR_COUNT_DOWN_PROTECTION);
         messages.put("bingo.pvp-protection", MessageConfig.BINGO_PVP_PROTECTION);
         messages.put("bingo.pvp-active", MessageConfig.BINGO_PVP_ACTIVE);
         messages.put("bingo.pvp-countdown", MessageConfig.BINGO_PVP_START_COUNT_DOWN);
@@ -257,6 +280,7 @@ public final class BingoManifestFactory {
         messages.put("bingo.game-winner", MessageConfig.BINGO_GAME_WINNER);
         messages.put("papi.none", MessageConfig.PLACEHOLDER_NONE);
         messages.put("papi.spectator", MessageConfig.PLACEHOLDER_SPECTATOR);
+        messages.putAll(MessageConfig.playerTextFormat().attributes());
         messages.put("presentation.daily-game", MessageConfig.PRESENTATION_DAILY_GAME);
         messages.put("presentation.tab.team-footer", MessageConfig.PRESENTATION_TAB_TEAM_FOOTER);
         messages.put(

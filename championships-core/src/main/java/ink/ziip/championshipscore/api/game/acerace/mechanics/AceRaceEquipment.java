@@ -8,17 +8,17 @@ import java.util.Locale;
 
 /** Equipment available for the course segment after a progress point. */
 public enum AceRaceEquipment {
-    NONE("none", MessageConfig.codeText("ace-race-equipment.none-1")),
-    ELYTRA("elytra", MessageConfig.codeText("ace-race-equipment.elytra-1")),
-    TRIDENT("trident", MessageConfig.codeText("ace-race-equipment.trident-1")),
-    DOLPHINS_GRACE("dolphins_grace", MessageConfig.codeText("ace-race-equipment.dolphins-grace-1"));
+    NONE("none", "ace-race-equipment.none-1"),
+    ELYTRA("elytra", "ace-race-equipment.elytra-1"),
+    TRIDENT("trident", "ace-race-equipment.trident-1"),
+    DOLPHINS_GRACE("dolphins_grace", "ace-race-equipment.dolphins-grace-1");
 
     private final String configValue;
-    private final String displayName;
+    private final String displayNameKey;
 
-    AceRaceEquipment(@NotNull String configValue, @NotNull String displayName) {
+    AceRaceEquipment(@NotNull String configValue, @NotNull String displayNameKey) {
         this.configValue = configValue;
-        this.displayName = displayName;
+        this.displayNameKey = displayNameKey;
     }
 
     public @NotNull String configValue() {
@@ -26,7 +26,7 @@ public enum AceRaceEquipment {
     }
 
     public @NotNull String displayName() {
-        return displayName;
+        return MessageConfig.codeText(displayNameKey);
     }
 
     public static @NotNull AceRaceEquipment fromConfig(String value) {

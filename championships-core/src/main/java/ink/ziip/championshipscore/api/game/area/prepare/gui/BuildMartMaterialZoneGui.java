@@ -9,16 +9,17 @@ import ink.ziip.championshipscore.api.game.buildmart.mechanics.BuildMartCopperPo
 import ink.ziip.championshipscore.api.game.buildmart.model.BuildMartMaterialZone;
 import ink.ziip.championshipscore.api.game.buildmart.runtime.BuildMartMaterialIsland;
 import ink.ziip.championshipscore.api.game.buildmart.runtime.BuildMartMaterialManifest;
+import ink.ziip.championshipscore.api.gui.GuiMenu;
+import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.api.gui.MenuInventory;
+import ink.ziip.championshipscore.api.gui.MenuLayout;
+import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.integration.worldedit.WorldEditManager;
-import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -37,13 +38,7 @@ import java.util.UUID;
 
 /** Compact editor for repeatable Build Mart material cuboids. */
 public final class BuildMartMaterialZoneGui {
-    private static final int PAGE_SIZE = 45;
-    private static final int SET_SELECTION_SLOT = 45;
-    private static final int PREVIOUS_SLOT = 46;
-    private static final int CLEAR_SLOT = 48;
-    private static final int PAGE_SLOT = 49;
-    private static final int NEXT_SLOT = 52;
-    private static final int BACK_SLOT = 53;
+    private static final String PATH = MenuId.BUILD_MART_MATERIAL_ZONES.path();
     private static final long MAX_VOLUME = 200_000L;
 
     private BuildMartMaterialZoneGui() {}
@@ -53,6 +48,10 @@ public final class BuildMartMaterialZoneGui {
         final String stepKey;
         @Nullable BuildMartMaterialIsland island;
         int page;
+        int overviewPage;
+        final MenuLayout layout = layout();
+        final Map<Integer, BuildMartMaterialIsland> islandTargets = new java.util.HashMap<>();
+        final Map<Integer, UUID> zoneTargets = new java.util.HashMap<>();
         Inventory inventory;
 
         Holder(@NotNull PrepareSession session, @NotNull PrepareStep step) {
@@ -74,13 +73,7 @@ public final class BuildMartMaterialZoneGui {
         Holder holder = new Holder(session, step);
         holder.inventory =
                 Bukkit.createInventory(
-                        holder,
-                        54,
-                        LegacyText.component(
-                                        GuiConfig.text(
-                                                "map-editor.menus.step-list.items.material-zone.title"))
-                                .decorationIfAbsent(
-                                        TextDecoration.ITALIC, TextDecoration.State.FALSE));
+                        holder, holder.layout.size(), GuiConfig.component(PATH + ".title"));
         refresh(holder);
         player.openInventory(holder.inventory);
     }
@@ -99,80 +92,79 @@ public final class BuildMartMaterialZoneGui {
         }
         BuildMartConfig config = (BuildMartConfig) session.getTarget().config();
         int slot = event.getRawSlot();
-        if (holder.island == null && slot >= 0 && slot < BuildMartMaterialIsland.values().length) {
-            holder.island = BuildMartMaterialIsland.values()[slot];
+        BuildMartMaterialIsland selectedIsland = holder.islandTargets.get(slot);
+        if (holder.island == null && selectedIsland != null) {
+            holder.overviewPage = holder.page;
+            holder.island = selectedIsland;
             holder.page = 0;
             refresh(holder);
             return;
         }
-        if (holder.island != null && slot >= 0 && slot < PAGE_SIZE) {
+        UUID selectedZone = holder.zoneTargets.get(slot);
+        if (holder.island != null && selectedZone != null) {
             List<BuildMartMaterialZone> islandZones = config.getMaterialZones(holder.island);
-            int index = holder.page * PAGE_SIZE + slot;
-            if (index < islandZones.size()) {
-                BuildMartMaterialZone removed = islandZones.get(index);
-                List<BuildMartMaterialZone> zones = new ArrayList<>(config.getMaterialZones());
-                zones.removeIf(zone -> zone.snapshotId().equals(removed.snapshotId()));
-                if (!config.setMaterialZones(zones)) {
-                    player.sendMessage(
-                            CoreMessages.formatAdminError(
-                                    MessageConfig.MAP_EDITOR_BUILD_SAVE_FAILED));
-                    return;
-                }
-                config.deleteMaterialZoneSnapshot(removed);
-                session.markDirty();
-                player.sendMessage(
-                        CoreMessages.formatAdminSuccess(
-                                MessageConfig.MAP_EDITOR_BUILD_ZONE_DELETED
-                                        .replace("%island%", holder.island.displayName())
-                                        .replace("%index%", String.valueOf(index + 1))));
+            BuildMartMaterialZone removed =
+                    islandZones.stream()
+                            .filter(zone -> zone.snapshotId().equals(selectedZone))
+                            .findFirst()
+                            .orElse(null);
+            if (removed == null) {
                 refresh(holder);
+                return;
             }
+            int index = islandZones.indexOf(removed);
+            List<BuildMartMaterialZone> zones = new ArrayList<>(config.getMaterialZones());
+            zones.removeIf(zone -> zone.snapshotId().equals(selectedZone));
+            if (!config.setMaterialZones(zones)) {
+                player.sendMessage(
+                        CoreMessages.formatAdminError(MessageConfig.MAP_EDITOR_BUILD_SAVE_FAILED));
+                return;
+            }
+            config.deleteMaterialZoneSnapshot(removed);
+            session.markDirty();
+            player.sendMessage(
+                    CoreMessages.formatAdminSuccess(
+                            MessageConfig.MAP_EDITOR_BUILD_ZONE_DELETED
+                                    .replace("%island%", holder.island.displayName())
+                                    .replace("%index%", String.valueOf(index + 1))));
+            refresh(holder);
             return;
         }
-        switch (slot) {
-            case SET_SELECTION_SLOT -> saveCurrentSelection(player, holder, config);
-            case PREVIOUS_SLOT -> {
-                if (holder.island != null && holder.page > 0) {
-                    holder.page--;
-                    refresh(holder);
-                }
-            }
-            case CLEAR_SLOT -> {
-                if (holder.island != null) return;
-                List<BuildMartMaterialZone> zones = config.getMaterialZones();
-                if (!config.clearMaterialZones()) {
-                    player.sendMessage(
-                            CoreMessages.formatAdminError(
-                                    MessageConfig.MAP_EDITOR_BUILD_SAVE_FAILED));
-                    return;
-                }
-                zones.forEach(config::deleteMaterialZoneSnapshot);
-                session.markDirty();
-                holder.page = 0;
-                player.sendMessage(
-                        CoreMessages.formatAdminSuccess(
-                                MessageConfig.MAP_EDITOR_BUILD_ZONES_CLEARED));
+        if (slot == holder.layout.control("save")) saveCurrentSelection(player, holder, config);
+        else if (slot == holder.layout.control("previous") && holder.page > 0) {
+            holder.page--;
+            refresh(holder);
+        } else if (slot == holder.layout.control("next")) {
+            int count =
+                    holder.island == null
+                            ? BuildMartMaterialIsland.values().length
+                            : config.getMaterialZones(holder.island).size();
+            if (holder.page + 1 < holder.layout.pageCount(count)) {
+                holder.page++;
                 refresh(holder);
             }
-            case NEXT_SLOT -> {
-                if (holder.island == null) return;
-                int pageCount = pageCount(config.getMaterialZones(holder.island).size());
-                if (holder.page + 1 < pageCount) {
-                    holder.page++;
-                    refresh(holder);
-                }
+        } else if (slot == holder.layout.control("clear") && holder.island == null) {
+            List<BuildMartMaterialZone> zones = config.getMaterialZones();
+            if (!config.clearMaterialZones()) {
+                player.sendMessage(
+                        CoreMessages.formatAdminError(MessageConfig.MAP_EDITOR_BUILD_SAVE_FAILED));
+                return;
             }
-            case BACK_SLOT -> {
-                if (holder.island != null) {
-                    holder.island = null;
-                    holder.page = 0;
-                    refresh(holder);
-                } else {
-                    player.closeInventory();
-                    PrepareModeInventory.refresh(player, session);
-                }
+            zones.forEach(config::deleteMaterialZoneSnapshot);
+            session.markDirty();
+            holder.page = 0;
+            player.sendMessage(
+                    CoreMessages.formatAdminSuccess(MessageConfig.MAP_EDITOR_BUILD_ZONES_CLEARED));
+            refresh(holder);
+        } else if (slot == holder.layout.control("back")) {
+            if (holder.island != null) {
+                holder.island = null;
+                holder.page = holder.overviewPage;
+                refresh(holder);
+            } else {
+                player.closeInventory();
+                PrepareModeInventory.refresh(player, session);
             }
-            default -> {}
         }
     }
 
@@ -246,7 +238,7 @@ public final class BuildMartMaterialZoneGui {
                                                             .equals(zone.snapshotId()))
                                     .findFirst()
                                     .orElse(null));
-            holder.page = assignedIndex < 0 ? 0 : assignedIndex / PAGE_SIZE;
+            holder.page = assignedIndex < 0 ? 0 : assignedIndex / holder.layout.content().size();
             if (replacedIndex < 0) {
                 player.sendMessage(
                         CoreMessages.formatAdminSuccess(
@@ -288,245 +280,165 @@ public final class BuildMartMaterialZoneGui {
     private static void refresh(Holder holder) {
         Inventory inventory = holder.inventory;
         inventory.clear();
+        holder.islandTargets.clear();
+        holder.zoneTargets.clear();
+        for (int slot : holder.layout.border())
+            inventory.setItem(
+                    slot, configured("border", null, Map.of(), Material.GRAY_STAINED_GLASS_PANE));
         BuildMartConfig config = (BuildMartConfig) holder.session.getTarget().config();
-        if (holder.island == null) {
-            refreshIslandOverview(holder, config);
-            return;
-        }
-        List<BuildMartMaterialZone> zones = config.getMaterialZones(holder.island);
-        int pageCount = pageCount(zones.size());
-        holder.page = Math.max(0, Math.min(holder.page, pageCount - 1));
-        int first = holder.page * PAGE_SIZE;
-        Map<UUID, Material> dominantMaterials =
-                BuildMartMaterialManifest.readDominantMaterials(config);
-        for (int slot = 0; slot < PAGE_SIZE; slot++) {
-            int index = first + slot;
-            if (index < zones.size()) {
-                BuildMartMaterialZone zone = zones.get(index);
-                Material dominant = dominantMaterials.get(zone.snapshotId());
-                Material icon =
-                        dominant != null && dominant.isItem() ? dominant : Material.STRUCTURE_BLOCK;
-                Component name =
-                        dominant == null
-                                ? GuiConfig.component(
-                                        "map-editor.games.build-mart.menus.material-zones.items.zone.states.no-material.title",
-                                        Map.of("order", index + 1))
-                                : GuiConfig.component(
-                                                "map-editor.games.build-mart.menus.material-zones.items.zone.title",
-                                                Map.of("order", index + 1))
-                                        .append(Component.translatable(dominant.translationKey()));
+        boolean overview = holder.island == null;
+        List<BuildMartMaterialZone> zones =
+                overview ? List.of() : config.getMaterialZones(holder.island);
+        var islands = BuildMartMaterialIsland.values();
+        int count = overview ? islands.length : zones.size();
+        holder.page = holder.layout.clampPage(holder.page, count);
+        int pages = holder.layout.pageCount(count);
+        Map<UUID, Material> materials =
+                overview ? Map.of() : BuildMartMaterialManifest.readDominantMaterials(config);
+        var centers = config.getMaterialIslandCenters();
+        var grouped =
+                overview
+                        ? config.getMaterialZonesByIsland()
+                        : Map.<BuildMartMaterialIsland, List<BuildMartMaterialZone>>of();
+        for (int slot : holder.layout.content()) {
+            int index = holder.layout.index(holder.page, slot);
+            if (index >= count) {
                 inventory.setItem(
                         slot,
-                        item(
-                                icon,
-                                name,
-                                List.of(
-                                        GuiConfig.line(
-                                                        "map-editor.games.build-mart.menus.material-zones.items.zone.lore",
-                                                        0)
-                                                .replace("%range%", compact(zone)),
-                                        GuiConfig.line(
-                                                "map-editor.games.build-mart.menus.material-zones.items.zone.lore",
-                                                1),
-                                        GuiConfig.line(
-                                                "map-editor.games.build-mart.menus.material-zones.items.zone.lore",
-                                                2)),
-                                NamedTextColor.WHITE));
-            } else inventory.setItem(slot, filler());
+                        configured("border", null, Map.of(), Material.GRAY_STAINED_GLASS_PANE));
+            } else if (overview) {
+                BuildMartMaterialIsland island = islands[index];
+                Vector center = centers.get(island);
+                inventory.setItem(
+                        slot,
+                        configured(
+                                "island",
+                                center == null ? "unconfigured" : null,
+                                Map.of(
+                                        "order",
+                                        index + 1,
+                                        "name",
+                                        island.displayName(),
+                                        "count",
+                                        grouped.getOrDefault(island, List.of()).size(),
+                                        "center",
+                                        center == null ? "" : compact(center)),
+                                island.icon()));
+                holder.islandTargets.put(slot, island);
+            } else {
+                BuildMartMaterialZone zone = zones.get(index);
+                Material dominant = materials.get(zone.snapshotId());
+                Material icon =
+                        dominant != null && dominant.isItem() ? dominant : Material.STRUCTURE_BLOCK;
+                ItemStack item =
+                        configured(
+                                "zone",
+                                dominant == null ? "no-material" : null,
+                                Map.of("order", index + 1, "range", compact(zone)),
+                                icon);
+                if (dominant != null)
+                    item.editMeta(
+                            meta ->
+                                    meta.displayName(
+                                            meta.displayName()
+                                                    .append(
+                                                            Component.translatable(
+                                                                    dominant.translationKey()))));
+                inventory.setItem(slot, item);
+                holder.zoneTargets.put(slot, zone.snapshotId());
+            }
         }
         inventory.setItem(
-                SET_SELECTION_SLOT,
-                item(
-                        Material.GOLDEN_AXE,
-                        GuiConfig.text(
-                                "map-editor.games.build-mart.menus.material-zones.items.save.title"),
-                        List.of(
-                                GuiConfig.line(
-                                                "map-editor.games.build-mart.menus.material-zones.items.save.lore",
-                                                0),
-                                        GuiConfig.line(
-                                                "map-editor.games.build-mart.menus.material-zones.items.save.lore",
-                                                1),
-                                GuiConfig.line(
-                                                "map-editor.games.build-mart.menus.material-zones.items.save.lore",
-                                                2),
-                                        GuiConfig.line(
-                                                "map-editor.games.build-mart.menus.material-zones.items.save.lore",
-                                                3)),
-                        NamedTextColor.YELLOW));
-        if (holder.page > 0) {
+                holder.layout.control("save"),
+                configured("save", null, Map.of(), Material.GOLDEN_AXE));
+        if (overview)
             inventory.setItem(
-                    PREVIOUS_SLOT,
-                    itemComponents(
-                            Material.ARROW,
-                            GuiConfig.component("map-editor.menus.step-list.items.previous.title"),
-                            List.of(
-                                    LegacyText.component(
-                                            GuiConfig.line(
-                                                    "map-editor.menus.step-list.items.previous.lore",
-                                                    0,
-                                                    Map.of("page", holder.page)))),
-                            NamedTextColor.WHITE));
-        }
-        Vector center = config.getMaterialIslandCenters().get(holder.island);
-        inventory.setItem(
-                CLEAR_SLOT,
-                item(
-                        holder.island.icon(),
-                        holder.island.displayName(),
-                        center == null
-                                ? List.of(
-                                        GuiConfig.line(
-                                                "map-editor.games.build-mart.menus.material-zones.items.island.states.unconfigured.lore",
-                                                0))
-                                : List.of(
-                                        GuiConfig.line(
-                                                        "map-editor.games.build-mart.menus.material-zones.items.island.lore",
-                                                        0)
-                                                .replace("%center%", compact(center))),
-                        NamedTextColor.AQUA));
-        inventory.setItem(
-                PAGE_SLOT,
-                item(
-                        Material.PAPER,
-                        GuiConfig.component(
-                                "map-editor.games.build-mart.menus.material-zones.items.page.title",
-                                Map.of("page", holder.page + 1, "pages", pageCount)),
-                        List.of(
-                                holder.island.displayName(),
-                                GuiConfig.line(
-                                        "map-editor.games.build-mart.menus.material-zones.items.page.lore",
-                                        0,
-                                        Map.of("count", zones.size()))),
-                        NamedTextColor.AQUA));
-        if (holder.page + 1 < pageCount) {
+                    holder.layout.control("clear"),
+                    configured(
+                            "clear", null, Map.of("islands", islands.length), Material.RED_WOOL));
+        else {
+            Vector center = centers.get(holder.island);
             inventory.setItem(
-                    NEXT_SLOT,
-                    itemComponents(
-                            Material.ARROW,
-                            GuiConfig.component("map-editor.menus.step-list.items.next.title"),
-                            List.of(
-                                    LegacyText.component(
-                                            GuiConfig.line(
-                                                    "map-editor.menus.step-list.items.next.lore",
-                                                    0,
-                                                    Map.of("page", holder.page + 2)))),
-                            NamedTextColor.WHITE));
+                    holder.layout.control("clear"),
+                    configured(
+                            "island-summary",
+                            center == null ? "unconfigured" : null,
+                            Map.of(
+                                    "name",
+                                    holder.island.displayName(),
+                                    "center",
+                                    center == null ? "" : compact(center)),
+                            holder.island.icon()));
         }
         inventory.setItem(
-                BACK_SLOT,
-                item(
-                        Material.ARROW,
-                        GuiConfig.text(
-                                "map-editor.games.build-mart.menus.material-zones.items.back.title"),
-                        List.of(
-                                GuiConfig.line(
-                                        "map-editor.games.build-mart.menus.material-zones.items.back.lore",
-                                        0)),
-                        NamedTextColor.WHITE));
+                holder.layout.control("page"),
+                configured(
+                        "page",
+                        overview ? null : "detail",
+                        Map.of(
+                                "page",
+                                holder.page + 1,
+                                "pages",
+                                pages,
+                                "count",
+                                overview ? config.getMaterialZones().size() : zones.size(),
+                                "island",
+                                overview ? "" : holder.island.displayName()),
+                        overview ? Material.COMPASS : Material.PAPER));
+        if (holder.page > 0)
+            inventory.setItem(
+                    holder.layout.control("previous"),
+                    configured(
+                            "previous",
+                            null,
+                            Map.of("page", holder.page, "pages", pages),
+                            Material.ARROW));
+        if (holder.page + 1 < pages)
+            inventory.setItem(
+                    holder.layout.control("next"),
+                    configured(
+                            "next",
+                            null,
+                            Map.of("page", holder.page + 2, "pages", pages),
+                            Material.ARROW));
+        inventory.setItem(
+                holder.layout.control("back"),
+                configured(
+                        "back",
+                        overview ? "overview" : null,
+                        Map.of("islands", islands.length),
+                        Material.ARROW));
     }
 
-    private static void refreshIslandOverview(
-            @NotNull Holder holder, @NotNull BuildMartConfig config) {
-        Inventory inventory = holder.inventory;
-        Map<BuildMartMaterialIsland, Vector> centers = config.getMaterialIslandCenters();
-        Map<BuildMartMaterialIsland, List<BuildMartMaterialZone>> grouped =
-                config.getMaterialZonesByIsland();
-        BuildMartMaterialIsland[] islands = BuildMartMaterialIsland.values();
-        for (int slot = 0; slot < islands.length; slot++) {
-            BuildMartMaterialIsland island = islands[slot];
-            Vector center = centers.get(island);
-            int count = grouped.getOrDefault(island, List.of()).size();
-            Material icon = center == null ? Material.BARRIER : island.icon();
-            List<String> lore =
-                    center == null
-                            ? List.of(
-                                    GuiConfig.line(
-                                            "map-editor.games.build-mart.menus.material-zones.items.island.states.unconfigured.lore",
-                                            0),
-                                    GuiConfig.line(
-                                            "map-editor.games.build-mart.menus.material-zones.items.island.states.unconfigured.lore",
-                                            1))
-                            : List.of(
-                                    GuiConfig.line(
-                                                    "map-editor.games.build-mart.menus.material-zones.items.island.lore",
-                                                    0)
-                                            .replace("%center%", compact(center)),
-                                    GuiConfig.line(
-                                                    "map-editor.games.build-mart.menus.material-zones.items.island.lore",
-                                                    1)
-                                            .replace("%count%", String.valueOf(count)),
-                                    GuiConfig.line(
-                                            "map-editor.games.build-mart.menus.material-zones.items.island.lore",
-                                            2));
-            inventory.setItem(
-                    slot,
-                    item(
-                            icon,
-                            GuiConfig.component(
-                                    "map-editor.games.build-mart.menus.material-zones.items.island.title",
-                                    Map.of("order", slot + 1, "name", island.displayName())),
-                            lore,
-                            center == null ? NamedTextColor.RED : NamedTextColor.WHITE));
-        }
-        for (int slot = islands.length; slot < PAGE_SIZE; slot++) inventory.setItem(slot, filler());
-        inventory.setItem(
-                SET_SELECTION_SLOT,
-                item(
-                        Material.GOLDEN_AXE,
-                        GuiConfig.text(
-                                "map-editor.games.build-mart.menus.material-zones.items.save.title"),
-                        List.of(
-                                GuiConfig.line(
-                                                "map-editor.games.build-mart.menus.material-zones.items.save.lore",
-                                                0),
-                                        GuiConfig.line(
-                                                "map-editor.games.build-mart.menus.material-zones.items.save.lore",
-                                                1),
-                                GuiConfig.line(
-                                                "map-editor.games.build-mart.menus.material-zones.items.save.lore",
-                                                2),
-                                        GuiConfig.line(
-                                                "map-editor.games.build-mart.menus.material-zones.items.save.lore",
-                                                3)),
-                        NamedTextColor.YELLOW));
-        inventory.setItem(
-                CLEAR_SLOT,
-                item(
-                        Material.RED_WOOL,
-                        GuiConfig.text(
-                                "map-editor.games.build-mart.menus.material-zones.items.clear.title"),
-                        List.of(
-                                GuiConfig.line(
-                                        "map-editor.games.build-mart.menus.material-zones.items.clear.lore",
-                                        0)),
-                        NamedTextColor.RED));
-        inventory.setItem(
-                PAGE_SLOT,
-                item(
-                        Material.COMPASS,
-                        GuiConfig.component(
-                                "map-editor.games.build-mart.menus.material-zones.items.page.title",
-                                Map.of(
-                                        "page",
-                                        holder.page + 1,
-                                        "pages",
-                                        pageCount(islands.length))),
-                        List.of(
-                                GuiConfig.line(
-                                                "map-editor.games.build-mart.menus.material-zones.items.page.lore",
-                                                0)
-                                        .replace(
-                                                "%count%",
-                                                String.valueOf(config.getMaterialZones().size()))),
-                        NamedTextColor.AQUA));
-        inventory.setItem(
-                BACK_SLOT,
-                item(
-                        Material.ARROW,
-                        GuiConfig.text("map-editor.menus.step-list.items.back.title"),
-                        List.of(GuiConfig.text("map-editor.menus.step-list.items.back.title")),
-                        NamedTextColor.WHITE));
+    static MenuLayout layout() {
+        int size = GuiConfig.menu(PATH, 54, "", MenuLayout.range(0, 45)).size();
+        return MenuLayout.load(
+                PATH,
+                size,
+                MenuLayout.range(0, 45),
+                List.of(),
+                Map.of(
+                        "save",
+                        45,
+                        "previous",
+                        46,
+                        "clear",
+                        48,
+                        "page",
+                        49,
+                        "next",
+                        52,
+                        "back",
+                        53));
+    }
+
+    private static ItemStack configured(
+            String id, String state, Map<String, ?> placeholders, Material fallback) {
+        return ConfiguredGui.item(
+                PATH + ".items." + id,
+                state,
+                placeholders,
+                GuiMenu.item(fallback, Component.empty(), List.of(), false));
     }
 
     private static @NotNull String islandName(@Nullable BuildMartMaterialIsland island) {
@@ -536,88 +448,39 @@ public final class BuildMartMaterialZoneGui {
                 : island.displayName();
     }
 
-    private static int pageCount(int entries) {
-        return Math.max(1, (entries + PAGE_SIZE - 1) / PAGE_SIZE);
-    }
-
     private static String compact(BuildMartMaterialZone zone) {
-        return String.format(
-                java.util.Locale.ROOT,
-                "%d, %d, %d → %d, %d, %d",
-                zone.minX(),
-                zone.minY(),
-                zone.minZ(),
-                zone.maxX(),
-                zone.maxY(),
-                zone.maxZ());
+        return GuiConfig.text(
+                PATH + ".items.range-format.title",
+                Map.of(
+                        "min-x",
+                        zone.minX(),
+                        "min-y",
+                        zone.minY(),
+                        "min-z",
+                        zone.minZ(),
+                        "max-x",
+                        zone.maxX(),
+                        "max-y",
+                        zone.maxY(),
+                        "max-z",
+                        zone.maxZ()));
     }
 
     private static String compact(Vector center) {
-        return String.format(
-                java.util.Locale.ROOT,
-                "%s, %s, %s",
-                format(center.getX()),
-                format(center.getY()),
-                format(center.getZ()));
+        return GuiConfig.text(
+                PATH + ".items.coordinate-format.title",
+                Map.of(
+                        "x",
+                        format(center.getX()),
+                        "y",
+                        format(center.getY()),
+                        "z",
+                        format(center.getZ())));
     }
 
     private static String format(double value) {
         return value == Math.rint(value)
                 ? Long.toString(Math.round(value))
-                : String.format("%.2f", value);
-    }
-
-    private static ItemStack item(
-            Material material, String name, List<String> lore, NamedTextColor color) {
-        return item(material, LegacyText.component(name), lore, color);
-    }
-
-    private static ItemStack itemComponents(
-            Material material, Component name, List<Component> lore, NamedTextColor color) {
-        ItemStack stack = new ItemStack(material);
-        stack.editMeta(
-                meta -> {
-                    meta.displayName(
-                            name.colorIfAbsent(color)
-                                    .decorationIfAbsent(
-                                            TextDecoration.ITALIC, TextDecoration.State.FALSE));
-                    meta.lore(
-                            lore.stream()
-                                    .map(
-                                            line ->
-                                                    line.colorIfAbsent(NamedTextColor.GRAY)
-                                                            .decorationIfAbsent(
-                                                                    TextDecoration.ITALIC,
-                                                                    TextDecoration.State.FALSE))
-                                    .toList());
-                });
-        return stack;
-    }
-
-    private static ItemStack item(
-            Material material, Component name, List<String> lore, NamedTextColor color) {
-        ItemStack stack = new ItemStack(material);
-        stack.editMeta(
-                meta -> {
-                    meta.displayName(
-                            name.colorIfAbsent(color)
-                                    .decorationIfAbsent(
-                                            TextDecoration.ITALIC, TextDecoration.State.FALSE));
-                    meta.lore(
-                            lore.stream()
-                                    .map(
-                                            line ->
-                                                    LegacyText.component(line)
-                                                            .colorIfAbsent(NamedTextColor.GRAY)
-                                                            .decorationIfAbsent(
-                                                                    TextDecoration.ITALIC,
-                                                                    TextDecoration.State.FALSE))
-                                    .toList());
-                });
-        return stack;
-    }
-
-    private static ItemStack filler() {
-        return item(Material.GRAY_STAINED_GLASS_PANE, " ", List.of(), NamedTextColor.DARK_GRAY);
+                : String.format(java.util.Locale.ROOT, "%.2f", value);
     }
 }

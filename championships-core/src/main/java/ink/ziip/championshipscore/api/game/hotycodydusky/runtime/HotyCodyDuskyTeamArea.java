@@ -9,7 +9,6 @@ import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
-import ink.ziip.championshipscore.shared.presentation.DurationText;
 
 import lombok.Getter;
 
@@ -199,7 +198,7 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
 
         // Rule-introduction phase (if configured): gather players at the introduction spawn point
         // and
-        // broadcast the rule sections in chat over 45s, then run the normal preparation below.
+        // broadcast the configured rule sections, then run the normal preparation below.
         startGameIntroduction(this::startFormalPreparation);
     }
 
@@ -241,10 +240,8 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
             if (player == null) {
-                deathPlayer.add(uuid);
-                ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
-                if (championshipTeam != null) {
-                    addTeamDeathPlayer(championshipTeam);
+                excludeBeforeStart(uuid);
+                if (plugin.getTeamManager().getTeamByPlayer(uuid) != null) {
                     logGame(
                             Level.INFO,
                             MessageConfig.codeText(
@@ -266,6 +263,10 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
     }
 
     private void beginGameProgress() {
+        for (UUID uuid : gamePlayers) {
+            Player player = Bukkit.getPlayer(uuid);
+            if (player == null || !player.isOnline()) excludeBeforeStart(uuid);
+        }
         timer = getGameConfig().getTimer();
         for (int arena : getSelectedArenaIndices(getGameConfig().getCopies()))
             selectCodyHolder(arena, true);
@@ -276,7 +277,7 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
                             timer = seconds;
                             updateGameTimerBossBar(
                                     MessageConfig.HOTY_CODY_DUSKY_ACTION_BAR_COUNT_DOWN
-                                            .replace("%time%", DurationText.bossBarSeconds(timer))
+                                            .replace("%time%", CoreMessages.bossBarTime(timer))
                                             .replace(
                                                     "%holder%",
                                                     codyHolders.isEmpty()
@@ -471,11 +472,22 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
 
     private void addDeathPlayer(Player player) {
         UUID uuid = player.getUniqueId();
+        if (deathPlayer.contains(uuid)) return;
         addDeathPlayer(uuid);
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(uuid);
         if (championshipTeam != null) {
             addTeamDeathPlayer(championshipTeam);
         }
+    }
+
+    /**
+     * An absent countdown participant never enters the survival ranking or earns survivor points.
+     */
+    private void excludeBeforeStart(UUID uuid) {
+        if (deathPlayer.contains(uuid)) return;
+        deathPlayer.add(uuid);
+        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(uuid);
+        if (team != null) teamDeathPlayers.merge(team, 1, Integer::sum);
     }
 
     private void addDeathPlayer(UUID uuid) {
@@ -576,6 +588,11 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
             return;
         }
 
+        if (getGameStageEnum() == GameStageEnum.COUNTDOWN) {
+            excludeBeforeStart(player.getUniqueId());
+            return;
+        }
+
         if (getGameStageEnum() != GameStageEnum.PROGRESS) {
             return;
         }
@@ -602,6 +619,12 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
         }
 
         if (getGameStageEnum() == GameStageEnum.COUNTDOWN) {
+            if (deathPlayer.contains(player.getUniqueId())) {
+                plugin.getGameManager()
+                        .getSpectatorManager()
+                        .enterParticipantSpectator(player, this, getSpectatorSpawnLocation());
+                return;
+            }
             player.teleport(playerSpawn(player.getUniqueId()));
             player.setGameMode(GameMode.ADVENTURE);
             return;

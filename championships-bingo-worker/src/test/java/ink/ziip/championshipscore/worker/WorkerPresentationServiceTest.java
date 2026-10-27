@@ -15,6 +15,68 @@ import java.util.Map;
 
 class WorkerPresentationServiceTest {
     @Test
+    void fullTimersUseFrozenCoreTemplatesAndLegacySnapshotsKeepTheirOriginalComposition() {
+        var fields = new java.util.HashMap<String, String>();
+        fields.put("duration.seconds", "%seconds%s");
+        fields.put("duration.minutes-seconds", "%minutes%m %seconds%s");
+        fields.put("bingo.timer", "&eTime %time%");
+        fields.put("bingo.pvp-active", "&cPvP");
+        fields.put("bingo.pvp-protection", "&aSafe %time%");
+        var old = new BingoPresentation(fields);
+        assertEquals(
+                "Time 1m 1s • Safe 5s",
+                PlainTextComponentSerializer.plainText()
+                        .serialize(WorkerPresentationService.timerTitle(old, false, 61, 5)));
+        assertEquals(
+                "Time 1m 1s • PvP",
+                PlainTextComponentSerializer.plainText()
+                        .serialize(WorkerPresentationService.timerTitle(old, true, 61, 0)));
+
+        fields.put("bingo.timer-pvp", "&bPvP %time%");
+        fields.put("bingo.timer-protection", "&d%grace% / %time%");
+        var frozen = new BingoPresentation(fields);
+        fields.put("bingo.timer-protection", "changed");
+        assertEquals(
+                "5s / 1m 1s",
+                PlainTextComponentSerializer.plainText()
+                        .serialize(WorkerPresentationService.timerTitle(frozen, false, 61, 5)));
+        assertEquals(
+                "PvP 1m 1s",
+                PlainTextComponentSerializer.plainText()
+                        .serialize(WorkerPresentationService.timerTitle(frozen, true, 61, 0)));
+        assertEquals(5, old.messages().size());
+        fields.remove("bingo.timer-pvp");
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        WorkerPresentationService.timerTitle(
+                                new BingoPresentation(fields), false, 61, 5));
+    }
+
+    @Test
+    void durationsUseFrozenCoreTemplatesAndOldManifestsKeepTheirOriginalRendering() {
+        var configured =
+                new BingoPresentation(
+                        Map.of(
+                                "duration.seconds",
+                                "%seconds%s",
+                                "duration.minutes-seconds",
+                                "%minutes%m %seconds%s"));
+        assertEquals("60s", WorkerPresentationService.bossBarTime(configured, 60));
+        assertEquals("1m 1s", WorkerPresentationService.bossBarTime(configured, 61));
+        var old = new BingoPresentation(Map.of("game.name", "Bingo"));
+        assertEquals("60秒", WorkerPresentationService.bossBarTime(old, 60));
+        assertEquals("1分1秒", WorkerPresentationService.bossBarTime(old, 61));
+        assertEquals(Map.of("game.name", "Bingo"), old.messages());
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        WorkerPresentationService.bossBarTime(
+                                new BingoPresentation(Map.of("duration.seconds", "%seconds%s")),
+                                61));
+    }
+
+    @Test
     void standardThreeSectionsKeepCoreTiming() {
         assertEquals(-1, WorkerPresentationService.sectionAt(9, 45, 3));
         assertEquals(0, WorkerPresentationService.sectionAt(10, 45, 3));
@@ -79,6 +141,26 @@ class WorkerPresentationServiceTest {
                 "宾果时速 / 4",
                 WorkerPresentationService.sidebarLine(
                         "{game.name} / {viewer.tasks}", "宾果时速", "ignored", 4));
+        assertEquals(
+                "{game.status} / 4",
+                WorkerPresentationService.sidebarLine(
+                        "{game.name} / {viewer.tasks}", "{game.status}", "running", 4));
+    }
+
+    @Test
+    void ordinaryMessageArgumentsDoNotExpandOtherArguments() {
+        var presentation = new BingoPresentation(Map.of("notice", "%player% / {0}"));
+        assertEquals(
+                "{0} $1\\name / ready",
+                PlainTextComponentSerializer.plainText()
+                        .serialize(
+                                WorkerPresentationService.message(
+                                        presentation,
+                                        "notice",
+                                        "%player%",
+                                        "{0} $1\\name",
+                                        "{0}",
+                                        "ready")));
     }
 
     @Test

@@ -11,6 +11,88 @@ import java.util.UUID;
 
 class LaserBoxWeaponRoundTest {
     @Test
+    void eachRespawnGetsEightSecondsAndOldLifeCannotChangeTheNewWindow() {
+        var round = new LaserBoxRound();
+        UUID player = UUID.randomUUID();
+        round.beginLife(player);
+        var first = round.selection(player);
+        for (int tick = 0; tick < 159; tick++) round.advance();
+        assertTrue(first.canSelect(round.tick()));
+        round.beginLife(player);
+        assertSame(first, round.selection(player), "repeated setup cannot renew the window");
+        round.advance();
+        assertFalse(first.canSelect(round.tick()));
+        round.damage(player, true, true, null, 100);
+        for (int tick = 0; tick < 80; tick++) round.advance();
+        assertTrue(round.respawn(player));
+        var next = round.selection(player);
+        assertNotSame(first, next);
+        first.closeMenu(round.tick());
+        assertTrue(next.canSelect(round.tick() + 159));
+        assertFalse(next.canSelect(round.tick() + 160));
+    }
+
+    @Test
+    void onlySuccessfulFireAndActualDamageLockSelection() {
+        var round = new LaserBoxRound();
+        UUID shooter = UUID.randomUUID(), victim = UUID.randomUUID();
+        round.beginLife(shooter);
+        assertFalse(round.requestReload(shooter, LaserGun.RIFLE));
+        assertTrue(round.selection(shooter).canSelect(0));
+        assertEquals(LaserWeaponState.FireResult.FIRED, round.shoot(shooter, LaserGun.RIFLE));
+        assertTrue(round.selection(shooter).locked());
+        round.beginLife(victim);
+        round.protect(victim);
+        assertEquals(
+                LaserBoxRound.DamageResult.IGNORED, round.damage(victim, true, false, shooter, 35));
+        assertFalse(round.selection(victim).locked());
+        for (int tick = 0; tick < 80; tick++) round.advance();
+        round.shield(victim, 1);
+        assertEquals(
+                LaserBoxRound.DamageResult.SHIELD, round.damage(victim, true, false, shooter, 35));
+        assertFalse(round.selection(victim).locked());
+        assertEquals(
+                LaserBoxRound.DamageResult.DAMAGED, round.damage(victim, true, false, shooter, 35));
+        assertTrue(round.selection(victim).locked());
+    }
+
+    @Test
+    void disconnectAndFinishInvalidateOpenMenusWithoutRecreatingTheirLife() {
+        var round = new LaserBoxRound();
+        UUID player = UUID.randomUUID();
+        round.beginLife(player);
+        var old = round.selection(player);
+        assertTrue(old.openMenu(0));
+        round.disconnect(player);
+        assertFalse(old.canSelect(1));
+        round.beginLife(player);
+        assertSame(old, round.selection(player));
+        round.finish();
+        assertNull(round.selection(player));
+        round.beginLife(player);
+        assertNull(round.selection(player));
+    }
+
+    @Test
+    void firingThroughoutRespawnProtectionDoesNotCancelOrExtendIt() {
+        LaserBoxRound round = new LaserBoxRound();
+        UUID player = UUID.randomUUID(), enemy = UUID.randomUUID();
+        round.protect(player);
+        for (int tick = 0; tick < 80; tick++) {
+            round.shoot(player, LaserGun.MACHINE);
+            assertTrue(round.protectedFromHits(player));
+            assertEquals(
+                    LaserBoxRound.DamageResult.IGNORED,
+                    round.damage(player, true, false, enemy, 100));
+            round.advance();
+        }
+        assertFalse(round.protectedFromHits(player));
+        assertEquals(
+                LaserBoxRound.DamageResult.ELIMINATED,
+                round.damage(player, true, false, enemy, 100));
+    }
+
+    @Test
     void eliminatedDisconnectedAndFinishedPlayersCannotFireOrCompleteOldReloads() {
         LaserBoxRound round = new LaserBoxRound();
         UUID player = UUID.randomUUID();

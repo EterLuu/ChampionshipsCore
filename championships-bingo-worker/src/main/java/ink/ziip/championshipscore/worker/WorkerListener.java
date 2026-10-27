@@ -5,6 +5,7 @@ import com.destroystokyo.paper.event.player.PlayerAdvancementCriterionGrantEvent
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoNameTagObjective;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoRidingTravel;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoStarterKitService;
+import ink.ziip.championshipscore.platform.bukkit.gui.PlayerListMenu;
 import ink.ziip.championshipscore.platform.bukkit.scheduler.PlatformScheduler;
 import ink.ziip.championshipscore.platform.bukkit.text.ChatMessageText;
 import ink.ziip.championshipscore.platform.bukkit.text.PlayerPresentation;
@@ -281,6 +282,7 @@ final class WorkerListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onEventDeath(org.bukkit.event.entity.PlayerDeathEvent event) {
+        registry.cancelTeammateTeleports(event.getEntity().getUniqueId());
         Player player = event.getEntity();
         if (!registry.isRunningPlayer(player.getUniqueId())) return;
         if (registry.clearsInventoryOnDeath(player)) event.getDrops().clear();
@@ -744,28 +746,18 @@ final class WorkerListener implements Listener {
         }
     }
 
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onCompassModeChange(org.bukkit.event.player.PlayerGameModeChangeEvent event) {
+        registry.cancelTeammateTeleports(event.getPlayer().getUniqueId());
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onMenuClick(InventoryClickEvent event) {
         if (!WorkerMenuService.isReadOnly(event.getView().getTopInventory())) return;
         event.setCancelled(true);
         if (!(event.getWhoClicked() instanceof Player player)) return;
-        UUID target =
-                WorkerMenuService.teammateTarget(
-                        event.getView().getTopInventory(), event.getRawSlot());
-        if (target != null) {
-            player.closeInventory();
-            registry.teleportToTeammate(player, target);
+        if (PlayerListMenu.click(player, event.getView().getTopInventory(), event.getRawSlot()))
             return;
-        }
-        if (WorkerMenuService.navigateSpectatorTargets(
-                player, event.getView().getTopInventory(), event.getRawSlot())) return;
-        UUID spectatorTarget =
-                WorkerMenuService.spectatorTarget(
-                        event.getView().getTopInventory(), event.getRawSlot());
-        if (spectatorTarget != null) {
-            player.closeInventory();
-            registry.teleportToSpectatorTarget(player, spectatorTarget);
-        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)

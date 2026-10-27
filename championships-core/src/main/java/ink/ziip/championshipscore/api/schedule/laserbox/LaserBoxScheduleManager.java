@@ -25,6 +25,7 @@ import java.util.*;
 
 /** BattleBox-style round robin: all pairings finish and settle before the next round starts. */
 public final class LaserBoxScheduleManager extends BaseManager {
+    private long scheduleGeneration;
     private static final GameTypeEnum GAME = GameTypeEnum.LaserBox;
     private final BukkitScheduler scheduler;
     private final LaserBoxScheduleHandler handler;
@@ -116,6 +117,7 @@ public final class LaserBoxScheduleManager extends BaseManager {
             return reject(failure.getMessage());
         }
         plugin.getScheduleManager().addRound(GAME);
+        scheduleGeneration++;
         enabled = true;
         subRound = 0;
         countdown(true);
@@ -238,12 +240,13 @@ public final class LaserBoxScheduleManager extends BaseManager {
         // instances have reported may the scheduler settle and advance the event.
         if (!activeRoundInstances.isEmpty()) return;
         boolean next = prepareNextRound();
+        long generation = scheduleGeneration;
         plugin.getScheduleManager()
                 .settleEventRound(
                         GAME,
                         next,
                         () -> {
-                            if (!enabled) return;
+                            if (!enabled || generation != scheduleGeneration) return;
                             if (!next) {
                                 endSchedule();
                                 return;
@@ -285,7 +288,7 @@ public final class LaserBoxScheduleManager extends BaseManager {
     }
 
     public void endSchedule() {
-        plugin.getScheduleManager().clearStartSelection(GameTypeEnum.LaserBox);
+        scheduleGeneration++;
         enabled = false;
         if (countdownTask != null) countdownTask.cancel();
         countdownTask = null;
@@ -297,8 +300,6 @@ public final class LaserBoxScheduleManager extends BaseManager {
         previousOpponents.clear();
         totalRounds = 0;
         map = null;
-        plugin.getScheduleManager().clearRoundPreparationCountdown();
-        plugin.getGameManager().releaseEventSpectatorsForGame(GAME);
-        plugin.getGameManager().releaseRoundTransitionHolds(GAME);
+        plugin.getScheduleManager().releaseSchedule(GAME);
     }
 }

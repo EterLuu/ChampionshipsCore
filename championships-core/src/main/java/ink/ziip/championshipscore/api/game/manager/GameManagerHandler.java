@@ -2,8 +2,6 @@ package ink.ziip.championshipscore.api.game.manager;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
-import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
-import ink.ziip.championshipscore.api.event.TeamGameEndEvent;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.spatial.LobbyReturnLocations;
 import ink.ziip.championshipscore.api.game.spatial.TeleportPositions;
@@ -304,15 +302,5 @@ public class GameManagerHandler extends BaseListener {
     public void onLobbyDeparture(PlayerTeleportEvent event) {
         if (event.getTo() == null || event.getFrom().getWorld() == event.getTo().getWorld()) return;
         LobbyReturnLocations.remember(event.getPlayer(), event.getFrom(), CCConfig.LOBBY_LOCATION);
-    }
-
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onTeamGameEnd(TeamGameEndEvent event) {
-        plugin.getGameManager().teamGameEndHandler(event);
-    }
-
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onSingleTeamGameEnd(SingleGameEndEvent event) {
-        plugin.getGameManager().singleTeamGameEndHandler(event);
     }
 }

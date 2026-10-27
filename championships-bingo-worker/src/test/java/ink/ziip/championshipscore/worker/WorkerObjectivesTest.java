@@ -17,6 +17,71 @@ import java.util.UUID;
 
 class WorkerObjectivesTest {
     @Test
+    void anyDiscAcceptsEverySupportedDiscAndRejectsFragments() {
+        var discs =
+                java.util.Arrays.stream(Material.values())
+                        .filter(material -> material.name().startsWith("MUSIC_DISC_"))
+                        .filter(
+                                material ->
+                                        ink.ziip.championshipscore.protocol.BingoContentCatalog
+                                                .worker()
+                                                .contains("materials", material.name()))
+                        .toList();
+        WorkerObjectives objectives =
+                new WorkerObjectives(
+                        java.util.List.of(
+                                new BingoTaskSpec(
+                                        0,
+                                        "set:MUSIC_DISC_CAT",
+                                        "item_set",
+                                        Map.of(
+                                                "materials",
+                                                discs.stream()
+                                                        .map(Enum::name)
+                                                        .collect(
+                                                                java.util.stream.Collectors.joining(
+                                                                        ",")),
+                                                "count",
+                                                "1"))));
+        assertEquals(22, discs.size());
+        for (Material disc : discs) {
+            assertEquals(
+                    java.util.List.of(0),
+                    objectives.matching(playerWithInventory(stack(disc, 1)), cell -> true),
+                    disc.name());
+        }
+        assertTrue(
+                objectives
+                        .matching(
+                                playerWithInventory(stack(Material.DISC_FRAGMENT_5, 9)),
+                                cell -> true)
+                        .isEmpty());
+    }
+
+    @Test
+    void anyCollectionRequiresOneVariantToReachTheCount() {
+        WorkerObjectives objectives =
+                new WorkerObjectives(
+                        java.util.List.of(
+                                new BingoTaskSpec(
+                                        0,
+                                        "set:RAW_IRON",
+                                        "item_set",
+                                        Map.of("materials", "RAW_IRON,RAW_COPPER", "count", "3"))));
+        assertTrue(
+                objectives
+                        .matching(
+                                playerWithInventory(
+                                        stack(Material.RAW_IRON, 2), stack(Material.RAW_COPPER, 1)),
+                                cell -> true)
+                        .isEmpty());
+        assertEquals(
+                java.util.List.of(0),
+                objectives.matching(
+                        playerWithInventory(stack(Material.RAW_IRON, 3)), cell -> true));
+    }
+
+    @Test
     void completedCellsCanBeExcludedBeforeInventoryScanning() {
         WorkerObjectives objectives =
                 new WorkerObjectives(

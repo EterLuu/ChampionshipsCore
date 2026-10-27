@@ -10,7 +10,6 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.location.LocationConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
-import ink.ziip.championshipscore.shared.presentation.DurationText;
 
 import lombok.Getter;
 
@@ -108,7 +107,7 @@ public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
 
         // Rule-introduction phase (if configured): gather players at the introduction spawn point
         // and
-        // broadcast the rule sections in chat over 45s, then run the normal preparation below.
+        // broadcast the configured rule sections, then run the normal preparation below.
         startGameIntroduction(this::startFormalPreparation);
     }
 
@@ -169,7 +168,7 @@ public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
                             timer = seconds;
                             updateGameTimerBossBar(
                                     MessageConfig.TGTTOS_ACTION_BAR_COUNT_DOWN.replace(
-                                            "%time%", DurationText.bossBarSeconds(timer)),
+                                            "%time%", CoreMessages.bossBarTime(timer)),
                                     timer,
                                     getGameConfig().getTimer());
                         },
@@ -258,17 +257,21 @@ public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
         if (getGameStageEnum() == GameStageEnum.PROGRESS
                 && getGameConfig().getAreaType().equals("ELYTRA")
                 && !arrivedPlayers.contains(player.getUniqueId())) {
-            scheduler.runTask(
-                    plugin,
+            long generation = captureGameGeneration();
+            scheduleParticipantRecovery(
+                    player,
                     () -> {
                         player.spigot().respawn();
-                        scheduler.runTask(
-                                plugin,
+                        if (!isCurrentParticipantConnection(generation, player)) return;
+                        scheduleGameplayAction(
+                                player,
                                 () ->
                                         resetElytraPlayerToStart(
                                                 player,
-                                                MessageConfig.TGTTOS_RETURN_REASON_ACCIDENT));
-                    });
+                                                MessageConfig.TGTTOS_RETURN_REASON_ACCIDENT),
+                                1L);
+                    },
+                    1L);
             return;
         }
 
@@ -280,7 +283,8 @@ public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
 
     /** Terra Swoop Force failures restart the flight from the configured launch area. */
     public void resetElytraPlayerToStart(@NotNull Player player, @NotNull String reason) {
-        if (getGameStageEnum() != GameStageEnum.PROGRESS
+        if (!isGameplayParticipant(player)
+                || getGameStageEnum() != GameStageEnum.PROGRESS
                 || !getGameConfig().getAreaType().equals("ELYTRA")
                 || arrivedPlayers.contains(player.getUniqueId())) {
             return;
@@ -396,85 +400,52 @@ public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
     @Override
     public void handlePlayerJoin(@NotNull PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        if (notAreaPlayer(player)) {
+        if (notAreaPlayer(player)) return;
+        GameStageEnum stage = getGameStageEnum();
+        if (stage == GameStageEnum.PREPARATION) {
+            player.teleport(getPreparationTeleportLocation(getSpectatorSpawnLocation()));
+            scheduleParticipantRecovery(player, () -> player.setGameMode(GameMode.ADVENTURE), 1L);
             return;
         }
-        if (getGameStageEnum() == GameStageEnum.PREPARATION) {
-            player.teleport(getPreparationTeleportLocation(getSpectatorSpawnLocation()));
-            ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-            championshipsCore
-                    .getServer()
-                    .getScheduler()
-                    .runTask(
-                            championshipsCore,
-                            () -> {
-                                player.setGameMode(GameMode.ADVENTURE);
-                            });
+        if (stage != GameStageEnum.COUNTDOWN && stage != GameStageEnum.PROGRESS) return;
+        if (arrivedPlayers.contains(player.getUniqueId())) {
+            plugin.getGameManager()
+                    .getSpectatorManager()
+                    .scheduleParticipantSpectator(player, this, getSpectatorSpawnLocation(), false);
+            return;
         }
-        if (getGameStageEnum() == GameStageEnum.COUNTDOWN
-                || getGameStageEnum() == GameStageEnum.PROGRESS) {
-            player.teleport(getSpectatorSpawnLocation());
-            ChampionshipsCore championshipsCore = ChampionshipsCore.getInstance();
-            if (getGameConfig().getAreaType().equals("ELYTRA")
-                    && arrivedPlayers.contains(player.getUniqueId())) {
-                plugin.getGameManager()
-                        .getSpectatorManager()
-                        .scheduleParticipantSpectator(
-                                player, this, getSpectatorSpawnLocation(), false);
-                return;
-            }
-            switch (getGameConfig().getAreaType()) {
-                case "BOAT" ->
-                        championshipsCore
-                                .getServer()
-                                .getScheduler()
-                                .runTask(
-                                        championshipsCore,
-                                        () -> {
-                                            player.setGameMode(GameMode.SURVIVAL);
-                                            giveBoatToPlayer(player);
-                                        });
-                case "ROAD" ->
-                        championshipsCore
-                                .getServer()
-                                .getScheduler()
-                                .runTask(
-                                        championshipsCore,
-                                        () -> {
-                                            player.setGameMode(GameMode.SURVIVAL);
-                                            giveRoadToolToPlayer(player);
-                                        });
-                case "ELYTRA" ->
-                        championshipsCore
-                                .getServer()
-                                .getScheduler()
-                                .runTask(
-                                        championshipsCore,
-                                        () -> {
-                                            player.setGameMode(GameMode.ADVENTURE);
-                                            giveElytraToPlayer(player);
-                                            Location spawn =
-                                                    randomSpawnLocation(
-                                                            getGameConfig()
-                                                                    .getPlayerSpawnAreaPos1(),
-                                                            getGameConfig()
-                                                                    .getPlayerSpawnAreaPos2(),
-                                                            getGameConfig().getPlayerSpawnYaw(),
-                                                            getGameConfig().getPlayerSpawnPitch());
-                                            if (spawn != null) player.teleport(spawn);
-                                        });
-                default ->
-                        championshipsCore
-                                .getServer()
-                                .getScheduler()
-                                .runTask(
-                                        championshipsCore,
-                                        () -> {
-                                            player.setGameMode(GameMode.ADVENTURE);
-                                            giveTeamArmorToPlayer(player);
-                                        });
-            }
-        }
+        player.teleport(getSpectatorSpawnLocation());
+        scheduleParticipantRecovery(
+                player,
+                () -> {
+                    if (arrivedPlayers.contains(player.getUniqueId())) return;
+                    switch (getGameConfig().getAreaType()) {
+                        case "BOAT" -> {
+                            player.setGameMode(GameMode.SURVIVAL);
+                            giveBoatToPlayer(player);
+                        }
+                        case "ROAD" -> {
+                            player.setGameMode(GameMode.SURVIVAL);
+                            giveRoadToolToPlayer(player);
+                        }
+                        case "ELYTRA" -> {
+                            player.setGameMode(GameMode.ADVENTURE);
+                            giveElytraToPlayer(player);
+                            Location spawn =
+                                    randomSpawnLocation(
+                                            getGameConfig().getPlayerSpawnAreaPos1(),
+                                            getGameConfig().getPlayerSpawnAreaPos2(),
+                                            getGameConfig().getPlayerSpawnYaw(),
+                                            getGameConfig().getPlayerSpawnPitch());
+                            if (spawn != null) player.teleport(spawn);
+                        }
+                        default -> {
+                            player.setGameMode(GameMode.ADVENTURE);
+                            giveTeamArmorToPlayer(player);
+                        }
+                    }
+                },
+                1L);
     }
 
     private void giveRoadToolsToAllPlayers() {

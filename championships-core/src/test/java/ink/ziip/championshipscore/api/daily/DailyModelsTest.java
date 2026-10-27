@@ -33,20 +33,6 @@ class DailyModelsTest {
         }
     }
 
-    @Nested
-    class DailyStatsMenuCases {
-        @Test
-        void mapCardsCenterInsteadOfFillingFromTheTopLeftCorner() {
-            assertEquals(List.of(31), DailyStatsMenu.mapSlots(1));
-            assertEquals(List.of(30, 31, 32), DailyStatsMenu.mapSlots(3));
-            assertEquals(List.of(28, 29, 30, 31, 32, 33, 34), DailyStatsMenu.mapSlots(7));
-            // Eight cards split 4+4 across the first two content rows, each row centered.
-            assertEquals(List.of(20, 21, 22, 23, 29, 30, 31, 32), DailyStatsMenu.mapSlots(8));
-            // A full page of 21 fills all three rows evenly.
-            assertEquals(21, DailyStatsMenu.mapSlots(21).size());
-        }
-    }
-
     @ExtendWith(ConfigurationStateExtension.class)
     @Nested
     class DailyMetricCases {

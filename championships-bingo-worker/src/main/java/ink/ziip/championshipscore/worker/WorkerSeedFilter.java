@@ -1,6 +1,6 @@
 package ink.ziip.championshipscore.worker;
 
-import ink.ziip.championshipscore.worker.seedlab.SeedLab26_2;
+import ink.ziip.championshipscore.worker.seed.OverworldBiomeSampler;
 
 import org.bukkit.plugin.Plugin;
 
@@ -60,10 +60,10 @@ final class WorkerSeedFilter {
         return OptionalLong.of(seed);
     }
 
-    private long runFilter(Path seedFile) throws IOException {
+    private long runFilter(Path seedFile) throws IOException, ReflectiveOperationException {
         long timeoutNanos = config.timeout().toNanos();
         long deadline = System.nanoTime() + timeoutNanos;
-        SeedLab26_2 predictor = SeedLab26_2.instance();
+        OverworldBiomeSampler predictor = new OverworldBiomeSampler(plugin.getServer());
         SplittableRandom random = new SplittableRandom(ThreadLocalRandom.current().nextLong());
         long bestSeed = 0L;
         int bestScore = -1;
@@ -82,20 +82,20 @@ final class WorkerSeedFilter {
                     bestScore = score;
                     bestSeed = candidate;
                 }
-            } catch (SeedLab26_2.SeedFilterTimeoutException timeout) {
+            } catch (OverworldBiomeSampler.SeedFilterTimeoutException timeout) {
                 break;
             }
         }
         if (evaluated == 0) {
             throw new IOException(
-                    "embedded SeedLab timed out before completing a candidate after "
+                    "native biome filter timed out before completing a candidate after "
                             + config.timeout().toMillis()
                             + " ms");
         }
         persistSeed(seedFile, bestSeed);
         plugin.getLogger()
                 .info(
-                        "SeedLab evaluated "
+                        "Biome filter evaluated "
                                 + evaluated
                                 + " candidate(s); best biome score="
                                 + bestScore);

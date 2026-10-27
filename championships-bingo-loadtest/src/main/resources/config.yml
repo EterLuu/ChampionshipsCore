@@ -1,6 +1,10 @@
 # Keep false in packaged artifacts. The deployed test config enables this once and the plugin
 # immediately persists it back to false before scheduling the run.
 auto-start: false
+messages:
+  started: "Chunk stress test started"
+  busy: "Chunk stress test is busy"
+  stopping: "Chunk stress test stopping"
 start-delay-seconds: 20
 world: bingo
 view-distance: 10

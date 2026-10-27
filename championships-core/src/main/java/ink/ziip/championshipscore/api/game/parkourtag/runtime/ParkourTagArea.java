@@ -15,7 +15,6 @@ import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
-import ink.ziip.championshipscore.shared.presentation.DurationText;
 
 import lombok.Getter;
 
@@ -62,8 +61,6 @@ public class ParkourTagArea extends BasePairedGameInstance {
     private ParkourTagMatch match;
     private ChampionshipTeam matchWinner;
 
-    // Disabled wind charge: keep the once-per-round state for restoring the item later.
-    // private final Set<ChampionshipTeam> windChargeUsedTeams = ConcurrentHashMap.newKeySet();
     /** Chasers currently revealed by an Ender Eye; each entry owns its expiry task. */
     private final Map<UUID, BukkitTask> temporaryChaserGlowTasks = new HashMap<>();
 
@@ -188,7 +185,7 @@ public class ParkourTagArea extends BasePairedGameInstance {
         cleanDroppedItems();
         match = null;
         matchWinner = null;
-        // windChargeUsedTeams.clear();
+
         startGameProgressTask = null;
     }
 
@@ -205,7 +202,7 @@ public class ParkourTagArea extends BasePairedGameInstance {
 
         // Rule-introduction phase (if configured): gather players at the introduction spawn point
         // and
-        // broadcast the rule sections in chat over 45s, then run the normal preparation below.
+        // broadcast the configured rule sections, then run the normal preparation below.
         startGameIntroduction(this::startFormalPreparation);
     }
 
@@ -213,8 +210,6 @@ public class ParkourTagArea extends BasePairedGameInstance {
      * Teams choose their chasers at their preparation spots for 20 seconds before cage assignment.
      */
     private void startFormalPreparation() {
-
-        // windChargeUsedTeams.clear();
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
         if (match != null) {
@@ -295,7 +290,7 @@ public class ParkourTagArea extends BasePairedGameInstance {
                                     MessageConfig.codeText(
                                             "parkour-tag-area.begin-game-progress-1",
                                             MessageConfig.PARKOUR_TAG_ACTION_BAR_COUNT_DOWN.replace(
-                                                    "%time%", DurationText.bossBarSeconds(timer)),
+                                                    "%time%", CoreMessages.bossBarTime(timer)),
                                             chasers),
                                     timer,
                                     getGameConfig().getTimer());
@@ -530,16 +525,6 @@ public class ParkourTagArea extends BasePairedGameInstance {
                             .decoration(TextDecoration.ITALIC, false));
             enderEye.setItemMeta(enderEyeMeta);
         }
-
-        /* Disabled wind charge: keep item creation for restoring the item later.
-        ItemStack windCharge = new ItemStack(Material.WIND_CHARGE);
-        ItemMeta windChargeMeta = windCharge.getItemMeta();
-        if (windChargeMeta != null) {
-            windChargeMeta.displayName(LegacyText.component(MessageConfig.PARKOUR_TAG_KITS_WIND_CHARGE)
-                    .decoration(TextDecoration.ITALIC, false));
-            windCharge.setItemMeta(windChargeMeta);
-        }
-        */
 
         for (Player player : match.getRightAreaEscapees()) {
             player.getInventory().setItem(0, enderEye.clone());
@@ -826,43 +811,11 @@ public class ParkourTagArea extends BasePairedGameInstance {
         plugin.getGameManager().getParkourTagManager().setEnderEyeUsedTimes(team);
     }
 
-    /* Disabled wind charge: levitates the opposing chaser for 1.5s. Once per team per round.
-    public void useWindCharge(@NotNull Player player) {
-        ParkourTagMatch match = matchOf(player);
-        if (match == null) return;
-        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
-        if (team == null) return;
-        if (windChargeUsedTeams.contains(team)) {
-            player.sendMessage(MessageConfig.PARKOUR_TAG_KITS_USE_WIND_CHARGE_FAILED);
-            return;
-        }
-
-        Player chaser = null;
-        List<Player> teamEscapees = null;
-        if (team.equals(match.getRight())) {
-            chaser = match.getLeftAreaChaserPlayer();
-            teamEscapees = match.getLeftAreaEscapees();
-        } else if (team.equals(match.getLeft())) {
-            chaser = match.getRightAreaChaserPlayer();
-            teamEscapees = match.getRightAreaEscapees();
-        }
-
-        if (chaser != null) chaser.addPotionEffect(new PotionEffect(PotionEffectType.LEVITATION, 30, 0));
-        if (teamEscapees != null) {
-            for (Player escapee : teamEscapees) {
-                escapee.sendMessage(MessageConfig.PARKOUR_TAG_KITS_USE_WIND_CHARGE);
-                ItemStack slot1 = escapee.getInventory().getItem(1);
-                if (slot1 != null && slot1.getType() == Material.WIND_CHARGE) {
-                    slot1.setAmount(0);
-                }
-            }
-        }
-        windChargeUsedTeams.add(team);
-    }
-    */
-
     /** Resolves player-vs-player damage. Returns true if the event should be cancelled. */
     public boolean handleChaserDamage(@NotNull Player victim, @NotNull Player assailant) {
+        if (getGameStageEnum() != GameStageEnum.PROGRESS
+                || !isGameplayParticipant(victim)
+                || !isGameplayParticipant(assailant)) return true;
         ParkourTagMatch match = matchOf(victim);
         if (match == null) return false;
         if (match.getRightAreaEscapees().contains(assailant)
@@ -875,6 +828,7 @@ public class ParkourTagArea extends BasePairedGameInstance {
 
         if (assailant.getUniqueId().equals(match.getLeftAreaChaser())
                 || assailant.getUniqueId().equals(match.getRightAreaChaser())) {
+            if (!match.recordElimination(victim.getUniqueId(), elapsed())) return true;
             plugin.getGameManager()
                     .getSpectatorManager()
                     .scheduleParticipantSpectator(victim, this, getSpectatorSpawnLocation(), false);
@@ -887,7 +841,6 @@ public class ParkourTagArea extends BasePairedGameInstance {
                             .replace("%chaser%", CoreMessages.formatPlayerName(assailant));
             sendMessageToChaserArea(match, assailant.getUniqueId(), message);
 
-            match.getPlayerSurviveTimes().put(victim.getUniqueId(), elapsed());
             updateAndAnnounce(match);
             return false;
         }
@@ -898,7 +851,7 @@ public class ParkourTagArea extends BasePairedGameInstance {
     public void handleEscapeeQuit(@NotNull Player player) {
         ParkourTagMatch match = matchOf(player);
         if (match == null || match.isChaser(player)) return;
-        match.getPlayerSurviveTimes().put(player.getUniqueId(), elapsed());
+        if (!match.recordElimination(player.getUniqueId(), elapsed())) return;
         updateAndAnnounce(match);
     }
 

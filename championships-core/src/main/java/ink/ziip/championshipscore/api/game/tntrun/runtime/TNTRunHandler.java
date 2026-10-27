@@ -70,9 +70,7 @@ public class TNTRunHandler extends BaseListener {
             }
             return;
         }
-        // Foot-block probing is intentionally handled by TNTRunTeamArea's tested async polling
-        // task;
-        // this routed event remains responsible only for authoritative boundary/death handling.
+        // The area's tick task probes foot blocks; movement events enforce arena boundaries.
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

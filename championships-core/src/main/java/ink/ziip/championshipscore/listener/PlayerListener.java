@@ -220,7 +220,11 @@ public class PlayerListener extends BaseListener {
         if (daily) {
             if (plugin.getTeamManager().isTransientTeam(team)) {
                 return new PlayerPresentation(
-                        team.getColoredName(), team.getColorCode(), playerArea != null, true);
+                        team.getColoredName(),
+                        team.getColorCode(),
+                        playerArea != null,
+                        true,
+                        MessageConfig.playerTextFormat());
             }
             BaseGameInstance shownArea = playerArea;
             if (shownArea == null)
@@ -234,13 +238,16 @@ public class PlayerListener extends BaseListener {
                     label,
                     team == null ? null : team.getColorCode(),
                     playerArea != null && team != null,
-                    true);
+                    true,
+                    MessageConfig.playerTextFormat());
         }
         String label = team == null ? MessageConfig.PLACEHOLDER_SPECTATOR : team.getColoredName();
         return new PlayerPresentation(
                 label,
                 team == null ? null : team.getColorCode(),
-                playerArea != null && team != null);
+                playerArea != null && team != null,
+                false,
+                MessageConfig.playerTextFormat());
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

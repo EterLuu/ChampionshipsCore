@@ -38,12 +38,15 @@ public final class LaserShotEngine {
         default void intercept(Entity entity, Vector point) {}
 
         /** Receives at most one aggregated hit per victim in this shot. */
-        void damage(Player player, double damage, LaserGun.HitRegion region);
+        void damage(Player player, double damage, LaserGun.HitRegion region, Vector point);
     }
 
-    private record Hit(double damage, LaserGun.HitRegion region) {
-        Hit add(double amount, LaserGun.HitRegion next) {
-            return new Hit(damage + amount, next == LaserGun.HitRegion.HEAD ? next : region);
+    private record Hit(double damage, LaserGun.HitRegion region, Vector point) {
+        Hit add(double amount, LaserGun.HitRegion next, Vector nextPoint) {
+            return new Hit(
+                    damage + amount,
+                    next == LaserGun.HitRegion.HEAD ? next : region,
+                    next == LaserGun.HitRegion.HEAD ? nextPoint.clone() : point);
         }
     }
 
@@ -91,8 +94,8 @@ public final class LaserShotEngine {
                         victim,
                         (ignored, previous) ->
                                 previous == null
-                                        ? new Hit(amount, region)
-                                        : previous.add(amount, region));
+                                        ? new Hit(amount, region, hit.getHitPosition().clone())
+                                        : previous.add(amount, region, hit.getHitPosition()));
             } else if (target != null && intercepted.add(target.getUniqueId())) {
                 context.intercept(target, hit.getHitPosition());
             }
@@ -101,7 +104,10 @@ public final class LaserShotEngine {
             if (!context.current()) break;
             if (context.enemy(entry.getKey()))
                 context.damage(
-                        entry.getKey(), entry.getValue().damage(), entry.getValue().region());
+                        entry.getKey(),
+                        entry.getValue().damage(),
+                        entry.getValue().region(),
+                        entry.getValue().point());
         }
         context.sound(shooter, gun);
     }

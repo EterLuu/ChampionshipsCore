@@ -4,6 +4,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ink.ziip.championshipscore.api.game.bingo.execution.RemoteBingoContent;
+import ink.ziip.championshipscore.api.game.bingo.task.OneOfTask;
+import ink.ziip.championshipscore.protocol.BingoContentCatalog;
+
+import org.bukkit.Material;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 
@@ -11,6 +16,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -148,7 +154,136 @@ class DefaultBingoResourcesTest {
                         .filter(entry -> "MUSIC_DISC_CAT".equals(entry.get("icon")))
                         .findFirst()
                         .orElseThrow();
-        assertEquals(expectedMusicDiscs, Set.copyOf((List<?>) anyMusicDisc.get("one_of")));
+        assertEquals(List.of("MUSIC_DISC_*"), anyMusicDisc.get("one_of"));
+    }
+
+    @Test
+    void anyFamiliesIncludeAllDiscsAndPreviouslyMissingVariants() throws Exception {
+        try (var ignored = new CollectionItemTypes()) {
+            Map<String, Set<String>> required =
+                    Map.of(
+                            "MUSIC_DISC_CAT",
+                                    Arrays.stream(Material.values())
+                                            .map(Enum::name)
+                                            .filter(name -> name.startsWith("MUSIC_DISC_"))
+                                            .collect(Collectors.toSet()),
+                            "ORANGE_CANDLE", Set.of("CANDLE", "WHITE_CANDLE", "ORANGE_CANDLE"),
+                            "RED_SHULKER_BOX",
+                                    Set.of("SHULKER_BOX", "WHITE_SHULKER_BOX", "RED_SHULKER_BOX"),
+                            "BIRCH_SAPLING",
+                                    Set.of(
+                                            "MANGROVE_PROPAGULE",
+                                            "AZALEA",
+                                            "FLOWERING_AZALEA",
+                                            "BIRCH_SAPLING"),
+                            "SKELETON_SKULL",
+                                    Set.of("DRAGON_HEAD", "SKELETON_SKULL", "PIGLIN_HEAD"),
+                            "WOODEN_PICKAXE",
+                                    Arrays.stream(Material.values())
+                                            .map(Enum::name)
+                                            .filter(
+                                                    name ->
+                                                            !name.startsWith("LEGACY_")
+                                                                    && name.endsWith("_PICKAXE"))
+                                            .collect(Collectors.toSet()));
+            var yaml = resourceYaml("/bingo/cards/default.yml");
+            var rows = new java.util.ArrayList<Map<?, ?>>(yaml.getMapList("singletons.sets"));
+            for (Map<?, ?> category : yaml.getMapList("categories")) {
+                for (Object member : (List<?>) category.get("members")) {
+                    if (member instanceof Map<?, ?> row && row.containsKey("one_of")) rows.add(row);
+                }
+            }
+            Method parse =
+                    TaskPoolLoader.class.getDeclaredMethod(
+                            "parseOneOf",
+                            Map.class,
+                            Difficulty.class,
+                            Dimension.class,
+                            String.class,
+                            Logger.class,
+                            String.class);
+            parse.setAccessible(true);
+            for (Map<?, ?> row : rows) {
+                String icon = (String) row.get("icon");
+                if (!required.containsKey(icon)) continue;
+                @SuppressWarnings("unchecked")
+                var entries =
+                        (List<PoolEntrySpec>)
+                                parse.invoke(
+                                        null,
+                                        row,
+                                        Difficulty.MEDIUM,
+                                        Dimension.OVERWORLD,
+                                        null,
+                                        Logger.getAnonymousLogger(),
+                                        "default.yml");
+                PoolEntrySpec entry = entries.getFirst();
+                assertEquals("set:" + icon, entry.objectiveId());
+                if (required.containsKey(icon)) {
+                    assertTrue(entry.members().containsAll(required.get(icon)), icon);
+                }
+                assertTrue(
+                        entry.members().stream().allMatch(name -> Material.valueOf(name).isItem()),
+                        icon);
+                var remote =
+                        RemoteBingoContent.filter(new TaskPoolSpec(entries)).entries().getFirst();
+                assertEquals(
+                        entry.members().stream()
+                                .filter(
+                                        name ->
+                                                BingoContentCatalog.worker()
+                                                        .contains("materials", name))
+                                .toList(),
+                        remote.members(),
+                        icon);
+                if (icon.equals("MUSIC_DISC_CAT"))
+                    assertEquals(required.get(icon), Set.copyOf(entry.members()));
+                if (icon.equals("BIRCH_SAPLING")) {
+                    assertEquals(
+                            "sapling",
+                            OneOfTask.familyToken(
+                                    entry.members().stream()
+                                            .map(Material::valueOf)
+                                            .collect(Collectors.toSet())));
+                }
+            }
+        }
+    }
+
+    @Test
+    void distinctSaplingCollectionExpandsMixedPatternsAndSpecialNames() throws Exception {
+        try (var ignored = new CollectionItemTypes()) {
+            var yaml = resourceYaml("/bingo/cards/default.yml");
+            Map<?, ?> row =
+                    yaml.getMapList("singletons.events").stream()
+                            .filter(
+                                    entry ->
+                                            "unique_collect".equals(entry.get("trigger"))
+                                                    && "BIRCH_SAPLING".equals(entry.get("icon")))
+                            .findFirst()
+                            .orElseThrow();
+            Method parse =
+                    TaskPoolLoader.class.getDeclaredMethod(
+                            "parseEvents", Map.class, Logger.class, String.class);
+            parse.setAccessible(true);
+            @SuppressWarnings("unchecked")
+            var entries =
+                    (List<PoolEntrySpec>)
+                            parse.invoke(null, row, Logger.getAnonymousLogger(), "default.yml");
+            var members = entries.getFirst().members();
+            assertTrue(
+                    members.containsAll(
+                            List.of(
+                                    "BIRCH_SAPLING",
+                                    "OAK_SAPLING",
+                                    "MANGROVE_PROPAGULE",
+                                    "AZALEA",
+                                    "FLOWERING_AZALEA")));
+            assertTrue(
+                    members.stream()
+                            .noneMatch(name -> name.contains("*") || name.startsWith("POTTED_")));
+            assertEquals(4, entries.getFirst().count());
+        }
     }
 
     @Test
@@ -198,6 +333,43 @@ class DefaultBingoResourcesTest {
                                 objectiveId));
         assertEquals(
                 Difficulty.VERY_HARD, tierlist.resolve("event:wear_full_enchanted:").orElseThrow());
+    }
+
+    /**
+     * Minimal item/block distinction for these six families; native registries are audited
+     * separately.
+     */
+    private static final class CollectionItemTypes implements AutoCloseable {
+        private final java.lang.reflect.Field field;
+        private final Map<Material, Object> originals = new java.util.EnumMap<>(Material.class);
+
+        CollectionItemTypes() throws Exception {
+            field = Material.class.getDeclaredField("itemType");
+            field.setAccessible(true);
+            var item =
+                    (org.bukkit.inventory.ItemType)
+                            java.lang.reflect.Proxy.newProxyInstance(
+                                    org.bukkit.inventory.ItemType.class.getClassLoader(),
+                                    new Class<?>[] {org.bukkit.inventory.ItemType.class},
+                                    (proxy, method, args) -> {
+                                        throw new UnsupportedOperationException(method.getName());
+                                    });
+            for (Material material : Material.values()) {
+                String name = material.name();
+                if (name.startsWith("LEGACY_")) continue;
+                originals.put(material, field.get(material));
+                boolean isBlockOnly = name.startsWith("POTTED_") || name.equals("BAMBOO_SAPLING");
+                field.set(
+                        material,
+                        (java.util.function.Supplier<org.bukkit.inventory.ItemType>)
+                                () -> isBlockOnly ? null : item);
+            }
+        }
+
+        @Override
+        public void close() throws Exception {
+            for (var entry : originals.entrySet()) field.set(entry.getKey(), entry.getValue());
+        }
     }
 
     private static YamlConfiguration resourceYaml(String path) throws Exception {

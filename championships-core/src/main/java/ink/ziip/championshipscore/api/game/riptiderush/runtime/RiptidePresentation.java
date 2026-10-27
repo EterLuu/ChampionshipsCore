@@ -53,7 +53,7 @@ final class RiptidePresentation {
                         (accelerationBreak
                                         ? MessageConfig.RIPTIDE_RUSH_SPEED_SHIELD_BREAK
                                         : MessageConfig.RIPTIDE_RUSH_SHIELD_BROKEN)
-                                + " §7| ")
+                                + MessageConfig.codeText("riptide-presentation.floor-separator"))
                 .append(target);
     }
 

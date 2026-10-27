@@ -10,7 +10,6 @@ import ink.ziip.championshipscore.api.game.spatial.TeleportPositions;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
-import ink.ziip.championshipscore.shared.presentation.DurationText;
 import ink.ziip.championshipscore.util.Enchants;
 
 import io.papermc.paper.registry.keys.EnchantmentKeys;
@@ -264,7 +263,7 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
     private void updateFightBossBar() {
         updateGameTimerBossBar(
                 MessageConfig.DRAGON_EGG_CARNIVAL_ACTION_BAR_COUNT_DOWN.replace(
-                        "%time%", DurationText.bossBarSeconds(timer)),
+                        "%time%", CoreMessages.bossBarTime(timer)),
                 1D);
     }
 
@@ -492,12 +491,11 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
         event.setDroppedExp(0);
 
         if (getGameStageEnum() != GameStageEnum.PROGRESS) {
-            scheduler.runTask(
-                    plugin,
-                    () -> {
-                        player.spigot().respawn();
-                        scheduler.runTask(plugin, () -> teleportPlayerToSpawnLocation(player));
-                    });
+            scheduleParticipantRespawn(
+                    player,
+                    () ->
+                            scheduleGameplayAction(
+                                    player, () -> teleportPlayerToSpawnLocation(player), 1L));
             return;
         }
 
@@ -507,12 +505,11 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
         respawnReadyAt.put(player.getUniqueId(), readyAt);
         scheduleRespawnRelease(player.getUniqueId(), delaySeconds * 20L);
 
-        scheduler.runTask(
-                plugin,
-                () -> {
-                    player.spigot().respawn();
-                    scheduler.runTask(plugin, () -> enterRespawnCooldown(player, delaySeconds));
-                });
+        scheduleParticipantRespawn(
+                player,
+                () ->
+                        scheduleParticipantRecovery(
+                                player, () -> enterRespawnCooldown(player, delaySeconds), 1L));
 
         announceDeath(player);
     }
@@ -532,10 +529,20 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
     private void scheduleRespawnRelease(@NotNull UUID playerId, long delayTicks) {
         BukkitTask previous = respawnTasks.remove(playerId);
         if (previous != null) previous.cancel();
+        long generation = captureGameGeneration();
+        Long deadline = respawnReadyAt.get(playerId);
         respawnTasks.put(
                 playerId,
                 scheduler.runTaskLater(
-                        plugin, () -> releaseRespawn(playerId), Math.max(1L, delayTicks)));
+                        plugin,
+                        () -> {
+                            if (!isDisposed()
+                                    && generation == captureGameGeneration()
+                                    && java.util.Objects.equals(
+                                            deadline, respawnReadyAt.get(playerId)))
+                                releaseRespawn(playerId);
+                        },
+                        Math.max(1L, delayTicks)));
     }
 
     private void releaseRespawn(@NotNull UUID playerId) {
@@ -549,7 +556,9 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
         }
 
         Player player = Bukkit.getPlayer(playerId);
-        if (player == null || !player.isOnline()) return;
+        if (player == null
+                || !player.isOnline()
+                || !isCurrentParticipantConnection(captureGameGeneration(), player)) return;
         respawnReadyAt.remove(playerId);
         plugin.getGameManager().getSpectatorManager().resumeParticipant(player, this);
         teleportPlayerToTeamPlatform(player);
@@ -651,7 +660,7 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
                 || getGameStageEnum() == GameStageEnum.END) {
             player.getInventory().clear();
             teleportToLobby(player);
-            scheduler.runTask(plugin, () -> player.setGameMode(GameMode.ADVENTURE));
+            player.setGameMode(GameMode.ADVENTURE);
             return;
         }
 
@@ -676,13 +685,14 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
         }
         if (teamOf(player) != null) {
             teleportPlayerToTeamPlatform(player);
-            scheduler.runTask(
-                    plugin,
+            scheduleGameplayAction(
+                    player,
                     () ->
                             player.setGameMode(
                                     getGameStageEnum() == GameStageEnum.PREPARATION
                                             ? GameMode.ADVENTURE
-                                            : GameMode.SURVIVAL));
+                                            : GameMode.SURVIVAL),
+                    1L);
             return;
         }
         plugin.getGameManager()

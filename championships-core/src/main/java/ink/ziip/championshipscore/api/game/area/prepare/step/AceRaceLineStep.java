@@ -88,6 +88,7 @@ public final class AceRaceLineStep extends PrepareStep {
                             "%fall%", String.valueOf(config.getStartFallY())));
             AnvilInputGui.openInteger(
                     player,
+                    session,
                     GuiConfig.text(
                             "map-editor.menus.step-list.games.ace-race.items.start-fall-height.title"),
                     config.getStartFallY(),

@@ -8,6 +8,20 @@ settings:
   update-interval-ticks: 20
   papi-fallback: true
 
+presentation:
+  map-status:
+    entry: '  {map.game-color}{map.game} &8/ {map.publish-glyph}&f{map.name}'
+    runtime-separator: '&7 / '
+    game-colors: ['#ff7373', '#64b5f6', '#81c784', '#ba68c8', '#ffb74d', '#4dd0e1']
+    ready-glyph: '&a✓ '
+    published-glyph: '&e⚠ '
+    unpublished-glyph: '&c✗ '
+  map-edit:
+    progress-complete: '&a'
+    progress-incomplete: '&e'
+    errors-complete: '&a'
+    errors-incomplete: '&c'
+
 values:
   map-publish:
     ready: "&a已发布"

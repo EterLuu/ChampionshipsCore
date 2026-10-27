@@ -13,7 +13,6 @@ import ink.ziip.championshipscore.api.game.bingo.mechanics.BingoStarterKit;
 import ink.ziip.championshipscore.api.game.bingo.task.GameTask;
 import ink.ziip.championshipscore.api.game.bingo.task.TaskData;
 import ink.ziip.championshipscore.api.game.bingo.util.BingoTeamAdapter;
-import ink.ziip.championshipscore.api.game.bingo.world.SpawnScatterManager;
 import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameInstance;
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
@@ -24,12 +23,14 @@ import ink.ziip.championshipscore.platform.bukkit.bingo.BingoFireworkSupply;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoRidingTravel;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoWorldRules;
 import ink.ziip.championshipscore.platform.bukkit.player.PlayerStateService;
+import ink.ziip.championshipscore.platform.bukkit.player.PlayerTargetTeleports;
+import ink.ziip.championshipscore.platform.bukkit.scheduler.PlayerProgressChecks;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+import ink.ziip.championshipscore.platform.bukkit.world.SafeScatterService;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 import ink.ziip.championshipscore.protocol.BingoMode;
 import ink.ziip.championshipscore.protocol.BingoRemix;
 import ink.ziip.championshipscore.protocol.BingoVariantRules;
-import ink.ziip.championshipscore.shared.presentation.DurationText;
 import ink.ziip.championshipscore.util.world.WorldManager;
 
 import lombok.Getter;
@@ -107,7 +108,9 @@ public class BingoArea extends BaseMultiTeamGameInstance {
      */
     private final Map<UUID, Location> lastQuitLocations = new HashMap<>();
 
-    private final SpawnScatterManager scatterManager;
+    private SafeScatterService scatterManager;
+    private PlayerProgressChecks progressChecks;
+    private PlayerTargetTeleports teammateTeleports;
 
     /**
      * Parsed permanent potion effects for the current round (empty outside a running round).
@@ -123,29 +126,44 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         getGameHandler().setBingoArea(this);
         getGameHandler().register();
 
-        this.scatterManager = new SpawnScatterManager(plugin);
-
         setGameStageEnum(GameStageEnum.WAITING);
     }
 
     @Override
+    public void dispose() {
+        if (progressChecks != null) progressChecks.close();
+        if (teammateTeleports != null) teammateTeleports.close();
+        cancelLocalTasks();
+        super.dispose();
+    }
+
+    private void cancelLocalTasks() {
+        if (teammateTeleports != null) teammateTeleports.clear();
+        if (progressChecks != null) progressChecks.clear();
+        cancelScatter();
+        if (startGameProgressTask != null) startGameProgressTask.cancel();
+        if (pvpEnableTask != null) pvpEnableTask.cancel();
+        if (remixTask != null) remixTask.cancel();
+        startGameProgressTask = null;
+        pvpEnableTask = null;
+        remixTask = null;
+    }
+
+    private void cancelScatter() {
+        if (scatterManager != null) scatterManager.cancelPending();
+        scatterManager = null;
+    }
+
+    @Override
     public void resetArea() {
+        cancelLocalTasks();
         // Bingo spans the whole world, so there is no area bounding-box to sweep (and area-pos may
         // be
         // unset). The static world is reloaded from the template each round via loadMap, which
         // already
         // wipes any dropped items, so no explicit cleanup is needed here.
         round = null;
-        startGameProgressTask = null;
         fireworkSupply = null;
-        if (pvpEnableTask != null) {
-            pvpEnableTask.cancel();
-            pvpEnableTask = null;
-        }
-        if (remixTask != null) {
-            remixTask.cancel();
-            remixTask = null;
-        }
         pvpEnabled = false;
         lastQuitLocations.clear();
         permanentEffects = List.of();
@@ -153,6 +171,71 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         activeVariant = BingoVariantRules.FIXED_POINTS;
         activeDuration = 0;
         winningTeam = null;
+    }
+
+    public boolean canUseTeammateCompass(
+            Player player, ChampionshipTeam team, BingoRound expected, long generation) {
+        return expected != null
+                && round == expected
+                && getGameStageEnum() == GameStageEnum.PROGRESS
+                && team != null
+                && team.getMembers().contains(player.getUniqueId())
+                && plugin.getTeamManager().getTeamByPlayer(player) == team
+                && isCurrentParticipantConnection(generation, player)
+                && isGameplayParticipant(player)
+                && player.isOnline()
+                && !player.isDead()
+                && isBingoWorld(player.getWorld());
+    }
+
+    public void cancelTeammateTeleports(UUID player) {
+        if (teammateTeleports != null) teammateTeleports.cancelPlayer(player);
+    }
+
+    public void teleportToTeammate(
+            Player player,
+            UUID targetId,
+            ChampionshipTeam team,
+            BingoRound expected,
+            long generation) {
+        if (!canUseTeammateCompass(player, team, expected, generation)) return;
+        if (teammateTeleports == null) teammateTeleports = new PlayerTargetTeleports(plugin);
+        teammateTeleports.cancel(player.getUniqueId());
+        var target = Bukkit.getPlayer(targetId);
+        if (target == null) {
+            player.sendMessage(
+                    CoreMessages.styled(
+                            "bingo-area.unreachable", MessageConfig.MAP_EDITOR_BINGO_UNREACHABLE));
+            return;
+        }
+        String name = CoreMessages.formatPlayerName(target);
+        teammateTeleports
+                .request(
+                        player,
+                        targetId,
+                        () -> canUseTeammateCompass(player, team, expected, generation),
+                        candidate -> canUseTeammateCompass(candidate, team, expected, generation),
+                        () ->
+                                round == expected
+                                        && getGameStageEnum() == GameStageEnum.PROGRESS
+                                        && team.getMembers().contains(targetId)
+                                        && plugin.getTeamManager().getTeamByPlayer(targetId)
+                                                == team,
+                        () ->
+                                player.sendMessage(
+                                        CoreMessages.styled(
+                                                        "bingo-area.sent-to",
+                                                        MessageConfig.MAP_EDITOR_BINGO_SENT_TO)
+                                                .append(LegacyText.component(name))))
+                .exceptionally(
+                        failure -> {
+                            plugin.getLogger()
+                                    .log(
+                                            java.util.logging.Level.WARNING,
+                                            "Unable to teleport Bingo teammate",
+                                            failure);
+                            return false;
+                        });
     }
 
     public void prepareVariantForNextStart(@NotNull BingoVariantRules variant) {
@@ -171,7 +254,7 @@ public class BingoArea extends BaseMultiTeamGameInstance {
 
         // Rule-introduction phase (if configured): gather players at the introduction spawn point
         // and
-        // broadcast the rule sections in chat over 45s, then run the normal preparation below.
+        // broadcast the configured rule sections, then run the normal preparation below.
         startGameIntroduction(this::startFormalPreparation);
     }
 
@@ -194,6 +277,14 @@ public class BingoArea extends BaseMultiTeamGameInstance {
     }
 
     protected void startGameProgress() {
+        cancelScatter();
+        long generation = captureGameGeneration();
+        scatterManager =
+                new SafeScatterService(
+                        plugin,
+                        player ->
+                                isCurrentParticipantConnection(generation, player)
+                                        && isGameplayParticipant(player));
         World world = Bukkit.getWorld(getWorldName());
         if (world == null) {
             // The persistent bingo world should have been created at startup; without it we can't
@@ -334,7 +425,12 @@ public class BingoArea extends BaseMultiTeamGameInstance {
                 dailyRun ? 180 : config.getScatterRadius(),
                 dailyRun ? 32 : 0,
                 dailyRun ? 40 : config.getScatterMaxTries(),
-                this::beginRunningAfterScatter);
+                () -> {
+                    if (generation == captureGameGeneration()
+                            && !isDisposed()
+                            && getGameStageEnum() == GameStageEnum.PREPARATION)
+                        beginRunningAfterScatter();
+                });
     }
 
     /**
@@ -386,14 +482,14 @@ public class BingoArea extends BaseMultiTeamGameInstance {
                             String timerTitle =
                                     pvpEnabled
                                             ? MessageConfig.BINGO_ACTION_BAR_COUNT_DOWN_PVP.replace(
-                                                    "%time%", DurationText.bossBarSeconds(timer))
+                                                    "%time%", CoreMessages.bossBarTime(timer))
                                             : MessageConfig.BINGO_ACTION_BAR_COUNT_DOWN_PROTECTION
                                                     .replace(
                                                             "%time%",
-                                                            DurationText.bossBarSeconds(timer))
+                                                            CoreMessages.bossBarTime(timer))
                                                     .replace(
                                                             "%grace%",
-                                                            DurationText.bossBarSeconds(
+                                                            CoreMessages.bossBarTime(
                                                                     graceRemaining));
                             updateGameTimerBossBar(timerTitle, timer, activeDuration);
                             if (!pvpEnabled && graceRemaining >= 1 && graceRemaining <= 10) {
@@ -475,6 +571,26 @@ public class BingoArea extends BaseMultiTeamGameInstance {
                         period);
     }
 
+    /** Inventory changes settle next tick; duplicate events retain the first scheduled check. */
+    void requestProgressCheck(Player player) {
+        if (player == null
+                || round == null
+                || getGameStageEnum() != GameStageEnum.PROGRESS
+                || !isGameplayParticipant(player)) return;
+        BingoRound requestedRound = round;
+        long generation = captureGameGeneration();
+        if (progressChecks == null) progressChecks = new PlayerProgressChecks(plugin);
+        progressChecks.request(
+                player,
+                requestedRound,
+                () ->
+                        round == requestedRound
+                                && isCurrentParticipantConnection(generation, player)
+                                && getGameStageEnum() == GameStageEnum.PROGRESS
+                                && isGameplayParticipant(player),
+                () -> checkPlayerProgress(player));
+    }
+
     /**
      * Item + statistic progress check for one player; called every tracker tick and on inventory
      * events.
@@ -517,10 +633,12 @@ public class BingoArea extends BaseMultiTeamGameInstance {
                     .ifPresent(task -> announceCompletion(player, task));
         }
 
-        for (GameTask done : round.tryCompleteStatistics(player, team, gameTime)) {
+        for (BingoRound.CompletionResult done :
+                round.tryCompleteStatistics(player, team, gameTime)) {
             announceCompletion(player, done);
         }
-        for (GameTask done : round.tryCompletePollableEvents(player, team, gameTime)) {
+        for (BingoRound.CompletionResult done :
+                round.tryCompletePollableEvents(player, team, gameTime)) {
             announceCompletion(player, done);
         }
     }
@@ -588,7 +706,8 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         round.eventTracker().increment(player, "advancement_count");
         round.tryCompleteAdvancement(player, team, advancement, roundSeconds())
                 .ifPresent(task -> announceCompletion(player, task));
-        for (GameTask done : round.tryCompletePollableEvents(player, team, roundSeconds())) {
+        for (BingoRound.CompletionResult done :
+                round.tryCompletePollableEvents(player, team, roundSeconds())) {
             announceCompletion(player, done);
         }
     }
@@ -597,10 +716,11 @@ public class BingoArea extends BaseMultiTeamGameInstance {
      * Credits the completing player with the cell's points, credits any line bonus to every team
      * member, and broadcasts the completion.
      */
-    private void announceCompletion(Player player, GameTask task) {
+    private void announceCompletion(Player player, BingoRound.CompletionResult completion) {
         if (round == null) return;
-        int cellDelta = round.lastCellDelta();
-        int lineDelta = round.lastLineDelta();
+        GameTask task = completion.task();
+        int cellDelta = completion.cellDelta();
+        int lineDelta = completion.lineDelta();
         ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
         if (cellDelta != 0) {
             addPlayerPoints(player.getUniqueId(), cellDelta);
@@ -686,7 +806,16 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         }
         if (team != null && round.hasWon(team)) {
             winningTeam = team;
-            scheduler.runTask(plugin, this::endGame);
+            BingoRound completedRound = round;
+            long generation = captureGameGeneration();
+            scheduler.runTask(
+                    plugin,
+                    () -> {
+                        if (!isDisposed()
+                                && generation == captureGameGeneration()
+                                && round == completedRound
+                                && getGameStageEnum() == GameStageEnum.PROGRESS) endGame();
+                    });
         }
     }
 
@@ -836,18 +965,10 @@ public class BingoArea extends BaseMultiTeamGameInstance {
 
     @Override
     public void endGame() {
+        cancelLocalTasks();
         if (getGameStageEnum() == GameStageEnum.WAITING || getGameStageEnum() == GameStageEnum.END)
             return;
 
-        if (startGameProgressTask != null) startGameProgressTask.cancel();
-        if (pvpEnableTask != null) {
-            pvpEnableTask.cancel();
-            pvpEnableTask = null;
-        }
-        if (remixTask != null) {
-            remixTask.cancel();
-            remixTask = null;
-        }
         setBingoPvP(true); // restore world PvP for between rounds / next round
 
         // Resolve the winner and stamp the outcome so the card-map renderer paints the win overlay.
@@ -926,6 +1047,7 @@ public class BingoArea extends BaseMultiTeamGameInstance {
     @Override
     public void handlePlayerDeath(@NotNull PlayerDeathEvent event) {
         Player player = event.getEntity();
+        cancelTeammateTeleports(player.getUniqueId());
         if (notAreaPlayer(player)) return;
         if (activeVariant.difficulty().clearsInventoryOnDeath()) event.getDrops().clear();
     }
@@ -933,6 +1055,8 @@ public class BingoArea extends BaseMultiTeamGameInstance {
     @Override
     public void handlePlayerQuit(@NotNull PlayerQuitEvent event) {
         Player player = event.getPlayer();
+        cancelTeammateTeleports(player.getUniqueId());
+        if (progressChecks != null) progressChecks.cancel(player);
         if (notAreaPlayer(player)) return;
         // Record where the participant logged out so a mid-round reconnect puts them back here
         // rather
@@ -962,9 +1086,11 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         if (stage == GameStageEnum.PREPARATION) {
             // Reintegrate a participant who disconnected before/while the lobby->world teleport
             // ran.
-            resetPlayerHealthFoodEffectLevelInventory();
+            PlayerStateService.resetVitals(player);
+            PlayerStateService.clearEffects(player);
+            player.getInventory().clear();
             player.teleport(getPreparationTeleportLocation(getSpectatorSpawnLocation()));
-            scheduler.runTask(plugin, () -> player.setGameMode(GameMode.ADVENTURE));
+            scheduleGameplayAction(player, () -> player.setGameMode(GameMode.ADVENTURE), 1L);
             return;
         }
         if (stage == GameStageEnum.COUNTDOWN || stage == GameStageEnum.PROGRESS) {
@@ -996,13 +1122,14 @@ public class BingoArea extends BaseMultiTeamGameInstance {
                 // teleport).
                 Location last = lastQuitLocations.remove(player.getUniqueId());
                 if (last != null && last.getWorld() != null) {
-                    scheduler.runTask(
-                            plugin,
+                    scheduleGameplayAction(
+                            player,
                             () -> {
                                 player.teleport(last);
                                 player.setFallDistance(0f);
                                 player.setFireTicks(0);
-                            });
+                            },
+                            1L);
                 } else {
                     scatterIntoBingo(player);
                 }
@@ -1020,7 +1147,7 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         // END / LOADING / WAITING (transitional, normally unreachable for a reconnect): benign
         // default.
         player.teleport(getSpectatorSpawnLocation());
-        scheduler.runTask(plugin, () -> player.setGameMode(GameMode.ADVENTURE));
+        scheduleGameplayAction(player, () -> player.setGameMode(GameMode.ADVENTURE), 1L);
     }
 
     /**
@@ -1059,8 +1186,8 @@ public class BingoArea extends BaseMultiTeamGameInstance {
      * Sets a participant to SURVIVAL with full vitals and no potion effects (used on reconnect).
      */
     private void refreshVitals(Player player) {
-        scheduler.runTask(
-                plugin,
+        scheduleGameplayAction(
+                player,
                 () -> {
                     player.setGameMode(GameMode.SURVIVAL);
                     PlayerStateService.resetVitals(player);
@@ -1069,11 +1196,13 @@ public class BingoArea extends BaseMultiTeamGameInstance {
                     // (deferred, so
                     // this runs after the kit/card handed out synchronously in handlePlayerJoin).
                     BingoPermanentEffects.ensure(player, permanentEffects);
-                });
+                },
+                1L);
     }
 
     /** Scatters a participant with no saved location into the active variant world. */
     private void scatterIntoBingo(Player player) {
+        if (scatterManager == null || !isGameplayParticipant(player)) return;
         World world =
                 Bukkit.getWorld(
                         activeVariant.remix() == BingoRemix.NETHER

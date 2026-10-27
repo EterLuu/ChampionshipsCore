@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.bingo.gui;
 
 import ink.ziip.championshipscore.api.game.bingo.card.BingoCard;
+import ink.ziip.championshipscore.api.game.bingo.config.BingoCardMenuConfig;
 import ink.ziip.championshipscore.api.game.bingo.game.BingoRound;
 import ink.ziip.championshipscore.api.game.bingo.game.RoundOutcome;
 import ink.ziip.championshipscore.api.game.bingo.task.AdvancementTask;
@@ -13,7 +14,10 @@ import ink.ziip.championshipscore.api.game.bingo.task.PotionTask;
 import ink.ziip.championshipscore.api.game.bingo.task.StatisticTask;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.platform.bukkit.bingo.map.MapColorMatcher;
+import ink.ziip.championshipscore.platform.bukkit.bingo.map.TaskCellLayout;
 import ink.ziip.championshipscore.platform.bukkit.bingo.map.TaskImageAtlas;
+import ink.ziip.championshipscore.platform.bukkit.gui.BingoTaskItems;
+import ink.ziip.championshipscore.shared.presentation.BingoTaskPresentation;
 
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.format.TextColor;
@@ -22,7 +26,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.map.MapCanvas;
 import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
-import org.bukkit.map.MinecraftFont;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -52,6 +55,7 @@ public final class BingoCardMapRenderer extends MapRenderer {
 
     private final @Nullable ChampionshipTeam viewerTeam;
     private String lastState;
+    private final BingoTaskPresentation taskTheme;
 
     public BingoCardMapRenderer(BingoCard card, String teamId, TextColor teamColor) {
         this(card, teamId, teamColor, 0, null, null);
@@ -80,6 +84,7 @@ public final class BingoCardMapRenderer extends MapRenderer {
             @Nullable ChampionshipTeam viewerTeam) {
         super(false);
         this.card = card;
+        this.taskTheme = BingoCardMenuConfig.taskSnapshot();
         this.teamId = teamId;
         this.teamColor = teamColor;
         this.tierSegments = Math.clamp(tierSegments, 0, MAX_COMPLETION_TEAMS);
@@ -126,8 +131,15 @@ public final class BingoCardMapRenderer extends MapRenderer {
     }
 
     private void drawTask(MapCanvas canvas, GameTask task, int gridX, int gridY) {
-        if ((task.isHidden() && !task.isCompleted()) || (task.isLocked() && !task.isCompleted())) {
-            BufferedImage hidden = TaskImageAtlas.imageFor(Key.key("minecraft", "bedrock"));
+        if (BingoTaskPresentation.masked(task.isCompleted(), task.isHidden(), task.isLocked())) {
+            var state =
+                    task.isLocked()
+                            ? BingoTaskPresentation.State.LOCKED
+                            : BingoTaskPresentation.State.HIDDEN;
+            BufferedImage hidden =
+                    TaskImageAtlas.imageFor(
+                            BingoTaskItems.material(taskTheme.states().get(state).material())
+                                    .key());
             if (hidden != null) drawImage(canvas, gridX * 24 + 5, gridY * 24 + 5, hidden, null);
             return;
         }
@@ -184,9 +196,7 @@ public final class BingoCardMapRenderer extends MapRenderer {
                 drawImage(canvas, x, y, cell, null);
             }
         } else if (task.data instanceof OneOfTask) {
-            // one_of: the representative item plus a small top-right "stack" badge marking the cell
-            // as
-            // "any one of a set" — far clearer than the old four-member quadrant collage.
+            // Draw one representative item with a top-right badge for "any one of this set".
             BufferedImage image = TaskImageAtlas.imageFor(key);
             if (image != null) {
                 drawImage(canvas, x + 1, y + 1, image, null);
@@ -286,19 +296,7 @@ public final class BingoCardMapRenderer extends MapRenderer {
 
     private void drawAmount(
             MapCanvas canvas, int gridX, int gridY, int amount, boolean shiftUpLeft) {
-        String text = Integer.toString(amount);
-        int xStart = text.length() == 1 ? 6 : 0;
-        int d = shiftUpLeft ? -1 : 0;
-        canvas.drawText(
-                gridX * 24 + 17 + xStart + d,
-                gridY * 24 + 21 + d,
-                MinecraftFont.Font,
-                "§47;" + amount);
-        canvas.drawText(
-                gridX * 24 + 16 + xStart + d,
-                gridY * 24 + 20 + d,
-                MinecraftFont.Font,
-                "§58;" + amount);
+        TaskCellLayout.drawAmount(canvas, gridX, gridY, amount, shiftUpLeft);
     }
 
     /** Glyph width/height of the tiny built-in "ANY" font, and the 1px gap between letters. */

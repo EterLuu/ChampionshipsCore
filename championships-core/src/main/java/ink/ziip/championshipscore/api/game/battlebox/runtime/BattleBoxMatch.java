@@ -14,13 +14,11 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockState;
 import org.bukkit.entity.Player;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
@@ -126,22 +124,32 @@ public class BattleBoxMatch {
         return geometry.getRightSpawn() == null ? null : geometry.getRightSpawn().getWorld();
     }
 
-    /** Counts blocks of each material inside this match's wool floor. */
-    public HashMap<Material, Integer> countWool() {
-        HashMap<Material, Integer> blockCount = new HashMap<>();
+    public record WoolCount(int right, int left) {
+        public boolean complete() {
+            return right == 9 || left == 9;
+        }
+    }
+
+    /** Reads the whole floor so plugin edits and final settlement use the current world state. */
+    public WoolCount countWool() {
         World world = world();
-        if (world == null) return blockCount;
+        if (world == null) return new WoolCount(0, 0);
+        Material rightWool = woolOf(right);
+        Material leftWool = woolOf(left);
+        int rightCount = 0;
+        int leftCount = 0;
         Vector woolMin = geometry.getWoolMin();
         Vector woolMax = geometry.getWoolMax();
         for (int x = woolMin.getBlockX(); x <= woolMax.getBlockX(); x++) {
             for (int y = woolMin.getBlockY(); y <= woolMax.getBlockY(); y++) {
                 for (int z = woolMin.getBlockZ(); z <= woolMax.getBlockZ(); z++) {
                     Material material = world.getBlockAt(x, y, z).getType();
-                    blockCount.put(material, blockCount.getOrDefault(material, 0) + 1);
+                    if (material == rightWool) rightCount++;
+                    if (material == leftWool) leftCount++;
                 }
             }
         }
-        return blockCount;
+        return new WoolCount(rightCount, leftCount);
     }
 
     /** Fills this match's wool floor with {@code material}. */
@@ -155,21 +163,15 @@ public class BattleBoxMatch {
                 for (int z = woolMin.getBlockZ(); z <= woolMax.getBlockZ(); z++) {
                     Block block = world.getBlockAt(x, y, z);
                     block.setType(material);
-                    BlockState state = block.getState();
-                    state.setType(material);
-                    state.update();
                 }
             }
         }
     }
 
-    /**
-     * Resets the centre to a neutral colour avoiding both teams' wool colours, like the original
-     * single match.
-     */
+    /** Resets the centre to a neutral colour distinct from both teams' wool colours. */
     public void resetCenterWool() {
         Material material = Material.WHITE_WOOL;
-        if (right.getWool().getType() != material && left.getWool().getType() != material) {
+        if (woolOf(right) != material && woolOf(left) != material) {
             resetWool(material);
             return;
         }
@@ -184,5 +186,9 @@ public class BattleBoxMatch {
             }
         }
         resetWool(material);
+    }
+
+    private static Material woolOf(ChampionshipTeam team) {
+        return Material.getMaterial(team.getColorName() + "_WOOL");
     }
 }

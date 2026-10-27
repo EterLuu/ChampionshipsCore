@@ -214,8 +214,9 @@ class LaserShotEngineTest {
         }
 
         @Override
-        public void damage(Player player, double damage, LaserGun.HitRegion region) {
+        public void damage(Player player, double damage, LaserGun.HitRegion region, Vector point) {
             hits.add(new Damage(damage, region));
+            assertEquals(new Vector(0, 65, 4), point);
         }
     }
 }

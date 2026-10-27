@@ -91,10 +91,13 @@ public class ChampionshipPlaceholder extends BasePlaceholder {
             BaseGameInstance activeGame =
                     plugin.getGameManager().getBasePlayerArea(player.getUniqueId());
             if (activeGame != null) {
-                return ChampionshipTabText.gamePrefix(activeGame.getGameTypeEnum().toString());
+                return ChampionshipTabText.gamePrefix(
+                        MessageConfig.playerTextFormat(), activeGame.getGameTypeEnum().toString());
             }
             ChampionshipTeam team = visibleTeam(player);
-            if (team != null) return ChampionshipTabText.bracketedPrefix(team.getColoredName());
+            if (team != null)
+                return ChampionshipTabText.bracketedPrefix(
+                        MessageConfig.playerTextFormat(), team.getColoredName());
             BaseGameInstance area = plugin.getGameManager().getBasePlayerArea(player.getUniqueId());
             if (area == null)
                 area = plugin.getGameManager().getPlayerSpectatorStatus(player.getUniqueId());
@@ -103,18 +106,20 @@ public class ChampionshipPlaceholder extends BasePlaceholder {
                             ? MessageConfig.PRESENTATION_DAILY_LOBBY
                             : MessageConfig.PRESENTATION_DAILY_GAME.replace(
                                     "%game%", area.getGameTypeEnum().toString());
-            return ChampionshipTabText.bracketedPrefix(status);
+            return ChampionshipTabText.bracketedPrefix(MessageConfig.playerTextFormat(), status);
         }
         ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
         String name = team == null ? MessageConfig.PLACEHOLDER_SPECTATOR : team.getColoredName();
-        return ChampionshipTabText.bracketedPrefix(name);
+        return ChampionshipTabText.bracketedPrefix(MessageConfig.playerTextFormat(), name);
     }
 
     private String tabNameColor(OfflinePlayer player) {
         BaseGameInstance area = plugin.getGameManager().getBasePlayerArea(player.getUniqueId());
         ChampionshipTeam team = visibleTeam(player);
         return ChampionshipTabText.playerNameColor(
-                team == null ? null : team.getColorCode(), area != null && team != null);
+                MessageConfig.playerTextFormat(),
+                team == null ? null : team.getColorCode(),
+                area != null && team != null);
     }
 
     private String tabFooterStatus(OfflinePlayer player) {

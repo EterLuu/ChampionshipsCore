@@ -606,7 +606,7 @@ categories:
   - id: tool_set
     dimension: overworld
     members:
-      - { one_of: [WOODEN_PICKAXE, STONE_PICKAXE, IRON_PICKAXE, GOLDEN_PICKAXE, COPPER_PICKAXE, DIAMOND_PICKAXE, NETHERITE_PICKAXE], icon: WOODEN_PICKAXE }
+      - { one_of: ["*_PICKAXE"], icon: WOODEN_PICKAXE }
 
   # Biome or ecology bottlenecks.
   - id: biome_log
@@ -1584,23 +1584,23 @@ singletons:
     - { one_of: ["*_BED"], icon: RED_BED }
     - { one_of: ["*_WOOL"], icon: WHITE_WOOL }
     - { one_of: ["*_CARPET"], icon: BLUE_CARPET }
-    - { one_of: ["*_CANDLE"], icon: ORANGE_CANDLE }
+    - { one_of: [CANDLE, "*_CANDLE"], icon: ORANGE_CANDLE }
     - { one_of: ["*_CONCRETE_POWDER"], icon: LIME_CONCRETE_POWDER }
     - { one_of: ["*_CONCRETE"], icon: LIME_CONCRETE }
     - { one_of: ["*_STAINED_GLASS"], icon: CYAN_STAINED_GLASS }
     - { one_of: ["*_GLAZED_TERRACOTTA"], icon: MAGENTA_GLAZED_TERRACOTTA }
-    - { one_of: ["*_SHULKER_BOX"], icon: RED_SHULKER_BOX, dimension: the_end }
+    - { one_of: [SHULKER_BOX, "*_SHULKER_BOX"], icon: RED_SHULKER_BOX, dimension: the_end }
     # 种类家族 / type families
     - { one_of: ["*_PLANKS"], icon: OAK_PLANKS }
-    - { one_of: ["*_SAPLING"], icon: BIRCH_SAPLING }
+    - { one_of: ["*_SAPLING", MANGROVE_PROPAGULE, AZALEA, FLOWERING_AZALEA], icon: BIRCH_SAPLING }
     - { one_of: ["*_LEAVES"], icon: OAK_LEAVES }
     - { one_of: [TUBE_CORAL, BRAIN_CORAL, BUBBLE_CORAL, FIRE_CORAL, HORN_CORAL], icon: BRAIN_CORAL }
     - { one_of: [RAW_IRON, RAW_COPPER, RAW_GOLD], icon: RAW_IRON, count: 3 }
     - { one_of: ["*_HORSE_ARMOR"], icon: IRON_HORSE_ARMOR }
-    - { one_of: [MUSIC_DISC_OTHERSIDE, MUSIC_DISC_PIGSTEP, MUSIC_DISC_13, MUSIC_DISC_CAT, MUSIC_DISC_BOUNCE, MUSIC_DISC_CREATOR, MUSIC_DISC_PRECIPICE, MUSIC_DISC_CREATOR_MUSIC_BOX, MUSIC_DISC_TEARS, MUSIC_DISC_LAVA_CHICKEN, MUSIC_DISC_RELIC], icon: MUSIC_DISC_CAT }
+    - { one_of: ["MUSIC_DISC_*"], icon: MUSIC_DISC_CAT }
     - { one_of: ["*_DYE"], icon: RED_DYE }
     - { one_of: ["*_BANNER"], icon: WHITE_BANNER }
-    - { one_of: [ZOMBIE_HEAD, SKELETON_SKULL, CREEPER_HEAD, PIGLIN_HEAD, WITHER_SKELETON_SKULL], icon: SKELETON_SKULL }
+    - { one_of: [ZOMBIE_HEAD, SKELETON_SKULL, CREEPER_HEAD, PIGLIN_HEAD, WITHER_SKELETON_SKULL, DRAGON_HEAD], icon: SKELETON_SKULL }
     - { one_of: [PUFFERFISH_BUCKET, TROPICAL_FISH_BUCKET, COD_BUCKET, SALMON_BUCKET, AXOLOTL_BUCKET, TADPOLE_BUCKET], icon: TROPICAL_FISH_BUCKET }
     - { one_of: ["*_ARMOR_TRIM_SMITHING_TEMPLATE"], icon: SENTRY_ARMOR_TRIM_SMITHING_TEMPLATE }
     # 任意陶片 -- 拿到任意一种陶片即完成（与 archaeology_loot 各具体陶片任务并存，靠 item 主体去重）。
@@ -1629,7 +1629,7 @@ singletons:
     - { path: story/lava_bucket }
     - { path: story/cure_zombie_villager }
     - { path: husbandry/tame_an_animal }
-    - { path: husbandry/spyglass_at_ghast }
+    - { path: adventure/spyglass_at_ghast }
     - { path: adventure/honey_block_slide }
     - { path: adventure/ol_betsy }
     - { path: adventure/summon_iron_golem }
@@ -1732,7 +1732,7 @@ singletons:
     - { trigger: spy, param: PIGLIN_BRUTE, category: spy, dimension: nether }
     # 收集 N 种不同（轮询背包）。unique_collect 的 param 为家族 glob 或列表。整组 unique_collect 分类，
     # 每卡最多 1 个（收集全套 all_of 已移入 singletons.sets，共用同一分类）。
-    - { trigger: unique_collect, param: "*_SAPLING", count: 4, icon: BIRCH_SAPLING, category: unique_collect }
+    - { trigger: unique_collect, param: ["*_SAPLING", MANGROVE_PROPAGULE, AZALEA, FLOWERING_AZALEA], count: 4, icon: BIRCH_SAPLING, category: unique_collect }
     - { trigger: unique_collect, param: "*_SEEDS", count: 4, icon: WHEAT_SEEDS, category: unique_collect }
     - { trigger: unique_collect, param: "*_BUCKET", count: 6, icon: WATER_BUCKET, category: unique_collect }
     - { trigger: unique_collect, param: "*_BANNER_PATTERN", count: 3, icon: GLOBE_BANNER_PATTERN, category: unique_collect }

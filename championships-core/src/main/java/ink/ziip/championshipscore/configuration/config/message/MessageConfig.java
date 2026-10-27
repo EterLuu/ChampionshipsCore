@@ -1,37 +1,83 @@
 package ink.ziip.championshipscore.configuration.config.message;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.api.game.buildmart.presentation.MaterialDisplayFormat;
 import ink.ziip.championshipscore.configuration.ConfigOption;
 import ink.ziip.championshipscore.configuration.config.BaseConfigurationFile;
+import ink.ziip.championshipscore.presentation.display.TextDisplayStyle;
+import ink.ziip.championshipscore.presentation.display.WorldTextStyles;
+import ink.ziip.championshipscore.shared.presentation.PlayerTextFormat;
 
 import lombok.Getter;
 
 @Getter
 public class MessageConfig extends BaseConfigurationFile {
+    private static final org.bukkit.configuration.file.YamlConfiguration DEFAULT_DOCUMENT =
+            loadDefaults();
+    private static final PlayerTextFormat PLAYER_TEXT_DEFAULTS =
+            loadPlayerText(DEFAULT_DOCUMENT, null);
+    private static volatile PlayerTextFormat playerTextFormat = PLAYER_TEXT_DEFAULTS;
+    private static final MaterialDisplayFormat MATERIAL_DISPLAY_DEFAULTS =
+            MaterialDisplayFormat.read(DEFAULT_DOCUMENT, null);
+    private static volatile MaterialDisplayFormat materialDisplayFormat = MATERIAL_DISPLAY_DEFAULTS;
+    private static volatile java.util.Map<WorldTextStyles.Profile, TextDisplayStyle>
+            worldTextStyles = WorldTextStyles.read(DEFAULT_DOCUMENT, DEFAULT_DOCUMENT);
     private static final java.util.Map<String, String> CODE_DEFAULTS = loadCodeDefaults();
     private static volatile java.util.Map<String, String> codeMessages = CODE_DEFAULTS;
     private static final java.util.regex.Pattern ARGUMENT =
             java.util.regex.Pattern.compile("%arg([1-9][0-9]*)%");
 
-    private static java.util.Map<String, String> loadCodeDefaults() {
+    private static org.bukkit.configuration.file.YamlConfiguration loadDefaults() {
         try (var stream = MessageConfig.class.getResourceAsStream("/message.yml")) {
             if (stream == null) throw new IllegalStateException("Missing message.yml resource");
             var document = new org.bukkit.configuration.file.YamlConfiguration();
             document.load(
                     new java.io.InputStreamReader(stream, java.nio.charset.StandardCharsets.UTF_8));
-            var section = document.getConfigurationSection("code-text");
-            if (section == null) throw new IllegalStateException("Missing code-text defaults");
-            var defaults = new java.util.LinkedHashMap<String, String>();
-            section.getValues(true)
-                    .forEach(
-                            (key, value) -> {
-                                if (value instanceof String text) defaults.put(key, text);
-                            });
-            return java.util.Map.copyOf(defaults);
+            return document;
         } catch (java.io.IOException
                 | org.bukkit.configuration.InvalidConfigurationException exception) {
             throw new IllegalStateException("Cannot load message.yml text defaults", exception);
         }
+    }
+
+    private static java.util.Map<String, String> loadCodeDefaults() {
+        var section = DEFAULT_DOCUMENT.getConfigurationSection("code-text");
+        if (section == null) throw new IllegalStateException("Missing code-text defaults");
+        var defaults = new java.util.LinkedHashMap<String, String>();
+        section.getValues(true)
+                .forEach(
+                        (key, value) -> {
+                            if (value instanceof String text) defaults.put(key, text);
+                        });
+        return java.util.Map.copyOf(defaults);
+    }
+
+    private static PlayerTextFormat loadPlayerText(
+            org.bukkit.configuration.file.YamlConfiguration document, PlayerTextFormat defaults) {
+        var values = new java.util.LinkedHashMap<String, String>();
+        if (defaults != null) values.putAll(defaults.attributes());
+        values.put(PlayerTextFormat.PREFIX + "version", "1");
+        for (String key : PlayerTextFormat.KEYS) {
+            String path = PlayerTextFormat.PREFIX + key;
+            if (defaults != null && !document.isSet(path)) continue;
+            Object value = document.get(path);
+            if (!(value instanceof String text))
+                throw new IllegalArgumentException(path + " must be text");
+            values.put(path, text);
+        }
+        return PlayerTextFormat.from(values);
+    }
+
+    public static PlayerTextFormat playerTextFormat() {
+        return playerTextFormat;
+    }
+
+    public static MaterialDisplayFormat materialDisplayFormat() {
+        return materialDisplayFormat;
+    }
+
+    public static TextDisplayStyle worldTextStyle(WorldTextStyles.Profile profile) {
+        return worldTextStyles.get(profile);
     }
 
     @Override
@@ -45,7 +91,13 @@ public class MessageConfig extends BaseConfigurationFile {
                 throw new IllegalArgumentException(path + " must be text");
             messages.put(key, text);
         }
+        var playerText = loadPlayerText(document, PLAYER_TEXT_DEFAULTS);
+        var materialDisplay = MaterialDisplayFormat.read(document, MATERIAL_DISPLAY_DEFAULTS);
+        var displayStyles = WorldTextStyles.read(document, DEFAULT_DOCUMENT);
         super.loadFromConfiguration(document);
+        playerTextFormat = playerText;
+        materialDisplayFormat = materialDisplay;
+        worldTextStyles = displayStyles;
         codeMessages = java.util.Map.copyOf(messages);
     }
 
@@ -88,7 +140,7 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @Override
     public int getLatestVersion() {
-        return 62;
+        return 73;
     }
 
     // Player
@@ -1558,6 +1610,9 @@ public class MessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "laserbox.hit")
     public static String LASER_BOX_HIT;
 
+    @ConfigOption(path = "laserbox.special-attack-name")
+    public static String LASER_BOX_SPECIAL_ATTACK_NAME;
+
     @ConfigOption(path = "laserbox.headshot", nullable = true)
     public static String LASER_BOX_HEADSHOT;
 
@@ -1713,6 +1768,10 @@ public class MessageConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "frostbite.frozen")
     public static String FROSTBITE_FROZEN;
+
+    @ConfigOption(path = "frostbite.item-presentation.lore")
+    public static java.util.List<String> FROSTBITE_ITEM_LORE =
+            DEFAULT_DOCUMENT.getStringList("frostbite.item-presentation.lore");
 
     @ConfigOption(path = "frostbite.item.avalanche.title")
     public static String FROSTBITE_ITEM_AVALANCHE_TITLE;

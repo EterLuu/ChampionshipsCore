@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.game.laserbox.runtime;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
+import ink.ziip.championshipscore.api.game.laser.presentation.LaserGunMenu;
 
 import io.papermc.paper.event.entity.EntityLungeEvent;
 import io.papermc.paper.event.player.PlayerArmSwingEvent;
@@ -13,10 +14,10 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.*;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.EquipmentSlot;
-import org.bukkit.inventory.InventoryHolder;
 
 public final class LaserBoxHandler extends BaseListener {
     private LaserBoxArea area;
@@ -60,9 +61,7 @@ public final class LaserBoxHandler extends BaseListener {
         if (area.isIntroductionPhase()) return;
         if (area.isGunSelectionStage()) {
             event.setCancelled(true);
-            // The first menu is opened automatically. Once a gun has been selected, a gun's
-            // right click must not reopen it; switching to the selector is the explicit reopen
-            // action during the remaining first-round selection window.
+            // The selector explicitly reopens the menu; clicking a weapon does not.
             if (event.getHand() == EquipmentSlot.HAND && area.holdsGunSelector(event.getPlayer()))
                 area.openGunMenu(event.getPlayer());
             return;
@@ -112,8 +111,7 @@ public final class LaserBoxHandler extends BaseListener {
     /** Handles a main-hand sniper swing; the off hand never fires a gun. */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void armSwing(PlayerArmSwingEvent event) {
-        if (event.getHand() != EquipmentSlot.HAND
-                || !participant(event.getPlayer())) return;
+        if (event.getHand() != EquipmentSlot.HAND || !participant(event.getPlayer())) return;
         area.fireFromLeftClick(event.getPlayer());
     }
 
@@ -169,27 +167,27 @@ public final class LaserBoxHandler extends BaseListener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void heldItem(PlayerItemHeldEvent event) {
-        if (participant(event.getPlayer())) area.heldItemChanged(event.getPlayer(), event.getNewSlot());
+        if (participant(event.getPlayer()))
+            area.heldItemChanged(event.getPlayer(), event.getNewSlot());
     }
 
     @EventHandler
     public void click(InventoryClickEvent event) {
-        InventoryHolder holder = event.getView().getTopInventory().getHolder();
-        if (holder instanceof LaserBoxGunMenuHolder menu && menu.area() == area) {
+        if (LaserGunMenu.handleClick(area, event)) return;
+        if (event.getWhoClicked() instanceof Player player && participant(player))
             event.setCancelled(true);
-            if (event.getWhoClicked() instanceof Player p) area.selectGunFromMenu(p, event);
-            return;
-        }
-        if (event.getWhoClicked() instanceof Player p && participant(p)) event.setCancelled(true);
+    }
+
+    @EventHandler
+    public void close(InventoryCloseEvent event) {
+        LaserGunMenu.handleClose(area, event);
     }
 
     @EventHandler
     public void drag(InventoryDragEvent event) {
-        if (event.getView().getTopInventory().getHolder() instanceof LaserBoxGunMenuHolder) {
+        if (LaserGunMenu.handleDrag(area, event)) return;
+        if (event.getWhoClicked() instanceof Player player && participant(player))
             event.setCancelled(true);
-            return;
-        }
-        if (event.getWhoClicked() instanceof Player p && participant(p)) event.setCancelled(true);
     }
 
     @EventHandler

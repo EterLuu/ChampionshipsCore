@@ -6,6 +6,7 @@ import ink.ziip.championshipscore.protocol.BingoPresentation;
 import ink.ziip.championshipscore.protocol.ParticipantRole;
 import ink.ziip.championshipscore.protocol.PlayerSnapshot;
 import ink.ziip.championshipscore.protocol.TeamSnapshot;
+import ink.ziip.championshipscore.shared.presentation.PlayerTextFormat;
 
 /** Pure resolver kept separate from PlaceholderAPI so manifest semantics remain unit-testable. */
 final class WorkerChampionshipPlaceholderValues {
@@ -25,11 +26,12 @@ final class WorkerChampionshipPlaceholderValues {
             BingoPresentation presentation,
             String params,
             boolean daily) {
+        PlayerTextFormat format = PlayerTextFormat.from(presentation.messages());
         String none = presentation.message("papi.none");
         String spectator = presentation.message("papi.spectator");
         if (params.equals("tab_prefix")) {
             if (daily && player != null && player.role() == ParticipantRole.PLAYER) {
-                return ChampionshipTabText.gamePrefix(presentation.message("game.name"));
+                return ChampionshipTabText.gamePrefix(format, presentation.message("game.name"));
             }
             String name =
                     team == null
@@ -39,13 +41,13 @@ final class WorkerChampionshipPlaceholderValues {
                                             .replace("%game%", presentation.message("game.name"))
                                     : spectator
                             : LegacyText.translateColorCodes(team.colorCode() + team.name());
-            return ChampionshipTabText.bracketedPrefix(name);
+            return ChampionshipTabText.bracketedPrefix(format, name);
         }
         if (params.equals("tab_name_color")) {
             boolean activePlayer =
                     player != null && player.role() == ParticipantRole.PLAYER && team != null;
             return ChampionshipTabText.playerNameColor(
-                    team == null ? null : team.colorCode(), activePlayer);
+                    format, team == null ? null : team.colorCode(), activePlayer);
         }
         if (params.equals("tab_footer_status")) {
             if (daily && team != null)

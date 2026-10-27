@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.worker;
 
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoRidingTravel;
 import ink.ziip.championshipscore.platform.bukkit.scheduler.PlatformScheduler;
+import ink.ziip.championshipscore.platform.bukkit.scheduler.PlayerProgressChecks;
 import ink.ziip.championshipscore.platform.bukkit.scoreboard.NativeTeamService;
 import ink.ziip.championshipscore.platform.bukkit.text.PlayerPresentation;
 import ink.ziip.championshipscore.protocol.BingoPresentation;
@@ -28,7 +29,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ConcurrentHashMap;
 
 /** Worker command dispatcher with match/epoch fencing and a single active-world ownership slot. */
 final class WorkerMatchRegistry {
@@ -42,7 +42,7 @@ final class WorkerMatchRegistry {
     private final PlatformScheduler scheduler;
     private final Set<NamespacedKey> recipeKeys;
     private final Map<UUID, MatchManifest> manifests = new HashMap<>();
-    private final Set<UUID> pendingObservations = ConcurrentHashMap.newKeySet();
+    private final PlayerProgressChecks progressChecks;
     private WorkerMatchSession active;
     private BingoPresentation latestPresentation;
     private boolean latestDaily;
@@ -62,6 +62,7 @@ final class WorkerMatchRegistry {
         this.worlds = worlds;
         this.nativeTeams = nativeTeams;
         this.scheduler = new PlatformScheduler(plugin);
+        this.progressChecks = new PlayerProgressChecks(plugin);
         this.recipeKeys = loadRecipeKeys(plugin);
         this.worldReset =
                 config.allowWorldReuseWithoutReset()
@@ -155,6 +156,7 @@ final class WorkerMatchRegistry {
             }
             if (!active.state().terminal()) return CompletableFuture.completedFuture(false);
         }
+        progressChecks.clear();
         active =
                 new WorkerMatchSession(
                         plugin,
@@ -223,7 +225,7 @@ final class WorkerMatchRegistry {
 
     void onQuit(Player player) {
         returnRouter.cancel(player.getUniqueId());
-        pendingObservations.remove(player.getUniqueId());
+        progressChecks.cancel(player);
         WorkerMatchSession session;
         synchronized (this) {
             session = active;
@@ -312,16 +314,18 @@ final class WorkerMatchRegistry {
         if (session != null) session.observe(player);
     }
 
-    void requestObserve(Player player) {
-        UUID playerId = player.getUniqueId();
-        if (!pendingObservations.add(playerId)) return;
-        scheduler.runEntityLater(
+    synchronized void requestObserve(Player player) {
+        WorkerMatchSession session = active;
+        if (session == null || !session.isRunningPlayer(player.getUniqueId())) return;
+        progressChecks.request(
                 player,
-                () -> {
-                    pendingObservations.remove(playerId);
-                    observe(player);
-                },
-                1L);
+                session,
+                () -> isCurrentRunningSession(session, player.getUniqueId()),
+                () -> session.observe(player));
+    }
+
+    private synchronized boolean isCurrentRunningSession(WorkerMatchSession session, UUID player) {
+        return active == session && session.isRunningPlayer(player);
     }
 
     void observeAdvancement(Player player, org.bukkit.advancement.Advancement advancement) {
@@ -413,7 +417,12 @@ final class WorkerMatchRegistry {
                                 : latestPresentation.message("papi.spectator"),
                         null,
                         false,
-                        latestDaily)
+                        latestDaily,
+                        latestPresentation == null
+                                ? ink.ziip.championshipscore.shared.presentation.PlayerTextFormat
+                                        .legacy()
+                                : ink.ziip.championshipscore.shared.presentation.PlayerTextFormat
+                                        .from(latestPresentation.messages()))
                 : active.playerPresentation(playerId);
     }
 
@@ -518,20 +527,12 @@ final class WorkerMatchRegistry {
         if (session != null) session.openSpectatorTargets(player);
     }
 
-    void teleportToSpectatorTarget(Player player, UUID targetId) {
+    void cancelTeammateTeleports(UUID player) {
         WorkerMatchSession session;
         synchronized (this) {
             session = active;
         }
-        if (session != null) session.teleportToSpectatorTarget(player, targetId);
-    }
-
-    void teleportToTeammate(Player player, UUID targetId) {
-        WorkerMatchSession session;
-        synchronized (this) {
-            session = active;
-        }
-        if (session != null) session.teleportToTeammate(player, targetId);
+        if (session != null) session.cancelTeammateTeleports(player);
     }
 
     synchronized boolean sameTeam(UUID first, UUID second) {
@@ -554,6 +555,7 @@ final class WorkerMatchRegistry {
     }
 
     CompletionStage<Boolean> shutdown() {
+        progressChecks.close();
         WorkerMatchSession session;
         synchronized (this) {
             session = active;

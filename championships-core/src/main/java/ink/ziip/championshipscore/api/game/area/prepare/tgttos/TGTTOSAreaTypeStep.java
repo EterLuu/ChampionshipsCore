@@ -20,7 +20,11 @@ import java.util.Map;
 
 /** Selects the map's player equipment/game-mode profile from the prepare menu. */
 public final class TGTTOSAreaTypeStep extends PrepareStep {
-    public record Option(String value, Material icon, String name, String description) {}
+    public record Option(String value, Material icon, String name, String descriptionKey) {
+        public String description() {
+            return GuiConfig.text(descriptionKey);
+        }
+    }
 
     private static final List<Option> OPTIONS =
             List.of(
@@ -28,26 +32,22 @@ public final class TGTTOSAreaTypeStep extends PrepareStep {
                             "BOAT",
                             Material.OAK_BOAT,
                             "BOAT",
-                            GuiConfig.text(
-                                    "map-editor.games.tgttos.menus.area-type.items.option.boat.title")),
+                            "map-editor.games.tgttos.menus.area-type.items.option.boat.title"),
                     new Option(
                             "ROAD",
                             Material.DIAMOND_PICKAXE,
                             "ROAD",
-                            GuiConfig.text(
-                                    "map-editor.games.tgttos.menus.area-type.items.option.road.title")),
+                            "map-editor.games.tgttos.menus.area-type.items.option.road.title"),
                     new Option(
                             "NONE",
                             Material.BARRIER,
                             "NONE",
-                            GuiConfig.text(
-                                    "map-editor.games.tgttos.menus.area-type.items.option.none.title")),
+                            "map-editor.games.tgttos.menus.area-type.items.option.none.title"),
                     new Option(
                             "ELYTRA",
                             Material.ELYTRA,
                             "ELYTRA",
-                            GuiConfig.text(
-                                    "map-editor.games.tgttos.menus.area-type.items.option.elytra.title")));
+                            "map-editor.games.tgttos.menus.area-type.items.option.elytra.title"));
 
     public TGTTOSAreaTypeStep() {
         super(

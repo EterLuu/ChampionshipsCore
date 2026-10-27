@@ -8,9 +8,9 @@ import ink.ziip.championshipscore.api.game.bingo.task.TaskData;
 import ink.ziip.championshipscore.api.game.bingo.task.pool.TagFilters;
 import ink.ziip.championshipscore.api.game.bingo.task.pool.TaskPoolSource;
 import ink.ziip.championshipscore.api.game.bingo.util.MessageService;
-import ink.ziip.championshipscore.api.gui.GuiMenu;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import ink.ziip.championshipscore.configuration.config.message.GuiText;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.platform.bukkit.text.ComponentTemplates;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.protocol.BingoDifficulty;
 import ink.ziip.championshipscore.protocol.BingoMode;
@@ -18,8 +18,6 @@ import ink.ziip.championshipscore.protocol.BingoRemix;
 import ink.ziip.championshipscore.protocol.BingoVariantRules;
 import ink.ziip.championshipscore.shared.presentation.DurationText;
 
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.title.Title;
 
@@ -30,10 +28,7 @@ import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
@@ -102,39 +97,6 @@ final class DailyBingoVoteController {
         RANDOM
     }
 
-    private static final int INVENTORY_SIZE = 27;
-    private static final int OPTION_FIRST_SLOT = 11;
-    private static final int OPTION_LAST_SLOT = 15;
-    private static final int PREVIOUS_SLOT = 18;
-    private static final int PAGE_SLOT = 22;
-    private static final int NEXT_SLOT = 26;
-    private static final int CLOSE_SLOT = 24;
-
-    final class VoteHolder extends GuiMenu {
-        private Phase votePhase;
-
-        private VoteHolder(UUID voter, Phase votePhase) {
-            super(voter);
-            this.votePhase = votePhase;
-        }
-
-        UUID viewerId() {
-            return viewer;
-        }
-
-        void setInventory(Inventory inventory) {
-            this.inventory = inventory;
-        }
-
-        Phase votePhase() {
-            return votePhase;
-        }
-
-        void votePhase(Phase votePhase) {
-            this.votePhase = votePhase;
-        }
-    }
-
     private final ChampionshipsCore plugin;
     private final DailyManager daily;
     private final Set<UUID> voters = new LinkedHashSet<>();
@@ -149,6 +111,7 @@ final class DailyBingoVoteController {
     private BukkitTask timer;
     private BossBar bossBar;
     private int secondsLeft;
+    private int phaseDuration;
     private BingoMode selectedMode;
     private BingoDifficulty selectedDifficulty;
     private int selectedWinLines = 1;
@@ -169,109 +132,105 @@ final class DailyBingoVoteController {
     }
 
     synchronized void cancel() {
-        if (result != null && !result.isDone()) result.complete(null);
+        CompletableFuture<BingoVariantRules> completion = result;
         reset();
+        if (completion != null && !completion.isDone()) completion.complete(null);
     }
 
-    boolean owns(InventoryHolder holder) {
-        return holder instanceof VoteHolder;
+    private boolean currentView(Player player, DailyBingoVoteMenu menu) {
+        return menu.owner == this
+                && menu.vote == result
+                && result != null
+                && !result.isDone()
+                && player == menu.connection
+                && player.isOnline()
+                && Bukkit.getPlayer(player.getUniqueId()) == player
+                && voters.contains(player.getUniqueId())
+                && player.getOpenInventory().getTopInventory() == menu.getInventory()
+                && phase != null
+                && (phase == Phase.GENESIS) == (menu.phase == Phase.GENESIS);
     }
 
-    synchronized void click(Player player, int rawSlot, VoteHolder holder) {
-        if (result == null
-                || result.isDone()
-                || !holder.viewerId().equals(player.getUniqueId())
-                || !voters.contains(player.getUniqueId())) {
-            player.closeInventory();
+    synchronized void click(Player player, int rawSlot, DailyBingoVoteMenu menu) {
+        if (!currentView(player, menu)) return;
+        if (rawSlot == menu.layout.control("options-previous")) {
+            if (menu.changePage(-1)) render(menu);
             return;
         }
-        if (phase == Phase.GENESIS) {
-            if (holder.votePhase() != Phase.GENESIS) {
+        if (rawSlot == menu.layout.control("options-next")) {
+            if (menu.changePage(1)) render(menu);
+            return;
+        }
+        if (menu.phase != Phase.GENESIS) {
+            if (rawSlot == menu.layout.control("previous")) {
+                navigate(player, menu, -1);
+                return;
+            }
+            if (rawSlot == menu.layout.control("next")) {
+                navigate(player, menu, 1);
+                return;
+            }
+            if (rawSlot == menu.layout.control("close")) {
                 player.closeInventory();
                 return;
             }
-            castGenesis(player, rawSlot);
-            return;
         }
-        if (rawSlot == PREVIOUS_SLOT) {
-            navigate(player, holder, -1);
-            return;
-        }
-        if (rawSlot == NEXT_SLOT) {
-            navigate(player, holder, 1);
-            return;
-        }
-        if (rawSlot == CLOSE_SLOT) {
-            player.closeInventory();
-            return;
-        }
-        switch (holder.votePhase()) {
-            case MODE -> castMode(player, rawSlot);
-            case DIFFICULTY -> castDifficulty(player, rawSlot);
-            case LINES -> castLines(player, rawSlot);
-            case GENESIS -> castGenesis(player, rawSlot);
+        Object choice = menu.targets.get(rawSlot);
+        switch (menu.phase) {
+            case MODE -> {
+                if (choice instanceof ModeChoice mode) castMode(player, mode);
+            }
+            case DIFFICULTY -> {
+                if (choice instanceof BingoDifficulty difficulty)
+                    castDifficulty(player, difficulty);
+            }
+            case LINES -> {
+                if (choice instanceof Integer lines) castLines(player, lines);
+            }
+            case GENESIS -> {
+                if (choice instanceof Material material) castGenesis(player, material);
+            }
         }
     }
 
-    private void castMode(Player player, int slot) {
-        ModeChoice choice =
-                switch (slot) {
-                    case 11 -> ModeChoice.DOMINATION;
-                    case 12 -> ModeChoice.SPEEDRUN;
-                    case 13 -> ModeChoice.QUANTITY;
-                    case 14 -> ModeChoice.POINTS;
-                    case 15 -> ModeChoice.RANDOM;
-                    default -> null;
-                };
-        if (choice == null || (choice == ModeChoice.POINTS && teams.size() < 4)) return;
+    private void castMode(Player player, ModeChoice choice) {
+        if (choice == ModeChoice.POINTS && teams.size() < 4) return;
         modeVotes.put(player.getUniqueId(), choice);
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.8F, 1.2F);
         open(player, Phase.DIFFICULTY);
+        refreshOpenMenus();
     }
 
-    private void castDifficulty(Player player, int slot) {
-        BingoDifficulty choice =
-                switch (slot) {
-                    case 11 -> BingoDifficulty.EASY;
-                    case 12 -> BingoDifficulty.LITE;
-                    case 13 -> BingoDifficulty.NORMAL;
-                    case 14 -> BingoDifficulty.HARD;
-                    case 15 -> BingoDifficulty.EXTREME;
-                    default -> null;
-                };
+    private void castDifficulty(Player player, BingoDifficulty choice) {
         boolean hasSoloTeam = teams.stream().anyMatch(team -> team.getMembers().size() <= 1);
-        if (choice == null || (choice == BingoDifficulty.EXTREME && hasSoloTeam)) return;
+        if (choice == BingoDifficulty.EXTREME && hasSoloTeam) return;
         difficultyVotes.put(player.getUniqueId(), choice);
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.8F, 1.2F);
         open(player, Phase.LINES);
+        refreshOpenMenus();
     }
 
-    private void castLines(Player player, int slot) {
-        if (slot < OPTION_FIRST_SLOT || slot > OPTION_LAST_SLOT) return;
-        lineVotes.put(player.getUniqueId(), slot - OPTION_FIRST_SLOT + 1);
+    private void castLines(Player player, int lines) {
+        if (lines < 1 || lines > 5) return;
+        lineVotes.put(player.getUniqueId(), lines);
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.8F, 1.2F);
         refreshOpenMenus();
     }
 
-    private void castGenesis(Player player, int slot) {
-        if (slot < 9 || slot > 17) return;
-        List<Material> options = genesisOptions.get(player.getUniqueId());
-        int index = slot - 9;
-        if (options == null || index >= options.size()) return;
-        genesisPicks.put(player.getUniqueId(), options.get(index));
+    private void castGenesis(Player player, Material material) {
+        if (!genesisOptions.getOrDefault(player.getUniqueId(), List.of()).contains(material))
+            return;
+        genesisPicks.put(player.getUniqueId(), material);
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 0.8F, 1.2F);
-        open(player, Phase.GENESIS);
+        refreshOpenMenus();
     }
 
-    private void navigate(Player player, VoteHolder holder, int direction) {
+    private void navigate(Player player, DailyBingoVoteMenu menu, int direction) {
         Phase[] pages = {Phase.MODE, Phase.DIFFICULTY, Phase.LINES};
-        int current = java.util.Arrays.asList(pages).indexOf(holder.votePhase());
+        int current = java.util.Arrays.asList(pages).indexOf(menu.phase);
         if (current < 0) return;
         int next = Math.max(0, Math.min(pages.length - 1, current + direction));
-        if (next != current) {
-            holder.votePhase(pages[next]);
-            open(player, holder);
-        }
+        if (next != current) open(player, pages[next]);
     }
 
     private void beginPhase(Phase next) {
@@ -279,10 +238,12 @@ final class DailyBingoVoteController {
             throw new IllegalArgumentException(
                     "Only the initial vote page or Genesis may start a timer");
         phase = next;
+        CompletableFuture<BingoVariantRules> currentVote = result;
         secondsLeft =
                 next == Phase.GENESIS
-                        ? 30
+                        ? plugin.getGameManager().getBingoManager().dailyGenesisSeconds()
                         : plugin.getGameManager().getBingoManager().dailyVoteSeconds();
+        phaseDuration = secondsLeft;
         MessageService messages = MessageService.global();
         int phaseSeconds = secondsLeft;
         broadcast(
@@ -307,7 +268,9 @@ final class DailyBingoVoteController {
                                 plugin,
                                 () -> {
                                     synchronized (DailyBingoVoteController.this) {
-                                        if (result == null || result.isDone()) return;
+                                        if (result != currentVote
+                                                || currentVote.isDone()
+                                                || phase != next) return;
                                         long online =
                                                 voters.stream()
                                                         .filter(
@@ -343,7 +306,8 @@ final class DailyBingoVoteController {
                 List<ModeChoice> choices = new ArrayList<>(List.of(ModeChoice.values()));
                 if (teams.size() < 4) choices.remove(ModeChoice.POINTS);
                 ModeChoice winner = winner(choices, modeVotes);
-                if (winner == ModeChoice.RANDOM) {
+                boolean randomized = winner == ModeChoice.RANDOM;
+                if (randomized) {
                     choices.remove(ModeChoice.RANDOM);
                     winner = choices.get(ThreadLocalRandom.current().nextInt(choices.size()));
                 }
@@ -351,9 +315,11 @@ final class DailyBingoVoteController {
                 MessageService messages = MessageService.global();
                 broadcast(
                         messages.tr(
-                                winner == ModeChoice.RANDOM ? "vote.result_random" : "vote.result",
+                                randomized ? "vote.result_random" : "vote.result",
                                 messages.tr(
-                                        "mode." + selectedMode.name().toLowerCase() + ".name")));
+                                        "mode."
+                                                + selectedMode.name().toLowerCase(Locale.ROOT)
+                                                + ".name")));
                 List<BingoDifficulty> difficultyChoices =
                         new ArrayList<>(List.of(BingoDifficulty.values()));
                 if (teams.stream().anyMatch(team -> team.getMembers().size() <= 1))
@@ -364,7 +330,7 @@ final class DailyBingoVoteController {
                                 "difficulty_vote.result",
                                 messages.tr(
                                         "card_difficulty."
-                                                + selectedDifficulty.name().toLowerCase()
+                                                + selectedDifficulty.name().toLowerCase(Locale.ROOT)
                                                 + ".name")));
                 int lines =
                         selectedMode == BingoMode.SPEEDRUN
@@ -376,6 +342,18 @@ final class DailyBingoVoteController {
             }
             case GENESIS -> finishGenesis();
         }
+    }
+
+    static Title remixTitle(MessageService messages, String name, String description) {
+        return Title.title(
+                ComponentTemplates.render(
+                        MessageConfig.codeText("daily-bingo-vote-controller.remix-title"),
+                        Map.of("%title%", LegacyText.component(messages.tr("genesis.title")))),
+                ComponentTemplates.render(
+                        MessageConfig.codeText("daily-bingo-vote-controller.remix-subtitle"),
+                        Map.of(
+                                "%name%", LegacyText.component(name),
+                                "%description%", LegacyText.component(description))));
     }
 
     private void complete(int winLines) {
@@ -397,19 +375,7 @@ final class DailyBingoVoteController {
             for (UUID voter : voters) {
                 Player player = Bukkit.getPlayer(voter);
                 if (player != null)
-                    player.showTitle(
-                            Title.title(
-                                    LegacyText.component(
-                                            remixMessages.tr("genesis.title"),
-                                            NamedTextColor.LIGHT_PURPLE),
-                                    LegacyText.component(remixName, NamedTextColor.GRAY)
-                                            .append(
-                                                    LegacyText.component(
-                                                            GuiText.SEPARATOR, NamedTextColor.GRAY))
-                                            .append(
-                                                    LegacyText.component(
-                                                            remixDescription,
-                                                            NamedTextColor.GRAY))));
+                    player.showTitle(remixTitle(remixMessages, remixName, remixDescription));
             }
         }
         if (remix == BingoRemix.GENESIS) {
@@ -462,7 +428,16 @@ final class DailyBingoVoteController {
         List<Material> source = new ArrayList<>(candidates);
         for (UUID voter : voters) {
             java.util.Collections.shuffle(source);
-            genesisOptions.put(voter, List.copyOf(source.subList(0, Math.min(9, source.size()))));
+            genesisOptions.put(
+                    voter,
+                    List.copyOf(
+                            source.subList(
+                                    0,
+                                    Math.min(
+                                            plugin.getGameManager()
+                                                    .getBingoManager()
+                                                    .dailyGenesisOptions(),
+                                            source.size()))));
         }
     }
 
@@ -481,287 +456,107 @@ final class DailyBingoVoteController {
     }
 
     private void open(Player player, Phase votePhase) {
-        VoteHolder holder = new VoteHolder(player.getUniqueId(), votePhase);
-        open(player, holder);
+        if (result == null
+                || result.isDone()
+                || !voters.contains(player.getUniqueId())
+                || !player.isOnline()
+                || Bukkit.getPlayer(player.getUniqueId()) != player) return;
+        DailyBingoVoteMenu menu = new DailyBingoVoteMenu(this, player, result, votePhase);
+        render(menu);
+        player.openInventory(menu.getInventory());
     }
 
-    private void open(Player player, VoteHolder holder) {
+    private void render(DailyBingoVoteMenu menu) {
+        UUID viewer = menu.connection.getUniqueId();
+        List<?> choices =
+                switch (menu.phase) {
+                    case MODE -> List.of(ModeChoice.values());
+                    case DIFFICULTY -> List.of(BingoDifficulty.values());
+                    case LINES -> List.of(1, 2, 3, 4, 5);
+                    case GENESIS -> genesisOptions.getOrDefault(viewer, List.of());
+                };
+        menu.render(choices, choice -> optionItem(menu.phase, viewer, choice));
+    }
+
+    private ItemStack optionItem(Phase page, UUID viewer, Object choice) {
         MessageService messages = MessageService.global();
-        Phase votePhase = holder.votePhase();
-        String title =
-                messages.tr(
-                        switch (votePhase) {
-                            case MODE -> "vote.menu_title";
-                            case DIFFICULTY -> "difficulty_vote.menu_title";
-                            case LINES -> "lines_vote.menu_title";
-                            case GENESIS -> "genesis.menu_title";
-                        });
-        Inventory inventory =
-                Bukkit.createInventory(holder, INVENTORY_SIZE, LegacyText.component(title));
-        ItemStack border =
-                item(Material.GRAY_STAINED_GLASS_PANE, " ", List.of(), NamedTextColor.GRAY, false);
-        for (int slot = 0; slot < inventory.getSize(); slot++) inventory.setItem(slot, border);
-        holder.setInventory(inventory);
-        switch (votePhase) {
-            case MODE -> renderModes(inventory, player.getUniqueId());
-            case DIFFICULTY -> renderDifficulties(inventory, player.getUniqueId());
-            case LINES -> renderLines(inventory, player.getUniqueId());
-            case GENESIS -> renderGenesis(inventory, player.getUniqueId());
-        }
-        if (votePhase != Phase.GENESIS) renderNavigation(inventory, holder);
-        player.openInventory(inventory);
-    }
-
-    private void renderModes(Inventory inventory, UUID viewer) {
-        put(
-                inventory,
-                11,
-                ModeChoice.DOMINATION,
-                Material.GRASS_BLOCK,
-                "mode.domination",
-                viewer,
-                modeVotes,
-                false);
-        put(
-                inventory,
-                12,
-                ModeChoice.SPEEDRUN,
-                Material.FEATHER,
-                "mode.speedrun",
-                viewer,
-                modeVotes,
-                false);
-        put(
-                inventory,
-                13,
-                ModeChoice.QUANTITY,
-                Material.GOLD_INGOT,
-                "mode.quantity",
-                viewer,
-                modeVotes,
-                false);
-        put(
-                inventory,
-                14,
-                ModeChoice.POINTS,
-                Material.SUNFLOWER,
-                "mode.points",
-                viewer,
-                modeVotes,
-                teams.size() < 4);
-        put(
-                inventory,
-                15,
-                ModeChoice.RANDOM,
-                Material.NETHER_STAR,
-                "mode.random",
-                viewer,
-                modeVotes,
-                false);
-    }
-
-    private void renderDifficulties(Inventory inventory, UUID viewer) {
-        boolean lockExtreme = teams.stream().anyMatch(team -> team.getMembers().size() <= 1);
-        Material[] icons = {
-            Material.GRASS_BLOCK,
-            Material.OAK_LOG,
-            Material.IRON_INGOT,
-            Material.DIAMOND,
-            Material.NETHERITE_INGOT
-        };
-        int index = 0;
-        for (BingoDifficulty difficulty : BingoDifficulty.values()) {
-            put(
-                    inventory,
-                    11 + index,
-                    difficulty,
-                    icons[index],
-                    "card_difficulty." + difficulty.name().toLowerCase(),
-                    viewer,
-                    difficultyVotes,
-                    difficulty == BingoDifficulty.EXTREME && lockExtreme);
-            index++;
-        }
-    }
-
-    private void renderLines(Inventory inventory, UUID viewer) {
-        MessageService messages = MessageService.global();
-        for (int lines = 1; lines <= 5; lines++) {
-            int line = lines;
-            int count = (int) lineVotes.values().stream().filter(value -> value == line).count();
-            boolean picked = Integer.valueOf(line).equals(lineVotes.get(viewer));
-            List<String> lore =
-                    new ArrayList<>(List.of(messages.tr("lines_vote.menu_desc", line), ""));
-            lore.add(messages.tr("lines_vote.menu_count", count));
-            lore.add(messages.tr(picked ? "lines_vote.menu_picked" : "lines_vote.menu_hint"));
-            ItemStack stack =
-                    item(
-                            Material.LIGHT,
-                            messages.tr("lines_vote.menu_option", line),
-                            lore,
-                            NamedTextColor.YELLOW,
-                            picked);
-            ItemMeta meta = stack.getItemMeta();
-            if (meta != null) {
-                if (meta instanceof org.bukkit.inventory.meta.BlockDataMeta blockMeta) {
-                    org.bukkit.block.data.type.Light light =
-                            (org.bukkit.block.data.type.Light) Material.LIGHT.createBlockData();
-                    light.setLevel(lines);
-                    blockMeta.setBlockData(light);
-                }
-                meta.setMaxStackSize(99);
-                stack.setItemMeta(meta);
-            }
-            stack.setAmount(Math.max(1, count));
-            inventory.setItem(OPTION_FIRST_SLOT + line - 1, stack);
-        }
-    }
-
-    private void renderGenesis(Inventory inventory, UUID viewer) {
-        List<Material> options = genesisOptions.getOrDefault(viewer, List.of());
-        Material selected = genesisPicks.get(viewer);
-        for (int index = 0; index < options.size(); index++) {
-            Material material = options.get(index);
-            inventory.setItem(
-                    9 + index,
-                    item(
-                            material,
+        if (page == Phase.GENESIS) {
+            Material material = (Material) choice;
+            boolean selected = material == genesisPicks.get(viewer);
+            return DailyBingoVoteMenu.option(
+                    "genesis",
+                    selected ? "selected" : "idle",
+                    Map.of(
+                            "name",
                             material.key().asString(),
-                            List.of(
-                                    MessageService.global()
-                                            .tr(
-                                                    selected == material
-                                                            ? "vote.menu_picked"
-                                                            : "genesis.menu_hint")),
-                            NamedTextColor.LIGHT_PURPLE,
-                            material == selected));
+                            "hint",
+                            messages.tr(selected ? "vote.menu_picked" : "genesis.menu_hint")),
+                    List.of(),
+                    material,
+                    1,
+                    0);
         }
-    }
-
-    private void renderNavigation(Inventory inventory, VoteHolder holder) {
-        Phase current = holder.votePhase();
-        MessageService messages = MessageService.global();
-        String previous = messages.tr("vote.previous");
-        String next = messages.tr("vote.next");
-        String close = messages.tr("vote.close");
-        String page =
-                messages.tr(
-                        switch (current) {
-                            case MODE -> "vote.page_mode";
-                            case DIFFICULTY -> "vote.page_difficulty";
-                            case LINES -> "vote.page_lines";
-                            case GENESIS -> "vote.page_mode";
-                        });
-        String freeNavigation = messages.tr("vote.free_navigation");
-        inventory.setItem(
-                PREVIOUS_SLOT,
-                current == Phase.MODE
-                        ? item(
-                                Material.GRAY_STAINED_GLASS_PANE,
-                                " ",
-                                List.of(),
-                                NamedTextColor.GRAY,
-                                false)
-                        : item(Material.ARROW, previous, List.of(), NamedTextColor.WHITE, false));
-        inventory.setItem(
-                PAGE_SLOT,
-                item(Material.PAPER, page, List.of(freeNavigation), NamedTextColor.AQUA, false));
-        inventory.setItem(
-                CLOSE_SLOT, item(Material.BARRIER, close, List.of(), NamedTextColor.RED, false));
-        inventory.setItem(
-                NEXT_SLOT,
-                current == Phase.LINES
-                        ? item(
-                                Material.GRAY_STAINED_GLASS_PANE,
-                                " ",
-                                List.of(),
-                                NamedTextColor.GRAY,
-                                false)
-                        : item(Material.ARROW, next, List.of(), NamedTextColor.WHITE, false));
-    }
-
-    private <T> void put(
-            Inventory inventory,
-            int slot,
-            T choice,
-            Material icon,
-            String langKey,
-            UUID viewer,
-            Map<UUID, T> votes,
-            boolean locked) {
+        String id;
+        String prefix;
+        String name;
+        List<String> description;
+        Map<UUID, ?> votes;
+        boolean locked = false;
+        int light = 0;
+        switch (page) {
+            case MODE -> {
+                id = "modes." + ((ModeChoice) choice).name().toLowerCase(Locale.ROOT);
+                String key = "mode." + ((ModeChoice) choice).name().toLowerCase(Locale.ROOT);
+                prefix = "vote";
+                name = messages.tr(key + ".name");
+                description = messages.lines(key + ".lore");
+                votes = modeVotes;
+                locked = choice == ModeChoice.POINTS && teams.size() < 4;
+            }
+            case DIFFICULTY -> {
+                id = "difficulties." + ((BingoDifficulty) choice).name().toLowerCase(Locale.ROOT);
+                String key =
+                        "card_difficulty."
+                                + ((BingoDifficulty) choice).name().toLowerCase(Locale.ROOT);
+                prefix = "difficulty_vote";
+                name = messages.tr(key + ".name");
+                description = messages.lines(key + ".lore");
+                votes = difficultyVotes;
+                locked =
+                        choice == BingoDifficulty.EXTREME
+                                && teams.stream().anyMatch(team -> team.getMembers().size() <= 1);
+            }
+            case LINES -> {
+                id = "lines";
+                prefix = "lines_vote";
+                light = (Integer) choice;
+                name = messages.tr("lines_vote.menu_option", light);
+                description = List.of(messages.tr("lines_vote.menu_desc", light));
+                votes = lineVotes;
+            }
+            case GENESIS -> throw new IllegalStateException("Genesis is rendered separately");
+            default -> throw new IllegalStateException("Unknown phase: " + page);
+        }
         int count = (int) votes.values().stream().filter(choice::equals).count();
-        MessageService messages = MessageService.global();
-        String name = messages.tr(langKey + ".name");
-        List<String> lore = new ArrayList<>(messages.lines(langKey + ".lore"));
-        lore.add("");
-        if (locked)
-            lore.add(
-                    messages.tr(
-                            langKey.startsWith("mode.")
-                                    ? "vote.menu_locked"
-                                    : "difficulty_vote.menu_locked"));
-        else {
-            String countKey =
-                    langKey.startsWith("mode.")
-                            ? "vote.menu_count"
-                            : langKey.startsWith("card_difficulty.")
-                                    ? "difficulty_vote.menu_count"
-                                    : "lines_vote.menu_count";
-            String hintKey =
-                    langKey.startsWith("mode.")
-                            ? "vote.menu_hint"
-                            : langKey.startsWith("card_difficulty.")
-                                    ? "difficulty_vote.menu_hint"
-                                    : "lines_vote.menu_hint";
-            lore.add(messages.tr(countKey, count));
-            boolean picked = choice.equals(votes.get(viewer));
-            lore.add(
-                    messages.tr(
-                            picked
-                                    ? (langKey.startsWith("mode.")
-                                            ? "vote.menu_picked"
-                                            : langKey.startsWith("card_difficulty.")
-                                                    ? "difficulty_vote.menu_picked"
-                                                    : "lines_vote.menu_picked")
-                                    : hintKey));
-        }
-        ItemStack stack =
-                item(
-                        locked ? Material.BARRIER : icon,
+        boolean picked = choice.equals(votes.get(viewer));
+        return DailyBingoVoteMenu.option(
+                id,
+                locked ? "locked" : picked ? "selected" : "idle",
+                Map.of(
+                        "name",
                         name,
-                        lore,
-                        locked ? NamedTextColor.RED : NamedTextColor.YELLOW,
-                        choice.equals(votes.get(viewer)));
-        ItemMeta meta = stack.getItemMeta();
-        if (meta != null) {
-            meta.setMaxStackSize(99);
-            stack.setItemMeta(meta);
-        }
-        stack.setAmount(Math.max(1, locked ? 1 : count));
-        inventory.setItem(slot, stack);
-    }
-
-    private ItemStack item(
-            Material material, String name, List<String> lore, NamedTextColor color, boolean glow) {
-        ItemStack item = new ItemStack(material);
-        ItemMeta meta = item.getItemMeta();
-        meta.displayName(
-                LegacyText.component(name == null ? "" : name)
-                        .colorIfAbsent(color)
-                        .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
-        meta.lore(
-                lore.stream()
-                        .map(
-                                line ->
-                                        LegacyText.component(line == null ? "" : line)
-                                                .colorIfAbsent(NamedTextColor.GRAY)
-                                                .decorationIfAbsent(
-                                                        TextDecoration.ITALIC,
-                                                        TextDecoration.State.FALSE))
-                        .toList());
-        if (glow) meta.setEnchantmentGlintOverride(true);
-        item.setItemMeta(meta);
-        return item;
+                        "count",
+                        count,
+                        "count-text",
+                        messages.tr(prefix + ".menu_count", count),
+                        "hint",
+                        messages.tr(prefix + (picked ? ".menu_picked" : ".menu_hint")),
+                        "locked-text",
+                        locked ? messages.tr(prefix + ".menu_locked") : ""),
+                description,
+                Material.PAPER,
+                locked ? 1 : count,
+                light);
     }
 
     private void refreshOpenMenus() {
@@ -769,9 +564,8 @@ final class DailyBingoVoteController {
             Player player = Bukkit.getPlayer(voter);
             if (player != null
                     && player.getOpenInventory().getTopInventory().getHolder()
-                            instanceof VoteHolder holder
-                    && phase != Phase.GENESIS
-                    && holder.votePhase() != Phase.GENESIS) open(player, holder);
+                            instanceof DailyBingoVoteMenu menu
+                    && currentView(player, menu)) render(menu);
         }
     }
 
@@ -780,7 +574,12 @@ final class DailyBingoVoteController {
             Player player = Bukkit.getPlayer(voter);
             if (player != null
                     && player.getOpenInventory().getTopInventory().getHolder()
-                            instanceof VoteHolder) player.closeInventory();
+                            instanceof DailyBingoVoteMenu menu
+                    && menu.owner == this
+                    && menu.vote == result
+                    && player == menu.connection
+                    && player.getOpenInventory().getTopInventory() == menu.getInventory())
+                player.closeInventory();
         }
     }
 
@@ -805,6 +604,7 @@ final class DailyBingoVoteController {
         teams = List.of();
         phase = null;
         secondsLeft = 0;
+        phaseDuration = 0;
         selectedMode = null;
         selectedDifficulty = null;
         selectedWinLines = 1;
@@ -819,7 +619,9 @@ final class DailyBingoVoteController {
         if (result == null
                 || result.isDone()
                 || phase == null
-                || !voters.contains(player.getUniqueId())) return false;
+                || !voters.contains(player.getUniqueId())
+                || !player.isOnline()
+                || Bukkit.getPlayer(player.getUniqueId()) != player) return false;
         open(player, phase);
         return true;
     }
@@ -837,18 +639,7 @@ final class DailyBingoVoteController {
         if (bossBar == null)
             bossBar = Bukkit.createBossBar(legacyTitle, BarColor.PURPLE, BarStyle.SOLID);
         else bossBar.setTitle(legacyTitle);
-        bossBar.setProgress(
-                Math.max(
-                        0.0,
-                        Math.min(
-                                1.0,
-                                secondsLeft
-                                        / (double)
-                                                Math.max(
-                                                        1,
-                                                        plugin.getGameManager()
-                                                                .getBingoManager()
-                                                                .dailyVoteSeconds()))));
+        bossBar.setProgress(Math.clamp(secondsLeft / (double) Math.max(1, phaseDuration), 0D, 1D));
         for (UUID voter : voters) {
             Player player = Bukkit.getPlayer(voter);
             if (player != null && !bossBar.getPlayers().contains(player)) bossBar.addPlayer(player);

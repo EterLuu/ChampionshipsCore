@@ -23,6 +23,7 @@ import org.bukkit.scheduler.BukkitTask;
 import java.util.*;
 
 public class ParkourTagScheduleManager extends BaseManager {
+    private long scheduleGeneration;
     private static final int ROUND_TRANSITION_SECONDS = 10;
     private final BukkitScheduler scheduler;
     private final ParkourTagScheduleHandler handler;
@@ -151,6 +152,7 @@ public class ParkourTagScheduleManager extends BaseManager {
 
         plugin.getGameManager().getParkourTagManager().resetEventState();
         plugin.getScheduleManager().addRound(GameTypeEnum.ParkourTag);
+        scheduleGeneration++;
         enabled = true;
         timer = 10;
         subRound = 0;
@@ -250,18 +252,11 @@ public class ParkourTagScheduleManager extends BaseManager {
                                 MessageConfig.codeText(
                                         "parkour-tag-schedule-manager.abort-schedule-1"),
                                 reason));
-        if (firstStartTask != null) firstStartTask.cancel();
-        if (startTask != null) startTask.cancel();
-        enabled = false;
-        activeRoundInstances.clear();
-        scheduledMapName = null;
-        handler.unRegister();
-        plugin.getGameManager().releaseEventSpectatorsForGame(GameTypeEnum.ParkourTag);
-        plugin.getScheduleManager().clearRoundPreparationCountdown();
+        endSchedule();
     }
 
     public void endSchedule() {
-        plugin.getScheduleManager().clearStartSelection(GameTypeEnum.ParkourTag);
+        scheduleGeneration++;
         if (firstStartTask != null) firstStartTask.cancel();
         if (startTask != null) startTask.cancel();
 
@@ -270,8 +265,7 @@ public class ParkourTagScheduleManager extends BaseManager {
         scheduledMapName = null;
 
         handler.unRegister();
-        plugin.getScheduleManager().clearRoundPreparationCountdown();
-        plugin.getGameManager().releaseEventSpectatorsForGame(GameTypeEnum.ParkourTag);
+        plugin.getScheduleManager().releaseSchedule(GameTypeEnum.ParkourTag);
         rounds.clear();
         teams = List.of();
         standings.clear();
@@ -338,12 +332,13 @@ public class ParkourTagScheduleManager extends BaseManager {
         if (!activeRoundInstances.isEmpty()) return;
 
         boolean hasNextRound = prepareNextRound();
+        long generation = scheduleGeneration;
         plugin.getScheduleManager()
                 .settleEventRound(
                         GameTypeEnum.ParkourTag,
                         hasNextRound,
                         () -> {
-                            if (!enabled) return;
+                            if (!enabled || generation != scheduleGeneration) return;
                             if (hasNextRound) nextParkourTagRound();
                             else endSchedule();
                         });

@@ -22,34 +22,19 @@ import java.util.Map;
 /** Optional editor control for the three-second block disappearance at the final countdown. */
 public final class CountdownBlockDisappearanceStep extends PrepareStep {
     public enum Mode {
-        RANDOM(
-                "RANDOM",
-                GuiConfig.text("map-editor.menus.countdown-blocks.items.random.title"),
-                Material.SAND),
-        DOOR_EAST_WEST(
-                "DOOR_EAST_WEST",
-                GuiConfig.text("map-editor.menus.countdown-blocks.items.east-west.title"),
-                Material.OAK_DOOR),
-        DOOR_NORTH_SOUTH(
-                "DOOR_NORTH_SOUTH",
-                GuiConfig.text("map-editor.menus.countdown-blocks.items.north-south.title"),
-                Material.SPRUCE_DOOR),
-        DOOR_VERTICAL(
-                "DOOR_VERTICAL",
-                GuiConfig.text("map-editor.menus.countdown-blocks.items.vertical.title"),
-                Material.IRON_BARS),
-        DIRECT(
-                "DIRECT",
-                GuiConfig.text("map-editor.menus.countdown-blocks.items.direct.title"),
-                Material.TNT);
+        RANDOM("RANDOM", "random", Material.SAND),
+        DOOR_EAST_WEST("DOOR_EAST_WEST", "east-west", Material.OAK_DOOR),
+        DOOR_NORTH_SOUTH("DOOR_NORTH_SOUTH", "north-south", Material.SPRUCE_DOOR),
+        DOOR_VERTICAL("DOOR_VERTICAL", "vertical", Material.IRON_BARS),
+        DIRECT("DIRECT", "direct", Material.TNT);
 
         private final String value;
-        private final String displayName;
+        private final String itemId;
         private final Material icon;
 
-        Mode(String value, String displayName, Material icon) {
+        Mode(String value, String itemId, Material icon) {
             this.value = value;
-            this.displayName = displayName;
+            this.itemId = itemId;
             this.icon = icon;
         }
 
@@ -58,7 +43,11 @@ public final class CountdownBlockDisappearanceStep extends PrepareStep {
         }
 
         public String displayName() {
-            return displayName;
+            return GuiConfig.text("map-editor.menus.countdown-blocks.items." + itemId + ".title");
+        }
+
+        public String itemId() {
+            return itemId;
         }
 
         public Material icon() {

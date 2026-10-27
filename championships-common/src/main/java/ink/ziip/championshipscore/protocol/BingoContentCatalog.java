@@ -10,17 +10,17 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/** Registry baseline shared by Core card selection and the supported Folia 26.2 worker. */
+/** Registry baseline shared by Core card selection and the supported Folia worker. */
 public final class BingoContentCatalog {
-    private static final BingoContentCatalog WORKER_26_2 = load("26.2");
+    private static final BingoContentCatalog WORKER = load("26.3");
     private final Map<String, Set<String>> registries;
 
     private BingoContentCatalog(Map<String, Set<String>> registries) {
         this.registries = Map.copyOf(registries);
     }
 
-    public static BingoContentCatalog worker26_2() {
-        return WORKER_26_2;
+    public static BingoContentCatalog worker() {
+        return WORKER;
     }
 
     public boolean contains(String registry, String value) {
@@ -78,7 +78,7 @@ public final class BingoContentCatalog {
     public void requireSupported(BingoTaskSpec task) {
         if (!supports(task)) {
             throw new IllegalArgumentException(
-                    "Bingo task exceeds the Minecraft 26.2 worker content baseline: "
+                    "Bingo task exceeds the Minecraft 26.3 worker content baseline: "
                             + task.taskId());
         }
     }

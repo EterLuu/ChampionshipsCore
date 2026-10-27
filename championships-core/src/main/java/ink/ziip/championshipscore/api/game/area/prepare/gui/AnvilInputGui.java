@@ -1,249 +1,161 @@
 package ink.ziip.championshipscore.api.game.area.prepare.gui;
 
+import ink.ziip.championshipscore.api.ChampionshipPermissions;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareKeys;
+import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.api.gui.AnvilInputMenu;
+import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
-import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.inventory.AnvilInventory;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
-import org.bukkit.inventory.MenuType;
-import org.bukkit.inventory.view.AnvilView;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.IntConsumer;
 
-/**
- * Anvil-rename input used for two prompts: reading a new area name ({@link #openName}) and reading
- * a stamp copy count ({@link #openNumber}). The player types in the rename field and clicks the
- * result slot (slot 2) to confirm; {@link AnvilInventory#getRenameText()} yields the typed text.
- * Repair cost is forced to 0 (via {@link org.bukkit.event.inventory.PrepareAnvilEvent}) so no XP is
- * ever charged.
- */
+/** Prepare-domain validation over the Core-owned native input lifecycle. */
 public final class AnvilInputGui {
-    private static final Map<UUID, Holder> OPEN_INPUTS = new HashMap<>();
-
     private AnvilInputGui() {}
 
-    public enum Mode {
-        NAME,
-        NUMBER
-    }
-
-    public static final class Holder implements InventoryHolder {
-        final Mode mode;
-        final Consumer<String> callback;
-        Runnable onCancel;
-        Inventory inventory;
-
-        Holder(Mode mode, Consumer<String> callback) {
-            this.mode = mode;
-            this.callback = callback;
-        }
-
-        @Override
-        public @NotNull Inventory getInventory() {
-            return inventory;
-        }
-    }
-
-    public static void openName(
-            @NotNull Player player,
-            @NotNull PrepareSessionManager manager,
-            @NotNull GameTypeEnum gameType) {
+    public static void openName(Player player, PrepareSessionManager manager, GameTypeEnum type) {
+        var session = manager.getSession(player);
+        String prompt = GuiConfig.text(MenuId.MAP_EDITOR_INPUT.item("name") + ".title");
         open(
                 player,
-                Mode.NAME,
-                GuiConfig.text("map-editor.menus.input.items.name.title"),
-                text -> {
-                    String error = validateName(manager, gameType, text);
-                    if (error != null) {
-                        player.sendMessage(error);
-                        return;
-                    }
-                    close(player);
-                    manager.createAndEnter(player, gameType, text);
-                });
+                manager,
+                session,
+                "name",
+                prompt,
+                prompt,
+                text -> validateName(manager, type, text),
+                text -> manager.createAndEnter(player, type, text),
+                player::sendMessage,
+                null);
     }
 
-    public static void openNumber(@NotNull Player player, @NotNull IntConsumer onCount) {
+    public static void openNumber(Player player, PrepareSession session, IntConsumer submit) {
+        String prompt = GuiConfig.text(MenuId.MAP_EDITOR_INPUT.item("number") + ".title");
         open(
                 player,
-                Mode.NUMBER,
-                GuiConfig.text("map-editor.menus.input.items.number.title"),
+                session.getPlugin().getPrepareSessionManager(),
+                session,
+                "number",
+                prompt,
+                prompt,
                 text -> {
-                    int n;
                     try {
-                        n = Integer.parseInt(text);
-                    } catch (NumberFormatException e) {
-                        CoreMessages.sendAdminError(
-                                player, MessageConfig.MAP_EDITOR_INPUT_INVALID_NUMBER);
-                        return;
+                        return Integer.parseInt(text) < 1
+                                ? MessageConfig.MAP_EDITOR_INPUT_NUMBER_TOO_SMALL
+                                : null;
+                    } catch (NumberFormatException ignored) {
+                        return MessageConfig.MAP_EDITOR_INPUT_INVALID_NUMBER;
                     }
-                    if (n < 1) {
-                        CoreMessages.sendAdminError(
-                                player, MessageConfig.MAP_EDITOR_INPUT_NUMBER_TOO_SMALL);
-                        return;
-                    }
-                    close(player);
-                    onCount.accept(n);
-                });
+                },
+                text -> submit.accept(Integer.parseInt(text)),
+                error -> CoreMessages.sendAdminError(player, error),
+                null);
     }
 
-    /** Opens a signed integer prompt. An empty input accepts the supplied default value. */
+    /** A blank signed integer accepts the caller's original default. */
     public static void openInteger(
-            @NotNull Player player,
-            @NotNull String prompt,
+            Player player,
+            PrepareSession session,
+            String prompt,
             int defaultValue,
-            @NotNull IntConsumer onValue) {
+            IntConsumer submit) {
         open(
                 player,
-                Mode.NUMBER,
+                session.getPlugin().getPrepareSessionManager(),
+                session,
+                "number",
+                prompt,
                 prompt,
                 text -> {
-                    int value = defaultValue;
-                    if (!text.isBlank()) {
-                        try {
-                            value = Integer.parseInt(text);
-                        } catch (NumberFormatException e) {
-                            CoreMessages.sendAdminError(
-                                    player, MessageConfig.MAP_EDITOR_INPUT_INVALID_INTEGER);
-                            return;
-                        }
+                    if (text.isBlank()) return null;
+                    try {
+                        Integer.parseInt(text);
+                        return null;
+                    } catch (NumberFormatException ignored) {
+                        return MessageConfig.MAP_EDITOR_INPUT_INVALID_INTEGER;
                     }
-                    close(player);
-                    onValue.accept(value);
-                });
+                },
+                text -> submit.accept(text.isBlank() ? defaultValue : Integer.parseInt(text)),
+                error -> CoreMessages.sendAdminError(player, error),
+                null);
     }
 
-    /**
-     * Free text for session-scoped editors; their callbacks validate permission and session
-     * ownership.
-     */
-    public static void openText(Player player, String prompt, Consumer<String> onValue) {
-        open(
-                player,
-                Mode.NAME,
-                prompt,
-                text -> {
-                    close(player);
-                    onValue.accept(text);
-                });
-    }
-
-    /**
-     * Prefilled, validated editor input. Invalid input stays open; Esc returns to its parent menu.
-     */
     public static void openEditorText(
             Player player,
+            PrepareSession session,
             String prompt,
             String initialValue,
-            java.util.function.Function<String, String> validate,
-            Consumer<String> onValue,
-            Runnable onCancel) {
+            Function<String, String> validate,
+            Consumer<String> submit,
+            Runnable cancel) {
         open(
                 player,
-                Mode.NAME,
+                session.getPlugin().getPrepareSessionManager(),
+                session,
+                "name",
                 prompt,
                 initialValue,
-                text -> {
-                    String error = validate.apply(text);
-                    if (error != null) {
-                        CoreMessages.sendAdminError(player, error);
-                        return;
-                    }
-                    close(player);
-                    onValue.accept(text);
-                },
-                onCancel);
+                validate,
+                submit,
+                error -> CoreMessages.sendAdminError(player, error),
+                cancel);
     }
 
     private static void open(
-            @NotNull Player player,
-            @NotNull Mode mode,
-            @NotNull String prompt,
-            @NotNull Consumer<String> callback) {
-        open(player, mode, prompt, prompt, callback, null);
+            Player player,
+            PrepareSessionManager manager,
+            PrepareSession session,
+            String item,
+            String title,
+            String value,
+            Function<String, String> validate,
+            Consumer<String> submit,
+            Consumer<String> error,
+            Runnable cancel) {
+        var configured =
+                AnvilInputMenu.Prompt.configured(
+                        MenuId.MAP_EDITOR_INPUT.item(item),
+                        title,
+                        value,
+                        GuiConfig.component(MenuId.MAP_EDITOR_INPUT.item("hint") + ".title"));
+        var input = configured.input();
+        PrepareKeys.tagPrepare(input);
+        manager.getPlugin()
+                .getAnvilInputMenu()
+                .open(
+                        manager,
+                        player,
+                        new AnvilInputMenu.Prompt(title, value, input),
+                        new AnvilInputMenu.Callbacks(
+                                () ->
+                                        player.hasPermission(ChampionshipPermissions.ADMIN)
+                                                && manager.getPlugin().getPrepareSessionManager()
+                                                        == manager
+                                                && manager.getSession(player) == session,
+                                validate,
+                                submit,
+                                error,
+                                cancel,
+                                null));
     }
 
-    private static void open(
-            @NotNull Player player,
-            @NotNull Mode mode,
-            @NotNull String prompt,
-            @NotNull String initialValue,
-            @NotNull Consumer<String> callback,
-            @Nullable Runnable onCancel) {
-        Holder holder = new Holder(mode, callback);
-        AnvilView view = MenuType.ANVIL.create(player, LegacyText.plainComponent(prompt));
-        AnvilInventory inv = view.getTopInventory();
-        holder.inventory = inv;
-        holder.onCancel = onCancel;
-        // Send the actual value in the initial container contents. Replacing a prompt after opening
-        // can leave the client's rename field initialized from the wrong item name.
-        inv.setFirstItem(
-                PrepareKeys.item(
-                        Material.PAPER,
-                        LegacyText.plainComponent(initialValue),
-                        List.of(
-                                LegacyText.plainComponent(
-                                        GuiConfig.text(
-                                                "map-editor.menus.input.items.hint.title")))));
-        player.openInventory(view);
-        OPEN_INPUTS.put(player.getUniqueId(), holder);
-        view.setMaximumRepairCost(0);
-        view.setRepairCost(0);
+    public static void close(PrepareSessionManager manager, Player player) {
+        manager.getPlugin().getAnvilInputMenu().close(manager, player);
     }
 
-    public static @Nullable Holder getHolder(@NotNull Player player, @NotNull Inventory inventory) {
-        Holder holder = OPEN_INPUTS.get(player.getUniqueId());
-        return holder != null && holder.inventory == inventory ? holder : null;
-    }
-
-    public static void clear(@NotNull Player player, @NotNull Inventory inventory) {
-        Holder holder = getHolder(player, inventory);
-        if (holder != null) {
-            holder.inventory.clear();
-            OPEN_INPUTS.remove(player.getUniqueId());
-            if (holder.onCancel != null) holder.onCancel.run();
-        }
-    }
-
-    /**
-     * Remove the input placeholder before its container is closed, so it cannot enter a player
-     * inventory.
-     */
-    public static void close(@NotNull Player player) {
-        Holder holder = OPEN_INPUTS.remove(player.getUniqueId());
-        if (holder == null) return;
-        holder.inventory.clear();
-        if (player.getOpenInventory().getTopInventory() == holder.inventory) {
-            player.closeInventory();
-        }
-    }
-
-    /** Clears every callback and inventory reference during plugin shutdown. */
-    public static void closeAll() {
-        for (UUID playerId : List.copyOf(OPEN_INPUTS.keySet())) {
-            Player player = Bukkit.getPlayer(playerId);
-            if (player != null) close(player);
-        }
-        OPEN_INPUTS.values().forEach(holder -> holder.inventory.clear());
-        OPEN_INPUTS.clear();
+    public static void closeAll(PrepareSessionManager manager) {
+        manager.getPlugin().getAnvilInputMenu().closeOwner(manager);
     }
 
     private static @Nullable String validateName(
@@ -263,16 +175,5 @@ public final class AnvilInputGui {
             return CoreMessages.formatAdminError(
                     MessageConfig.MAP_EDITOR_INPUT_NAME_ALREADY_EXISTS.replace("%name%", trimmed));
         return null;
-    }
-
-    public static void handleClick(
-            @NotNull PrepareSessionManager manager,
-            @NotNull InventoryClickEvent event,
-            @NotNull Player player,
-            @NotNull Holder holder) {
-        event.setCancelled(true);
-        if (event.getRawSlot() != 2) return; // only the result slot confirms
-        String text = ((AnvilView) event.getView()).getRenameText();
-        holder.callback.accept(text == null ? "" : text.trim());
     }
 }

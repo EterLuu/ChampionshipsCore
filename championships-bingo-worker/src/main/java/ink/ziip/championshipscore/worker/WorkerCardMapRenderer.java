@@ -1,10 +1,13 @@
 package ink.ziip.championshipscore.worker;
 
 import ink.ziip.championshipscore.platform.bukkit.bingo.map.MapColorMatcher;
+import ink.ziip.championshipscore.platform.bukkit.bingo.map.TaskCellLayout;
 import ink.ziip.championshipscore.platform.bukkit.bingo.map.TaskImageAtlas;
+import ink.ziip.championshipscore.platform.bukkit.gui.BingoTaskItems;
 import ink.ziip.championshipscore.protocol.BingoTaskSpec;
 import ink.ziip.championshipscore.protocol.MatchManifest;
 import ink.ziip.championshipscore.protocol.TeamSnapshot;
+import ink.ziip.championshipscore.shared.presentation.BingoTaskPresentation;
 
 import net.kyori.adventure.key.Key;
 
@@ -15,7 +18,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.map.MapCanvas;
 import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
-import org.bukkit.map.MinecraftFont;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.image.BufferedImage;
@@ -31,6 +33,7 @@ final class WorkerCardMapRenderer extends MapRenderer {
     private final WorkerMatchSession session;
     private final java.util.UUID viewerPlayer;
     private String lastSignature;
+    private final BingoTaskPresentation taskTheme;
 
     WorkerCardMapRenderer(MatchManifest manifest, int viewerTeam, WorkerMatchSession session) {
         this(manifest, viewerTeam, null, session);
@@ -47,6 +50,7 @@ final class WorkerCardMapRenderer extends MapRenderer {
             WorkerMatchSession session) {
         super(false);
         this.manifest = manifest;
+        this.taskTheme = BingoTaskPresentation.from(manifest.runtimeRules().presentation());
         this.viewerTeam = viewerTeam;
         this.viewerPlayer = viewerPlayer;
         this.session = session;
@@ -91,8 +95,9 @@ final class WorkerCardMapRenderer extends MapRenderer {
             int gridX = displaySlot % width + offset;
             int gridY = displaySlot / width + offset;
             boolean completed = !completions.getOrDefault(trueIndex, List.of()).isEmpty();
-            if (!completed && (session.cellHidden(trueIndex) || session.cellLocked(trueIndex)))
-                drawBlocked(canvas, gridX, gridY);
+            if (BingoTaskPresentation.masked(
+                    completed, session.cellHidden(trueIndex), session.cellLocked(trueIndex)))
+                drawBlocked(canvas, gridX, gridY, session.cellLocked(trueIndex));
             else drawTask(canvas, task, gridX, gridY);
             drawBorders(canvas, gridX, gridY, completions.getOrDefault(trueIndex, List.of()));
         }
@@ -107,8 +112,12 @@ final class WorkerCardMapRenderer extends MapRenderer {
         lastSignature = signature;
     }
 
-    private void drawBlocked(MapCanvas canvas, int gridX, int gridY) {
-        BufferedImage image = TaskImageAtlas.imageFor(Key.key("minecraft", "bedrock"));
+    private void drawBlocked(MapCanvas canvas, int gridX, int gridY, boolean locked) {
+        var state =
+                locked ? BingoTaskPresentation.State.LOCKED : BingoTaskPresentation.State.HIDDEN;
+        BufferedImage image =
+                TaskImageAtlas.imageFor(
+                        BingoTaskItems.material(taskTheme.states().get(state).material()).key());
         if (image != null) drawImage(canvas, gridX * 24 + 5, gridY * 24 + 5, image);
     }
 
@@ -324,19 +333,7 @@ final class WorkerCardMapRenderer extends MapRenderer {
 
     static void drawAmount(
             MapCanvas canvas, int gridX, int gridY, int amount, boolean shiftUpLeft) {
-        String text = Integer.toString(amount);
-        int xStart = text.length() == 1 ? 6 : 0;
-        int delta = shiftUpLeft ? -1 : 0;
-        canvas.drawText(
-                gridX * 24 + 17 + xStart + delta,
-                gridY * 24 + 21 + delta,
-                MinecraftFont.Font,
-                "§47;" + amount);
-        canvas.drawText(
-                gridX * 24 + 16 + xStart + delta,
-                gridY * 24 + 20 + delta,
-                MinecraftFont.Font,
-                "§58;" + amount);
+        TaskCellLayout.drawAmount(canvas, gridX, gridY, amount, shiftUpLeft);
     }
 
     private static final int GLYPH_W = 4;

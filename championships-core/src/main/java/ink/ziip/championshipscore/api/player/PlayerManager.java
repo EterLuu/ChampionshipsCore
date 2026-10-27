@@ -295,6 +295,14 @@ public class PlayerManager extends BaseManager {
 
     /** Resolves the configured server identity without blocking the server thread. */
     public CompletionStage<UUID> resolvePlayerUUID(@NotNull String name) {
+        return resolvePlayerUUID(name, null);
+    }
+
+    /**
+     * A selected identity must still resolve to its original UUID before any cache or DB update.
+     */
+    public CompletionStage<UUID> resolvePlayerUUID(
+            @NotNull String name, @Nullable UUID expectedUuid) {
         if (!name.matches("[A-Za-z0-9_]{3,16}")) {
             return CompletableFuture.failedFuture(
                     new PlayerUuidLookupException(
@@ -308,6 +316,8 @@ public class PlayerManager extends BaseManager {
                         .findFirst()
                         .orElse(null);
         if (online != null) {
+            if (expectedUuid != null && !expectedUuid.equals(online.getUniqueId()))
+                return CompletableFuture.failedFuture(selectedIdentityChanged(name));
             PlayerIdentityMigrationResult modeFailure =
                     validateOnlineUuid(online.getName(), online.getUniqueId());
             if (modeFailure != null) {
@@ -327,6 +337,8 @@ public class PlayerManager extends BaseManager {
                         () -> {
                             try {
                                 UUID uuid = resolveConfiguredUuid(name);
+                                if (expectedUuid != null && !expectedUuid.equals(uuid))
+                                    throw selectedIdentityChanged(name);
                                 PlayerIdentityMigrationResult migration =
                                         playerDao.synchronizeIdentity(name, uuid);
                                 if (!migration.successful() || migration.hasTeamConflict()) {
@@ -352,6 +364,12 @@ public class PlayerManager extends BaseManager {
                             }
                         });
         return resolved;
+    }
+
+    private static PlayerUuidLookupException selectedIdentityChanged(String name) {
+        return new PlayerUuidLookupException(
+                PlayerUuidLookupException.Reason.IDENTITY_CONFLICT,
+                "Selected player identity changed for " + name);
     }
 
     /**

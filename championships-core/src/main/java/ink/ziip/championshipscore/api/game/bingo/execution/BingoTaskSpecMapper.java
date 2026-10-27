@@ -13,9 +13,8 @@ import ink.ziip.championshipscore.api.game.bingo.task.StatisticCategories;
 import ink.ziip.championshipscore.api.game.bingo.task.StatisticCategory;
 import ink.ziip.championshipscore.api.game.bingo.task.StatisticHandle;
 import ink.ziip.championshipscore.api.game.bingo.task.StatisticTask;
+import ink.ziip.championshipscore.platform.bukkit.bingo.FrozenBingoTaskText;
 import ink.ziip.championshipscore.protocol.BingoTaskSpec;
-
-import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -144,18 +143,10 @@ public final class BingoTaskSpecMapper {
                 "display.material", task.data.getDisplayMaterial(CardDisplayInfo.DEFAULT).name());
         attributes.put(
                 "display.amount", Integer.toString(Math.max(1, task.data.getRequiredAmount())));
-        try {
-            GsonComponentSerializer serializer = GsonComponentSerializer.gson();
-            attributes.put("display.name", serializer.serialize(task.data.getName()));
-            net.kyori.adventure.text.Component[] description = task.data.getItemDescription();
-            attributes.put("display.lore-size", Integer.toString(description.length));
-            for (int index = 0; index < description.length; index++) {
-                attributes.put("display.lore." + index, serializer.serialize(description[index]));
-            }
-        } catch (RuntimeException | LinkageError unavailableRegistry) {
-            // Headless mapper tests have no Paper RegistryAccess. The Worker retains a
-            // registry-name
-            // fallback, while production Core always supplies these rich display fields.
-        }
+        attributes.put("display.glow", Boolean.toString(task.data.shouldItemGlow()));
+        attributes.putAll(
+                new FrozenBingoTaskText(
+                                task.data.getName(), List.of(task.data.getItemDescription()))
+                        .attributes());
     }
 }
