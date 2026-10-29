@@ -125,6 +125,12 @@ task:
   #集合任务的「家族名」：按成员物品ID的公共词缀匹配（如*_WOOL → wool）。
   #命中则标题显示「任意<家族名>」，未命中则回退到「任意：<代表物品>」。
   family:
+    wool_slab: "羊毛台阶"
+    wool_stairs: "羊毛楼梯"
+    cushion: "坐垫"
+    concrete_slab: "混凝土台阶"
+    concrete_stairs: "混凝土楼梯"
+    map: "探险地图"
     bed: "床"
     wool: "羊毛"
     carpet: "地毯"
@@ -225,6 +231,7 @@ task:
       height_limit: "高度上限"
       nether_roof: "下界顶部"
     label:
+      dappled_forest: "斑驳森林生物群系"
       mushroom: "蘑菇"
       water_bottle: "水瓶"
       water_bucket: "桶"

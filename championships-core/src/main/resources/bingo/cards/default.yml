@@ -284,8 +284,26 @@ categories:
     dimension: overworld
     members:
       - { material: "*_WOOL" }
+      - { material: "*_WOOL_SLAB" }
+      - { material: "*_WOOL_STAIRS" }
+      - { material: "*_CUSHION" }
       - { material: "*_CARPET" }
-      - { material: "*_BED" }
+      - { material: WHITE_BED }
+      - { material: ORANGE_BED }
+      - { material: MAGENTA_BED }
+      - { material: LIGHT_BLUE_BED }
+      - { material: YELLOW_BED }
+      - { material: LIME_BED }
+      - { material: PINK_BED }
+      - { material: GRAY_BED }
+      - { material: LIGHT_GRAY_BED }
+      - { material: CYAN_BED }
+      - { material: PURPLE_BED }
+      - { material: BLUE_BED }
+      - { material: BROWN_BED }
+      - { material: GREEN_BED }
+      - { material: RED_BED }
+      - { material: BLACK_BED }
       - { material: "*_BANNER" }
       - { material: "*_BUNDLE" }
   - id: dyed_glass
@@ -297,6 +315,8 @@ categories:
     dimension: overworld
     members:
       - { material: "*_CONCRETE" }
+      - { material: "*_CONCRETE_SLAB" }
+      - { material: "*_CONCRETE_STAIRS" }
       - { material: "*_CONCRETE_POWDER" }
   - id: dyed_clay
     dimension: overworld
@@ -720,6 +740,39 @@ categories:
       - { material: STRIPPED_MANGROVE_WOOD }
       - { material: STRIPPED_CHERRY_WOOD }
       - { material: STRIPPED_PALE_OAK_WOOD }
+  # Wilderness Bound (26.3): share the biome bottleneck across its resources.
+  - id: dappled_forest_biome
+    dimension: overworld
+    members:
+      - { material: ORANGE_POPLAR_LEAVES }
+      - { material: POPLAR_BOAT }
+      - { material: POPLAR_BUTTON }
+      - { material: POPLAR_CHEST_BOAT }
+      - { material: POPLAR_DOOR }
+      - { material: POPLAR_FENCE }
+      - { material: POPLAR_FENCE_GATE }
+      - { material: POPLAR_HANGING_SIGN }
+      - { material: POPLAR_LOG }
+      - { material: POPLAR_PLANKS }
+      - { material: POPLAR_PRESSURE_PLATE }
+      - { material: POPLAR_SAPLING }
+      - { material: POPLAR_SHELF }
+      - { material: POPLAR_SIGN }
+      - { material: POPLAR_SLAB }
+      - { material: POPLAR_STAIRS }
+      - { material: POPLAR_TRAPDOOR }
+      - { material: POPLAR_WOOD }
+      - { material: RED_POPLAR_LEAVES }
+      - { material: STRIPPED_POPLAR_LOG }
+      - { material: STRIPPED_POPLAR_WOOD }
+      - { material: YELLOW_POPLAR_LEAVES }
+      - { material: SHELF_MUSHROOM }
+      - { material: RED_SHRUB }
+  - id: camping_supplies
+    dimension: overworld
+    members:
+      - { material: STRAW_BED }
+      - { stat: SLEEP_IN_STRAW_BED }
   - id: desert_biome
     dimension: overworld
     members:
@@ -1103,6 +1156,27 @@ categories:
       - { material: FILLED_MAP }
       - { material: HEART_OF_THE_SEA }
       - { material: NAUTILUS_SHELL }
+  # Explorer maps have distinct item types in 26.3, including converted old maps.
+  - id: explorer_maps
+    dimension: overworld
+    members:
+      - { material: ABANDONED_CAMP_MAP }
+      - { material: BURIED_ANCIENT_CITY_MAP }
+      - { material: BURIED_MINESHAFT_MAP }
+      - { material: BURIED_TREASURE_MAP }
+      - { material: BURIED_TRIAL_CHAMBERS_MAP }
+      - { material: DESERT_PYRAMID_MAP }
+      - { material: DESERT_VILLAGE_MAP }
+      - { material: JUNGLE_PYRAMID_MAP }
+      - { material: OCEAN_MONUMENT_MAP }
+      - { material: PLAINS_VILLAGE_MAP }
+      - { material: SAVANNA_VILLAGE_MAP }
+      - { material: SNOWY_VILLAGE_MAP }
+      - { material: SWAMP_HUT_MAP }
+      - { material: TAIGA_VILLAGE_MAP }
+      - { material: WARM_OCEAN_RUINS_MAP }
+      - { material: WOODLAND_MANSION_MAP }
+      - { one_of: [ABANDONED_CAMP_MAP, BURIED_ANCIENT_CITY_MAP, BURIED_MINESHAFT_MAP, BURIED_TREASURE_MAP, BURIED_TRIAL_CHAMBERS_MAP, DESERT_PYRAMID_MAP, DESERT_VILLAGE_MAP, JUNGLE_PYRAMID_MAP, OCEAN_MONUMENT_MAP, PLAINS_VILLAGE_MAP, SAVANNA_VILLAGE_MAP, SNOWY_VILLAGE_MAP, SWAMP_HUT_MAP, TAIGA_VILLAGE_MAP, WARM_OCEAN_RUINS_MAP, WOODLAND_MANSION_MAP], icon: BURIED_TREASURE_MAP }
   - id: archaeology_loot
     dimension: overworld
     members:
@@ -1581,12 +1655,17 @@ singletons:
   #   作为普通物品格渲染，顶部角标为黄色像素 “ALL”（ANY 的对应物）。
   sets:
     # 颜色家族 / colour families
-    - { one_of: ["*_BED"], icon: RED_BED }
+    - { one_of: [WHITE_BED, ORANGE_BED, MAGENTA_BED, LIGHT_BLUE_BED, YELLOW_BED, LIME_BED, PINK_BED, GRAY_BED, LIGHT_GRAY_BED, CYAN_BED, PURPLE_BED, BLUE_BED, BROWN_BED, GREEN_BED, RED_BED, BLACK_BED], icon: RED_BED }
     - { one_of: ["*_WOOL"], icon: WHITE_WOOL }
+    - { one_of: ["*_WOOL_SLAB"], icon: WHITE_WOOL_SLAB }
+    - { one_of: ["*_WOOL_STAIRS"], icon: WHITE_WOOL_STAIRS }
+    - { one_of: ["*_CUSHION"], icon: WHITE_CUSHION }
     - { one_of: ["*_CARPET"], icon: BLUE_CARPET }
     - { one_of: [CANDLE, "*_CANDLE"], icon: ORANGE_CANDLE }
     - { one_of: ["*_CONCRETE_POWDER"], icon: LIME_CONCRETE_POWDER }
     - { one_of: ["*_CONCRETE"], icon: LIME_CONCRETE }
+    - { one_of: ["*_CONCRETE_SLAB"], icon: WHITE_CONCRETE_SLAB }
+    - { one_of: ["*_CONCRETE_STAIRS"], icon: WHITE_CONCRETE_STAIRS }
     - { one_of: ["*_STAINED_GLASS"], icon: CYAN_STAINED_GLASS }
     - { one_of: ["*_GLAZED_TERRACOTTA"], icon: MAGENTA_GLAZED_TERRACOTTA }
     - { one_of: [SHULKER_BOX, "*_SHULKER_BOX"], icon: RED_SHULKER_BOX, dimension: the_end }
@@ -1609,7 +1688,7 @@ singletons:
     # label 对应 lang 的 task.family.*，用于标题“集齐全套：<家族名>”。
     - { all_of: [FURNACE, BLAST_FURNACE, SMOKER], icon: FURNACE, label: furnace, category: unique_collect }
     - { all_of: [MINECART, CHEST_MINECART, FURNACE_MINECART, HOPPER_MINECART, TNT_MINECART], icon: MINECART, label: minecart, category: unique_collect }
-    - { all_of: [RED_MUSHROOM, BROWN_MUSHROOM], icon: RED_MUSHROOM, label: mushroom, category: unique_collect }
+    - { all_of: [RED_MUSHROOM, BROWN_MUSHROOM, SHELF_MUSHROOM], icon: RED_MUSHROOM, label: mushroom, category: unique_collect }
     - { all_of: [CRIMSON_FUNGUS, WARPED_FUNGUS], icon: CRIMSON_FUNGUS, label: crimson_fungus, category: unique_collect, dimension: nether }
     - { all_of: [PUMPKIN, CARVED_PUMPKIN, JACK_O_LANTERN], icon: PUMPKIN, label: pumpkin, category: unique_collect }
     - { all_of: [TORCH, SOUL_TORCH], icon: TORCH, label: torch, category: unique_collect }
@@ -1803,3 +1882,5 @@ singletons:
     - { trigger: kill_family, param: ARTHROPOD, count: 20, category: kill_family }
     - { trigger: kill_unique, param: HOSTILE, count: 7, category: kill_family }
     - { trigger: visit_biomes, param: [NETHER_WASTES, CRIMSON_FOREST, WARPED_FOREST, BASALT_DELTAS, SOUL_SAND_VALLEY], count: 3, icon: NETHER, category: visit_biomes, dimension: nether }
+    # Visiting the new biome shares its category with collecting its resources.
+    - { trigger: visit_biomes, param: [DAPPLED_FOREST], count: 1, icon: DAPPLED_FOREST, category: dappled_forest_biome }

@@ -17,6 +17,108 @@ import java.util.UUID;
 
 class WorkerObjectivesTest {
     @Test
+    void wildernessBoundFamiliesAcceptEveryColorAndRejectTheOriginalFullBlocks() {
+        for (String family :
+                new String[] {
+                    "WOOL_SLAB", "WOOL_STAIRS", "CUSHION", "CONCRETE_SLAB", "CONCRETE_STAIRS"
+                }) {
+            String members =
+                    java.util.Arrays.stream(org.bukkit.DyeColor.values())
+                            .map(color -> color.name() + "_" + family)
+                            .collect(java.util.stream.Collectors.joining(","));
+            var objectives =
+                    new WorkerObjectives(
+                            java.util.List.of(
+                                    new BingoTaskSpec(
+                                            0,
+                                            "set:WHITE_" + family,
+                                            "item_set",
+                                            Map.of("materials", members, "count", "1"))));
+            for (String member : members.split(",")) {
+                assertEquals(
+                        java.util.List.of(0),
+                        objectives.matching(
+                                playerWithInventory(stack(Material.valueOf(member), 1)),
+                                cell -> true),
+                        member);
+            }
+            assertTrue(
+                    objectives
+                            .matching(
+                                    playerWithInventory(stack(Material.WHITE_WOOL, 1)),
+                                    cell -> true)
+                            .isEmpty());
+            assertTrue(
+                    objectives
+                            .matching(
+                                    playerWithInventory(stack(Material.WHITE_CONCRETE, 1)),
+                                    cell -> true)
+                            .isEmpty());
+        }
+    }
+
+    @Test
+    void mushroomSetNowRequiresTheShelfMushroomAsWell() {
+        var objectives =
+                new WorkerObjectives(
+                        java.util.List.of(
+                                new BingoTaskSpec(
+                                        0,
+                                        "all:RED_MUSHROOM",
+                                        "all_of",
+                                        Map.of(
+                                                "materials",
+                                                "RED_MUSHROOM,BROWN_MUSHROOM,SHELF_MUSHROOM"))));
+        assertTrue(
+                objectives
+                        .matching(
+                                playerWithInventory(
+                                        stack(Material.RED_MUSHROOM, 1),
+                                        stack(Material.BROWN_MUSHROOM, 1)),
+                                cell -> true)
+                        .isEmpty());
+        assertEquals(
+                java.util.List.of(0),
+                objectives.matching(
+                        playerWithInventory(
+                                stack(Material.RED_MUSHROOM, 1),
+                                stack(Material.BROWN_MUSHROOM, 1),
+                                stack(Material.SHELF_MUSHROOM, 1)),
+                        cell -> true));
+    }
+
+    @Test
+    void strawBedSleepUsesItsOwnStatisticAndMatchBaseline() {
+        var objectives =
+                new WorkerObjectives(
+                        java.util.List.of(
+                                new BingoTaskSpec(
+                                        0,
+                                        "stat:SLEEP_IN_STRAW_BED",
+                                        "statistic",
+                                        Map.of("statistic", "SLEEP_IN_STRAW_BED", "target", "1"))));
+        UUID id = UUID.randomUUID();
+        var strawSleeps = new java.util.concurrent.atomic.AtomicInteger(5);
+        Player player =
+                proxy(
+                        Player.class,
+                        (method, args) ->
+                                switch (method.getName()) {
+                                    case "getUniqueId" -> id;
+                                    case "getStatistic" ->
+                                            args[0] == org.bukkit.Statistic.SLEEP_IN_STRAW_BED
+                                                    ? strawSleeps.get()
+                                                    : 100;
+                                    default -> defaultValue(method.getReturnType());
+                                });
+        objectives.captureBaselines(player);
+        assertTrue(objectives.matching(player, cell -> true).isEmpty());
+        strawSleeps.incrementAndGet();
+        assertEquals(java.util.List.of(0), objectives.matching(player, cell -> true));
+        assertTrue(objectives.matching(player, cell -> false).isEmpty());
+    }
+
+    @Test
     void anyDiscAcceptsEverySupportedDiscAndRejectsFragments() {
         var discs =
                 java.util.Arrays.stream(Material.values())
@@ -275,7 +377,7 @@ class WorkerObjectivesTest {
                         PlayerInventory.class,
                         (method, args) ->
                                 switch (method.getName()) {
-                                    case "getContents" -> contents;
+                                    case "getContents", "getStorageContents" -> contents;
                                     default -> defaultValue(method.getReturnType());
                                 });
         return proxy(

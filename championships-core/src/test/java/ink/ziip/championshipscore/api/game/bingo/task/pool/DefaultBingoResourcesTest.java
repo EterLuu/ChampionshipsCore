@@ -1,10 +1,13 @@
 package ink.ziip.championshipscore.api.game.bingo.task.pool;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ink.ziip.championshipscore.api.game.bingo.execution.RemoteBingoContent;
+import ink.ziip.championshipscore.api.game.bingo.task.CardDisplayInfo;
+import ink.ziip.championshipscore.api.game.bingo.task.EventTask;
 import ink.ziip.championshipscore.api.game.bingo.task.OneOfTask;
 import ink.ziip.championshipscore.protocol.BingoContentCatalog;
 
@@ -69,7 +72,7 @@ class DefaultBingoResourcesTest {
                         "MUSIC_DISC_RELIC");
 
         assertEquals(7, sets.stream().filter(entry -> entry.containsKey("all_of")).count());
-        assertEquals(129, events.size());
+        assertEquals(130, events.size());
         assertTrue(
                 sets.stream()
                         .anyMatch(
@@ -155,6 +158,108 @@ class DefaultBingoResourcesTest {
                         .findFirst()
                         .orElseThrow();
         assertEquals(List.of("MUSIC_DISC_*"), anyMusicDisc.get("one_of"));
+    }
+
+    @Test
+    void wildernessBoundCollectionsKeepColoredBedsSeparateAndIncludeTheNewShapes()
+            throws Exception {
+        try (var ignored = new CollectionItemTypes()) {
+            var yaml = resourceYaml("/bingo/cards/default.yml");
+            Map<String, String> families =
+                    Map.of(
+                            "RED_BED", "bed",
+                            "WHITE_WOOL_SLAB", "wool_slab",
+                            "WHITE_WOOL_STAIRS", "wool_stairs",
+                            "WHITE_CUSHION", "cushion",
+                            "WHITE_CONCRETE_SLAB", "concrete_slab",
+                            "WHITE_CONCRETE_STAIRS", "concrete_stairs");
+            Method parse =
+                    TaskPoolLoader.class.getDeclaredMethod(
+                            "parseOneOf",
+                            Map.class,
+                            Difficulty.class,
+                            Dimension.class,
+                            String.class,
+                            Logger.class,
+                            String.class);
+            parse.setAccessible(true);
+            for (var family : families.entrySet()) {
+                Map<?, ?> row =
+                        yaml.getMapList("singletons.sets").stream()
+                                .filter(entry -> family.getKey().equals(entry.get("icon")))
+                                .findFirst()
+                                .orElseThrow();
+                @SuppressWarnings("unchecked")
+                var entries =
+                        (List<PoolEntrySpec>)
+                                parse.invoke(
+                                        null,
+                                        row,
+                                        Difficulty.MEDIUM,
+                                        Dimension.OVERWORLD,
+                                        null,
+                                        Logger.getAnonymousLogger(),
+                                        "default.yml");
+                Set<Material> members =
+                        entries.getFirst().members().stream()
+                                .map(Material::valueOf)
+                                .collect(Collectors.toSet());
+                assertEquals(16, members.size(), family.getKey());
+                assertFalse(members.contains(Material.STRAW_BED));
+                assertEquals(family.getValue(), OneOfTask.familyToken(members));
+                OneOfTask task =
+                        new OneOfTask(
+                                members,
+                                Material.valueOf(family.getKey()),
+                                null,
+                                1,
+                                Dimension.OVERWORLD);
+                assertEquals(
+                        Material.valueOf(
+                                "WHITE_" + family.getValue().toUpperCase(java.util.Locale.ROOT)),
+                        task.getDisplayMaterial(CardDisplayInfo.DEFAULT));
+                for (String locale : List.of("zh_CN", "en_US")) {
+                    assertNotNull(
+                            resourceYaml("/bingo/lang/" + locale + ".yml")
+                                    .getString("task.family." + family.getValue()));
+                }
+                assertEquals(
+                        entries, RemoteBingoContent.filter(new TaskPoolSpec(entries)).entries());
+            }
+            Map<?, ?> mushrooms =
+                    yaml.getMapList("singletons.sets").stream()
+                            .filter(row -> "RED_MUSHROOM".equals(row.get("icon")))
+                            .findFirst()
+                            .orElseThrow();
+            assertEquals(
+                    List.of("RED_MUSHROOM", "BROWN_MUSHROOM", "SHELF_MUSHROOM"),
+                    mushrooms.get("all_of"));
+        }
+    }
+
+    @Test
+    void dappledForestVisitRetainsItsBiomeSubjectAndThemedIcon() throws Exception {
+        Map<?, ?> row =
+                resourceYaml("/bingo/cards/default.yml").getMapList("singletons.events").stream()
+                        .filter(entry -> "DAPPLED_FOREST".equals(entry.get("icon")))
+                        .findFirst()
+                        .orElseThrow();
+        Method parse =
+                TaskPoolLoader.class.getDeclaredMethod(
+                        "parseEvents", Map.class, Logger.class, String.class);
+        parse.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        var entries =
+                (List<PoolEntrySpec>)
+                        parse.invoke(null, row, Logger.getAnonymousLogger(), "default.yml");
+        assertEquals("event:visit_biomes:DAPPLED_FOREST", entries.getFirst().objectiveId());
+        assertEquals(List.of("DAPPLED_FOREST"), entries.getFirst().members());
+        assertEquals("dappled_forest_biome", entries.getFirst().category());
+        assertEquals(entries, RemoteBingoContent.filter(new TaskPoolSpec(entries)).entries());
+        assertEquals(
+                Material.POPLAR_SAPLING,
+                new EventTask("visit_biomes", "DAPPLED_FOREST", 1, Dimension.OVERWORLD)
+                        .getDisplayMaterial(CardDisplayInfo.DEFAULT));
     }
 
     @Test
@@ -333,6 +438,36 @@ class DefaultBingoResourcesTest {
                                 objectiveId));
         assertEquals(
                 Difficulty.VERY_HARD, tierlist.resolve("event:wear_full_enchanted:").orElseThrow());
+        for (String objective :
+                List.of(
+                        "WHITE_CUSHION",
+                        "LIGHT_BLUE_WOOL_STAIRS",
+                        "set:WHITE_WOOL_SLAB",
+                        "STRAW_BED",
+                        "stat:SLEEP_IN_STRAW_BED")) {
+            assertEquals(Difficulty.EASY, tierlist.resolve(objective).orElseThrow(), objective);
+        }
+        for (String objective :
+                List.of(
+                        "POPLAR_LOG",
+                        "STRIPPED_POPLAR_WOOD",
+                        "RED_POPLAR_LEAVES",
+                        "SHELF_MUSHROOM",
+                        "RED_SHRUB",
+                        "GRAY_CONCRETE_STAIRS",
+                        "set:WHITE_CONCRETE_SLAB",
+                        "event:visit_biomes:DAPPLED_FOREST")) {
+            assertEquals(Difficulty.MEDIUM, tierlist.resolve(objective).orElseThrow(), objective);
+        }
+        for (String objective :
+                List.of(
+                        "all:RED_MUSHROOM",
+                        "ABANDONED_CAMP_MAP",
+                        "BURIED_TREASURE_MAP",
+                        "set:BURIED_TREASURE_MAP")) {
+            assertEquals(Difficulty.ADVANCED, tierlist.resolve(objective).orElseThrow(), objective);
+        }
+        assertEquals(Difficulty.HARD, tierlist.resolve("BURIED_ANCIENT_CITY_MAP").orElseThrow());
     }
 
     /**

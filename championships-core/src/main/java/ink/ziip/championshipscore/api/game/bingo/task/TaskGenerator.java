@@ -7,6 +7,7 @@ import ink.ziip.championshipscore.api.game.bingo.task.pool.TaskPoolEntry;
 import ink.ziip.championshipscore.api.game.bingo.task.pool.TaskPoolSource;
 
 import org.bukkit.Bukkit;
+import org.bukkit.DyeColor;
 import org.bukkit.Material;
 import org.bukkit.Statistic;
 import org.bukkit.inventory.CraftingRecipe;
@@ -14,6 +15,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -24,6 +26,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * Generates the task list for a card from the active {@link TaskPoolSource}, filtered by included
@@ -397,17 +400,27 @@ public final class TaskGenerator {
             Set.of(
                     "_DYE",
                     "_WOOL",
+                    "_WOOL_SLAB",
+                    "_WOOL_STAIRS",
+                    "_CUSHION",
                     "_CARPET",
                     "_BED",
                     "_BANNER",
                     "_STAINED_GLASS",
                     "_STAINED_GLASS_PANE",
                     "_CONCRETE",
+                    "_CONCRETE_SLAB",
+                    "_CONCRETE_STAIRS",
                     "_CONCRETE_POWDER",
                     "_TERRACOTTA",
                     "_GLAZED_TERRACOTTA",
                     "_CANDLE",
                     "_HARNESS");
+
+    private static final Set<String> DYE_COLORS =
+            Arrays.stream(DyeColor.values())
+                    .map(Enum::name)
+                    .collect(Collectors.toUnmodifiableSet());
 
     private static String colorKey(TaskData task) {
         Material material = null;
@@ -420,13 +433,13 @@ public final class TaskGenerator {
         return colorKeyFor(material);
     }
 
-    private static String colorKeyFor(Material material) {
+    static String colorKeyFor(Material material) {
         if (material == null) return null;
         String name = material.name();
         for (String suffix : COLOR_SUFFIXES) {
             if (name.endsWith(suffix)) {
                 String prefix = name.substring(0, name.length() - suffix.length());
-                if (!prefix.isEmpty()) {
+                if (DYE_COLORS.contains(prefix)) {
                     return "color:" + prefix;
                 }
             }

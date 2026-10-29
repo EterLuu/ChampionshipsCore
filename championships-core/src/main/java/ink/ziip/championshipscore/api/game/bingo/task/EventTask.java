@@ -539,7 +539,10 @@ public record EventTask(
             case "leash_unique" -> Material.LEAD;
             case "compost_unique" -> Material.COMPOSTER;
             case "advancement_count" -> Material.KNOWLEDGE_BOOK;
-            case "visit_biomes" -> Material.NETHERRACK;
+            case "visit_biomes" ->
+                    "DAPPLED_FOREST".equalsIgnoreCase(param)
+                            ? Material.POPLAR_SAPLING
+                            : Material.NETHERRACK;
             case "kill_family", "kill_unique" ->
                     "ARTHROPOD".equalsIgnoreCase(param)
                             ? Material.SPIDER_EYE

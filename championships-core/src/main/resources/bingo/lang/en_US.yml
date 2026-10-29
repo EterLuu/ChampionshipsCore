@@ -125,6 +125,12 @@ task:
   # Set-task "family" name, matched from the members' shared item-id affix (e.g. *_WOOL -> wool).
   # On a hit the title reads "Any <family>"; otherwise it falls back to "Any: <representative item>".
   family:
+    wool_slab: "Wool Slab"
+    wool_stairs: "Wool Stairs"
+    cushion: "Cushion"
+    concrete_slab: "Concrete Slab"
+    concrete_stairs: "Concrete Stairs"
+    map: "Explorer Map"
     bed: "Bed"
     wool: "Wool"
     carpet: "Carpet"
@@ -225,6 +231,7 @@ task:
       height_limit: "Height Limit"
       nether_roof: "Nether Roof"
     label:
+      dappled_forest: "Dappled Forest Biome"
       mushroom: "Mushrooms"
       water_bottle: "Water Bottle"
       water_bucket: "Buckets"

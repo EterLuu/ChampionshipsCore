@@ -5,6 +5,14 @@
 
 tiers:
   EASY:
+    # Wilderness Bound craftable wool shapes and camping supplies.
+    - "*_WOOL_SLAB"
+    - "*_WOOL_STAIRS"
+    - "*_CUSHION"
+    - "set:WHITE_WOOL_SLAB"
+    - "set:WHITE_WOOL_STAIRS"
+    - "set:WHITE_CUSHION"
+    - "stat:SLEEP_IN_STRAW_BED"
     # CC-specific mined-block-count objectives.
     - "mine:COAL_ORE"
     - "mine:DIRT"
@@ -348,6 +356,17 @@ tiers:
     - "event:wear_dyed:"
     - "event:fill_inventory_unique::36"
   MEDIUM:
+    # Wilderness Bound resources and concrete variants.
+    - "POPLAR_*"
+    - "STRIPPED_POPLAR_*"
+    - "*_POPLAR_LEAVES"
+    - "SHELF_MUSHROOM"
+    - "RED_SHRUB"
+    - "*_CONCRETE_SLAB"
+    - "*_CONCRETE_STAIRS"
+    - "set:WHITE_CONCRETE_SLAB"
+    - "set:WHITE_CONCRETE_STAIRS"
+    - "event:visit_biomes:DAPPLED_FOREST"
     # 锻造模板：沉船三类箱子均有 16.7% 概率；任意纹饰模板按这条最易路线定级。
     - "COAST_ARMOR_TRIM_SMITHING_TEMPLATE"
     - "set:SENTRY_ARMOR_TRIM_SMITHING_TEMPLATE"
@@ -722,7 +741,6 @@ tiers:
     - "event:die:IRON_GOLEM"
     - "event:unique_collect:GLOBE_BANNER_PATTERN:3"
     - "event:unique_collect:CRAFTING_TABLE:7"
-    - "all:RED_MUSHROOM"
     - "all:TORCH"
     - "all:CRIMSON_FUNGUS"
     - "event:craft_unique::25"
@@ -751,6 +769,22 @@ tiers:
     - "event:visit_biomes:NETHER:3"
     - "event:break_item:WOODEN_PICKAXE"
   ADVANCED:
+    # Gathering all mushrooms now includes the Dappled Forest species.
+    - "all:RED_MUSHROOM"
+    - "set:BURIED_TREASURE_MAP"
+    - "ABANDONED_CAMP_MAP"
+    - "BURIED_MINESHAFT_MAP"
+    - "BURIED_TREASURE_MAP"
+    - "BURIED_TRIAL_CHAMBERS_MAP"
+    - "DESERT_PYRAMID_MAP"
+    - "DESERT_VILLAGE_MAP"
+    - "JUNGLE_PYRAMID_MAP"
+    - "PLAINS_VILLAGE_MAP"
+    - "SAVANNA_VILLAGE_MAP"
+    - "SNOWY_VILLAGE_MAP"
+    - "SWAMP_HUT_MAP"
+    - "TAIGA_VILLAGE_MAP"
+    - "WARM_OCEAN_RUINS_MAP"
     # 锻造模板：来自较易探索的地表结构，单箱概率为 14.3%～33.3%。
     - "DUNE_ARMOR_TRIM_SMITHING_TEMPLATE"
     - "SENTRY_ARMOR_TRIM_SMITHING_TEMPLATE"
@@ -1087,6 +1121,9 @@ tiers:
     - "event:tame:NAUTILUS"
     - "event:die:POLAR_BEAR"
   HARD:
+    - "BURIED_ANCIENT_CITY_MAP"
+    - "WOODLAND_MANSION_MAP"
+    - "OCEAN_MONUMENT_MAP"
     # 锻造模板：需要试炼密室、古迹废墟、下界堡垒或堡垒遗迹等专项探索。
     - "BOLT_ARMOR_TRIM_SMITHING_TEMPLATE"
     - "FLOW_ARMOR_TRIM_SMITHING_TEMPLATE"
