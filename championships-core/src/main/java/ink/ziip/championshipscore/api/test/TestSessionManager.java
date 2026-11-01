@@ -182,7 +182,7 @@ public final class TestSessionManager extends BaseManager {
     private void requireEnabled() {
         if (!isEnabled())
             throw new IllegalStateException(
-                    "Game tests are disabled; set test.enabled only on an isolated test server");
+                    "Game tests are disabled; set test.enabled on this server to allow them");
     }
 
     /** Creates an authentication-pending session; only one session may exist at a time. */

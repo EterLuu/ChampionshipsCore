@@ -80,7 +80,7 @@ public class CCConfig extends BaseConfigurationFile {
     @ConfigOption(path = "mode")
     public static String MODE;
 
-    /** Explicit opt-in for isolated game tests; permissions alone cannot enable them. */
+    /** Explicit opt-in for unattended game tests; permissions alone cannot enable them. */
     @ConfigOption(path = "test.enabled")
     public static volatile Boolean TEST_ENABLED = false;
 
