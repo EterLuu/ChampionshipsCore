@@ -66,6 +66,8 @@ async function runShards(settings, filename) {
         const child = fork(filename, ['--worker'], { env: { ...process.env,
           CC_TEST_COUNT: String(plan.count), CC_TEST_START_INDEX: String(plan.startIndex),
           CC_TEST_INTERVAL_MS: String(settings.intervalMs * plans.length),
+          CC_TEST_CORE_AUTO_SESSION: 'false',
+          CC_TEST_WEB_DISABLE_ON_FINISH: 'false',
           CC_TEST_BOT_CREDENTIALS: settings.credentials ? JSON.stringify(settings.credentials) : '',
           CC_TEST_REPORT: reportPath }, stdio: ['ignore', 'ignore', 'pipe', 'ipc'] });
         children.add(child);

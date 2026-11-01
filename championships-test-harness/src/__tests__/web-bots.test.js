@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { provisionBots } = require('../web-bots');
+const { provisionBots, disableBots } = require('../web-bots');
 
 test('cc-web provisioning sends passwords but never accepts UUID input', async () => {
   let request;
@@ -53,4 +53,24 @@ test('cc-web provisioning rejects an incomplete account response', async () => {
     }, async () => ({ ok: true, status: 200, json: async () => ({ bots: [] }) })),
     /incomplete account list/,
   );
+});
+
+test('cc-web disable is explicit and signs the exact Bot slot list', async () => {
+  let request;
+  const result = await disableBots({
+    count: 3,
+    startIndex: 4,
+    webBaseUrl: 'http://127.0.0.1:3000',
+    webKeyId: 'harness',
+    webHmacSecret: 'test-secret-that-is-at-least-32-bytes-long',
+    allowInsecureWebHttp: true,
+    webRequestTimeoutMs: 1000,
+  }, async (url, options) => {
+    request = { url, options, body: JSON.parse(options.body) };
+    return { ok: true, status: 200, json: async () => ({ disabled: [{ slot: 4 }, { slot: 5 }, { slot: 6 }] }) };
+  });
+  assert.equal(request.url, 'http://127.0.0.1:3000/api/internal/test/bots/disable');
+  assert.deepEqual(request.body.slots, [4, 5, 6]);
+  assert.equal(result.disabled.length, 3);
+  assert.match(request.options.headers['x-cc-signature'], /^[0-9a-f]{64}$/);
 });

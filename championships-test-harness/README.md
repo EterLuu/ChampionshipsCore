@@ -92,3 +92,38 @@ Bot 的 UUID 由 AuthProxy、BungeeCord、Paper 和身份平台提供。Core lea
 每次运行使用独立的报告目录、stop file、测试身份域和 Redis namespace。结束后保留报告和服务端日志，确认 Core `status` 已回到无活动会话，再清理临时环境。Harness 不删除 Core reservation 或 Worker release journal，也不修改认证门禁。
 
 动作 profile 的职责说明见 [`src/profiles/README.md`](src/profiles/README.md)，Core 会话和命令见 [无人测试设计](../docs/game-test-research.md) 与 [命令参考](../docs/commands.md)。
+
+## Core test interface orchestration
+
+Set `CC_TEST_CORE_AUTO_SESSION=true` to let the coordinator drive an isolated Core
+test session through its RCON console. This mode requires `resident`, `idle`, the
+cc-web identity mode, and the complete `autobot00` through `autobot63` roster:
+
+```text
+CC_TEST_MODE=resident \
+CC_TEST_ACTION=idle \
+CC_TEST_IDENTITY_MODE=cc-web \
+CC_TEST_CORE_AUTO_SESSION=true \
+CC_TEST_CORE_RCON_HOST=127.0.0.1 \
+CC_TEST_CORE_RCON_PORT=25575 \
+CC_TEST_CORE_RCON_PASSWORD=<isolated-rcon-password> \
+CC_TEST_CORE_SESSION_MODE=event \
+CC_TEST_CORE_EVENT_PROFILE=smoke \
+CC_TEST_STOP_FILE=/tmp/cc-game-test-harness/run.finished \
+npm run connect
+```
+
+For a single game use `CC_TEST_CORE_SESSION_MODE=single` together with
+`CC_TEST_CORE_GAME`, `CC_TEST_CORE_MAP`, and optionally `CC_TEST_CORE_PROFILE`,
+`CC_TEST_CORE_DIFFICULTY`, and `CC_TEST_CORE_REMIX`. The coordinator executes
+`single/event start`, `lease web`, `status`, `run`, and `stop --confirm` through
+RCON. It waits for `READY`, 64 bound seats, and 16 transient teams before
+starting the game. When Core reaches `COMPLETED`, it writes the stop file so all
+Bot workers disconnect cleanly. RCON is intended for an isolated test server;
+the default remains manual Harness operation.
+
+`CC_TEST_WEB_DISABLE_ON_FINISH=true` is an explicit opt-in to call cc-web's
+`/api/internal/test/bots/disable` endpoint after cleanup. Persistent Bot
+accounts remain active by default. The Harness never supplies a UUID: cc-web
+provisions credentials and Core obtains the current UUID and signed leases with
+`lease web`.

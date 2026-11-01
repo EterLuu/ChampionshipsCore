@@ -81,6 +81,8 @@ npm run connect
 
 resident 使用无限等待窗口，直到外部创建 stop file。Bot 不发送游戏动作，Core 仍按真实玩家处理队伍、传送、玩法和计分；所有连接由 8 个 Node worker 承载。报告包含每个 Bot 的登录、世界位置、传送确认、重生、keep-alive、断线和退出状态。
 
+Harness 也可以在隔离环境中自动驱动完整会话。设置 `CC_TEST_CORE_AUTO_SESSION=true`、RCON 参数和 `CC_TEST_CORE_SESSION_MODE=single|event` 后，协调进程依次执行 Core 的 `single/event start`、`lease web`、`status`、`run` 和 `stop --confirm`；它等待 64 个 Bot 和 16 个临时队伍进入 `READY`，Event 或单局进入终态后创建 stop file，使 resident worker 正常退出。该开关默认关闭，RCON 只连接测试服。cc-web Bot 默认保留为持久账号，只有显式设置 `CC_TEST_WEB_DISABLE_ON_FINISH=true` 才调用停用接口。
+
 ## 运行模式与数据
 
 测试会话使用独立的 `GameExecutionContext` 和 `SettlementPolicy`。测试结果、事件、Rank、Redis 消息和远程 match 状态可以正常写入测试数据域，便于检查真实行为；正式 Schedule 的全局状态仍只由正式 Event 使用。测试队伍使用 transient team，不写入正式队伍关系。

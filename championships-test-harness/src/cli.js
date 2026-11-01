@@ -4,7 +4,8 @@ const protocol = require('@wp2508/minecraft-protocol');
 const { attachClient, successfulRun } = require('./client');
 const { runShards } = require('./shards');
 const { waitForWindow } = require('./window');
-const { provisionBots } = require('./web-bots');
+const { provisionBots, disableBots } = require('./web-bots');
+const { CoreTestControl } = require('./core-control');
 const { monitorEventLoopDelay } = require('node:perf_hooks');
 
 const DEFAULTS = Object.freeze({
@@ -26,10 +27,22 @@ const DEFAULTS = Object.freeze({
   identityMode: 'offline',
   webRequestTimeoutMs: 10000,
   botPersistent: true,
+  coreSessionMode: 'single',
+  coreProfile: 'idle',
+  coreStatusIntervalMs: 1000,
+  coreTimeoutMs: 180000,
+  coreRconTimeoutMs: 10000,
 });
 
 function help() {
-  console.log(`Championships Core protocol harness\n\nEnvironment:\n  CC_TEST_HOST, CC_TEST_PORT, CC_TEST_VERSION, CC_TEST_VIEW_DISTANCE\n  CC_TEST_COUNT, CC_TEST_START_INDEX, CC_TEST_PREFIX, CC_TEST_INTERVAL_MS, CC_TEST_HOLD_MS\n  CC_TEST_CLIENTS_PER_PROCESS=8\n  CC_TEST_RECONNECT_ATTEMPTS, CC_TEST_RECONNECT_DELAY_MS\n  CC_TEST_MODE=window|resident (default: window)\n  CC_TEST_ACTION=idle|look|walk (bingo-walk is a legacy compatibility profile)\n  CC_TEST_IDENTITY_MODE=offline|cc-web\n  CC_TEST_WEB_BASE_URL, CC_TEST_WEB_KEY_ID, CC_TEST_WEB_HMAC_SECRET\n  CC_TEST_BOT_ALLOWED_CIDRS (required for cc-web mode)\n  CC_TEST_REPORT=/tmp/.../bots.json\n  CC_TEST_STOP_FILE=/tmp/.../finished\n\nresident mode keeps idle Bot clients connected until the absolute stop file is created.\nIt is valid only with CC_TEST_ACTION=idle and a new CC_TEST_STOP_FILE. The Bot\nhandles proxy/AuthMe/Core login, server teleports, respawn and keep-alive; Core\ncontinues to own teams, game rules, scoring and the normal match lifecycle.\n\nCore should obtain leases with "/cc game test lease web" after creating the session.\n`);
+  console.log(`Championships Core protocol harness\n\nEnvironment:\n  CC_TEST_HOST, CC_TEST_PORT, CC_TEST_VERSION, CC_TEST_VIEW_DISTANCE\n  CC_TEST_COUNT, CC_TEST_START_INDEX, CC_TEST_PREFIX, CC_TEST_INTERVAL_MS, CC_TEST_HOLD_MS\n  CC_TEST_CLIENTS_PER_PROCESS=8\n  CC_TEST_RECONNECT_ATTEMPTS, CC_TEST_RECONNECT_DELAY_MS\n  CC_TEST_MODE=window|resident (default: window)\n  CC_TEST_ACTION=idle|look|walk (bingo-walk is a legacy compatibility profile)\n  CC_TEST_IDENTITY_MODE=offline|cc-web\n  CC_TEST_WEB_BASE_URL, CC_TEST_WEB_KEY_ID, CC_TEST_WEB_HMAC_SECRET\n  CC_TEST_BOT_ALLOWED_CIDRS (required for cc-web mode)\n  CC_TEST_WEB_DISABLE_ON_FINISH=true (optional; disables the provisioned slots)\n  CC_TEST_REPORT=/tmp/.../bots.json\n  CC_TEST_STOP_FILE=/tmp/.../finished\n  CC_TEST_CORE_AUTO_SESSION=true
+  CC_TEST_CORE_RCON_HOST, CC_TEST_CORE_RCON_PORT, CC_TEST_CORE_RCON_PASSWORD
+  CC_TEST_CORE_SESSION_MODE=single|event
+  CC_TEST_CORE_GAME, CC_TEST_CORE_MAP, CC_TEST_CORE_PROFILE
+  CC_TEST_CORE_EVENT_PROFILE, CC_TEST_CORE_DIFFICULTY, CC_TEST_CORE_REMIX
+  CC_TEST_CORE_AUTO_RUN=true, CC_TEST_CORE_AUTO_STOP=true
+  CC_TEST_CORE_STATUS_INTERVAL_MS, CC_TEST_CORE_TIMEOUT_MS
+\nresident mode keeps idle Bot clients connected until the absolute stop file is created.\nIt is valid only with CC_TEST_ACTION=idle and a new CC_TEST_STOP_FILE. The Bot\nhandles proxy/AuthMe/Core login, server teleports, respawn and keep-alive; Core\ncontinues to own teams, game rules, scoring and the normal match lifecycle.\n\nCore should obtain leases with "/cc game test lease web" after creating the session.\n`);
 }
 
 function numberEnv(name, fallback, minimum) {
@@ -65,10 +78,29 @@ function config() {
     botAllowedCidrs: (process.env.CC_TEST_BOT_ALLOWED_CIDRS || '')
       .split(',').map(value => value.trim()).filter(Boolean),
     botPersistent: process.env.CC_TEST_BOT_PERSISTENT !== 'false',
+    webDisableOnFinish: process.env.CC_TEST_WEB_DISABLE_ON_FINISH === 'true',
     webRequestTimeoutMs: numberEnv('CC_TEST_WEB_REQUEST_TIMEOUT_MS', DEFAULTS.webRequestTimeoutMs, 1000),
     credentials: parseCredentials(process.env.CC_TEST_BOT_CREDENTIALS),
     report: process.env.CC_TEST_REPORT || null,
     stopFile: process.env.CC_TEST_STOP_FILE || null,
+    coreAutoSession: process.env.CC_TEST_CORE_AUTO_SESSION === 'true',
+    coreSessionMode: process.env.CC_TEST_CORE_SESSION_MODE || DEFAULTS.coreSessionMode,
+    coreGame: process.env.CC_TEST_CORE_GAME || null,
+    coreMap: process.env.CC_TEST_CORE_MAP || null,
+    coreProfile: process.env.CC_TEST_CORE_PROFILE || DEFAULTS.coreProfile,
+    coreEventProfile: process.env.CC_TEST_CORE_EVENT_PROFILE || null,
+    coreDifficulty: process.env.CC_TEST_CORE_DIFFICULTY || null,
+    coreRemix: process.env.CC_TEST_CORE_REMIX || null,
+    coreAutoRun: process.env.CC_TEST_CORE_AUTO_RUN !== 'false',
+    coreAutoStop: process.env.CC_TEST_CORE_AUTO_STOP !== 'false',
+    coreStatusIntervalMs: numberEnv('CC_TEST_CORE_STATUS_INTERVAL_MS', DEFAULTS.coreStatusIntervalMs, 100),
+    coreTimeoutMs: numberEnv('CC_TEST_CORE_TIMEOUT_MS', DEFAULTS.coreTimeoutMs, 1000),
+    coreRcon: {
+      host: process.env.CC_TEST_CORE_RCON_HOST || null,
+      port: numberEnv('CC_TEST_CORE_RCON_PORT', 25575, 1),
+      password: process.env.CC_TEST_CORE_RCON_PASSWORD || null,
+      timeoutMs: numberEnv('CC_TEST_CORE_RCON_TIMEOUT_MS', DEFAULTS.coreRconTimeoutMs, 1000),
+    },
   };
 }
 
@@ -97,6 +129,25 @@ function validateSettings(settings, exists = fs.existsSync) {
     throw new Error('stop file must be an absolute path which does not already exist');
   if (![settings.count, settings.startIndex, settings.clientsPerProcess].every(Number.isSafeInteger))
     throw new Error('count, start index and clients per process must be integers');
+  if (settings.coreAutoSession) {
+    if (settings.mode !== 'resident') throw new Error('Core auto session requires CC_TEST_MODE=resident');
+    if (settings.action !== 'idle') throw new Error('Core auto session requires CC_TEST_ACTION=idle');
+    if (settings.identityMode !== 'cc-web') throw new Error('Core auto session requires CC_TEST_IDENTITY_MODE=cc-web');
+    if (settings.count !== 64 || settings.startIndex !== 0 || settings.prefix !== 'autobot')
+      throw new Error('Core auto session requires the default 64-seat autobot00..autobot63 roster');
+    if (!['single', 'event'].includes(settings.coreSessionMode))
+      throw new Error(`unsupported Core session mode: ${settings.coreSessionMode}`);
+    if (settings.coreSessionMode === 'single' && (!settings.coreGame || !settings.coreMap))
+      throw new Error('Core single session requires CC_TEST_CORE_GAME and CC_TEST_CORE_MAP');
+    if (settings.coreSessionMode === 'event' && !settings.coreEventProfile)
+      throw new Error('Core event session requires CC_TEST_CORE_EVENT_PROFILE');
+    if (settings.coreRemix && !settings.coreDifficulty)
+      throw new Error('CC_TEST_CORE_REMIX requires CC_TEST_CORE_DIFFICULTY');
+    if (!settings.coreRcon.host || !settings.coreRcon.password)
+      throw new Error('Core auto session requires CC_TEST_CORE_RCON_HOST and CC_TEST_CORE_RCON_PASSWORD');
+    if (!settings.coreAutoRun && !settings.stopFile)
+      throw new Error('Core auto session without auto-run requires an external stop file');
+  }
 }
 
 function username(prefix, index) {
@@ -139,21 +190,7 @@ function createClient(settings, name, index, result, state, clients) {
   return client;
 }
 
-async function main() {
-  if (process.argv.includes('--help')) { help(); return; }
-  const settings = config();
-  validateSettings(settings);
-  if (settings.identityMode === 'cc-web' && !settings.credentials) {
-    const provisioned = await provisionBots(settings);
-    settings.credentials = provisioned.credentials;
-    settings.uuidMode = provisioned.uuidMode;
-  }
-  if (!process.argv.includes('--worker') && settings.count > settings.clientsPerProcess) {
-    const report = await runShards(settings, __filename);
-    writeReport(settings, report);
-    if (!report.success) process.exitCode = 1;
-    return;
-  }
+async function runClients(settings) {
   const eventLoop = monitorEventLoopDelay({ resolution: 20 });
   eventLoop.enable();
   const result = {
@@ -236,6 +273,71 @@ async function main() {
   eventLoop.disable();
   result.eventLoop = { meanMs: Number(eventLoop.mean) / 1e6, maxMs: Number(eventLoop.max) / 1e6,
     p99Ms: Number(eventLoop.percentile(99)) / 1e6 };
+  return result;
+}
+
+async function runBotProcesses(settings) {
+  if (settings.count > settings.clientsPerProcess)
+    return runShards(settings, __filename);
+  return runClients(settings);
+}
+
+async function runWithCoreSession(settings) {
+  const control = new CoreTestControl(settings);
+  await control.start();
+  await control.leaseWeb();
+  const bots = runBotProcesses(settings);
+  let terminal = null;
+  try {
+    await control.waitForReady({ timeoutMs: settings.coreTimeoutMs, intervalMs: settings.coreStatusIntervalMs });
+    if (settings.coreAutoRun) {
+      await control.run();
+      terminal = await control.waitForTerminal({
+        timeoutMs: settings.coreTimeoutMs,
+        intervalMs: settings.coreStatusIntervalMs,
+      });
+      if (settings.stopFile) fs.writeFileSync(settings.stopFile, `${JSON.stringify({
+        state: terminal.state,
+        at: new Date().toISOString(),
+      })}\n`, { flag: 'wx' });
+    }
+    return await bots;
+  } catch (error) {
+    if (settings.stopFile && !fs.existsSync(settings.stopFile)) {
+      try { fs.writeFileSync(settings.stopFile, `${error.message}\n`, { flag: 'wx' }); } catch { /* preserve original error */ }
+    }
+    try { await bots; } catch { /* preserve the first lifecycle failure */ }
+    throw error;
+  } finally {
+    if (settings.coreAutoStop) {
+      try { await control.stop(); } catch (error) { if (!terminal) throw error; }
+    }
+    if (settings.webDisableOnFinish) await disableBots(settings);
+  }
+}
+
+async function main() {
+  if (process.argv.includes('--help')) { help(); return; }
+  const settings = config();
+  validateSettings(settings);
+  if (settings.identityMode === 'cc-web' && !settings.credentials) {
+    const provisioned = await provisionBots(settings);
+    settings.credentials = provisioned.credentials;
+    settings.uuidMode = provisioned.uuidMode;
+  }
+  if (!process.argv.includes('--worker') && settings.coreAutoSession) {
+    const report = await runWithCoreSession(settings);
+    writeReport(settings, report);
+    if (!report.success) process.exitCode = 1;
+    return;
+  }
+  if (!process.argv.includes('--worker') && settings.count > settings.clientsPerProcess) {
+    const report = await runShards(settings, __filename);
+    writeReport(settings, report);
+    if (!report.success) process.exitCode = 1;
+    return;
+  }
+  const result = await runClients(settings);
   writeReport(settings, result);
   if (!result.success) process.exitCode = 1;
 }
@@ -250,4 +352,4 @@ function writeReport(settings, result) {
 
 if (require.main === module) main().catch(error => { console.error(error.stack || error); process.exitCode = 2; });
 
-module.exports = { config, validateSettings };
+module.exports = { config, validateSettings, runClients, runBotProcesses, runWithCoreSession };
