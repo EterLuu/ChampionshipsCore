@@ -119,6 +119,9 @@ Worker `plugins/ChampionshipsBingoWorker/config.yml`：
 
 ```yaml
 enabled: true
+# 测试部署再设置 test.enabled: true；正式环境保持 false。
+test:
+  enabled: false
 worker-id: bingo-1
 redis:
   uri: redis://redis-host:6379/0

@@ -20,6 +20,9 @@
 | [比赛启动](game-start.md) | 选图、选队、自动分配与子场地 |
 | [地图编辑](map-editing.md) | 草稿、世界绑定、校验、发布与 BuildMart 蓝图 |
 | [自由游玩](daily-mode.md) | DAILY 队列、同行小队、战绩和占位符 |
+| [无人测试设计](game-test-research.md) | 64 Bot、测试会话、resident 和 cc-web 身份 |
+| [无人测试矩阵](game-test-matrix.md) | 各游戏的测试拓扑和动作验证入口 |
+| [无人测试当前状态](game-test-progress.md) | 当前已完成能力与后续验证范围 |
 | [积分与展示](presentation.md) | 权重、投票、观战、聊天、PAPI 与侧栏 |
 | [Riptide 编排](riptide-stage-mechanics.md) | 关卡池、木筏、淘汰和地图试玩 |
 
@@ -48,4 +51,4 @@
 | [Bingo 容量验证](bingo-performance-validation.md) | 压力模型、指标与端到端验收 |
 | [LoadTest](../championships-bingo-loadtest/README.md) | 隔离 Folia 的区块与实体压力 |
 
-文档以代码和默认资源为依据；部署自定义值以实际配置为准。验证指南不代表某一部署已通过验收。单次部署记录、模拟输出和审查证据保存在 `/tmp`，不作为使用指南或开发契约。
+文档以当前代码和默认资源为准，部署时请以实际配置中的自定义值为准。验证指南说明如何检查行为；运行报告和临时日志保存在 `/tmp`，不会替代使用指南与开发契约。

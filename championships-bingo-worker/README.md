@@ -22,7 +22,7 @@ PlaceholderAPI 可选；FastBoard、Redis 客户端和内部共享模块已包�
 mvn -B -ntp -pl championships-bingo-worker -am clean package
 ```
 
-将 `championships-bingo-worker/target/championships-bingo-worker-1.3-SNAPSHOT.jar` 与 PacketEvents 安装到独立 Folia 的 `plugins/`。首次启动生成配置时默认 `enabled: false`；停止服务器后填写配置、准备世界和代理路由，再启用。
+将 `championships-bingo-worker/target/championships-bingo-worker-1.3-SNAPSHOT.jar` 与 PacketEvents 安装到独立 Folia 的 `plugins/`。首次启动生成配置时默认 `enabled: false`，`test.enabled: false`；停止服务器后填写配置、准备世界和代理路由，再按部署用途分别启用 Worker 和测试入口。
 
 ## 配置
 
@@ -30,6 +30,9 @@ mvn -B -ntp -pl championships-bingo-worker -am clean package
 
 ```yaml
 enabled: true
+# 测试部署另行设置 test.enabled: true；生产保持 false。
+test:
+  enabled: false
 worker-id: bingo-1
 redis:
   uri: redis://redis-host:6379/0

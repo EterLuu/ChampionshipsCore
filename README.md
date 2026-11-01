@@ -20,6 +20,7 @@ ChampionshipsCore 是用于 Minecraft 团队锦标赛的 Paper 插件，统一�
 - 统一观战保护、玩家实体显隐、完整 Tab 列表和可配置侧栏。
 - `DAILY` 自由游玩：匹配队列、同行小队和独立战绩。
 - 可选的 Redis 跨服同步、远程 Bingo 与身份认证连接器。
+- 独立测试会话、64 Bot Harness、resident 长驻和多轮 Test Event，详见 [无人测试设计](docs/game-test-research.md)。
 
 ## 运行要求
 
@@ -129,6 +130,7 @@ Core 的配置位于 `plugins/ChampionshipsCore/`：
 - [游戏与玩法](docs/games.md)、[命令参考](docs/commands.md)、[比赛启动](docs/game-start.md)
 - [地图编辑与发布](docs/map-editing.md)、[自由游玩](docs/daily-mode.md)
 - [积分、观战与展示](docs/presentation.md)
+- [无人测试设计](docs/game-test-research.md)、[测试矩阵](docs/game-test-matrix.md)
 - [Bingo 跨服架构](docs/bingo-remote-architecture.md)、[容量验证](docs/bingo-performance-validation.md)
 - [开发指南](docs/development.md)、[旁观契约](docs/spectator-visibility-contract.md)
 

@@ -20,9 +20,12 @@
 | --- | --- |
 | `cc.player` | `/cc spawn`、`vote`、`spectate`、`rank` 等玩家功能 |
 | `cc.admin` | 队伍、单局、正式赛事、地图、世界和裁判管理；同时可用玩家功能 |
+| `cc.test` | 无人测试 session/lease/16×4 roster 准备控制；`cc.admin` 当前继承此能力 |
 | `cc.refuge` | 严格观战规则开启时，允许参赛队员以裁判/替补身份观战 |
 
 建议使用权限插件分组：普通选手授予 `cc.player`，赛事管理员授予 `cc.admin`；裁判或替补按需增加 `cc.refuge`。
+
+无人测试默认关闭。只在独立测试部署为 Core 配置 `test.enabled: true`；远程 Bingo 的 Worker 也必须单独设置该键为 true，缺省均为 false。`cc.test`、`cc.admin` 和 OP 均不能覆盖开关。测试会话中的写入是正常测试产物，应在隔离数据域中观察和清理；没有活动测试会话时，开关关闭不改变现有正式功能。开关不会自动隔离世界或身份服务。
 
 ## 命令约定
 
@@ -126,6 +129,16 @@ light_gray cyan purple blue brown green red black
 | 命令 | 说明 |
 | --- | --- |
 | `/cc game stop <游戏> <场地> <实例> --confirm` | 精确结束运行实例；已开赛则正常结算 |
+| `/cc game test single start <游戏> <地图> [profile] [difficulty] [remix]` | 创建单局无人测试 session；Bingo TEST 可选 `EASY|LITE|NORMAL|HARD|EXTREME` 和 `NONE|NETHER|...`，其他游戏忽略变体参数 |
+| `/cc game test event start <event-profile> [difficulty] [remix]` | 创建 Test Event session；profile 回合可在 YAML 中写 `difficulty`/`remix`，命令参数会覆盖所有回合；原生验证需在独立 Worker/Redis namespace 中执行 |
+| `/cc game test lease <signed-token\|web>` | 校验单个签名 lease；`web` 由 Core 使用 `TEST_HARNESS` HMAC 客户端从 cc-web 获取当前 Bot UUID 和整批 lease |
+| `/cc game test status` | 查看 session、认证名册和 transient team 准备状态 |
+| `/cc game test run` | 核对全部席位在线后，对已 READY 的单局执行 `GameRunMode.TEST`，对 Test Event 执行隔离的 `GameRunMode.TEST_EVENT`；Event 按 profile 顺序推进轮次 |
+| `/cc game test join <队伍编号>` | 准备阶段用管理员当前玩家替换该队一个 Bot 席位 |
+| `/cc game test leave` | 准备阶段释放当前管理员占用的测试席位 |
+| `/cc game test spectate` | 运行中的测试游戏中，使用统一 `SpectatorManager` 进入旁观；不占用 64 个 roster 席位 |
+| `/cc game test spectate leave` | 通过统一旁观释放路径退出测试游戏旁观 |
+| `/cc game test stop --confirm` | 立即撤销 lease，等待 Core 拥有实例恢复后清理身份/队伍并报告结果 |
 | `/cc admin reload --confirm` | 重载配置；基础设施变更可能需要重启 |
 | `/cc admin set-max-player <数量>` | 修改最大玩家数 |
 | `/cc admin mute <玩家> [原因...]` | 永久禁言玩家的公共聊天 |
@@ -143,6 +156,14 @@ light_gray cyan purple blue brown green red black
 | `/cc admin world delete <世界> confirm` | 永久删除未被地图配置引用的世界 |
 | `/cc admin world teleport <世界>` | 传送到世界出生点并开启飞行 |
 | `/cc admin world unload <世界>` | 保存并卸载世界，不删除世界文件 |
+
+测试控制命令使用 `cc.test` 权限，`cc.admin` 自动拥有该权限；普通 `/cc game start` 和 `/cc game stop` 仍使用 `cc.admin`。Core 和 Worker 的 `test.enabled` 默认都是 `false`，测试部署需要分别打开。
+
+测试身份通过签名 lease 登记。`/cc game test lease <signed-token>` 接收身份服务按当前 session、generation、用户名和 UUID 签发的短期 token；`/cc game test lease web` 由 Core 通过 `TEST_HARNESS` HMAC 客户端从 cc-web 获取整批 Bot 的当前 UUID 和 lease。Core 会将 lease 与 Paper 实际观察到的 UUID、AuthMe 登录和 AuthProxy profile 一起核对，不接受裸 UUID 或客户端自报 UUID。
+
+`plugins/ChampionshipsCore/test/lease-nonces.tsv` 保存已消费 nonce，`identity-reservations.tsv` 保存测试名称和历史 UUID。两份文件属于测试身份状态，重启、重载和 stop 都会保留。准备阶段 Bot 掉线会撤销 READY，重新连接必须再次通过 AuthMe；开发者替换席位后也要重新签发 Bot lease。开赛后名册冻结。
+
+测试会话使用独立的队伍、数据库、Redis namespace 和世界。测试结果、Rank、事件和远程 match 写入测试数据域，结束时由会话和 Worker 的释放流程清理。远程 Bingo 的 `stop --confirm` 会等待 Worker `RELEASED`，状态仍显示待清理时应继续按照当前会话处理。
 
 主大厅世界和 Bingo 三维度不能删除或重命名。删除必须显式附加 `confirm`，且不会破坏仍被 ChampionshipsCore 地图配置引用的世界。重命名未加载世界时需给出其原环境；世界名只允许字母、数字、下划线和连字符；`create` 默认使用 `normal` 环境。普通小游戏世界使用虚空生成器，Bingo 的 `bingo`、`bingo_nether` 和 `bingo_the_end` 三个世界则使用原版地形。
 

@@ -32,6 +32,18 @@ JUnit 报告中的数量是执行次数，参数化方法按每种游戏或输�
 
 逐项审查清单、统计和单次测试日志放在 `/tmp`。移动或重命名测试类后执行 clean test，避免旧测试 class 和旧报告混入结果。只修改测试和文档不需要替换运行 JAR 或重启服务器。
 
+## 原生服与协议客户端
+
+需要验证 Paper/Folia、BungeeCord、AuthMe、UUID、传送、重生、旁观或游戏结算时，使用 `championships-test-harness` 连接独立测试服。Harness 的 `resident + idle` 适合先建立 64 Bot 长驻基线，游戏动作再按 [无人测试游戏矩阵](game-test-matrix.md) 添加 profile。
+
+```bash
+cd championships-test-harness
+npm ci --ignore-scripts --no-audit --no-fund
+npm test
+```
+
+运行前建立独立数据库、Redis namespace、世界和身份域。Core 先创建测试 session 并执行 `lease`，Harness 再连接；测试完成后由 Core 的 `stop --confirm` 和 Worker 的释放流程清理。报告同时查看客户端状态、Core roster、游戏阶段、数据库/Redis 写入和世界状态。
+
 ## 隔离和断言
 
 - 异步测试等待真正发生的输出，不将“已落盘”当作“已发布”。超时明确失败，资源可靠关闭。

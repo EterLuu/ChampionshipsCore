@@ -51,6 +51,25 @@ AuthProxy 使用 `offline-cache.enabled` 和 `offline-cache.max-stale-hours` 控
 4. 测试未绑定、撤销、封禁、维护、网络中断、密钥错误及重连行为。
 5. 已有身份发生 UUID 变化时执行 [UUID 迁移流程](player-uuid-contract.md#5-uuid-迁移规范)，只改配置不会迁移数据库。
 
+## 测试 Bot 的身份链
+
+测试 Bot 使用 Core 的测试 lease 与独立身份域。cc-web 模式下，Harness 通过 `TEST_HARNESS` 客户端取得账号密码，Core 的 `test.identity` 配置取得 profile UUID 和签名 lease；AuthProxy 与 AuthBridge 再用 Bot 的 CIDR、账号状态和服务器实际 UUID 完成准入。Harness 不发送 UUID。
+
+```yaml
+test:
+  enabled: true
+  auth:
+    server-id: isolated-core
+    hmac-secret: <Core 与签发端共享的随机密钥>
+  identity:
+    base-url: https://cc-web.internal
+    key-id: test-harness
+    hmac-secret: <TEST_HARNESS 专用密钥>
+    allow-insecure-private-http: false
+```
+
+Core 与 Worker 的 `test.enabled` 只在独立测试部署打开。服务器使用 `online-mode=false` 时，Bungee 仍然是登录入口；Bot 的 UUID 由 AuthProxy profile、Paper、AuthBridge 和 Core 共同确认，不能把传输模式当作 UUID 来源。完整流程见 [无人测试设计](game-test-research.md)。
+
 ## 持久状态与兼容文件
 
 Proxy 持久状态位于其数据目录的 `state.properties`，Bridge 位于 `state.yml`。保留这些文件以支持重启后的游标、准入和封禁恢复。
