@@ -280,10 +280,11 @@ final class WorkerListener implements Listener {
         registry.observeEventSignal(player, "break_item", type.name());
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEventDeath(org.bukkit.event.entity.PlayerDeathEvent event) {
         registry.cancelTeammateTeleports(event.getEntity().getUniqueId());
         Player player = event.getEntity();
+        registry.recoverRespawn(player, true);
         if (!registry.isRunningPlayer(player.getUniqueId())) return;
         if (registry.clearsInventoryOnDeath(player)) event.getDrops().clear();
         String cause = resolveDeathCause(player);
@@ -697,8 +698,7 @@ final class WorkerListener implements Listener {
         Location location = registry.respawnLocation(event.getPlayer());
         if (location == null) return;
         event.setRespawnLocation(location);
-        scheduler.runEntityLater(
-                event.getPlayer(), () -> registry.restoreAfterRespawn(event.getPlayer()), 1L);
+        registry.recoverRespawn(event.getPlayer(), false);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)

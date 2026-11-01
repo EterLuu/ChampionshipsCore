@@ -21,7 +21,7 @@ public class AceRaceScheduleHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onGameEnd(SingleGameEndEvent event) {
         if (event.getGameInstance() instanceof AceRaceArea area
-                && area.isEventRun()
+                && area.isFormalEventRun()
                 && scheduleManager.isEnabled()) scheduleManager.nextRound();
     }
 }

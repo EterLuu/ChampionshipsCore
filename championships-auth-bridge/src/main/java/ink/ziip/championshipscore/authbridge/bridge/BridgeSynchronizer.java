@@ -117,7 +117,12 @@ public final class BridgeSynchronizer implements Runnable {
             String accountId = requireAccountId(player.accountId());
             UUID uuid = resolveUuid(username, player.uuidSource(), player.minecraftUuid());
             authMe.provision(username, requirePasswordHash(player.passwordHash()), uuid);
-            state.recordIdentity(username, accountId, uuid.toString());
+            state.recordIdentity(
+                    username,
+                    accountId,
+                    uuid.toString(),
+                    Boolean.TRUE.equals(player.bot()),
+                    player.allowedCidrs());
             state.setAuthVersion(username, player.version());
         }
         state.markBindingSnapshotApplied();
@@ -191,7 +196,8 @@ public final class BridgeSynchronizer implements Runnable {
                     "Bridge change is missing operation (id=" + change.id() + ")");
         }
         boolean requiresUuid =
-                Set.of("PROVISION", "USERNAME_UPDATED", "WHITELISTED").contains(operation);
+                Set.of("PROVISION", "PASSWORD_UPDATED", "USERNAME_UPDATED", "WHITELISTED")
+                        .contains(operation);
         UUID uuid =
                 requiresUuid
                         ? resolveUuid(username, change.uuidSource(), change.minecraftUuid())
@@ -199,9 +205,22 @@ public final class BridgeSynchronizer implements Runnable {
         switch (operation) {
             case "PROVISION" -> {
                 applyPasswordIfCurrent(change, requireUuid(uuid));
-                state.recordIdentity(username, accountId, uuid.toString());
+                state.recordIdentity(
+                        username,
+                        accountId,
+                        uuid.toString(),
+                        Boolean.TRUE.equals(change.bot()),
+                        change.allowedCidrs());
             }
-            case "PASSWORD_UPDATED" -> applyPasswordIfCurrent(change);
+            case "PASSWORD_UPDATED" -> {
+                applyPasswordIfCurrent(change);
+                state.recordIdentity(
+                        username,
+                        accountId,
+                        requireUuid(uuid).toString(),
+                        Boolean.TRUE.equals(change.bot()),
+                        change.allowedCidrs());
+            }
             case "USERNAME_UPDATED" -> {
                 String oldUsername = requireUsername(change.oldAuthmeUsername());
                 authMe.rename(oldUsername, username, requireUuid(uuid));
@@ -211,12 +230,18 @@ public final class BridgeSynchronizer implements Runnable {
                         oldUsername,
                         replacePlaceholders(usernameUpdatedMessage, oldUsername, username));
             }
-            case "WHITELISTED" -> state.recordIdentity(username, accountId, uuid.toString());
+            case "WHITELISTED" ->
+                    state.recordIdentity(
+                            username,
+                            accountId,
+                            uuid.toString(),
+                            Boolean.TRUE.equals(change.bot()),
+                            change.allowedCidrs());
             case "REVOKED" -> {
                 state.revoke(username);
                 authMe.remove(username);
-                if (admissionOwner == AuthAdmissionOwner.BRIDGE)
-                    kick(username, accessRevokedMessage);
+                if (admissionOwner == AuthAdmissionOwner.BRIDGE
+                        || Boolean.TRUE.equals(change.bot())) kick(username, accessRevokedMessage);
             }
             case "BANNED" -> {
                 try {

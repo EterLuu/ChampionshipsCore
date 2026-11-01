@@ -101,11 +101,14 @@ public final class NativeTeamService {
             Team.OptionStatus collisionRule) {
         Objects.requireNonNull(team, "team");
         NamedTextColor color = resolveNamedColor(colorName, colorCode);
-        team.displayName(
-                LegacyText.component(Objects.requireNonNull(displayName, "displayName"), color));
-        team.color(color);
-        team.setOption(
-                Team.Option.COLLISION_RULE, Objects.requireNonNull(collisionRule, "collisionRule"));
+        var title = LegacyText.component(Objects.requireNonNull(displayName, "displayName"), color);
+        // Paper rebuilds waypoint connections for native team metadata changes. Lobby scans must
+        // not issue unchanged mutations once per player, while still repairing external changes.
+        if (!title.equals(team.displayName())) team.displayName(title);
+        if (!team.hasColor() || !color.equals(team.color())) team.color(color);
+        Objects.requireNonNull(collisionRule, "collisionRule");
+        if (team.getOption(Team.Option.COLLISION_RULE) != collisionRule)
+            team.setOption(Team.Option.COLLISION_RULE, collisionRule);
     }
 
     /** Makes the native entry set exactly match the requested usernames. */

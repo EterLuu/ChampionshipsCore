@@ -13,6 +13,9 @@ import java.util.Set;
 import java.util.UUID;
 
 public interface PlayerDao {
+    /** Returns whether either the durable UUID or username already belongs to Core. */
+    boolean hasIdentity(@NotNull UUID uuid, @NotNull String name);
+
     @Nullable
     PlayerEntry getPlayer(UUID uuid);
 

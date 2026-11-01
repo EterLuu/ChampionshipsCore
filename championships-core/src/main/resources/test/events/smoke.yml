@@ -1,0 +1,6 @@
+name: smoke
+rounds:
+  - game: tntrun
+    map: astra
+  - game: tntrun
+    map: astra

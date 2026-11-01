@@ -34,7 +34,12 @@ public record BingoStartRequest(
         if (area.isBlank()) throw new IllegalArgumentException("area must not be blank");
         // The worker has no BaseGameInstance guard, so normalize the same lifecycle invariant at
         // the execution boundary before the value is frozen into a remote manifest.
-        showIntroduction = runMode == GameRunMode.EVENT && showIntroduction;
-        if (runMode != GameRunMode.DAILY) variant = BingoVariantRules.FIXED_POINTS;
+        showIntroduction =
+                runMode == GameRunMode.EVENT || runMode == GameRunMode.TEST_EVENT
+                        ? showIntroduction
+                        : false;
+        if (runMode != GameRunMode.DAILY
+                && runMode != GameRunMode.TEST
+                && runMode != GameRunMode.TEST_EVENT) variant = BingoVariantRules.FIXED_POINTS;
     }
 }

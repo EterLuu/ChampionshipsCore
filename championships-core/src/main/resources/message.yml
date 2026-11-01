@@ -1257,6 +1257,21 @@ sulfursoccer:
 
 # Text extracted from Java; %argN% preserves each dynamic argument.
 code-text:
+  test-session:
+    description: "受保护的无人测试会话控制"
+    usage: "/cc game test single start <game> <map> [profile] [difficulty] [remix] | event start <event-profile> [difficulty] [remix] | lease <signed-token|web> | join <team> | leave | status | run | spectate [leave] | stop --confirm"
+    error: "测试会话操作失败：%arg1%"
+    created: "测试会话已创建：%arg1%，等待 64 个测试身份完成认证。"
+    lease-registered: "已登记测试身份 lease：%arg1%"
+    developer-joined: "已加入测试队伍 %arg1%，等待 Bot 名册就绪。"
+    developer-left: "已离开测试席位，Bot %arg1% 可重新连接。"
+    spectator-joined: "已进入测试游戏旁观，使用 /cc game test spectate leave 退出。"
+    spectator-left: "已退出测试游戏旁观。"
+    none: "当前没有测试会话。"
+    status: "测试会话 %arg1% | 模式=%arg2% | 状态=%arg3% | 已绑定=%arg4% | transient teams=%arg5% | event round=%arg6% | standings=%arg7%"
+    run-started: "测试游戏已启动：%arg1%"
+    run-failed: "测试游戏未启动：%arg1%"
+    stopped: "测试会话已停止并清理。"
   area-list-gui:
     delete-confirmation: "&c%message%"
   parkour-tag-chaser-button-step:
@@ -2509,6 +2524,7 @@ code-text:
     log-failure-1: "日常"
     log-failure-2: "操作=%arg1% 失败"
   player-dao-impl:
+    has-identity-1: "核验正式玩家身份"
     get-player-1: "按 UUID 查询玩家"
     get-player-2: "按名称查询玩家"
     get-player-list-1: "查询玩家列表"

@@ -38,6 +38,11 @@ import java.util.concurrent.TimeUnit;
 
 /** Core-side authoritative replay and lifecycle for one remote execution. */
 final class RemoteBingoMatch {
+    /** Keep a full Event roster from opening all proxy backend handshakes in one tick. */
+    private static final int ROUTE_BATCH_SIZE = 1;
+
+    private static final long ROUTE_BATCH_DELAY_TICKS = 10L;
+
     private final ChampionshipsCore plugin;
     private final MatchManifest manifest;
     private final RemoteBingoInstance instance;
@@ -61,6 +66,11 @@ final class RemoteBingoMatch {
 
     private final Map<Integer, Integer> firstCompletionsByTeam = new ConcurrentHashMap<>();
     private final CompletableFuture<Void> terminal = new CompletableFuture<>();
+    private final CompletableFuture<Void> resourcesReleased = new CompletableFuture<>();
+    private boolean testAbortRequested;
+    private boolean releaseAcknowledged;
+    private boolean workerReadyObserved;
+    private boolean testAdmissionRejected;
     private boolean normalStopRequested;
     private long lastEventSeq;
     private long lastActivityMillis = System.currentTimeMillis();
@@ -101,6 +111,32 @@ final class RemoteBingoMatch {
         return terminal;
     }
 
+    CompletableFuture<Void> resourcesReleasedFuture() {
+        return resourcesReleased;
+    }
+
+    boolean resourcesReleased() {
+        return resourcesReleased.isDone() && !resourcesReleased.isCompletedExceptionally();
+    }
+
+    synchronized boolean markTestAbortRequested() {
+        if (testAbortRequested) return false;
+        testAbortRequested = true;
+        return true;
+    }
+
+    synchronized void resetTestAbortRequest() {
+        testAbortRequested = false;
+    }
+
+    void confirmResourcesReleased() {
+        synchronized (this) {
+            if (!releaseAcknowledged)
+                throw new IllegalStateException("Worker release was not acknowledged");
+        }
+        resourcesReleased.complete(null);
+    }
+
     synchronized boolean markNormalStopRequested() {
         if (normalStopRequested) return false;
         normalStopRequested = true;
@@ -115,23 +151,37 @@ final class RemoteBingoMatch {
         synchronized (this) {
             if (event.seq() <= lastEventSeq) return CompletableFuture.completedFuture(true);
             if (event.seq() != lastEventSeq + 1) return CompletableFuture.completedFuture(false);
+            if (event.type() == ink.ziip.championshipscore.protocol.MatchEventType.READY)
+                workerReadyObserved = true;
         }
 
         CompletionStage<Boolean> result =
-                switch (event.type()) {
-                    case READY -> onReady(event);
-                    case PLAYER_ARRIVED -> onPlayerArrived(event);
-                    case SPECTATOR_ADDED ->
-                            completed(() -> acknowledgeSpectator(event, spectatorAddAcks));
-                    case SPECTATOR_REMOVED ->
-                            completed(() -> acknowledgeSpectator(event, spectatorRemoveAcks));
-                    case STARTED -> completed(this::markStarted);
-                    case TASK_COMPLETED -> completed(() -> applyCompletion(event));
-                    case FINISHED -> finish(event);
-                    case PREPARE_FAILED, FAILED, ABORTED -> completed(this::abort);
-                    case PLAYER_LEFT -> onPlayerLeft(event);
-                    case HEARTBEAT -> completed(() -> applyHeartbeat(event));
-                };
+                manifest.runMode().test()
+                                && state().terminal()
+                                && event.type()
+                                        != ink.ziip.championshipscore.protocol.MatchEventType
+                                                .RELEASED
+                                && event.type()
+                                        != ink.ziip.championshipscore.protocol.MatchEventType
+                                                .PREPARE_FAILED
+                        ? CompletableFuture.completedFuture(true)
+                        : switch (event.type()) {
+                            case READY -> onReady(event);
+                            case PLAYER_ARRIVED -> onPlayerArrived(event);
+                            case SPECTATOR_ADDED ->
+                                    completed(() -> acknowledgeSpectator(event, spectatorAddAcks));
+                            case SPECTATOR_REMOVED ->
+                                    completed(
+                                            () -> acknowledgeSpectator(event, spectatorRemoveAcks));
+                            case STARTED -> completed(this::markStarted);
+                            case TASK_COMPLETED -> completed(() -> applyCompletion(event));
+                            case FINISHED -> finish(event);
+                            case PREPARE_FAILED -> completed(() -> rejectPreparation(event));
+                            case FAILED, ABORTED -> completed(this::abort);
+                            case PLAYER_LEFT -> onPlayerLeft(event);
+                            case HEARTBEAT -> completed(() -> applyHeartbeat(event));
+                            case RELEASED -> completed(() -> acknowledgeRelease(event));
+                        };
         return result.thenApply(
                 success -> {
                     if (success) {
@@ -142,6 +192,25 @@ final class RemoteBingoMatch {
                     }
                     return success;
                 });
+    }
+
+    private synchronized boolean acknowledgeRelease(MatchEvent event) {
+        String worlds = event.attributes().getOrDefault("worlds", "");
+        boolean unclaimed =
+                "unclaimed".equals(worlds) && testAdmissionRejected && !workerReadyObserved;
+        if (!manifest.runMode().test()
+                || !state().terminal()
+                || (!Set.of("reused", "reset").contains(worlds) && !unclaimed)) return false;
+        releaseAcknowledged = true;
+        return true;
+    }
+
+    private synchronized boolean rejectPreparation(MatchEvent event) {
+        testAdmissionRejected =
+                manifest.runMode().test()
+                        && !workerReadyObserved
+                        && "test-disabled".equals(event.attributes().get("reason"));
+        return abort();
     }
 
     private CompletionStage<Boolean> onReady(MatchEvent event) {
@@ -169,40 +238,137 @@ final class RemoteBingoMatch {
                                                 || plugin.getServer().getPlayer(player.uuid())
                                                         != null)
                         .toList();
-        List<CompletionStage<RouteReceipt>> routes =
+        List<PlayerRoute> routes =
                 routedParticipants.stream()
                         .map(
                                 player ->
-                                        router.route(
-                                                new PlayerRoute(
-                                                        player.uuid(),
-                                                        manifest.matchId(),
-                                                        manifest.epoch(),
-                                                        workerServer,
-                                                        player.role(),
-                                                        expires)))
+                                        new PlayerRoute(
+                                                player.uuid(),
+                                                manifest.matchId(),
+                                                manifest.epoch(),
+                                                workerServer,
+                                                player.role(),
+                                                expires))
                         .toList();
+        CompletionStage<List<RouteReceipt>> routing =
+                manifest.runMode().test()
+                        ? routeParticipantsInBatches(routes)
+                        : routeParticipantsAtOnce(routes);
+        return routing.thenApply(
+                receipts -> {
+                    for (int index = 0; index < receipts.size(); index++) {
+                        RouteReceipt receipt = receipts.get(index);
+                        if (!receipt.accepted()
+                                && routedParticipants.get(index).role() == ParticipantRole.PLAYER) {
+                            return false;
+                        }
+                    }
+                    synchronized (this) {
+                        if (lifecycle.state() == MatchState.READY)
+                            lifecycle.transitionTo(MatchState.ROUTING);
+                    }
+                    return true;
+                });
+    }
+
+    private CompletionStage<List<RouteReceipt>> routeParticipantsInBatches(
+            List<PlayerRoute> routes) {
+        CompletableFuture<List<RouteReceipt>> result = new CompletableFuture<>();
+        routeParticipantBatch(routes, 0, new ArrayList<>(), result);
+        return result;
+    }
+
+    /** Preserve the established formal GAME/EVENT/DAILY routing timing. */
+    private CompletionStage<List<RouteReceipt>> routeParticipantsAtOnce(List<PlayerRoute> routes) {
+        List<CompletionStage<RouteReceipt>> pending = routes.stream().map(router::route).toList();
         CompletableFuture<?>[] futures =
-                routes.stream()
+                pending.stream()
                         .map(CompletionStage::toCompletableFuture)
                         .toArray(CompletableFuture[]::new);
         return CompletableFuture.allOf(futures)
                 .thenApply(
-                        ignored -> {
-                            for (int index = 0; index < routes.size(); index++) {
-                                RouteReceipt receipt =
-                                        routes.get(index).toCompletableFuture().join();
-                                if (!receipt.accepted()
-                                        && routedParticipants.get(index).role()
-                                                == ParticipantRole.PLAYER) {
-                                    return false;
+                        ignored ->
+                                pending.stream()
+                                        .map(stage -> stage.toCompletableFuture().join())
+                                        .toList());
+    }
+
+    private void routeParticipantBatch(
+            List<PlayerRoute> routes,
+            int offset,
+            List<RouteReceipt> receipts,
+            CompletableFuture<List<RouteReceipt>> result) {
+        if (result.isDone()) return;
+        if (offset >= routes.size()) {
+            result.complete(List.copyOf(receipts));
+            return;
+        }
+        int end = Math.min(routes.size(), offset + ROUTE_BATCH_SIZE);
+        List<CompletableFuture<RouteReceipt>> batch = new ArrayList<>(end - offset);
+        for (int index = offset; index < end; index++) {
+            PlayerRoute route = routes.get(index);
+            int sequence = index + 1;
+            logTestRoute("dispatch", route, sequence, routes.size(), "");
+            try {
+                CompletableFuture<RouteReceipt> routed = router.route(route).toCompletableFuture();
+                routed.whenComplete(
+                        (receipt, failure) -> {
+                            if (failure != null) {
+                                logTestRoute(
+                                        "route-failed",
+                                        route,
+                                        sequence,
+                                        routes.size(),
+                                        failure.getClass().getSimpleName());
+                            } else {
+                                logTestRoute(
+                                        "route-receipt",
+                                        route,
+                                        sequence,
+                                        routes.size(),
+                                        "accepted="
+                                                + receipt.accepted()
+                                                + " detail="
+                                                + receipt.detail());
+                            }
+                        });
+                batch.add(routed);
+            } catch (RuntimeException failure) {
+                result.completeExceptionally(failure);
+                return;
+            }
+        }
+        CompletableFuture.allOf(batch.toArray(CompletableFuture[]::new))
+                .whenComplete(
+                        (ignored, failure) -> {
+                            if (failure != null) {
+                                result.completeExceptionally(failure);
+                                return;
+                            }
+                            batch.forEach(future -> receipts.add(future.join()));
+                            if (end >= routes.size()) {
+                                result.complete(List.copyOf(receipts));
+                            } else {
+                                if (manifest.runMode().test()) {
+                                    plugin.getLogger()
+                                            .info(
+                                                    "TEST_ROUTE match="
+                                                            + manifest.matchId()
+                                                            + " epoch="
+                                                            + manifest.epoch()
+                                                            + " stage=next-batch-wait nextSeq="
+                                                            + (end + 1)
+                                                            + "/"
+                                                            + routes.size()
+                                                            + " delayTicks="
+                                                            + ROUTE_BATCH_DELAY_TICKS
+                                                            + " atMs="
+                                                            + System.currentTimeMillis());
                                 }
+                                scheduler.runGlobalLater(
+                                        () -> routeParticipantBatch(routes, end, receipts, result),
+                                        ROUTE_BATCH_DELAY_TICKS);
                             }
-                            synchronized (this) {
-                                if (lifecycle.state() == MatchState.READY)
-                                    lifecycle.transitionTo(MatchState.ROUTING);
-                            }
-                            return true;
                         });
     }
 
@@ -212,6 +378,22 @@ final class RemoteBingoMatch {
             playerId = UUID.fromString(required(event, "playerId"));
         } catch (IllegalArgumentException invalid) {
             throw new IllegalArgumentException("Invalid PLAYER_ARRIVED event", invalid);
+        }
+        if (manifest.runMode().test()) {
+            plugin.getLogger()
+                    .info(
+                            "TEST_ROUTE match="
+                                    + manifest.matchId()
+                                    + " epoch="
+                                    + manifest.epoch()
+                                    + " player="
+                                    + playerId
+                                    + " role="
+                                    + event.attributes().getOrDefault("role", "unknown")
+                                    + " stage=worker-arrived-event eventSeq="
+                                    + event.seq()
+                                    + " atMs="
+                                    + System.currentTimeMillis());
         }
         boolean shouldCommit;
         synchronized (this) {
@@ -254,6 +436,32 @@ final class RemoteBingoMatch {
                             }
                             return true;
                         });
+    }
+
+    private void logTestRoute(
+            String stage, PlayerRoute route, int sequence, int total, String detail) {
+        if (!manifest.runMode().test()) return;
+        plugin.getLogger()
+                .info(
+                        "TEST_ROUTE match="
+                                + manifest.matchId()
+                                + " epoch="
+                                + manifest.epoch()
+                                + " seq="
+                                + sequence
+                                + "/"
+                                + total
+                                + " player="
+                                + route.playerId()
+                                + " role="
+                                + route.role()
+                                + " target="
+                                + route.serverName()
+                                + " stage="
+                                + stage
+                                + (detail.isBlank() ? "" : " " + detail)
+                                + " atMs="
+                                + System.currentTimeMillis());
     }
 
     private CompletionStage<Boolean> onPlayerLeft(MatchEvent event) {
@@ -353,7 +561,7 @@ final class RemoteBingoMatch {
         }
         List<ink.ziip.championshipscore.api.rank.RankManager.PointSubmission> submissions =
                 new ArrayList<>();
-        if (instance.isEventRun()) {
+        if (instance.isFormalEventRun() || manifest.runMode().test()) {
             for (PendingAward pending : pendingAwards) {
                 PlayerAward award = pending.award();
                 UUID transactionId =
@@ -375,7 +583,7 @@ final class RemoteBingoMatch {
             }
         }
         return plugin.getRankManager()
-                .addPlayerPointsBatch(submissions)
+                .addPlayerPointsBatch(submissions, manifest.runMode().test())
                 .thenCompose(
                         staged ->
                                 staged
@@ -390,7 +598,7 @@ final class RemoteBingoMatch {
             lifecycle.transitionTo(MatchState.FINISHED);
             completeSpectatorAcks(false);
         }
-        if (instance.isEventRun()) plugin.getRankManager().refreshAfterPendingPointWrites();
+        if (instance.isFormalEventRun()) plugin.getRankManager().refreshAfterPendingPointWrites();
         instance.completeFromRemote();
         terminal.complete(null);
         return true;
@@ -417,11 +625,29 @@ final class RemoteBingoMatch {
     }
 
     MatchCommand abortCommand(String reason) {
+        var attributes = new java.util.HashMap<String, String>();
+        attributes.put("reason", reason);
+        if (manifest.runMode().test()) {
+            String bots =
+                    manifest.participants().stream()
+                            .filter(
+                                    player ->
+                                            plugin.getPlayerManager()
+                                                            .isEphemeralTestIdentity(player.uuid())
+                                                    && (plugin.getTestSessionManager() == null
+                                                            || !plugin.getTestSessionManager()
+                                                                    .hasUsableReconnectLease(
+                                                                            player.username(),
+                                                                            player.uuid())))
+                            .map(player -> player.uuid().toString())
+                            .collect(java.util.stream.Collectors.joining(","));
+            attributes.put("disconnectPlayers", bots);
+        }
         return MatchMessages.command(
                 manifest.matchId(),
                 manifest.epoch(),
                 MatchCommandType.ABORT,
-                Map.of("reason", reason),
+                attributes,
                 Clock.systemUTC());
     }
 

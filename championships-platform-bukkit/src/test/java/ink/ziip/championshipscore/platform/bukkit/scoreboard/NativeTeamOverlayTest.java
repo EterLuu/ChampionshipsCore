@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.platform.bukkit.scoreboard;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
@@ -10,11 +11,68 @@ import org.junit.jupiter.api.Test;
 import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
 class NativeTeamOverlayTest {
+    @Test
+    void freshBukkitWrappersStillRestoreTheOriginalRegistration() {
+        FakeScoreboard scoreboard = new FakeScoreboard();
+        scoreboard.freshWrappers = true;
+        Team original = scoreboard.team("formal");
+        Team temporary = scoreboard.team("temporary");
+        original.addEntry("Alice");
+        var overlay = new NativeTeamService(scoreboard.scoreboard()).newOverlay();
+        overlay.own(temporary);
+        UUID id = UUID.randomUUID();
+        overlay.assign(id, "Alice", temporary);
+        // A lookup returns a different wrapper with Bukkit registration equality.
+        Team lookedUp = scoreboard.scoreboard().getTeam("temporary");
+        org.junit.jupiter.api.Assertions.assertNotSame(temporary, lookedUp);
+        assertEquals(temporary, lookedUp);
+        overlay.removeTeam(lookedUp);
+        assertSame(original, scoreboard.entryTeam("Alice"));
+        assertNull(scoreboard.scoreboard().getTeam("temporary"));
+    }
+
+    @Test
+    void anotherRegistrationWithTheSameNameIsNeverOwnedByTheOldOverlay() {
+        FakeScoreboard scoreboard = new FakeScoreboard();
+        scoreboard.freshWrappers = true;
+        Team temporary = scoreboard.team("temporary");
+        var overlay = new NativeTeamService(scoreboard.scoreboard()).newOverlay();
+        overlay.own(temporary);
+        UUID id = UUID.randomUUID();
+        overlay.assign(id, "Alice", temporary);
+        temporary.unregister();
+        Team replacement = scoreboard.team("temporary");
+        replacement.addEntry("Alice");
+        overlay.release(id);
+        assertSame(replacement, scoreboard.entryTeam("Alice"));
+    }
+
+    @Test
+    void repeatedAssignmentSkipsNativeEntryWritesButRepairsExternalReassignment() {
+        FakeScoreboard scoreboard = new FakeScoreboard();
+        Team original = scoreboard.team("formal");
+        Team temporary = scoreboard.team("temporary");
+        original.addEntry("Alice");
+        var overlay = new NativeTeamService(scoreboard.scoreboard()).newOverlay();
+        overlay.own(temporary);
+        UUID id = UUID.randomUUID();
+        overlay.assign(id, "Alice", temporary);
+        int writes = scoreboard.entryWrites;
+        for (int i = 0; i < 64; i++) overlay.assign(id, "Alice", temporary);
+        assertEquals(writes, scoreboard.entryWrites);
+        original.addEntry("Alice");
+        overlay.assign(id, "Alice", temporary);
+        assertSame(temporary, scoreboard.entryTeam("Alice"));
+        overlay.release(id);
+        assertSame(original, scoreboard.entryTeam("Alice"));
+    }
+
     @Test
     void restoresTheOriginalTeamWhenReleased() {
         FakeScoreboard scoreboard = new FakeScoreboard();
@@ -87,6 +145,9 @@ class NativeTeamOverlayTest {
     }
 
     private static final class FakeScoreboard {
+        int entryWrites;
+        boolean freshWrappers;
+        final Map<Object, Team> wrapperRoots = new IdentityHashMap<>();
         private final Map<String, TeamState> teams = new HashMap<>();
         private final Map<String, Team> entries = new HashMap<>();
         private final Scoreboard scoreboard =
@@ -96,9 +157,9 @@ class NativeTeamOverlayTest {
                                 switch (method.getName()) {
                                     case "getTeam" -> {
                                         TeamState state = teams.get(args[0]);
-                                        yield state == null ? null : state.team;
+                                        yield state == null ? null : wrap(state.team);
                                     }
-                                    case "getEntryTeam" -> entries.get(args[0]);
+                                    case "getEntryTeam" -> wrap(entries.get(args[0]));
                                     case "getTeams" ->
                                             teams.values().stream()
                                                     .map(state -> state.team)
@@ -113,6 +174,22 @@ class NativeTeamOverlayTest {
 
         Team entryTeam(String entry) {
             return entries.get(entry);
+        }
+
+        private Team wrap(Team root) {
+            if (root == null || !freshWrappers) return root;
+            Team wrapper =
+                    proxy(
+                            Team.class,
+                            (method, args) -> {
+                                try {
+                                    return method.invoke(root, args);
+                                } catch (java.lang.reflect.InvocationTargetException failure) {
+                                    throw failure.getCause();
+                                }
+                            });
+            wrapperRoots.put(wrapper, root);
+            return wrapper;
         }
 
         Team team(String name) {
@@ -136,12 +213,15 @@ class NativeTeamOverlayTest {
                                 Team.class,
                                 (method, args) ->
                                         switch (method.getName()) {
+                                            case "hashCode" -> System.identityHashCode(self[0]);
+                                            case "equals" -> wrapperRoots.get(args[0]) == self[0];
                                             case "getName" -> name;
                                             case "getScoreboard" -> scoreboard;
                                             case "getEntries" -> Set.copyOf(members);
                                             case "hasEntry" -> members.contains(args[0]);
                                             case "getSize" -> members.size();
                                             case "addEntry" -> {
+                                                entryWrites++;
                                                 String entry = (String) args[0];
                                                 Team previous = entries.put(entry, self[0]);
                                                 if (previous != null && previous != self[0])
@@ -168,6 +248,7 @@ class NativeTeamOverlayTest {
                                             default -> defaultValue(method.getReturnType());
                                         });
                 self[0] = this.team;
+                wrapperRoots.put(this.team, this.team);
             }
         }
 

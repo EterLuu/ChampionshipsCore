@@ -56,7 +56,9 @@ public final class BingoManifestFactory {
             BingoVariantRules variant) {
         long cardSeed =
                 java.util.concurrent.ThreadLocalRandom.current().nextLong(1, Long.MAX_VALUE);
-        if (runMode != GameRunMode.DAILY) variant = BingoVariantRules.FIXED_POINTS;
+        if (runMode != GameRunMode.DAILY
+                && runMode != GameRunMode.TEST
+                && runMode != GameRunMode.TEST_EVENT) variant = BingoVariantRules.FIXED_POINTS;
         CardSize cardSize =
                 variant.remix() == BingoRemix.SPEEDRUN
                         ? CardSize.X3
@@ -209,6 +211,8 @@ public final class BingoManifestFactory {
                     case EVENT -> MatchRunMode.EVENT;
                     case DAILY -> MatchRunMode.DAILY;
                     case GAME -> MatchRunMode.GAME;
+                    case TEST -> MatchRunMode.TEST;
+                    case TEST_EVENT -> MatchRunMode.TEST_EVENT;
                 },
                 duration,
                 cardSeed,

@@ -1,4 +1,8 @@
 enabled: false
+# Independent opt-in: a production Worker rejects TEST/TEST_EVENT before acquiring its world slot.
+# Pending release journals are recovered even with test.enabled=false.
+test:
+  enabled: false
 worker-id: "bingo-1"
 redis:
   uri: "redis://127.0.0.1:6379/0"

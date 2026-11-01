@@ -1,6 +1,22 @@
 dont-edit-this:
   version: 25
 mode: "CHAMPIONSHIP"
+# Enable only in a separate test deployment with isolated worlds, identities and data services.
+# This permits real game resets; it does not create a sandbox. Historical Bot denials remain active.
+test:
+  enabled: false
+  auth:
+    # Configure a unique value and a private 32+ byte key only on the isolated test Core.
+    server-id: ""
+    hmac-secret: ""
+  identity:
+    # Optional cc-web TEST_HARNESS client. Core uses it to obtain current Bot UUIDs and leases.
+    base-url: ""
+    key-id: ""
+    hmac-secret: ""
+    allow-insecure-private-http: false
+    connect-timeout-seconds: 5
+    request-timeout-seconds: 15
 # Registration names used by formal event schedules; [] selects registered maps.
 # These are map identities, not physical world names.
 # Keep this section synchronized through /cc map rename; do not add map IDs in ScheduleManager code.

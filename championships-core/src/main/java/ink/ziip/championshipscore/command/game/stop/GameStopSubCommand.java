@@ -26,7 +26,8 @@ public final class GameStopSubCommand extends BaseSubCommand {
         super(
                 "stop",
                 MessageConfig.codeText("game-stop-sub-command.constructor-1"),
-                MessageConfig.codeText("game-stop-sub-command.constructor-2"));
+                MessageConfig.codeText("game-stop-sub-command.constructor-2"),
+                ADMIN_PERMISSION);
     }
 
     @Override

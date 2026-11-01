@@ -19,6 +19,9 @@ permissions:
   cc.admin:
     description: ChampionshipsCore event and administration commands.
     default: op
+  cc.test:
+    description: Unattended game test controls.
+    default: false
   cc.refuge:
     description: ChampionshipsCore referee presentation and game-flow bypasses.
     default: false

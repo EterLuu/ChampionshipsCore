@@ -184,8 +184,9 @@ public class BingoHandler extends BaseListener {
         bingoArea.onEventSignal(event.getPlayer(), "break_item", type.name());
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEventTaskDeath(PlayerDeathEvent event) {
+        if (bingoArea != null) bingoArea.recoverRespawn(event.getEntity(), true);
         if (!running() || bingoArea.notAreaPlayer(event.getEntity())) return;
         String cause = resolveDeathCause(event.getEntity());
         if (cause != null) bingoArea.onEventSignal(event.getEntity(), "die", cause);
@@ -466,13 +467,7 @@ public class BingoHandler extends BaseListener {
         if (respawn != null && respawn.getWorld() != null) {
             event.setRespawnLocation(respawn);
         }
-        if (stage == GameStageEnum.PROGRESS) {
-            // KEEP_INVENTORY is on so the kit/card survive a death, but re-issue them as a safety
-            // net
-            // in case the gamerule is ever off or the items were lost. hasKit gates the kit so the
-            // non-stacking tools never duplicate.
-            platformScheduler.runEntity(player, () -> bingoArea.ensureKitAndCard(player));
-        }
+        bingoArea.recoverRespawn(player, false);
     }
 
     // ── friendly fire off ──────────────────────────────────────────────────────────────────────

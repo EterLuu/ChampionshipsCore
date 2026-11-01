@@ -12,6 +12,10 @@ offline-cache:
   enabled: true
   # 0 表示不按时间失效；未知玩家以及从未完整同步过的玩家仍会拒绝登录。
   max-stale-hours: 0
+bot:
+  # Bot names are restricted at the proxy before AuthMe. An empty list rejects every Bot name.
+  username-prefix: autobot
+  allowed-cidrs: []
 messages:
   not-bound: |-
     &#696969&m--------------------------------

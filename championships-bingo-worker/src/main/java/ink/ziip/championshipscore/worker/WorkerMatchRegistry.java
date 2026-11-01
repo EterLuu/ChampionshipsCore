@@ -7,7 +7,9 @@ import ink.ziip.championshipscore.platform.bukkit.scoreboard.NativeTeamService;
 import ink.ziip.championshipscore.platform.bukkit.text.PlayerPresentation;
 import ink.ziip.championshipscore.protocol.BingoPresentation;
 import ink.ziip.championshipscore.protocol.MatchCommand;
+import ink.ziip.championshipscore.protocol.MatchEventType;
 import ink.ziip.championshipscore.protocol.MatchManifest;
+import ink.ziip.championshipscore.protocol.MatchMessages;
 import ink.ziip.championshipscore.protocol.transport.DeliveryDisposition;
 import ink.ziip.championshipscore.protocol.transport.InboundDelivery;
 import ink.ziip.championshipscore.protocol.transport.MatchInboundMessage;
@@ -22,6 +24,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 
+import java.time.Clock;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -29,6 +32,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 
 /** Worker command dispatcher with match/epoch fencing and a single active-world ownership slot. */
 final class WorkerMatchRegistry {
@@ -47,6 +51,7 @@ final class WorkerMatchRegistry {
     private BingoPresentation latestPresentation;
     private boolean latestDaily;
     private boolean worldSlotConsumed;
+    private final WorkerTestReleaseJournal testReleases;
 
     WorkerMatchRegistry(
             Plugin plugin,
@@ -64,6 +69,13 @@ final class WorkerMatchRegistry {
         this.scheduler = new PlatformScheduler(plugin);
         this.progressChecks = new PlayerProgressChecks(plugin);
         this.recipeKeys = loadRecipeKeys(plugin);
+        try {
+            testReleases =
+                    new WorkerTestReleaseJournal(
+                            plugin.getDataFolder().toPath().resolve("test-releases"));
+        } catch (java.io.IOException failure) {
+            throw new java.io.UncheckedIOException(failure);
+        }
         this.worldReset =
                 config.allowWorldReuseWithoutReset()
                         ? null
@@ -100,6 +112,9 @@ final class WorkerMatchRegistry {
                     "Manifest changed without advancing its epoch: " + manifest.matchId());
         }
         manifests.put(manifest.matchId(), manifest);
+        // Keep only the envelope needed to acknowledge a rejected start. Do not project its UI
+        // or acquire worlds/players on a Worker which has not explicitly enabled game tests.
+        if (manifest.runMode().test() && !config.testEnabled()) return true;
         latestPresentation = manifest.runtimeRules().presentation();
         latestDaily = manifest.runMode() == ink.ziip.championshipscore.protocol.MatchRunMode.DAILY;
         return true;
@@ -111,12 +126,17 @@ final class WorkerMatchRegistry {
             case START_COMMIT -> withActive(command, WorkerMatchSession::startCommit);
             case FORCE_END -> withActive(command, session -> session.finish("force-end"));
             case ABORT ->
-                    withActive(
-                            command,
-                            session ->
-                                    session.abort(
-                                            command.attributes()
-                                                    .getOrDefault("reason", "core-abort")));
+                    disabledTest(command)
+                            ? rejectDisabledTest(command)
+                            : withActive(
+                                    command,
+                                    session ->
+                                            session.abort(
+                                                    command.attributes()
+                                                            .getOrDefault("reason", "core-abort"),
+                                                    parsePlayers(
+                                                            command.attributes()
+                                                                    .get("disconnectPlayers"))));
             case ADD_SPECTATOR ->
                     withActive(
                             command,
@@ -150,11 +170,14 @@ final class WorkerMatchRegistry {
         if (manifest == null || manifest.epoch() != command.epoch()) {
             return CompletableFuture.completedFuture(false);
         }
+        if (disabledTest(command)) return rejectDisabledTest(command);
         if (active != null) {
             if (active.matchId().equals(command.matchId()) && active.epoch() == command.epoch()) {
                 return active.prepare();
             }
             if (!active.state().terminal()) return CompletableFuture.completedFuture(false);
+            if (active.testRun() && !active.testResourcesReleased())
+                return CompletableFuture.completedFuture(false);
         }
         progressChecks.clear();
         active =
@@ -167,11 +190,90 @@ final class WorkerMatchRegistry {
                         worlds,
                         nativeTeams,
                         worldReset == null ? () -> {} : worldReset::request);
+        active.testReleaseJournal(testReleases);
         if (worldSlotConsumed && !config.allowWorldReuseWithoutReset()) {
             return active.rejectPreparation("world-slot-requires-reset");
         }
         worldSlotConsumed = true;
         return active.prepare();
+    }
+
+    private boolean disabledTest(MatchCommand command) {
+        MatchManifest manifest = manifests.get(command.matchId());
+        return !config.testEnabled()
+                && manifest != null
+                && manifest.epoch() == command.epoch()
+                && manifest.runMode().test();
+    }
+
+    /** No match session or world ownership was created; retries retain deterministic event IDs. */
+    private CompletionStage<Boolean> rejectDisabledTest(MatchCommand command) {
+        var failed =
+                MatchMessages.event(
+                        command.matchId(),
+                        command.epoch(),
+                        1,
+                        MatchEventType.PREPARE_FAILED,
+                        Map.of("reason", "test-disabled"),
+                        Clock.systemUTC());
+        var released =
+                MatchMessages.event(
+                        command.matchId(),
+                        command.epoch(),
+                        2,
+                        MatchEventType.RELEASED,
+                        Map.of("worlds", "unclaimed"),
+                        Clock.systemUTC());
+        return events.publishEvent(failed)
+                .thenCompose(ignored -> events.publishEvent(released))
+                .thenApply(ignored -> true);
+    }
+
+    CompletionStage<Boolean> resumeTestReleases() {
+        return scheduler
+                .supplyGlobal(
+                        () -> {
+                            var ids = new java.util.LinkedHashMap<String, UUID>();
+                            for (String name :
+                                    java.util.List.of(
+                                            config.overworld(), config.nether(), config.end())) {
+                                var world = plugin.getServer().getWorld(name);
+                                if (world == null)
+                                    throw new IllegalStateException(
+                                            "release recovery world missing: " + name);
+                                ids.put(name, world.getUID());
+                            }
+                            return ids;
+                        })
+                .thenCompose(
+                        ids -> {
+                            try {
+                                return testReleases.resume(ids, events);
+                            } catch (java.io.IOException failure) {
+                                return CompletableFuture.failedFuture(failure);
+                            }
+                        })
+                .thenCompose(
+                        count ->
+                                scheduler.supplyGlobal(
+                                        () -> {
+                                            try {
+                                                if (testReleases.pending().isEmpty()) return true;
+                                                if (worldReset == null)
+                                                    throw new IllegalStateException(
+                                                            "A pending test release requires a real"
+                                                                    + " world reset");
+                                                plugin.getLogger()
+                                                        .info(
+                                                                "Test release awaits fresh worlds;"
+                                                                    + " resuming reset handoff"
+                                                                    + " before command admission");
+                                                worldReset.request();
+                                                return false;
+                                            } catch (java.io.IOException failure) {
+                                                throw new java.io.UncheckedIOException(failure);
+                                            }
+                                        }));
     }
 
     private synchronized CompletionStage<Boolean> withActive(
@@ -193,7 +295,14 @@ final class WorkerMatchRegistry {
         }
         if (session != null && session.owns(player.getUniqueId())) {
             returnRouter.cancel(player.getUniqueId());
-            session.playerArrived(player)
+            CompletionStage<Boolean> admission = session.playerArrived(player);
+            if (session.testRun()) {
+                // A Folia entity teleport can remain pending while a large TEST roster is
+                // loading chunks. Return the player through the existing router so Core can
+                // issue a fresh route instead of waiting for the match arrival timeout.
+                admission = admission.toCompletableFuture().orTimeout(10L, TimeUnit.SECONDS);
+            }
+            admission
                     .thenAccept(
                             accepted -> {
                                 if (!accepted) returnRouter.request(player);
@@ -381,12 +490,13 @@ final class WorkerMatchRegistry {
         return session == null ? null : session.respawnLocation(player.getUniqueId());
     }
 
-    void restoreAfterRespawn(Player player) {
+    void recoverRespawn(Player player, boolean death) {
         WorkerMatchSession session;
         synchronized (this) {
             session = active;
         }
-        if (session != null) session.restoreAfterRespawn(player);
+        if (session != null)
+            session.recoverRespawn(player, death, () -> activeSession() == session);
     }
 
     boolean clearsInventoryOnDeath(Player player) {
@@ -395,6 +505,14 @@ final class WorkerMatchRegistry {
             session = active;
         }
         return session != null && session.clearsInventoryOnDeath(player.getUniqueId());
+    }
+
+    void cancelPendingRespawns() {
+        WorkerMatchSession session;
+        synchronized (this) {
+            session = active;
+        }
+        if (session != null) session.cancelRespawnRecovery();
     }
 
     synchronized boolean isPlaying(UUID playerId) {

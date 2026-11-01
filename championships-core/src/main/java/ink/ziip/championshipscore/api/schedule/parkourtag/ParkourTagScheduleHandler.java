@@ -20,7 +20,7 @@ public class ParkourTagScheduleHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onGameEnd(TeamGameEndEvent event) {
         if (event.getGameInstance() instanceof ParkourTagArea parkourTagArea) {
-            if (parkourTagArea.isEventRun() && scheduleManager.isEnabled()) {
+            if (parkourTagArea.isFormalEventRun() && scheduleManager.isEnabled()) {
                 scheduleManager.onInstanceComplete(parkourTagArea, parkourTagArea.getMatchWinner());
             }
         }

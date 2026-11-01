@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.nio.file.Files;
 import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -49,6 +50,27 @@ class LocalAccessStateTest {
 
             assertEquals("rule violation", restored.reason());
             assertEquals("2030-01-01T00:00:00Z", restored.expiresAt());
+        } finally {
+            Files.deleteIfExists(file.toPath());
+        }
+    }
+
+    @Test
+    void persistsBotNetworkMetadataAcrossRestart() throws Exception {
+        File file = Files.createTempFile("authbridge-bot-state", ".yml").toFile();
+        try {
+            LocalAccessState state = new LocalAccessState(file);
+            state.recordIdentity(
+                    "autobot00",
+                    UUID.randomUUID().toString(),
+                    UUID.randomUUID().toString(),
+                    true,
+                    List.of("10.20.0.0/16"));
+            state.advance("1");
+
+            LocalAccessState.Identity restored = new LocalAccessState(file).identity("autobot00");
+            assertEquals(true, restored.bot());
+            assertEquals(List.of("10.20.0.0/16"), restored.allowedCidrs());
         } finally {
             Files.deleteIfExists(file.toPath());
         }

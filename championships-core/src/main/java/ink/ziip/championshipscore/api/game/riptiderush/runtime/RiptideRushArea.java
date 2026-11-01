@@ -1205,7 +1205,8 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
                 MessageConfig.RIPTIDE_RUSH_GAME_END_TITLE,
                 MessageConfig.RIPTIDE_RUSH_GAME_END_SUBTITLE);
         beginPostGameSettlement();
-        if (!isEventRun() || !plugin.getScheduleManager().hasNextRound(GameTypeEnum.RiptideRush)) {
+        if (!isFormalEventRun()
+                || !plugin.getScheduleManager().hasNextRound(GameTypeEnum.RiptideRush)) {
             changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
             resetPlayerHealthFoodEffectLevelInventory();
         }
@@ -1265,7 +1266,7 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
     @Override
     public java.util.concurrent.CompletableFuture<Boolean> abortAndReset() {
         if (!Bukkit.isPrimaryThread()) return super.abortAndReset();
-        if (isEventRun() || upcomingCourse != null)
+        if (isFormalEventRun() || (upcomingCourse != null && !isTestRun()))
             plugin.getScheduleManager().endGameSchedule(GameTypeEnum.RiptideRush);
         return super.abortAndReset();
     }

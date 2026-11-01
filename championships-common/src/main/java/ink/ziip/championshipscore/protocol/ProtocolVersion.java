@@ -2,7 +2,8 @@ package ink.ziip.championshipscore.protocol;
 
 /** Wire compatibility version shared by SCC, Bingo workers and proxy adapters. */
 public final class ProtocolVersion {
-    public static final int CURRENT = 8;
+    /** Version 10 adds Worker-confirmed test resource release, including fresh-world recovery. */
+    public static final int CURRENT = 10;
 
     private ProtocolVersion() {}
 

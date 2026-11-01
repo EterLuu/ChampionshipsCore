@@ -465,11 +465,22 @@ public class RankManager extends BaseManager {
      */
     public CompletionStage<Boolean> addPlayerPointsBatch(
             @NotNull Collection<PointSubmission> submissions) {
+        return addPlayerPointsBatch(submissions, false);
+    }
+
+    /**
+     * Stages point writes for a real or isolated test settlement. Test teams are transient and are
+     * therefore excluded by the formal-team lookup unless the caller explicitly opts in.
+     */
+    public CompletionStage<Boolean> addPlayerPointsBatch(
+            @NotNull Collection<PointSubmission> submissions, boolean allowTransientTeams) {
         List<FrozenPointSubmission> frozen = new ArrayList<>();
         for (PointSubmission submission : submissions) {
             if (!isScoringGame(submission.game())) continue;
             ChampionshipTeam team =
-                    plugin.getTeamManager().getFormalTeamByPlayer(submission.playerId());
+                    allowTransientTeams
+                            ? plugin.getTeamManager().getTeamByPlayer(submission.playerId())
+                            : plugin.getTeamManager().getFormalTeamByPlayer(submission.playerId());
             if (team == null) {
                 plugin.getLogger()
                         .severe(

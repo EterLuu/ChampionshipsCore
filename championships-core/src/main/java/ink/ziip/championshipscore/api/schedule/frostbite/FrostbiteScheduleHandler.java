@@ -21,7 +21,7 @@ public final class FrostbiteScheduleHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onGameEnd(SingleGameEndEvent event) {
         if (event.getGameInstance() instanceof FrostbiteArea
-                && event.getGameInstance().isEventRun()
+                && event.getGameInstance().isFormalEventRun()
                 && scheduleManager.isEnabled()) {
             scheduleManager.nextRound();
         }

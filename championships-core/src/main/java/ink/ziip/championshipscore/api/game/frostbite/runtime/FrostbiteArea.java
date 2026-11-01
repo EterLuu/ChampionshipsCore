@@ -185,7 +185,7 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
         try {
             getGameConfig().validate();
             int index =
-                    isEventRun()
+                    isFormalEventRun()
                             ? plugin.getScheduleManager()
                                             .getFrostbiteScheduleManager()
                                             .getSubRound()
@@ -1267,7 +1267,7 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
 
     @Override
     public java.util.concurrent.CompletableFuture<Boolean> abortAndReset() {
-        if (Bukkit.isPrimaryThread() && isEventRun())
+        if (Bukkit.isPrimaryThread() && isFormalEventRun())
             plugin.getScheduleManager().endGameSchedule(GameTypeEnum.FrostbiteFrenzy);
         return super.abortAndReset();
     }

@@ -6,6 +6,10 @@ api:
   poll-seconds: 10
   connect-timeout-seconds: 5
   request-timeout-seconds: 10
+bot:
+  # An empty list rejects every configured Bot name at this backend as well as at Bungee.
+  username-prefix: autobot
+  allowed-cidrs: []
 access:
   # PROXY: AuthProxy rejects external logins; BRIDGE: this plugin owns backend admission.
   admission-owner: PROXY

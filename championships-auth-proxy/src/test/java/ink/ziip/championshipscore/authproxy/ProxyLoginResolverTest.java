@@ -96,6 +96,34 @@ class ProxyLoginResolverTest {
         assertThrows(IOException.class, () -> resolver.lookup("UnknownPlayer"));
     }
 
+    @Test
+    void neverFallsBackToAStaleBotAdmissionWhenWebIsUnavailable() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext(
+                "/api/internal/bridge/login-profile/autobot00",
+                exchange ->
+                        respond(
+                                exchange,
+                                200,
+                                "{\"status\":\"ALLOWED\",\"uuid\":\""
+                                        + UUID
+                                        + "\",\"bot\":true,\"allowedCidrs\":[\"10.20.0.0/16\"]}"));
+        server.start();
+        try {
+            ProxyIdentityClient client = client(server.getAddress().getPort());
+            ProxyLoginResolver resolver =
+                    resolver(
+                            client,
+                            new ProxyAccessState(
+                                    tempDirectory.resolve("bot-outage.properties").toFile()));
+            assertEquals(UUID, resolver.lookup("autobot00").uuid);
+            server.stop(0);
+            assertThrows(IOException.class, () -> resolver.lookup("autobot00"));
+        } finally {
+            server.stop(0);
+        }
+    }
+
     private static ProxyLoginResolver resolver(ProxyIdentityClient client, ProxyAccessState state) {
         Logger logger = Logger.getLogger("proxy-login-resolver-test-" + System.nanoTime());
         logger.setUseParentHandlers(false);

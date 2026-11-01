@@ -5,6 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ink.ziip.championshipscore.api.game.model.GameRunMode;
+import ink.ziip.championshipscore.protocol.BingoDifficulty;
+import ink.ziip.championshipscore.protocol.BingoMode;
+import ink.ziip.championshipscore.protocol.BingoRemix;
+import ink.ziip.championshipscore.protocol.BingoVariantRules;
 
 import org.junit.jupiter.api.Test;
 
@@ -23,6 +27,27 @@ class BingoExecutionRouterTest {
 
         assertFalse(request.showIntroduction());
         assertEquals(GameRunMode.GAME, request.runMode());
+    }
+
+    @Test
+    void testEventKeepsEventIntroductionWithoutBecomingFormalEvent() {
+        BingoStartRequest request = new BingoStartRequest("bingo", true, GameRunMode.TEST_EVENT);
+
+        assertTrue(request.showIntroduction());
+        assertEquals(GameRunMode.TEST_EVENT, request.runMode());
+    }
+
+    @Test
+    void testRunPreservesExplicitVariantWhileFormalRunKeepsHistoricalFixedRules() {
+        var variant =
+                new BingoVariantRules(BingoMode.POINTS, BingoDifficulty.HARD, 1, BingoRemix.NETHER);
+        BingoStartRequest test =
+                new BingoStartRequest("bingo", false, GameRunMode.TEST, List.of(), variant);
+        BingoStartRequest formal =
+                new BingoStartRequest("bingo", false, GameRunMode.EVENT, List.of(), variant);
+
+        assertEquals(variant, test.variant());
+        assertEquals(BingoVariantRules.FIXED_POINTS, formal.variant());
     }
 
     @Test

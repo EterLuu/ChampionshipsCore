@@ -37,6 +37,28 @@ public class PlayerDaoImpl implements PlayerDao {
     private final ChampionshipsCore plugin = ChampionshipsCore.getInstance();
 
     @Override
+    public boolean hasIdentity(@NotNull UUID uuid, @NotNull String name) {
+        try (Connection connection = plugin.getDatabaseManager().getConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement(
+                                """
+                                SELECT 1
+                                FROM `players`
+                                WHERE `uuid`=? OR LOWER(`username`)=LOWER(?)
+                                LIMIT 1
+                                """)) {
+            statement.setString(1, uuid.toString());
+            statement.setString(2, name);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next();
+            }
+        } catch (SQLException failure) {
+            logFailure(MessageConfig.codeText("player-dao-impl.has-identity-1"), failure);
+            throw new IllegalStateException("Unable to verify formal player identity", failure);
+        }
+    }
+
+    @Override
     @Nullable
     public PlayerEntry getPlayer(UUID uuid) {
         try (Connection connection = plugin.getDatabaseManager().getConnection()) {

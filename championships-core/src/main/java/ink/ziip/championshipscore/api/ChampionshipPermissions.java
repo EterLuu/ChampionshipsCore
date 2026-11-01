@@ -4,6 +4,7 @@ package ink.ziip.championshipscore.api;
 public final class ChampionshipPermissions {
     public static final String PLAYER = "cc.player";
     public static final String ADMIN = "cc.admin";
+    public static final String TEST = "cc.test";
     public static final String REFEREE = "cc.refuge";
 
     private ChampionshipPermissions() {}

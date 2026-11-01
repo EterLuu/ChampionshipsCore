@@ -21,7 +21,7 @@ public final class BuildMartScheduleHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onGameEnd(SingleGameEndEvent event) {
         if (event.getGameInstance() instanceof BuildMartArea area
-                && area.isEventRun()
+                && area.isFormalEventRun()
                 && scheduleManager.isEnabled()) {
             scheduleManager.nextRound();
         }

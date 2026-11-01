@@ -12,6 +12,7 @@ import ink.ziip.championshipscore.platform.bukkit.bingo.FrozenBingoTaskText;
 import ink.ziip.championshipscore.platform.bukkit.bingo.map.TaskImageAtlas;
 import ink.ziip.championshipscore.platform.bukkit.gui.BingoTaskItems;
 import ink.ziip.championshipscore.platform.bukkit.gui.InventoryItems;
+import ink.ziip.championshipscore.platform.bukkit.player.PlayerRespawnRecovery;
 import ink.ziip.championshipscore.platform.bukkit.player.PlayerStateService;
 import ink.ziip.championshipscore.platform.bukkit.player.PlayerTargetTeleports;
 import ink.ziip.championshipscore.platform.bukkit.player.SpectatorStateService;
@@ -100,8 +101,12 @@ final class WorkerMatchSession {
     private final WorkerWorldController worlds;
     private final NativeTeamService nativeTeams;
     private final Runnable worldReset;
+    private WorkerTestReleaseJournal testReleaseJournal;
+    private CompletableFuture<Void> testRelease;
+    private WorkerTestReleaseJournal.Pending pendingResetRelease;
     private final PlatformScheduler scheduler;
     private final PlayerTargetTeleports teammateTeleports;
+    private final PlayerRespawnRecovery respawnRecovery;
     private final NamespacedKey cardKey;
     private final NamespacedKey spectatorControlKey;
     private final WorkerTeamScatterService scatter;
@@ -206,6 +211,7 @@ final class WorkerMatchSession {
         this.worldReset = worldReset;
         this.scheduler = new PlatformScheduler(plugin);
         this.teammateTeleports = new PlayerTargetTeleports(plugin);
+        this.respawnRecovery = new PlayerRespawnRecovery(plugin);
         this.cardKey = new NamespacedKey(plugin, "bingo_card");
         this.spectatorControlKey = new NamespacedKey(plugin, "spectator_control");
         this.scatter = new WorkerTeamScatterService(plugin);
@@ -245,7 +251,21 @@ final class WorkerMatchSession {
 
     /** True for championship (EVENT) matches, where voluntary mid-match leaving is disabled. */
     boolean eventMode() {
-        return manifest.runMode() == MatchRunMode.EVENT;
+        return manifest.runMode().eventLike();
+    }
+
+    boolean testRun() {
+        return manifest.runMode().test();
+    }
+
+    synchronized boolean testResourcesReleased() {
+        return testRelease != null
+                && testRelease.isDone()
+                && !testRelease.isCompletedExceptionally();
+    }
+
+    void testReleaseJournal(WorkerTestReleaseJournal journal) {
+        testReleaseJournal = journal;
     }
 
     synchronized boolean owns(UUID playerId) {
@@ -402,13 +422,58 @@ final class WorkerMatchSession {
         return world == null ? null : world.getSpawnLocation();
     }
 
-    void restoreAfterRespawn(Player player) {
+    private void restoreAfterRespawn(Player player) {
         PlayerSnapshot snapshot;
         synchronized (this) {
             snapshot = participants.get(player.getUniqueId());
             if (snapshot == null || lifecycle.state().terminal()) return;
         }
         restoreParticipantState(player, snapshot);
+    }
+
+    void recoverRespawn(
+            Player player, boolean death, java.util.function.BooleanSupplier stillActive) {
+        PlayerSnapshot expected;
+        synchronized (this) {
+            expected = participants.get(player.getUniqueId());
+            if (expected == null || lifecycle.state().terminal()) return;
+        }
+        java.util.function.BooleanSupplier current =
+                () -> {
+                    if (!stillActive.getAsBoolean()) return false;
+                    synchronized (this) {
+                        return !lifecycle.state().terminal()
+                                && participants.get(player.getUniqueId()) == expected;
+                    }
+                };
+        java.util.function.Supplier<Location> destination =
+                () ->
+                        expected.role() == ParticipantRole.SPECTATOR
+                                ? null
+                                : respawnLocation(player.getUniqueId());
+        if (death) {
+            cancelSpectatorTeleport(player.getUniqueId());
+            respawnRecovery
+                    .death(player, this, current, destination, () -> restoreAfterRespawn(player))
+                    .exceptionally(
+                            error -> {
+                                plugin.getLogger()
+                                        .log(Level.WARNING, "Bingo respawn recovery failed", error);
+                                return false;
+                            });
+        } else
+            respawnRecovery
+                    .respawn(player, this, current, destination, () -> restoreAfterRespawn(player))
+                    .exceptionally(
+                            error -> {
+                                plugin.getLogger()
+                                        .log(Level.WARNING, "Bingo respawn recovery failed", error);
+                                return false;
+                            });
+    }
+
+    void cancelRespawnRecovery() {
+        if (respawnRecovery != null) respawnRecovery.close();
     }
 
     CompletionStage<Boolean> prepare() {
@@ -478,6 +543,24 @@ final class WorkerMatchSession {
                             || lastQuitLocations.containsKey(player.getUniqueId())
                             || (roundPrepared && snapshot.role() == ParticipantRole.PLAYER);
             currentState = lifecycle.state();
+            if (testRun()) {
+                plugin.getLogger()
+                        .info(
+                                "TEST_ADMISSION match="
+                                        + manifest.matchId()
+                                        + " epoch="
+                                        + manifest.epoch()
+                                        + " player="
+                                        + snapshot.uuid()
+                                        + " role="
+                                        + snapshot.role()
+                                        + " stage=join-admission state="
+                                        + currentState
+                                        + " returning="
+                                        + returning
+                                        + " atMs="
+                                        + System.currentTimeMillis());
+            }
             scheduler.runGlobal(() -> syncNativePlayer(snapshot, player.getName()));
             if (returning) {
                 scheduler.runEntity(player, () -> restoreParticipantState(player, snapshot));
@@ -556,6 +639,20 @@ final class WorkerMatchSession {
         // A late spectator or reconnect gets a new Player entity. Reconcile both directions after
         // admission so active players cannot briefly see the spectator's body.
         scheduler.runGlobal(this::reconcileVisibility);
+        if (testRun()) {
+            plugin.getLogger()
+                    .info(
+                            "TEST_ADMISSION match="
+                                    + manifest.matchId()
+                                    + " epoch="
+                                    + manifest.epoch()
+                                    + " player="
+                                    + snapshot.uuid()
+                                    + " role="
+                                    + snapshot.role()
+                                    + " stage=player-arrived-publish atMs="
+                                    + System.currentTimeMillis());
+        }
         emit(
                         MatchEventType.PLAYER_ARRIVED,
                         Map.of(
@@ -565,6 +662,24 @@ final class WorkerMatchSession {
                                 snapshot.role().name()))
                 .whenComplete(
                         (ignored, publishError) -> {
+                            if (testRun()) {
+                                plugin.getLogger()
+                                        .info(
+                                                "TEST_ADMISSION match="
+                                                        + manifest.matchId()
+                                                        + " epoch="
+                                                        + manifest.epoch()
+                                                        + " player="
+                                                        + snapshot.uuid()
+                                                        + " role="
+                                                        + snapshot.role()
+                                                        + " stage=player-arrived-"
+                                                        + (publishError == null
+                                                                ? "published"
+                                                                : "publish-failed")
+                                                        + " atMs="
+                                                        + System.currentTimeMillis());
+                            }
                             if (publishError == null) result.complete(true);
                             else result.completeExceptionally(publishError);
                         });
@@ -1366,9 +1481,23 @@ final class WorkerMatchSession {
     }
 
     CompletionStage<Boolean> abort(String reason) {
+        return abort(reason, Set.of());
+    }
+
+    CompletionStage<Boolean> abort(String reason, Set<UUID> disconnectPlayers) {
+        if (!disconnectPlayers.isEmpty()
+                && (!testRun() || !participants.keySet().containsAll(disconnectPlayers)))
+            return CompletableFuture.failedFuture(
+                    new IllegalArgumentException("invalid test disconnect roster"));
+        boolean terminal;
         synchronized (this) {
-            if (lifecycle.state().terminal()) return CompletableFuture.completedFuture(true);
-            lifecycle.transitionTo(MatchState.ABORTED);
+            terminal = lifecycle.state().terminal();
+            if (!terminal) lifecycle.transitionTo(MatchState.ABORTED);
+        }
+        if (terminal) {
+            if (testRun()) releaseTestResources();
+            disconnectTestPlayers(disconnectPlayers);
+            return CompletableFuture.completedFuture(true);
         }
         cancelTasks();
         worlds.freeze();
@@ -1376,10 +1505,28 @@ final class WorkerMatchSession {
         CompletionStage<MatchEvent> published =
                 emit(MatchEventType.ABORTED, Map.of("reason", reason));
         routeEveryoneBack();
+        disconnectTestPlayers(disconnectPlayers);
         return published.thenApply(ignored -> true);
     }
 
+    /**
+     * Revoked Bot leases cannot return through Core; ordinary developers keep the normal router.
+     */
+    private void disconnectTestPlayers(Set<UUID> ids) {
+        for (UUID id : ids) {
+            Player player = plugin.getServer().getPlayer(id);
+            if (player != null)
+                scheduler.runEntity(
+                        player,
+                        () -> {
+                            if (lifecycle.state().terminal())
+                                player.kick(Component.text("Test session released."));
+                        });
+        }
+    }
+
     void playerLeft(Player player) {
+        if (respawnRecovery != null) respawnRecovery.cancel(player);
         UUID playerId = player.getUniqueId();
         if (!owns(playerId)) return;
         cancelSpectatorTeleport(playerId);
@@ -2264,7 +2411,8 @@ final class WorkerMatchSession {
         worlds.freeze();
         CompletionStage<MatchEvent> published =
                 emit(MatchEventType.PREPARE_FAILED, Map.of("reason", reason));
-        worldReset.run();
+        if (testRun()) routeEveryoneBack();
+        else worldReset.run();
         return published.thenApply(ignored -> false);
     }
 
@@ -2293,6 +2441,10 @@ final class WorkerMatchSession {
     }
 
     private void routeEveryoneBack() {
+        if (testRun()) {
+            releaseTestResources();
+            return;
+        }
         clearVisibility();
         clearNativeTeams();
         List<PlayerSnapshot> routingParticipants;
@@ -2306,6 +2458,150 @@ final class WorkerMatchSession {
             } else returnRouter.request(participant.uuid());
         }
         worldReset.run();
+    }
+
+    /** Test acknowledgements follow actual entity cleanup and observed backend departures. */
+    private CompletionStage<Void> releaseTestResources() {
+        CompletableFuture<Void> result;
+        List<UUID> ids;
+        synchronized (this) {
+            if (testRelease != null && !testRelease.isCompletedExceptionally()) return testRelease;
+            if (!lifecycle.state().terminal())
+                return CompletableFuture.failedFuture(
+                        new IllegalStateException("test match is not terminal"));
+            result = new CompletableFuture<>();
+            testRelease = result;
+            ids = List.copyOf(participants.keySet());
+        }
+        clearVisibility();
+        clearNativeTeams();
+        var cleared = new ArrayList<CompletableFuture<Void>>();
+        for (UUID id : ids) {
+            Player player = plugin.getServer().getPlayer(id);
+            CompletionStage<Void> entity =
+                    player == null
+                            ? CompletableFuture.completedFuture(null)
+                            : scheduler
+                                    .supplyEntity(
+                                            player,
+                                            () -> {
+                                                sidebar.hide(player);
+                                                player.getInventory().clear();
+                                                SpectatorStateService.clear(player);
+                                                PlayerStateService.clearEffects(player);
+                                                PlayerStateService.resetVitals(player);
+                                                player.setGameMode(GameMode.ADVENTURE);
+                                                return Boolean.TRUE;
+                                            })
+                                    .handle(
+                                            (executed, failure) -> {
+                                                if (failure != null)
+                                                    throw new java.util.concurrent
+                                                            .CompletionException(failure);
+                                                return executed;
+                                            })
+                                    .thenCompose(
+                                            executed ->
+                                                    scheduler.supplyGlobal(
+                                                            () -> {
+                                                                if (!Boolean.TRUE.equals(executed)
+                                                                        && plugin.getServer()
+                                                                                        .getPlayer(
+                                                                                                id)
+                                                                                != null)
+                                                                    throw new IllegalStateException(
+                                                                            "Test entity cleanup"
+                                                                                + " retired while"
+                                                                                + " connection"
+                                                                                + " remains");
+                                                                return null;
+                                                            }));
+            cleared.add(entity.toCompletableFuture());
+        }
+        CompletableFuture.allOf(cleared.toArray(CompletableFuture[]::new))
+                .thenCompose(
+                        ignored ->
+                                // Submit all proxy transfers from one global task. Scheduling one
+                                // global task per player makes a 64-player release contend with
+                                // Folia's global region and can delay the reset handoff.
+                                scheduler.supplyGlobal(
+                                        () -> {
+                                            List<CompletableFuture<Void>> departures =
+                                                    ids.stream()
+                                                            .map(
+                                                                    id ->
+                                                                            returnRouter
+                                                                                    .requestAndAwaitDeparture(
+                                                                                            id)
+                                                                                    .toCompletableFuture())
+                                                            .toList();
+                                            return CompletableFuture.allOf(
+                                                    departures.toArray(CompletableFuture[]::new));
+                                        }))
+                .thenCompose(stage -> stage)
+                .thenCompose(
+                        ignored ->
+                                scheduler.supplyGlobal(
+                                        () -> {
+                                            if (config.allowWorldReuseWithoutReset())
+                                                return emit(
+                                                                MatchEventType.RELEASED,
+                                                                Map.of("worlds", "reused"))
+                                                        .thenApply(event -> (Void) null);
+                                            if (testReleaseJournal == null)
+                                                throw new IllegalStateException(
+                                                        "test release journal is unavailable");
+                                            if (pendingResetRelease == null) {
+                                                var worldIds =
+                                                        new java.util.LinkedHashMap<String, UUID>();
+                                                for (String name :
+                                                        List.of(
+                                                                config.overworld(),
+                                                                config.nether(),
+                                                                config.end())) {
+                                                    var world = plugin.getServer().getWorld(name);
+                                                    if (world == null)
+                                                        throw new IllegalStateException(
+                                                                "release world is unavailable: "
+                                                                        + name);
+                                                    worldIds.put(name, world.getUID());
+                                                }
+                                                var event =
+                                                        MatchMessages.event(
+                                                                manifest.matchId(),
+                                                                manifest.epoch(),
+                                                                ++eventSeq,
+                                                                MatchEventType.RELEASED,
+                                                                Map.of("worlds", "reset"),
+                                                                Clock.systemUTC());
+                                                pendingResetRelease =
+                                                        new WorkerTestReleaseJournal.Pending(
+                                                                event, worldIds);
+                                            }
+                                            try {
+                                                testReleaseJournal.stage(pendingResetRelease);
+                                            } catch (java.io.IOException failure) {
+                                                throw new java.io.UncheckedIOException(failure);
+                                            }
+                                            // The replacement process publishes the reserved event
+                                            // after checking new UIDs.
+                                            worldReset.run();
+                                            return new CompletableFuture<Void>();
+                                        }))
+                .thenCompose(stage -> stage)
+                .whenComplete(
+                        (ignored, failure) -> {
+                            if (failure == null) result.complete(null);
+                            else {
+                                result.completeExceptionally(failure);
+                                plugin.getLogger()
+                                        .log(
+                                                Level.WARNING,
+                                                "Test Bingo resources remain owned",
+                                                failure);
+                            }
+                        });
+        return result;
     }
 
     /**
@@ -2426,6 +2722,7 @@ final class WorkerMatchSession {
     }
 
     private void cancelTasks() {
+        if (respawnRecovery != null) respawnRecovery.close();
         teammateTeleports.close();
         for (UUID viewer : List.copyOf(spectatorTeleports.keySet()))
             cancelSpectatorTeleport(viewer);

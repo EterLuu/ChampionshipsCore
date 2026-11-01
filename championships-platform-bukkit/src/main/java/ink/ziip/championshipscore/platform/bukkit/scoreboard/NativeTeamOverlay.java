@@ -3,8 +3,7 @@ package ink.ziip.championshipscore.platform.bukkit.scoreboard;
 import org.bukkit.scoreboard.Team;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.IdentityHashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -21,7 +20,9 @@ import java.util.UUID;
  */
 public final class NativeTeamOverlay implements AutoCloseable {
     private final NativeTeamService nativeTeams;
-    private final Set<Team> ownedTeams = Collections.newSetFromMap(new IdentityHashMap<>());
+    // CraftScoreboard returns fresh wrappers for the same registered team. Team.equals compares
+    // the underlying registration and distinguishes a later team which reuses the same name.
+    private final Set<Team> ownedTeams = new HashSet<>();
     private final Map<UUID, Assignment> assignments = new LinkedHashMap<>();
 
     public NativeTeamOverlay(NativeTeamService nativeTeams) {
@@ -77,7 +78,7 @@ public final class NativeTeamOverlay implements AutoCloseable {
             original = existing.originalTeam();
         }
         assignments.put(playerId, new Assignment(entry, target, original));
-        target.addEntry(entry);
+        if (!target.hasEntry(entry)) target.addEntry(entry);
     }
 
     public boolean contains(UUID playerId) {
@@ -110,7 +111,7 @@ public final class NativeTeamOverlay implements AutoCloseable {
     public void removeTeam(Team team) {
         if (team == null || !ownedTeams.remove(team)) return;
         for (Map.Entry<UUID, Assignment> entry : new ArrayList<>(assignments.entrySet())) {
-            if (entry.getValue().target() == team) releaseWithOwnedTeam(entry.getKey(), team);
+            if (entry.getValue().target().equals(team)) releaseWithOwnedTeam(entry.getKey(), team);
         }
         nativeTeams.unregister(team);
     }
@@ -119,7 +120,8 @@ public final class NativeTeamOverlay implements AutoCloseable {
         Assignment assignment = assignments.remove(playerId);
         if (assignment == null) return;
         Team current = nativeTeams.scoreboard().getEntryTeam(assignment.entry());
-        if (current != null && current != removingTeam && !ownedTeams.contains(current)) return;
+        if (current != null && !current.equals(removingTeam) && !ownedTeams.contains(current))
+            return;
         if (current != null) current.removeEntry(assignment.entry());
         if (assignment.originalTeam() == null) return;
         Team original = nativeTeams.scoreboard().getTeam(assignment.originalTeam());

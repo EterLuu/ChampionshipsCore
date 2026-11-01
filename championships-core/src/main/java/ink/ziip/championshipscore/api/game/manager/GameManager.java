@@ -585,7 +585,7 @@ public class GameManager extends BaseManager {
         return manager.getRuntimeInstances().stream()
                 .anyMatch(
                         instance ->
-                                instance.isEventRun()
+                                instance.isFormalEventRun()
                                         && instance.getGameStageEnum() != GameStageEnum.WAITING);
     }
 
@@ -807,7 +807,7 @@ public class GameManager extends BaseManager {
             @NotNull BaseGameInstance area,
             @NotNull ChampionshipTeam rightTeam,
             @NotNull ChampionshipTeam leftTeam) {
-        if (!area.isEventRun()) return;
+        if (area.getRunMode() != GameRunMode.EVENT) return;
         pendingFinaleAudience.put(area, Set.of(rightTeam, leftTeam));
         spectatorFocus = area;
         if (!isRegularSpectatingStage(area.getGameStageEnum())) return;
@@ -1351,7 +1351,10 @@ public class GameManager extends BaseManager {
     /** Unteamed online viewers frozen into the remote manifest and owned until settlement. */
     public synchronized Set<UUID> reserveRemoteBingoSpectators(
             @NotNull RemoteBingoInstance instance) {
-        if (!instance.isEventRun()) return Set.of();
+        // Only the schedule-owned event automatically adopts the server-wide audience. A
+        // TEST_EVENT is observed through the explicit test command and must not pull lobby or
+        // formal-event spectators into the test match.
+        if (instance.getRunMode() != GameRunMode.EVENT) return Set.of();
         Set<UUID> result = new LinkedHashSet<>();
         for (Player player : org.bukkit.Bukkit.getOnlinePlayers()) {
             if (plugin.getTeamManager().getTeamByPlayer(player) != null) continue;
@@ -1368,7 +1371,7 @@ public class GameManager extends BaseManager {
     }
 
     public synchronized void abortRemoteBingo(@NotNull RemoteBingoInstance instance) {
-        boolean interruptedEvent = instance.isEventRun();
+        boolean interruptedEvent = instance.isFormalEventRun();
         releaseInstanceParticipants(instance);
         List<UUID> spectatorIds =
                 playerSpectatorStatus.entrySet().stream()
@@ -1384,6 +1387,8 @@ public class GameManager extends BaseManager {
         instance.abortFromRemote();
         if (plugin.getDailyManager() != null) plugin.getDailyManager().abort(instance);
         instance.dispose();
+        if (instance.getExecutionContext().test() && plugin.getTestSessionManager() != null)
+            plugin.getTestSessionManager().failOwnedSession(instance.getExecutionContext());
         if (interruptedEvent) {
             plugin.getScheduleManager()
                     .abortFormalEvent(
@@ -1648,10 +1653,19 @@ public class GameManager extends BaseManager {
             return true;
         RoundTransitionHold hold = roundTransitionHolds.get(uuid);
         if (hold == null) return false;
-        return requestedMode != GameRunMode.EVENT
+        return !canReuseRoundTransitionHold(requestedMode, hold.mode())
                 || showIntroduction
-                || hold.mode() != GameRunMode.EVENT
                 || hold.instance().getGameTypeEnum() != gameType;
+    }
+
+    /**
+     * A round hold belongs to exactly one event-shaped owner. Test Event rounds may reuse only test
+     * holds; they must never take a player temporarily retained by a formal Event round.
+     */
+    static boolean canReuseRoundTransitionHold(
+            @NotNull GameRunMode requestedMode, @NotNull GameRunMode heldMode) {
+        return requestedMode == heldMode
+                && (requestedMode == GameRunMode.EVENT || requestedMode == GameRunMode.TEST_EVENT);
     }
 
     /** Marks participants as waiting while leaving them at their round-end locations. */
@@ -1966,9 +1980,13 @@ public class GameManager extends BaseManager {
                         .filter(
                                 entry ->
                                         entry.getValue().getGameTypeEnum() == gameType
-                                                && (entry.getValue().isEventRun()
-                                                        || isHeldSpectator(
-                                                                entry.getKey(), entry.getValue())))
+                                                && (entry.getValue().getRunMode()
+                                                                == GameRunMode.EVENT
+                                                        || (isHeldSpectator(
+                                                                        entry.getKey(),
+                                                                        entry.getValue())
+                                                                && entry.getValue().getRunMode()
+                                                                        == GameRunMode.EVENT)))
                         .toList();
         for (Map.Entry<UUID, BaseGameInstance> entry : entries) {
             Player player = org.bukkit.Bukkit.getPlayer(entry.getKey());
@@ -1979,7 +1997,11 @@ public class GameManager extends BaseManager {
         }
         spectatorTransitionHolds
                 .entrySet()
-                .removeIf(entry -> entry.getValue().instance().getGameTypeEnum() == gameType);
+                .removeIf(
+                        entry ->
+                                entry.getValue().instance().getGameTypeEnum() == gameType
+                                        && entry.getValue().instance().getRunMode()
+                                                == GameRunMode.EVENT);
     }
 
     public void clearSpectatorStatus(@NotNull UUID uuid, @NotNull BaseGameInstance expected) {
@@ -2014,7 +2036,9 @@ public class GameManager extends BaseManager {
     }
 
     private synchronized void focusSpectatorsOn(@NotNull BaseGameInstance startedInstance) {
-        if (!startedInstance.isEventRun()) return;
+        // Test event spectators are admitted explicitly by TestSessionManager. Keeping this
+        // automatic focus path formal-only prevents a test round from moving all unteamed players.
+        if (startedInstance.getRunMode() != GameRunMode.EVENT) return;
         if (!isRegularSpectatingStage(startedInstance.getGameStageEnum())) {
             spectatorFocus = startedInstance;
             return;
@@ -2118,7 +2142,7 @@ public class GameManager extends BaseManager {
             if (manager == null) continue;
             BaseGameInstance active =
                     manager.getRuntimeInstances().stream()
-                            .filter(BaseGameInstance::isEventRun)
+                            .filter(instance -> instance.getRunMode() == GameRunMode.EVENT)
                             .filter(
                                     instance ->
                                             isRegularSpectatingStage(instance.getGameStageEnum()))
@@ -2138,9 +2162,10 @@ public class GameManager extends BaseManager {
 
     private boolean isInstanceAvailableForSpectating(@Nullable BaseGameInstance instance) {
         if (instance == null) return false;
-        if (!instance.isEventRun()) return false;
+        if (instance.getRunMode() != GameRunMode.EVENT) return false;
         if (isInstanceActivelyRunning(instance)) return true;
-        return instance.isEventRun() && instance.getGameStageEnum() == GameStageEnum.END;
+        return instance.getRunMode() == GameRunMode.EVENT
+                && instance.getGameStageEnum() == GameStageEnum.END;
     }
 
     public boolean isInstanceActivelyRunning(@NotNull BaseGameInstance instance) {

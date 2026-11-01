@@ -104,6 +104,9 @@ class WorkerMatchSessionTest {
             set(session, "manifest", manifest);
             set(session, "participants", Map.of(player, playing, viewer, watching));
             set(session, "teams", Map.of(1, team));
+            var eventMode = WorkerMatchSession.class.getDeclaredMethod("eventMode");
+            eventMode.setAccessible(true);
+            assertEquals(mode.eventLike(), eventMode.invoke(session));
             assertEquals(format, session.playerPresentation(player).format());
             assertTrue(session.playerPresentation(player).activePlayer());
             assertEquals("&cRed", session.playerPresentation(player).label());

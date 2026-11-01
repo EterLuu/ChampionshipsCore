@@ -49,6 +49,35 @@ public class AdminReloadSubCommand extends BaseSubCommand {
             CoreMessages.sendAdminError(sender, MessageConfig.ADMIN_RELOAD_ALREADY_RUNNING);
             return true;
         }
+        var tests = plugin.getTestSessionManager();
+        if (tests != null && (tests.activeSession() != null || tests.isCleaningUp())) {
+            tests.closeActiveSessionAsync()
+                    .whenComplete(
+                            (ignored, failure) -> {
+                                Runnable continuation =
+                                        () -> {
+                                            if (failure != null) {
+                                                RELOAD_IN_PROGRESS.set(false);
+                                                CoreMessages.sendAdminError(
+                                                        sender,
+                                                        MessageConfig.ADMIN_RELOAD_RESET_FAILED);
+                                                plugin.getLogger()
+                                                        .log(
+                                                                java.util.logging.Level.WARNING,
+                                                                "Test cleanup blocked configuration"
+                                                                        + " reload",
+                                                                failure);
+                                            } else beginReload(plugin, sender);
+                                        };
+                                if (org.bukkit.Bukkit.isPrimaryThread()) continuation.run();
+                                else if (plugin.isEnabled())
+                                    plugin.getServer().getScheduler().runTask(plugin, continuation);
+                            });
+        } else beginReload(plugin, sender);
+        return true;
+    }
+
+    private static void beginReload(ChampionshipsCore plugin, CommandSender sender) {
         Set<GameTypeEnum> previouslyEnabled = plugin.getGameManager().enabledGamesSnapshot();
         RestartSensitiveConfig previousSensitive = RestartSensitiveConfig.capture();
         plugin.getScheduleManager().unload();
@@ -56,7 +85,7 @@ public class AdminReloadSubCommand extends BaseSubCommand {
             plugin.getScheduleManager().load();
             RELOAD_IN_PROGRESS.set(false);
             CoreMessages.sendAdminError(sender, MessageConfig.ADMIN_RELOAD_CONFIG_FAILED);
-            return true;
+            return;
         }
         List<String> restartRequired = previousSensitive.changedPaths();
         CoreMessages.sendAdminSuccess(sender, MessageConfig.ADMIN_RELOAD_READ_DONE);
@@ -75,8 +104,6 @@ public class AdminReloadSubCommand extends BaseSubCommand {
                                                                 report,
                                                                 failure,
                                                                 restartRequired)));
-
-        return true;
     }
 
     private static void finishReload(

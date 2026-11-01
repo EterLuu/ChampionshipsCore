@@ -24,6 +24,8 @@ final class WorkerReturnRouter implements AutoCloseable {
     private final PluginMessagePlayerRouter router;
     private final String returnServer;
     private final Set<UUID> pending = ConcurrentHashMap.newKeySet();
+    private final java.util.Map<UUID, java.util.concurrent.CompletableFuture<Void>> departures =
+            new ConcurrentHashMap<>();
     private final ScheduledTask retryTask;
 
     WorkerReturnRouter(Plugin plugin, PluginMessagePlayerRouter router, String returnServer) {
@@ -50,8 +52,22 @@ final class WorkerReturnRouter implements AutoCloseable {
         pending.remove(playerId);
     }
 
+    java.util.concurrent.CompletionStage<Void> requestAndAwaitDeparture(UUID playerId) {
+        var future =
+                departures.computeIfAbsent(
+                        playerId, ignored -> new java.util.concurrent.CompletableFuture<>());
+        request(playerId);
+        return future;
+    }
+
     private void retryPending() {
         for (UUID playerId : Set.copyOf(pending)) attempt(playerId);
+        for (UUID playerId : Set.copyOf(departures.keySet())) {
+            if (plugin.getServer().getPlayer(playerId) == null) {
+                var complete = departures.remove(playerId);
+                if (complete != null) complete.complete(null);
+            }
+        }
     }
 
     private void attempt(UUID playerId) {
@@ -68,6 +84,13 @@ final class WorkerReturnRouter implements AutoCloseable {
     public void close() {
         retryTask.cancel();
         pending.clear();
+        departures
+                .values()
+                .forEach(
+                        f ->
+                                f.completeExceptionally(
+                                        new IllegalStateException("Worker return router closed")));
+        departures.clear();
     }
 
     private static String requireServer(String server) {

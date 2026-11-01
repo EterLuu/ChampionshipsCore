@@ -1,0 +1,17 @@
+{
+  "name": "championships-test-harness",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Ephemeral Minecraft protocol clients for ChampionshipsCore isolated game tests.",
+  "type": "commonjs",
+  "scripts": {
+    "test": "node --test src/__tests__/*.test.js",
+    "help": "node src/cli.js --help",
+    "connect": "node src/cli.js",
+    "lease": "node src/lease-token.js"
+  },
+  "dependencies": {
+    "minecraft-data": "npm:@wp2508/minecraft-data@3.111.7",
+    "@wp2508/minecraft-protocol": "1.69.5"
+  }
+}

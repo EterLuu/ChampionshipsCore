@@ -56,13 +56,49 @@ public final class GameStartService {
     }
 
     public CompletionStage<Result> startManual(GameStartArguments arguments) {
+        return startManual(arguments, GameRunMode.GAME);
+    }
+
+    /** Starts through the normal topology and rollback surface with an explicit run mode. */
+    public CompletionStage<Result> startManual(GameStartArguments arguments, GameRunMode runMode) {
+        return startManual(arguments, runMode, null);
+    }
+
+    /** Starts with an already validated transient roster instead of resolving formal teams. */
+    public CompletionStage<Result> startManual(
+            GameStartArguments arguments,
+            GameRunMode runMode,
+            @org.jetbrains.annotations.Nullable List<ChampionshipTeam> explicitTeams) {
+        return startManual(arguments, runMode, explicitTeams, null);
+    }
+
+    public CompletionStage<Result> startManual(
+            GameStartArguments arguments,
+            GameRunMode runMode,
+            @org.jetbrains.annotations.Nullable List<ChampionshipTeam> explicitTeams,
+            @org.jetbrains.annotations.Nullable
+                    ink.ziip.championshipscore.protocol.BingoVariantRules variant) {
         try {
+            if ((runMode == GameRunMode.TEST || runMode == GameRunMode.TEST_EVENT)
+                    && !Boolean.TRUE.equals(
+                            ink.ziip.championshipscore.configuration.config.CCConfig.TEST_ENABLED))
+                throw new IllegalArgumentException("Game tests are disabled (test.enabled=false)");
             GameTypeEnum game = arguments.game();
             if (!plugin.getGameManager().isGameEnabled(game))
                 throw new IllegalArgumentException(
                         MessageConfig.codeText(
                                 "game-start-service.start-manual-1", game.commandName()));
-            List<ChampionshipTeam> teams = resolveTeams(arguments);
+            List<ChampionshipTeam> teams =
+                    explicitTeams == null
+                            ? resolveTeams(arguments, false, runMode)
+                            : List.copyOf(explicitTeams);
+            if (explicitTeams != null) {
+                GameStartRules.validateTeamCount(arguments.game(), teams.size());
+                String failure =
+                        plugin.getGameManager()
+                                .validateStartTeams(arguments.game(), teams, false, runMode);
+                if (failure != null) throw new IllegalArgumentException(failure);
+            }
             var manager = plugin.getGameManager().getAreaManager(game);
             if (manager == null)
                 throw new IllegalArgumentException(
@@ -72,10 +108,7 @@ public final class GameStartService {
                 map =
                         manager.getAreaNameList().stream()
                                 .sorted(String.CASE_INSENSITIVE_ORDER)
-                                .filter(
-                                        name ->
-                                                plugin.getPrepareSessionManager()
-                                                        .canStart(game, name))
+                                .filter(name -> canStartMapOnCore(game, name, runMode))
                                 .filter(
                                         name ->
                                                 game == GameTypeEnum.Bingo
@@ -102,27 +135,34 @@ public final class GameStartService {
                                                                 "game-start-service.start-manual-3",
                                                                 arguments.map())));
             }
-            if (!plugin.getPrepareSessionManager().canStart(game, map)) {
+            if (!canStartMapOnCore(game, map, runMode)) {
                 throw new IllegalArgumentException(
                         MessageConfig.codeText("game-start-service.start-manual-5", map));
             }
             if (game == GameTypeEnum.Bingo) {
                 arguments.arenas().resolve(1);
-                return plugin.getGameManager()
-                        .joinBingoForTeams(map, false, GameRunMode.GAME, teams)
-                        .handle(
-                                (started, failure) ->
-                                        new Result(
-                                                failure == null && Boolean.TRUE.equals(started),
-                                                failure != null
+                CompletionStage<Boolean> bingoStart =
+                        variant == null
+                                        || variant.equals(
+                                                ink.ziip.championshipscore.protocol
+                                                        .BingoVariantRules.FIXED_POINTS)
+                                ? plugin.getGameManager()
+                                        .joinBingoForTeams(map, false, runMode, teams)
+                                : plugin.getGameManager()
+                                        .joinBingoForTeams(map, false, runMode, teams, variant);
+                return bingoStart.handle(
+                        (started, failure) ->
+                                new Result(
+                                        failure == null && Boolean.TRUE.equals(started),
+                                        failure != null
+                                                ? MessageConfig.codeText(
+                                                        "game-start-service.start-manual-8")
+                                                : Boolean.TRUE.equals(started)
                                                         ? MessageConfig.codeText(
-                                                                "game-start-service.start-manual-8")
-                                                        : Boolean.TRUE.equals(started)
-                                                                ? MessageConfig.codeText(
-                                                                        "game-start-service.start-manual-7",
-                                                                        map)
-                                                                : MessageConfig.codeText(
-                                                                        "game-start-service.start-manual-6")));
+                                                                "game-start-service.start-manual-7",
+                                                                map)
+                                                        : MessageConfig.codeText(
+                                                                "game-start-service.start-manual-6")));
             }
             boolean started;
             if (GameStartRules.topology(game) == GameStartRules.Topology.PAIRED_COPIES) {
@@ -138,7 +178,7 @@ public final class GameStartService {
                                                 pairs,
                                                 arguments.arenas(),
                                                 false,
-                                                GameRunMode.GAME)
+                                                runMode)
                                 != null;
             } else if (GameStartRules.topology(game) == GameStartRules.Topology.PAIRED_FINAL) {
                 arguments.arenas().resolve(1);
@@ -152,7 +192,7 @@ public final class GameStartService {
                                                 teams.get(0),
                                                 false,
                                                 false,
-                                                GameRunMode.GAME)
+                                                runMode)
                                 : plugin.getGameManager()
                                         .joinTeamArea(
                                                 game,
@@ -160,7 +200,7 @@ public final class GameStartService {
                                                 teams.get(0),
                                                 teams.get(1),
                                                 false,
-                                                GameRunMode.GAME);
+                                                runMode);
             } else {
                 List<? extends BaseGameInstance> pool = manager.getMapInstances(map);
                 BaseGameInstance selected =
@@ -177,8 +217,7 @@ public final class GameStartService {
                 selected.prepareArenaSelection(selection);
                 started =
                         plugin.getGameManager()
-                                .joinMultiTeamInstanceForTeams(
-                                        game, multi, false, GameRunMode.GAME, teams);
+                                .joinMultiTeamInstanceForTeams(game, multi, false, runMode, teams);
                 if (!started && selected.getGameStageEnum() == GameStageEnum.WAITING)
                     selected.prepareArenaSelection(ArenaSelection.all());
             }
@@ -211,7 +250,7 @@ public final class GameStartService {
     public void validateMap(
             GameTypeEnum game, String map, List<ChampionshipTeam> teams, ArenaSelection arenas) {
         var manager = plugin.getGameManager().getAreaManager(game);
-        if (manager == null || !plugin.getPrepareSessionManager().canStart(game, map))
+        if (manager == null || !canStartMapOnCore(game, map, GameRunMode.EVENT))
             throw new IllegalArgumentException(
                     MessageConfig.codeText("game-start-service.start-manual-5", map));
         if (game == GameTypeEnum.Bingo) {
@@ -222,5 +261,19 @@ public final class GameStartService {
         } else {
             StartTargets.forGame(game, manager.getMapInstances(map), teams.size(), arenas);
         }
+    }
+
+    /**
+     * Test remote Bingo maps are validated by the Worker manifest instead of a Core world. Preserve
+     * the existing published-preparation requirement for every production start surface.
+     */
+    private boolean canStartMapOnCore(GameTypeEnum game, String map, GameRunMode mode) {
+        if ((mode == GameRunMode.TEST || mode == GameRunMode.TEST_EVENT)
+                && game == GameTypeEnum.Bingo
+                && plugin.getGameManager().getBingoManager() != null
+                && plugin.getGameManager().getBingoManager().remoteExecutionConfigured()) {
+            return true;
+        }
+        return plugin.getPrepareSessionManager().canStart(game, map);
     }
 }

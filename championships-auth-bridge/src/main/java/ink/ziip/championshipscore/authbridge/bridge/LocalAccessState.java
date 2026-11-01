@@ -7,6 +7,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import java.io.File;
 import java.io.IOException;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -42,7 +43,22 @@ public final class LocalAccessState {
     }
 
     public void recordIdentity(String username, String accountId, String minecraftUuid) {
-        identities.put(normalize(username), new Identity(accountId, minecraftUuid));
+        recordIdentity(username, accountId, minecraftUuid, false, List.of());
+    }
+
+    public void recordIdentity(
+            String username,
+            String accountId,
+            String minecraftUuid,
+            boolean bot,
+            List<String> allowedCidrs) {
+        identities.put(
+                normalize(username),
+                new Identity(
+                        accountId,
+                        minecraftUuid,
+                        bot,
+                        allowedCidrs == null ? List.of() : List.copyOf(allowedCidrs)));
     }
 
     /** Test convenience where the account id is also the effective game UUID. */
@@ -56,6 +72,10 @@ public final class LocalAccessState {
 
     public boolean hasIdentity(String username) {
         return identities.containsKey(normalize(username));
+    }
+
+    public Identity identity(String username) {
+        return identities.get(normalize(username));
     }
 
     public Ban activeBan(String username, java.time.Instant now) {
@@ -112,7 +132,9 @@ public final class LocalAccessState {
                                     : accountId,
                             minecraftUuid == null || minecraftUuid.isBlank()
                                     ? existing.minecraftUuid()
-                                    : minecraftUuid));
+                                    : minecraftUuid,
+                            existing.bot(),
+                            existing.allowedCidrs()));
         Integer version = authVersions.remove(oldKey);
         if (version != null) authVersions.merge(newKey, version, Math::max);
     }
@@ -204,7 +226,13 @@ public final class LocalAccessState {
         identities.replaceAll(
                 (name, identity) -> {
                     String uuid = uuidsByAccountId.get(identity.accountId());
-                    return uuid == null ? identity : new Identity(identity.accountId(), uuid);
+                    return uuid == null
+                            ? identity
+                            : new Identity(
+                                    identity.accountId(),
+                                    uuid,
+                                    identity.bot(),
+                                    identity.allowedCidrs());
                 });
         save();
     }
@@ -224,14 +252,16 @@ public final class LocalAccessState {
                 var identitySection = identitySectionRoot.getConfigurationSection(key);
                 if (identitySection == null) {
                     String legacy = identitySectionRoot.getString(key, "");
-                    identities.put(key, new Identity(legacy, legacy));
+                    identities.put(key, new Identity(legacy, legacy, false, List.of()));
                 } else {
                     String accountId = identitySection.getString("account-id", "");
                     identities.put(
                             key,
                             new Identity(
                                     accountId,
-                                    identitySection.getString("minecraft-uuid", accountId)));
+                                    identitySection.getString("minecraft-uuid", accountId),
+                                    identitySection.getBoolean("bot", false),
+                                    identitySection.getStringList("allowed-cidrs")));
                 }
             }
         String pendingControlId = yaml.getString("pending-control-completion.job-id");
@@ -280,6 +310,8 @@ public final class LocalAccessState {
                 (name, identity) -> {
                     yaml.set("identities." + name + ".account-id", identity.accountId());
                     yaml.set("identities." + name + ".minecraft-uuid", identity.minecraftUuid());
+                    yaml.set("identities." + name + ".bot", identity.bot());
+                    yaml.set("identities." + name + ".allowed-cidrs", identity.allowedCidrs());
                 });
         authVersions.forEach((name, version) -> yaml.set("auth-versions." + name, version));
         bans.forEach(
@@ -294,7 +326,8 @@ public final class LocalAccessState {
         return AuthIdentity.normalizeUsername(username);
     }
 
-    public record Identity(String accountId, String minecraftUuid) {}
+    public record Identity(
+            String accountId, String minecraftUuid, boolean bot, List<String> allowedCidrs) {}
 
     public record Ban(String reason, String expiresAt) {}
 

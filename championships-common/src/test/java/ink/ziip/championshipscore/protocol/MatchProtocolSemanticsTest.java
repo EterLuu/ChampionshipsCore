@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.protocol;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -17,6 +18,42 @@ import java.util.UUID;
 class MatchProtocolSemanticsTest {
     private static final Clock CLOCK =
             Clock.fixed(Instant.ofEpochMilli(1_800_000_000_000L), ZoneOffset.UTC);
+
+    @Test
+    void testModesAreEventShapedButNeverFormal() {
+        assertFalse(MatchRunMode.GAME.test());
+        assertFalse(MatchRunMode.EVENT.test());
+        assertFalse(MatchRunMode.DAILY.test());
+        assertTrue(MatchRunMode.TEST.test());
+        assertTrue(MatchRunMode.TEST_EVENT.test());
+        assertFalse(MatchRunMode.GAME.eventLike());
+        assertTrue(MatchRunMode.TEST_EVENT.eventLike());
+        assertTrue(MatchRunMode.EVENT.eventLike());
+        assertTrue(MatchRunMode.EVENT.formalEvent());
+        assertFalse(MatchRunMode.DAILY.formalEvent());
+        assertFalse(MatchRunMode.TEST.formalEvent());
+        assertFalse(MatchRunMode.TEST_EVENT.formalEvent());
+    }
+
+    @Test
+    void previousProtocolVersionCannotEnterTheTestModeProtocol() {
+        assertThrows(IllegalArgumentException.class, () -> ProtocolVersion.requireSupported(9));
+    }
+
+    @Test
+    void releaseIsAnIndependentVersionedEvent() {
+        var event =
+                MatchMessages.event(
+                        UUID.randomUUID(),
+                        3,
+                        42,
+                        MatchEventType.RELEASED,
+                        Map.of("worlds", "reset"),
+                        CLOCK);
+        var codec = new BinaryProtocolCodec();
+        assertEquals(event, codec.decodeEvent(codec.encodeEvent(event)));
+        assertNotEquals(MatchEventType.ABORTED, event.type());
+    }
 
     @Test
     void commandIdentityIsIndependentOfAttributeInsertionOrder() {

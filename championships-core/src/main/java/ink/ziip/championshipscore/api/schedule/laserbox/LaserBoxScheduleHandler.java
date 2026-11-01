@@ -18,7 +18,7 @@ public final class LaserBoxScheduleHandler extends BaseListener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onGameEnd(TeamGameEndEvent event) {
-        if (event.getGameInstance() instanceof LaserBoxArea area && area.isEventRun())
+        if (event.getGameInstance() instanceof LaserBoxArea area && area.isFormalEventRun())
             schedule.onInstanceComplete(area, area.getMatchWinner());
     }
 }

@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/** Keeps Bungee responsible for disconnecting already connected banned players. */
+/** Keeps Bungee responsible for disconnecting already connected denied players. */
 final class ProxyBanSynchronizer implements Runnable {
     @FunctionalInterface
     interface BanKick {
@@ -86,10 +86,16 @@ final class ProxyBanSynchronizer implements Runnable {
                             && (change.status == null
                                     ? "BANNED".equals(change.operation)
                                     : "BANNED".equals(change.status));
-            if (banned
-                    && isActive(change.expiresAt)
+            boolean revokedBot =
+                    change != null
+                            && Boolean.TRUE.equals(change.bot)
+                            && ("REVOKED".equals(change.status) || "UNBOUND".equals(change.status));
+            if (((banned && isActive(change.expiresAt)) || revokedBot)
                     && isMinecraftUsername(change.authmeUsername)) {
-                kick(change.authmeUsername, change.reason, change.expiresAt);
+                kick(
+                        change.authmeUsername,
+                        revokedBot ? "Bot account is no longer enabled" : change.reason,
+                        revokedBot ? null : change.expiresAt);
             }
         }
     }

@@ -20,7 +20,7 @@ public class HotyCodyDuskyScheduleHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onGameEnd(SingleGameEndEvent event) {
         if (event.getGameInstance() instanceof HotyCodyDuskyTeamArea hotyCodyDuskyTeamArea) {
-            if (hotyCodyDuskyTeamArea.isEventRun() && scheduleManager.isEnabled()) {
+            if (hotyCodyDuskyTeamArea.isFormalEventRun() && scheduleManager.isEnabled()) {
                 scheduleManager.addCompletedAreaNum();
             }
         }

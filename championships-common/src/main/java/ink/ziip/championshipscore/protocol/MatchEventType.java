@@ -12,5 +12,6 @@ public enum MatchEventType {
     HEARTBEAT,
     FINISHED,
     FAILED,
-    ABORTED
+    ABORTED,
+    RELEASED
 }

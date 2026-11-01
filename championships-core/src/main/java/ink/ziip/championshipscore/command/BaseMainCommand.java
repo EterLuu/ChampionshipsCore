@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.command;
 
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import lombok.Getter;
 
@@ -82,6 +83,10 @@ public class BaseMainCommand extends MainCommand {
 
         BaseMainCommand subCommand = findSubCommand(args[0]);
         if (subCommand != null) {
+            if (!canUse(sender, subCommand)) {
+                sender.sendMessage(MessageConfig.NO_PERMISSION);
+                return true;
+            }
             return subCommand.onCommand(
                     sender, command, label, Arrays.copyOfRange(args, 1, args.length));
         }
@@ -100,13 +105,14 @@ public class BaseMainCommand extends MainCommand {
         if (args.length == 1) {
             List<String> visible = new ArrayList<>();
             for (BaseMainCommand subCommand : subCommandMap.values()) {
-                if (isTabVisible(subCommand)) visible.add(subCommand.getCommandName());
+                if (isTabVisible(subCommand) && canUse(sender, subCommand))
+                    visible.add(subCommand.getCommandName());
             }
             return filterStartsWith(visible, args[0]);
         }
 
         BaseMainCommand subCommand = findSubCommand(args[0]);
-        if (subCommand != null && isTabVisible(subCommand)) {
+        if (subCommand != null && isTabVisible(subCommand) && canUse(sender, subCommand)) {
             return subCommand.onTabComplete(
                     sender, command, label, Arrays.copyOfRange(args, 1, args.length));
         }

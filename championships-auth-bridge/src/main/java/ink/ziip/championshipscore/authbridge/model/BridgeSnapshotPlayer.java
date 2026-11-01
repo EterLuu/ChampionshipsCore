@@ -6,4 +6,6 @@ public record BridgeSnapshotPlayer(
         String uuidSource,
         String minecraftUuid,
         String passwordHash,
-        int version) {}
+        int version,
+        Boolean bot,
+        java.util.List<String> allowedCidrs) {}

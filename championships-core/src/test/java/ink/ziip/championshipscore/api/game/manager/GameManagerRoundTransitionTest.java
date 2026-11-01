@@ -19,6 +19,19 @@ import java.util.*;
 
 class GameManagerRoundTransitionTest {
     @Test
+    void testEventCannotReuseAFormalEventRoundHold() {
+        assertTrue(GameManager.canReuseRoundTransitionHold(GameRunMode.EVENT, GameRunMode.EVENT));
+        assertTrue(
+                GameManager.canReuseRoundTransitionHold(
+                        GameRunMode.TEST_EVENT, GameRunMode.TEST_EVENT));
+        assertFalse(
+                GameManager.canReuseRoundTransitionHold(GameRunMode.TEST_EVENT, GameRunMode.EVENT));
+        assertFalse(
+                GameManager.canReuseRoundTransitionHold(GameRunMode.EVENT, GameRunMode.TEST_EVENT));
+        assertFalse(GameManager.canReuseRoundTransitionHold(GameRunMode.GAME, GameRunMode.EVENT));
+    }
+
+    @Test
     void endingScheduleReleasesOfflineRoundHoldsWithoutTouchingOtherGames() throws Exception {
         var field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
         field.setAccessible(true);

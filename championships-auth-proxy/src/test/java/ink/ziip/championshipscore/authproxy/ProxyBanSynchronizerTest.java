@@ -42,7 +42,8 @@ class ProxyBanSynchronizerTest {
                         respond(
                                 exchange,
                                 "{\"maintenance\":false,\"nextCursor\":\"11\",\"changes\":[{\"operation\":\"BANNED\",\"authmeUsername\":\"NewPlayer\",\"status\":\"BANNED\",\"reason\":\"event\"},"
-                                    + "{\"operation\":\"UNBANNED\",\"authmeUsername\":\"FormerPlayer\",\"status\":\"UNBOUND\"}]}"));
+                                    + "{\"operation\":\"UNBANNED\",\"authmeUsername\":\"FormerPlayer\",\"status\":\"UNBOUND\"},"
+                                    + "{\"operation\":\"REVOKED\",\"authmeUsername\":\"autobot00\",\"status\":\"UNBOUND\",\"bot\":true}]}"));
         server.start();
         try {
             List<String> kicked = new ArrayList<>();
@@ -65,7 +66,12 @@ class ProxyBanSynchronizerTest {
                             .uuid);
 
             synchronizer.run();
-            assertEquals(List.of("ActivePlayer:snapshot:null", "NewPlayer:event:null"), kicked);
+            assertEquals(
+                    List.of(
+                            "ActivePlayer:snapshot:null",
+                            "NewPlayer:event:null",
+                            "autobot00:Bot account is no longer enabled:null"),
+                    kicked);
             assertEquals("11", state.cursor());
         } finally {
             server.stop(0);

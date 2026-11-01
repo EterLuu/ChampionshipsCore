@@ -122,7 +122,14 @@ public final class BingoWorkerPlugin extends JavaPlugin {
                         replayed -> {
                             if (replayed > 0)
                                 getLogger().info("Replayed durable Bingo events: " + replayed);
-                            return consumer.start();
+                            return registry.resumeTestReleases()
+                                    .thenCompose(
+                                            recovered ->
+                                                    recovered
+                                                            ? consumer.start()
+                                                            : new java.util.concurrent
+                                                                            .CompletableFuture<
+                                                                    Void>());
                         })
                 .thenCompose(
                         ignored ->
@@ -217,6 +224,7 @@ public final class BingoWorkerPlugin extends JavaPlugin {
         // the global/region threads and abort mutates worlds and players. The Core
         // heartbeat fence treats this worker as unavailable; accepted events have
         // already been persisted by the durable outbox.
+        if (registry != null) registry.cancelPendingRespawns();
         org.bukkit.plugin.Plugin packetPlugin =
                 getServer().getPluginManager().getPlugin("packetevents");
         if (packetPlugin != null && packetPlugin.isEnabled()) {

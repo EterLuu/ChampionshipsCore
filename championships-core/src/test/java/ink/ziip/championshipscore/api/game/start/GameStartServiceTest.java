@@ -32,7 +32,58 @@ import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+@org.junit.jupiter.api.extension.ExtendWith(
+        ink.ziip.championshipscore.configuration.ConfigurationStateExtension.class)
 class GameStartServiceTest {
+    @org.junit.jupiter.api.BeforeEach
+    void enableGameTestsForFixture() {
+        ink.ziip.championshipscore.configuration.config.CCConfig.TEST_ENABLED = true;
+    }
+
+    @org.junit.jupiter.api.Test
+    void disabledTestsCannotBypassTheSessionThroughTheSharedStartSurface() {
+        ink.ziip.championshipscore.configuration.config.CCConfig.TEST_ENABLED = false;
+        var service = new GameStartService(null);
+        for (var mode : List.of(GameRunMode.TEST, GameRunMode.TEST_EVENT)) {
+            var result =
+                    service.startManual(
+                                    new GameStartArguments(
+                                            GameTypeEnum.Bingo,
+                                            "bingo",
+                                            List.of(),
+                                            ArenaSelection.all()),
+                                    mode,
+                                    List.of())
+                            .toCompletableFuture()
+                            .join();
+            assertFalse(result.started());
+            assertTrue(result.detail().contains("disabled"));
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = GameRunMode.class,
+            names = {"GAME", "EVENT", "DAILY"})
+    void disabledTestGatePreservesProductionStartModes(GameRunMode mode) throws Exception {
+        ink.ziip.championshipscore.configuration.config.CCConfig.TEST_ENABLED = false;
+        withFixture(
+                GameTypeEnum.TNTRun,
+                f -> {
+                    var arguments =
+                            GameStartArguments.parse(
+                                    new String[] {"tntrun", "CHOSEN", "#2", "team-1"}, false);
+                    var result =
+                            new GameStartService(f.plugin)
+                                    .startManual(arguments, mode)
+                                    .toCompletableFuture()
+                                    .join();
+                    assertTrue(result.started(), result.detail());
+                    assertEquals(mode, f.manager.mode);
+                    assertEquals(List.of(f.teams.get(1), f.teams.get(0)), f.manager.requested);
+                });
+    }
+
     @ParameterizedTest
     @EnumSource(GameTypeEnum.class)
     void everyGameCarriesTheChosenMapAndOnlyTheExplicitTeams(GameTypeEnum game) throws Exception {
@@ -141,6 +192,92 @@ class GameStartServiceTest {
             RecordingManager manager,
             BaseGameInstance area,
             List<ChampionshipTeam> teams) {}
+
+    @ParameterizedTest
+    @EnumSource(GameRunMode.class)
+    void unpublishedRemoteBingoIsAdmittedOnlyForTests(GameRunMode mode) throws Exception {
+        withFixture(
+                GameTypeEnum.Bingo,
+                f -> {
+                    set(f.plugin, "prepareSessionManager", allocate(UnreadyPrepare.class));
+                    set(f.manager, "bingoManager", allocate(RemoteBingo.class));
+                    var arguments =
+                            GameStartArguments.parse(
+                                    new String[] {"bingo", "Chosen", "#1", "#2"}, false);
+                    var service = new GameStartService(f.plugin);
+                    boolean test = mode == GameRunMode.TEST || mode == GameRunMode.TEST_EVENT;
+                    assertEquals(
+                            test,
+                            service.startManual(arguments, mode)
+                                    .toCompletableFuture()
+                                    .join()
+                                    .started());
+                    assertEquals(test ? "Chosen" : null, f.manager.map);
+                    assertThrows(
+                            IllegalArgumentException.class,
+                            () ->
+                                    service.validateMap(
+                                            GameTypeEnum.Bingo,
+                                            "Chosen",
+                                            f.teams.subList(0, 2),
+                                            ArenaSelection.all()));
+                    // Auto map selection must use the same gate as an explicit map.
+                    assertEquals(
+                            test,
+                            service.startManual(
+                                            GameStartArguments.parse(
+                                                    new String[] {"bingo", "auto", "#1", "#2"},
+                                                    false),
+                                            mode)
+                                    .toCompletableFuture()
+                                    .join()
+                                    .started());
+                });
+    }
+
+    @ParameterizedTest
+    @EnumSource(GameRunMode.class)
+    void unpublishedLocalBingoIsRejectedInEveryMode(GameRunMode mode) throws Exception {
+        withFixture(
+                GameTypeEnum.Bingo,
+                f -> {
+                    set(f.plugin, "prepareSessionManager", allocate(UnreadyPrepare.class));
+                    var result =
+                            new GameStartService(f.plugin)
+                                    .startManual(
+                                            GameStartArguments.parse(
+                                                    new String[] {"bingo", "Chosen", "#1", "#2"},
+                                                    false),
+                                            mode)
+                                    .toCompletableFuture()
+                                    .join();
+                    assertFalse(result.started());
+                    assertNull(f.manager.map);
+                });
+    }
+
+    private static final class RemoteBingo
+            extends ink.ziip.championshipscore.api.game.bingo.BingoManager {
+        private RemoteBingo() {
+            super(null);
+        }
+
+        @Override
+        public boolean remoteExecutionConfigured() {
+            return true;
+        }
+    }
+
+    private static final class UnreadyPrepare extends PrepareSessionManager {
+        private UnreadyPrepare() {
+            super(null);
+        }
+
+        @Override
+        public boolean canStart(GameTypeEnum game, String map) {
+            return false;
+        }
+    }
 
     private interface Action {
         void run(Fixture f) throws Exception;

@@ -39,6 +39,7 @@ public class PlayerManager extends BaseManager {
     private final Map<UUID, PlayerIdentityMigrationResult> pendingIdentityMigrations =
             new ConcurrentHashMap<>();
     private final Map<String, Object> identityLocks = new ConcurrentHashMap<>();
+    private final Set<UUID> ephemeralTestIdentities = ConcurrentHashMap.newKeySet();
     private final PlayerDao playerDao;
     private final ProfileUuidResolver profileUuidResolver;
     private final PlayerUuidSource uuidSource;
@@ -70,6 +71,7 @@ public class PlayerManager extends BaseManager {
         cachedPlayerName.clear();
         pendingIdentityMigrations.clear();
         identityLocks.clear();
+        ephemeralTestIdentities.clear();
     }
 
     public ChampionshipPlayer addPlayer(@NotNull UUID uuid) {
@@ -104,6 +106,73 @@ public class PlayerManager extends BaseManager {
                             DatabaseSyncDomain.TEAM,
                             DatabaseSyncDomain.RANK);
         }
+    }
+
+    /**
+     * Registers a test player only in the in-memory presentation/player cache. This method must be
+     * called after the AuthMe confirmation boundary; it deliberately never touches PlayerDao,
+     * formal teams, ranks, or Redis.
+     */
+    public void prepareEphemeralTestIdentity(@NotNull String username, @NotNull UUID uuid) {
+        String normalizedName = normalizeName(username);
+        // A test identity is deliberately ephemeral. Refuse to overwrite a formal/cache entry
+        // because cacheIdentity() evicts the previous name/UUID pair and cannot reconstruct all
+        // of the metadata that may have been attached to it after the test ends.
+        if (!ephemeralTestIdentities.contains(uuid)) {
+            UUID cachedUuid = cachedPlayerUUID.get(normalizedName);
+            String cachedName = cachedPlayerName.get(uuid);
+            if (cachedUuid != null && !cachedUuid.equals(uuid)) {
+                throw new IllegalStateException(
+                        "test identity username already belongs to another cached UUID: "
+                                + username);
+            }
+            if (cachedName != null && !cachedName.equalsIgnoreCase(username)) {
+                throw new IllegalStateException(
+                        "test identity UUID already belongs to another cached username: " + uuid);
+            }
+            if (cachedPlayers.containsKey(uuid)) {
+                throw new IllegalStateException(
+                        "test identity UUID already belongs to a formal player: " + uuid);
+            }
+        } else {
+            String previousTestName = cachedPlayerName.get(uuid);
+            if (previousTestName != null && !previousTestName.equalsIgnoreCase(username))
+                cachedPlayerUUID.remove(normalizeName(previousTestName), uuid);
+        }
+        ephemeralTestIdentities.add(uuid);
+        cacheIdentity(username, uuid, java.util.Set.of());
+        addPlayer(uuid);
+    }
+
+    /** Removes the in-memory identity created by {@link #prepareEphemeralTestIdentity}. */
+    public void removeEphemeralTestIdentity(@NotNull UUID uuid) {
+        if (!ephemeralTestIdentities.remove(uuid)) return;
+        cachedPlayerName.remove(uuid);
+        cachedPlayerUUID.entrySet().removeIf(entry -> uuid.equals(entry.getValue()));
+        cachedPlayers.remove(uuid);
+    }
+
+    /**
+     * Trusted Core classification used when instructing Worker to close revoked Bot connections.
+     */
+    public boolean isEphemeralTestIdentity(@NotNull UUID uuid) {
+        return ephemeralTestIdentities.contains(uuid);
+    }
+
+    /**
+     * Checks the durable and in-memory identity surfaces before a test lease is admitted. Database
+     * failures are propagated so the caller can fail closed instead of reserving a production
+     * identity while the database is unavailable.
+     */
+    public boolean conflictsWithFormalIdentity(@NotNull String username, @NotNull UUID uuid) {
+        String normalizedName = normalizeName(username);
+        Player onlineByName = Bukkit.getPlayerExact(username);
+        if (onlineByName != null || Bukkit.getPlayer(uuid) != null) return true;
+        UUID cachedUuid = cachedPlayerUUID.get(normalizedName);
+        if (cachedUuid != null) return true;
+        String cachedName = cachedPlayerName.get(uuid);
+        if (cachedName != null) return true;
+        return playerDao.hasIdentity(uuid, username);
     }
 
     /** Applies an approved name change before the player logs in again. */

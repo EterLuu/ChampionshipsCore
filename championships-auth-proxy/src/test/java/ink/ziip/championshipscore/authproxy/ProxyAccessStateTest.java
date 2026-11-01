@@ -105,6 +105,22 @@ class ProxyAccessStateTest {
                         "Player", Duration.ofHours(1), recordedAt.plus(Duration.ofHours(2))));
     }
 
+    @Test
+    void persistsBotNetworkMetadataForOfflineFallback() throws Exception {
+        Path file = tempDirectory.resolve("bot.properties");
+        ProxyAccessState state = new ProxyAccessState(file.toFile());
+        ProxyIdentityClient.LoginProfile live = profile("autobot00", "ALLOWED", UUID);
+        live.bot = true;
+        live.allowedCidrs = List.of("10.20.0.0/16");
+        state.recordLiveProfile("autobot00", live, Instant.now());
+
+        ProxyIdentityClient.LoginProfile restored =
+                new ProxyAccessState(file.toFile())
+                        .cachedProfile("autobot00", Duration.ZERO, Instant.now());
+        assertEquals(true, restored.bot);
+        assertEquals(List.of("10.20.0.0/16"), restored.allowedCidrs);
+    }
+
     private static ProxyIdentityClient.LoginProfile profile(
             String username, String status, String uuid) {
         ProxyIdentityClient.LoginProfile profile = new ProxyIdentityClient.LoginProfile();

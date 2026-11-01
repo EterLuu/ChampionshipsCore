@@ -111,6 +111,25 @@ class GameManagerSpectatorFocusTest {
                 });
     }
 
+    @Test
+    void testEventDoesNotReplaceFormalSpectatorFocus() throws Exception {
+        withManager(
+                manager -> {
+                    var formal =
+                            area(GameTypeEnum.Bingo, GameStageEnum.PROGRESS, GameRunMode.EVENT);
+                    var test =
+                            area(
+                                    GameTypeEnum.Bingo,
+                                    GameStageEnum.PREPARATION,
+                                    GameRunMode.TEST_EVENT);
+                    set(manager, "spectatorFocus", formal);
+
+                    manager.onInstancePreparationStarted(test);
+
+                    assertSame(formal, field(GameManager.class, "spectatorFocus").get(manager));
+                });
+    }
+
     private static BaseGameInstance area(GameTypeEnum game, GameStageEnum stage, GameRunMode mode)
             throws Exception {
         var area = allocate(LaserBoxArea.class);

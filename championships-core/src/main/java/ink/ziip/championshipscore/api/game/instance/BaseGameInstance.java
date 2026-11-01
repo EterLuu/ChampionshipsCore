@@ -11,6 +11,7 @@ import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.game.spatial.LobbyReturnLocations;
 import ink.ziip.championshipscore.api.game.spatial.TeleportPositions;
 import ink.ziip.championshipscore.api.game.start.ArenaSelection;
+import ink.ziip.championshipscore.api.game.start.GameExecutionContext;
 import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
 import ink.ziip.championshipscore.api.player.PlayerManager;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
@@ -46,6 +47,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 import java.util.function.Supplier;
 import java.util.logging.Level;
@@ -67,6 +69,9 @@ public abstract class BaseGameInstance {
     private boolean forceTerminalEnd;
     private boolean settlementSuppressed;
     private GameRunMode runMode = GameRunMode.GAME;
+    private GameExecutionContext executionContext =
+            GameExecutionContext.forRunMode(GameRunMode.GAME);
+    private Consumer<BaseGameInstance> testCompletionListener;
     private ArenaSelection arenaSelection = ArenaSelection.all();
     private volatile long startGeneration;
     private boolean postGamePending;
@@ -397,7 +402,7 @@ public abstract class BaseGameInstance {
     }
 
     public void addPlayerPointsToDatabase() {
-        if (settlementSuppressed || runMode != GameRunMode.EVENT) return;
+        if (settlementSuppressed || !executionContext.writesSettlement()) return;
         List<ink.ziip.championshipscore.api.rank.RankManager.PointSubmission> submissions =
                 new ArrayList<>();
         for (Map.Entry<UUID, Double> playerPointEntry : playerPoints.entrySet()) {
@@ -413,7 +418,7 @@ public abstract class BaseGameInstance {
                                 playerPointEntry.getValue()));
         }
         plugin.getRankManager()
-                .addPlayerPointsBatch(submissions)
+                .addPlayerPointsBatch(submissions, executionContext.test())
                 .whenComplete(
                         (accepted, failure) -> {
                             if (failure != null || !Boolean.TRUE.equals(accepted))
@@ -426,7 +431,7 @@ public abstract class BaseGameInstance {
                                                 failure,
                                                 submissions));
                         });
-        plugin.getRankManager().refreshAfterPendingPointWrites();
+        if (isFormalEventRun()) plugin.getRankManager().refreshAfterPendingPointWrites();
     }
 
     public double getTeamPoints(ChampionshipTeam championshipTeam) {
@@ -452,8 +457,32 @@ public abstract class BaseGameInstance {
         return runMode;
     }
 
+    public GameExecutionContext getExecutionContext() {
+        return executionContext;
+    }
+
+    /** Applies the owner/generation after a start surface has selected the concrete instance. */
+    public void applyExecutionContext(@NotNull GameExecutionContext context) {
+        this.executionContext = context;
+    }
+
+    /** Internal Core test hook for advancing a test-owned round after normal completion. */
+    public void setTestCompletionListener(
+            @org.jetbrains.annotations.Nullable Consumer<BaseGameInstance> listener) {
+        this.testCompletionListener = listener;
+    }
+
     public boolean isEventRun() {
-        return runMode == GameRunMode.EVENT;
+        return runMode == GameRunMode.EVENT || runMode == GameRunMode.TEST_EVENT;
+    }
+
+    /** True only for the production schedule-owned event lifecycle. */
+    public boolean isFormalEventRun() {
+        return runMode == GameRunMode.EVENT && executionContext.formalEvent();
+    }
+
+    public boolean isTestRun() {
+        return runMode == GameRunMode.TEST || runMode == GameRunMode.TEST_EVENT;
     }
 
     /** Assigned by GameManager immediately before tryStartGame; ordinary game commands use GAME. */
@@ -461,6 +490,8 @@ public abstract class BaseGameInstance {
         if (getGameStageEnum() != GameStageEnum.WAITING)
             throw new IllegalStateException("Cannot change run mode while an instance is active");
         this.runMode = runMode;
+        this.executionContext = GameExecutionContext.forRunMode(runMode);
+        this.settlementSuppressed = false;
     }
 
     public void setGameStageEnum(GameStageEnum gameStageEnum) {
@@ -1122,7 +1153,7 @@ public abstract class BaseGameInstance {
         cancelPostGameRouting();
         postGamePending = true;
         roundTransitionPending = false;
-        if (isEventRun() && plugin.getScheduleManager() != null)
+        if (isFormalEventRun() && plugin.getScheduleManager() != null)
             plugin.getScheduleManager().registerPendingEventInstance(this);
     }
 
@@ -1135,7 +1166,7 @@ public abstract class BaseGameInstance {
             completePostGame(false);
             return;
         }
-        if (isEventRun()) {
+        if (isFormalEventRun()) {
             plugin.getScheduleManager().onEventInstanceReady(this);
             return;
         }
@@ -1154,6 +1185,18 @@ public abstract class BaseGameInstance {
             plugin.getScheduleManager().unregisterPendingEventInstance(this);
         cancelPostGameRouting();
         roundTransitionPending = nextEventRound;
+
+        Consumer<BaseGameInstance> testCompletion = testCompletionListener;
+        if (testCompletion != null) {
+            try {
+                testCompletion.accept(this);
+            } catch (RuntimeException failure) {
+                logGame(
+                        Level.SEVERE,
+                        MessageConfig.codeText("base-game-instance.reset-game-1"),
+                        "TEST completion callback failed: " + failure.getMessage());
+            }
+        }
 
         List<UUID> participantIds = List.copyOf(getParticipantUniqueIds());
         if (nextEventRound) {
@@ -1180,7 +1223,10 @@ public abstract class BaseGameInstance {
             roundTransitionPending = false;
             postGamePending = false;
             postGameFinalizing = false;
+            testCompletionListener = null;
             runMode = GameRunMode.GAME;
+            executionContext = GameExecutionContext.forRunMode(GameRunMode.GAME);
+            settlementSuppressed = false;
         }
     }
 
@@ -1220,8 +1266,9 @@ public abstract class BaseGameInstance {
      * onComplete} runs immediately.
      */
     protected void startGameIntroduction(@NotNull Runnable onComplete) {
-        // Rule presentation belongs to the formal event lifecycle. Standalone game starts may
-        // select their participants, but must never turn into an event-wide audience action.
+        // Rule presentation belongs to event-shaped lifecycles (formal EVENT and TEST_EVENT).
+        // Standalone game starts may select their participants, but must never turn into an
+        // event-wide audience action.
         boolean showIntroduction = isEventRun() && introductionEnabledForNextStart;
         introductionEnabledForNextStart = false;
         if (!showIntroduction) {
@@ -1621,7 +1668,7 @@ public abstract class BaseGameInstance {
         sendActionBarToAllGamePlayers(
                 MessageConfig.GAME_END_ACTION_BAR.replace("%game%", gameTypeEnum.toString()));
         boolean hasNextRound =
-                isEventRun()
+                isFormalEventRun()
                         && plugin.getScheduleManager() != null
                         && plugin.getScheduleManager().hasNextRound(gameTypeEnum);
         String completionTitle =
@@ -1635,12 +1682,16 @@ public abstract class BaseGameInstance {
                 MessageConfig.codeText("base-game-instance.announce-game-end-2"));
     }
 
-    /** Emits a normal completion event only when this run is actually being settled. */
+    /**
+     * Emits the normal completion event for every run mode. Schedule listeners decide whether they
+     * own the event; TEST/TEST_EVENT therefore exercise the same Bukkit event path while formal
+     * schedule handlers continue to require {@link #isFormalEventRun()}.
+     */
     protected final void publishGameEndEvent(@NotNull Event event) {
         if (!settlementSuppressed) Bukkit.getPluginManager().callEvent(event);
     }
 
-    /** Shared guard for specialised settlement implementations such as paired-team scoring. */
+    /** Allows in-memory scoring for normal finishes, including TEST; aborts suppress scoring. */
     protected final boolean isSettlementAllowed() {
         return !settlementSuppressed;
     }

@@ -25,6 +25,7 @@ public class MainCommand implements TabExecutor, TabCompleter {
 
     public static final String PLAYER_PERMISSION = ChampionshipPermissions.PLAYER;
     public static final String ADMIN_PERMISSION = ChampionshipPermissions.ADMIN;
+    public static final String TEST_PERMISSION = ChampionshipPermissions.TEST;
 
     protected final ChampionshipsCore plugin = ChampionshipsCore.getInstance();
     protected final Map<String, BaseMainCommand> subCommandMap;
@@ -152,6 +153,8 @@ public class MainCommand implements TabExecutor, TabCompleter {
         if (PLAYER_PERMISSION.equals(permission))
             return sender.hasPermission(PLAYER_PERMISSION)
                     || sender.hasPermission(ADMIN_PERMISSION);
+        if (TEST_PERMISSION.equals(permission))
+            return sender.hasPermission(TEST_PERMISSION) || sender.hasPermission(ADMIN_PERMISSION);
         return sender.hasPermission(permission);
     }
 

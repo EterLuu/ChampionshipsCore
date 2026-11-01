@@ -16,6 +16,7 @@ import ink.ziip.championshipscore.api.player.event.PlayerUnknownRemovalEvent;
 import ink.ziip.championshipscore.api.rank.RankManager;
 import ink.ziip.championshipscore.api.schedule.ScheduleManager;
 import ink.ziip.championshipscore.api.team.TeamManager;
+import ink.ziip.championshipscore.api.test.TestSessionManager;
 import ink.ziip.championshipscore.api.visibility.PlayerVisibilityManager;
 import ink.ziip.championshipscore.api.vote.VoteManager;
 import ink.ziip.championshipscore.command.CommandManager;
@@ -65,6 +66,7 @@ public final class ChampionshipsCore extends JavaPlugin {
     private CommandManager commandManager;
     private WorldEditManager worldEditManager;
     private GameManager gameManager;
+    private TestSessionManager testSessionManager;
     private PlayerVisibilityManager visibilityManager;
     private ink.ziip.championshipscore.platform.bukkit.player.PlayerPacketPresentation
             playerPackets;
@@ -152,6 +154,7 @@ public final class ChampionshipsCore extends JavaPlugin {
         anvilInputMenu = new AnvilInputMenu(this);
         playerManager = new PlayerManager(this);
         publicChatMuteManager = new PublicChatMuteManager(this);
+        testSessionManager = new TestSessionManager(this);
         listenerManager = new ListenerManager(this);
         commandManager = new CommandManager(this);
         teamManager = new TeamManager(this);
@@ -223,6 +226,7 @@ public final class ChampionshipsCore extends JavaPlugin {
     private void finishManagerBootstrap() {
         // Plugin startup logic
         loadManager(publicChatMuteManager);
+        loadManager(testSessionManager);
         loadManager(listenerManager);
         loadManager(worldManager);
 
@@ -264,6 +268,7 @@ public final class ChampionshipsCore extends JavaPlugin {
         for (org.bukkit.entity.Player player : getServer().getOnlinePlayers())
             gameManager.initializeOnlinePlayer(player);
         bootstrapReady = true;
+        if (testSessionManager != null) testSessionManager.recoverOnlineDeveloperStates();
         List<PlayerNameChangeEvent> queuedNameChanges = List.copyOf(pendingNameChanges);
         pendingNameChanges.clear();
         queuedNameChanges.forEach(this::handlePlayerNameChange);
@@ -289,9 +294,16 @@ public final class ChampionshipsCore extends JavaPlugin {
         unloadManager(webLeaderboardManager);
         unloadManager(dailyManager);
         unloadManager(dailyStatsManager);
+        // GameManager owns the Core arena instances and their worlds. Unload it before starting
+        // the asynchronous test-session cleanup; otherwise abortAndReset() can still be restoring
+        // an arena while clearAreas() disposes the same instance and unloads its world.
+        unloadManager(gameManager);
+        // Test cleanup owns remote test matches until Worker has acknowledged RELEASED. Start
+        // it after Core arena disposal but before closing the Remote Bingo control plane; remote
+        // match handles must remain available while the Worker releases its three worlds.
+        unloadManager(testSessionManager);
         unloadManager(remoteBingoManager);
         unloadManager(redisManager);
-        unloadManager(gameManager);
         if (playerPackets != null) playerPackets.close();
         playerPackets = null;
         unloadManager(visibilityManager);

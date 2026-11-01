@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.authbridge;
 
 import ink.ziip.championshipscore.auth.AuthAdmissionOwner;
 import ink.ziip.championshipscore.auth.BanPresentation;
+import ink.ziip.championshipscore.auth.BotLoginPolicy;
 import ink.ziip.championshipscore.authbridge.authme.AuthMeHashStore;
 import ink.ziip.championshipscore.authbridge.bridge.BridgeApiClient;
 import ink.ziip.championshipscore.authbridge.bridge.BridgeSynchronizer;
@@ -77,7 +78,10 @@ public final class ChampionshipsAuthBridgePlugin extends JavaPlugin {
                                 configuredText("access.uuid-mismatch-message"),
                                 configuredText("access.unbound-message"),
                                 banPresentation,
-                                admissionOwner),
+                                admissionOwner,
+                                BotLoginPolicy.of(
+                                        getConfig().getString("bot.username-prefix", "autobot"),
+                                        getConfig().getStringList("bot.allowed-cidrs"))),
                         this);
         long period = Math.max(5L, getConfig().getLong("api.poll-seconds", 10)) * 20L;
         getServer().getScheduler().runTaskTimerAsynchronously(this, synchronizer, 1L, period);

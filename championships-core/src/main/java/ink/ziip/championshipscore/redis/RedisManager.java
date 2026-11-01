@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.redis;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
+import ink.ziip.championshipscore.api.game.bingo.execution.RemoteBingoManager;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.database.sync.DatabaseSyncDomain;
@@ -574,7 +575,24 @@ public final class RedisManager extends BaseManager {
         connectionRetryTask = null;
         if (reconciliationTask != null) reconciliationTask.cancel();
         reconciliationTask = null;
-        closeResources();
+        RemoteBingoManager remote = plugin == null ? null : plugin.getRemoteBingoManager();
+        if (remote != null && remote.requiresDeferredTransportClose()) {
+            remote.shutdownCompletion()
+                    .whenComplete(
+                            (ignored, failure) -> {
+                                if (failure == null) closeResources();
+                                else
+                                    plugin.getLogger()
+                                            .log(
+                                                    java.util.logging.Level.SEVERE,
+                                                    "Redis transport remains open because Remote"
+                                                            + " Bingo test resources were not"
+                                                            + " released",
+                                                    failure);
+                            });
+        } else {
+            closeResources();
+        }
         pendingPublications.clear();
         processedEvents.clear();
         connecting.set(false);

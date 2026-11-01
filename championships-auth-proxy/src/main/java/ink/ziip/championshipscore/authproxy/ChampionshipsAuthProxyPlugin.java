@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.authproxy;
 
 import ink.ziip.championshipscore.auth.BanPresentation;
+import ink.ziip.championshipscore.auth.BotLoginPolicy;
 
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
@@ -41,6 +42,7 @@ public final class ChampionshipsAuthProxyPlugin extends Plugin implements Listen
     private String maintenanceMessage;
     private ProxyBanSynchronizer banSynchronizer;
     private ScheduledTask banSynchronizerTask;
+    private BotLoginPolicy botLoginPolicy;
 
     @Override
     public void onEnable() {
@@ -58,6 +60,10 @@ public final class ChampionshipsAuthProxyPlugin extends Plugin implements Listen
             banPresentation = BanPresentation.from(config::getString, "messages.banned");
             revokedMessage = config.getString("messages.revoked");
             unavailableMessage = config.getString("messages.unavailable");
+            botLoginPolicy =
+                    BotLoginPolicy.of(
+                            config.getString("bot.username-prefix", "autobot"),
+                            config.getStringList("bot.allowed-cidrs"));
             maintenanceMessage = config.getString("messages.maintenance");
             if (migrateLegacyStateFile(getDataFolder())) {
                 getLogger()
@@ -120,6 +126,20 @@ public final class ChampionshipsAuthProxyPlugin extends Plugin implements Listen
         try {
             ProxyIdentityClient.LoginProfile profile =
                     loginResolver.lookup(event.getConnection().getName());
+            if (!botLoginPolicy.allows(
+                    event.getConnection().getName(),
+                    event.getConnection().getAddress() instanceof java.net.InetSocketAddress socket
+                            ? socket.getAddress()
+                            : null,
+                    profile.bot,
+                    profile.allowedCidrs)) {
+                reject(
+                        event,
+                        "BOT_SOURCE_REJECTED",
+                        "Bot source address is not allowed",
+                        notBoundMessage);
+                return;
+            }
             switch (profile.status) {
                 case "ALLOWED" -> {
                     event.getConnection().setOnlineMode(false);

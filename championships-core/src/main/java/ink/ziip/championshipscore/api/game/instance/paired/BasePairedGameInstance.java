@@ -65,7 +65,7 @@ public abstract class BasePairedGameInstance extends BaseGameInstance {
 
     @Override
     public void addPlayerPointsToDatabase() {
-        if (!isEventRun()) return;
+        if (!getExecutionContext().writesSettlement()) return;
         // Rival-aware point submissions require the same settlement admission as other games.
         if (!isSettlementAllowed()) return;
         List<ink.ziip.championshipscore.api.rank.RankManager.PointSubmission> submissions =
@@ -98,8 +98,10 @@ public abstract class BasePairedGameInstance extends BaseGameInstance {
                 }
             }
         }
-        plugin.getRankManager().addPlayerPointsBatch(submissions).exceptionally(failure -> false);
-        plugin.getRankManager().refreshAfterPendingPointWrites();
+        plugin.getRankManager()
+                .addPlayerPointsBatch(submissions, getExecutionContext().test())
+                .exceptionally(failure -> false);
+        if (isFormalEventRun()) plugin.getRankManager().refreshAfterPendingPointWrites();
     }
 
     @Override

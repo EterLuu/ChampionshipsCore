@@ -41,6 +41,9 @@ final class ProxyLoginResolver {
             ProxyIdentityClient.LoginProfile cached =
                     state.cachedProfile(username, maxStale, Instant.now());
             if (cached == null) throw failure;
+            // Bot accounts are long-lived test credentials; do not let an outage turn an old
+            // allow decision into an indefinite admission after cc-web disables the Bot.
+            if (Boolean.TRUE.equals(cached.bot)) throw failure;
             logFallback();
             return cached;
         }

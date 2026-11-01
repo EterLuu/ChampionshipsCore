@@ -18,7 +18,8 @@ record WorkerConfig(
         String nether,
         String end,
         boolean allowWorldReuseWithoutReset,
-        SeedFilterConfig seedFilter) {
+        SeedFilterConfig seedFilter,
+        boolean testEnabled) {
     static WorkerConfig load(FileConfiguration config) {
         String workerId = text(config, "worker-id");
         RedisTransportConfig redis =
@@ -48,7 +49,8 @@ record WorkerConfig(
                 text(config, "worlds.nether"),
                 text(config, "worlds.the-end"),
                 config.getBoolean("worlds.allow-reuse-without-reset", false),
-                seedFilter);
+                seedFilter,
+                config.getBoolean("test.enabled", false));
     }
 
     private static int positive(FileConfiguration config, String path, int fallback) {

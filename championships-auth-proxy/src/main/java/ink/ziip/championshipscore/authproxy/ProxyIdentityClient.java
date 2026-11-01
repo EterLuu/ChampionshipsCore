@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import ink.ziip.championshipscore.auth.AuthIdentity;
+import ink.ziip.championshipscore.auth.BotLoginPolicy;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -13,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Duration;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -122,6 +124,12 @@ final class ProxyIdentityClient {
                 throw new IllegalStateException("Allowed login profile omitted UUID");
             AuthIdentity.parseUuid(profile.uuid, "login profile UUID");
         }
+        if (Boolean.TRUE.equals(profile.bot)) {
+            if (profile.allowedCidrs == null)
+                throw new IllegalStateException("Bot login profile omitted CIDR policy");
+            // Parse now so malformed trusted metadata cannot poison the durable fallback cache.
+            BotLoginPolicy.of("autobot", profile.allowedCidrs);
+        }
     }
 
     static boolean isServiceUnavailable(Throwable failure) {
@@ -163,6 +171,8 @@ final class ProxyIdentityClient {
         public String username;
         public String status;
         public String uuid;
+        public Boolean bot;
+        public List<String> allowedCidrs;
         public String reason;
         public String expiresAt;
     }
@@ -192,6 +202,8 @@ final class ProxyIdentityClient {
         public String previousUsername;
         public String status;
         public String uuid;
+        public Boolean bot;
+        public List<String> allowedCidrs;
         public String reason;
         public String expiresAt;
     }

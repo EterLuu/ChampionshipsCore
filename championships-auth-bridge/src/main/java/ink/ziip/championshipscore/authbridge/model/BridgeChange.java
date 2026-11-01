@@ -11,4 +11,6 @@ public record BridgeChange(
         String minecraftUuid,
         String passwordHash,
         String reason,
-        String expiresAt) {}
+        String expiresAt,
+        Boolean bot,
+        java.util.List<String> allowedCidrs) {}

@@ -22,6 +22,7 @@ import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoFireworkSupply;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoRidingTravel;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoWorldRules;
+import ink.ziip.championshipscore.platform.bukkit.player.PlayerRespawnRecovery;
 import ink.ziip.championshipscore.platform.bukkit.player.PlayerStateService;
 import ink.ziip.championshipscore.platform.bukkit.player.PlayerTargetTeleports;
 import ink.ziip.championshipscore.platform.bukkit.scheduler.PlayerProgressChecks;
@@ -111,6 +112,7 @@ public class BingoArea extends BaseMultiTeamGameInstance {
     private SafeScatterService scatterManager;
     private PlayerProgressChecks progressChecks;
     private PlayerTargetTeleports teammateTeleports;
+    private PlayerRespawnRecovery respawnRecovery;
 
     /**
      * Parsed permanent potion effects for the current round (empty outside a running round).
@@ -131,6 +133,7 @@ public class BingoArea extends BaseMultiTeamGameInstance {
 
     @Override
     public void dispose() {
+        if (respawnRecovery != null) respawnRecovery.close();
         if (progressChecks != null) progressChecks.close();
         if (teammateTeleports != null) teammateTeleports.close();
         cancelLocalTasks();
@@ -138,6 +141,7 @@ public class BingoArea extends BaseMultiTeamGameInstance {
     }
 
     private void cancelLocalTasks() {
+        if (respawnRecovery != null) respawnRecovery.clear();
         if (teammateTeleports != null) teammateTeleports.clear();
         if (progressChecks != null) progressChecks.clear();
         cancelScatter();
@@ -946,6 +950,36 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         return world != null ? world.getSpawnLocation() : null;
     }
 
+    public void recoverRespawn(Player player, boolean death) {
+        long generation = captureGameGeneration();
+        if (!isCurrentParticipantConnection(generation, player) || !isGameplayParticipant(player))
+            return;
+        GameStageEnum stage = getGameStageEnum();
+        if (stage != GameStageEnum.PREPARATION && stage != GameStageEnum.PROGRESS) return;
+        if (respawnRecovery == null) respawnRecovery = new PlayerRespawnRecovery(plugin);
+        java.util.function.BooleanSupplier current =
+                () ->
+                        isCurrentParticipantConnection(generation, player)
+                                && isGameplayParticipant(player)
+                                && (getGameStageEnum() == GameStageEnum.PREPARATION
+                                        || getGameStageEnum() == GameStageEnum.PROGRESS);
+        Runnable restore =
+                () -> {
+                    if (getGameStageEnum() == GameStageEnum.PROGRESS) ensureKitAndCard(player);
+                };
+        var recovery =
+                death
+                        ? respawnRecovery.death(
+                                player, this, current, this::getRespawnLocation, restore)
+                        : respawnRecovery.respawn(
+                                player, this, current, this::getRespawnLocation, restore);
+        recovery.exceptionally(
+                error -> {
+                    plugin.getLogger().log(Level.WARNING, "Bingo respawn recovery failed", error);
+                    return false;
+                });
+    }
+
     /** True for the bingo overworld and its nether/end dimensions. */
     private boolean isBingoWorld(World world) {
         return WorldManager.isBingoWorld(world);
@@ -1055,6 +1089,7 @@ public class BingoArea extends BaseMultiTeamGameInstance {
     @Override
     public void handlePlayerQuit(@NotNull PlayerQuitEvent event) {
         Player player = event.getPlayer();
+        if (respawnRecovery != null) respawnRecovery.cancel(player);
         cancelTeammateTeleports(player.getUniqueId());
         if (progressChecks != null) progressChecks.cancel(player);
         if (notAreaPlayer(player)) return;

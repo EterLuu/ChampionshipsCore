@@ -60,7 +60,8 @@ final class ProxyAccessState {
         }
         CachedProfile cached = profiles.get(key);
         if (cached == null || isStale(cached.updatedAt(), maxStale, now)) return null;
-        return profile(cached.status(), cached.uuid(), null, null);
+        return profile(
+                cached.status(), cached.uuid(), null, null, cached.bot(), cached.allowedCidrs());
     }
 
     synchronized void recordLiveProfile(
@@ -78,6 +79,8 @@ final class ProxyAccessState {
                     key,
                     status,
                     live.uuid,
+                    live.bot,
+                    live.allowedCidrs,
                     live.reason,
                     live.expiresAt,
                     now.toEpochMilli());
@@ -131,6 +134,8 @@ final class ProxyAccessState {
                         key,
                         requireStatus(change.status),
                         change.uuid,
+                        change.bot,
+                        change.allowedCidrs,
                         change.reason,
                         change.expiresAt,
                         now.toEpochMilli());
@@ -157,7 +162,15 @@ final class ProxyAccessState {
                 throw new IllegalArgumentException("Unsupported profile status in bridge snapshot");
             }
             String uuid = validateUuid(status, profile.uuid);
-            if (parsed.put(key, new CachedProfile(status, uuid, updatedAt)) != null) {
+            if (parsed.put(
+                            key,
+                            new CachedProfile(
+                                    status,
+                                    uuid,
+                                    profile.bot,
+                                    copyCidrs(profile.allowedCidrs),
+                                    updatedAt))
+                    != null) {
                 throw new IllegalArgumentException("Duplicate profile in bridge snapshot");
             }
         }
@@ -184,12 +197,21 @@ final class ProxyAccessState {
             String key,
             String status,
             String uuid,
+            Boolean bot,
+            List<String> allowedCidrs,
             String reason,
             String expiresAt,
             long updatedAt) {
         switch (status) {
             case "ALLOWED", "UNBOUND", "REVOKED" -> {
-                profiles.put(key, new CachedProfile(status, validateUuid(status, uuid), updatedAt));
+                profiles.put(
+                        key,
+                        new CachedProfile(
+                                status,
+                                validateUuid(status, uuid),
+                                bot,
+                                copyCidrs(allowedCidrs),
+                                updatedAt));
                 bans.remove(key);
             }
             case "BANNED" -> {
@@ -249,7 +271,15 @@ final class ProxyAccessState {
         long updatedAt =
                 Long.parseLong(
                         properties.getProperty(PROFILE_PREFIX + normalized + ".updated-at", "0"));
-        profiles.put(normalized, new CachedProfile(status, uuid, updatedAt));
+        Boolean bot =
+                properties.containsKey(PROFILE_PREFIX + normalized + ".bot")
+                        ? Boolean.parseBoolean(
+                                properties.getProperty(PROFILE_PREFIX + normalized + ".bot"))
+                        : null;
+        List<String> allowedCidrs =
+                parseStoredCidrs(
+                        properties.getProperty(PROFILE_PREFIX + normalized + ".allowed-cidrs"));
+        profiles.put(normalized, new CachedProfile(status, uuid, bot, allowedCidrs, updatedAt));
     }
 
     private void loadBan(Properties properties, String reasonKey) {
@@ -273,6 +303,11 @@ final class ProxyAccessState {
                     properties.setProperty(prefix + "status", profile.status());
                     if (profile.uuid() != null)
                         properties.setProperty(prefix + "uuid", profile.uuid());
+                    if (profile.bot() != null) {
+                        properties.setProperty(prefix + "bot", Boolean.toString(profile.bot()));
+                        properties.setProperty(
+                                prefix + "allowed-cidrs", String.join(",", profile.allowedCidrs()));
+                    }
                     properties.setProperty(
                             prefix + "updated-at", Long.toString(profile.updatedAt()));
                 });
@@ -304,9 +339,21 @@ final class ProxyAccessState {
 
     private static ProxyIdentityClient.LoginProfile profile(
             String status, String uuid, String reason, String expiresAt) {
+        return profile(status, uuid, reason, expiresAt, null, List.of());
+    }
+
+    private static ProxyIdentityClient.LoginProfile profile(
+            String status,
+            String uuid,
+            String reason,
+            String expiresAt,
+            Boolean bot,
+            List<String> allowedCidrs) {
         ProxyIdentityClient.LoginProfile profile = new ProxyIdentityClient.LoginProfile();
         profile.status = status;
         profile.uuid = uuid;
+        profile.bot = bot;
+        profile.allowedCidrs = allowedCidrs;
         profile.reason = reason;
         profile.expiresAt = expiresAt;
         return profile;
@@ -362,7 +409,17 @@ final class ProxyAccessState {
         return value == null ? "" : value;
     }
 
-    private record CachedProfile(String status, String uuid, long updatedAt) {}
+    private static List<String> copyCidrs(List<String> cidrs) {
+        return cidrs == null ? List.of() : List.copyOf(cidrs);
+    }
+
+    private static List<String> parseStoredCidrs(String value) {
+        if (value == null || value.isBlank()) return List.of();
+        return List.of(value.split(",", -1));
+    }
+
+    private record CachedProfile(
+            String status, String uuid, Boolean bot, List<String> allowedCidrs, long updatedAt) {}
 
     private record CachedBan(String reason, String expiresAt) {}
 }

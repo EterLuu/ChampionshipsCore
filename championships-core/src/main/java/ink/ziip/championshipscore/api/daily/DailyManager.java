@@ -332,6 +332,10 @@ public final class DailyManager extends BaseManager {
             message(requester, MessageConfig.DAILY_UNAVAILABLE);
             return false;
         }
+        if (testOwnsPlayer(requester.getUniqueId())) {
+            message(requester, MessageConfig.DAILY_ALREADY_PLAYING);
+            return false;
+        }
         if (game == GameTypeEnum.Bingo && reopenBingoVote(requester)) return true;
         DailyRules targetRules = rules(game);
         DailyQueue target = queues.computeIfAbsent(game, DailyQueue::new);
@@ -359,6 +363,7 @@ public final class DailyManager extends BaseManager {
         for (UUID uuid : joining) {
             Player player = Bukkit.getPlayer(uuid);
             if (player == null
+                    || testOwnsPlayer(uuid)
                     || sessionByPlayer.containsKey(uuid)
                     || plugin.getGameManager().getBasePlayerArea(uuid) != null
                     || plugin.getGameManager().isWaitingForNextRound(uuid)) {
@@ -613,6 +618,7 @@ public final class DailyManager extends BaseManager {
     /** Whether a player is currently eligible to receive the lobby entry item or join a party. */
     boolean canJoinParty(@NotNull UUID player) {
         return isDailyLobby()
+                && !testOwnsPlayer(player)
                 && Bukkit.getPlayer(player) != null
                 && !isQueued(player)
                 && sessionByPlayer.get(player) == null
@@ -625,6 +631,7 @@ public final class DailyManager extends BaseManager {
     @Nullable
     PartyUnavailableReason partyUnavailableReason(@NotNull UUID player) {
         if (Bukkit.getPlayer(player) == null) return PartyUnavailableReason.OFFLINE;
+        if (testOwnsPlayer(player)) return PartyUnavailableReason.IN_GAME;
         if (partyManager.getParty(player) != null) return PartyUnavailableReason.IN_PARTY;
         if (isQueued(player)) return PartyUnavailableReason.QUEUED;
         if (sessionByPlayer.get(player) != null
@@ -662,13 +669,15 @@ public final class DailyManager extends BaseManager {
     private boolean canReceiveLobbyItem(@NotNull Player player) {
         UUID uuid = player.getUniqueId();
         return isDailyLobby()
+                && !testOwnsPlayer(uuid)
                 && sessionByPlayer.get(uuid) == null
                 && plugin.getGameManager().getBasePlayerArea(uuid) == null
                 && plugin.getGameManager().getPlayerSpectatorStatus(uuid) == null
                 && !plugin.getGameManager().isWaitingForNextRound(uuid);
     }
 
-    void syncLobbyItem(@NotNull Player player) {
+    /** Reconciles lobby-owned presentation after another lifecycle takes or releases a player. */
+    public void syncLobbyItem(@NotNull Player player) {
         syncLobbyIdentity(player);
         if (canReceiveLobbyItem(player)) {
             if (!DailyLobbyItem.give(player))
@@ -1264,10 +1273,16 @@ public final class DailyManager extends BaseManager {
     private void syncLobbyIdentity(@NotNull Player player) {
         boolean neutralLobbyIdentity =
                 isDailyLobby()
+                        && !testOwnsPlayer(player.getUniqueId())
                         && sessionByPlayer.get(player.getUniqueId()) == null
                         && plugin.getGameManager().getBasePlayerArea(player.getUniqueId()) == null;
         if (neutralLobbyIdentity) plugin.getTeamManager().applyDailyLobbyIdentity(player);
         else plugin.getTeamManager().clearDailyLobbyIdentity(player);
+    }
+
+    private boolean testOwnsPlayer(UUID uuid) {
+        var tests = plugin.getTestSessionManager();
+        return tests != null && tests.ownsRosterMember(uuid);
     }
 
     private void rebuildSnapshots() {

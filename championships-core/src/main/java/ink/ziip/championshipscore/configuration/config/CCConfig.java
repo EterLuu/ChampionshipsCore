@@ -80,6 +80,34 @@ public class CCConfig extends BaseConfigurationFile {
     @ConfigOption(path = "mode")
     public static String MODE;
 
+    /** Explicit opt-in for isolated game tests; permissions alone cannot enable them. */
+    @ConfigOption(path = "test.enabled")
+    public static volatile Boolean TEST_ENABLED = false;
+
+    @ConfigOption(path = "test.auth.server-id")
+    public static volatile String TEST_AUTH_SERVER_ID = "";
+
+    @ConfigOption(path = "test.auth.hmac-secret")
+    public static volatile String TEST_AUTH_HMAC_SECRET = "";
+
+    @ConfigOption(path = "test.identity.base-url")
+    public static volatile String TEST_IDENTITY_BASE_URL = "";
+
+    @ConfigOption(path = "test.identity.key-id")
+    public static volatile String TEST_IDENTITY_KEY_ID = "";
+
+    @ConfigOption(path = "test.identity.hmac-secret")
+    public static volatile String TEST_IDENTITY_HMAC_SECRET = "";
+
+    @ConfigOption(path = "test.identity.allow-insecure-private-http")
+    public static volatile Boolean TEST_IDENTITY_ALLOW_INSECURE_PRIVATE_HTTP = false;
+
+    @ConfigOption(path = "test.identity.connect-timeout-seconds")
+    public static volatile int TEST_IDENTITY_CONNECT_TIMEOUT_SECONDS = 5;
+
+    @ConfigOption(path = "test.identity.request-timeout-seconds")
+    public static volatile int TEST_IDENTITY_REQUEST_TIMEOUT_SECONDS = 15;
+
     // Daily public-play mode. Only games with a registered DailyGameAdapter are admitted.
     @ConfigOption(path = "daily.enabled-games")
     public static List<String> DAILY_ENABLED_GAMES;
