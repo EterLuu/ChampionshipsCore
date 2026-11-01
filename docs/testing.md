@@ -34,7 +34,7 @@ JUnit 报告中的数量是执行次数，参数化方法按每种游戏或输�
 
 ## 原生服与协议客户端
 
-需要验证 Paper/Folia、BungeeCord、AuthMe、UUID、传送、重生、旁观或游戏结算时，使用 `championships-test-harness` 连接独立测试服。Harness 的 `resident + idle` 适合先建立 64 Bot 长驻基线，游戏动作再按 [无人测试游戏矩阵](game-test-matrix.md) 添加 profile。
+需要验证 Paper/Folia、BungeeCord、AuthMe、UUID、传送、重生、旁观或游戏结算时，使用 `championships-test-harness` 连接测试服或已明确开启调试入口的生产服。Harness 的 `resident + idle` 适合先建立 64 Bot 长驻基线，游戏动作再按 [无人测试游戏矩阵](game-test-matrix.md) 添加 profile。
 
 ```bash
 cd championships-test-harness
@@ -42,7 +42,7 @@ npm ci --ignore-scripts --no-audit --no-fund
 npm test
 ```
 
-运行前建立独立数据库、Redis namespace、世界和身份域。Core 先创建测试 session 并执行 `lease`，Harness 再连接；测试完成后由 Core 的 `stop --confirm` 和 Worker 的释放流程清理。报告同时查看客户端状态、Core roster、游戏阶段、数据库/Redis 写入和世界状态。
+运行前确认数据库、Redis namespace、世界、身份域和正式赛程的使用边界。Core 先创建测试 session 并执行 `lease`，Harness 再连接；测试完成后由 Core 的 `stop --confirm` 和 Worker 的释放流程清理。报告同时查看客户端状态、Core roster、游戏阶段、数据库/Redis 写入和世界状态。
 
 ## 隔离和断言
 

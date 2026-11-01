@@ -119,7 +119,7 @@ Worker `plugins/ChampionshipsBingoWorker/config.yml`：
 
 ```yaml
 enabled: true
-# 测试部署再设置 test.enabled: true；正式环境保持 false。
+# 生产与调试共用时可设置 test.enabled: true；默认 false。Worker 仍只有一个自然世界 slot。
 test:
   enabled: false
 worker-id: bingo-1

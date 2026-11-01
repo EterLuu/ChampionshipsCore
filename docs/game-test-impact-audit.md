@@ -28,7 +28,7 @@ Core 的正常入口继续使用 `GAME`、正式 `EVENT` 和 `DAILY`：
 
 - 游戏仍执行真实准备、倒计时、玩法、结算、事件和地图恢复；
 - Test Event 由测试会话按 profile 推进轮次，不调用正式 Schedule 的全局轮次和观众释放；
-- 测试数据域允许写入结果、Rank、Redis、事件和远程 match，便于验证内容、顺序和幂等性；
+- 测试上下文允许写入结果、Rank、Redis、事件和远程 match，便于验证内容、顺序和幂等性；
 - `stop --confirm` 使用统一恢复入口，远程 Bingo 要等待 Worker `RELEASED` 后才释放世界占用；
 - 远程协议 v10 的 Core、Worker、AuthBridge 和 AuthProxy 需要配套版本。
 
@@ -40,9 +40,9 @@ AuthProxy 和 AuthBridge 都执行账号状态、CIDR、封禁/维护状态和 U
 
 ## 配置与部署边界
 
-Core、Worker 的 `test.enabled` 默认都是 `false`。启用测试前，应为 Core、Worker、Bungee、AuthMe、MariaDB、Redis、世界和 cc-web 准备独立环境；开关只开启测试入口，不替代物理隔离。
+Core、Worker 的 `test.enabled` 默认都是 `false`。允许生产与调试共用时，可以在现有 Core、Worker、Bungee、AuthMe、MariaDB、Redis、世界和 cc-web 上显式开启；开关只开启测试入口，不替代资源排班、RCON 网络限制、Bot 专用身份或 Worker 的单自然世界 slot。
 
-涉及 common 协议、共享展示、AuthBridge/AuthProxy 或 Worker 释放的版本时，Core、Worker 和认证组件需要配套构建和重启。只修改 Markdown、测试夹具或 Harness 不需要替换生产 JAR。生产服不安装 Harness，也不使用测试名称、测试 lease 或测试 Redis namespace。
+涉及 common 协议、共享展示、AuthBridge/AuthProxy 或 Worker 释放的版本时，Core、Worker 和认证组件需要配套构建和重启。只修改 Markdown、测试夹具或 Harness 不需要替换生产 JAR。Harness 仍不安装进生产插件目录，但可以从受控内部网络连接开启调试入口的生产 Core；不得公开 RCON 或把普通账号当作测试身份。
 
 ## 运维检查
 
@@ -52,6 +52,6 @@ Core、Worker 的 `test.enabled` 默认都是 `false`。启用测试前，应为
 2. Core `status` 显示会话状态和 16 个临时队伍，结束后回到无活动会话；
 3. 测试数据库和 Redis 中的写入与预期结果一致，测试 reservation、release journal 和世界状态按流程清理；
 4. 下一场测试可以重新建立，旧 session、旧回调和旧 lease 不会影响新名册；
-5. 正式数据库、正式 Redis、正式世界和正式玩家身份没有被测试环境引用。
+5. 生产调试模式下确认测试写入和正式数据域是预期行为，并确认正式赛程、正式玩家和 Worker 世界 slot 没有资源冲突。
 
 相关命令见 [命令参考](commands.md)，身份约束见 [UUID 契约](player-uuid-contract.md)，旁观和队伍投影见 [旁观契约](spectator-visibility-contract.md)。

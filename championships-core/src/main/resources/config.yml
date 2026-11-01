@@ -1,12 +1,13 @@
 dont-edit-this:
   version: 25
 mode: "CHAMPIONSHIP"
-# Enable only in a separate test deployment with isolated worlds, identities and data services.
-# This permits real game resets; it does not create a sandbox. Historical Bot denials remain active.
+# Explicit opt-in for unattended test sessions. It may be enabled on a production server that
+# deliberately runs production and debug traffic together; it does not create a sandbox or hide
+# writes from the normal database, Redis, worlds, ranks or event logs. Keep it false by default.
 test:
   enabled: false
   auth:
-    # Configure a unique value and a private 32+ byte key only on the isolated test Core.
+    # Configure a unique value and a private 32+ byte key for this Core instance.
     server-id: ""
     hmac-secret: ""
   identity:

@@ -1,6 +1,6 @@
 # 无人测试设计
 
-无人测试让开发者用真实 Minecraft 客户端连接参加比赛。Core 负责会话、队伍、比赛和结算，Bot Harness 负责连接代理、完成认证并保持在线。这样测试经过与真人相同的 Paper、BungeeCord、AuthMe、UUID、传送、重生和发包流程，游戏代码也继续使用现有的 `Player`、队伍和实例接口。
+无人测试让开发者用真实 Minecraft 客户端连接参加比赛。Core 负责会话、队伍、比赛和结算，Bot Harness 负责连接代理、完成认证并保持在线。这样测试经过与真人相同的 Paper、BungeeCord、AuthMe、UUID、传送、重生和发包流程，游戏代码也继续使用现有的 `Player`、队伍和实例接口。生产服务器可以在显式打开调试入口后同时承载正式比赛和测试会话；测试写入仍属于当前生产数据域，资源冲突需要由运行安排避免。
 
 ## 组成部分
 
@@ -81,13 +81,15 @@ npm run connect
 
 resident 使用无限等待窗口，直到外部创建 stop file。Bot 不发送游戏动作，Core 仍按真实玩家处理队伍、传送、玩法和计分；所有连接由 8 个 Node worker 承载。报告包含每个 Bot 的登录、世界位置、传送确认、重生、keep-alive、断线和退出状态。
 
-Harness 也可以在隔离环境中自动驱动完整会话。设置 `CC_TEST_CORE_AUTO_SESSION=true`、RCON 参数和 `CC_TEST_CORE_SESSION_MODE=single|event` 后，协调进程依次执行 Core 的 `single/event start`、`lease web`、`status`、`run` 和 `stop --confirm`；它等待 64 个 Bot 和 16 个临时队伍进入 `READY`，Event 或单局进入终态后创建 stop file，使 resident worker 正常退出。该开关默认关闭，RCON 只连接测试服。cc-web Bot 默认保留为持久账号，只有显式设置 `CC_TEST_WEB_DISABLE_ON_FINISH=true` 才调用停用接口。
+Harness 也可以自动驱动完整会话。设置 `CC_TEST_CORE_AUTO_SESSION=true`、RCON 参数和 `CC_TEST_CORE_SESSION_MODE=single|event` 后，协调进程依次执行 Core 的 `single/event start`、`lease web`、`status`、`run` 和 `stop --confirm`；它等待 64 个 Bot 和 16 个临时队伍进入 `READY`，Event 或单局进入终态后创建 stop file，使 resident worker 正常退出。该开关默认关闭，RCON 只应在 Core 所在内部网络可达，不能公开映射到互联网。cc-web Bot 默认保留为持久账号，只有显式设置 `CC_TEST_WEB_DISABLE_ON_FINISH=true` 才调用停用接口。
 
 ## 运行模式与数据
 
-测试会话使用独立的 `GameExecutionContext` 和 `SettlementPolicy`。测试结果、事件、Rank、Redis 消息和远程 match 状态可以正常写入测试数据域，便于检查真实行为；正式 Schedule 的全局状态仍只由正式 Event 使用。测试队伍使用 transient team，不写入正式队伍关系。
+测试会话使用独立的 `GameExecutionContext` 和 `SettlementPolicy`。测试结果、事件、Rank、Redis 消息和远程 match 状态会写入当前部署的数据域，便于检查真实行为；正式 Schedule 的全局状态仍只由正式 Event 使用。测试队伍使用 transient team，不写入正式队伍关系。
 
-Core 和 Worker 的 `test.enabled` 默认都是 `false`。只有隔离部署显式打开后才能创建或接收测试会话。开关只负责准入，不会自动创建沙箱；测试服仍需使用独立世界、数据库、Redis namespace、代理和身份域。
+Core 和 Worker 的 `test.enabled` 默认都是 `false`。生产与调试共用部署可以显式打开，开关只负责准入，不会自动创建沙箱或隔离数据。Core 测试会话仍使用 transient 队伍和自己的 ownership；远程 Bingo Worker 只有一个自然世界 slot，正式 Bingo 运行或上一场测试尚未释放时必须拒绝/等待新的测试 match。
+
+生产调试上线时，Core 的 `test.enabled`、`test.auth.server-id`、`test.auth.hmac-secret`、`test.identity.*` 与 Worker 的 `test.enabled` 作为同一变更准备；`server-id` 对每个 Core 实例唯一，密钥不写入仓库。Harness 通过 Bungee 进入正常登录链路，RCON 仅在 Core/Bungee 的受控 Docker 网络开放，不在宿主公网发布 `25575`。开启后先执行 `status` 和 1 个 Bot 的登录验证，再启动完整 64 Bot 或 Event；正式比赛运行中不要抢占同一地图实例或 Bingo Worker 世界 slot。
 
 远程 Bingo 使用内部协议 v10，Core、Worker、AuthBridge 和 AuthProxy 需要配套版本。Worker 的一场测试比赛占用三个世界，结束时等待所有玩家返回、写入 release journal、发布 `RELEASED`，再由外部监督流程重建世界。
 

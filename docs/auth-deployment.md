@@ -53,13 +53,13 @@ AuthProxy 使用 `offline-cache.enabled` 和 `offline-cache.max-stale-hours` 控
 
 ## 测试 Bot 的身份链
 
-测试 Bot 使用 Core 的测试 lease 与独立身份域。cc-web 模式下，Harness 通过 `TEST_HARNESS` 客户端取得账号密码，Core 的 `test.identity` 配置取得 profile UUID 和签名 lease；AuthProxy 与 AuthBridge 再用 Bot 的 CIDR、账号状态和服务器实际 UUID 完成准入。Harness 不发送 UUID。
+测试 Bot 使用 Core 的测试 lease。cc-web 模式下，Harness 通过 `TEST_HARNESS` 客户端取得账号密码，Core 的 `test.identity` 配置取得 profile UUID 和签名 lease；AuthProxy 与 AuthBridge 再用 Bot 的 CIDR、账号状态和服务器实际 UUID 完成准入。Harness 不发送 UUID。生产与调试共用时，Bot 账号仍必须是专用的 cc-web Bot 记录，不能复用普通玩家账号。
 
 ```yaml
 test:
   enabled: true
   auth:
-    server-id: isolated-core
+    server-id: <this-core-instance>
     hmac-secret: <Core 与签发端共享的随机密钥>
   identity:
     base-url: https://cc-web.internal
@@ -68,7 +68,7 @@ test:
     allow-insecure-private-http: false
 ```
 
-Core 与 Worker 的 `test.enabled` 只在独立测试部署打开。服务器使用 `online-mode=false` 时，Bungee 仍然是登录入口；Bot 的 UUID 由 AuthProxy profile、Paper、AuthBridge 和 Core 共同确认，不能把传输模式当作 UUID 来源。完整流程见 [无人测试设计](game-test-research.md)。
+Core 与 Worker 的 `test.enabled` 可在生产与调试共用部署中显式打开，但默认保持关闭。服务器使用 `online-mode=false` 时，Bungee 仍然是登录入口；Bot 的 UUID 由 AuthProxy profile、Paper、AuthBridge 和 Core 共同确认，不能把传输模式当作 UUID 来源。完整流程见 [无人测试设计](game-test-research.md)。
 
 ## 持久状态与兼容文件
 

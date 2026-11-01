@@ -11,7 +11,7 @@
 | resident Harness | 已支持无限等待窗口、stop file、8 worker 承载 64 Bot 和完整连接报告 |
 | cc-web Bot | 已支持 provision、`CUSTOM_UUID` profile、`lease web`、CIDR 同步和 AuthMe/UUID 校验 |
 | 离线隔离夹具 | 支持按 `OfflinePlayer:<name>` 生成签名 lease，适合没有 cc-web 的临时环境 |
-| 远程 Bingo | 已接入 TEST/TEST_EVENT manifest、Worker admission/release 和独立测试数据域；完整世界重置闭环仍按远程矩阵继续验收 |
+| 远程 Bingo | 已接入 TEST/TEST_EVENT manifest、Worker admission/release 和测试 ownership；完整世界重置闭环仍按远程矩阵继续验收 |
 | 正式功能兼容 | 没有活动测试会话时，正式 `GAME`、`EVENT`、`DAILY` 继续使用原有队伍、赛程、计分和 Redis 路径 |
 
 ## 最近的原生基线
@@ -27,7 +27,7 @@
 
 ## 代码和配置入口
 
-Core 会话、名册、身份和命令位于 `championships-core` 的 `api/test` 与 `command/game` 包；默认 Event profile 位于 `src/main/resources/test/events/`。Harness 位于 `championships-test-harness`，不打包进任何生产插件。Core 与 Worker 的 `test.enabled` 默认关闭，测试部署必须使用独立数据域。
+Core 会话、名册、身份和命令位于 `championships-core` 的 `api/test` 与 `command/game` 包；默认 Event profile 位于 `src/main/resources/test/events/`。Harness 位于 `championships-test-harness`，不打包进任何生产插件。Core 与 Worker 的 `test.enabled` 默认关闭；生产与调试共用时可显式开启，但测试写入当前数据域且远程 Worker 仍受单自然世界 slot 限制。
 
 ## 验证矩阵
 

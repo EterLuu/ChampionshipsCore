@@ -22,7 +22,7 @@ PlaceholderAPI 可选；FastBoard、Redis 客户端和内部共享模块已包�
 mvn -B -ntp -pl championships-bingo-worker -am clean package
 ```
 
-将 `championships-bingo-worker/target/championships-bingo-worker-1.3-SNAPSHOT.jar` 与 PacketEvents 安装到独立 Folia 的 `plugins/`。首次启动生成配置时默认 `enabled: false`，`test.enabled: false`；停止服务器后填写配置、准备世界和代理路由，再按部署用途分别启用 Worker 和测试入口。
+将 `championships-bingo-worker/target/championships-bingo-worker-1.3-SNAPSHOT.jar` 与 PacketEvents 安装到 Folia 的 `plugins/`。首次启动生成配置时默认 `enabled: false`，`test.enabled: false`；停止服务器后填写配置、准备世界和代理路由，再按部署用途启用 Worker 和测试入口。生产与调试共用时仍只有一个自然世界 ownership slot，不能让正式 Bingo 与测试 Bingo 并发占用同一 Worker。
 
 ## 配置
 
@@ -30,7 +30,7 @@ mvn -B -ntp -pl championships-bingo-worker -am clean package
 
 ```yaml
 enabled: true
-# 测试部署另行设置 test.enabled: true；生产保持 false。
+# 生产与调试共用时可设置为 true；默认 false，且不会增加自然世界 slot。
 test:
   enabled: false
 worker-id: bingo-1

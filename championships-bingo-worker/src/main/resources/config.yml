@@ -1,5 +1,6 @@
 enabled: false
-# Independent opt-in: a production Worker rejects TEST/TEST_EVENT before acquiring its world slot.
+# Explicit opt-in: a Worker may accept TEST/TEST_EVENT together with normal traffic, but it still
+# owns one natural-world slot and cannot run another Bingo match until the previous slot is reset.
 # Pending release journals are recovered even with test.enabled=false.
 test:
   enabled: false

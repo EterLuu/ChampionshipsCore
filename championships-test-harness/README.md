@@ -1,6 +1,6 @@
 # Championships Test Harness
 
-Harness 是 ChampionshipsCore 的通用真实协议客户端工具。它连接隔离的 Paper、Folia 或 BungeeCord 测试环境，完成 AuthMe 登录、跨服、传送确认、重生和 keep-alive，并输出每个 Bot 的连接状态。Core 继续负责队伍、玩法、计分和结算；Harness 不复制任何游戏规则。
+Harness 是 ChampionshipsCore 的通用真实协议客户端工具。它连接 Paper、Folia 或 BungeeCord 测试环境，也可以连接已明确开启调试入口的生产链路，完成 AuthMe 登录、跨服、传送确认、重生和 keep-alive，并输出每个 Bot 的连接状态。Core 继续负责队伍、玩法、计分和结算；Harness 不复制任何游戏规则。
 
 Harness 使用支持 Minecraft 26.3 的 `@wp2508/minecraft-protocol` 1.69.5，不依赖 Bukkit、BungeeCord、AuthMe 或 Core API，也不会打包进生产插件。它适合 1 个或 64 个测试身份，身份来源由认证链路决定。
 
@@ -37,7 +37,7 @@ CC_TEST_REPORT=/tmp/cc-game-test-harness/reports/bots.json \
 npm run connect
 ```
 
-`CC_TEST_HOST` 应指向隔离 BungeeCord。`CC_TEST_MODE=window` 会在固定窗口结束；`idle` 只验证连接和基础状态，`look`、`walk` 是协议动作 profile，`bingo-walk` 保留给旧脚本。它们都不代替具体游戏的动作脚本。
+`CC_TEST_HOST` 应指向测试或受控生产 BungeeCord。`CC_TEST_MODE=window` 会在固定窗口结束；`idle` 只验证连接和基础状态，`look`、`walk` 是协议动作 profile，`bingo-walk` 保留给旧脚本。它们都不代替具体游戏的动作脚本。
 
 `CC_TEST_CLIENTS_PER_PROCESS` 默认为 8。64 个连接由 8 个 Node worker 承载，协调进程汇总精确名册、退出码、重连、传送确认、死亡/重生、keep-alive 和事件循环延迟。任何 worker 缺少报告、Bot 名称重复/遗漏、提前断线或结束时不在世界中，汇总报告都会返回非零退出码。
 
@@ -89,14 +89,14 @@ Bot 的 UUID 由 AuthProxy、BungeeCord、Paper 和身份平台提供。Core lea
 
 本地编排器先确认 MariaDB、Redis、Core、Worker 和代理健康，再启动 Harness。Paper 与依赖服务应在同一 Docker network 中运行；使用宿主端口时，从实际 Paper network namespace 检查可达性。首次使用可先用 1、4、8 个 Bot 检查 AuthMe 注册或预注册账号，再提升到 64 个。
 
-每次运行使用独立的报告目录、stop file、测试身份域和 Redis namespace。结束后保留报告和服务端日志，确认 Core `status` 已回到无活动会话，再清理临时环境。Harness 不删除 Core reservation 或 Worker release journal，也不修改认证门禁。
+每次运行使用独立的报告目录和 stop file；生产调试模式还必须提前确认测试写入、Bot 身份和正式赛程资源安排。结束后保留报告和服务端日志，确认 Core `status` 已回到无活动会话，再清理临时环境。Harness 不删除 Core reservation 或 Worker release journal，也不修改认证门禁。
 
 动作 profile 的职责说明见 [`src/profiles/README.md`](src/profiles/README.md)，Core 会话和命令见 [无人测试设计](../docs/game-test-research.md) 与 [命令参考](../docs/commands.md)。
 
 ## Core test interface orchestration
 
-Set `CC_TEST_CORE_AUTO_SESSION=true` to let the coordinator drive an isolated Core
-test session through its RCON console. This mode requires `resident`, `idle`, the
+Set `CC_TEST_CORE_AUTO_SESSION=true` to let the coordinator drive a Core test
+session through its RCON console. This mode requires `resident`, `idle`, the
 cc-web identity mode, and the complete `autobot00` through `autobot63` roster:
 
 ```text
@@ -104,9 +104,9 @@ CC_TEST_MODE=resident \
 CC_TEST_ACTION=idle \
 CC_TEST_IDENTITY_MODE=cc-web \
 CC_TEST_CORE_AUTO_SESSION=true \
-CC_TEST_CORE_RCON_HOST=127.0.0.1 \
+CC_TEST_CORE_RCON_HOST=cc-core \
 CC_TEST_CORE_RCON_PORT=25575 \
-CC_TEST_CORE_RCON_PASSWORD=<isolated-rcon-password> \
+CC_TEST_CORE_RCON_PASSWORD=<private-rcon-password> \
 CC_TEST_CORE_SESSION_MODE=event \
 CC_TEST_CORE_EVENT_PROFILE=smoke \
 CC_TEST_STOP_FILE=/tmp/cc-game-test-harness/run.finished \
@@ -119,8 +119,9 @@ For a single game use `CC_TEST_CORE_SESSION_MODE=single` together with
 `single/event start`, `lease web`, `status`, `run`, and `stop --confirm` through
 RCON. It waits for `READY`, 64 bound seats, and 16 transient teams before
 starting the game. When Core reaches `COMPLETED`, it writes the stop file so all
-Bot workers disconnect cleanly. RCON is intended for an isolated test server;
-the default remains manual Harness operation.
+Bot workers disconnect cleanly. Run the Harness inside the Core/Bungee private
+network or use an equally restricted route; never publish RCON publicly. The
+default remains manual Harness operation.
 
 `CC_TEST_WEB_DISABLE_ON_FINISH=true` is an explicit opt-in to call cc-web's
 `/api/internal/test/bots/disable` endpoint after cleanup. Persistent Bot
