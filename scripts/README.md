@@ -6,6 +6,7 @@
 | --- | --- | --- |
 | `format-java.sh` | 按 Google Java Format 1.33.0 AOSP 样式格式化或检查 Maven Java 源码 | Bash、Git、ripgrep、curl、JDK 25、Python 3.11+ |
 | `check-source-layout.py` | 检查生产/测试分离、package 路径和领域归属 | Python 3.11+ 标准库 |
+| `rotate-production-secrets.sh` | 轮换 Web/Bridge/AuthMe/测试会话凭据并写入 Core、Bungee、Bingo 生产配置 | Bash、OpenSSL、Python 3.11+、root |
 | `buildmart_blueprint_audit.py` | 只读检查蓝图难度与材料区覆盖，输出 Markdown、CSV、JSON | Python 3.11+ 标准库 |
 
 ## 开发检查
@@ -16,6 +17,19 @@ python3 scripts/check-source-layout.py
 ```
 
 省略 `--check` 会格式化 Java 文件。格式器首次运行下载固定版本 JAR 到 `/tmp`，不在仓库保存工具二进制。
+
+## 生产密钥轮换
+
+脚本默认只做路径和配置预检；明确使用 `--apply` 才会生成新密钥并原子写入生产文件：
+
+```bash
+scripts/rotate-production-secrets.sh --dry-run
+scripts/rotate-production-secrets.sh --apply
+```
+
+它会轮换 cc-web Bridge 客户端、Core 测试 Harness/lease、AuthMe Bungee 共享 secret，并同步 `cc-core`、`cc-bungeecord` 与 `cc-bingo`。`BRIDGE_HMAC_SECRET`、数据库密码和 Redis/LuckPerms 外部凭据不会被直接轮换；这些值有独立的加密或外部存储生命周期。RCON 默认保持关闭，只有明确使用 `--enable-rcon` 才会为 Core 设置密码并打开它。
+
+脚本不会重启服务。写入后必须在维护窗口通过 MCSManager 重启 `cc-web`、`cc-bungeecord`、`cc-core` 和 `cc-bingo`，否则已加载的 JVM 仍使用旧凭据。每次轮换会在 `/data/cc-production-secret-rotations/<UTC 时间>/` 保存权限为 `0600` 的回滚副本。
 
 Python 格式由根目录 `pyproject.toml` 管理。可在临时虚拟环境安装固定版本 Ruff：
 
