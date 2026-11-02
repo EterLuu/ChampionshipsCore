@@ -11,6 +11,7 @@ umask 077
 SCRIPT_NAME="$(basename "$0")"
 ACTION="dry-run"
 ENABLE_RCON=0
+RECREATE_WEB=0
 
 CORE_DIR="${CC_ROTATE_CORE_DIR:-/home/minecraft/minecraft/cc-core}"
 BINGO_DIR="${CC_ROTATE_BINGO_DIR:-/home/minecraft/minecraft/cc-bingo}"
@@ -28,7 +29,7 @@ die() {
 
 usage() {
     cat <<'EOF'
-Usage: scripts/rotate-production-secrets.sh [--dry-run|--apply] [--enable-rcon]
+Usage: scripts/rotate-production-secrets.sh [--dry-run|--apply] [--enable-rcon] [--recreate-web]
 
 Rotate and write the production credentials used by cc-web, cc-core,
 cc-bungeecord and cc-bingo.
@@ -36,11 +37,14 @@ cc-bungeecord and cc-bingo.
   --dry-run       Validate paths and show the files that would change (default)
   --apply         Generate new credentials and atomically update the files
   --enable-rcon   Also enable Core RCON and generate a new Core RCON password
+  --recreate-web  Recreate cc-web after writing .env so Docker reloads it
   -h, --help      Show this help
 
-The script never restarts production services.  After --apply, restart
-cc-web, cc-bungeecord, cc-core and cc-bingo through MCSManager in one
-maintenance window.  RCON is left disabled unless --enable-rcon is supplied.
+The script never restarts Minecraft services.  --recreate-web only recreates
+the Docker Compose Web container; a plain `docker compose restart web` does not
+reload .env.  After --apply, restart cc-bungeecord, cc-core and cc-bingo
+through MCSManager in one maintenance window.  RCON is left disabled unless
+--enable-rcon is supplied.
 
 Override paths with CC_ROTATE_* environment variables.  The generated master
 file defaults to /data/cc-production-secrets.env and is mode 0600.
@@ -52,6 +56,7 @@ while (($#)); do
         --dry-run) ACTION="dry-run" ;;
         --apply) ACTION="apply" ;;
         --enable-rcon) ENABLE_RCON=1 ;;
+        --recreate-web) RECREATE_WEB=1 ;;
         -h|--help) usage; exit 0 ;;
         *) die "unknown option: $1 (use --help)" ;;
     esac
@@ -550,5 +555,22 @@ else:
     print("RCON was left unchanged and disabled")
 PY
 
-printf '%s\n' "Rotation finished. Restart cc-web, cc-bungeecord, cc-core and cc-bingo through MCSManager before using the new credentials."
-printf '%s\n' "The script did not restart or stop any production service."
+if ((RECREATE_WEB)); then
+    command -v docker >/dev/null 2>&1 || die "docker is required for --recreate-web"
+    [[ -f "$WEB_DIR/compose.yml" ]] || die "cc-web compose.yml is missing: $WEB_DIR/compose.yml"
+    (cd "$WEB_DIR" && docker compose up -d --no-deps --force-recreate web)
+    for _ in $(seq 1 60); do
+        web_status="$(docker inspect --format '{{.State.Health.Status}}' cc-web 2>/dev/null || true)"
+        [[ "$web_status" == healthy ]] && break
+        sleep 1
+    done
+    [[ "${web_status:-}" == healthy ]] || die "cc-web did not become healthy after recreation"
+    printf '%s\n' "cc-web was recreated and is healthy"
+fi
+
+if ((RECREATE_WEB)); then
+    printf '%s\n' "Rotation finished. Restart cc-bungeecord, cc-core and cc-bingo through MCSManager before using the new credentials."
+else
+    printf '%s\n' "Rotation finished. Recreate cc-web with Docker Compose, then restart cc-bungeecord, cc-core and cc-bingo through MCSManager."
+fi
+printf '%s\n' "The script did not restart or stop Minecraft services."

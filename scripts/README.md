@@ -25,11 +25,13 @@ python3 scripts/check-source-layout.py
 ```bash
 scripts/rotate-production-secrets.sh --dry-run
 scripts/rotate-production-secrets.sh --apply
+# 可选：写入后立即重新创建 cc-web，使 Docker 重新读取 .env
+scripts/rotate-production-secrets.sh --apply --recreate-web
 ```
 
 它会轮换 cc-web Bridge 客户端、Core 测试 Harness/lease、AuthMe Bungee 共享 secret，并同步 `cc-core`、`cc-bungeecord` 与 `cc-bingo`。`BRIDGE_HMAC_SECRET`、数据库密码和 Redis/LuckPerms 外部凭据不会被直接轮换；这些值有独立的加密或外部存储生命周期。RCON 默认保持关闭，只有明确使用 `--enable-rcon` 才会为 Core 设置密码并打开它。
 
-脚本不会重启服务。写入后必须在维护窗口通过 MCSManager 重启 `cc-web`、`cc-bungeecord`、`cc-core` 和 `cc-bingo`，否则已加载的 JVM 仍使用旧凭据。每次轮换会在 `/data/cc-production-secret-rotations/<UTC 时间>/` 保存权限为 `0600` 的回滚副本。
+脚本不会重启 Minecraft 服务。`--recreate-web` 会执行 `docker compose up -d --no-deps --force-recreate web`，因为普通 `docker compose restart web` 不会重新读取 `.env`；不使用该选项时，写入后也必须通过 Compose 重新创建 cc-web。随后在维护窗口通过 MCSManager 重启 `cc-bungeecord`、`cc-core` 和 `cc-bingo`，否则已加载的 JVM 仍使用旧凭据。每次轮换会在 `/data/cc-production-secret-rotations/<UTC 时间>/` 保存权限为 `0600` 的回滚副本。
 
 Python 格式由根目录 `pyproject.toml` 管理。可在临时虚拟环境安装固定版本 Ruff：
 
