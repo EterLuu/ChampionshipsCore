@@ -18,7 +18,7 @@
 
 ## 查看与精修
 
-重启 `cc-core` 后自动创建世界、预热区块并分批生成原型。管理员进入任意 Riptide 地图的 map edit 后，在“准备步骤”中点击“规则介绍试玩场地”即可传送到共享教学世界；编辑完成后返回地图世界，再保存草稿、发布或退出地图编辑。世界出生点位于后方安全栈道。交互机制在正式赛事第一轮介绍期间运行。`/cc admin world teleport riptide_introduction` 仍可作为只读查看的备用入口。
+重启 Core 服务后自动创建世界、预热区块并分批生成原型。管理员进入任意 Riptide 地图的 map edit 后，在“准备步骤”中点击“规则介绍试玩场地”即可传送到共享教学世界；编辑完成后返回地图世界，再保存草稿、发布或退出地图编辑。世界出生点位于后方安全栈道。交互机制在正式赛事第一轮介绍期间运行。`/cc admin world teleport riptide_introduction` 仍可作为只读查看的备用入口。
 
 配置位于 `plugins/ChampionshipsCore/riptiderush/introduction/arena.yml`。`enabled: false` 恢复原规则介绍。`spawn` 定义教学木筏起点，默认 `(0.5, 80, 0.5)`，路线向 Z 正方向延伸；教学世界名称固定，避免将生成器指向大厅或正式地图。配置变更通过重启加载。
 

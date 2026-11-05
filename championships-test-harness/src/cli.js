@@ -28,8 +28,8 @@ const DEFAULTS = Object.freeze({
   action: 'idle',
   identityMode: 'offline',
   webRequestTimeoutMs: 10000,
-  // AuthBridge polls cc-web's outbox on a roughly ten-second cadence.  Keep a
-  // full poll interval plus margin between PROVISION and the first login.
+  // Provisioning is published to the authentication bridge asynchronously.
+  // Wait one bridge poll interval plus margin before the first login.
   webProvisionSettleMs: 15000,
   botPersistent: true,
   coreSessionMode: 'single',

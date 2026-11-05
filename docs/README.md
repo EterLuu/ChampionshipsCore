@@ -22,7 +22,7 @@
 | [自由游玩](daily-mode.md) | DAILY 队列、同行小队、战绩和占位符 |
 | [无人测试设计](game-test-research.md) | 64 Bot、测试会话、resident 和 cc-web 身份 |
 | [无人测试矩阵](game-test-matrix.md) | 各游戏的测试拓扑和动作验证入口 |
-| [无人测试当前状态](game-test-progress.md) | 当前已完成能力与后续验证范围 |
+| [无人测试支持范围](game-test-progress.md) | 已支持能力、验证顺序与原生验收边界 |
 | [积分与展示](presentation.md) | 权重、投票、观战、聊天、PAPI 与侧栏 |
 | [Riptide 编排](riptide-stage-mechanics.md) | 关卡池、木筏、淘汰和地图试玩 |
 

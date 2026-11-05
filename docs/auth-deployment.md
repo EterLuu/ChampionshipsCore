@@ -62,7 +62,7 @@ test:
     server-id: <this-core-instance>
     hmac-secret: <Core 与签发端共享的随机密钥>
   identity:
-    base-url: https://cc-web.internal
+    base-url: https://<cc-web-host>
     key-id: <TEST_HARNESS keyId>
     hmac-secret: <TEST_HARNESS 专用密钥>
     allow-insecure-private-http: false

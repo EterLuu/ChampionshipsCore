@@ -83,4 +83,4 @@ CI 读取 Harness JSON 报告和 Core/Test Event 状态，至少要求：
 - `mechanismPackets` 包含当前 profile 的机制标签；服务端结果必须由 Core/Worker 的事件、积分、世界或 Redis 状态核对，客户端动作包本身不能作为得分证据。
 - 单局结束后执行 `stop --confirm`，检查临时队伍、lease、世界 slot 和延迟任务清零；Test Event 再启动第二轮确认没有旧状态泄漏。
 
-当前只有通用 resident 生命周期和 TNTRun `astra` 两轮 Event 有原生运行证据；2026-11-03 通过 cc-bungeecord 容器普通 listener `25566` 完成 64 Bot 的连接、认证、UUID、队伍、传送和长驻基线，并完成单 Bot `tntrun` 的 `WAITING` 阶段感知 smoke（含受限实体、物品和消息样本），但没有启动比赛，因此不增加任何游戏机制、阶段掉线、积分或第二场证据。`npm run test:scenarios` 已为全部 17 个 profile 提供协议级阶段/动作/重连/计分场景证据。其余行在完成对应地图的原生运行、积分核对和第二场验收前，不能标记为已完成。
+`npm run test:scenarios` 为全部 profile 提供协议级阶段、动作、重连、计分和结束场景证据。表格中的“当前证据”只描述代码与契约具备的能力；原生机制、阶段掉线、积分和第二场证据必须在对应地图上实际开局后补齐，未完成的行保持“可执行 profile；原生行为待验收”，不标记为已完成。

@@ -39,7 +39,7 @@ npm run connect
 
 `CC_TEST_HOST` 应指向测试或受控生产 BungeeCord。`CC_TEST_MODE=window` 会在固定窗口结束；`idle` 只验证连接和基础状态，`look`、`walk` 是协议动作 profile，`bingo-walk` 保留给旧脚本。`game` 通过矩阵 profile 按服务端阶段发送客户端动作。
 
-在当前 cc-bungeecord 部署中，普通测试 listener 是容器内的 `25566`（例如从同一 Docker network 使用 `CC_TEST_HOST=cc-bungeecord CC_TEST_PORT=25566`）；宿主映射的 `25567` 对应要求 PROXY protocol 的旧 listener，不能作为 Harness 的等价入口。
+`CC_TEST_HOST` 与 `CC_TEST_PORT` 指向代理提供给 Harness 的测试监听。应选择能接受普通客户端登录、并把真实来源地址传给后端的监听；如果某个监听要求 PROXY protocol，必须由可信代理补齐来源信息，不能用等价端口直接替代。
 
 管理员手动测试时可以让 resident Bot 按当前游戏发送动作基线：
 
@@ -61,7 +61,7 @@ npm run connect
 
 ```text
 CC_TEST_IDENTITY_MODE=cc-web \
-CC_TEST_WEB_BASE_URL=https://cc-web.internal \
+CC_TEST_WEB_BASE_URL=https://<cc-web-host> \
 CC_TEST_WEB_KEY_ID=test-harness \
 CC_TEST_WEB_HMAC_SECRET=<独立的至少32字节密钥> \
 CC_TEST_BOT_ALLOWED_CIDRS=10.20.0.0/16 \
@@ -73,7 +73,7 @@ Harness 通过 `TEST_HARNESS` HMAC 客户端调用 `/api/internal/test/bots/prov
 
 `CC_TEST_BOT_ALLOWED_CIDRS` 应与代理和 AuthBridge 的实际网络一致。cc-web 为每个 Bot 返回的 CIDR 会参与准入检查，账号被停用、撤销或没有有效 CIDR 时，Proxy、Bridge、Yggdrasil 和 Core 都停止接受该 Bot。
 
-Provision 接口成功后默认等待 `CC_TEST_WEB_PROVISION_SETTLE_MS=15000` 毫秒，让 cc-web outbox、AuthMe 和 Bridge 消费新的密码；已由外部同步探针确认完成时可设为 `0`。生产链路的 Bridge 按轮询周期消费 outbox，过短的 settle 会让首次登录在 `PROVISION` 尚未 ACK 时被拒绝。
+Provision 接口成功后默认等待 `CC_TEST_WEB_PROVISION_SETTLE_MS=15000` 毫秒，让身份服务、AuthMe 和 Bridge 消费新的密码；调用方已确认同步完成时可设为 `0`。Bridge 按轮询周期消费 outbox，过短的 settle 会让首次登录在 provision 尚未 ACK 时被拒绝。
 
 设置 `CC_TEST_WEB_DISABLE_ON_FINISH=true` 时，无论是单进程还是分片运行，Harness 在写完报告后都会停用本次 slot；默认值为 `false`，便于 resident 管理员反复使用同一 Bot 池。
 
@@ -127,7 +127,7 @@ CC_TEST_ACTION=game \
 CC_TEST_GAME=tntrun \
 CC_TEST_IDENTITY_MODE=cc-web \
 CC_TEST_CORE_AUTO_SESSION=true \
-CC_TEST_CORE_RCON_HOST=cc-core \
+CC_TEST_CORE_RCON_HOST=<core-host> \
 CC_TEST_CORE_RCON_PORT=25575 \
 CC_TEST_CORE_RCON_PASSWORD=<private-rcon-password> \
 CC_TEST_CORE_SESSION_MODE=event \

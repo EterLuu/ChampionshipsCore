@@ -89,9 +89,19 @@ Harness 也可以自动驱动完整会话。设置 `CC_TEST_CORE_AUTO_SESSION=tr
 
 Core 和 Worker 的 `test.enabled` 默认都是 `false`。生产与调试共用部署可以显式打开，开关只负责准入，不会自动创建沙箱或隔离数据。Core 测试会话仍使用 transient 队伍和自己的 ownership；远程 Bingo Worker 只有一个自然世界 slot，正式 Bingo 运行或上一场测试尚未释放时必须拒绝/等待新的测试 match。
 
-生产调试上线时，Core 的 `test.enabled`、`test.auth.server-id`、`test.auth.hmac-secret`、`test.identity.*` 与 Worker 的 `test.enabled` 作为同一变更准备；`server-id` 对每个 Core 实例唯一，密钥不写入仓库。`test.identity.hmac-secret` 与 Harness 的 Web API secret 是同一个受 `TEST_HARNESS` role 限制的客户端凭据；`test.auth.hmac-secret` 则必须使用独立的 `TEST_LEASE_HMAC_SECRET`，只在 Web 签发和 Core 验证 lease 的链路出现。Harness 通过 Bungee 进入正常登录链路，RCON 仅在需要自动驱动 Core 命令时单独配置于受控 Docker 网络，不在宿主公网发布 `25575`；Bot 仅登录/常驻时不需要 RCON。开启后先执行 `status` 和 1 个 Bot 的登录验证，再启动完整 64 Bot 或 Event；正式比赛运行中不要抢占同一地图实例或 Bingo Worker 世界 slot。
+生产调试上线时，Core 的 `test.enabled`、`test.auth.server-id`、`test.auth.hmac-secret`、`test.identity.*` 与 Worker 的 `test.enabled` 作为同一变更准备；`server-id` 对每个 Core 实例唯一，密钥不写入仓库。`test.identity.hmac-secret` 与 Harness 的 Web API secret 是同一个受 `TEST_HARNESS` role 限制的客户端凭据；`test.auth.hmac-secret` 则必须使用独立的 `TEST_LEASE_HMAC_SECRET`，只在 Web 签发和 Core 验证 lease 的链路出现。Harness 通过代理进入正常登录链路，RCON 仅在需要自动驱动 Core 命令时单独配置于受控内部网络，不向公网发布 RCON 端口；Bot 仅登录/常驻时不需要 RCON。开启后先执行 `status` 和 1 个 Bot 的登录验证，再启动完整 64 Bot 或 Event；正式比赛运行中不要抢占同一地图实例或 Bingo Worker 世界 slot。
 
 远程 Bingo 使用内部协议 v10，Core、Worker、AuthBridge 和 AuthProxy 需要配套版本。Worker 的一场测试比赛占用三个世界，结束时等待所有玩家返回、写入 release journal、发布 `RELEASED`，再由外部监督流程重建世界。
+
+## 与正式功能的边界
+
+没有活动测试会话时，正式 `GAME`、正式 `EVENT` 和 `DAILY` 完全使用原有队伍、赛程、计分、身份和 Redis 路径；`cc.test` 与 `cc.test.automation` 只是命令入口，测试关闭时不会改变普通功能，也不会把普通玩家或正式比赛转成测试身份或 Test Event。
+
+测试会话只为测试身份、临时队伍、比赛实例和远程 Worker 建立独立所有权：session UUID、generation、64 席位 roster、Bot UUID、开发者替换席位和 transient team 都由 `TestSessionManager` 记录，延迟回调带 generation，stop、reload、卸载和下一场都会让旧回调失效。lease 绑定 server ID、session/generation、用户名、期望 UUID、过期时间和 nonce，登录仍以 Paper 实际观察到的 UUID 为权威；transient team 不写入正式队伍关系。测试结束先恢复游戏实例和玩家，再撤销 lease、移除临时队伍、清理 ephemeral 身份。
+
+`TEST`/`TEST_EVENT` 通过 `GameExecutionContext` 区分玩法流程与正式赛程所有权：游戏仍执行真实准备、倒计时、玩法、结算和地图恢复，Test Event 由会话按 profile 推进轮次而不接管正式 Schedule；测试上下文允许写入结果、Rank、Redis、事件和远程 match 以便校验，`stop --confirm` 走统一恢复入口，远程 Bingo 等 Worker `RELEASED` 后才释放世界。
+
+Core 与 Worker 的 `test.enabled` 默认关闭；在共用部署中显式开启只打开准入，不会自动创建沙箱或隔离数据，资源冲突仍需由运行安排避免。涉及 common 协议、共享展示、AuthBridge/AuthProxy 或 Worker 释放的版本时，Core、Worker 和认证组件需要配套构建与重启；只修改文档、测试夹具或 Harness 不需要替换生产 JAR。
 
 ## 代码位置
 
