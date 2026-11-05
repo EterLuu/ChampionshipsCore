@@ -54,8 +54,12 @@ function attachClient(client, settings, index, result, state, timers = globalThi
   state.entities = new Map();
   state.blockChanges = state.blockChanges || 0;
   state.targetBlock = state.targetBlock || null;
+  state.recentBlocks = state.recentBlocks || [];
   state.window = null;
   state.menuSent = false;
+  state.hotbar = state.hotbar || new Array(9).fill(null);
+  state.inventorySlots = state.inventorySlots || {};
+  state.heldSlot = Number.isInteger(state.heldSlot) ? state.heldSlot : 0;
   state.injectedDisconnectPhases = state.injectedDisconnectPhases || new Set();
   const increment = key => {
     result[key] = (result[key] || 0) + 1;
@@ -106,9 +110,23 @@ function attachClient(client, settings, index, result, state, timers = globalThi
           : 0;
         return { entityId, distance, hasPosition };
       })
+      // Once we know our own position, ignore entities the server has not
+      // positioned yet: an unpositioned target cannot be aimed or reached.
+      .filter(candidate => position == null || candidate.hasPosition)
       .filter(candidate => candidate.distance <= maxDistance)
       .sort((a, b) => a.distance - b.distance);
     return candidates.length ? candidates[0].entityId : null;
+  };
+  const selectHeldSlot = slot => {
+    if (!Number.isInteger(slot) || slot < 0 || slot > 8) return false;
+    client.write('held_item_slot', { slotId: slot });
+    state.heldSlot = slot;
+    return true;
+  };
+  const rememberBlock = location => {
+    if (!location) return;
+    state.recentBlocks.push({ x: location.x, y: location.y, z: location.z });
+    if (state.recentBlocks.length > 16) state.recentBlocks.shift();
   };
   const stopActions = () => {
     if (actionTimer != null) timers.clearInterval(actionTimer);
@@ -124,6 +142,7 @@ function attachClient(client, settings, index, result, state, timers = globalThi
     state.worldReady = false;
     state.voteSent = false;
     state.targetBlock = null;
+    state.recentBlocks = [];
     state.entities.clear();
     if (!preservePhase) phaseTracker.reset();
     state.phase = phaseTracker.phase;
@@ -172,6 +191,11 @@ function attachClient(client, settings, index, result, state, timers = globalThi
             menuSlot: settings.menuSlot,
             menuSent: state.menuSent,
             targetBlock: state.targetBlock,
+            recentBlocks: state.recentBlocks,
+            hotbar: state.hotbar,
+            inventory: state.inventorySlots,
+            heldSlot: state.heldSlot,
+            selectHeldSlot,
             allowWorldMutation: settings.allowWorldMutation === true,
             nextSequence,
             nearestEntity,
@@ -235,12 +259,34 @@ function attachClient(client, settings, index, result, state, timers = globalThi
     evidence('entities', { event: 'destroy', entityIds: entities.slice(0, 16) });
     for (const entityId of entities) state.entities.delete(entityId);
   });
+  // Keep tracked entity positions current for aim/reach decisions.  These are
+  // pure observation packets; the harness never derives a target of its own.
+  const moveEntity = (packet, absolute) => {
+    if (!Number.isInteger(packet.entityId)) return;
+    const entity = state.entities.get(packet.entityId);
+    if (!entity) return;
+    if (absolute) {
+      if (Number.isFinite(packet.x)) entity.x = packet.x;
+      if (Number.isFinite(packet.y)) entity.y = packet.y;
+      if (Number.isFinite(packet.z)) entity.z = packet.z;
+    } else {
+      if (Number.isFinite(packet.dX)) entity.x = (entity.x || 0) + packet.dX;
+      if (Number.isFinite(packet.dY)) entity.y = (entity.y || 0) + packet.dY;
+      if (Number.isFinite(packet.dZ)) entity.z = (entity.z || 0) + packet.dZ;
+    }
+    if (Number.isFinite(packet.yaw)) entity.yaw = packet.yaw;
+    if (Number.isFinite(packet.pitch)) entity.pitch = packet.pitch;
+  };
+  client.on('rel_entity_move', packet => moveEntity(packet, false));
+  client.on('entity_move_look', packet => moveEntity(packet, false));
+  client.on('entity_teleport', packet => moveEntity(packet, true));
   client.on('block_change', packet => {
     const location = packet.location || packet.position;
     if (!location || !Number.isInteger(location.x) || !Number.isInteger(location.y) || !Number.isInteger(location.z)) return;
     // Keep one server-observed block as a legal target for BuildMart-style
     // profiles.  Never invent a coordinate when the server has not sent one.
     state.targetBlock = { x: location.x, y: location.y, z: location.z };
+    rememberBlock(location);
     serverEvidence('block-change');
     state.blockChanges = (state.blockChanges || 0) + 1;
     state.observations.blockChanges += 1;
@@ -257,16 +303,26 @@ function attachClient(client, settings, index, result, state, timers = globalThi
     observe('open_window', packet);
   });
   client.on('close_window', () => { state.window = null; });
+  const updateInventory = (slot, item) => {
+    if (!Number.isInteger(slot)) return;
+    state.inventorySlots[slot] = item || null;
+    if (slot >= 36 && slot <= 44) state.hotbar[slot - 36] = item || null;
+  };
   client.on('set_slot', packet => {
     serverEvidence('item');
     if (state.window && packet.windowId === state.window.windowId && Number.isInteger(packet.stateId))
       state.window.stateId = packet.stateId;
+    if (packet.windowId === 0) updateInventory(packet.slot, packet.item);
     evidence('items', { event: 'slot', windowId: packet.windowId, slot: packet.slot, item: packet.item });
   });
   client.on('window_items', packet => {
     serverEvidence('item');
     if (state.window && packet.windowId === state.window.windowId && Number.isInteger(packet.stateId))
       state.window.stateId = packet.stateId;
+    if (packet.windowId === 0) {
+      const slots = packet.items || packet.slots || [];
+      slots.forEach((item, slot) => updateInventory(slot, item));
+    }
     evidence('items', { event: 'window', windowId: packet.windowId, count: (packet.items || packet.slots || []).length });
   });
   client.on('scoreboard_score', packet => {

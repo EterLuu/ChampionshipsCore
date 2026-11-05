@@ -206,7 +206,8 @@ function applyMatrixExpectations(settings) {
   const contract = gameContract(settings.game);
   if (!settings.expectedPhases) settings.expectedPhases = 'WAITING,PROGRESS,END';
   if (!settings.expectedMechanisms) settings.expectedMechanisms = contract.mechanism;
-  if (!settings.expectedActions) settings.expectedActions = contract.actions.join(',');
+  if (!settings.expectedActions)
+    settings.expectedActions = (contract.signatureActions || contract.actions).join(',');
   if (!settings.expectedServerEvidence) settings.expectedServerEvidence = contract.serverEvidence.join(',');
   if (settings.expectedScorePackets == null) settings.expectedScorePackets = 1;
   if (!settings.expectedReconnectPhases && settings.disconnectPhases?.length)

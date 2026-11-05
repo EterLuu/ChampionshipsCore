@@ -33,9 +33,14 @@ test('matrix action and evidence declarations use the shared vocabulary', () => 
   assert.ok(SERVER_EVIDENCE_TYPES.includes('scoreboard'));
   assert.deepEqual(validateMatrix({ bad: {
     token: 'bad', mechanism: 'x', actions: ['typo'], disconnect: ['PROGRESS'],
-    score: ['points'], serverEvidence: ['unknown'], checks: ['x'], phaseActions: {},
+    score: ['points'], serverEvidence: ['unknown'],
+    signatureActions: ['block-interact'], checks: ['x'], phaseActions: {},
     reconnect: [{ phase: 'PROGRESS' }],
-  }}), ['bad: unsupported action typo', 'bad: unsupported server evidence unknown']);
+  }}), [
+    'bad: unsupported action typo',
+    'bad: unsupported server evidence unknown',
+    'bad: signature action block-interact is not in actions',
+  ]);
 });
 
 test('the documentation table names every executable game token', (t) => {

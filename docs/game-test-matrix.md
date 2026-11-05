@@ -6,7 +6,9 @@
 
 ## Profile 和运行方式
 
-`src/matrix.js` 是这份文档的可执行契约，逐一声明每个游戏各阶段动作、掉线阶段及重连后必须保留的身份/队伍/世界/回合/结算状态、机制证据、积分信号和生命周期检查项；`src/profiles/index.js` 将它与具体客户端 profile 合并。`src/packets.js` 是唯一的动作发包入口。profile 可以组合移动、跳跃、冲刺、视角、挥手、使用物品、攻击、方块挖掘/放置、实体交互、投票点击和窗口操作。profile 不直接判断胜负，也不伪造服务端分数。
+`src/matrix.js` 是这份文档的可执行契约，逐一声明每个游戏各阶段动作、掉线阶段及重连后必须保留的身份/队伍/世界/回合/结算状态、机制证据、积分信号和生命周期检查项；`src/profiles/index.js` 将它与具体客户端 profile 合并。每个游戏还声明 `signatureActions`：`actions` 是合法动作词汇，`signatureActions` 是必须在 `PROGRESS` 中实际触发的机制动作，报告校验默认按 signature 断言。`src/packets.js` 是唯一的动作发包入口。profile 可以组合移动、跳跃、冲刺、视角、挥手、使用物品、攻击、方块挖掘/放置、实体交互、投票点击和窗口操作。profile 不直接判断胜负，也不伪造服务端分数。
+
+游戏动作是**状态驱动**而不是盲目轮询：实体目标来自服务端实体包、方块目标来自 `block_change`、武器/道具来自玩家背包槽位；攻击和交互先做 4.5 格距离判定，超出范围改为转向移动；出手前按目标坐标计算 yaw/pitch 瞄准；战斗类先切换真实武器槽；BuildMart 只在显式开启世界修改时对已观察方块挖掘/放置。因此每个 Bot 的动作会随服务端世界状态变化，而不是每 tick 固定把全部动作发一遍。
 
 CI 的单次连接测试使用 `window`；需要真实比赛生命周期时使用自动 Core session。阶段掉线回归通过 `CC_TEST_DISCONNECT_PHASE` 注入一次断线，Harness 使用既有 reconnect 逻辑重新登录，并在报告中记录 `phaseTransitions`、`injectedDisconnects`、`deaths`、`respawnPackets` 和 `mechanismPackets`。
 

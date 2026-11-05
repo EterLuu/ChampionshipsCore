@@ -36,6 +36,30 @@ function phasePacket(text) {
   return { content: text };
 }
 
+// Each game reacts to a different observable entity type.  The scenario only
+// supplies what the server in that game would actually send.
+const ENTITY_TYPES = {
+  sulfursoccer: 'sulfur_cube',
+  battlebox: 'player',
+  parkourtag: 'player',
+  lasershowdown: 'player',
+  laserbox: 'player',
+  dodgebolt: 'player',
+  skywars: 'player',
+  frostbite: 'player',
+};
+
+function hotbarItems() {
+  // Player inventory slots 36..44 are the hotbar.  Provide a weapon, a block
+  // and a usable item so profiles can select real slots instead of guessing.
+  const items = new Array(45).fill(null);
+  items[36] = { itemCount: 1, itemId: 1, name: 'diamond_sword' };
+  items[37] = { itemCount: 16, itemId: 2, name: 'stone' };
+  items[38] = { itemCount: 1, itemId: 3, name: 'bow' };
+  items[39] = { itemCount: 8, itemId: 4, name: 'snowball' };
+  return items;
+}
+
 function runGameScenario(game) {
   const timers = fakeTimers();
   const result = { count: 1, loggedIn: 0, actionPackets: 0, fatalErrors: [] };
@@ -53,10 +77,11 @@ function runGameScenario(game) {
   client.emit('system_chat', phasePacket('Preparation phase'));
   client.emit('action_bar', { text: 'Starting in 3' });
   client.emit('set_title_text', { text: 'GO!' });
-  client.emit('entity_spawn', { entityId: 99, type: 'objective' });
+  client.emit('entity_spawn', { entityId: 99, type: ENTITY_TYPES[game] || 'objective', x: 1, y: 64, z: 1 });
   client.emit('entity_destroy', { entityIds: [98] });
   client.emit('block_change', { location: { x: 1, y: 63, z: 1 }, type: 1 });
-  client.emit('set_slot', { windowId: 2, slot: 0, stateId: 4, item: { itemCount: 1 } });
+  client.emit('window_items', { windowId: 0, stateId: 4, items: hotbarItems() });
+  client.emit('set_slot', { windowId: 0, slot: 36, stateId: 5, item: { itemCount: 1, itemId: 1, name: 'diamond_sword' } });
   timers.tick(24);
   const actionsBeforeDisconnect = client.writes.length;
   const writesBeforeDisconnect = client.writes.slice();

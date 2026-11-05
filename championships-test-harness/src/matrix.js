@@ -22,6 +22,30 @@ const SERVER_EVIDENCE_TYPES = deepFreeze([
   'item', 'scoreboard', 'block-change', 'entity-spawn', 'entity-destroy',
 ]);
 
+// The mechanic-defining action families a profile must actually exercise.  The
+// full `actions` list is the legal vocabulary; the signature is the subset that
+// proves the game-specific behavior ran (jumps/aims are legal everywhere but do
+// not by themselves demonstrate a mechanic).
+const SIGNATURE_ACTIONS = {
+  bingo: ['move-ground', 'use-item', 'entity-interact'],
+  tntrun: ['move', 'sprint', 'jump', 'swing'],
+  parkourtag: ['move', 'look', 'use-item'],
+  battlebox: ['attack', 'use-item'],
+  lasershowdown: ['look', 'swing', 'use-item'],
+  skywars: ['move', 'use-item', 'attack'],
+  tgttos: ['move', 'sprint', 'jump', 'look'],
+  dragoneggcarnival: ['entity-interact'],
+  parkourwarrior: ['move', 'sprint', 'jump', 'look'],
+  hotycodydusky: ['move', 'sprint', 'jump'],
+  buildmart: ['block-dig', 'block-place'],
+  dodgebolt: ['look', 'use-item'],
+  acerace: ['move', 'sprint', 'jump', 'look'],
+  riptide: ['move', 'sprint', 'jump'],
+  frostbite: ['look', 'use-item'],
+  laserbox: ['look', 'swing', 'use-item'],
+  sulfursoccer: ['attack', 'use-item'],
+};
+
 const SERVER_EVIDENCE = {
   bingo: ['item', 'scoreboard'], tntrun: ['block-change', 'scoreboard'],
   parkourtag: ['entity-destroy', 'scoreboard'], battlebox: ['entity-destroy', 'scoreboard'],
@@ -37,7 +61,7 @@ const SERVER_EVIDENCE = {
 const MATRIX_DEFINITIONS = {
   bingo: {
     token: 'bingo', topology: 'remote-worker', mechanism: 'task-progress',
-    actions: ['move-ground', 'use-item', 'entity-interact'],
+    actions: ['move-ground', 'use-item', 'entity-interact', 'block-dig'],
     disconnect: ['PREPARATION', 'PROGRESS', 'END'], score: ['points'],
     checks: ['manifest-freeze', 'task-event', 'death-respawn', 'three-world-release'],
   },
@@ -165,6 +189,7 @@ function reconnectExpectations(disconnect) {
 const GAME_TEST_MATRIX = deepFreeze(Object.fromEntries(
   Object.entries(MATRIX_DEFINITIONS).map(([game, contract]) => [game, {
     ...contract,
+    signatureActions: SIGNATURE_ACTIONS[game],
     serverEvidence: SERVER_EVIDENCE[game],
     phaseActions: phaseActions(contract.actions),
     reconnect: reconnectExpectations(contract.disconnect),
@@ -199,6 +224,12 @@ function validateMatrix(matrix = GAME_TEST_MATRIX) {
     if (Array.isArray(contract.serverEvidence)) {
       for (const evidence of contract.serverEvidence)
         if (!SERVER_EVIDENCE_TYPES.includes(evidence)) errors.push(`${game}: unsupported server evidence ${evidence}`);
+    }
+    if (!Array.isArray(contract.signatureActions) || contract.signatureActions.length === 0)
+      errors.push(`${game}: signature actions are required`);
+    if (Array.isArray(contract.signatureActions) && Array.isArray(contract.actions)) {
+      for (const action of contract.signatureActions)
+        if (!contract.actions.includes(action)) errors.push(`${game}: signature action ${action} is not in actions`);
     }
     if (!Array.isArray(contract.checks) || contract.checks.length === 0) errors.push(`${game}: mechanism checks are required`);
     if (!contract.phaseActions || !contract.reconnect
