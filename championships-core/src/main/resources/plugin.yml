@@ -20,7 +20,10 @@ permissions:
     description: ChampionshipsCore event and administration commands.
     default: op
   cc.test:
-    description: Unattended game test controls.
+    description: Resident Bot and manual test setup controls.
+    default: false
+  cc.test.automation:
+    description: Automated Core test session controls for development and CI.
     default: false
   cc.refuge:
     description: ChampionshipsCore referee presentation and game-flow bypasses.

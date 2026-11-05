@@ -14,8 +14,8 @@ import java.util.List;
 
 public class GameMainCommand extends BaseMainCommand {
     public GameMainCommand() {
-        // Child commands enforce their own permissions.  This lets cc.test reach the
-        // test control while keeping ordinary start/stop routes administrative.
+        // Child commands enforce their own permissions. Automated test controls use a
+        // dedicated permission and are intentionally separate from server administration.
         super("game", MessageConfig.codeText("game-main-command.constructor-1"));
         addSubCommand(new GameStartMainCommand());
         addSubCommand(new GameStopSubCommand());
@@ -30,7 +30,8 @@ public class GameMainCommand extends BaseMainCommand {
             @NotNull String[] args) {
         // The parent node accepts both admin and test permissions so the test child can
         // be reached. Preserve the old root-level access boundary for ordinary players.
-        if (!sender.hasPermission(ADMIN_PERMISSION) && !sender.hasPermission(TEST_PERMISSION)) {
+        if (!sender.hasPermission(ADMIN_PERMISSION)
+                && !sender.hasPermission(TEST_AUTOMATION_PERMISSION)) {
             sender.sendMessage(MessageConfig.NO_PERMISSION);
             return true;
         }
@@ -47,7 +48,8 @@ public class GameMainCommand extends BaseMainCommand {
             @NotNull Command command,
             @NotNull String label,
             @NotNull String[] args) {
-        if (!sender.hasPermission(ADMIN_PERMISSION) && !sender.hasPermission(TEST_PERMISSION))
+        if (!sender.hasPermission(ADMIN_PERMISSION)
+                && !sender.hasPermission(TEST_AUTOMATION_PERMISSION))
             return List.of();
         return super.onTabComplete(sender, command, label, args);
     }

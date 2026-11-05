@@ -26,6 +26,7 @@ public class MainCommand implements TabExecutor, TabCompleter {
     public static final String PLAYER_PERMISSION = ChampionshipPermissions.PLAYER;
     public static final String ADMIN_PERMISSION = ChampionshipPermissions.ADMIN;
     public static final String TEST_PERMISSION = ChampionshipPermissions.TEST;
+    public static final String TEST_AUTOMATION_PERMISSION = ChampionshipPermissions.TEST_AUTOMATION;
 
     protected final ChampionshipsCore plugin = ChampionshipsCore.getInstance();
     protected final Map<String, BaseMainCommand> subCommandMap;

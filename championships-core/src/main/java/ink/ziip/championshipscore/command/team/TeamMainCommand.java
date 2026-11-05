@@ -14,13 +14,14 @@ public class TeamMainCommand extends BaseMainCommand {
     private final TeamManagementMenu menu;
 
     public TeamMainCommand() {
-        super("team", MessageConfig.codeText("team-main-command.constructor-1"), ADMIN_PERMISSION);
+        super("team", MessageConfig.codeText("team-main-command.constructor-1"), TEST_PERMISSION);
         menu = new TeamManagementMenu(plugin);
         addSubCommand(new TeamAddSubCommand());
         addSubCommand(new TeamDeleteSubCommand());
         addSubCommand(new TeamInfoSubCommand());
         addSubCommand(new TeamListSubCommand());
         addSubCommand(new TeamTeleportationSubCommand());
+        addSubCommand(new TeamTestSubCommand());
         addSubCommand(new MemberMainCommand());
     }
 
@@ -31,7 +32,7 @@ public class TeamMainCommand extends BaseMainCommand {
             @NotNull String label,
             @NotNull String[] args) {
         if (args.length == 0) {
-            if (sender instanceof Player player) {
+            if (sender.hasPermission(ADMIN_PERMISSION) && sender instanceof Player player) {
                 menu.openOverview(player, 0);
             } else {
                 super.onCommand(sender, command, label, args);
@@ -39,5 +40,12 @@ public class TeamMainCommand extends BaseMainCommand {
             return true;
         }
         return super.onCommand(sender, command, label, args);
+    }
+
+    @Override
+    protected boolean canUse(@NotNull CommandSender sender, @NotNull BaseMainCommand subCommand) {
+        if ("test".equalsIgnoreCase(subCommand.getCommandName()))
+            return sender.hasPermission(TEST_PERMISSION) || sender.hasPermission(ADMIN_PERMISSION);
+        return sender.hasPermission(ADMIN_PERMISSION);
     }
 }

@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const { EventEmitter } = require('node:events');
 const { attachClient, successfulRun } = require('../client');
 
-function fixture(action = 'idle') {
+function fixture(action = 'idle', overrides = {}) {
   const client = new EventEmitter();
   client.state = 'play';
   const writes = [];
@@ -19,7 +19,7 @@ function fixture(action = 'idle') {
   const state = { active: false, loggedIn: false, stopRequested: false };
   const result = { count: 1, loggedIn: 0, teleportConfirmations: 0,
     authDialogSubmissions: 0, actionPackets: 0, fatalErrors: [] };
-  attachClient(client, { action, password: 'ephemeral' }, 0, result, state, timers);
+  attachClient(client, { action, password: 'ephemeral', ...overrides }, 0, result, state, timers);
   const position = overrides => client.emit('position', {
     teleportId: 7, x: 10, y: 64, z: -5, yaw: 90, pitch: 0, flags: {}, ...overrides,
   });
@@ -104,6 +104,22 @@ test('a previously logged-in client disconnected without an error cannot pass', 
   assert.equal(successfulRun([f.state], f.result), false);
 });
 
+test('reconnect history records phase, identity and restored world evidence', () => {
+  const f = fixture('game', { game: 'tntrun' });
+  f.client.emit('success', { uuid: 'same-player' });
+  f.client.emit('login', { entityId: 42 });
+  f.position();
+  f.client.emit('teams', { name: 'red', mode: 0, players: ['autobot00'] });
+  f.client.emit('system_chat', { content: 'Game in progress' });
+  f.client.emit('end', 'injected phase disconnect');
+  f.client.emit('success', { uuid: 'same-player' });
+  f.client.emit('login', { entityId: 43 });
+  f.position({ teleportId: 8 });
+  assert.deepEqual(f.state.reconnectHistory.map(item => item.phase), ['PROGRESS']);
+  assert.equal(f.state.reconnectHistory[0].identityPreserved, true);
+  assert.equal(f.state.reconnectHistory[0].worldReadyAfter, true);
+});
+
 test('health and own combat death request one real protocol respawn and stop old movement', () => {
   const f = fixture('walk');
   f.client.emit('login', { entityId: 42 });
@@ -141,6 +157,15 @@ test('health and own combat death request one real protocol respawn and stop old
   f.client.emit('death_combat_event', { playerId: 42 });
   assert.equal(f.result.deaths, 2);
   assert.equal(f.result.respawnRequests, 2);
+});
+
+test('death and respawn packets remain visible in the phase history', () => {
+  const f = fixture('game', { game: 'tntrun' });
+  f.client.emit('login', { entityId: 42 });
+  f.client.emit('death_combat_event', { playerId: 42 });
+  assert.equal(f.state.phase, 'PROGRESS');
+  f.client.emit('respawn');
+  assert.ok(f.state.phaseTransitions.some(item => item.packet === 'death_combat_event'));
 });
 
 test('world switches and configuration are not completed death respawns or ready worlds', () => {
@@ -204,4 +229,66 @@ test('bingo-walk reports grounded movement for statistic objectives', () => {
   [...f.callbacks][0]();
   const movement = f.writes.find(write => write.name === 'position');
   assert.equal(movement.data.flags.onGround, true);
+});
+
+test('game resident profile follows server phase before emitting mechanism actions', () => {
+  const f = fixture('game', { game: 'battlebox' });
+  f.client.emit('login', { entityId: 1 });
+  f.position();
+  f.settle();
+  const tick = [...f.callbacks][0];
+  for (let index = 0; index < 20; index += 1) tick();
+  assert.equal(f.result.actionPackets, 0); // waiting phase is observation-only
+  f.client.emit('system_chat', { content: 'GO!' });
+  for (let index = 0; index < 20; index += 1) tick();
+  assert.ok(f.result.actionPackets > 1);
+  assert.equal(f.state.phase, 'PROGRESS');
+  assert.ok(f.state.mechanismPackets['weapon-combat'] || f.state.mechanismPackets['weapon-combat-search']);
+});
+
+test('scoreboard packets are captured with the phase for CI score assertions', () => {
+  const f = fixture();
+  f.client.emit('login');
+  f.client.emit('scoreboard_score', { itemName: 'autobot00', scoreName: 'points', value: 12 });
+  assert.equal(f.state.scorePackets, 1);
+  assert.deepEqual(f.state.scores.points.autobot00, 12);
+  assert.equal(f.state.scoreHistory[0].phase, 'WAITING');
+});
+
+test('server observations expose legal targets and scoreboard/team evidence', () => {
+  const f = fixture('game', { game: 'buildmart' });
+  f.client.emit('login', { entityId: 42 });
+  f.client.emit('entity_spawn', { entityId: 99, type: 'display' });
+  f.client.emit('block_change', { location: { x: 4, y: 64, z: -2 }, type: 1 });
+  f.client.emit('scoreboard_objective', { name: 'points', mode: 0 });
+  f.client.emit('teams', { name: 'red', mode: 0 });
+  assert.deepEqual(f.state.targetBlock, { x: 4, y: 64, z: -2 });
+  assert.equal(f.state.observations.entitySpawns, 1);
+  assert.equal(f.state.observations.blockChanges, 1);
+  assert.equal(f.state.observations.scoreboardObjectives, 1);
+  assert.equal(f.state.observations.teamPackets, 1);
+  assert.equal(f.state.scoreObjectives.points, 0);
+  assert.equal(f.state.evidence.blocks[0].event, 'change');
+  assert.equal(f.state.evidence.entities[0].event, 'spawn');
+  assert.equal(f.state.evidence.windows.length, 0);
+});
+
+test('reconnect reports UUID, team and game mode history for identity assertions', () => {
+  const f = fixture();
+  f.client.emit('success', { uuid: '11111111-1111-4111-8111-111111111111' });
+  f.client.emit('teams', { name: 'test01', mode: 0, players: ['autobot00'] });
+  f.client.emit('game_state_change', { gameMode: 2 });
+  f.client.emit('success', { uuid: '11111111-1111-4111-8111-111111111111' });
+  assert.deepEqual(f.state.uuidHistory, ['11111111-1111-4111-8111-111111111111']);
+  assert.deepEqual(f.state.teamHistory[0], { name: 'test01', mode: 0, players: ['autobot00'] });
+  assert.deepEqual(f.state.gameModeHistory, [2]);
+});
+
+test('reconnect keeps the last game phase until the server sends a new phase signal', () => {
+  const f = fixture('game', { game: 'tntrun' });
+  f.client.emit('login', { entityId: 1 });
+  f.client.emit('system_chat', { content: 'GO!' });
+  assert.equal(f.state.phase, 'PROGRESS');
+  f.client.emit('end', 'network drop');
+  assert.equal(f.state.phase, 'PROGRESS');
 });

@@ -2482,6 +2482,13 @@ code-text:
     names-separator: "&7, &f"
   team-main-command:
     constructor-1: "队伍与成员管理"
+  team-test-sub-command:
+    constructor-1: "将已上线的 resident Bot 重建为 16 支测试队伍"
+    constructor-2: "/cc team test --confirm"
+    missing: "缺少 %arg1% 个已上线测试 Bot：%arg2%"
+    failed: "测试队伍创建失败：%arg1%"
+    busy: "现有队伍正在比赛中，或队伍数据库操作未完成"
+    completed: "已将 %arg1% 个 resident Bot 分配到 %arg2% 支测试队伍（test01-test16）。"
   team-teleportation-sub-command:
     constructor-1: "将队伍传送到你所在的位置"
     constructor-2: "/cc team tphere <队伍ID|all>"

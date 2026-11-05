@@ -79,9 +79,9 @@ CC_TEST_REPORT=/tmp/cc-game-test-harness/resident.json \
 npm run connect
 ```
 
-resident 使用无限等待窗口，直到外部创建 stop file。Bot 不发送游戏动作，Core 仍按真实玩家处理队伍、传送、玩法和计分；所有连接由 8 个 Node worker 承载。报告包含每个 Bot 的登录、世界位置、传送确认、重生、keep-alive、断线和退出状态。
+resident 使用无限等待窗口，直到外部创建 stop file。`idle` Bot 不发送游戏动作；管理员手动测试和 CI 自动测试都可使用 Harness 的 `game` profile 和 `CC_TEST_GAME`，让 Bot 根据服务端当前阶段产生移动、视角、投票窗口、物品使用或战斗输入。Core 仍按真实玩家处理队伍、传送、玩法和计分；所有连接由 8 个 Node worker 承载。报告包含每个 Bot 的登录、世界位置、传送确认、阶段转换、机制动作、计分板快照、重生、keep-alive、断线和退出状态。
 
-Harness 也可以自动驱动完整会话。设置 `CC_TEST_CORE_AUTO_SESSION=true`、RCON 参数和 `CC_TEST_CORE_SESSION_MODE=single|event` 后，协调进程依次执行 Core 的 `single/event start`、`lease web`、`status`、`run` 和 `stop --confirm`；它等待 64 个 Bot 和 16 个临时队伍进入 `READY`，Event 或单局进入终态后创建 stop file，使 resident worker 正常退出。该开关默认关闭，RCON 只应在 Core 所在内部网络可达，不能公开映射到互联网。cc-web Bot 默认保留为持久账号，只有显式设置 `CC_TEST_WEB_DISABLE_ON_FINISH=true` 才调用停用接口。
+Harness 也可以自动驱动完整会话。设置 `CC_TEST_CORE_AUTO_SESSION=true`、RCON 参数和 `CC_TEST_CORE_SESSION_MODE=single|event` 后，协调进程依次执行 Core 的 `single/event start`、`lease web`、`status`、`run` 和 `stop --confirm`；它等待 64 个 Bot 和 16 个临时队伍进入 `READY`，Event 或单局进入终态后创建 stop file，使 resident worker 正常退出。CI 可以把 `CC_TEST_ACTION=game` 与 `CC_TEST_GAME` 传给同一套 profile；管理员手动 resident 使用完全相同的动作逻辑。`CC_TEST_DISCONNECT_PHASE` 可在阶段转换后注入一次断线，验证重连和当前回合恢复。该开关默认关闭，RCON 只应在 Core 所在内部网络可达，不能公开映射到互联网。cc-web Bot 默认保留为持久账号，只有显式设置 `CC_TEST_WEB_DISABLE_ON_FINISH=true` 才调用停用接口。
 
 ## 运行模式与数据
 
@@ -106,6 +106,6 @@ Core 和 Worker 的 `test.enabled` 默认都是 `false`。生产与调试共用�
 
 ## 扩展游戏测试
 
-首先用 `resident + idle` 验证登录、队伍、传送、旁观和自然生命周期，再为确实需要动作的游戏添加 Harness profile。动作脚本只描述客户端操作，不复制游戏规则；游戏规则、胜负和结算仍由 Core 或 Worker 决定。每个游戏的拓扑、动作和验证状态登记在 [无人测试游戏矩阵](game-test-matrix.md) 中。
+首先用 `resident + idle` 验证登录、队伍、传送、旁观和自然生命周期，再用 `game + CC_TEST_GAME` 验证阶段动作、机制和重连。动作脚本只描述客户端操作，不复制游戏规则；游戏规则、胜负和结算仍由 Core 或 Worker 决定。每个游戏的拓扑、动作、掉线场景、积分断言和验证状态登记在 [无人测试游戏矩阵](game-test-matrix.md) 中。
 
 完整命令见 [命令参考](commands.md)，身份细节见 [UUID 契约](player-uuid-contract.md)，远程世界释放见 [Bingo 跨服架构](bingo-remote-architecture.md)。

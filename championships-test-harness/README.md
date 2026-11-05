@@ -37,7 +37,21 @@ CC_TEST_REPORT=/tmp/cc-game-test-harness/reports/bots.json \
 npm run connect
 ```
 
-`CC_TEST_HOST` 应指向测试或受控生产 BungeeCord。`CC_TEST_MODE=window` 会在固定窗口结束；`idle` 只验证连接和基础状态，`look`、`walk` 是协议动作 profile，`bingo-walk` 保留给旧脚本。它们都不代替具体游戏的动作脚本。
+`CC_TEST_HOST` 应指向测试或受控生产 BungeeCord。`CC_TEST_MODE=window` 会在固定窗口结束；`idle` 只验证连接和基础状态，`look`、`walk` 是协议动作 profile，`bingo-walk` 保留给旧脚本。`game` 通过矩阵 profile 按服务端阶段发送客户端动作。
+
+在当前 cc-bungeecord 部署中，普通测试 listener 是容器内的 `25566`（例如从同一 Docker network 使用 `CC_TEST_HOST=cc-bungeecord CC_TEST_PORT=25566`）；宿主映射的 `25567` 对应要求 PROXY protocol 的旧 listener，不能作为 Harness 的等价入口。
+
+管理员手动测试时可以让 resident Bot 按当前游戏发送动作基线：
+
+```text
+CC_TEST_MODE=resident \
+CC_TEST_ACTION=game \
+CC_TEST_GAME=tntrun \
+CC_TEST_STOP_FILE=/tmp/cc-game-test-harness/run.finished \
+npm run connect
+```
+
+`CC_TEST_GAME` 使用 Core 的命令 token，例如 `bingo`、`tntrun`、`parkourtag`、`riptide` 或 `laserbox`。profile 先识别等待、投票、准备、倒计时、进行和结束，再选择动作；它只产生客户端输入，管理员仍通过 Core 的普通开赛和观战命令控制比赛。
 
 `CC_TEST_CLIENTS_PER_PROCESS` 默认为 8。64 个连接由 8 个 Node worker 承载，协调进程汇总精确名册、退出码、重连、传送确认、死亡/重生、keep-alive 和事件循环延迟。任何 worker 缺少报告、Bot 名称重复/遗漏、提前断线或结束时不在世界中，汇总报告都会返回非零退出码。
 
@@ -59,6 +73,12 @@ Harness 通过 `TEST_HARNESS` HMAC 客户端调用 `/api/internal/test/bots/prov
 
 `CC_TEST_BOT_ALLOWED_CIDRS` 应与代理和 AuthBridge 的实际网络一致。cc-web 为每个 Bot 返回的 CIDR 会参与准入检查，账号被停用、撤销或没有有效 CIDR 时，Proxy、Bridge、Yggdrasil 和 Core 都停止接受该 Bot。
 
+Provision 接口成功后默认等待 `CC_TEST_WEB_PROVISION_SETTLE_MS=15000` 毫秒，让 cc-web outbox、AuthMe 和 Bridge 消费新的密码；已由外部同步探针确认完成时可设为 `0`。生产链路的 Bridge 按轮询周期消费 outbox，过短的 settle 会让首次登录在 `PROVISION` 尚未 ACK 时被拒绝。
+
+设置 `CC_TEST_WEB_DISABLE_ON_FINISH=true` 时，无论是单进程还是分片运行，Harness 在写完报告后都会停用本次 slot；默认值为 `false`，便于 resident 管理员反复使用同一 Bot 池。
+
+方块挖掘/放置动作默认关闭；`CC_TEST_ALLOW_WORLD_MUTATION=true` 只允许固定窗口或 Core 自动会话，resident 管理员手动测试不能打开它。
+
 `npm run lease` 只用于没有 cc-web 的离线隔离夹具：它按 `OfflinePlayer:<用户名>` 计算签名 UUID。生产或 cc-web 集成测试使用 `lease web`，由身份服务提供当前 UUID。
 
 ## 比赛常驻 Bot
@@ -77,7 +97,9 @@ npm run connect
 
 resident 使用无限等待窗口，直到外部创建 stop file。文件必须是本次运行唯一、启动时不存在的绝对路径。服务端 probe 确认比赛阶段和在线人数后创建它；所有 worker 先写报告，再正常断开。`windowEndReason=control-file` 表示 Harness 由该文件结束。
 
-resident 的 `idle` 不发送移动、视角或交互包。Core 仍把 Bot 当作真实玩家处理队伍、传送、玩法、计分、死亡和重生。客户端处理服务端位置、`teleport_confirm`、客户端 `tick_end`、configuration 变更和 keep-alive；收到死亡后发送一次重生请求，等待新的世界位置再恢复连接状态。
+resident 的 `idle` 不发送游戏动作；`game` 会按 `CC_TEST_GAME` 使用对应动作 profile，并根据服务端阶段自动暂停或恢复。Core 仍把 Bot 当作真实玩家处理队伍、传送、玩法、计分、死亡和重生。客户端处理服务端位置、`teleport_confirm`、客户端 `tick_end`、configuration 变更和 keep-alive；收到死亡后发送一次重生请求，等待新的世界位置再恢复连接状态。报告还包含阶段转换、机制动作、计分板快照和注入断线结果，并保留受限的实体、方块、窗口/物品和阶段消息样本，便于把客户端输入与服务端观察分开核对。
+
+CI 可以使用 `CC_TEST_DISCONNECT_PHASE=PROGRESS` 注入一次掉线；需要覆盖多个阶段时使用逗号分隔的 `CC_TEST_DISCONNECT_PHASES=PREPARATION,PROGRESS,END`。`CC_TEST_EXPECT_PHASES`、`CC_TEST_EXPECT_MECHANISMS`、`CC_TEST_EXPECT_ACTIONS`、`CC_TEST_EXPECT_SCORE_OBJECTIVE` 和 `CC_TEST_EXPECT_RECONNECTS` 可以把报告证据变成失败条件。
 
 ## 身份、UUID 与报告
 
@@ -96,12 +118,13 @@ Bot 的 UUID 由 AuthProxy、BungeeCord、Paper 和身份平台提供。Core lea
 ## Core test interface orchestration
 
 Set `CC_TEST_CORE_AUTO_SESSION=true` to let the coordinator drive a Core test
-session through its RCON console. This mode requires `resident`, `idle`, the
+session through its RCON console. This mode requires `resident`, `idle` or `game`, the
 cc-web identity mode, and the complete `autobot00` through `autobot63` roster:
 
 ```text
 CC_TEST_MODE=resident \
-CC_TEST_ACTION=idle \
+CC_TEST_ACTION=game \
+CC_TEST_GAME=tntrun \
 CC_TEST_IDENTITY_MODE=cc-web \
 CC_TEST_CORE_AUTO_SESSION=true \
 CC_TEST_CORE_RCON_HOST=cc-core \
@@ -128,3 +151,7 @@ default remains manual Harness operation.
 accounts remain active by default. The Harness never supplies a UUID: cc-web
 provisions credentials and Core obtains the current UUID and signed leases with
 `lease web`.
+
+CI can run the complete no-network profile contract with `npm run test:scenarios`; it executes all 17 profiles through voting, preparation, countdown, progress, reconnect, scoreboard observation and end-state transitions. `src/matrix.js` is the executable contract behind the game matrix: it declares each profile's legal action families per phase, disconnect points with reconnect preservation checks, server evidence and score signals. When `CC_TEST_EXPECT_PHASES` includes `PROGRESS`, the report validator automatically requires that profile's declared mechanism, action families and server evidence; when it includes `END`, it requires at least one server scoreboard observation. Set `CC_TEST_EXPECT_ACTIONS`, `CC_TEST_EXPECT_SERVER_EVIDENCE` or `CC_TEST_EXPECT_SCORE_PACKETS` explicitly to narrow or extend those requirements for a map. Set `CC_TEST_EXPECT_RECONNECT_PHASES=PREPARATION,PROGRESS,END` to require phase-specific reconnect records; each record must preserve the UUID and restore a ready world.
+
+`CC_TEST_CORE_AUTO_SESSION=true` 会自动填充当前 profile 的 `WAITING,PROGRESS,END`、机制、动作和至少一个计分板包断言；显式设置对应环境变量仍可覆盖这些默认值。

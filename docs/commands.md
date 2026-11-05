@@ -20,7 +20,8 @@
 | --- | --- |
 | `cc.player` | `/cc spawn`、`vote`、`spectate`、`rank` 等玩家功能 |
 | `cc.admin` | 队伍、单局、正式赛事、地图、世界和裁判管理；同时可用玩家功能 |
-| `cc.test` | 无人测试 session/lease/16×4 roster 准备控制；`cc.admin` 当前继承此能力 |
+| `cc.test` | resident Bot 测试队伍重建和管理员手动测试准备；`cc.admin` 可使用这些入口 |
+| `cc.test.automation` | 自动化 Core test session、lease、运行和清理；不由 `cc.admin` 继承 |
 | `cc.refuge` | 严格观战规则开启时，允许参赛队员以裁判/替补身份观战 |
 
 建议使用权限插件分组：普通选手授予 `cc.player`，赛事管理员授予 `cc.admin`；裁判或替补按需增加 `cc.refuge`。
@@ -98,6 +99,16 @@ light_gray cyan purple blue brown green red black
 
 每名玩家只能属于一支队伍，人数受 `team.max-members` 限制。在线成员直接使用 Bukkit/代理提供的 UUID；离线成员的 UUID 由 `identity.mode` 决定：`OFFLINE` 按 Minecraft 的 `OfflinePlayer:<玩家名>` 规则计算，`PROFILE_UUID` 调用 `identity.profile-api-base-url` 的标准档案接口，并要求返回值与登录链路一致。档案缺失、服务异常、响应格式错误或本地身份冲突会终止该次操作并提示管理员。完整边界见 [player-uuid-contract.md](player-uuid-contract.md)。
 
+### Resident 测试队伍
+
+resident Bot 全部上线后，可用以下命令把 `autobot00`–`autobot63` 重建为 16 支、每支 4 人的正式测试队伍：
+
+```text
+/cc team test --confirm
+```
+
+该命令会替换当前正式队伍和旧积分，必须确认没有正式比赛占用队伍；随后可以按 `test01`–`test16` 使用普通 `/cc game start` 手动测试。
+
 ### 查询、传送和删除
 
 | 命令 | 说明 |
@@ -157,7 +168,7 @@ light_gray cyan purple blue brown green red black
 | `/cc admin world teleport <世界>` | 传送到世界出生点并开启飞行 |
 | `/cc admin world unload <世界>` | 保存并卸载世界，不删除世界文件 |
 
-测试控制命令使用 `cc.test` 权限，`cc.admin` 自动拥有该权限；普通 `/cc game start` 和 `/cc game stop` 仍使用 `cc.admin`。Core 和 Worker 的 `test.enabled` 默认都是 `false`，生产调试部署需要分别打开。
+自动化 `/cc game test` 命令使用 `cc.test.automation`，服务器管理员不会因为拥有 `cc.admin` 而获得该入口。`/cc team test` 属于 resident 手动测试准备，使用 `cc.test`，`cc.admin` 可用；普通 `/cc game start` 和 `/cc game stop` 仍使用 `cc.admin`。Core 和 Worker 的 `test.enabled` 默认都是 `false`，生产调试部署需要分别打开。
 
 测试身份通过签名 lease 登记。`/cc game test lease <signed-token>` 接收身份服务按当前 session、generation、用户名和 UUID 签发的短期 token；`/cc game test lease web` 由 Core 通过 `TEST_HARNESS` HMAC 客户端从 cc-web 获取整批 Bot 的当前 UUID 和 lease。Core 会将 lease 与 Paper 实际观察到的 UUID、AuthMe 登录和 AuthProxy profile 一起核对，不接受裸 UUID 或客户端自报 UUID。
 

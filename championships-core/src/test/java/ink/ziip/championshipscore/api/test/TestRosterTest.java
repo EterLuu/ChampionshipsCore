@@ -19,6 +19,13 @@ class TestRosterTest {
     }
 
     @Test
+    void defaultResidentRosterMatchesHarnessNames() {
+        assertEquals("autobot00", TestRoster.defaultBotUsernames().getFirst());
+        assertEquals("autobot63", TestRoster.defaultBotUsernames().getLast());
+        assertEquals(TestRoster.TOTAL_SEATS, TestRoster.defaultBotUsernames().size());
+    }
+
+    @Test
     void createsExactlySixteenTeamsWithFourSeats() {
         TestRoster roster = TestRoster.fromBotUsernames(botNames());
 

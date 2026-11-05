@@ -34,6 +34,12 @@ function provisionBots(settings, fetchImpl = globalThis.fetch) {
   if (bots.some(bot => !/^[A-Za-z0-9_]{3,16}$/.test(bot.username)))
     throw new Error('cc-web Bot usernames must be 3-16 ASCII characters');
   return requestJson(settings, PROVISION_PATH, { bots }, fetchImpl).then(async result => {
+    // cc-web commits credentials and publishes an outbox event before the
+    // AuthMe/bridge consumers necessarily observe it. Give the normal sync
+    // path a small settle window so the first login is not mistaken for a bad
+    // password. Set to zero for a caller that already waits on sync health.
+    const settleMs = Number(settings.webProvisionSettleMs || 0);
+    if (settleMs > 0) await new Promise(resolve => setTimeout(resolve, settleMs));
     if (!result || !Array.isArray(result.bots) || result.bots.length !== bots.length)
       throw new Error('cc-web Bot provisioning returned an incomplete account list');
     const passwords = new Map(bots.map(bot => [bot.username.toLowerCase(), bot.password]));

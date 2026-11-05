@@ -6,6 +6,7 @@
   "type": "commonjs",
   "scripts": {
     "test": "node --test src/__tests__/*.test.js",
+    "test:scenarios": "node --test src/__tests__/scenarios.test.js",
     "help": "node src/cli.js --help",
     "connect": "node src/cli.js",
     "lease": "node src/lease-token.js"

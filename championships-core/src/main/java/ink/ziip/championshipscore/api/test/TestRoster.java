@@ -14,6 +14,13 @@ public final class TestRoster {
     public static final int SEATS_PER_TEAM = 4;
     public static final int TOTAL_SEATS = TEAM_COUNT * SEATS_PER_TEAM;
 
+    /** The default resident Harness roster used by the Core test and manual test commands. */
+    public static List<String> defaultBotUsernames() {
+        return java.util.stream.IntStream.range(0, TOTAL_SEATS)
+                .mapToObj(index -> String.format("autobot%02d", index))
+                .toList();
+    }
+
     public enum OccupantType {
         BOT,
         DEVELOPER

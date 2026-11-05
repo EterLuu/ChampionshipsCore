@@ -37,19 +37,28 @@ class GameMainCommandPermissionTest {
     }
 
     @Test
-    void testPermissionCanReachOnlyTestChild() {
+    void manualTestPermissionCannotReachAutomationControl() {
         CommandSender sender = senderWithPermissions("cc.test");
         GameMainCommand command = new GameMainCommand();
 
         assertTrue(command.onCommand(sender, null, "cc", new String[] {"test"}));
-        assertEquals(List.of("test"), command.onTabComplete(sender, null, "cc", new String[] {""}));
-        assertEquals(1, messages.size());
-        assertTrue(messages.getFirst().contains("/cc game test"));
+        assertEquals(List.of(), command.onTabComplete(sender, null, "cc", new String[] {""}));
+        assertEquals(List.of("no permission"), messages);
     }
 
     @Test
-    void adminPermissionAlsoReachesTestChild() {
+    void adminPermissionCannotReachAutomationControl() {
         CommandSender sender = senderWithPermissions("cc.admin");
+        GameMainCommand command = new GameMainCommand();
+
+        assertTrue(command.onCommand(sender, null, "cc", new String[] {"test"}));
+        assertTrue(!command.onTabComplete(sender, null, "cc", new String[] {""}).contains("test"));
+        assertEquals(List.of("no permission"), messages);
+    }
+
+    @Test
+    void automationPermissionCanReachTestChild() {
+        CommandSender sender = senderWithPermissions("cc.test.automation");
         GameMainCommand command = new GameMainCommand();
 
         assertTrue(command.onCommand(sender, null, "cc", new String[] {"test"}));
