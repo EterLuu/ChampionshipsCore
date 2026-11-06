@@ -152,7 +152,7 @@ Bridge 根据事件来源执行离线计算或 Mojang 查询，并把 UUID 策�
 4. 已有 UUID 需要变化时，按上一节的冻结映射执行维护任务；仅修改 `identity.mode` 不会迁移数据库。任务通过后更新登录链路与 Core 配置，再恢复登录。
 5. 在测试服确认离线录入、首次登录、改名、UUID 冲突和档案服务不可用的结果，再应用到正式服务。
 
-插件配置、客户端鉴权、事件 ACK 和控制任务字段见 [AuthBridge / AuthProxy 协议](auth-bridge-protocol.md)。代码接入和数据库职责见 [开发指南](development.md)。
+插件配置、客户端鉴权、事件 ACK 和控制任务字段见 [AuthBridge / AuthProxy 协议](../03-reference/03-auth-bridge-protocol.md)。代码接入和数据库职责见 [开发指南](01-development.md)。
 
 ## 7. 验收清单
 
@@ -175,4 +175,4 @@ Bridge 根据事件来源执行离线计算或 Mojang 查询，并把 UUID 策�
 
 ## 文档入口
 
-本文定义身份模型与 UUID 不变量；认证连接器的安装和配置见 [认证部署指南](auth-deployment.md)，接口字段、幂等和控制任务见 [同步协议](auth-bridge-protocol.md)。身份平台是外部系统，本仓库不提供其服务端实现。
+本文定义身份模型与 UUID 不变量；认证连接器的安装和配置见 [认证部署指南](../01-getting-started/01-auth-deployment.md)，接口字段、幂等和控制任务见 [同步协议](../03-reference/03-auth-bridge-protocol.md)。身份平台是外部系统，本仓库不提供其服务端实现。

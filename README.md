@@ -14,13 +14,13 @@ ChampionshipsCore 是用于 Minecraft 团队锦标赛的 Paper 插件，统一�
 
 ## 主要功能
 
-- 17 个游戏项目，包含 Bingo、BuildMart、跑酷、团队对抗和最终决赛；完整列表见 [游戏指南](docs/games.md)。
+- 17 个游戏项目，包含 Bingo、BuildMart、跑酷、团队对抗和最终决赛；完整列表见 [游戏指南](docs/02-games/01-games.md)。
 - 统一的地图编辑、校验和发布流程，按玩法支持场地副本或单实例分区。
 - 队伍管理、投票、多轮赛程、数据库积分和排行榜。
 - 统一观战保护、玩家实体显隐、完整 Tab 列表和可配置侧栏。
 - `DAILY` 自由游玩：匹配队列、同行小队和独立战绩。
 - 可选的 Redis 跨服同步、远程 Bingo 与身份认证连接器。
-- 独立测试会话、64 Bot Harness、resident 长驻和多轮 Test Event，详见 [无人测试设计](docs/game-test-research.md)。
+- 独立测试会话、64 Bot Harness、resident 长驻和多轮 Test Event，详见 [无人测试设计](docs/06-unattended-testing/01-game-test-research.md)。
 
 ## 运行要求
 
@@ -77,11 +77,11 @@ ProtocolLib 编译接口仍为 5.4.0，运行时须安装修复 26.3 协议映�
        pitch: 0.0
    ```
 
-   大厅世界必须已加载，坐标应是实际安全落点。`OFFLINE` 仅用于离线登录链路；正版服应使用 `PROFILE_UUID` 并设置 `identity.profile-api-base-url: https://api.mojang.com`。代理或自建档案服务须遵守 [UUID 契约](docs/player-uuid-contract.md)。
+   大厅世界必须已加载，坐标应是实际安全落点。`OFFLINE` 仅用于离线登录链路；正版服应使用 `PROFILE_UUID` 并设置 `identity.profile-api-base-url: https://api.mojang.com`。代理或自建档案服务须遵守 [UUID 契约](docs/04-development/04-player-uuid-contract.md)。
 
 5. 再次启动，确认没有依赖或数据库连接错误。数据库连接成功后插件自动创建表。拥有 `cc.admin` 权限的玩家执行 `/cc team`，能打开队伍管理菜单即可检查基础加载；普通玩家需授予 `cc.player`。
-6. 创建队伍并添加已上线的玩家，执行 `/cc map edit <游戏>`，按 [地图编辑指南](docs/map-editing.md) 绑定世界、设置必需步骤、校验并发布。
-7. 退出编辑后，用 `/cc game start <游戏> <地图> <队伍...>` 测试一局，通过 `/cc rank playerboard` 和 `/cc rank teamboard` 检查结果。选择语义见 [比赛启动指南](docs/game-start.md)。
+6. 创建队伍并添加已上线的玩家，执行 `/cc map edit <游戏>`，按 [地图编辑指南](docs/02-games/03-map-editing.md) 绑定世界、设置必需步骤、校验并发布。
+7. 退出编辑后，用 `/cc game start <游戏> <地图> <队伍...>` 测试一局，通过 `/cc rank playerboard` 和 `/cc rank teamboard` 检查结果。选择语义见 [比赛启动指南](docs/02-games/02-game-start.md)。
 
 ## 构建与安装
 
@@ -111,7 +111,7 @@ Core 的配置位于 `plugins/ChampionshipsCore/`：
 | 文件或键 | 用途 |
 | --- | --- |
 | `config.yml` | 数据库、身份、游戏开关、队伍、大厅、赛事和跨服选项 |
-| `enabled-games` | 使用 [游戏指南](docs/games.md)中的配置名称；空列表关闭所有游戏 |
+| `enabled-games` | 使用 [游戏指南](docs/02-games/01-games.md)中的配置名称；空列表关闭所有游戏 |
 | `formal-events.<游戏>.maps` | 正式赛地图注册名与顺序；空列表从已注册地图选择 |
 | `mode` / `daily.*` | `CHAMPIONSHIP` 或 `DAILY` 大厅及自由匹配设置 |
 | `weighted-score.*` | 游戏归一化权重和按轮次配置的倍率 |
@@ -119,23 +119,23 @@ Core 的配置位于 `plugins/ChampionshipsCore/`：
 | `scoreboards.yml` | 大厅、游戏、地图编辑与状态侧栏 |
 | 各游戏目录 | 地图定义、蓝图、任务及其他游戏专属资源 |
 
-配置变更可在空闲时执行 `/cc admin reload --confirm`；数据库连接等需要重启的变更由命令提示。JAR 更新必须重启。游戏世界、选区和地图资源配置见 [地图编辑指南](docs/map-editing.md)。
+配置变更可在空闲时执行 `/cc admin reload --confirm`；数据库连接等需要重启的变更由命令提示。JAR 更新必须重启。游戏世界、选区和地图资源配置见 [地图编辑指南](docs/02-games/03-map-editing.md)。
 
-远程 Bingo 还需 Redis、代理路由、独立 Folia 世界与外部重置管理流程。先阅读 [跨服架构](docs/bingo-remote-architecture.md) 和 [Worker 安装说明](championships-bingo-worker/README.md)，再切换 `bingo.execution-mode`。
+远程 Bingo 还需 Redis、代理路由、独立 Folia 世界与外部重置管理流程。先阅读 [跨服架构](docs/01-getting-started/02-bingo-remote-architecture.md) 和 [Worker 安装说明](championships-bingo-worker/README.md)，再切换 `bingo.execution-mode`。
 
 ## 文档
 
-[文档索引](docs/README.md) 按部署、游戏管理和开发契约组织完整说明。常用入口：
+[文档索引](docs/README.md) 按安装与运行、游戏与地图、参考手册、开发与契约、检查与验证、无人测试分类组织完整说明。常用入口：
 
-- [游戏与玩法](docs/games.md)、[命令参考](docs/commands.md)、[比赛启动](docs/game-start.md)
-- [地图编辑与发布](docs/map-editing.md)、[自由游玩](docs/daily-mode.md)
-- [积分、观战与展示](docs/presentation.md)
-- [无人测试设计](docs/game-test-research.md)、[测试矩阵](docs/game-test-matrix.md)
-- [Bingo 跨服架构](docs/bingo-remote-architecture.md)、[容量验证](docs/bingo-performance-validation.md)
-- [开发指南](docs/development.md)、[旁观契约](docs/spectator-visibility-contract.md)
+- [游戏与玩法](docs/02-games/01-games.md)、[命令参考](docs/03-reference/01-commands.md)、[比赛启动](docs/02-games/02-game-start.md)
+- [地图编辑与发布](docs/02-games/03-map-editing.md)、[自由游玩](docs/02-games/04-daily-mode.md)
+- [积分、观战与展示](docs/02-games/05-presentation.md)
+- [无人测试设计](docs/06-unattended-testing/01-game-test-research.md)、[测试矩阵](docs/06-unattended-testing/02-game-test-matrix.md)
+- [Bingo 跨服架构](docs/01-getting-started/02-bingo-remote-architecture.md)、[容量验证](docs/05-validation/03-bingo-performance-validation.md)
+- [开发指南](docs/04-development/01-development.md)、[旁观契约](docs/04-development/03-spectator-visibility-contract.md)
 
 ## 参与开发与许可证
 
-贡献前阅读 [开发指南](docs/development.md)。提交时说明问题、影响模块和验证结果；共享功能需要同时检查 Core 与 Worker。
+贡献前阅读 [开发指南](docs/04-development/01-development.md)。提交时说明问题、影响模块和验证结果；共享功能需要同时检查 Core 与 Worker。
 
 项目使用 [MIT License](LICENSE)。Bingo 任务机制与图像资源参考上游 [MineBingo](https://gitee.com/chancelethay/minebingo)；任务图像的来源记录见 [SOURCES.md](championships-core/src/main/resources/bingo/taskimages/SOURCES.md)。

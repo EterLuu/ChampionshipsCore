@@ -44,7 +44,7 @@ test('matrix action and evidence declarations use the shared vocabulary', () => 
 });
 
 test('the documentation table names every executable game token', (t) => {
-  const documentPath = path.join(__dirname, '../../../docs/game-test-matrix.md');
+  const documentPath = path.join(__dirname, '../../../docs/06-unattended-testing/02-game-test-matrix.md');
   // The production image intentionally contains only the harness.  The source
   // checkout runs this consistency check; the image test suite can still run
   // without copying the repository's documentation into /app.

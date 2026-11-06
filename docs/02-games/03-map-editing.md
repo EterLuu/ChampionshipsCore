@@ -26,7 +26,7 @@
 
 ## 场地模板与副本
 
-斗战方框、激光方盒、激光乱斗、霜冻决斗、跑酷追击、烫手鳕鱼和 TNT飞跃使用各地图的 `schematics/<地图名>/arena.schem` 生成复制场地；匹配赛建保留管理员手建的资源大厅，只选择其边界，并使用 `schematics/<地图>/base.schem` 生成队伍基地。复制场地游戏允许多张地图绑定到同一个物理世界，各地图通过各自的选区、锚点和复制布局占用互不重叠的区域；TNTRun 与匹配赛建赛后只恢复本地图的 schematic 区域，不会重载共享世界。匹配赛建 0 号基地只作模板，实际队伍从 1 号基地开始分配；大厅与基地各设置一个传送门落点即可双向路由。复制数量、布局和所有锚点都由各自的向导步骤配置。启动命令使用从 1 开始的编号，与编辑器的 0 号模板区分，详见 [比赛启动指南](game-start.md)。
+斗战方框、激光方盒、激光乱斗、霜冻决斗、跑酷追击、烫手鳕鱼和 TNT飞跃使用各地图的 `schematics/<地图名>/arena.schem` 生成复制场地；匹配赛建保留管理员手建的资源大厅，只选择其边界，并使用 `schematics/<地图>/base.schem` 生成队伍基地。复制场地游戏允许多张地图绑定到同一个物理世界，各地图通过各自的选区、锚点和复制布局占用互不重叠的区域；TNTRun 与匹配赛建赛后只恢复本地图的 schematic 区域，不会重载共享世界。匹配赛建 0 号基地只作模板，实际队伍从 1 号基地开始分配；大厅与基地各设置一个传送门落点即可双向路由。复制数量、布局和所有锚点都由各自的向导步骤配置。启动命令使用从 1 开始的编号，与编辑器的 0 号模板区分，详见 [比赛启动指南](02-game-start.md)。
 
 激光方盒通过 `/cc map edit laserbox` 编辑：用 WorldEdit 选取完整的 0 号场地，点击“保存场地模板”，再点击“批量生成比赛分区”输入场地总数（包含 0 号场地）。生成保留原建筑，沿 X 轴按模板宽度加 128 格隔离空隙、向上对齐到区块的间距复制；重新生成会先清除原布局的旧副本。双方出生点、观战点、补给点和边界只设置 0 号场地，副本自动平移这些坐标。完成后校验并发布；正式比赛同轮需要至少 `队伍数 / 2` 个场地。
 
@@ -40,7 +40,7 @@ TNT飞跃保存 0 号赛道模板时同时记录选区边界。模板选区决�
 
 正式赛程可在比赛准备前安排规则介绍，手动 `game start` 不触发此阶段。`rules` 是分段播报的文本列表，`introduction-spawn-point` 指定参观点；该点留空时使用地图观战出生点。要跳过地图规则介绍，将 `rules` 设为 `[]`。具体轮次由该游戏赛程管理器安排。
 
-Riptide 的关卡配置和试玩见 [关卡指南](riptide-stage-mechanics.md)，编辑侧栏校验与完整规划的区别见 [编辑性能指南](riptide-editor-performance.md)。
+Riptide 的关卡配置和试玩见 [关卡指南](06-riptide-stage-mechanics.md)，编辑侧栏校验与完整规划的区别见 [编辑性能指南](../05-validation/05-riptide-editor-performance.md)。
 
 ## 匹配赛建蓝图
 
@@ -60,9 +60,9 @@ Riptide 的关卡配置和试玩见 [关卡指南](riptide-stage-mechanics.md)�
 
 插件会忽略空气，把方块保存为相对选区最小角的偏移并立即重载蓝图库。蓝图长、宽、高均不能超过 7 格，文件位于 `buildmart/blueprints/<名称>.yml`；目录为空时会写出三个示例蓝图。
 
-蓝图不应包含只用于展示的整片地形底板；船底、篮底、表盘、站台、舞池、主体台基及植物必需的局部基质属于建筑结构，应保留。材料、支撑与判定审查方法见 [BuildMart 蓝图检查指南](buildmart-blueprint-validation.md)。
+蓝图不应包含只用于展示的整片地形底板；船底、篮底、表盘、站台、舞池、主体台基及植物必需的局部基质属于建筑结构，应保留。材料、支撑与判定审查方法见 [BuildMart 蓝图检查指南](../05-validation/04-buildmart-blueprint-validation.md)。
 
-完成判定以蓝图文件为准，展示与玩家建筑均从所选地板最小角上方一格开始。材质、状态与视觉等价规则见 [完成判定](buildmart-blueprint-validation.md#完成判定)。普通提交失败显示缺失、材质错误、状态错误三项数量。加载时坏行、重复坐标、越界、空蓝图会整张拒绝并记录文件名和列表项编号；导出时拒绝现场缺少支撑的方块。
+完成判定以蓝图文件为准，展示与玩家建筑均从所选地板最小角上方一格开始。材质、状态与视觉等价规则见 [完成判定](../05-validation/04-buildmart-blueprint-validation.md#完成判定)。普通提交失败显示缺失、材质错误、状态错误三项数量。加载时坏行、重复坐标、越界、空蓝图会整张拒绝并记录文件名和列表项编号；导出时拒绝现场缺少支撑的方块。
 
 ### 展示与区域保护
 
@@ -78,7 +78,7 @@ Riptide 的关卡配置和试玩见 [关卡指南](riptide-stage-mechanics.md)�
 
 保存匹配赛建材料区时，插件会扫描当前选区并生成 `buildmart/material-manifests/<地图>.yml`。该文件按材料区和总计记录非空气方块的 `minecraft:<material>` 数量，同时保留精确 `BlockData` 数量，供检查全部建筑的材料需求是否被资源大厅覆盖，也是编辑器提交小建筑的材料审查依据。清单缺失或快照已变化时会拒绝提交，需重新保存材料区。
 
-离线审查使用 `scripts/buildmart_blueprint_audit.py`，结合材料、结构和 BlockData 复杂度生成难度与材料覆盖报告。运行方式见 [维护脚本](../scripts/README.md#buildmart-审查)，材料、支撑、完成判定和遮挡的验收方法见 [蓝图验证指南](buildmart-blueprint-validation.md)。
+离线审查使用 `scripts/buildmart_blueprint_audit.py`，结合材料、结构和 BlockData 复杂度生成难度与材料覆盖报告。运行方式见 [维护脚本](../../scripts/README.md#buildmart-审查)，材料、支撑、完成判定和遮挡的验收方法见 [蓝图验证指南](../05-validation/04-buildmart-blueprint-validation.md)。
 
 ## 资源目录
 
@@ -103,4 +103,4 @@ skywars/variants/default.yml    # 可复制修改的规则方案
 
 BattleBox、ParkourTag、LaserBox、LaserShowdown、Frostbite、HotyCodyDusky 与 TNTRun 的场地模板位于各自目录的 `schematics/<地图>/arena.schem`。资源和配置模板位于源码 `championships-core/src/main/resources/`；目录并不意味着仓库附带可直接开赛的完整地图。
 
-地图改名的资产与数据库事务见 [改名契约](map-rename-contract.md)。修改地图前备份数据目录与数据库，并在空闲窗口保存、重载或编辑场地配置。
+地图改名的资产与数据库事务见 [改名契约](../04-development/05-map-rename-contract.md)。修改地图前备份数据目录与数据库，并在空闲窗口保存、重载或编辑场地配置。

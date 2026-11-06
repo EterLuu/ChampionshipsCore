@@ -1,5 +1,5 @@
 /**
- * The executable part of docs/game-test-matrix.md.
+ * The executable part of docs/06-unattended-testing/02-game-test-matrix.md.
  *
  * This file intentionally contains test intent rather than game rules.  A profile
  * consumes the action and evidence declarations, while Core/Worker remains the

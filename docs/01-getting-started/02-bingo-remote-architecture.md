@@ -14,7 +14,7 @@
 
 ## 模式与模块
 
-`bingo.execution-mode: LOCAL` 在 Core 内执行；`REMOTE` 使用独立 Worker。只在没有活动比赛时切换执行模式。Core 运行要求见 [主 README](../README.md)，远程环境见 [Worker README](../championships-bingo-worker/README.md)。
+`bingo.execution-mode: LOCAL` 在 Core 内执行；`REMOTE` 使用独立 Worker。只在没有活动比赛时切换执行模式。Core 运行要求见 [主 README](../../README.md)，远程环境见 [Worker README](../../championships-bingo-worker/README.md)。
 
 | 模块 | 职责 |
 | --- | --- |
@@ -40,7 +40,7 @@ Core 是正式积分和数据库的唯一权威，负责冻结队伍、名册、
 
 骑乘路程观察按原版统计分类累计三维距离。玩家移动与载具移动分别累计，载具观察覆盖直接乘客，再与本局原版统计增量取最大值，不相加；取消移动、传送不计入，保留往返与小数厘米。该补偿只用于判题，不写回玩家原版统计。
 
-旁观服务器模式为真实 Spectator，客户端呈现由平台层统一处理。Core 与 Worker 各有实体显隐管理器，双方均保持完整 Tab；详见 [旁观契约](spectator-visibility-contract.md)。
+旁观服务器模式为真实 Spectator，客户端呈现由平台层统一处理。Core 与 Worker 各有实体显隐管理器，双方均保持完整 Tab；详见 [旁观契约](../04-development/03-spectator-visibility-contract.md)。
 
 ## 生命周期与路由
 
@@ -142,7 +142,7 @@ Worker 每 5 秒发心跳，Core 默认 20 秒无连续事件或心跳即终止�
 
 每个 Worker 同时承载一个比赛，主世界、下界和末地组成同一世界槽。三维度边界为以 `(0,0)` 为中心的 16000×16000 格，开局落点保留 3000 格边缘缓冲。同队共用安全点，队伍间分散；所有在线选手成功传送后才进入倒计时，找不到安全地面或传送失败则中止。
 
-重置由 Worker 与部署方共同完成：Worker 等全员返回 Core 后写入 `.championships-bingo-reset` 并关服；外部监督进程等待 Java 退出、移走旧世界、处理标记并启动新进程。新 Worker 异步删除退役世界。本仓库不提供该监督脚本，具体格式和目录要求见 [Worker 重置接入](../championships-bingo-worker/README.md#世界重置接入)。
+重置由 Worker 与部署方共同完成：Worker 等全员返回 Core 后写入 `.championships-bingo-reset` 并关服；外部监督进程等待 Java 退出、移走旧世界、处理标记并启动新进程。新 Worker 异步删除退役世界。本仓库不提供该监督脚本，具体格式和目录要求见 [Worker 重置接入](../../championships-bingo-worker/README.md#世界重置接入)。
 
 正式部署保持 `worlds.allow-reuse-without-reset: false`。新世界的 seed 筛选与预生成属于开局前的外部准备流程；不能假定已生成的旧世界会在重置后保留。
 
@@ -153,6 +153,6 @@ Worker 每 5 秒发心跳，Core 默认 20 秒无连续事件或心跳即终止�
 3. 在空闲窗口切到 `REMOTE`，用测试队伍验证准备、到达、任务、重生、结算、返回和第二局。
 4. 演练 Worker/Core 重启、Redis/数据库中断、玩家重连、重复事件、代理目标不可达。
 5. 核对连续事件、幂等积分、旧 epoch 隔离、outbox 恢复及所有临时实体/任务/票据清理。
-6. 用 [LoadTest](../championships-bingo-loadtest/README.md) 定位区块与实体压力，再按 [容量指南](bingo-performance-validation.md) 验证真实连接的完整比赛。
+6. 用 [LoadTest](../../championships-bingo-loadtest/README.md) 定位区块与实体压力，再按 [容量指南](../05-validation/03-bingo-performance-validation.md) 验证真实连接的完整比赛。
 
 Folia 的并行收益依赖空间分布；单 region 热点不能仅靠增加 tick 线程解决。部署验收同时查看 region TPS/MSPT、区块加载延迟、实体分布、Redis 与数据库指标。

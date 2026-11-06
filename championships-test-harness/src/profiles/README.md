@@ -34,4 +34,4 @@ CC_TEST_DISCONNECT_PHASE=PROGRESS \
 npm run connect
 ```
 
-profile 不判断胜负，也不创建或伪造分数。积分、淘汰、世界变化和结算必须由 Core/Worker 的事件、存储、Redis 或正式结果状态核对。新增或细化游戏动作时，同步更新 [无人测试游戏矩阵](../../../docs/game-test-matrix.md) 和对应的 Harness 单测。
+profile 不判断胜负，也不创建或伪造分数。积分、淘汰、世界变化和结算必须由 Core/Worker 的事件、存储、Redis 或正式结果状态核对。新增或细化游戏动作时，同步更新 [无人测试游戏矩阵](../../../docs/06-unattended-testing/02-game-test-matrix.md) 和对应的 Harness 单测。

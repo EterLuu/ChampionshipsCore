@@ -83,10 +83,10 @@ Worker 每个进程只承载一个活动比赛。`worlds.allow-reuse-without-res
 
 1. 在代理注册 Core 和 Worker 服务名，禁止玩家直接选择 Worker，设置连接失败回退 Core。
 2. 核对 Redis、世界名和重置流程，确认启动日志无错误。
-3. Core 先保持 `LOCAL`；空闲时按 [跨服架构](../docs/bingo-remote-architecture.md) 配置 `REMOTE`。
+3. Core 先保持 `LOCAL`；空闲时按 [跨服架构](../docs/01-getting-started/02-bingo-remote-architecture.md) 配置 `REMOTE`。
 4. 用测试队伍走通准备、转服、倒计时、任务、结算和返回。
 5. 核对卡片、积分、队伍颜色、完整 Tab、旁观、侧栏、普通聊天和 `/teammsg`。
-6. 确认停服、移走旧世界、重启和第二局均成功，再进行 [容量验证](../docs/bingo-performance-validation.md)。
+6. 确认停服、移走旧世界、重启和第二局均成功，再进行 [容量验证](../docs/05-validation/03-bingo-performance-validation.md)。
 
 ## 排障
 
@@ -101,4 +101,4 @@ Worker 每个进程只承载一个活动比赛。`worlds.allow-reuse-without-res
 | TPS 降低 | 各 Folia region 的 MSPT、实体和区块分布，磁盘与新区块生成 |
 | 第二局拒绝或复用旧世界 | 重置标记、监督进程、世界布局与脏世界保护 |
 
-Redis 故障时保留本地 outbox，恢复后按序重投。公共聊天只保留实时窗口。共享实现、线程约束和升级要求见 [开发指南](../docs/development.md) 与 [旁观契约](../docs/spectator-visibility-contract.md)。替换 JAR 后重启；共享代码变化时 Core 与 Worker 成对升级。
+Redis 故障时保留本地 outbox，恢复后按序重投。公共聊天只保留实时窗口。共享实现、线程约束和升级要求见 [开发指南](../docs/04-development/01-development.md) 与 [旁观契约](../docs/04-development/03-spectator-visibility-contract.md)。替换 JAR 后重启；共享代码变化时 Core 与 Worker 成对升级。

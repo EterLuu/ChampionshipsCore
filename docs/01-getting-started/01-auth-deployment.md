@@ -1,6 +1,6 @@
 # 可选认证组件部署
 
-AuthBridge 在 Paper 上同步 AuthMe 账号、BCrypt 密码和身份控制任务；AuthProxy 在 BungeeCord 上决定准入并注入登录 UUID。两者需要实现 [同步协议](auth-bridge-protocol.md) 的外部身份平台，单服 Core 不依赖它们。
+AuthBridge 在 Paper 上同步 AuthMe 账号、BCrypt 密码和身份控制任务；AuthProxy 在 BungeeCord 上决定准入并注入登录 UUID。两者需要实现 [同步协议](../03-reference/03-auth-bridge-protocol.md) 的外部身份平台，单服 Core 不依赖它们。
 
 ## 要求与构建
 
@@ -49,7 +49,7 @@ AuthProxy 使用 `offline-cache.enabled` 和 `offline-cache.max-stale-hours` 控
 2. 在使用代理 UUID 转发或 authlib-injector 的部署中，确保所有环节返回相同 UUID；具体转发设置按所用代理与服务端配置。
 3. 核对一个测试账户的档案 API UUID、代理登录 UUID、Bukkit `Player#getUniqueId()`、Core 队员记录和 AuthMe 资料。
 4. 测试未绑定、撤销、封禁、维护、网络中断、密钥错误及重连行为。
-5. 已有身份发生 UUID 变化时执行 [UUID 迁移流程](player-uuid-contract.md#5-uuid-迁移规范)，只改配置不会迁移数据库。
+5. 已有身份发生 UUID 变化时执行 [UUID 迁移流程](../04-development/04-player-uuid-contract.md#5-uuid-迁移规范)，只改配置不会迁移数据库。
 
 ## 测试 Bot 的身份链
 
@@ -68,7 +68,7 @@ test:
     allow-insecure-private-http: false
 ```
 
-Core 与 Worker 的 `test.enabled` 可在生产与调试共用部署中显式打开，但默认保持关闭。服务器使用 `online-mode=false` 时，Bungee 仍然是登录入口；Bot 的 UUID 由 AuthProxy profile、Paper、AuthBridge 和 Core 共同确认，不能把传输模式当作 UUID 来源。完整流程见 [无人测试设计](game-test-research.md)。
+Core 与 Worker 的 `test.enabled` 可在生产与调试共用部署中显式打开，但默认保持关闭。服务器使用 `online-mode=false` 时，Bungee 仍然是登录入口；Bot 的 UUID 由 AuthProxy profile、Paper、AuthBridge 和 Core 共同确认，不能把传输模式当作 UUID 来源。完整流程见 [无人测试设计](../06-unattended-testing/01-game-test-research.md)。
 
 部署时只需要准备两把测试密钥：`TEST_HARNESS` 客户端密钥（Web `BRIDGE_CLIENT_KEYS`、Core `test.identity.hmac-secret`、Harness 共用）和 `TEST_LEASE_HMAC_SECRET`（Web 签发、Core `test.auth.hmac-secret` 共用）。RCON 密码是可选的控制通道，只有自动调度测试会话时才单独配置；Bot 仅登录或常驻时不需要它。两把测试密钥均不得复用 AuthBridge/AuthProxy、`BRIDGE_HMAC_SECRET` 或 RCON 密码。
 

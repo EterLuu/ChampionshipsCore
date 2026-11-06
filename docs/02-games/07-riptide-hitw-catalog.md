@@ -1,10 +1,10 @@
 # HITW 建筑目录
 
-激流勇进从插件内的 `riptiderush/hitw-walls.json` 读取内置目录，默认地图的 `course.pool` 保存建筑快照。运行时不访问 Wiki，不自动迁移旧快照，也不覆盖管理员保存的建筑。关卡编排和地图调整见 [Riptide 指南](riptide-stage-mechanics.md)。
+激流勇进从插件内的 `riptiderush/hitw-walls.json` 读取内置目录，默认地图的 `course.pool` 保存建筑快照。运行时不访问 Wiki，不自动迁移旧快照，也不覆盖管理员保存的建筑。关卡编排和地图调整见 [Riptide 指南](06-riptide-stage-mechanics.md)。
 
 ## 来源与适配
 
-内置 [目录资源](../championships-core/src/main/resources/riptiderush/hitw-walls.json) 为 v4，来源于 [MCC Island Wiki 的 Hole in the Wall 页面](https://mccisland.wiki/Hole_in_the_Wall) 修订 32764，包含 13 个子地图的 354 条来源记录。来源 E/D/X 标签标识来源分组，目录的难度值按有效通行截面积评级。
+内置 [目录资源](../../championships-core/src/main/resources/riptiderush/hitw-walls.json) 为 v4，来源于 [MCC Island Wiki 的 Hole in the Wall 页面](https://mccisland.wiki/Hole_in_the_Wall) 修订 32764，包含 13 个子地图的 354 条来源记录。来源 E/D/X 标签标识来源分组，目录的难度值按有效通行截面积评级。
 
 内置建筑快照宽 15 格、高 5 格，包含完整 BlockData 与通行元数据。管理员自建建筑按编辑器尺寸校验，不受该内置尺寸描述约束。保存尺寸、木筏内的可通行区域和实体碰撞空间分别处理，不能用建筑外框宽度代替可通行面积。
 

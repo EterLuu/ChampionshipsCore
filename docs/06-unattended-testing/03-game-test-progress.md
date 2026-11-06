@@ -1,6 +1,6 @@
 # 无人测试支持范围
 
-无人测试用真实 Minecraft 协议客户端代替手动组队，让开发者走完整的代理、认证、Paper、队伍、游戏和结算链路。本文说明当前支持的能力、推荐的验证顺序以及仍需原生验收的范围；会话设计与身份见 [无人测试设计](game-test-research.md)，逐游戏拓扑见 [无人测试游戏矩阵](game-test-matrix.md)，命令见 [命令参考](commands.md)。
+无人测试用真实 Minecraft 协议客户端代替手动组队，让开发者走完整的代理、认证、Paper、队伍、游戏和结算链路。本文说明当前支持的能力、推荐的验证顺序以及仍需原生验收的范围；会话设计与身份见 [无人测试设计](01-game-test-research.md)，逐游戏拓扑见 [无人测试游戏矩阵](02-game-test-matrix.md)，命令见 [命令参考](../03-reference/01-commands.md)。
 
 ## 支持的能力
 
@@ -40,6 +40,6 @@ Core 会话、名册、身份和命令位于 `championships-core` 的 `api/test`
 - 游戏动作与阶段边界：`championships-test-harness/src/matrix.js`、`src/profiles/`；
 - 报告校验：`championships-test-harness/src/validation.js`；
 - Core 会话与命令：`championships-core` 的 `api/test`、`command/game`、`src/main/resources/test/events/`；
-- 文档：本页、[游戏矩阵](game-test-matrix.md) 和 Harness README。
+- 文档：本页、[游戏矩阵](02-game-test-matrix.md) 和 Harness README。
 
-协议和部署升级见 [Bingo 跨服架构](bingo-remote-architecture.md) 与 [认证部署](auth-deployment.md)。
+协议和部署升级见 [Bingo 跨服架构](../01-getting-started/02-bingo-remote-architecture.md) 与 [认证部署](../01-getting-started/01-auth-deployment.md)。

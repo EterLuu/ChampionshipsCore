@@ -116,6 +116,6 @@ Core 与 Worker 的 `test.enabled` 默认关闭；在共用部署中显式开启
 
 ## 扩展游戏测试
 
-首先用 `resident + idle` 验证登录、队伍、传送、旁观和自然生命周期，再用 `game + CC_TEST_GAME` 验证阶段动作、机制和重连。动作脚本只描述客户端操作，不复制游戏规则；游戏规则、胜负和结算仍由 Core 或 Worker 决定。每个游戏的拓扑、动作、掉线场景、积分断言和验证状态登记在 [无人测试游戏矩阵](game-test-matrix.md) 中。
+首先用 `resident + idle` 验证登录、队伍、传送、旁观和自然生命周期，再用 `game + CC_TEST_GAME` 验证阶段动作、机制和重连。动作脚本只描述客户端操作，不复制游戏规则；游戏规则、胜负和结算仍由 Core 或 Worker 决定。每个游戏的拓扑、动作、掉线场景、积分断言和验证状态登记在 [无人测试游戏矩阵](02-game-test-matrix.md) 中。
 
-完整命令见 [命令参考](commands.md)，身份细节见 [UUID 契约](player-uuid-contract.md)，远程世界释放见 [Bingo 跨服架构](bingo-remote-architecture.md)。
+完整命令见 [命令参考](../03-reference/01-commands.md)，身份细节见 [UUID 契约](../04-development/04-player-uuid-contract.md)，远程世界释放见 [Bingo 跨服架构](../01-getting-started/02-bingo-remote-architecture.md)。

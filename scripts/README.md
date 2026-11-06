@@ -54,4 +54,4 @@ python3 scripts/buildmart_blueprint_audit.py <蓝图文件或目录> \
   --json /tmp/buildmart-audit.json
 ```
 
-参数中的文件名需替换为实际路径。脚本不改蓝图、配置或世界；支持的加工来源不能替代当前服务端配方和生存摆放验证。判定与原生检查见 [蓝图验证指南](../docs/buildmart-blueprint-validation.md)。
+参数中的文件名需替换为实际路径。脚本不改蓝图、配置或世界；支持的加工来源不能替代当前服务端配方和生存摆放验证。判定与原生检查见 [蓝图验证指南](../docs/05-validation/04-buildmart-blueprint-validation.md)。

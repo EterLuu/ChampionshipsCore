@@ -2,7 +2,7 @@
 
 本文说明远程 Bingo 的容量规划、性能采样和端到端验收方法。测试人数与门槛由部署方确定；64 人（16 队×4 人）是本文的示例场景，容量需在实际硬件、Folia 版本、地图与插件组合上验证。
 
-部署前先阅读 [Worker README](../championships-bingo-worker/README.md) 和 [跨服架构](bingo-remote-architecture.md)。
+部署前先阅读 [Worker README](../../championships-bingo-worker/README.md) 和 [跨服架构](../01-getting-started/02-bingo-remote-architecture.md)。
 
 ## 测试准备
 
@@ -16,7 +16,7 @@ Worker 当前边界为 16000×16000 格。预生成范围应覆盖允许活动�
 
 | 层次 | 方法 | 覆盖范围 |
 | --- | --- | --- |
-| 区块和实体压力 | [LoadTest](../championships-bingo-loadtest/README.md) 的逻辑加载者 | 加载窗口、移动、AI 实体、region 热点和清理 |
+| 区块和实体压力 | [LoadTest](../../championships-bingo-loadtest/README.md) 的逻辑加载者 | 加载窗口、移动、AI 实体、region 热点和清理 |
 | 端到端比赛 | 真实协议客户端或真人 | 网络、追踪、背包/统计观察、UI、代理、Redis、数据库、结算和重置 |
 
 逻辑加载者不是实际玩家，不覆盖完整任务与网络成本。先从低压力阶梯测试起，再运行目标人数的完整比赛。每轮从相同干净地图开始，每次只调整一类参数。
@@ -64,7 +64,7 @@ LoadTest 结果位于服务端 `plugins/ChampionshipsBingoLoadTest/results.jsonl
 | 回收 | 玩家返回 Core，临时任务/实体/票据释放，监督流程重建世界 |
 | 第二局 | 重新开局无旧 ownership、旧回调、残留资源或脏世界污染 |
 
-通过逻辑压测后仍需完成此层验收。完成后移除 LoadTest JAR，冻结正式版本和配置。原生包、线程与旁观验证另遵守 [旁观契约](spectator-visibility-contract.md)。
+通过逻辑压测后仍需完成此层验收。完成后移除 LoadTest JAR，冻结正式版本和配置。原生包、线程与旁观验证另遵守 [旁观契约](../04-development/03-spectator-visibility-contract.md)。
 
 ## 参考资料
 

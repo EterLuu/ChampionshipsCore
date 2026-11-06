@@ -1,6 +1,6 @@
 # AuthBridge 与 AuthProxy 同步协议
 
-ChampionshipsCore 以 Minecraft 赛事服务端为主体独立运行。AuthBridge 和 AuthProxy 是可选连接器，用于接入外部身份平台并同步密码、准入、身份迁移与 DAILY 排行榜。身份平台的服务端实现不在本仓库中，本文描述连接器要求的兼容接口；服务端鉴权、角色和全局游标规则属于对接方需满足的协议要求。安装与配置见 [认证部署指南](auth-deployment.md)。
+ChampionshipsCore 以 Minecraft 赛事服务端为主体独立运行。AuthBridge 和 AuthProxy 是可选连接器，用于接入外部身份平台并同步密码、准入、身份迁移与 DAILY 排行榜。身份平台的服务端实现不在本仓库中，本文描述连接器要求的兼容接口；服务端鉴权、角色和全局游标规则属于对接方需满足的协议要求。安装与配置见 [认证部署指南](../01-getting-started/01-auth-deployment.md)。
 
 本文定义双方使用的契约：AuthBridge 使用显式 `uuidSource` 执行身份操作，AuthProxy 在 Bungee 上固定为 `PROXY` 准入所有者，负责预登录准入与 UUID 转发。
 

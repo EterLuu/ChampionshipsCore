@@ -16,7 +16,7 @@
 
 Core 每个游戏以 `api/game/<game>/` 为功能边界。根目录的 Manager 注册地图和创建实例；`config/` 读取地图选项，`runtime/` 管理场地、回合、事件和清理，`model/` 保存模型，`geometry/` 处理空间算法，`mechanics/` 实现游戏机制。按需要创建子包，无需为空的职责建目录。Riptide 另有 `course/` 负责关卡池与生成，`editor/` 负责建筑草稿和试玩。游戏模型放在所属游戏内，共享的游戏类型、运行模式和阶段位于 `api/game/model/`，对局配对模型位于 `api/schedule/model/`。模型按所属领域组织，禁止放入通用的 `api/object/` 包。
 
-Laser 类游戏统一使用中立的 `api/game/laser/` 枪械包：`model/LaserGun` 定义枪械数值，`runtime/LaserWeaponState` 管理每个对局的弹药、换弹、连射及射击截止时间，`mechanics/LaserShotEngine` 负责射线检测和霰弹合并，`presentation/` 负责枪械物品、弹药显示、激光、开镜与击杀反馈。接入方式及生命周期见 [Laser 枪械接入](laser-weapons.md)。
+Laser 类游戏统一使用中立的 `api/game/laser/` 枪械包：`model/LaserGun` 定义枪械数值，`runtime/LaserWeaponState` 管理每个对局的弹药、换弹、连射及射击截止时间，`mechanics/LaserShotEngine` 负责射线检测和霰弹合并，`presentation/` 负责枪械物品、弹药显示、激光、开镜与击杀反馈。接入方式及生命周期见 [Laser 枪械接入](../03-reference/02-laser-weapons.md)。
 
 新增玩法接入 `GameTypeEnum`、`GameManager`、对应地图 Manager 和 prepare 流程。启动参数统一通过 `GameStartArguments` / `GameStartService`，正式赛保存 `EventStartSelection`；不得为单个游戏再写一套 all/队伍解析器。复制双队比赛共用批量占用、预热和回滚入口，单实例多分区用 `ArenaSelection` / `StartAllocation`，选择不得修改共享地图配置或拆成多份计分实例。场地生命周期使用 `BaseGameInstance`；双队比赛使用已有 paired 抽象，复制地图使用现有 arena/spatial 工具。不要在命令或 GUI 内再维护一套场地注册、游戏状态或复制坐标算法。地图文件使用小写 `.yml` 后缀；目录扫描和首次 tick 初始化调用 `BaseGameInstanceManager` 的 `loadMapDefinitions` / `deferMapLoad`。公共清理会使旧加载请求失效并通过 `onAreaDetached` 移除副本索引。复制场地通过 `registerMapInstances` 发布实例，查询和删除沿用基类，不另存副本注册表；子类只处理游戏特有的取消操作，不复制通用卸载循环。
 
@@ -61,7 +61,7 @@ SQL、连接池、schema 迁移和 DAO 位于 Core 的 `database/`。按 player�
 
 Core 生产 Java 源码不包含中文，包括注释。玩家提示、命令说明、编辑器文案和日志文本放在 `message.yml`；菜单结构与按钮文案继续由 `gui.yml` 管理，地图规则由地图配置和 `schedule-message.yml` 管理。`message.yml` 的 `code-text` 按类名和调用入口分组，使用 `MessageConfig.codeText(key, arguments...)` 读取；`%arg1%`、`%arg2%` 等表示原调用的动态参数，参数只替换一次。此入口保留原始颜色编码，由调用方沿用既有颜色转换方式。缺少覆盖键时使用内置默认，显式空字符串保留；配置重载原子替换文本表，删除覆盖键会恢复默认。新增文案优先使用有明确含义的键，不在 Java 中加入中文兜底。
 
-旁观和显隐必须遵守 [旁观契约](spectator-visibility-contract.md)。UUID 是持久身份，Player/Entity 只代表当前连接；身份边界见 [UUID 契约](player-uuid-contract.md)。不要在整理包或提取方法时扩大游戏资格、隐藏策略或线程访问范围。
+旁观和显隐必须遵守 [旁观契约](03-spectator-visibility-contract.md)。UUID 是持久身份，Player/Entity 只代表当前连接；身份边界见 [UUID 契约](04-player-uuid-contract.md)。不要在整理包或提取方法时扩大游戏资格、隐藏策略或线程访问范围。
 
 ## GUI 与语言配置
 
@@ -216,9 +216,9 @@ python3 scripts/check-source-layout.py
 mvn -B -ntp -pl championships-core,championships-bingo-worker -am clean package
 ```
 
-Java 格式脚本只处理 Maven 模块的生产和测试源码；首次执行会下载固定版本的格式工具到系统临时目录。维护脚本及用法见 [脚本指南](../scripts/README.md)。Python 脚本使用 Python 3.11 或更高版本和标准库；格式检查使用 Ruff 0.11.13，执行 `ruff format --check scripts`，配置由根目录 `pyproject.toml` 管理。生产源码放 `src/main/java`，JUnit 和测试夹具放 `src/test/java`。测试与被测类同包；多个包共用的夹具放测试源码的 support 包。
+Java 格式脚本只处理 Maven 模块的生产和测试源码；首次执行会下载固定版本的格式工具到系统临时目录。维护脚本及用法见 [脚本指南](../../scripts/README.md)。Python 脚本使用 Python 3.11 或更高版本和标准库；格式检查使用 Ruff 0.11.13，执行 `ruff format --check scripts`，配置由根目录 `pyproject.toml` 管理。生产源码放 `src/main/java`，JUnit 和测试夹具放 `src/test/java`。测试与被测类同包；多个包共用的夹具放测试源码的 support 包。
 
-测试按独立行为和失败路径组织，公共算法由所属模块验证，调用模块覆盖接入、角色与生命周期。用例设计、昂贵规划的复用和隔离规则见 [测试指南](testing.md)。
+测试按独立行为和失败路径组织，公共算法由所属模块验证，调用模块覆盖接入、角色与生命周期。用例设计、昂贵规划的复用和隔离规则见 [测试指南](02-testing.md)。
 
 按改动范围选择 reactor 模块并带上 `-am`。共享行为须同时检查 Core 与 Worker 的实现、资源、运行配置和测试。包移动需要 clean build，以免旧包的 class 残留在交付 JAR。涉及原生发包、反射或 Folia 线程的行为另按对应契约做原生验证。
 

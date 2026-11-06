@@ -49,7 +49,7 @@
 | `/cc rank info` | 查看各游戏的积分权重 |
 | `/cc rank recap` | 重看最近一次游戏结算和总榜 |
 
-`/cc vote <配置名称>` 使用 [游戏指南](games.md) 的“配置名称”一列中的值，匹配不区分大小写；`DragonEggCarnival`、`Dodgebolt` 与 `SulfurSoccer` 不参与投票。
+`/cc vote <配置名称>` 使用 [游戏指南](../02-games/01-games.md) 的“配置名称”一列中的值，匹配不区分大小写；`DragonEggCarnival`、`Dodgebolt` 与 `SulfurSoccer` 不参与投票。
 
 观战命令使用启用游戏的配置名称，Tab 补全会自动隐藏 `enabled-games` 中未启用的游戏。
 
@@ -97,7 +97,7 @@ light_gray cyan purple blue brown green red black
 /cc team member add red_rabbits Alex
 ```
 
-每名玩家只能属于一支队伍，人数受 `team.max-members` 限制。在线成员直接使用 Bukkit/代理提供的 UUID；离线成员的 UUID 由 `identity.mode` 决定：`OFFLINE` 按 Minecraft 的 `OfflinePlayer:<玩家名>` 规则计算，`PROFILE_UUID` 调用 `identity.profile-api-base-url` 的标准档案接口，并要求返回值与登录链路一致。档案缺失、服务异常、响应格式错误或本地身份冲突会终止该次操作并提示管理员。完整边界见 [player-uuid-contract.md](player-uuid-contract.md)。
+每名玩家只能属于一支队伍，人数受 `team.max-members` 限制。在线成员直接使用 Bukkit/代理提供的 UUID；离线成员的 UUID 由 `identity.mode` 决定：`OFFLINE` 按 Minecraft 的 `OfflinePlayer:<玩家名>` 规则计算，`PROFILE_UUID` 调用 `identity.profile-api-base-url` 的标准档案接口，并要求返回值与登录链路一致。档案缺失、服务异常、响应格式错误或本地身份冲突会终止该次操作并提示管理员。完整边界见 [player-uuid-contract.md](../04-development/04-player-uuid-contract.md)。
 
 ### Resident 测试队伍
 
@@ -133,7 +133,7 @@ resident Bot 全部上线后，可用以下命令把 `autobot00`–`autobot63` �
 
 手动局可以指定地图和参赛队伍，包括躲避箭、龙蛋狂欢及硫方足球。BattleBox、ParkourTag、LaserBox 自动把双数队伍按相邻顺序配对到空闲副本；副本不足或队伍不可用时整次请求失败。子场地编号从 1 开始，TNT、烫手鳕鱼、霜冻和激光乱斗可选择单一区或全部分区，仍按一个实例计时与结算。
 
-正式赛使用同样的选择参数，选择贯穿后续轮次；省略参数时使用配置的地图安排和注册队伍。手动局不额外把管理员加入名单，也不调整其他玩家；正式赛管理规则、观众和赛程。完整示例与分区语义见 [比赛启动指南](game-start.md)。
+正式赛使用同样的选择参数，选择贯穿后续轮次；省略参数时使用配置的地图安排和注册队伍。手动局不额外把管理员加入名单，也不调整其他玩家；正式赛管理规则、观众和赛程。完整示例与分区语义见 [比赛启动指南](../02-games/02-game-start.md)。
 
 ### 管理员命令
 

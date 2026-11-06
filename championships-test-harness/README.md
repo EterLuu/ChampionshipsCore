@@ -113,7 +113,7 @@ Bot 的 UUID 由 AuthProxy、BungeeCord、Paper 和身份平台提供。Core lea
 
 每次运行使用独立的报告目录和 stop file；生产调试模式还必须提前确认测试写入、Bot 身份和正式赛程资源安排。结束后保留报告和服务端日志，确认 Core `status` 已回到无活动会话，再清理临时环境。Harness 不删除 Core reservation 或 Worker release journal，也不修改认证门禁。
 
-动作 profile 的职责说明见 [`src/profiles/README.md`](src/profiles/README.md)，Core 会话和命令见 [无人测试设计](../docs/game-test-research.md) 与 [命令参考](../docs/commands.md)。
+动作 profile 的职责说明见 [`src/profiles/README.md`](src/profiles/README.md)，Core 会话和命令见 [无人测试设计](../docs/06-unattended-testing/01-game-test-research.md) 与 [命令参考](../docs/03-reference/01-commands.md)。
 
 ## Core test interface orchestration
 

@@ -1,6 +1,6 @@
 # 旁观与玩家可见性验证
 
-本文提供逐游戏检查矩阵；行为要求以 [旁观契约](spectator-visibility-contract.md) 为准。代码审查、隔离原生测试和真实比赛验收分别记录，不能相互替代。
+本文提供逐游戏检查矩阵；行为要求以 [旁观契约](../04-development/03-spectator-visibility-contract.md) 为准。代码审查、隔离原生测试和真实比赛验收分别记录，不能相互替代。
 
 ## 逐游戏入口
 
@@ -46,4 +46,4 @@
 mvn -B -ntp -pl championships-core,championships-bingo-worker -am test
 ```
 
-共享修改须同时核对两端默认资源与部署配置。具体交付和重启要求见 [开发指南](development.md)。
+共享修改须同时核对两端默认资源与部署配置。具体交付和重启要求见 [开发指南](../04-development/01-development.md)。

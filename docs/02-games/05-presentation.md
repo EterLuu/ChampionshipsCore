@@ -6,7 +6,7 @@
 
 在正式赛事模式中开启 `strict-spectator-rule` 后，正常赛事轮次中的参赛队员不能随意观战；拥有 `cc.refuge` 的裁判或替补不受此限制。DAILY 模式始终跳过该判定。
 
-旁观身份、实体可见性与 Tab 列表遵守 [旁观契约](spectator-visibility-contract.md)。下面的展示配置不改变玩家的真实角色或游戏资格。
+旁观身份、实体可见性与 Tab 列表遵守 [旁观契约](../04-development/03-spectator-visibility-contract.md)。下面的展示配置不改变玩家的真实角色或游戏资格。
 
 ## 聊天与跨服展示
 
@@ -77,7 +77,7 @@ Bingo 同样支持通用的 `%bingo_area_status_[场地]%` 和 `%bingo_area_time
 | `%cc_tab_name_color%` | 当前游戏队色；非活动选手使用白色 |
 | `%cc_tab_footer_status%` | 赛事队伍积分或 DAILY 当前游戏/临时队伍信息 |
 
-Core 与 Worker 共用这些展示规则。实体隐藏保留全部在线玩家的 Tab 条目，真实离线时移除。DAILY 的临时队伍与正式队伍数据分别处理，详见 [自由游玩指南](daily-mode.md#数据与-papi)。
+Core 与 Worker 共用这些展示规则。实体隐藏保留全部在线玩家的 Tab 条目，真实离线时移除。DAILY 的临时队伍与正式队伍数据分别处理，详见 [自由游玩指南](04-daily-mode.md#数据与-papi)。
 
 ## 侧栏记分板
 

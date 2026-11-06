@@ -1,6 +1,6 @@
 # Riptide 编辑器性能检查
 
-地图编辑侧栏会周期刷新，适合显示轻量校验结果；完整赛道规划可能执行大量搜索，不能放入每次 UI 刷新。当前接入方式见 [开发指南](development.md) 与 [关卡指南](riptide-stage-mechanics.md)。
+地图编辑侧栏会周期刷新，适合显示轻量校验结果；完整赛道规划可能执行大量搜索，不能放入每次 UI 刷新。当前接入方式见 [开发指南](../04-development/01-development.md) 与 [关卡指南](../02-games/06-riptide-stage-mechanics.md)。
 
 ## 展示与完整校验
 

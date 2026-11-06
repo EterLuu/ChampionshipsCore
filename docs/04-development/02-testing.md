@@ -1,6 +1,6 @@
 # 测试组织与运行
 
-测试按模块职责维护，以行为覆盖和故障边界为主。源码布局与格式要求见 [开发指南](development.md)。
+测试按模块职责维护，以行为覆盖和故障边界为主。源码布局与格式要求见 [开发指南](01-development.md)。
 
 ## 归属
 
@@ -34,7 +34,7 @@ JUnit 报告中的数量是执行次数，参数化方法按每种游戏或输�
 
 ## 原生服与协议客户端
 
-需要验证 Paper/Folia、BungeeCord、AuthMe、UUID、传送、重生、旁观或游戏结算时，使用 `championships-test-harness` 连接测试服或已明确开启调试入口的生产服。Harness 的 `resident + idle` 适合先建立 64 Bot 长驻基线，游戏动作再按 [无人测试游戏矩阵](game-test-matrix.md) 添加 profile。
+需要验证 Paper/Folia、BungeeCord、AuthMe、UUID、传送、重生、旁观或游戏结算时，使用 `championships-test-harness` 连接测试服或已明确开启调试入口的生产服。Harness 的 `resident + idle` 适合先建立 64 Bot 长驻基线，游戏动作再按 [无人测试游戏矩阵](../06-unattended-testing/02-game-test-matrix.md) 添加 profile。
 
 ```bash
 cd championships-test-harness

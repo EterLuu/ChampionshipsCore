@@ -27,7 +27,7 @@
 
 其他游戏的分配器把同行小队视为不可拆分单元：较大的小队优先落位，个人玩家随机补足未满队伍；全部为个人玩家时同样随机分队。分配完成后才创建 `TeamManager` 的临时颜色队伍（红队、绿队、蓝队等），因此不会污染正式队伍缓存和数据库。
 
-地图世界由地图定义绑定，管理员应使同世界内的赛道边界互不重叠；同一地图的并发实例共享地图几何。`PlayerIsolationService` 把日常 match ID 交给统一 `PlayerVisibilityManager`，由其应用正常选手的会话隔离。旁观身份和显隐仍遵守 [旁观契约](spectator-visibility-contract.md)，离开实例后解除会话绑定。
+地图世界由地图定义绑定，管理员应使同世界内的赛道边界互不重叠；同一地图的并发实例共享地图几何。`PlayerIsolationService` 把日常 match ID 交给统一 `PlayerVisibilityManager`，由其应用正常选手的会话隔离。旁观身份和显隐仍遵守 [旁观契约](../04-development/03-spectator-visibility-contract.md)，离开实例后解除会话绑定。
 
 Laser Showdown 的五种枪与 LaserBox 共用枪械物品控制、射击节奏、散布、后坐力、命中部位和枪声实现；狙击镜缩放、移动效果、弹量、手动／自动换弹与切换物品中断换弹也保持一致。
 
@@ -47,10 +47,10 @@ Bingo 记录胜场、连线数、完成任务总数和单场最多完成数；Ac
 
 DAILY 的 `player_team_name*`、`player_team_color*` 只展示当局临时队伍，不读取玩家的正式队伍；没有临时队伍时使用 `message.yml` 的 `papi.spectator` 或 `papi.none` 默认文本。Core 的 `player_team_points`/`player_team_rank` 返回 `0`，Worker 的队伍积分也返回 `0`。匹配产生的临时队伍按颜色命名为“红队、绿队、蓝队”等。
 
-TAB 使用 `%cc_tab_prefix%`、`%cc_tab_name_color%` 与 `%cc_tab_footer_status%`：大厅玩家使用白色名字，活动选手使用当局队色；聊天和加入/离开提示复用 `[前缀] 玩家名` 身份格式。完整展示规则见 [积分与展示指南](presentation.md#tab-展示)。
+TAB 使用 `%cc_tab_prefix%`、`%cc_tab_name_color%` 与 `%cc_tab_footer_status%`：大厅玩家使用白色名字，活动选手使用当局队色；聊天和加入/离开提示复用 `[前缀] 玩家名` 身份格式。完整展示规则见 [积分与展示指南](05-presentation.md#tab-展示)。
 
 排行榜占位符格式为 `%cc_daily_lb_<榜单>_<名次>%`，并可追加 `_name` 或 `_value` 只取玩家名/数值。例如：`wins`、`bingo_wins`、`bingo_lines`、`bingo_completed_tasks`、`bingo_max_completed`、`acerace_fastest_lap_<地图>`、`acerace_fastest_three_laps_<地图>`。不存在累计积分榜。地图名会转为小写下划线标识。可在支持 PlaceholderAPI 的展示插件中配置这些占位符。
 
 大厅侧边栏使用 `scoreboards.yml` 的 `daily-lobby`。缺少该节点时使用内置回退模板；可按当前默认资源添加自定义侧栏。
 
-网页榜单同步由 `leaderboard-sync.enabled-games` 限制为已部署网页支持的游戏，默认 Bingo、AceRace、龙蛋狂欢和跑路战士。当前网页目录尚未接入 LaserShowdown，新统计在游戏内查看；部署相应网页目录和指标后，才将该游戏加入网页同步列表，避免未知游戏导致整批榜单被拒绝。
+网页榜单同步由 `leaderboard-sync.enabled-games` 限制为网页端支持的游戏，默认 Bingo、AceRace、龙蛋狂欢和跑路战士。网页端目前未接入 LaserShowdown，新统计在游戏内查看；部署相应网页目录和指标后，才将该游戏加入网页同步列表，避免未知游戏导致整批榜单被拒绝。
