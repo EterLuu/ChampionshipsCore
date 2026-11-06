@@ -6,6 +6,7 @@
 | --- | --- | --- |
 | `format-java.sh` | 按 Google Java Format 1.33.0 AOSP 样式格式化或检查 Maven Java 源码 | Bash、Git、ripgrep、curl、JDK 25、Python 3.11+ |
 | `check-source-layout.py` | 检查生产/测试分离、package 路径和领域归属 | Python 3.11+ 标准库 |
+| `check-docs.py` | 检查 Markdown 链接、文件路径、类型名、配置键和游戏显示名与代码一致 | Python 3.11+ 标准库 |
 | `rotate-production-secrets.sh` | 轮换 Web/Bridge/AuthMe/测试会话凭据并写入 Core、Bungee、Bingo 生产配置 | Bash、OpenSSL、Python 3.11+、root |
 | `buildmart_blueprint_audit.py` | 只读检查蓝图难度与材料区覆盖，输出 Markdown、CSV、JSON | Python 3.11+ 标准库 |
 
@@ -14,7 +15,10 @@
 ```bash
 scripts/format-java.sh --check
 python3 scripts/check-source-layout.py
+python3 scripts/check-docs.py
 ```
+
+`check-docs.py` 校验文档中的相对链接、仓库内文件路径、项目类名、点号配置键，以及 `游戏指南` 的显示名是否与 `message.yml` 一致；发现失效引用时以非零状态退出，便于在文档或代码改名后及时发现并更新。
 
 省略 `--check` 会格式化 Java 文件。格式器首次运行下载固定版本 JAR 到 `/tmp`，不在仓库保存工具二进制。
 

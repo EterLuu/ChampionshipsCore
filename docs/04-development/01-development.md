@@ -67,7 +67,7 @@ Core 生产 Java 源码不包含中文，包括注释。玩家提示、命令说
 
 Core 通知中的中性玩家名由 `code-text.core-messages.player-name` / `player-with-team` 完整模板负责；它们不同于参赛身份、TAB 和聊天使用的共享 `presentation.player` 模板，不能用团队颜色替代中性姓名。个人加分 actionbar、足球首次开球副标题及 Core `bingo` 扩展的排名行分别使用 `base-game-instance.points-actionbar`、`sulfur-soccer-area.kickoff-countdown-subtitle` 和 `bingo-placeholder.rank-entry`。格式化保留原始数字语义、颜色、缺失排名回退和非首次开球空副标题；不能借文案调整改变计分、排名、身份查询或比赛状态。
 
-`/cc team list` 使用 `code-text.team-list-sub-command` 的 `header`、完整 `row`、`summary`、`empty` 和 `names-separator`，由参数传入队伍、在线/离线名单及计数。整行与汇总只插值一次，名称中同名 token 保留。v69 从旧 `on-command-1..7` / `format-names-1` 明确迁移实际运行值后删除旧键，不能直接用默认行覆盖旧自定义标签。DAILY 的 `%prefix%` 是既有显式嵌套约定：先对正文执行一次前缀展开，再用公共模板工具处理外层 `%message%` / `%prefix%`；不要把这项兼容行为误删，也不要扩展为任意参数递归替换。
+`/cc team list` 使用 `code-text.team-list-sub-command` 的 `header`、完整 `row`、`summary`、`empty` 和 `names-separator`，由参数传入队伍、在线/离线名单及计数。整行与汇总只插值一次，名称中同名 token 保留；读取只使用语义键，不能用默认行覆盖管理员自定义标签。DAILY 的 `%prefix%` 是既有显式嵌套约定：先对正文执行一次前缀展开，再用公共模板工具处理外层 `%message%` / `%prefix%`；不要把这项兼容行为误删，也不要扩展为任意参数递归替换。
 
 GUI 的菜单标题、按钮材质、槽位、状态、lore 和高亮通过 `gui.yml`、`GuiConfig`、`ConfiguredGui` 及现有 `GuiMenu` 入口管理。键表达用途，不新增 `text-001` 等编号键；相同文本但不同用途可以独立配置，不按字面内容强制合并。读取多行 lore 使用列表入口，禁止将 `lore.2` 当字符串路径。按钮动作依据所属菜单和当前状态判断，不能依赖可配置名称或材质识别功能。
 
@@ -93,7 +93,7 @@ Core 和 Worker 的玩家选择窗口共用 `PlayerListPresentation` 与平台 `
 
 玩家选择窗口同时绑定原所有者、原 Player 连接、原会话 token 或角色快照及当前背包。翻页重读当前名单，夹取页码并清空上一页目标；选择须核对目标仍在原名单。关闭事件可能改变身份，因此关闭后、分派选择前再次检查连接和原会话。选择直接回到原所有者，禁止经当前 registry 把旧窗口目标转交新局。旁观身份和区块预热、最新请求、最终传送仍由现有 Core `SpectatorManager` / Worker 会话统一入口负责，菜单不得另建旁观状态。
 
-Bingo 队友传送使用同一个玩家列表窗口，配置入口为 `games.bingo.menus.teammate-teleport`，其有效配置冻结为 `gui.teammates.*`；条目继续读取 `items.teammate`，翻页等控件继承共享按钮。v57 仅为该菜单预留页脚并缩小默认内容区，不覆盖原队友图标、标题、lore 或其他菜单。Core 的旁观监听器只分派自己拥有的共享窗口，Bingo 监听器只分派原 Bingo 实例的窗口，防止一次点击被处理两遍。旧 Worker manifest 保留队友语言、配色和物品样式；旧自适应单页布局会截断名单，改为资源定义的完整分页布局，并明确将这项修正与旧样式兼容区分。
+Bingo 队友传送使用同一个玩家列表窗口，配置入口为 `games.bingo.menus.teammate-teleport`，其有效配置冻结为 `gui.teammates.*`；条目读取 `items.teammate`，翻页等控件继承共享按钮，菜单在 `gui.yml` 预留页脚并设置默认内容区，父级按钮可覆盖。Core 的旁观监听器只分派自己拥有的共享窗口，Bingo 监听器只分派原 Bingo 实例的窗口，防止一次点击被处理两遍。队友名单使用资源定义的完整分页布局，不按在线人数截断。
 
 队友传送请求由原 `BingoArea` / `WorkerMatchSession` 的 `PlayerTargetTeleports` 管理，不能由物品 PDC 或当前 registry 猜测目标。源和目标都必须是原回合的正常游戏玩家、同队、当前连接、存活且位于 Bingo 世界；不得把旁观者作为参赛者传送的源或目标。目标实体线程先捕获位置，异步预热区块后再次验证目标，在查看者实体线程紧邻 `teleportAsync` 前核对源资格、目标角色快照和最新请求。成功提示同样返回查看者实体线程并重查资格。新的选择覆盖旧请求；离场、断线、死亡、真实模式变化和结束/reset/dispose 取消相关出入请求，旧实例清理不能取消新实例请求。Core 保留原回合引用与游戏 generation；Worker 保留原 roster 的 PlayerSnapshot。该服务只保存待传送请求，不拥有或复制旁观身份、显隐策略或游戏 roster。Folia 验证必须包含真实跨区域实体调度，不得以纯背包代理测试声称线程验证完成。
 
@@ -127,11 +127,11 @@ BuildMart 材料标签的 `buildmart.material-display` 在 `message.yml` 中定�
 
 日常战绩与排行榜各自有 `screens.overview` 和 `screens.detail`，由 `DailyMenuPage` 共用分页与导航。支持的居中页面可将 `layout.content` 写成“条目数 → 槽位列表”；例如 `"1": [22]`、`"2": [21, 23]`。最大列表扣除固定控件后决定每页容量，其余列表只控制尾页排列；数量键必须等于列表长度，所有槽位均须有效且唯一。固定控件占用了某个居中位置时，该页回退到完整内容列表中的可用槽位，不覆盖按钮。普通列表如 `[16, 10]` 仍按原顺序分页，完全替代居中表。渲染必须使用 `MenuLayout.pageSlots`，点击保存实际对象或使用带总数的 `index`；仅在 `MenuId.supportsContentArrangements` 声明已接入的菜单开放这种配置，不能给仍按固定顺序点击的页面启用。空态位置也不能覆盖固定按钮。
 
-日常成绩卡片共用 `DailyRecordItem` 和 `buttons.daily-record` 的游戏图标/颜色状态。完整 lore 中单独一行 `%records%` 插入动态成绩，其他行完整保留；先识别模板中的行标记，再单次展开参数，玩家名或地图名中相同文本不得被当成第二个标记。动态成绩行和固定说明使用各自的语义模板，不按旧 lore 的第零行、第二行硬拆，修改模板长度不得丢行。v48 将日常菜单旧根布局迁入两个 `screens`，默认布局改为居中表，已有自定义槽位列表保留；摘要、榜首行和地图卡片分别有独立模板，父级按钮槽位继续可覆盖。
+日常成绩卡片共用 `DailyRecordItem` 和 `buttons.daily-record` 的游戏图标/颜色状态。完整 lore 中单独一行 `%records%` 插入动态成绩，其他行完整保留；先识别模板中的行标记，再单次展开参数，玩家名或地图名中相同文本不得被当成第二个标记。动态成绩行和固定说明使用各自的语义模板，不按 lore 的固定行号硬拆，修改模板长度不得丢行。日常菜单使用 `screens.overview` 与 `screens.detail` 两套布局，默认居中表，摘要、榜首行和地图卡片分别有独立模板，父级按钮槽位可覆盖。
 
 日常大厅、游戏选择和组队窗口同样由 `DailyMenuPage` 保存布局；游戏卡片与在线候选人按配置容量完整分页，自动刷新名单时夹取页码并重建实际目标，不能按在线人数截断。固定功能菜单只配置各 `items.<用途>.slot`，不保留无效的 `layout.content`；空态使用 `layout.overlay.empty`，可放在内容区但不得覆盖按钮。旧组队窗口的操作须核对原小队引用和 revision，接受邀请前核对原 `PendingInvite`；身份或邀请改变时只刷新，后续点击才作用于新对象。
 
-日常成员行共用 `DailyPartyPresentation` 与 `buttons.daily-party-member`，完整 lore 用单独一行 `%members%` 决定动态名单位置；没有标记时不追加名单。成绩与成员模板由 `GuiItemLore` 统一先识别行标记、再单次展开参数。v50 为已有两处小队 lore 增量追加标记，以保留原有末尾成员列表。地图名预览数量和分隔符属于 `game-selection-screen.presentation.map-preview-limit` 与 `items.map-separator`，不得在菜单中另写固定展示数量和分隔字符。
+日常成员行共用 `DailyPartyPresentation` 与 `buttons.daily-party-member`，完整 lore 用单独一行 `%members%` 决定动态名单位置；没有标记时不追加名单。成绩与成员模板由 `GuiItemLore` 统一先识别行标记、再单次展开参数。地图名预览数量和分隔符属于 `game-selection-screen.presentation.map-preview-limit` 与 `items.map-separator`，不得在菜单中另写固定展示数量和分隔字符。
 
 场地旁观选择器的场地、比赛分区和匹配赛建位置页面共用 `MenuLayout` 与窗口归属检查。每个窗口冻结尺寸、内容、边框、控件和空态覆盖槽；自动刷新与分页更新同一个背包，点击只使用实际渲染的目标表。旧连接、旧管理器、停止后的排队事件和已被替换的窗口不得操作当前菜单；旧管理器关闭时只关闭自己的窗口。场地与传送资格仍由 `GameManager` / `SpectatorManager` 决定，菜单不保存平行的旁观状态，已移除的场地或位置不得凭旧条目进入。
 
@@ -181,7 +181,7 @@ Core 与 Worker 卡片共用平台 `BingoCardMenu` / `InventoryItems`，不各�
 
 Bingo 任务物品由 common `BingoTaskPresentation` 判定正常、隐藏、锁定、本队完成、被其他队伍占领五种显示状态，并由平台 `BingoTaskItems` 渲染；Core 和 Worker 只适配任务与已接受的完成事实，不重复实现状态装饰。未有任何队伍完成时，隐藏/锁定任务的名称、说明、物品数量及地图图标都不得泄露任务内容。完成后按本队、其他队伍和中立视角处理；Domination 的其他队伍显示占领状态，中立汇总仍显示原任务。地图沿用原有任务图像、队色边框和连线机制，仅复用隐藏判断与遮罩材质，不使用 GUI 的完成障碍物覆盖地图任务。
 
-`games.bingo.menus.card.items.task` 定义正常物品，`states.hidden/locked/completed/occupied` 定义状态的完整材质、标题、lore 与 glint；`TASK` 仅在非遮罩状态表示原任务图标。正常状态 glint 是原任务高亮的开关，已有任一完成时不再额外高亮；完成/占领状态按配置独立高亮。`task-presentation` 保存备用材质、完成名单分隔符、玩家身份模板、完成汇总完整行模板与未知/短/长时钟模板。`%description%` 和 `%completion-summary%` 是显式完整行占位，未配置的行不得自动追加；后者仅在有完成记录时展开 `task-presentation.completion-summary` 的完整行（默认空行与完成者名单）。显式空 lore 保持为空。隐藏/锁定的标题和 lore 不允许任务数据占位，且不得使用 `TASK` 材质；候选 GUI 在激活前和 Worker PREPARE 原生注册表均须校验。v58 只增量补充这些配置，不覆盖既有卡片标题、信息卡、网格或运行自定义值。
+`games.bingo.menus.card.items.task` 定义正常物品，`states.hidden/locked/completed/occupied` 定义状态的完整材质、标题、lore 与 glint；`TASK` 仅在非遮罩状态表示原任务图标。正常状态 glint 是原任务高亮的开关，已有任一完成时不再额外高亮；完成/占领状态按配置独立高亮。`task-presentation` 保存备用材质、完成名单分隔符、玩家身份模板、完成汇总完整行模板与未知/短/长时钟模板。`%description%` 和 `%completion-summary%` 是显式完整行占位，未配置的行不得自动追加；后者仅在有完成记录时展开 `task-presentation.completion-summary` 的完整行（默认空行与完成者名单）。显式空 lore 保持为空。隐藏/锁定的标题和 lore 不允许任务数据占位，且不得使用 `TASK` 材质；候选 GUI 在激活前和 Worker PREPARE 原生注册表均须校验；未配置的字段回退到父级或内置默认。
 
 任务样式冻结为独立 `gui.card-task.*` schema；只有整个前缀缺失时读取 common 的历史样式资源，部分字段或未知版本须拒绝。旧 manifest 的哈希不修改；隐藏泄露、占领状态和完成信息属于共享行为修复，不以兼容为由保留错误显示。原版可翻译任务、描述、原生成就图标组件及药水颜色必须保留，不能把富文本先转换成 legacy 字符串再拼回去。`ComponentTemplates` 只替换一次，普通参数保留自身队色；任务状态标题可明确覆盖整个名称树的颜色和删除线。完成记录在接受时保存实际完成者 UUID、当时姓名/队伍和游戏时间；合作模式给其他队伍计入同一完成者，不能改成被计分队伍的身份。Worker 的地图名单从同一份记录派生，不另建一份可漂移的展示完成状态；玩家退出或名单变化不应丢失历史完成信息。完成时钟通过 `DurationText.clock` 统一算法并固定数字区域设置，时间样式来自配置。共享变更需对两端、两种语言、三种卡片尺寸、正常/占领/合作/中立状态以及原生物品数据和地图遮罩分别验证，明确隔离验证的边界。
 
@@ -235,4 +235,4 @@ Java 格式脚本只处理 Maven 模块的生产和测试源码；首次执行�
 - 同一规则选择一处完整说明，其他文档通过链接引用。版本、命令与数值核对实现和默认资源，并明确区分默认值、可配置值与固定约束。
 - 仍受支持的兼容格式和迁移步骤属于当前行为，保留其触发条件、边界与操作要求；删除说明前确认代码及实际配置已不依赖它。
 - 使用仓库相对路径或服务端标准目录。示例服务名、数据库凭据、地图和玩家名称明确为示例；不提交个人工作目录或私有服务地址。
-- 移动、合并或删除文档时同步索引、模块 README 和章节链接，检查本地目标与标题锚点。文档检查无需运行 Maven 或替换 JAR。
+- 移动、合并或删除文档时同步索引、模块 README 和章节链接，检查本地目标与标题锚点。提交前运行 `python3 scripts/check-docs.py` 校验链接、路径、类名、配置键和游戏显示名；文档检查无需运行 Maven 或替换 JAR。
