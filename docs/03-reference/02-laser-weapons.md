@@ -33,7 +33,7 @@ LaserShowdown 首次准备在分配出生点、发放装备和传送完成后自
 
 枪械包只在调用方现有线程同步执行。操作真实玩家、实体和发包时必须遵守 [旁观契约](../04-development/03-spectator-visibility-contract.md) 与 [UUID 契约](../04-development/04-player-uuid-contract.md)，不能用枪械状态代替统一旁观身份或另建调度流程。
 
-玩家文案沿用现有 `message.yml` 的 `laser-box` 及 `code-text.laser-box-area` 枪械键，保留已安装的自定义名称、说明和颜色；物品标记键由玩法传入，避免与其余玩法道具冲突。新增玩法复用这些枪械文案与呈现入口，无需复制枪械配置或算法。
+玩家文案沿用现有 `message.yml` 的 `laserbox` 及 `code-text.laser-box-area` 枪械键，保留已安装的自定义名称、说明和颜色；物品标记键由玩法传入，避免与其余玩法道具冲突。新增玩法复用这些枪械文案与呈现入口，无需复制枪械配置或算法。
 
 共享算法和状态测试位于 `src/test/java/.../api/game/laser/`，具体玩法测试仍验证计分、角色和生命周期接入。Laser 类玩法仅在 Core 的 Paper 服务端运行；Folia 仅供 Bingo Worker 使用，未使用枪械包，无需为 Laser 游戏加入 Folia 兼容实现。
 

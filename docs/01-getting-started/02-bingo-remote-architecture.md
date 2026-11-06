@@ -26,7 +26,7 @@
 | `championships-core` | 赛程、manifest、事件重放、积分和数据库 |
 | `championships-bingo-loadtest` | 隔离区块与实体压测，不参与正式比赛 |
 
-当前 wire 协议为 8，由 `ProtocolVersion.CURRENT` 定义，其他协议版本会被拒绝。共享模块随插件打包，不单独安装。共享契约变化时从根目录构建双方：
+当前 wire 协议为 10，由 `ProtocolVersion.CURRENT` 定义，其他协议版本会被拒绝。共享模块随插件打包，不单独安装。共享契约变化时从根目录构建双方：
 
 ```bash
 mvn -B -ntp -pl championships-core,championships-bingo-worker -am clean package

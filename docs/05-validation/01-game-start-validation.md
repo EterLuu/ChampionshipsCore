@@ -6,11 +6,11 @@
 
 | 范围 | 检查内容 |
 | --- | --- |
-| 全部游戏 | `GameStartArguments` / `GameStartRules` / `GameStartService` 解析指定地图、队伍、GAME 模式与顺序 |
+| 全部游戏 | `GameStartArguments` 解析地图、队伍与 `--arena` 子场地；`GameStartRules` 校验拓扑与队伍数量；`GameStartService` 完成解析、占用与启动 |
 | 最终对决 | Dodgebolt、DragonEggCarnival、SulfurSoccer 恰好两队；正式决赛默认前二，手动指定保留 |
 | 双队副本 | BattleBox、ParkourTag、LaserBox 支持双数队伍批量配对，拒绝重复/奇数/容量不足 |
 | 启动失败 | 只释放本次占用，不结束无关比赛；共同预热后进入准备 |
-| 单实例分区 | TNT、烫手鳕鱼、霜冻、激光乱斗使用稳定物理编号，一个计时和积分所有者 |
+| 单实例分区 | TNT飞跃、烫手鳕鱼、霜冻决斗、激光乱斗使用稳定物理编号，一个计时和积分所有者 |
 | 跨轮次 | `EventStartSelection` 保留地图/队伍，结束或中止清除 |
 | 烫手鳕鱼 | 各物理区独立持鱼/传鱼，全实例结算生存和团队奖励，保持并列规则 |
 | 区块票据 | 重叠副本引用计数，最后使用者释放，旧预热失效 |

@@ -49,7 +49,7 @@ SHA256_BODY
 
 ## 3. 事件应用和确认
 
-每个 writer 按同一 outbox 顺序应用事件。`PROVISION`、`USERNAME_UPDATED` 和 `WHITELISTED` 先完成 UUID 解析；`PASSWORD_UPDATED` 只按已有 AuthMe 玩家名更新 BCrypt 密码，不读取或推导 UUID，也不会创建缺失的 AuthMe 账号。`REVOKED`、封禁和解封事件不需要重新解析 UUID。任何字段缺失或解析失败都不推进本地游标。
+每个 writer 按同一 outbox 顺序应用事件。`PROVISION`、`PASSWORD_UPDATED`、`USERNAME_UPDATED` 和 `WHITELISTED` 先完成 UUID 解析；其中 `PASSWORD_UPDATED` 只按已有 AuthMe 玩家名更新 BCrypt 密码，不会创建缺失的 AuthMe 账号。`REVOKED`、封禁和解封事件不需要重新解析 UUID。任何字段缺失或解析失败都不推进本地游标。
 
 `POST /api/internal/bridge/ack` 只接受 `{ "through": "<cursor>" }`，只确认当前 keyId 已应用的事件游标。Bridge 在本地持久化待确认游标，网络恢复后重试，保证确认幂等。身份平台为每个 writer 保存独立服务端游标；`sync_outbox` 的全局 `ACKNOWLEDGED` 只推进到所有启用 writer 游标的最小值。
 
@@ -79,11 +79,11 @@ Core 清理范围固定为 `players`、`team_members`、`player_points`、`daily
 
 ## 6. AuthProxy 边界
 
-AuthProxy 服务统一 UUID 登录部署。它从 `/login-profile/<username>` 获取当前有效 UUID，并在预登录阶段拒绝未绑定、撤销、封禁和维护中的账户；缺少 UUID 时拒绝登录，不生成离线 UUID。皮肤和签名档案由身份平台独立查询 Mojang，不参与 AuthBridge UUID 解析。
+AuthProxy 服务统一 UUID 登录部署。它从 `/api/internal/bridge/login-profile/<username>` 获取当前有效 UUID，并在预登录阶段拒绝未绑定、撤销、封禁和维护中的账户；缺少 UUID 时拒绝登录，不生成离线 UUID。皮肤和签名档案由身份平台独立查询 Mojang，不参与 AuthBridge UUID 解析。
 
-启动时使用 `/proxy-ban-snapshot` 获取全部当前获准玩家的 `username/status/uuid`、有效封禁、显式 `maintenance` 状态和当前 outbox 游标；之后轮询 `/proxy-changes?after=<cursor>`，接收 `PROVISION`、`WHITELISTED`、`USERNAME_UPDATED`、`REVOKED`、`BANNED`、`UNBANNED` 对应账户的当前最终准入状态。改名事件同时携带 `previousUsername`，Proxy 必须删除旧名称缓存。该流不包含密码哈希，proxy key 也不能调用 writer ACK。
+启动时使用 `/api/internal/bridge/proxy-ban-snapshot` 获取全部当前获准玩家的 `username/status/uuid`、有效封禁、显式 `maintenance` 状态和当前 outbox 游标；之后轮询 `/api/internal/bridge/proxy-changes?after=<cursor>`，接收 `PROVISION`、`WHITELISTED`、`USERNAME_UPDATED`、`REVOKED`、`BANNED`、`UNBANNED` 对应账户的当前最终准入状态。改名事件同时携带 `previousUsername`，Proxy 必须删除旧名称缓存。该流不包含密码哈希，proxy key 也不能调用 writer ACK。
 
-Proxy 将身份档案、UUID、封禁、维护状态和游标原子写入本地 `state.properties`。实时 `/login-profile` 成功时同步刷新单人档案；连接、DNS、超时、HTTP 429 或 5xx 时可以按 `offline-cache` 配置回退，其他 HTTP 错误和响应校验错误不得回退。`max-stale-hours: 0` 表示不按时间自动失效；管理员可设置正数限制允许档案的最长陈旧时间。维护锁和未到期封禁不因普通档案超时而放行。每个 proxy key 的服务端只读游标独立推进。
+Proxy 将身份档案、UUID、封禁、维护状态和游标原子写入本地 `state.properties`。实时 `/api/internal/bridge/login-profile` 成功时同步刷新单人档案；连接、DNS、超时、HTTP 429 或 5xx 时可以按 `offline-cache` 配置回退，其他 HTTP 错误和响应校验错误不得回退。`max-stale-hours: 0` 表示不按时间自动失效；管理员可设置正数限制允许档案的最长陈旧时间。维护锁和未到期封禁不因普通档案超时而放行。每个 proxy key 的服务端只读游标独立推进。
 
 AuthProxy 没有 `access.admission-owner` 配置；只要插件启用，它就是玩家面对的准入决策点。后端 AuthBridge 不应在 `PROXY` 模式下再次按本地未绑定/封禁名单拒绝或踢出玩家，以免身份平台短暂延迟造成双重判定。
 

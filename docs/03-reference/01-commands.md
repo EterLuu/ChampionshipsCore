@@ -48,10 +48,15 @@
 | `/cc rank teamboard` | 查看队伍积分榜 |
 | `/cc rank info` | 查看各游戏的积分权重 |
 | `/cc rank recap` | 重看最近一次游戏结算和总榜 |
+| `/cc play [leave\|leaderboard]` | 打开自由游玩菜单；`leave` 退出游玩，`leaderboard` 打开排行榜 |
+| `/cc party <invite\|accept\|leave\|disband\|info> [玩家]` | 管理自由游玩的临时同行小队 |
+| `/cc daily <leave\|stats> [游戏]` | 兼容入口：退出游玩或查看个人统计 |
 
 `/cc vote <配置名称>` 使用 [游戏指南](../02-games/01-games.md) 的“配置名称”一列中的值，匹配不区分大小写；`DragonEggCarnival`、`Dodgebolt` 与 `SulfurSoccer` 不参与投票。
 
 观战命令使用启用游戏的配置名称，Tab 补全会自动隐藏 `enabled-games` 中未启用的游戏。
+
+`/cc play`、`/cc party`、`/cc daily` 属于自由游玩模式，匹配、小队、统计与排行榜详见 [自由游玩模式](../02-games/04-daily-mode.md)。
 
 ## 队伍与成员管理
 
@@ -113,6 +118,7 @@ resident Bot 全部上线后，可用以下命令把 `autobot00`–`autobot63` �
 
 | 命令 | 说明 |
 | --- | --- |
+| `/cc team list` | 列出全部队伍 |
 | `/cc team info <队伍名>` | 查看队伍成员 |
 | `/cc team tphere <队伍名>` | 将指定队伍传送到命令执行者的位置 |
 | `/cc team tphere all` | 将全部队伍传送到命令执行者的位置 |
@@ -159,7 +165,7 @@ resident Bot 全部上线后，可用以下命令把 `autobot00`–`autobot63` �
 | `/cc admin sudo all <命令...>` | 让所有在线参赛者执行命令 |
 | `/cc admin teleport gameplayers` | 将正在比赛的玩家传送到管理员位置 |
 | `/cc admin teleport spectators` | 将观众传送到管理员位置 |
-| `/cc admin vote start` | 开始 120 秒投票 |
+| `/cc admin vote start` | 开始 90 秒投票 |
 | `/cc admin vote end` | 提前结束投票并公布结果 |
 | `/cc admin world list` | 查看已加载及磁盘上尚未加载的世界 |
 | `/cc admin world create <世界> [normal\|nether\|the_end]` | 创建世界，或加载已有世界 |
@@ -167,6 +173,8 @@ resident Bot 全部上线后，可用以下命令把 `autobot00`–`autobot63` �
 | `/cc admin world delete <世界> confirm` | 永久删除未被地图配置引用的世界 |
 | `/cc admin world teleport <世界>` | 传送到世界出生点并开启飞行 |
 | `/cc admin world unload <世界>` | 保存并卸载世界，不删除世界文件 |
+| `/cc admin visibility [玩家]` | 查看玩家实体显隐状态与原因 |
+| `/cc switch <championship\|daily>` | 切换大厅为正式赛事或自由游玩 |
 
 自动化 `/cc game test` 命令使用 `cc.test.automation`，服务器管理员不会因为拥有 `cc.admin` 而获得该入口。`/cc team test` 属于 resident 手动测试准备，使用 `cc.test`，`cc.admin` 可用；普通 `/cc game start` 和 `/cc game stop` 仍使用 `cc.admin`。Core 和 Worker 的 `test.enabled` 默认都是 `false`，生产调试部署需要分别打开。
 
@@ -204,7 +212,7 @@ resident Bot 全部上线后，可用以下命令把 `autobot00`–`autobot63` �
 2. 执行 `/cc event teams import <赛事配置链接> --confirm`，原子结束上一届积分并整体替换正式队伍。
 3. `/cc admin vote start` 开放下一项目投票；玩家使用 `/cc vote` 投票，随后 `/cc admin vote end` 公布结果。
 4. 管理员执行 `/cc event start <游戏>` 启动正式赛程；未导入赛事时直接使用服务器现有队伍，已导入赛事时只能启动该赛事游戏列表中的项目，已归档赛事需先导入下一届。Tab 补全会列出全部已启用且支持赛事的游戏，无需先导入赛事。`riptide`、`frostbite` 和 `laserbox` 均支持此入口；`sulfursoccer` 等决赛游戏沿用总榜前二的决赛流程，也可使用 `/cc finale <游戏> start <场地>` 指定场地。
-5. 调度器广播项目介绍和积分规则，进行 10 秒倒计时；游戏结束事件触发下一小轮，小轮之间默认等待 30 秒。
+5. 调度器广播项目介绍和积分规则，进行 10 秒倒计时；游戏结束事件触发下一小轮，每轮之间先展示约 10 秒结算，再进入 10 秒准备倒计时。
 6. 全部小轮结束后，调度器广播本项目积分和总榜，并将观众移出场地。
 7. 全部项目结算且无正式赛程运行后，执行 `/cc event export [冠军队伍]`。JSON 写入 `plugins/ChampionshipsCore/exports/<赛事标识>-results.json`，包含赛事 ID、固定游戏键、版本、玩家 UUID 和已加权积分，在兼容的外部赛事平台上传发布。未填写冠军时，上传前必须在网页选择最终冠军，不能把积分第一自动当作冠军。
 

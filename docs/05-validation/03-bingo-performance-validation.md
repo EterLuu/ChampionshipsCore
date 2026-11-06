@@ -10,7 +10,7 @@
 
 使用可丢弃的独立世界，准备停止和清理流程。正式世界先完成三维度预生成；重置创建新世界后应重新准备，不能依赖上一局的区块缓存。
 
-Worker 当前边界为 16000×16000 格。预生成范围应覆盖允许活动区域、视距边缘及维度传送需求；按实际 world border 核对，不照搬其他部署的半径。
+Worker 世界边界默认为 16000×16000 格。预生成范围应覆盖允许活动区域、视距边缘及维度传送需求；按实际 world border 核对，不照搬其他部署的半径。
 
 ## 两层验证
 
@@ -45,7 +45,7 @@ Worker 当前边界为 16000×16000 格。预生成范围应覆盖允许活动�
 - Redis/数据库：pending、reclaim、DLQ、重放、事务时延与重复积分。
 - 系统：CPU 配额、GC pause、heap/direct memory、磁盘延迟和网络吞吐。
 
-LoadTest 结果位于服务端 `plugins/ChampionshipsBingoLoadTest/results.jsonl`，日志输出 `CHUNK_STRESS`。保存配置、结果与 profiler 报告，比较同一版本同一场景的重复运行。
+LoadTest 把结果追加到插件数据目录的 `results.jsonl`，日志输出 `CHUNK_STRESS`。保存配置、结果与 profiler 报告，比较同一版本同一场景的重复运行。
 
 ## 端到端验收
 
