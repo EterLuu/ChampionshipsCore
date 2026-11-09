@@ -24,6 +24,7 @@ public final class LocalAccessState {
     private volatile String maintenanceJobId;
     private volatile String pendingAckCursor;
     private volatile ControlCompletion pendingControlCompletion;
+    private volatile boolean resynchronizing;
 
     public LocalAccessState(File file) {
         this.file = file;
@@ -185,6 +186,50 @@ public final class LocalAccessState {
         }
     }
 
+    /**
+     * True while the bridge rebuilds its state from a fresh snapshot and replays the outbox from
+     * the start. Replayed events describe the past, so they must not kick online players.
+     */
+    public boolean resynchronizing() {
+        return resynchronizing;
+    }
+
+    /**
+     * cc-web rejected the saved cursor, typically because its database was restored from an older
+     * backup. Forget everything derived from the outbox so the next run imports the snapshot and
+     * replays the outbox like a fresh install. Identities stay until the snapshot replaces them, so
+     * logins keep working in between; password versions are cleared because a restored website
+     * reissues lower versions that would otherwise be ignored.
+     */
+    public synchronized void beginResynchronization() throws IOException {
+        cursor = "0";
+        pendingAckCursor = null;
+        bindingSnapshotApplied = false;
+        authVersions.clear();
+        resynchronizing = true;
+        save();
+    }
+
+    public synchronized void finishResynchronization() throws IOException {
+        if (!resynchronizing) return;
+        resynchronizing = false;
+        save();
+    }
+
+    /** Adopts the website's active bans as the authoritative local ban list. */
+    public synchronized void replaceBans(Map<String, Ban> activeBans) throws IOException {
+        Map<String, Ban> replacement = new LinkedHashMap<>();
+        for (Map.Entry<String, Ban> entry : activeBans.entrySet()) {
+            AuthIdentity.requireUsername(entry.getKey());
+            String expiresAt = entry.getValue().expiresAt();
+            if (expiresAt != null && !expiresAt.isBlank()) java.time.Instant.parse(expiresAt);
+            replacement.put(normalize(entry.getKey()), entry.getValue());
+        }
+        bans.clear();
+        bans.putAll(replacement);
+        save();
+    }
+
     public synchronized PendingAcknowledgement pendingAcknowledgement() {
         if (pendingAckCursor == null || pendingAckCursor.isBlank()) return null;
         return new PendingAcknowledgement(pendingAckCursor);
@@ -244,6 +289,7 @@ public final class LocalAccessState {
         bindingSnapshotApplied = yaml.getBoolean("binding-snapshot-applied", false);
         maintenanceJobId = yaml.getString("maintenance-job-id", yaml.getString("migration-job-id"));
         pendingAckCursor = yaml.getString("pending-ack.cursor");
+        resynchronizing = yaml.getBoolean("resynchronizing", false);
         var identitySectionRoot = yaml.getConfigurationSection("identities");
         if (identitySectionRoot == null)
             identitySectionRoot = yaml.getConfigurationSection("whitelist");
@@ -300,6 +346,7 @@ public final class LocalAccessState {
         yaml.set("binding-snapshot-applied", bindingSnapshotApplied);
         yaml.set("maintenance-job-id", maintenanceJobId);
         yaml.set("pending-ack.cursor", pendingAckCursor);
+        yaml.set("resynchronizing", resynchronizing);
         yaml.set(
                 "pending-control-completion.job-id",
                 pendingControlCompletion == null ? null : pendingControlCompletion.jobId());

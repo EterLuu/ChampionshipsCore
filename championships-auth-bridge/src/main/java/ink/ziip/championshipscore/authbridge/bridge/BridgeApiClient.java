@@ -25,6 +25,9 @@ import javax.crypto.spec.SecretKeySpec;
 public final class BridgeApiClient {
     private static final String CHANGE_PATH = "/api/internal/bridge/changes";
 
+    /** Changes requested per page; a shorter page means the writer has caught up. */
+    public static final int CHANGE_PAGE_SIZE = 100;
+
     private final URI baseUri;
     private final String keyId;
     private final byte[] secret;
@@ -67,7 +70,7 @@ public final class BridgeApiClient {
         String timestamp = Long.toString(System.currentTimeMillis());
         String requestId = UUID.randomUUID().toString();
         String signature = sign("GET", CHANGE_PATH, timestamp, requestId, "");
-        URI uri = baseUri.resolve(CHANGE_PATH + "?after=" + cursor + "&limit=100");
+        URI uri = baseUri.resolve(CHANGE_PATH + "?after=" + cursor + "&limit=" + CHANGE_PAGE_SIZE);
         HttpRequest request =
                 HttpRequest.newBuilder(uri)
                         .timeout(requestTimeout)
@@ -81,7 +84,8 @@ public final class BridgeApiClient {
         HttpResponse<String> response =
                 client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         if (!isSuccess(response.statusCode()))
-            throw new IllegalStateException("Bridge API returned HTTP " + response.statusCode());
+            throw new BridgeApiException(
+                    "Bridge API", response.statusCode(), errorCode(response.body()));
         return mapper.readValue(response.body(), BridgeChangeBatch.class);
     }
 
@@ -125,10 +129,11 @@ public final class BridgeApiClient {
                         .header("X-CC-Signature", sign("POST", path, timestamp, requestId, body))
                         .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
                         .build();
-        HttpResponse<Void> response = client.send(request, HttpResponse.BodyHandlers.discarding());
+        HttpResponse<String> response =
+                client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         if (!isSuccess(response.statusCode()))
-            throw new IllegalStateException(
-                    "Bridge acknowledgment returned HTTP " + response.statusCode());
+            throw new BridgeApiException(
+                    "Bridge acknowledgment", response.statusCode(), errorCode(response.body()));
     }
 
     public BridgeControlJobEnvelope controlJob() throws Exception {
@@ -180,6 +185,17 @@ public final class BridgeApiClient {
         if (!isSuccess(response.statusCode())) {
             throw new IllegalStateException(
                     "Bridge control completion returned HTTP " + response.statusCode());
+        }
+    }
+
+    /** cc-web reports failures as {@code {"message": "STABLE_CODE", ...}}. */
+    private String errorCode(String body) {
+        if (body == null || body.isBlank()) return null;
+        try {
+            String message = mapper.readTree(body).path("message").asText(null);
+            return message != null && message.matches("[A-Z][A-Z0-9_]{1,63}") ? message : null;
+        } catch (Exception ignored) {
+            return null;
         }
     }
 

@@ -109,6 +109,16 @@ final class ProxyAccessState {
         save();
     }
 
+    /**
+     * Drops an event cursor cc-web rejected so the next synchronization loads a full snapshot.
+     * Cached admissions stay usable as the offline fallback until that snapshot replaces them.
+     */
+    synchronized void requireSnapshot() throws IOException {
+        cursor = null;
+        snapshotInitialized = false;
+        save();
+    }
+
     synchronized void applyChanges(ProxyIdentityClient.ProxyChangeBatch batch, Instant now)
             throws IOException {
         if (batch == null || batch.maintenance == null || batch.changes == null) {

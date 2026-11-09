@@ -75,7 +75,15 @@ final class ProxyBanSynchronizer implements Runnable {
     }
 
     private void applyChanges() throws Exception {
-        ProxyIdentityClient.ProxyChangeBatch batch = client.changesAfter(state.cursor());
+        String cursor = state.cursor();
+        ProxyIdentityClient.ProxyChangeBatch batch;
+        try {
+            batch = client.changesAfter(cursor);
+        } catch (ProxyIdentityClient.BridgeHttpException exception) {
+            if (!exception.rejectsCursor()) throw exception;
+            resynchronize(cursor, exception);
+            return;
+        }
         if (batch == null || batch.maintenance == null || batch.changes == null) {
             throw new IllegalStateException("Bridge proxy change batch is incomplete");
         }
@@ -98,6 +106,24 @@ final class ProxyBanSynchronizer implements Runnable {
                         revokedBot ? null : change.expiresAt);
             }
         }
+    }
+
+    /**
+     * Waiting for cc-web to catch up with a rejected cursor would skip every event whose id is
+     * reissued after a database restore, so the cache is rebuilt from a fresh snapshot. If that
+     * request fails, the state stays uninitialized and the next run bootstraps.
+     */
+    private void resynchronize(String cursor, ProxyIdentityClient.BridgeHttpException rejection)
+            throws Exception {
+        logger.warning(
+                "cc-web rejected proxy event cursor "
+                        + cursor
+                        + " ("
+                        + rejection.getMessage()
+                        + "); reloading the full access snapshot");
+        state.requireSnapshot();
+        bootstrap();
+        logger.info("Reloaded the proxy access snapshot at event cursor " + state.cursor());
     }
 
     private void kick(String username, String reason, String expiresAt) {

@@ -55,6 +55,29 @@ class ProxyAccessStateTest {
     }
 
     @Test
+    void aRejectedCursorRequiresASnapshotButKeepsTheOfflineFallback() throws Exception {
+        Path file = tempDirectory.resolve("rejected.properties");
+        ProxyAccessState state = new ProxyAccessState(file.toFile());
+        ProxyIdentityClient.ProxyBanSnapshot snapshot = new ProxyIdentityClient.ProxyBanSnapshot();
+        snapshot.maintenance = false;
+        snapshot.nextCursor = "120";
+        snapshot.profiles = List.of(profile("AllowedPlayer", "ALLOWED", UUID));
+        snapshot.bans = List.of(ban("BannedPlayer", "rule violation", null));
+        state.replaceSnapshot(snapshot, Instant.now());
+
+        state.requireSnapshot();
+        ProxyAccessState restored = new ProxyAccessState(file.toFile());
+
+        assertFalse(state.initialized());
+        assertFalse(restored.initialized());
+        assertEquals(
+                UUID, restored.cachedProfile("AllowedPlayer", Duration.ZERO, Instant.now()).uuid);
+        assertEquals(
+                "BANNED",
+                restored.cachedProfile("BannedPlayer", Duration.ZERO, Instant.now()).status);
+    }
+
+    @Test
     void appliesRenameRevocationAndMaintenanceFromIncrementalState() throws Exception {
         ProxyAccessState state =
                 new ProxyAccessState(tempDirectory.resolve("changes.properties").toFile());

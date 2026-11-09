@@ -2,11 +2,15 @@ package ink.ziip.championshipscore.authbridge;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.sun.net.httpserver.HttpServer;
 
 import ink.ziip.championshipscore.authbridge.bridge.BridgeApiClient;
+import ink.ziip.championshipscore.authbridge.bridge.BridgeApiException;
 
 import org.junit.jupiter.api.Test;
 
@@ -108,6 +112,68 @@ class BridgeApiClientTransportTest {
         } finally {
             server.stop(0);
         }
+    }
+
+    @Test
+    void reportsCursorRejectionsWithCcWebErrorCodes() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext(
+                "/api/internal/bridge/ack",
+                exchange -> respond(exchange, 409, "CURSOR_AHEAD_OF_OUTBOX", "Conflict"));
+        server.createContext(
+                "/api/internal/bridge/changes",
+                exchange ->
+                        respond(
+                                exchange,
+                                exchange.getRequestURI().getQuery().startsWith("after=bad")
+                                        ? 400
+                                        : 401,
+                                exchange.getRequestURI().getQuery().startsWith("after=bad")
+                                        ? "INVALID_CURSOR"
+                                        : "Unauthorized",
+                                "Error"));
+        server.start();
+        try {
+            BridgeApiClient client =
+                    client("http://127.0.0.1:" + server.getAddress().getPort(), false);
+
+            BridgeApiException ahead =
+                    assertThrows(BridgeApiException.class, () -> client.acknowledge("99"));
+            assertEquals(409, ahead.status());
+            assertEquals("CURSOR_AHEAD_OF_OUTBOX", ahead.code());
+            assertTrue(ahead.rejectsCursor());
+
+            BridgeApiException malformed =
+                    assertThrows(BridgeApiException.class, () -> client.changesAfter("bad"));
+            assertTrue(malformed.rejectsCursor());
+
+            // Credential failures keep retrying instead of discarding local progress.
+            BridgeApiException unauthorized =
+                    assertThrows(BridgeApiException.class, () -> client.changesAfter("5"));
+            assertEquals(401, unauthorized.status());
+            assertNull(unauthorized.code());
+            assertFalse(unauthorized.rejectsCursor());
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    private static void respond(
+            com.sun.net.httpserver.HttpExchange exchange, int status, String code, String error)
+            throws java.io.IOException {
+        byte[] body =
+                ("{\"message\":\""
+                                + code
+                                + "\",\"error\":\""
+                                + error
+                                + "\",\"statusCode\":"
+                                + status
+                                + "}")
+                        .getBytes(StandardCharsets.UTF_8);
+        exchange.getResponseHeaders().add("Content-Type", "application/json");
+        exchange.sendResponseHeaders(status, body.length);
+        exchange.getResponseBody().write(body);
+        exchange.close();
     }
 
     private static BridgeApiClient client(String url, boolean allowInsecurePrivateHttp) {

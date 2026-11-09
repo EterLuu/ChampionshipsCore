@@ -106,7 +106,8 @@ final class ProxyIdentityClient {
                         .build();
         HttpResponse<String> response =
                 client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-        if (response.statusCode() != 200) throw new BridgeHttpException(response.statusCode());
+        if (response.statusCode() != 200)
+            throw new BridgeHttpException(response.statusCode(), errorCode(response.body()));
         T profile = mapper.readValue(response.body(), responseType);
         if (profile instanceof LoginProfile loginProfile) validateLoginProfile(loginProfile);
         return profile;
@@ -129,6 +130,16 @@ final class ProxyIdentityClient {
                 throw new IllegalStateException("Bot login profile omitted CIDR policy");
             // Parse now so malformed trusted metadata cannot poison the durable fallback cache.
             BotLoginPolicy.of("autobot", profile.allowedCidrs);
+        }
+    }
+
+    /** cc-web reports stable error codes in Nest's {@code message} field. */
+    private String errorCode(String body) {
+        try {
+            String message = mapper.readTree(body).path("message").asText(null);
+            return message != null && message.matches("^[A-Z][A-Z0-9_]{1,63}$") ? message : null;
+        } catch (Exception ignored) {
+            return null;
         }
     }
 
@@ -210,10 +221,24 @@ final class ProxyIdentityClient {
 
     static final class BridgeHttpException extends Exception {
         private final int statusCode;
+        private final String code;
 
-        BridgeHttpException(int statusCode) {
-            super("Bridge API returned HTTP " + statusCode);
+        BridgeHttpException(int statusCode, String code) {
+            super(
+                    "Bridge API returned HTTP "
+                            + statusCode
+                            + (code == null ? "" : " (" + code + ")"));
             this.statusCode = statusCode;
+            this.code = code;
+        }
+
+        /**
+         * The event cursor is unusable: beyond every id cc-web has issued (its database was
+         * restored from a backup) or malformed. Only a fresh snapshot can recover from it.
+         */
+        boolean rejectsCursor() {
+            return (statusCode == 409 && "CURSOR_AHEAD_OF_OUTBOX".equals(code))
+                    || (statusCode == 400 && "INVALID_CURSOR".equals(code));
         }
     }
 }

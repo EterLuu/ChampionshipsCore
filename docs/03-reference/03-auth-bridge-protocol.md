@@ -53,6 +53,8 @@ SHA256_BODY
 
 `POST /api/internal/bridge/ack` 只接受 `{ "through": "<cursor>" }`，只确认当前 keyId 已应用的事件游标。Bridge 在本地持久化待确认游标，网络恢复后重试，保证确认幂等。身份平台为每个 writer 保存独立服务端游标；`sync_outbox` 的全局 `ACKNOWLEDGED` 只推进到所有启用 writer 游标的最小值。
 
+身份平台拒绝游标时（`through` 超过它已发出的最大 outbox id 返回 `409 CURSOR_AHEAD_OF_OUTBOX`，格式错误返回 `400 INVALID_CURSOR`，响应体 `message` 为错误码），通常意味着平台数据库已从较早的备份恢复，重试同一确认永远不会成功。Bridge 此时进入重新同步：丢弃待确认游标，把本地游标置为 `0`，清除密码版本和“快照已导入”标记，并持久化 `resynchronizing: true`。下一轮重新导入绑定快照，只保留快照中的身份，并以快照的有效封禁替换本地封禁（旧平台响应没有 `bans` 时由 outbox 重放恢复），随后从头重放 outbox。重放期间事件照常写入 AuthMe 和本地状态，但不踢出在线玩家；某一页变更少于每页上限时视为追平并结束重新同步。游标 `0` 被拒绝、鉴权失败等其他错误不会重置本地状态。
+
 ## 4. 身份迁移控制任务
 
 `IDENTITY_MODE_MIGRATION` 使用身份平台创建任务时冻结的 UUID 映射：每名玩家的 `fromUuid` 和 `toUuid` 写入任务 payload，并为每个当前启用 writer 创建一个 target。每个 writer 只能领取分配给自己的 target，并且必须：
@@ -84,6 +86,8 @@ AuthProxy 服务统一 UUID 登录部署。它从 `/api/internal/bridge/login-pr
 启动时使用 `/api/internal/bridge/proxy-ban-snapshot` 获取全部当前获准玩家的 `username/status/uuid`、有效封禁、显式 `maintenance` 状态和当前 outbox 游标；之后轮询 `/api/internal/bridge/proxy-changes?after=<cursor>`，接收 `PROVISION`、`WHITELISTED`、`USERNAME_UPDATED`、`REVOKED`、`BANNED`、`UNBANNED` 对应账户的当前最终准入状态。改名事件同时携带 `previousUsername`，Proxy 必须删除旧名称缓存。该流不包含密码哈希，proxy key 也不能调用 writer ACK。
 
 Proxy 将身份档案、UUID、封禁、维护状态和游标原子写入本地 `state.properties`。实时 `/api/internal/bridge/login-profile` 成功时同步刷新单人档案；连接、DNS、超时、HTTP 429 或 5xx 时可以按 `offline-cache` 配置回退，其他 HTTP 错误和响应校验错误不得回退。`max-stale-hours: 0` 表示不按时间自动失效；管理员可设置正数限制允许档案的最长陈旧时间。维护锁和未到期封禁不因普通档案超时而放行。每个 proxy key 的服务端只读游标独立推进。
+
+`proxy-changes` 的 `after` 超过身份平台已发出的最大 outbox id 时返回 `409 CURSOR_AHEAD_OF_OUTBOX`，格式错误返回 `400 INVALID_CURSOR`，且不推进服务端只读游标。平台数据库从较早备份恢复后会出现该情况：恢复点之后的 id 会被新事件重新使用，继续等待会跳过这些事件。Proxy 收到这两个错误码时记录警告，丢弃本地游标并立即重新获取 `proxy-ban-snapshot`，以快照替换缓存的档案和封禁并踢出快照中仍在线的被封禁玩家；快照请求失败时状态保持未初始化，下一轮继续获取快照，期间旧缓存仍可作为离线回退。其他 HTTP 错误不会重置游标。
 
 AuthProxy 没有 `access.admission-owner` 配置；只要插件启用，它就是玩家面对的准入决策点。后端 AuthBridge 不应在 `PROXY` 模式下再次按本地未绑定/封禁名单拒绝或踢出玩家，以免身份平台短暂延迟造成双重判定。
 

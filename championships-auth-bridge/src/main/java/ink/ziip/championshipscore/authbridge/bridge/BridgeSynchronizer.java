@@ -15,6 +15,7 @@ import ink.ziip.championshipscore.authbridge.model.BridgeChangeBatch;
 import ink.ziip.championshipscore.authbridge.model.BridgeControlJob;
 import ink.ziip.championshipscore.authbridge.model.BridgeControlPlayer;
 import ink.ziip.championshipscore.authbridge.model.BridgeSnapshot;
+import ink.ziip.championshipscore.authbridge.model.BridgeSnapshotBan;
 import ink.ziip.championshipscore.authbridge.model.BridgeSnapshotPlayer;
 
 import org.bukkit.Bukkit;
@@ -93,11 +94,48 @@ public final class BridgeSynchronizer implements Runnable {
             state.advance(batch.nextCursor());
             client.acknowledge(batch.nextCursor());
             state.confirmAcknowledged(batch.nextCursor());
+            if (state.resynchronizing()
+                    && batch.changes().size() < BridgeApiClient.CHANGE_PAGE_SIZE) {
+                state.finishResynchronization();
+                plugin.getLogger()
+                        .info(
+                                "Auth bridge resynchronization finished at outbox cursor "
+                                        + batch.nextCursor()
+                                        + ".");
+            }
             consecutiveFailures = 0;
         } catch (Exception exception) {
-            logFailure(exception);
+            if (!resynchronizeAfterRejectedCursor(exception)) logFailure(exception);
         } finally {
             running.set(false);
+        }
+    }
+
+    /**
+     * cc-web refuses a cursor beyond every outbox id it has issued, which happens after its
+     * database is restored from an older backup. Retrying the same acknowledgment can never
+     * succeed, so start over like a fresh install: import the snapshot, then replay the outbox.
+     */
+    private boolean resynchronizeAfterRejectedCursor(Exception failure) throws RuntimeException {
+        if (!(failure instanceof BridgeApiException api) || !api.rejectsCursor()) return false;
+        // A cursor of 0 is always valid; refusing it is a server fault, not stale local state.
+        if ("0".equals(state.cursor()) && state.pendingAcknowledgement() == null) return false;
+        try {
+            String rejected = state.cursor();
+            state.beginResynchronization();
+            consecutiveFailures = 0;
+            plugin.getLogger()
+                    .warning(
+                            "cc-web rejected auth bridge cursor "
+                                    + rejected
+                                    + " ("
+                                    + api.code()
+                                    + "); re-importing the website snapshot and replaying its"
+                                    + " outbox from the start.");
+            return true;
+        } catch (IOException saveFailure) {
+            failure.addSuppressed(saveFailure);
+            return false;
         }
     }
 
@@ -125,12 +163,36 @@ public final class BridgeSynchronizer implements Runnable {
                     player.allowedCidrs());
             state.setAuthVersion(username, player.version());
         }
+        if (state.resynchronizing()) adoptSnapshotAccess(snapshot);
         state.markBindingSnapshotApplied();
         plugin.getLogger()
                 .info(
                         "Imported "
                                 + snapshot.players().size()
                                 + " bound account(s) into AuthMe from the bridge snapshot.");
+    }
+
+    /**
+     * During resynchronization the snapshot is the website's current truth. Identities and bans
+     * that only exist locally (created after the backup the website was restored from) would never
+     * be revoked by the replay, so they are dropped here.
+     */
+    private void adoptSnapshotAccess(BridgeSnapshot snapshot) throws IOException {
+        Set<String> admitted = new LinkedHashSet<>();
+        for (BridgeSnapshotPlayer player : snapshot.players()) admitted.add(player.username());
+        state.retainIdentities(admitted);
+        if (snapshot.bans() == null) return; // Older cc-web: the outbox replay restores bans.
+        Map<String, LocalAccessState.Ban> bans = new LinkedHashMap<>();
+        for (BridgeSnapshotBan ban : snapshot.bans()) {
+            bans.put(
+                    requireUsername(ban.username()),
+                    new LocalAccessState.Ban(
+                            ban.reason() == null ? "" : ban.reason(),
+                            ban.expiresAt() == null || ban.expiresAt().isBlank()
+                                    ? null
+                                    : ban.expiresAt()));
+        }
+        state.replaceBans(bans);
     }
 
     private void logFailure(Exception failure) {
@@ -434,6 +496,8 @@ public final class BridgeSynchronizer implements Runnable {
     }
 
     private void kick(String username, String reason) {
+        // Replayed history must not disconnect players whose current access is unchanged.
+        if (state.resynchronizing()) return;
         Bukkit.getScheduler()
                 .runTask(
                         plugin,
