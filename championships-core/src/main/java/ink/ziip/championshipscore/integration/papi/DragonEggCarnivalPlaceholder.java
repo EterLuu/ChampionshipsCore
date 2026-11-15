@@ -5,7 +5,7 @@ import ink.ziip.championshipscore.api.game.decarnival.runtime.DragonEggCarnivalA
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.ScoreMessages;
 
 import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
@@ -42,7 +42,7 @@ public class DragonEggCarnivalPlaceholder extends BaseGamePlaceholder<DragonEggC
             DragonEggCarnivalArea dragonEggCarnivalArea =
                     resolveArea(params, "area_team_wins_", offlinePlayer);
             if (dragonEggCarnivalArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             ChampionshipTeam team = displayedTeam(dragonEggCarnivalArea, offlinePlayer, false);
             return String.valueOf(pointsOf(dragonEggCarnivalArea, team));
@@ -51,12 +51,12 @@ public class DragonEggCarnivalPlaceholder extends BaseGamePlaceholder<DragonEggC
             DragonEggCarnivalArea dragonEggCarnivalArea =
                     resolveArea(params, "area_team_", offlinePlayer);
             if (dragonEggCarnivalArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             ChampionshipTeam championshipTeam =
                     displayedTeam(dragonEggCarnivalArea, offlinePlayer, false);
             if (championshipTeam == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             return championshipTeam.getColoredName();
         }
@@ -64,7 +64,7 @@ public class DragonEggCarnivalPlaceholder extends BaseGamePlaceholder<DragonEggC
             DragonEggCarnivalArea dragonEggCarnivalArea =
                     resolveArea(params, "area_rival_wins_", offlinePlayer);
             if (dragonEggCarnivalArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             ChampionshipTeam team = displayedTeam(dragonEggCarnivalArea, offlinePlayer, true);
             return String.valueOf(pointsOf(dragonEggCarnivalArea, team));
@@ -73,12 +73,12 @@ public class DragonEggCarnivalPlaceholder extends BaseGamePlaceholder<DragonEggC
             DragonEggCarnivalArea dragonEggCarnivalArea =
                     resolveArea(params, "area_rival_", offlinePlayer);
             if (dragonEggCarnivalArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             ChampionshipTeam championshipTeam =
                     displayedTeam(dragonEggCarnivalArea, offlinePlayer, true);
             if (championshipTeam == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             return championshipTeam.getColoredName();
         }

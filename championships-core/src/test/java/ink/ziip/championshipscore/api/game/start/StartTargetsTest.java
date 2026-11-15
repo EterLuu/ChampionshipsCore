@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.start;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
@@ -65,9 +67,8 @@ class StartTargetsTest {
     }
 
     private static Slot slot(int index, GameStageEnum stage) throws Exception {
-        var field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-        field.setAccessible(true);
-        var result = (Slot) ((sun.misc.Unsafe) field.get(null)).allocateInstance(Slot.class);
+
+        var result = allocate(Slot.class);
         result.index = index;
         result.stage = stage;
         return result;

@@ -3,7 +3,7 @@ package ink.ziip.championshipscore.api.game.dodgebolt.runtime;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.DodgeboltMessages;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
 import lombok.Setter;
@@ -52,7 +52,7 @@ public final class DodgeboltHandler extends BaseListener {
         if (!(event.getEntity() instanceof Player player) || area.notAreaPlayer(player)) return;
         if (!area.canShoot(player, event.getConsumable())) {
             event.setCancelled(true);
-            CoreMessages.sendActionBar(player, MessageConfig.DODGEBOLT_CANT_SHOOT);
+            CoreMessages.sendActionBar(player, DodgeboltMessages.DODGEBOLT_CANT_SHOOT);
             return;
         }
         area.registerShot(player, event.getProjectile());
@@ -69,7 +69,7 @@ public final class DodgeboltHandler extends BaseListener {
                         && event.getAction() != Action.RIGHT_CLICK_BLOCK)) return;
         if (!area.canShoot(player)) {
             event.setCancelled(true);
-            CoreMessages.sendActionBar(player, MessageConfig.DODGEBOLT_CANT_SHOOT);
+            CoreMessages.sendActionBar(player, DodgeboltMessages.DODGEBOLT_CANT_SHOOT);
         }
     }
 
@@ -150,7 +150,7 @@ public final class DodgeboltHandler extends BaseListener {
         if (!area.inOwnArea(player, event.getTo())
                 && changedBlock(event.getFrom(), event.getTo())) {
             event.setCancelled(true);
-            CoreMessages.sendActionBar(player, MessageConfig.DODGEBOLT_CANT_CROSS);
+            CoreMessages.sendActionBar(player, DodgeboltMessages.DODGEBOLT_CANT_CROSS);
             return;
         }
         area.updateArrowAccess(player, event.getTo());

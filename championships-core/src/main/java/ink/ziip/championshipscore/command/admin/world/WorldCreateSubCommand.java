@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.command.admin.world;
 
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.AdminMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 import ink.ziip.championshipscore.util.world.WorldManager;
@@ -38,12 +39,12 @@ public class WorldCreateSubCommand extends BaseSubCommand {
 
         String worldName = args[0];
         if (!WorldManager.isValidWorldName(worldName)) {
-            CoreMessages.sendAdminError(sender, MessageConfig.ADMIN_WORLD_INVALID_NAME);
+            CoreMessages.sendAdminError(sender, AdminMessages.ADMIN_WORLD_INVALID_NAME);
             return true;
         }
         if (Bukkit.getWorld(worldName) != null) {
             CoreMessages.sendAdminInfo(
-                    sender, MessageConfig.ADMIN_WORLD_ALREADY_LOADED.replace("%world%", worldName));
+                    sender, AdminMessages.ADMIN_WORLD_ALREADY_LOADED.replace("%world%", worldName));
             return true;
         }
 
@@ -59,7 +60,7 @@ public class WorldCreateSubCommand extends BaseSubCommand {
         if (bingoEnvironment != null && args.length == 2 && environment != bingoEnvironment) {
             CoreMessages.sendAdminError(
                     sender,
-                    MessageConfig.ADMIN_WORLD_BINGO_ENVIRONMENT_REQUIRED
+                    AdminMessages.ADMIN_WORLD_BINGO_ENVIRONMENT_REQUIRED
                             .replace("%world%", worldName)
                             .replace("%environment%", bingoEnvironment.name().toLowerCase()));
             return true;
@@ -72,18 +73,18 @@ public class WorldCreateSubCommand extends BaseSubCommand {
                         : worldManager.loadBingoWorld(worldName, bingoEnvironment);
         if (!loaded) {
             CoreMessages.sendAdminError(
-                    sender, MessageConfig.ADMIN_WORLD_LOAD_FAILED.replace("%world%", worldName));
+                    sender, AdminMessages.ADMIN_WORLD_LOAD_FAILED.replace("%world%", worldName));
             return true;
         }
 
         CoreMessages.sendAdminSuccess(
                 sender,
-                MessageConfig.ADMIN_WORLD_CREATED
+                AdminMessages.ADMIN_WORLD_CREATED
                         .replace(
                                 "%action%",
                                 existed
-                                        ? MessageConfig.ADMIN_WORLD_ACTION_LOADED
-                                        : MessageConfig.ADMIN_WORLD_ACTION_CREATED)
+                                        ? AdminMessages.ADMIN_WORLD_ACTION_LOADED
+                                        : AdminMessages.ADMIN_WORLD_ACTION_CREATED)
                         .replace("%world%", worldName)
                         .replace(
                                 "%environment%",

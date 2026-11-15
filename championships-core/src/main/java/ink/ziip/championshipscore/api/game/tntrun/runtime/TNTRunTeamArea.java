@@ -11,6 +11,7 @@ import ink.ziip.championshipscore.api.game.tntrun.geometry.TNTRunRainPattern;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.TNTRunMessages;
 import ink.ziip.championshipscore.configuration.location.LocationConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 import ink.ziip.championshipscore.util.Enchants;
@@ -263,9 +264,9 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
         giveElytraToAllPlayers();
 
         announceGamePreparation(
-                MessageConfig.TNT_RUN_START_PREPARATION,
-                MessageConfig.TNT_RUN_START_PREPARATION_TITLE,
-                MessageConfig.TNT_RUN_START_PREPARATION_SUBTITLE);
+                TNTRunMessages.TNT_RUN_START_PREPARATION,
+                TNTRunMessages.TNT_RUN_START_PREPARATION_TITLE,
+                TNTRunMessages.TNT_RUN_START_PREPARATION_SUBTITLE);
 
         startGameProgress();
     }
@@ -289,9 +290,9 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
         addPointsToAllSurvivePlayers(offlinePlayers * 4);
 
         startFinalCountdown(
-                MessageConfig.TNT_RUN_START_PREPARATION_TITLE,
-                MessageConfig.TNT_RUN_GAME_START_TITLE,
-                MessageConfig.TNT_RUN_GAME_START_SUBTITLE,
+                TNTRunMessages.TNT_RUN_START_PREPARATION_TITLE,
+                TNTRunMessages.TNT_RUN_GAME_START_TITLE,
+                TNTRunMessages.TNT_RUN_GAME_START_SUBTITLE,
                 this::beginGameProgress);
     }
 
@@ -307,12 +308,12 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
                             int tntRainWarning = tntRainWarningSeconds();
                             if (tntRainWarning > 0) {
                                 sendActionBarToAllGamePlayers(
-                                        MessageConfig.TNT_RUN_TNT_RAIN_COUNT_DOWN.replace(
+                                        TNTRunMessages.TNT_RUN_TNT_RAIN_COUNT_DOWN.replace(
                                                 "%time%", String.valueOf(tntRainWarning)));
                             }
 
                             if (isTntRainStart(timer)) {
-                                sendActionBarToAllGamePlayers(MessageConfig.TNT_RUN_TNT_RAIN);
+                                sendActionBarToAllGamePlayers(TNTRunMessages.TNT_RUN_TNT_RAIN);
 
                                 startTntRain();
                             }
@@ -481,11 +482,11 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
     private String tntRunBossBarTitle() {
         int activeSeconds = activeTntRainSeconds();
         if (activeSeconds > 0) {
-            return MessageConfig.TNT_RUN_BOSS_BAR_TNT_RAIN
+            return TNTRunMessages.TNT_RUN_BOSS_BAR_TNT_RAIN
                     .replace("%time%", CoreMessages.bossBarTime(timer))
                     .replace("%rain-time%", CoreMessages.bossBarTime(activeSeconds));
         }
-        return MessageConfig.TNT_RUN_BOSS_BAR.replace("%time%", CoreMessages.bossBarTime(timer));
+        return TNTRunMessages.TNT_RUN_BOSS_BAR.replace("%time%", CoreMessages.bossBarTime(timer));
     }
 
     private int tntRainWarningSeconds() {
@@ -546,7 +547,7 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
         setGameStageEnum(GameStageEnum.END);
 
         announceGameEnd(
-                MessageConfig.TNT_RUN_GAME_END_TITLE, MessageConfig.TNT_RUN_GAME_END_SUBTITLE);
+                TNTRunMessages.TNT_RUN_GAME_END_TITLE, TNTRunMessages.TNT_RUN_GAME_END_SUBTITLE);
 
         beginPostGameSettlement();
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
@@ -590,7 +591,7 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
         UUID uuid = player.getUniqueId();
         if (addDeathPlayer(uuid)) {
             sendMessageToAllGamePlayers(
-                    MessageConfig.TNT_RUN_FALL_INTO_VOID.replace(
+                    TNTRunMessages.TNT_RUN_FALL_INTO_VOID.replace(
                             "%player%", CoreMessages.formatPlayerName(player)));
         }
     }

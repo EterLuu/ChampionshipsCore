@@ -15,7 +15,7 @@ import ink.ziip.championshipscore.api.gui.MenuInventory;
 import ink.ziip.championshipscore.api.gui.MenuLayout;
 import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.integration.worldedit.WorldEditManager;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -117,14 +117,15 @@ public final class BuildMartMaterialZoneGui {
             zones.removeIf(zone -> zone.snapshotId().equals(selectedZone));
             if (!config.setMaterialZones(zones)) {
                 player.sendMessage(
-                        CoreMessages.formatAdminError(MessageConfig.MAP_EDITOR_BUILD_SAVE_FAILED));
+                        CoreMessages.formatAdminError(
+                                MapEditorMessages.MAP_EDITOR_BUILD_SAVE_FAILED));
                 return;
             }
             config.deleteMaterialZoneSnapshot(removed);
             session.markDirty();
             player.sendMessage(
                     CoreMessages.formatAdminSuccess(
-                            MessageConfig.MAP_EDITOR_BUILD_ZONE_DELETED
+                            MapEditorMessages.MAP_EDITOR_BUILD_ZONE_DELETED
                                     .replace("%island%", holder.island.displayName())
                                     .replace("%index%", String.valueOf(index + 1))));
             refresh(holder);
@@ -147,14 +148,16 @@ public final class BuildMartMaterialZoneGui {
             List<BuildMartMaterialZone> zones = config.getMaterialZones();
             if (!config.clearMaterialZones()) {
                 player.sendMessage(
-                        CoreMessages.formatAdminError(MessageConfig.MAP_EDITOR_BUILD_SAVE_FAILED));
+                        CoreMessages.formatAdminError(
+                                MapEditorMessages.MAP_EDITOR_BUILD_SAVE_FAILED));
                 return;
             }
             zones.forEach(config::deleteMaterialZoneSnapshot);
             session.markDirty();
             holder.page = 0;
             player.sendMessage(
-                    CoreMessages.formatAdminSuccess(MessageConfig.MAP_EDITOR_BUILD_ZONES_CLEARED));
+                    CoreMessages.formatAdminSuccess(
+                            MapEditorMessages.MAP_EDITOR_BUILD_ZONES_CLEARED));
             refresh(holder);
         } else if (slot == holder.layout.control("back")) {
             if (holder.island != null) {
@@ -172,7 +175,7 @@ public final class BuildMartMaterialZoneGui {
         if (!holder.session.getFlow().isInCorrectWorld(player, holder.session.getTarget())) {
             player.sendMessage(
                     CoreMessages.formatAdminError(
-                            MessageConfig.MAP_EDITOR_STEP_GO_TO_MAP_WORLD_FIRST.replace(
+                            MapEditorMessages.MAP_EDITOR_STEP_GO_TO_MAP_WORLD_FIRST.replace(
                                     "%world%", holder.session.getTarget().worldName())));
             return;
         }
@@ -182,7 +185,7 @@ public final class BuildMartMaterialZoneGui {
                     != BuildMartMaterialIsland.values().length) {
                 player.sendMessage(
                         CoreMessages.formatAdminError(
-                                MessageConfig.MAP_EDITOR_BUILD_CENTERS_INCOMPLETE));
+                                MapEditorMessages.MAP_EDITOR_BUILD_CENTERS_INCOMPLETE));
                 return;
             }
             Vector[] selection =
@@ -195,7 +198,7 @@ public final class BuildMartMaterialZoneGui {
             if (zone.volume() <= 0 || zone.volume() > MAX_VOLUME) {
                 player.sendMessage(
                         CoreMessages.formatAdminError(
-                                MessageConfig.MAP_EDITOR_BUILD_ZONE_VOLUME_INVALID.replace(
+                                MapEditorMessages.MAP_EDITOR_BUILD_ZONE_VOLUME_INVALID.replace(
                                         "%max%", String.valueOf(MAX_VOLUME))));
                 return;
             }
@@ -218,7 +221,8 @@ public final class BuildMartMaterialZoneGui {
             if (!saved) {
                 config.deleteMaterialZoneSnapshot(zone);
                 player.sendMessage(
-                        CoreMessages.formatAdminError(MessageConfig.MAP_EDITOR_BUILD_SAVE_FAILED));
+                        CoreMessages.formatAdminError(
+                                MapEditorMessages.MAP_EDITOR_BUILD_SAVE_FAILED));
                 return;
             }
             pendingSnapshot = null;
@@ -242,14 +246,14 @@ public final class BuildMartMaterialZoneGui {
             if (replacedIndex < 0) {
                 player.sendMessage(
                         CoreMessages.formatAdminSuccess(
-                                MessageConfig.MAP_EDITOR_BUILD_ZONE_SAVED
+                                MapEditorMessages.MAP_EDITOR_BUILD_ZONE_SAVED
                                         .replace("%blocks%", String.valueOf(zone.volume()))
                                         .replace("%island%", islandName(assigned))
                                         .replace("%file%", config.getAreaName() + ".yml")));
             } else {
                 player.sendMessage(
                         CoreMessages.formatAdminSuccess(
-                                MessageConfig.MAP_EDITOR_BUILD_ZONE_UPDATED
+                                MapEditorMessages.MAP_EDITOR_BUILD_ZONE_UPDATED
                                         .replace("%island%", islandName(assigned))
                                         .replace("%blocks%", String.valueOf(zone.volume()))));
             }
@@ -258,7 +262,7 @@ public final class BuildMartMaterialZoneGui {
             if (pendingSnapshot != null) config.deleteMaterialZoneSnapshot(pendingSnapshot);
             player.sendMessage(
                     CoreMessages.formatAdminError(
-                            MessageConfig.MAP_EDITOR_BUILD_SNAPSHOT_FAILED.replace(
+                            MapEditorMessages.MAP_EDITOR_BUILD_SNAPSHOT_FAILED.replace(
                                     "%error%", exception.getMessage())));
         }
     }

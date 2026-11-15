@@ -8,7 +8,9 @@ import ink.ziip.championshipscore.api.daily.DailyPlayerSnapshot;
 import ink.ziip.championshipscore.api.daily.DailyStatSnapshot;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.config.message.DailyMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.ScoreMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.ChampionshipTabText;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 
@@ -30,31 +32,31 @@ public class ChampionshipPlaceholder extends BasePlaceholder {
         if (params == null) return null;
         if (params.startsWith("daily_"))
             return daily(offlinePlayer, params.substring("daily_".length()));
-        if (offlinePlayer == null) return MessageConfig.PLACEHOLDER_NONE;
+        if (offlinePlayer == null) return ScoreMessages.PLACEHOLDER_NONE;
         if (params.equals("tab_prefix")) return tabPrefix(offlinePlayer);
         if (params.equals("tab_name_color")) return tabNameColor(offlinePlayer);
         if (params.equals("tab_footer_status")) return tabFooterStatus(offlinePlayer);
         if (params.startsWith("player_team_name_no_color")) {
             ChampionshipTeam championshipTeam = visibleTeam(offlinePlayer);
-            if (championshipTeam == null) return MessageConfig.PLACEHOLDER_SPECTATOR;
+            if (championshipTeam == null) return ScoreMessages.PLACEHOLDER_SPECTATOR;
 
             return championshipTeam.getName();
         }
         if (params.startsWith("player_team_name")) {
             ChampionshipTeam championshipTeam = visibleTeam(offlinePlayer);
-            if (championshipTeam == null) return MessageConfig.PLACEHOLDER_SPECTATOR;
+            if (championshipTeam == null) return ScoreMessages.PLACEHOLDER_SPECTATOR;
 
             return championshipTeam.getColoredName();
         }
         if (params.startsWith("player_team_color_code")) {
             ChampionshipTeam championshipTeam = visibleTeam(offlinePlayer);
-            if (championshipTeam == null) return MessageConfig.PLACEHOLDER_NONE;
+            if (championshipTeam == null) return ScoreMessages.PLACEHOLDER_NONE;
 
             return championshipTeam.getColorCode();
         }
         if (params.startsWith("player_team_color")) {
             ChampionshipTeam championshipTeam = visibleTeam(offlinePlayer);
-            if (championshipTeam == null) return MessageConfig.PLACEHOLDER_NONE;
+            if (championshipTeam == null) return ScoreMessages.PLACEHOLDER_NONE;
 
             return championshipTeam.getColorName();
         }
@@ -103,13 +105,13 @@ public class ChampionshipPlaceholder extends BasePlaceholder {
                 area = plugin.getGameManager().getPlayerSpectatorStatus(player.getUniqueId());
             String status =
                     area == null
-                            ? MessageConfig.PRESENTATION_DAILY_LOBBY
-                            : MessageConfig.PRESENTATION_DAILY_GAME.replace(
+                            ? ScoreMessages.PRESENTATION_DAILY_LOBBY
+                            : ScoreMessages.PRESENTATION_DAILY_GAME.replace(
                                     "%game%", area.getGameTypeEnum().toString());
             return ChampionshipTabText.bracketedPrefix(MessageConfig.playerTextFormat(), status);
         }
         ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
-        String name = team == null ? MessageConfig.PLACEHOLDER_SPECTATOR : team.getColoredName();
+        String name = team == null ? ScoreMessages.PLACEHOLDER_SPECTATOR : team.getColoredName();
         return ChampionshipTabText.bracketedPrefix(MessageConfig.playerTextFormat(), name);
     }
 
@@ -127,19 +129,19 @@ public class ChampionshipPlaceholder extends BasePlaceholder {
             ChampionshipTeam team = visibleTeam(player);
             if (team != null)
                 return ChampionshipTabText.dailyTeamFooter(
-                        MessageConfig.PRESENTATION_TAB_DAILY_TEAM_FOOTER, team.getColoredName());
+                        ScoreMessages.PRESENTATION_TAB_DAILY_TEAM_FOOTER, team.getColoredName());
             DailyPlayerSnapshot snapshot = plugin.getDailyManager().snapshot(player.getUniqueId());
             String game =
                     "-".equals(snapshot.activeGame())
                             ? snapshot.selectedGame()
                             : snapshot.activeGame();
             return ChampionshipTabText.currentGameFooter(
-                    MessageConfig.PRESENTATION_TAB_CURRENT_GAME_FOOTER, game);
+                    ScoreMessages.PRESENTATION_TAB_CURRENT_GAME_FOOTER, game);
         }
         ChampionshipTeam team = visibleTeam(player);
-        String name = team == null ? MessageConfig.PLACEHOLDER_SPECTATOR : team.getColoredName();
+        String name = team == null ? ScoreMessages.PLACEHOLDER_SPECTATOR : team.getColoredName();
         return ChampionshipTabText.teamFooter(
-                MessageConfig.PRESENTATION_TAB_TEAM_FOOTER,
+                ScoreMessages.PRESENTATION_TAB_TEAM_FOOTER,
                 name,
                 plugin.getRankManager().getPlayerTeamPoints(player.getUniqueId()));
     }
@@ -189,12 +191,12 @@ public class ChampionshipPlaceholder extends BasePlaceholder {
             request = request.substring(0, request.length() - 6);
         }
         int separator = request.lastIndexOf('_');
-        if (separator < 1) return MessageConfig.PLACEHOLDER_NONE;
+        if (separator < 1) return ScoreMessages.PLACEHOLDER_NONE;
         int rank;
         try {
             rank = Integer.parseInt(request.substring(separator + 1));
         } catch (NumberFormatException ignored) {
-            return MessageConfig.PLACEHOLDER_NONE;
+            return ScoreMessages.PLACEHOLDER_NONE;
         }
         String board = request.substring(0, separator);
         java.util.List<DailyLeaderboardEntry> entries =
@@ -202,9 +204,9 @@ public class ChampionshipPlaceholder extends BasePlaceholder {
         if (rank < 1 || rank > entries.size()) {
             if ("row".equals(field))
                 return LegacyText.translateColorCodes(
-                        MessageConfig.DAILY_LEADERBOARD_EMPTY.replace(
+                        DailyMessages.DAILY_LEADERBOARD_EMPTY.replace(
                                 "%rank%", Integer.toString(rank)));
-            return MessageConfig.PLACEHOLDER_NONE;
+            return ScoreMessages.PLACEHOLDER_NONE;
         }
         DailyLeaderboardEntry entry = entries.get(rank - 1);
         String value = formatBoardValue(board, entry);
@@ -212,8 +214,8 @@ public class ChampionshipPlaceholder extends BasePlaceholder {
         if ("value".equals(field)) return value;
         String template =
                 entry.duration()
-                        ? MessageConfig.DAILY_LEADERBOARD_ROW_TIME
-                        : MessageConfig.DAILY_LEADERBOARD_ROW_COUNT;
+                        ? DailyMessages.DAILY_LEADERBOARD_ROW_TIME
+                        : DailyMessages.DAILY_LEADERBOARD_ROW_COUNT;
         return LegacyText.translateColorCodes(
                 template.replace("%rank%", Integer.toString(rank))
                         .replace("%player%", entry.name())
@@ -244,15 +246,15 @@ public class ChampionshipPlaceholder extends BasePlaceholder {
                 plugin.getDailyManager().statsManager().stat(player.getUniqueId(), null);
         return switch (key) {
             case "games" -> Long.toString(stat.gamesPlayed());
-            default -> MessageConfig.PLACEHOLDER_NONE;
+            default -> ScoreMessages.PLACEHOLDER_NONE;
         };
     }
 
     private String safeDailyDefault(String key) {
         return switch (key) {
             case "party_size", "queue_players", "games", "points", "best" -> "0";
-            case "mode" -> MessageConfig.DAILY_MODE_CHAMPIONSHIP;
-            default -> MessageConfig.PLACEHOLDER_NONE;
+            case "mode" -> DailyMessages.DAILY_MODE_CHAMPIONSHIP;
+            default -> ScoreMessages.PLACEHOLDER_NONE;
         };
     }
 }

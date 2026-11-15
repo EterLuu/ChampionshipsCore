@@ -7,7 +7,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.step.WeSelectionStep;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.api.game.skywars.config.SkyWarsConfig;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -47,7 +47,7 @@ public final class SkyWarsPrepareFlow extends SnapshotMapPrepareFlow {
                             cfg(t).setAreaPos2(v[1]);
                         },
                         CoreMessages.formatAdminSuccess(
-                                MessageConfig.MAP_EDITOR_SW_MAP_BOUNDARIES_SET)));
+                                MapEditorMessages.MAP_EDITOR_SW_MAP_BOUNDARIES_SET)));
         steps.add(
                 new StandAndRunStep(
                         "boundary_center",
@@ -62,7 +62,7 @@ public final class SkyWarsPrepareFlow extends SnapshotMapPrepareFlow {
                         t -> cfg(t).getBoundaryCenterPoint() != null,
                         (t, l) -> cfg(t).setBoundaryCenterPoint(l),
                         CoreMessages.formatAdminSuccess(
-                                MessageConfig.MAP_EDITOR_SW_BORDER_CENTER_SET)));
+                                MapEditorMessages.MAP_EDITOR_SW_BORDER_CENTER_SET)));
         steps.add(
                 new StandAndRunStep(
                         "spectator_spawn",
@@ -77,7 +77,7 @@ public final class SkyWarsPrepareFlow extends SnapshotMapPrepareFlow {
                         t -> cfg(t).getSpectatorSpawnPoint() != null,
                         (t, l) -> cfg(t).setSpectatorSpawnPoint(l),
                         CoreMessages.formatAdminSuccess(
-                                MessageConfig.MAP_EDITOR_STEP_SPECTATOR_SPAWN_POINT_SET)));
+                                MapEditorMessages.MAP_EDITOR_STEP_SPECTATOR_SPAWN_POINT_SET)));
         steps.add(
                 new ListStep(
                         "team_spawn_points",

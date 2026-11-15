@@ -3,7 +3,7 @@ package ink.ziip.championshipscore.api.game.riptiderush.mechanics;
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.api.game.riptiderush.support.RiptideTestFixtures;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.RiptideRushMessages;
 
 import org.junit.jupiter.api.Test;
 
@@ -161,11 +161,11 @@ class RiptideQuestionTest {
 
     @Test
     void observationClueAndPromptOccupyDifferentTitleLines() {
-        String title = MessageConfig.RIPTIDE_RUSH_QUESTION_TITLE,
-                subtitle = MessageConfig.RIPTIDE_RUSH_QUESTION_SUBTITLE;
+        String title = RiptideRushMessages.RIPTIDE_RUSH_QUESTION_TITLE,
+                subtitle = RiptideRushMessages.RIPTIDE_RUSH_QUESTION_SUBTITLE;
         try {
-            MessageConfig.RIPTIDE_RUSH_QUESTION_TITLE = "%question%";
-            MessageConfig.RIPTIDE_RUSH_QUESTION_SUBTITLE = "left %left% | right %right%";
+            RiptideRushMessages.RIPTIDE_RUSH_QUESTION_TITLE = "%question%";
+            RiptideRushMessages.RIPTIDE_RUSH_QUESTION_SUBTITLE = "left %left% | right %right%";
             for (String variant : RiptideQuestion.variants()) {
                 var q = RiptideQuestion.generate(variant, new Random(123), 10, 99);
                 var display = RiptideQuestionDisplay.of(q, 1);
@@ -180,8 +180,8 @@ class RiptideQuestionTest {
                 assertFalse(display.subtitle().contains("\n"));
             }
         } finally {
-            MessageConfig.RIPTIDE_RUSH_QUESTION_TITLE = title;
-            MessageConfig.RIPTIDE_RUSH_QUESTION_SUBTITLE = subtitle;
+            RiptideRushMessages.RIPTIDE_RUSH_QUESTION_TITLE = title;
+            RiptideRushMessages.RIPTIDE_RUSH_QUESTION_SUBTITLE = subtitle;
         }
     }
 }

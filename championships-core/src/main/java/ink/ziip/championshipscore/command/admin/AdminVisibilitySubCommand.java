@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.command.admin;
 
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.AdminMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -38,7 +39,7 @@ public final class AdminVisibilitySubCommand extends BaseSubCommand {
             target = Bukkit.getPlayerExact(args[0]);
             if (target == null) {
                 CoreMessages.sendAdminError(
-                        sender, MessageConfig.ADMIN_PLAYER_OFFLINE.replace("%player%", args[0]));
+                        sender, AdminMessages.ADMIN_PLAYER_OFFLINE.replace("%player%", args[0]));
                 return true;
             }
         } else if (sender instanceof Player player) {
@@ -49,11 +50,11 @@ public final class AdminVisibilitySubCommand extends BaseSubCommand {
         }
 
         sender.sendMessage(
-                MessageConfig.ADMIN_VISIBILITY_HEADER
+                AdminMessages.ADMIN_VISIBILITY_HEADER
                         .replace("%player%", target.getName())
                         .replace("%uuid%", String.valueOf(target.getUniqueId())));
         for (String line : plugin.getVisibilityManager().describe(target.getUniqueId()))
-            sender.sendMessage(MessageConfig.ADMIN_VISIBILITY_LINE.replace("%line%", line));
+            sender.sendMessage(AdminMessages.ADMIN_VISIBILITY_LINE.replace("%line%", line));
         return true;
     }
 

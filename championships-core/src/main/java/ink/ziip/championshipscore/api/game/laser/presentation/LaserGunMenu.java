@@ -6,7 +6,7 @@ import ink.ziip.championshipscore.api.gui.MenuInventory;
 import ink.ziip.championshipscore.api.gui.MenuLayout;
 import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.LaserBoxMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.shared.presentation.MessageTemplate;
 
@@ -90,14 +90,15 @@ public final class LaserGunMenu implements MenuInventory {
                                 Map.of(
                                         "title",
                                         LaserGunItems.text(
-                                                MessageConfig.LASER_BOX_GUN_SELECTION_TITLE))));
+                                                LaserBoxMessages.LASER_BOX_GUN_SELECTION_TITLE))));
         menu.render();
         viewer.openInventory(menu.inventory);
         if (!menu.ownsView()) {
             menu.finishClose();
             return;
         }
-        viewer.sendActionBar(LegacyText.component(MessageConfig.LASER_BOX_GUN_SELECTION_SUBTITLE));
+        viewer.sendActionBar(
+                LegacyText.component(LaserBoxMessages.LASER_BOX_GUN_SELECTION_SUBTITLE));
     }
 
     private void render() {
@@ -183,7 +184,7 @@ public final class LaserGunMenu implements MenuInventory {
                     LegacyText.component(
                             MessageTemplate.render(
                                     LaserGunItems.text(
-                                            MessageConfig.LASER_BOX_GUN_SELECTION_CHOSEN),
+                                            LaserBoxMessages.LASER_BOX_GUN_SELECTION_CHOSEN),
                                     Map.of("%gun%", LaserGunItems.gunName(gun)))));
         return true;
     }

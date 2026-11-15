@@ -1,6 +1,6 @@
 package ink.ziip.championshipscore.api.game.model;
 
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.GameMessages;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -56,23 +56,23 @@ public enum GameTypeEnum {
     @Override
     public String toString() {
         return switch (this) {
-            case Bingo -> MessageConfig.GAME_BINGO;
-            case ParkourTag -> MessageConfig.GAME_PARKOUR_TAG;
-            case BattleBox -> MessageConfig.GAME_BATTLE_BOX;
-            case TNTRun -> MessageConfig.GAME_TNT_RUN;
-            case LaserShowdown -> MessageConfig.GAME_LASER_SHOWDOWN;
-            case SkyWars -> MessageConfig.GAME_SKY_WARS;
-            case TGTTOS -> MessageConfig.GAME_TGTTOS;
-            case DragonEggCarnival -> MessageConfig.GAME_DRAGON_EGG_CARNIVAL;
-            case ParkourWarrior -> MessageConfig.PARKOUR_WARRIOR;
-            case HotyCodyDusky -> MessageConfig.GAME_HOTY_CODY_DUSKY;
-            case BuildMart -> MessageConfig.GAME_BUILD_MART;
-            case Dodgebolt -> MessageConfig.GAME_DODGEBOLT;
-            case AceRace -> MessageConfig.GAME_ACE_RACE;
-            case RiptideRush -> MessageConfig.GAME_RIPTIDE_RUSH;
-            case FrostbiteFrenzy -> MessageConfig.GAME_FROSTBITE;
-            case LaserBox -> MessageConfig.GAME_LASER_BOX;
-            case SulfurSoccer -> MessageConfig.GAME_SULFUR_SOCCER;
+            case Bingo -> GameMessages.GAME_BINGO;
+            case ParkourTag -> GameMessages.GAME_PARKOUR_TAG;
+            case BattleBox -> GameMessages.GAME_BATTLE_BOX;
+            case TNTRun -> GameMessages.GAME_TNT_RUN;
+            case LaserShowdown -> GameMessages.GAME_LASER_SHOWDOWN;
+            case SkyWars -> GameMessages.GAME_SKY_WARS;
+            case TGTTOS -> GameMessages.GAME_TGTTOS;
+            case DragonEggCarnival -> GameMessages.GAME_DRAGON_EGG_CARNIVAL;
+            case ParkourWarrior -> GameMessages.PARKOUR_WARRIOR;
+            case HotyCodyDusky -> GameMessages.GAME_HOTY_CODY_DUSKY;
+            case BuildMart -> GameMessages.GAME_BUILD_MART;
+            case Dodgebolt -> GameMessages.GAME_DODGEBOLT;
+            case AceRace -> GameMessages.GAME_ACE_RACE;
+            case RiptideRush -> GameMessages.GAME_RIPTIDE_RUSH;
+            case FrostbiteFrenzy -> GameMessages.GAME_FROSTBITE;
+            case LaserBox -> GameMessages.GAME_LASER_BOX;
+            case SulfurSoccer -> GameMessages.GAME_SULFUR_SOCCER;
         };
     }
 }

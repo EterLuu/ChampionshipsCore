@@ -12,10 +12,7 @@ class LaserShowdownStatsTest {
         var first = new LaserShowdownStats(1, 10, 20, 10, 0, 1, 2, 0, 0);
         var second = new LaserShowdownStats(1, 30, 80, 8, 0, 2, 0, 0, 1);
         var sum = first.merge(second);
-        assertEquals(2, sum.games());
-        assertEquals(40, sum.kills());
-        assertEquals(18, sum.headHits());
-        assertEquals(100, sum.enemyHits());
+        assertEquals(new LaserShowdownStats(2, 40, 100, 18, 0, 3, 2, 0, 1), sum);
         assertEquals(LaserGun.RIFLE, sum.favoriteGun());
         assertEquals(3, sum.lives(LaserGun.RIFLE));
         assertNull(LaserShowdownStats.EMPTY.favoriteGun());

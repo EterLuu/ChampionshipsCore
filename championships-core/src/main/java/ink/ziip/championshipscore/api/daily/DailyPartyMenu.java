@@ -2,7 +2,7 @@ package ink.ziip.championshipscore.api.daily;
 
 import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
@@ -86,12 +86,12 @@ final class DailyPartyMenu {
                 if (party == null) {
                     daily.message(
                             player.getUniqueId(),
-                            MessageConfig.MAP_EDITOR_DAILY_PARTY_INVITATION_CANNOT_ACCEPT);
+                            MapEditorMessages.MAP_EDITOR_DAILY_PARTY_INVITATION_CANNOT_ACCEPT);
                 } else {
                     for (UUID member : party.members())
                         daily.message(
                                 member,
-                                MessageConfig.MAP_EDITOR_DAILY_PARTY_MEMBER_JOINED.replace(
+                                MapEditorMessages.MAP_EDITOR_DAILY_PARTY_MEMBER_JOINED.replace(
                                         "%player%", player.getName()));
                 }
                 refresh(holder);
@@ -108,7 +108,7 @@ final class DailyPartyMenu {
             if (party == null) {
                 daily.message(
                         player.getUniqueId(),
-                        MessageConfig.MAP_EDITOR_DAILY_PARTY_CLICK_ONLINE_TO_INVITE);
+                        MapEditorMessages.MAP_EDITOR_DAILY_PARTY_CLICK_ONLINE_TO_INVITE);
                 clickSound(player, 1F);
                 return;
             }
@@ -121,11 +121,12 @@ final class DailyPartyMenu {
                 daily.message(
                         player.getUniqueId(),
                         leader
-                                ? MessageConfig.MAP_EDITOR_DAILY_PARTY_DISBANDED
-                                : MessageConfig.MAP_EDITOR_DAILY_PARTY_LEFT);
+                                ? MapEditorMessages.MAP_EDITOR_DAILY_PARTY_DISBANDED
+                                : MapEditorMessages.MAP_EDITOR_DAILY_PARTY_LEFT);
             else
                 daily.message(
-                        player.getUniqueId(), MessageConfig.MAP_EDITOR_DAILY_PARTY_CANNOT_MODIFY);
+                        player.getUniqueId(),
+                        MapEditorMessages.MAP_EDITOR_DAILY_PARTY_CANNOT_MODIFY);
             refresh(holder);
             clickSound(player, success ? 1F : 0.8F);
             return;
@@ -139,15 +140,15 @@ final class DailyPartyMenu {
         if (!daily.partyManager().invite(player.getUniqueId(), target)) {
             daily.message(
                     player.getUniqueId(),
-                    MessageConfig.MAP_EDITOR_DAILY_PARTY_PLAYER_CANNOT_INVITE);
+                    MapEditorMessages.MAP_EDITOR_DAILY_PARTY_PLAYER_CANNOT_INVITE);
         } else {
             daily.message(
                     player.getUniqueId(),
-                    MessageConfig.MAP_EDITOR_DAILY_PARTY_INVITATION_SENT.replace(
+                    MapEditorMessages.MAP_EDITOR_DAILY_PARTY_INVITATION_SENT.replace(
                             "%target%", DailyPartyPresentation.playerName(target)));
             daily.message(
                     target,
-                    MessageConfig.MAP_EDITOR_DAILY_PARTY_INVITED_BY.replace(
+                    MapEditorMessages.MAP_EDITOR_DAILY_PARTY_INVITED_BY.replace(
                             "%player%", player.getName()));
         }
         refresh(holder);

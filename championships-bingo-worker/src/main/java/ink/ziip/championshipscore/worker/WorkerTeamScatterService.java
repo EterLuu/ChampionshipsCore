@@ -20,6 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
+import java.util.function.BooleanSupplier;
 
 /**
  * Resolves one safe destination per team and reuses it for every member, including late arrivals.
@@ -27,7 +28,12 @@ import java.util.function.BiFunction;
 final class WorkerTeamScatterService {
     private static final int MAX_CONCURRENT_SEARCHES = 4;
     private final LocationSearch search;
-    private final BiFunction<Player, Location, CompletableFuture<Boolean>> teleport;
+
+    private interface Teleport {
+        CompletableFuture<Boolean> apply(Player player, Location location, BooleanSupplier current);
+    }
+
+    private final Teleport teleport;
     private final Runnable cancelSearch;
     private final Map<Integer, CompletableFuture<Location>> destinations =
             new ConcurrentHashMap<>();
@@ -49,17 +55,25 @@ final class WorkerTeamScatterService {
                                 maxTries);
         cancelSearch = safeLocations::cancelPending;
         teleport =
-                (player, location) ->
+                (player, location, current) ->
                         scheduler
                                 .supplyEntity(
                                         player,
                                         () -> {
-                                            if (cancelled || !player.isOnline())
+                                            if (cancelled
+                                                    || !current.getAsBoolean()
+                                                    || !player.isOnline()
+                                                    || plugin.getServer()
+                                                                    .getPlayer(player.getUniqueId())
+                                                            != player)
                                                 return CompletableFuture.completedFuture(false);
                                             return player.teleportAsync(location.clone())
                                                     .thenCompose(
                                                             success -> {
-                                                                if (!Boolean.TRUE.equals(success))
+                                                                if (cancelled
+                                                                        || !current.getAsBoolean()
+                                                                        || !Boolean.TRUE.equals(
+                                                                                success))
                                                                     return CompletableFuture
                                                                             .completedFuture(false);
                                                                 placedPlayers.add(
@@ -68,6 +82,10 @@ final class WorkerTeamScatterService {
                                                                         .runEntityFuture(
                                                                                 player,
                                                                                 () -> {
+                                                                                    if (cancelled
+                                                                                            || !current
+                                                                                                    .getAsBoolean())
+                                                                                        return;
                                                                                     player
                                                                                             .setFallDistance(
                                                                                                     0F);
@@ -89,7 +107,11 @@ final class WorkerTeamScatterService {
             LocationSearch search,
             BiFunction<Player, Location, CompletableFuture<Boolean>> teleport) {
         this.search = search;
-        this.teleport = teleport;
+        this.teleport =
+                (player, location, current) ->
+                        current.getAsBoolean()
+                                ? teleport.apply(player, location)
+                                : CompletableFuture.completedFuture(false);
         this.cancelSearch = () -> {};
     }
 
@@ -143,6 +165,10 @@ final class WorkerTeamScatterService {
     }
 
     CompletableFuture<Void> teleportAsync(Player player, int teamId) {
+        return teleportAsync(player, teamId, () -> true);
+    }
+
+    CompletableFuture<Void> teleportAsync(Player player, int teamId, BooleanSupplier current) {
         if (cancelled) return CompletableFuture.failedFuture(new CancellationException());
         CompletableFuture<Location> destination = destinations.get(teamId);
         if (destination == null)
@@ -158,7 +184,7 @@ final class WorkerTeamScatterService {
                                     if (cancelled)
                                         return CompletableFuture.failedFuture(
                                                 new CancellationException());
-                                    return teleport.apply(player, location.clone())
+                                    return teleport.apply(player, location.clone(), current)
                                             .thenAccept(
                                                     success -> {
                                                         if (!Boolean.TRUE.equals(success)) {

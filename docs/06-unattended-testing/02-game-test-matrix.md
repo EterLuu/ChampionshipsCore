@@ -76,11 +76,11 @@ npm run connect
 
 CI 读取 Harness JSON 报告和 Core/Test Event 状态，至少要求：
 
-没有运行中的 Minecraft 服时，先执行 `npm run test:scenarios`，它对 17 个 profile 运行阶段、动作、重连、计分包和结束状态的协议级场景；接着在真实地图上执行本矩阵的原生断言。
+没有运行中的 Minecraft 服时，先执行 `npm run test:scenarios`，它对 17 个 profile 运行阶段、动作、重连、计分包和结束状态的客户端模拟场景；接着在真实地图上执行本矩阵的原生断言。
 
 - roster 与预期 Bot 完全一致；所有 Bot 在终点仍已登录、在线、世界就绪；意外断线、死亡或重复 UUID 使测试失败。
 - `phaseTransitions` 包含矩阵要求的阶段；`injectedDisconnects` 等于预期注入次数；重连后的 `playLogins`、传送确认、队伍和身份与断线前一致。
 - `mechanismPackets` 包含当前 profile 的机制标签；服务端结果必须由 Core/Worker 的事件、积分、世界或 Redis 状态核对，客户端动作包本身不能作为得分证据。
 - 单局结束后执行 `stop --confirm`，检查临时队伍、lease、世界 slot 和延迟任务清零；Test Event 再启动第二轮确认没有旧状态泄漏。
 
-`npm run test:scenarios` 为全部 profile 提供协议级阶段、动作、重连、计分和结束场景证据。表格中的“当前证据”只描述代码与契约具备的能力；原生机制、阶段掉线、积分和第二场证据必须在对应地图上实际开局后补齐，未完成的行保持“可执行 profile；原生行为待验收”，不标记为已完成。
+`npm run test:scenarios` 为全部 profile 提供客户端模拟阶段、动作、重连、计分包和结束场景证据。表格中的“当前证据”只描述代码与契约具备的能力；原生机制、阶段掉线、积分和第二场证据必须在对应地图上实际开局后补齐，未完成的行保持“可执行 profile；原生行为待验收”，不标记为已完成。

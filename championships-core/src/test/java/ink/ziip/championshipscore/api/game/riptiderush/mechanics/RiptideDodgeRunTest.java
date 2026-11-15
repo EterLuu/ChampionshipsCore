@@ -24,10 +24,7 @@ class RiptideDodgeRunTest {
         assertEquals(1.4D, box.getHeight(), 1e-9);
         assertEquals(10.9D, box.getCenterX(), 1e-9);
         assertEquals(31D, box.getCenterZ(), 1e-9);
-    }
-
-    @Test
-    void spiderCollisionAllowsAPlayerToPassWithASmallHorizontalGap() {
+        // A spider's wide native box shrinks so a player can pass through a small horizontal gap.
         var nativeBox = new BoundingBox(-.7, 0, -.7, .7, .9, .7);
         var collision = RiptideDodgeRun.collisionBox(nativeBox);
         var clearPlayer = new BoundingBox(.31, 0, -.3, .91, 1.8, .3);

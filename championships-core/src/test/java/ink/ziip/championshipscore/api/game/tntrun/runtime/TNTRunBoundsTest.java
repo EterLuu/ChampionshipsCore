@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.tntrun.runtime;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
@@ -147,12 +149,8 @@ class TNTRunBoundsTest {
 
         private static TNTRunConfig config() {
             try {
-                var field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-                field.setAccessible(true);
-                ChampionshipsCore plugin =
-                        (ChampionshipsCore)
-                                ((sun.misc.Unsafe) field.get(null))
-                                        .allocateInstance(ChampionshipsCore.class);
+
+                ChampionshipsCore plugin = allocate(ChampionshipsCore.class);
                 return new TNTRunConfig(plugin, "test");
             } catch (ReflectiveOperationException exception) {
                 throw new AssertionError(exception);
@@ -235,12 +233,8 @@ class TNTRunBoundsTest {
         }
 
         private static HeadlessArea area(GameStageEnum stage) throws Exception {
-            var field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-            field.setAccessible(true);
-            HeadlessArea area =
-                    (HeadlessArea)
-                            ((sun.misc.Unsafe) field.get(null))
-                                    .allocateInstance(HeadlessArea.class);
+
+            HeadlessArea area = allocate(HeadlessArea.class);
             area.config = TNTRunPlayerBoundsCases.preparedConfig();
             area.config.setEliminationY(60.0);
             area.stage = stage;

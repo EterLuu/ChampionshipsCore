@@ -19,7 +19,7 @@ import org.bukkit.scheduler.BukkitTask;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-public abstract class BaseSingleGameSchedule extends BaseManager {
+public abstract class BaseSingleGameSchedule extends BaseManager implements FormalSchedule {
     private static final int ROUND_TRANSITION_SECONDS = 10;
     protected final BukkitScheduler scheduler;
     protected final BaseListener handler;
@@ -52,10 +52,10 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
         }
     }
 
-    public void startGame() {
+    public boolean startGame() {
         if (enabled) {
             endSchedule();
-            return;
+            return false;
         }
 
         plugin.getScheduleManager().addRound(gameTypeEnum);
@@ -88,6 +88,7 @@ public abstract class BaseSingleGameSchedule extends BaseManager {
                         },
                         0,
                         20L);
+        return enabled;
     }
 
     public void startRound() {

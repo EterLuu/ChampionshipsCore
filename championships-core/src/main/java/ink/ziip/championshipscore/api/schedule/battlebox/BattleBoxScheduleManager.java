@@ -7,6 +7,7 @@ import ink.ziip.championshipscore.api.game.model.GameRunMode;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.schedule.FormalEventMapResolver;
 import ink.ziip.championshipscore.api.schedule.FormalPairingScheduler;
+import ink.ziip.championshipscore.api.schedule.FormalSchedule;
 import ink.ziip.championshipscore.api.schedule.model.TwoVTwoVector;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
@@ -22,7 +23,7 @@ import org.bukkit.scheduler.BukkitTask;
 
 import java.util.*;
 
-public class BattleBoxScheduleManager extends BaseManager {
+public class BattleBoxScheduleManager extends BaseManager implements FormalSchedule {
     private long scheduleGeneration;
     private static final int ROUND_TRANSITION_SECONDS = 10;
     private final BukkitScheduler scheduler;
@@ -94,13 +95,13 @@ public class BattleBoxScheduleManager extends BaseManager {
         }
     }
 
-    public void startBattleBox() {
+    public boolean startGame() {
         if (enabled) {
             endSchedule();
-            return;
+            return false;
         }
 
-        if (!cycleGeneratePairs()) return;
+        if (!cycleGeneratePairs()) return false;
         scheduledMapName = FormalEventMapResolver.map(plugin, GameTypeEnum.BattleBox, 1);
         if (scheduledMapName == null) {
             plugin.getLogger()
@@ -114,7 +115,7 @@ public class BattleBoxScheduleManager extends BaseManager {
                                             "battle-box-schedule-manager.start-battle-box-1"),
                                     MessageConfig.codeText(
                                             "battle-box-schedule-manager.start-battle-box-2")));
-            return;
+            return false;
         }
         int requiredInstances = rounds.getFirst().size();
         long availableInstances =
@@ -144,7 +145,7 @@ public class BattleBoxScheduleManager extends BaseManager {
                                             requiredInstances,
                                             availableInstances)));
             scheduledMapName = null;
-            return;
+            return false;
         }
 
         plugin.getScheduleManager().addRound(GameTypeEnum.BattleBox);
@@ -184,6 +185,7 @@ public class BattleBoxScheduleManager extends BaseManager {
                         },
                         0,
                         20L);
+        return enabled;
     }
 
     public void startBattleBoxRound() {

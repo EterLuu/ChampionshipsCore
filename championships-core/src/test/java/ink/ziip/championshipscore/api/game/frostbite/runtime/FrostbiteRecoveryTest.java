@@ -1,5 +1,9 @@
 package ink.ziip.championshipscore.api.game.frostbite.runtime;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+import static ink.ziip.championshipscore.support.TestObjects.field;
+import static ink.ziip.championshipscore.support.TestObjects.set;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
@@ -19,6 +23,23 @@ import java.lang.reflect.*;
 import java.util.*;
 
 class FrostbiteRecoveryTest {
+    @Test
+    void interRoundResetClearsRuntimeWithoutUnloadingTheOccupiedWorld() throws Exception {
+        try (var f = new Fixture()) {
+            set(f.area, "gamePlayers", new ArrayList<>());
+            set(f.area, "pickupDisplays", new ArrayList<>());
+            set(f.area, "pickupArenaOffsets", new HashMap<>());
+            set(f.area, "roundTransitionPending", true);
+            set(f.area, "timer", 45);
+            // No map lifecycle is installed: attempting to reload or unload the world fails this
+            // fixture. The actual round/runtime cleanup must still run.
+            f.area.resetArea();
+            assertNull(field(FrostbiteArea.class, "round").get(f.area));
+            assertEquals(0, f.area.getTimer());
+            assertTrue(f.area.isRoundTransitionPending());
+        }
+    }
+
     @Test
     void nonFormalDisconnectStillSitsOutTheRound() throws Exception {
         for (var stage :
@@ -190,27 +211,5 @@ class FrostbiteRecoveryTest {
         public void close() throws Exception {
             field(Bukkit.class, "server").set(null, oldServer);
         }
-    }
-
-    private static Field field(Class<?> type, String name) throws Exception {
-        for (; type != null; type = type.getSuperclass()) {
-            try {
-                Field field = type.getDeclaredField(name);
-                field.setAccessible(true);
-                return field;
-            } catch (NoSuchFieldException ignored) {
-            }
-        }
-        throw new NoSuchFieldException(name);
-    }
-
-    private static void set(Object object, String name, Object value) throws Exception {
-        field(object.getClass(), name).set(object, value);
-    }
-
-    private static <T> T allocate(Class<T> type) throws Exception {
-        return type.cast(
-                ((sun.misc.Unsafe) field(sun.misc.Unsafe.class, "theUnsafe").get(null))
-                        .allocateInstance(type));
     }
 }

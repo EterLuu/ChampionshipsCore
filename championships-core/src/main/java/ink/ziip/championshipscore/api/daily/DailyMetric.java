@@ -3,7 +3,7 @@ package ink.ziip.championshipscore.api.daily;
 import ink.ziip.championshipscore.api.game.laser.model.LaserGun;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.LaserBoxMessages;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -126,11 +126,11 @@ public enum DailyMetric {
     private static String weaponName(LaserGun gun) {
         String name =
                 switch (gun) {
-                    case SNIPER -> MessageConfig.LASER_BOX_GUN_SNIPER_NAME;
-                    case RIFLE -> MessageConfig.LASER_BOX_GUN_RIFLE_NAME;
-                    case SMG -> MessageConfig.LASER_BOX_GUN_SMG_NAME;
-                    case MACHINE -> MessageConfig.LASER_BOX_GUN_MACHINE_NAME;
-                    case SHOTGUN -> MessageConfig.LASER_BOX_GUN_SHOTGUN_NAME;
+                    case SNIPER -> LaserBoxMessages.LASER_BOX_GUN_SNIPER_NAME;
+                    case RIFLE -> LaserBoxMessages.LASER_BOX_GUN_RIFLE_NAME;
+                    case SMG -> LaserBoxMessages.LASER_BOX_GUN_SMG_NAME;
+                    case MACHINE -> LaserBoxMessages.LASER_BOX_GUN_MACHINE_NAME;
+                    case SHOTGUN -> LaserBoxMessages.LASER_BOX_GUN_SHOTGUN_NAME;
                 };
         return name == null ? gun.id() : name;
     }

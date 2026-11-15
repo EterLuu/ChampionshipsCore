@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.command.event;
 
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.EventMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -35,15 +36,15 @@ public final class EventStopSubCommand extends BaseSubCommand {
         if (game == null
                 || !plugin.getGameManager().isGameEnabled(game)
                 || !EventCommandSupport.canSchedule(game)) {
-            CoreMessages.sendAdminError(sender, MessageConfig.EVENT_STOP_UNAVAILABLE);
+            CoreMessages.sendAdminError(sender, EventMessages.EVENT_STOP_UNAVAILABLE);
             return true;
         }
         if (plugin.getScheduleManager().stopFormalEvent(game))
             CoreMessages.sendAdminSuccess(
-                    sender, MessageConfig.EVENT_STOPPED.replace("%game%", game.name()));
+                    sender, EventMessages.EVENT_STOPPED.replace("%game%", game.name()));
         else
             CoreMessages.sendAdminInfo(
-                    sender, MessageConfig.EVENT_NOT_RUNNING.replace("%game%", game.name()));
+                    sender, EventMessages.EVENT_NOT_RUNNING.replace("%game%", game.name()));
         return true;
     }
 

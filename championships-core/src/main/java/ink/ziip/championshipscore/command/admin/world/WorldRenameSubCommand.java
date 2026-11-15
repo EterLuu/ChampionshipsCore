@@ -6,6 +6,7 @@ import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.AdminMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 import ink.ziip.championshipscore.util.world.WorldManager;
@@ -52,18 +53,18 @@ public class WorldRenameSubCommand extends BaseSubCommand {
         WorldManager worldManager = plugin.getWorldManager();
         if (!WorldManager.isValidWorldName(oldWorldName)
                 || !WorldManager.isValidWorldName(newWorldName)) {
-            CoreMessages.sendAdminError(sender, MessageConfig.ADMIN_WORLD_INVALID_NAME);
+            CoreMessages.sendAdminError(sender, AdminMessages.ADMIN_WORLD_INVALID_NAME);
             return true;
         }
         if (oldWorldName.equalsIgnoreCase(newWorldName)) {
-            CoreMessages.sendAdminError(sender, MessageConfig.ADMIN_WORLD_SAME_NAME);
+            CoreMessages.sendAdminError(sender, AdminMessages.ADMIN_WORLD_SAME_NAME);
             return true;
         }
         if (Bukkit.getWorld(newWorldName) != null
                 || worldManager.getWorldFolder(newWorldName).exists()) {
             CoreMessages.sendAdminError(
                     sender,
-                    MessageConfig.ADMIN_WORLD_TARGET_EXISTS.replace("%world%", newWorldName));
+                    AdminMessages.ADMIN_WORLD_TARGET_EXISTS.replace("%world%", newWorldName));
             return true;
         }
 
@@ -71,7 +72,7 @@ public class WorldRenameSubCommand extends BaseSubCommand {
         File oldFolder = worldManager.getWorldFolder(oldWorldName);
         if (oldWorld == null && !oldFolder.isDirectory()) {
             CoreMessages.sendAdminError(
-                    sender, MessageConfig.ADMIN_WORLD_MISSING.replace("%world%", oldWorldName));
+                    sender, AdminMessages.ADMIN_WORLD_MISSING.replace("%world%", oldWorldName));
             return true;
         }
         if ((oldWorld != null && worldManager.isMainWorld(oldWorld))
@@ -79,15 +80,15 @@ public class WorldRenameSubCommand extends BaseSubCommand {
                         worldManager.getMainWorld() == null
                                 ? ""
                                 : worldManager.getMainWorld().getName())) {
-            CoreMessages.sendAdminError(sender, MessageConfig.ADMIN_WORLD_MAIN_PROTECTED_RENAME);
+            CoreMessages.sendAdminError(sender, AdminMessages.ADMIN_WORLD_MAIN_PROTECTED_RENAME);
             return true;
         }
         if (WorldManager.isBingoWorldName(oldWorldName)) {
-            CoreMessages.sendAdminError(sender, MessageConfig.ADMIN_WORLD_BINGO_PROTECTED_RENAME);
+            CoreMessages.sendAdminError(sender, AdminMessages.ADMIN_WORLD_BINGO_PROTECTED_RENAME);
             return true;
         }
         if (plugin.getPrepareSessionManager().hasActiveSessions()) {
-            CoreMessages.sendAdminError(sender, MessageConfig.ADMIN_WORLD_PREPARE_ACTIVE_RENAME);
+            CoreMessages.sendAdminError(sender, AdminMessages.ADMIN_WORLD_PREPARE_ACTIVE_RENAME);
             return true;
         }
 
@@ -99,20 +100,20 @@ public class WorldRenameSubCommand extends BaseSubCommand {
         }
         if (oldWorld == null) {
             if (requestedEnvironment == null) {
-                CoreMessages.sendAdminError(sender, MessageConfig.ADMIN_WORLD_ENVIRONMENT_REQUIRED);
+                CoreMessages.sendAdminError(sender, AdminMessages.ADMIN_WORLD_ENVIRONMENT_REQUIRED);
                 return true;
             }
             if (!worldManager.loadWorld(oldWorldName, requestedEnvironment, false)) {
                 CoreMessages.sendAdminError(
                         sender,
-                        MessageConfig.ADMIN_WORLD_LOAD_FAILED.replace("%world%", oldWorldName));
+                        AdminMessages.ADMIN_WORLD_LOAD_FAILED.replace("%world%", oldWorldName));
                 return true;
             }
             oldWorld = Bukkit.getWorld(oldWorldName);
             if (oldWorld == null) {
                 CoreMessages.sendAdminError(
                         sender,
-                        MessageConfig.ADMIN_WORLD_LOAD_FAILED_SIMPLE.replace(
+                        AdminMessages.ADMIN_WORLD_LOAD_FAILED_SIMPLE.replace(
                                 "%world%", oldWorldName));
                 return true;
             }
@@ -120,7 +121,7 @@ public class WorldRenameSubCommand extends BaseSubCommand {
                 && requestedEnvironment != oldWorld.getEnvironment()) {
             CoreMessages.sendAdminError(
                     sender,
-                    MessageConfig.ADMIN_WORLD_ENVIRONMENT_MISMATCH.replace(
+                    AdminMessages.ADMIN_WORLD_ENVIRONMENT_MISMATCH.replace(
                             "%environment%", oldWorld.getEnvironment().name().toLowerCase()));
             return true;
         }
@@ -140,18 +141,18 @@ public class WorldRenameSubCommand extends BaseSubCommand {
         if (newTemplate.exists()) {
             CoreMessages.sendAdminError(
                     sender,
-                    MessageConfig.ADMIN_WORLD_TEMPLATE_EXISTS.replace("%world%", newWorldName));
+                    AdminMessages.ADMIN_WORLD_TEMPLATE_EXISTS.replace("%world%", newWorldName));
             return true;
         }
         if (!worldManager.unloadWorld(oldWorldName, true)) {
             CoreMessages.sendAdminError(
                     sender,
-                    MessageConfig.ADMIN_WORLD_UNLOAD_FAILED.replace("%world%", oldWorldName));
+                    AdminMessages.ADMIN_WORLD_UNLOAD_FAILED.replace("%world%", oldWorldName));
             return true;
         }
         if (!worldManager.renameWorldFiles(oldWorldName, newWorldName)) {
             worldManager.loadWorld(oldWorldName, environment, false);
-            CoreMessages.sendAdminError(sender, MessageConfig.ADMIN_WORLD_DIRECTORY_RENAME_FAILED);
+            CoreMessages.sendAdminError(sender, AdminMessages.ADMIN_WORLD_DIRECTORY_RENAME_FAILED);
             return true;
         }
 
@@ -166,7 +167,7 @@ public class WorldRenameSubCommand extends BaseSubCommand {
                     oldTemplate,
                     newTemplate,
                     templateMoved);
-            CoreMessages.sendAdminError(sender, MessageConfig.ADMIN_WORLD_RENAME_FAILED);
+            CoreMessages.sendAdminError(sender, AdminMessages.ADMIN_WORLD_RENAME_FAILED);
             return true;
         }
 
@@ -185,21 +186,21 @@ public class WorldRenameSubCommand extends BaseSubCommand {
                     newTemplate,
                     templateMoved);
             rollbackMapConfigs(mapConfigs.keySet(), newWorldName, newWorld, oldWorldName);
-            CoreMessages.sendAdminError(sender, MessageConfig.ADMIN_WORLD_CONFIG_MIGRATION_FAILED);
+            CoreMessages.sendAdminError(sender, AdminMessages.ADMIN_WORLD_CONFIG_MIGRATION_FAILED);
             return true;
         }
         owners.forEach(manager -> manager.renameManagedWorld(oldWorldName, newWorldName));
 
         CoreMessages.sendAdminSuccess(
                 sender,
-                MessageConfig.ADMIN_WORLD_RENAMED
+                AdminMessages.ADMIN_WORLD_RENAMED
                         .replace("%old%", oldWorldName)
                         .replace("%new%", newWorldName)
                         .replace(
                                 "%moved%",
                                 movedPlayers == 0
                                         ? ""
-                                        : MessageConfig.ADMIN_WORLD_MOVED_PLAYERS.replace(
+                                        : AdminMessages.ADMIN_WORLD_MOVED_PLAYERS.replace(
                                                 "%count%", String.valueOf(movedPlayers))));
         return true;
     }
@@ -230,10 +231,10 @@ public class WorldRenameSubCommand extends BaseSubCommand {
             for (BaseGameInstance instance : manager.getRuntimeInstances()) {
                 if (!worldName.equals(instance.getWorldName())) continue;
                 if (instance.getGameStageEnum() != GameStageEnum.WAITING)
-                    return MessageConfig.ADMIN_WORLD_GAME_IN_USE.replace("%world%", worldName);
+                    return AdminMessages.ADMIN_WORLD_GAME_IN_USE.replace("%world%", worldName);
                 BaseGameConfig config = instance.getGameConfig();
                 if (!config.ownsNamedWorld(worldName))
-                    return MessageConfig.ADMIN_WORLD_NAME_DERIVED.replace("%world%", worldName);
+                    return AdminMessages.ADMIN_WORLD_NAME_DERIVED.replace("%world%", worldName);
                 configs.put(config, Boolean.TRUE);
                 owners.add(manager);
             }

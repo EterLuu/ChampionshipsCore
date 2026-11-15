@@ -7,6 +7,7 @@ import ink.ziip.championshipscore.api.game.arena.ArenaGrid;
 import ink.ziip.championshipscore.api.game.arena.ArenaPreparer;
 import ink.ziip.championshipscore.api.game.config.FourArenaConfig;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
@@ -57,15 +58,15 @@ public final class FourArenaStampStep extends PrepareStep {
                     MessageConfig.codeText("four-arena-config.four-required"));
         if (!session.getTarget().canSaveMap())
             return CoreMessages.formatAdminError(
-                    MessageConfig.MAP_EDITOR_STEP_ARENA_INSTANCE_RUNNING);
+                    MapEditorMessages.MAP_EDITOR_STEP_ARENA_INSTANCE_RUNNING);
         File file = FourArenaSchematicStep.templateFile(session.getTarget());
         if (!file.isFile())
             return CoreMessages.formatAdminError(
-                    MessageConfig.MAP_EDITOR_STEP_ARENA_TEMPLATE_MISSING);
+                    MapEditorMessages.MAP_EDITOR_STEP_ARENA_TEMPLATE_MISSING);
         World world = Bukkit.getWorld(session.getTarget().worldName());
         if (world == null)
             return CoreMessages.formatAdminError(
-                    MessageConfig.MAP_EDITOR_STEP_WORLD_NOT_LOADED.replace(
+                    MapEditorMessages.MAP_EDITOR_STEP_WORLD_NOT_LOADED.replace(
                             "%world%", session.getTarget().worldName()));
         FourArenaConfig config = (FourArenaConfig) session.getTarget().config();
         try {
@@ -104,13 +105,13 @@ public final class FourArenaStampStep extends PrepareStep {
             config.markPrepareWorldBuilt();
         } catch (Exception failure) {
             return CoreMessages.formatAdminError(
-                    MessageConfig.MAP_EDITOR_STEP_ARENA_GENERATE_FAILED.replace(
+                    MapEditorMessages.MAP_EDITOR_STEP_ARENA_GENERATE_FAILED.replace(
                             "%detail%", String.valueOf(failure.getMessage())));
         }
         session.setWorldConfirmed(true);
         session.setStamped(true);
         return CoreMessages.formatAdminSuccess(
-                MessageConfig.MAP_EDITOR_STEP_ARENA_TOTAL_SET
+                MapEditorMessages.MAP_EDITOR_STEP_ARENA_TOTAL_SET
                         .replace("%count%", "4")
                         .replace("%copies%", "3"));
     }

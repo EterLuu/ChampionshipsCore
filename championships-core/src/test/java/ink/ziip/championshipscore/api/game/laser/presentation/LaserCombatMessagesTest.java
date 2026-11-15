@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.laser.model.LaserGun;
 import ink.ziip.championshipscore.configuration.ConfigurationStateExtension;
+import ink.ziip.championshipscore.configuration.config.message.LaserBoxMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 
@@ -96,8 +97,8 @@ class LaserCombatMessagesTest {
     @Test
     void respawnFeedbackPreservesTickRoundingAndTitleDuration() throws Exception {
         config();
-        MessageConfig.LASER_BOX_RESPAWN_TITLE = "&eWait";
-        MessageConfig.LASER_BOX_RESPAWN_SUBTITLE = "&a%seconds% / %seconds%";
+        LaserBoxMessages.LASER_BOX_RESPAWN_TITLE = "&eWait";
+        LaserBoxMessages.LASER_BOX_RESPAWN_SUBTITLE = "&a%seconds% / %seconds%";
         var sent = new ArrayList<List<Object>>();
         Player player =
                 proxy(

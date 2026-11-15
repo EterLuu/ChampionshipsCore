@@ -8,6 +8,7 @@ import ink.ziip.championshipscore.api.game.buildmart.runtime.BuildMartArea;
 import ink.ziip.championshipscore.api.game.buildmart.runtime.BuildMartMaterialManifest;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.BuildMartMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -54,7 +55,7 @@ public final class BuildMartBlueprintAuditSubCommand extends BaseSubCommand {
         if (areaName != null && config == null) {
             CoreMessages.sendAdminError(
                     sender,
-                    MessageConfig.BUILD_MART_BLUEPRINT_MAP_MISSING.replace("%map%", areaName));
+                    BuildMartMessages.BUILD_MART_BLUEPRINT_MAP_MISSING.replace("%map%", areaName));
             return true;
         }
         BuildMartMaterialManifest.AuditInventory inventory =
@@ -84,7 +85,7 @@ public final class BuildMartBlueprintAuditSubCommand extends BaseSubCommand {
         if (blueprint == null) {
             CoreMessages.sendAdminError(
                     sender,
-                    MessageConfig.BUILD_MART_BLUEPRINT_MISSING.replace("%blueprint%", args[0]));
+                    BuildMartMessages.BUILD_MART_BLUEPRINT_MISSING.replace("%blueprint%", args[0]));
             return true;
         }
         showAudit(sender, BuildMartBlueprintAuditor.audit(blueprint, inventory), config);
@@ -110,7 +111,7 @@ public final class BuildMartBlueprintAuditSubCommand extends BaseSubCommand {
         if (page > pages) {
             CoreMessages.sendAdminError(
                     sender,
-                    MessageConfig.BUILD_MART_BLUEPRINT_PAGE_OUT_OF_RANGE.replace(
+                    BuildMartMessages.BUILD_MART_BLUEPRINT_PAGE_OUT_OF_RANGE.replace(
                             "%pages%", String.valueOf(pages)));
             return;
         }
@@ -125,13 +126,13 @@ public final class BuildMartBlueprintAuditSubCommand extends BaseSubCommand {
                         : config.getAreaName();
         CoreMessages.sendAdminInfo(
                 sender,
-                MessageConfig.BUILD_MART_BLUEPRINT_AUDIT_HEADER
+                BuildMartMessages.BUILD_MART_BLUEPRINT_AUDIT_HEADER
                         .replace("%map%", map)
                         .replace("%page%", String.valueOf(page))
                         .replace("%pages%", String.valueOf(pages)));
         CoreMessages.sendAdminInfo(
                 sender,
-                MessageConfig.BUILD_MART_BLUEPRINT_AUDIT_SUMMARY
+                BuildMartMessages.BUILD_MART_BLUEPRINT_AUDIT_SUMMARY
                         .replace("%total%", String.valueOf(audits.size()))
                         .replace("%covered%", String.valueOf(covered))
                         .replace("%mismatched%", String.valueOf(mismatched)));
@@ -148,15 +149,15 @@ public final class BuildMartBlueprintAuditSubCommand extends BaseSubCommand {
                                             audit.uncoveredMaterials().size());
             String stars =
                     audit.configuredStars() == audit.suggestedStars()
-                            ? MessageConfig.BUILD_MART_BLUEPRINT_STARS_SAME.replace(
+                            ? BuildMartMessages.BUILD_MART_BLUEPRINT_STARS_SAME.replace(
                                     "%stars%", String.valueOf(audit.configuredStars()))
-                            : MessageConfig.BUILD_MART_BLUEPRINT_STARS_CHANGED
+                            : BuildMartMessages.BUILD_MART_BLUEPRINT_STARS_CHANGED
                                     .replace(
                                             "%configured%", String.valueOf(audit.configuredStars()))
                                     .replace("%suggested%", String.valueOf(audit.suggestedStars()));
             CoreMessages.sendAdminInfo(
                     sender,
-                    MessageConfig.BUILD_MART_BLUEPRINT_AUDIT_ROW
+                    BuildMartMessages.BUILD_MART_BLUEPRINT_AUDIT_ROW
                             .replace("%name%", audit.name())
                             .replace("%stars%", stars)
                             .replace("%score%", String.valueOf(audit.score()))
@@ -169,21 +170,21 @@ public final class BuildMartBlueprintAuditSubCommand extends BaseSubCommand {
             CommandSender sender, BuildMartBlueprintAuditor.Audit audit, BuildMartConfig config) {
         CoreMessages.sendAdminInfo(
                 sender,
-                MessageConfig.BUILD_MART_BLUEPRINT_AUDIT_TITLE
+                BuildMartMessages.BUILD_MART_BLUEPRINT_AUDIT_TITLE
                         .replace("%name%", audit.name())
                         .replace("%configured%", String.valueOf(audit.configuredStars()))
                         .replace("%suggested%", String.valueOf(audit.suggestedStars()))
                         .replace("%score%", String.valueOf(audit.score())));
         CoreMessages.sendAdminInfo(
                 sender,
-                MessageConfig.BUILD_MART_BLUEPRINT_AUDIT_STRUCTURE
+                BuildMartMessages.BUILD_MART_BLUEPRINT_AUDIT_STRUCTURE
                         .replace("%blocks%", String.valueOf(audit.blocks()))
                         .replace("%materials%", String.valueOf(audit.uniqueMaterials()))
                         .replace("%dimensions%", audit.dimensions())
                         .replace("%components%", String.valueOf(audit.components())));
         CoreMessages.sendAdminInfo(
                 sender,
-                MessageConfig.BUILD_MART_BLUEPRINT_AUDIT_STATE
+                BuildMartMessages.BUILD_MART_BLUEPRINT_AUDIT_STATE
                         .replace("%stateful%", String.valueOf(audit.statefulBlocks()))
                         .replace("%directional%", String.valueOf(audit.directionalBlocks()))
                         .replace("%complex%", String.valueOf(audit.complexStateBlocks()))
@@ -192,8 +193,8 @@ public final class BuildMartBlueprintAuditSubCommand extends BaseSubCommand {
             CoreMessages.sendAdminError(
                     sender,
                     config == null
-                            ? MessageConfig.BUILD_MART_BLUEPRINT_COVERAGE_NO_MAP
-                            : MessageConfig.BUILD_MART_BLUEPRINT_COVERAGE_NO_ZONES);
+                            ? BuildMartMessages.BUILD_MART_BLUEPRINT_COVERAGE_NO_MAP
+                            : BuildMartMessages.BUILD_MART_BLUEPRINT_COVERAGE_NO_ZONES);
         } else {
             String islands =
                     audit.materialIslands().isEmpty()
@@ -203,17 +204,17 @@ public final class BuildMartBlueprintAuditSubCommand extends BaseSubCommand {
                                     .collect(Collectors.joining("、"));
             CoreMessages.sendAdminInfo(
                     sender,
-                    MessageConfig.BUILD_MART_BLUEPRINT_AUDIT_MATERIALS
+                    BuildMartMessages.BUILD_MART_BLUEPRINT_AUDIT_MATERIALS
                             .replace("%direct%", String.valueOf(audit.directMaterials()))
                             .replace("%craftable%", String.valueOf(audit.craftableMaterials()))
                             .replace("%islands%", islands));
             if (audit.uncoveredMaterials().isEmpty()) {
                 CoreMessages.sendAdminSuccess(
-                        sender, MessageConfig.BUILD_MART_BLUEPRINT_COVERAGE_FULL);
+                        sender, BuildMartMessages.BUILD_MART_BLUEPRINT_COVERAGE_FULL);
             } else {
                 CoreMessages.sendAdminError(
                         sender,
-                        MessageConfig.BUILD_MART_BLUEPRINT_COVERAGE_UNCOVERED.replace(
+                        BuildMartMessages.BUILD_MART_BLUEPRINT_COVERAGE_UNCOVERED.replace(
                                 "%materials%",
                                 audit.uncoveredMaterials().stream()
                                         .map(Material::getKey)
@@ -224,7 +225,8 @@ public final class BuildMartBlueprintAuditSubCommand extends BaseSubCommand {
         for (String warning : audit.warnings())
             CoreMessages.sendAdminError(
                     sender,
-                    MessageConfig.BUILD_MART_BLUEPRINT_AUDIT_WARNING.replace("%warning%", warning));
+                    BuildMartMessages.BUILD_MART_BLUEPRINT_AUDIT_WARNING.replace(
+                            "%warning%", warning));
     }
 
     static @Nullable BuildMartConfig resolveConfig(

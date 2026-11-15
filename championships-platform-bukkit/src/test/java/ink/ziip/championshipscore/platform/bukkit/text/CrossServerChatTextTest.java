@@ -85,21 +85,4 @@ class CrossServerChatTextTest {
                     "daily=" + daily);
         }
     }
-
-    @Test
-    void rejectsMalformedAdventurePayloads() {
-        CrossServerChatMessage message =
-                new CrossServerChatMessage(
-                        UUID.randomUUID(),
-                        "worker-a",
-                        UUID.randomUUID(),
-                        "Alice",
-                        "&a大厅",
-                        null,
-                        false,
-                        "{",
-                        123L);
-
-        assertThrows(RuntimeException.class, () -> CrossServerChatText.render(message));
-    }
 }

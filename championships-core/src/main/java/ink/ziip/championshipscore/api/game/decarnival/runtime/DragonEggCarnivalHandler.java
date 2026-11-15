@@ -4,7 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.DragonEggCarnivalMessages;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
 import lombok.Setter;
@@ -82,7 +82,7 @@ public class DragonEggCarnivalHandler extends BaseListener {
         ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
         if (team != null) {
             dragonEggCarnivalArea.sendMessageToAllGamePlayers(
-                    MessageConfig.DRAGON_EGG_CARNIVAL_OUT_OF_BORDER.replace(
+                    DragonEggCarnivalMessages.DRAGON_EGG_CARNIVAL_OUT_OF_BORDER.replace(
                             "%player%", CoreMessages.formatPlayerName(player)));
         }
     }

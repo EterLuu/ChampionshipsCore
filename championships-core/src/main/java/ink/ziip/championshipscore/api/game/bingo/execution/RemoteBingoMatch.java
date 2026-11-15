@@ -78,6 +78,8 @@ final class RemoteBingoMatch {
     /** Latest worker heartbeat online count; -1 means no valid heartbeat has arrived yet. */
     private int remoteOnlineParticipantCount = -1;
 
+    private final Set<UUID> retainedWorkerPlayers = new java.util.HashSet<>();
+
     RemoteBingoMatch(
             ChampionshipsCore plugin,
             MatchManifest manifest,
@@ -105,6 +107,18 @@ final class RemoteBingoMatch {
 
     synchronized MatchState state() {
         return lifecycle.state();
+    }
+
+    synchronized List<UUID> pendingArrivalPlayers() {
+        return manifest.participants().stream()
+                .filter(player -> player.role() == ParticipantRole.PLAYER)
+                .filter(
+                        player ->
+                                player.requiredAtStart()
+                                        || retainedWorkerPlayers.contains(player.uuid()))
+                .map(ink.ziip.championshipscore.protocol.PlayerSnapshot::uuid)
+                .filter(playerId -> !arrivedPlayers.contains(playerId))
+                .toList();
     }
 
     CompletableFuture<Void> terminalFuture() {
@@ -229,14 +243,24 @@ final class RemoteBingoMatch {
             }
         }
 
+        synchronized (this) {
+            String retained = event.attributes().getOrDefault("retainedPlayers", "");
+            if (!retained.isBlank())
+                for (String id : retained.split(",")) {
+                    UUID uuid = UUID.fromString(id);
+                    if (roleOf(uuid) == ParticipantRole.PLAYER) retainedWorkerPlayers.add(uuid);
+                }
+        }
         long expires = System.currentTimeMillis() + 120_000L;
         List<ink.ziip.championshipscore.protocol.PlayerSnapshot> routedParticipants =
                 manifest.participants().stream()
                         .filter(
                                 player ->
-                                        player.requiredAtStart()
-                                                || plugin.getServer().getPlayer(player.uuid())
-                                                        != null)
+                                        !retainedWorkerPlayers.contains(player.uuid())
+                                                && (player.requiredAtStart()
+                                                        || plugin.getServer()
+                                                                        .getPlayer(player.uuid())
+                                                                != null))
                         .toList();
         List<PlayerRoute> routes =
                 routedParticipants.stream()
@@ -418,7 +442,9 @@ final class RemoteBingoMatch {
                             .filter(
                                     player ->
                                             player.role() == ParticipantRole.PLAYER
-                                                    && player.requiredAtStart())
+                                                    && (player.requiredAtStart()
+                                                            || retainedWorkerPlayers.contains(
+                                                                    player.uuid())))
                             .allMatch(player -> arrivedPlayers.contains(player.uuid()));
         }
         if (!shouldCommit) return CompletableFuture.completedFuture(true);

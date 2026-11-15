@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.command.admin.world;
 
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.AdminMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -35,7 +36,7 @@ public class WorldTeleportSubCommand extends BaseSubCommand {
             return true;
         }
         if (!(sender instanceof Player player)) {
-            CoreMessages.sendAdminError(sender, MessageConfig.COMMAND_PLAYER_ONLY);
+            CoreMessages.sendAdminError(sender, AdminMessages.COMMAND_PLAYER_ONLY);
             return true;
         }
 
@@ -43,7 +44,7 @@ public class WorldTeleportSubCommand extends BaseSubCommand {
         if (world == null) {
             CoreMessages.sendAdminError(
                     sender,
-                    MessageConfig.ADMIN_WORLD_NOT_LOADED_CREATE.replace("%world%", args[0]));
+                    AdminMessages.ADMIN_WORLD_NOT_LOADED_CREATE.replace("%world%", args[0]));
             return true;
         }
 
@@ -52,14 +53,14 @@ public class WorldTeleportSubCommand extends BaseSubCommand {
         if (!player.teleport(target)) {
             CoreMessages.sendAdminError(
                     sender,
-                    MessageConfig.ADMIN_WORLD_TELEPORT_FAILED.replace("%world%", world.getName()));
+                    AdminMessages.ADMIN_WORLD_TELEPORT_FAILED.replace("%world%", world.getName()));
             return true;
         }
         player.setGameMode(org.bukkit.GameMode.CREATIVE);
         player.setAllowFlight(true);
         player.setFlying(true);
         CoreMessages.sendAdminSuccess(
-                sender, MessageConfig.ADMIN_WORLD_TELEPORTED.replace("%world%", world.getName()));
+                sender, AdminMessages.ADMIN_WORLD_TELEPORTED.replace("%world%", world.getName()));
         return true;
     }
 

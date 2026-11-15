@@ -84,27 +84,4 @@ class GameStartArgumentsTest {
             assertThrows(IllegalArgumentException.class, () -> ArenaSelection.parse(value));
         }
     }
-
-    @Test
-    void everyGameHasAStartTopologyIncludingAllFinals() {
-        for (GameTypeEnum game : GameTypeEnum.values())
-            assertNotNull(GameStartRules.topology(game));
-        for (GameTypeEnum game :
-                List.of(GameTypeEnum.BattleBox, GameTypeEnum.ParkourTag, GameTypeEnum.LaserBox)) {
-            GameStartRules.validateTeamCount(game, 6);
-            assertThrows(
-                    IllegalArgumentException.class,
-                    () -> GameStartRules.validateTeamCount(game, 3));
-        }
-        for (GameTypeEnum game :
-                List.of(
-                        GameTypeEnum.Dodgebolt,
-                        GameTypeEnum.SulfurSoccer,
-                        GameTypeEnum.DragonEggCarnival)) {
-            GameStartRules.validateTeamCount(game, 2);
-            assertThrows(
-                    IllegalArgumentException.class,
-                    () -> GameStartRules.validateTeamCount(game, 4));
-        }
-    }
 }

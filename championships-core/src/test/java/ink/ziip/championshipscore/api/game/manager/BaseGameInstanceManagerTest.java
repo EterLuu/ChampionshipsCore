@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.manager;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
@@ -125,12 +127,6 @@ class BaseGameInstanceManagerTest {
         var area = allocate(Area.class);
         area.config = config;
         return area;
-    }
-
-    private static <T> T allocate(Class<T> type) throws Exception {
-        var field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-        field.setAccessible(true);
-        return type.cast(((sun.misc.Unsafe) field.get(null)).allocateInstance(type));
     }
 
     private static final class Manager extends BaseGameInstanceManager<Area> {

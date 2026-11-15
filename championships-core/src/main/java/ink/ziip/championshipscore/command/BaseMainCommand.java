@@ -1,7 +1,7 @@
 package ink.ziip.championshipscore.command;
 
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.ServerMessages;
 
 import lombok.Getter;
 
@@ -84,7 +84,7 @@ public class BaseMainCommand extends MainCommand {
         BaseMainCommand subCommand = findSubCommand(args[0]);
         if (subCommand != null) {
             if (!canUse(sender, subCommand)) {
-                sender.sendMessage(MessageConfig.NO_PERMISSION);
+                sender.sendMessage(ServerMessages.NO_PERMISSION);
                 return true;
             }
             return subCommand.onCommand(

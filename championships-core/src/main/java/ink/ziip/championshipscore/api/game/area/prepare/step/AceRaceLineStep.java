@@ -7,7 +7,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.AnvilInputGui;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -64,13 +64,14 @@ public final class AceRaceLineStep extends PrepareStep {
         try {
             selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, true);
         } catch (Exception exception) {
-            return CoreMessages.formatAdminError(MessageConfig.MAP_EDITOR_ACE_LINE_SELECT_FIRST);
+            return CoreMessages.formatAdminError(
+                    MapEditorMessages.MAP_EDITOR_ACE_LINE_SELECT_FIRST);
         }
         int spanX = Math.abs(selection[0].getBlockX() - selection[1].getBlockX());
         int spanY = Math.abs(selection[0].getBlockY() - selection[1].getBlockY());
         int spanZ = Math.abs(selection[0].getBlockZ() - selection[1].getBlockZ());
         if (spanY != 0 || (spanX > 0 && spanZ > 0) || (spanX == 0 && spanZ == 0))
-            return CoreMessages.formatAdminError(MessageConfig.MAP_EDITOR_ACE_LINE_INVALID);
+            return CoreMessages.formatAdminError(MapEditorMessages.MAP_EDITOR_ACE_LINE_INVALID);
         AceRaceConfig config = cfg(session.getTarget());
         if (start) {
             config.setStartLinePos1(selection[0]);
@@ -84,7 +85,7 @@ public final class AceRaceLineStep extends PrepareStep {
         if (start) {
             CoreMessages.sendAdminInfo(
                     player,
-                    MessageConfig.MAP_EDITOR_ACE_START_FALL_INPUT.replace(
+                    MapEditorMessages.MAP_EDITOR_ACE_START_FALL_INPUT.replace(
                             "%fall%", String.valueOf(config.getStartFallY())));
             AnvilInputGui.openInteger(
                     player,
@@ -97,13 +98,13 @@ public final class AceRaceLineStep extends PrepareStep {
                         session.markDirty();
                         CoreMessages.sendAdminSuccess(
                                 player,
-                                MessageConfig.MAP_EDITOR_ACE_START_FALL_SET.replace(
+                                MapEditorMessages.MAP_EDITOR_ACE_START_FALL_SET.replace(
                                         "%fall%", String.valueOf(value)));
                     });
         }
         return CoreMessages.formatAdminSuccess(
                 start
-                        ? MessageConfig.MAP_EDITOR_ACE_START_LINE_SET
-                        : MessageConfig.MAP_EDITOR_ACE_FINISH_LINE_SET);
+                        ? MapEditorMessages.MAP_EDITOR_ACE_START_LINE_SET
+                        : MapEditorMessages.MAP_EDITOR_ACE_FINISH_LINE_SET);
     }
 }

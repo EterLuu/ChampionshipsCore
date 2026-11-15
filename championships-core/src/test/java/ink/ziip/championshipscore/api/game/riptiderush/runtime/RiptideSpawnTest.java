@@ -1,5 +1,8 @@
 package ink.ziip.championshipscore.api.game.riptiderush.runtime;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+import static ink.ziip.championshipscore.support.TestObjects.set;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.api.game.riptiderush.support.RiptideTestFixtures;
@@ -18,12 +21,8 @@ class RiptideSpawnTest {
     @Test
     void allPlayersSpawnAtCentreWithCollisionDisabledBeforeTeleportAndRestoreTheirOriginalState()
             throws Exception {
-        var unsafeField = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-        unsafeField.setAccessible(true);
-        var area =
-                (RiptideRushArea)
-                        ((sun.misc.Unsafe) unsafeField.get(null))
-                                .allocateInstance(RiptideRushArea.class);
+
+        var area = allocate(RiptideRushArea.class);
         var g = RiptideTestFixtures.config().resolveGeometry();
         var players = new LinkedHashMap<UUID, Player>();
         var collision = new HashMap<UUID, Boolean>();
@@ -119,18 +118,5 @@ class RiptideSpawnTest {
         } finally {
             serverField.set(null, previous);
         }
-    }
-
-    private static void set(Object target, String name, Object value) throws Exception {
-        for (Class<?> type = target.getClass(); type != null; type = type.getSuperclass()) {
-            try {
-                var field = type.getDeclaredField(name);
-                field.setAccessible(true);
-                field.set(target, value);
-                return;
-            } catch (NoSuchFieldException ignored) {
-            }
-        }
-        throw new NoSuchFieldException(name);
     }
 }

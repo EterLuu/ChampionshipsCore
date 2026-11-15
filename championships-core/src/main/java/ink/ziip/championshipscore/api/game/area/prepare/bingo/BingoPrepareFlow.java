@@ -8,7 +8,7 @@ import ink.ziip.championshipscore.api.game.bingo.config.BingoConfig;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 import ink.ziip.championshipscore.util.world.WorldManager;
@@ -70,7 +70,7 @@ public class BingoPrepareFlow extends PrepareFlowDefinition {
                         t -> ((BingoConfig) t.config()).getSpectatorSpawnPoint() != null,
                         (t, loc) -> ((BingoConfig) t.config()).setSpectatorSpawnPoint(loc),
                         CoreMessages.formatAdminSuccess(
-                                MessageConfig.MAP_EDITOR_STEP_SPECTATOR_SPAWN_POINT_SET));
+                                MapEditorMessages.MAP_EDITOR_STEP_SPECTATOR_SPAWN_POINT_SET));
 
         return List.of(confirm, spectator);
     }

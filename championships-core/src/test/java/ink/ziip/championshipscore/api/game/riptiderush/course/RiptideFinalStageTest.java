@@ -98,7 +98,7 @@ class RiptideFinalStageTest {
     void eachWallProducesExactlyOneBatchAtItsFinalTick() throws Exception {
         var c = RiptideTestFixtures.config();
         var g = c.resolveGeometry();
-        ink.ziip.championshipscore.configuration.config.message.MessageConfig
+        ink.ziip.championshipscore.configuration.config.message.RiptideRushMessages
                         .RIPTIDE_RUSH_SWEEP_TITLE =
                 "侧向来墙！";
         var template = RiptideLevelTemplate.create("wall", RiptideLevelType.PASS);

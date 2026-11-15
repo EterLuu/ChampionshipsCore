@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.manager.GameManager;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.AdminMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -42,11 +43,11 @@ public class AdminReloadSubCommand extends BaseSubCommand {
 
         ChampionshipsCore plugin = ChampionshipsCore.getInstance();
         if (plugin.getPrepareSessionManager().hasActiveSessions()) {
-            CoreMessages.sendAdminError(sender, MessageConfig.ADMIN_RELOAD_PREPARE_ACTIVE);
+            CoreMessages.sendAdminError(sender, AdminMessages.ADMIN_RELOAD_PREPARE_ACTIVE);
             return true;
         }
         if (!RELOAD_IN_PROGRESS.compareAndSet(false, true)) {
-            CoreMessages.sendAdminError(sender, MessageConfig.ADMIN_RELOAD_ALREADY_RUNNING);
+            CoreMessages.sendAdminError(sender, AdminMessages.ADMIN_RELOAD_ALREADY_RUNNING);
             return true;
         }
         var tests = plugin.getTestSessionManager();
@@ -60,7 +61,7 @@ public class AdminReloadSubCommand extends BaseSubCommand {
                                                 RELOAD_IN_PROGRESS.set(false);
                                                 CoreMessages.sendAdminError(
                                                         sender,
-                                                        MessageConfig.ADMIN_RELOAD_RESET_FAILED);
+                                                        AdminMessages.ADMIN_RELOAD_RESET_FAILED);
                                                 plugin.getLogger()
                                                         .log(
                                                                 java.util.logging.Level.WARNING,
@@ -84,26 +85,53 @@ public class AdminReloadSubCommand extends BaseSubCommand {
         if (!plugin.getConfigurationManager().reload()) {
             plugin.getScheduleManager().load();
             RELOAD_IN_PROGRESS.set(false);
-            CoreMessages.sendAdminError(sender, MessageConfig.ADMIN_RELOAD_CONFIG_FAILED);
+            CoreMessages.sendAdminError(sender, AdminMessages.ADMIN_RELOAD_CONFIG_FAILED);
             return;
         }
         List<String> restartRequired = previousSensitive.changedPaths();
-        CoreMessages.sendAdminSuccess(sender, MessageConfig.ADMIN_RELOAD_READ_DONE);
+        CoreMessages.sendAdminSuccess(sender, AdminMessages.ADMIN_RELOAD_READ_DONE);
         plugin.getGameManager()
                 .hotReload(previouslyEnabled)
                 .whenComplete(
                         (report, failure) ->
-                                plugin.getServer()
-                                        .getScheduler()
-                                        .runTask(
-                                                plugin,
-                                                () ->
-                                                        finishReload(
-                                                                plugin,
-                                                                sender,
-                                                                report,
-                                                                failure,
-                                                                restartRequired)));
+                                continueReload(
+                                        plugin,
+                                        () ->
+                                                finishReload(
+                                                        plugin,
+                                                        sender,
+                                                        report,
+                                                        failure,
+                                                        restartRequired)));
+    }
+
+    /** Plugin shutdown invalidates queued reload feedback as well as the game reconciliation. */
+    private static void continueReload(ChampionshipsCore plugin, Runnable action) {
+        if (!plugin.isEnabled()) {
+            RELOAD_IN_PROGRESS.set(false);
+            return;
+        }
+        try {
+            plugin.getServer()
+                    .getScheduler()
+                    .runTask(
+                            plugin,
+                            () -> {
+                                if (!plugin.isEnabled()) {
+                                    RELOAD_IN_PROGRESS.set(false);
+                                    return;
+                                }
+                                action.run();
+                            });
+        } catch (RuntimeException failure) {
+            RELOAD_IN_PROGRESS.set(false);
+            if (plugin.isEnabled())
+                plugin.getLogger()
+                        .log(
+                                java.util.logging.Level.SEVERE,
+                                "Unable to resume configuration hot reload",
+                                failure);
+        }
     }
 
     private static void finishReload(
@@ -115,7 +143,7 @@ public class AdminReloadSubCommand extends BaseSubCommand {
         if (failure != null || report == null) {
             plugin.getScheduleManager().load();
             RELOAD_IN_PROGRESS.set(false);
-            CoreMessages.sendAdminError(sender, MessageConfig.ADMIN_RELOAD_RESET_FAILED);
+            CoreMessages.sendAdminError(sender, AdminMessages.ADMIN_RELOAD_RESET_FAILED);
             plugin.getLogger()
                     .log(
                             java.util.logging.Level.SEVERE,
@@ -128,19 +156,17 @@ public class AdminReloadSubCommand extends BaseSubCommand {
                 .reloadContentConfiguration()
                 .whenComplete(
                         (bingoReady, bingoFailure) ->
-                                plugin.getServer()
-                                        .getScheduler()
-                                        .runTask(
-                                                plugin,
-                                                () ->
-                                                        completeReload(
-                                                                plugin,
-                                                                sender,
-                                                                report,
-                                                                restartRequired,
-                                                                bingoFailure == null
-                                                                        && Boolean.TRUE.equals(
-                                                                                bingoReady))));
+                                continueReload(
+                                        plugin,
+                                        () ->
+                                                completeReload(
+                                                        plugin,
+                                                        sender,
+                                                        report,
+                                                        restartRequired,
+                                                        bingoFailure == null
+                                                                && Boolean.TRUE.equals(
+                                                                        bingoReady))));
     }
 
     private static void completeReload(
@@ -158,22 +184,22 @@ public class AdminReloadSubCommand extends BaseSubCommand {
             String restartNotice =
                     restartRequired.isEmpty()
                             ? ""
-                            : MessageConfig.ADMIN_RELOAD_RESTART_REQUIRED.replace(
+                            : AdminMessages.ADMIN_RELOAD_RESTART_REQUIRED.replace(
                                     "%items%", String.join(",", restartRequired));
             String resetFailure =
                     report.failedResets() == 0
                             ? ""
-                            : MessageConfig.ADMIN_RELOAD_RESET_FAILURES.replace(
+                            : AdminMessages.ADMIN_RELOAD_RESET_FAILURES.replace(
                                     "%count%", String.valueOf(report.failedResets()));
-            String bingoFailure = bingoReady ? "" : MessageConfig.ADMIN_RELOAD_BINGO_FAILURE;
+            String bingoFailure = bingoReady ? "" : AdminMessages.ADMIN_RELOAD_BINGO_FAILURE;
             String configFailure =
                     report.failedConfigurations() == 0
                             ? ""
-                            : MessageConfig.ADMIN_RELOAD_CONFIG_FAILURES.replace(
+                            : AdminMessages.ADMIN_RELOAD_CONFIG_FAILURES.replace(
                                     "%count%", String.valueOf(report.failedConfigurations()));
             CoreMessages.sendAdminSuccess(
                     sender,
-                    MessageConfig.ADMIN_RELOAD_COMPLETED
+                    AdminMessages.ADMIN_RELOAD_COMPLETED
                             .replace("%reused%", String.valueOf(report.reusedInstances()))
                             .replace("%reloaded%", String.valueOf(report.reloadedConfigurations()))
                             .replace("%configFailure%", configFailure)
@@ -185,7 +211,7 @@ public class AdminReloadSubCommand extends BaseSubCommand {
                                     "%remote%",
                                     report.remoteMatchesStopped() == 0
                                             ? ""
-                                            : MessageConfig.ADMIN_RELOAD_REMOTE_STOPPED.replace(
+                                            : AdminMessages.ADMIN_RELOAD_REMOTE_STOPPED.replace(
                                                     "%count%",
                                                     String.valueOf(report.remoteMatchesStopped())))
                             .replace("%bingoFailure%", bingoFailure)

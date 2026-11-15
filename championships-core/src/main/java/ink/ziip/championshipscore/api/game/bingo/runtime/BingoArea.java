@@ -18,6 +18,8 @@ import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.configuration.config.message.BingoMessages;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoFireworkSupply;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoRidingTravel;
@@ -209,7 +211,8 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         if (target == null) {
             player.sendMessage(
                     CoreMessages.styled(
-                            "bingo-area.unreachable", MessageConfig.MAP_EDITOR_BINGO_UNREACHABLE));
+                            "bingo-area.unreachable",
+                            MapEditorMessages.MAP_EDITOR_BINGO_UNREACHABLE));
             return;
         }
         String name = CoreMessages.formatPlayerName(target);
@@ -229,7 +232,7 @@ public class BingoArea extends BaseMultiTeamGameInstance {
                                 player.sendMessage(
                                         CoreMessages.styled(
                                                         "bingo-area.sent-to",
-                                                        MessageConfig.MAP_EDITOR_BINGO_SENT_TO)
+                                                        MapEditorMessages.MAP_EDITOR_BINGO_SENT_TO)
                                                 .append(LegacyText.component(name))))
                 .exceptionally(
                         failure -> {
@@ -273,9 +276,9 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         resetPlayerHealthFoodEffectLevelInventory();
 
         announceGamePreparation(
-                MessageConfig.BINGO_START_PREPARATION,
-                MessageConfig.BINGO_START_PREPARATION_TITLE,
-                MessageConfig.BINGO_START_PREPARATION_SUBTITLE);
+                BingoMessages.BINGO_START_PREPARATION,
+                BingoMessages.BINGO_START_PREPARATION_TITLE,
+                BingoMessages.BINGO_START_PREPARATION_SUBTITLE);
 
         startGameProgress();
     }
@@ -445,9 +448,9 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         if (round == null) return;
 
         startFinalCountdown(
-                MessageConfig.BINGO_START_PREPARATION_TITLE,
-                MessageConfig.BINGO_GAME_START_TITLE,
-                MessageConfig.BINGO_GAME_START_SUBTITLE,
+                BingoMessages.BINGO_START_PREPARATION_TITLE,
+                BingoMessages.BINGO_GAME_START_TITLE,
+                BingoMessages.BINGO_GAME_START_SUBTITLE,
                 this::beginGameProgress);
     }
 
@@ -470,7 +473,7 @@ public class BingoArea extends BaseMultiTeamGameInstance {
                             pvpEnableTask = null;
                             setBingoPvP(true);
                             pvpEnabled = true;
-                            sendActionBarToAllGamePlayers(MessageConfig.BINGO_PVP_STARTED);
+                            sendActionBarToAllGamePlayers(BingoMessages.BINGO_PVP_STARTED);
                         },
                         PVP_GRACE_TICKS);
 
@@ -485,9 +488,9 @@ public class BingoArea extends BaseMultiTeamGameInstance {
                             int graceRemaining = Math.max(0, PVP_GRACE_SECONDS - elapsed);
                             String timerTitle =
                                     pvpEnabled
-                                            ? MessageConfig.BINGO_ACTION_BAR_COUNT_DOWN_PVP.replace(
+                                            ? BingoMessages.BINGO_ACTION_BAR_COUNT_DOWN_PVP.replace(
                                                     "%time%", CoreMessages.bossBarTime(timer))
-                                            : MessageConfig.BINGO_ACTION_BAR_COUNT_DOWN_PROTECTION
+                                            : BingoMessages.BINGO_ACTION_BAR_COUNT_DOWN_PROTECTION
                                                     .replace(
                                                             "%time%",
                                                             CoreMessages.bossBarTime(timer))
@@ -498,7 +501,7 @@ public class BingoArea extends BaseMultiTeamGameInstance {
                             updateGameTimerBossBar(timerTitle, timer, activeDuration);
                             if (!pvpEnabled && graceRemaining >= 1 && graceRemaining <= 10) {
                                 sendActionBarToAllGamePlayers(
-                                        MessageConfig.BINGO_PVP_START_COUNT_DOWN.replace(
+                                        BingoMessages.BINGO_PVP_START_COUNT_DOWN.replace(
                                                 "%time%", String.valueOf(graceRemaining)));
                             }
                             if (timer == 0) return;
@@ -725,25 +728,8 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         GameTask task = completion.task();
         int cellDelta = completion.cellDelta();
         int lineDelta = completion.lineDelta();
-        ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
-        if (cellDelta != 0) {
-            addPlayerPoints(player.getUniqueId(), cellDelta);
-        } else if (!round.variant().mode().usesPoints()
-                || round.variant().remix() == BingoRemix.COOP) {
-            if (round.variant().remix() == BingoRemix.COOP) {
-                for (ChampionshipTeam collaborator : round.teams())
-                    collaborator.getMembers().stream()
-                            .findFirst()
-                            .ifPresent(uuid -> addPlayerPoints(uuid, 1));
-            } else {
-                addPlayerPoints(player.getUniqueId(), 1);
-            }
-        }
-        // Line bonus goes to every team member (all team members receive +50/+25), not just the
-        // completer.
-        if (lineDelta != 0 && team != null) {
-            addPlayerPointsToAllTeamMembers(team, lineDelta);
-        }
+        ChampionshipTeam team = completion.team();
+        for (var award : completion.awards()) addPlayerPoints(award.playerId(), award.points());
         if (team != null
                 && getRunMode() == ink.ziip.championshipscore.api.game.model.GameRunMode.DAILY) {
             long elapsedMillis = Math.max(0L, System.currentTimeMillis() - roundStartMillis);
@@ -784,12 +770,9 @@ public class BingoArea extends BaseMultiTeamGameInstance {
         }
 
         int delta = cellDelta + lineDelta;
-        if (delta == 0
-                && (!round.variant().mode().usesPoints()
-                        || round.variant().remix() == BingoRemix.COOP)) delta = 1;
         Component message =
                 LegacyText.component(
-                                MessageConfig.BINGO_TASK_COMPLETED
+                                BingoMessages.BINGO_TASK_COMPLETED
                                         .replace("%player%", CoreMessages.formatPlayerName(player))
                                         .replace("%points%", String.valueOf(delta)))
                         .replaceText(
@@ -967,12 +950,15 @@ public class BingoArea extends BaseMultiTeamGameInstance {
                 () -> {
                     if (getGameStageEnum() == GameStageEnum.PROGRESS) ensureKitAndCard(player);
                 };
+        java.util.function.Supplier<Location> destination =
+                () ->
+                        ink.ziip.championshipscore.platform.bukkit.bingo.BingoRespawnLocations
+                                .recoveryDestination(
+                                        player, this::isBingoWorld, this::getRespawnLocation);
         var recovery =
                 death
-                        ? respawnRecovery.death(
-                                player, this, current, this::getRespawnLocation, restore)
-                        : respawnRecovery.respawn(
-                                player, this, current, this::getRespawnLocation, restore);
+                        ? respawnRecovery.death(player, this, current, destination, restore)
+                        : respawnRecovery.respawn(player, this, current, destination, restore);
         recovery.exceptionally(
                 error -> {
                     plugin.getLogger().log(Level.WARNING, "Bingo respawn recovery failed", error);
@@ -1028,14 +1014,14 @@ public class BingoArea extends BaseMultiTeamGameInstance {
             forceCardMapRedraw();
             if (winner != null) {
                 sendMessageToAllGamePlayers(
-                        MessageConfig.BINGO_GAME_WINNER
+                        BingoMessages.BINGO_GAME_WINNER
                                 .replace("%team%", winner.getColoredName())
                                 .replace("%points%", String.valueOf(round.score(winner))));
             }
         }
 
         cleanInventoryForAllGamePlayers();
-        announceGameEnd(MessageConfig.BINGO_GAME_END_TITLE, MessageConfig.BINGO_GAME_END_SUBTITLE);
+        announceGameEnd(BingoMessages.BINGO_GAME_END_TITLE, BingoMessages.BINGO_GAME_END_SUBTITLE);
 
         setGameStageEnum(GameStageEnum.END);
 

@@ -13,7 +13,8 @@ import ink.ziip.championshipscore.api.game.buildmart.config.BuildMartConfig;
 import ink.ziip.championshipscore.api.game.buildmart.mechanics.BuildMartCopperPolicy;
 import ink.ziip.championshipscore.api.game.buildmart.reference.ReferenceBuilder;
 import ink.ziip.championshipscore.api.game.buildmart.runtime.BuildMartMaterialManifest;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.BuildMartMessages;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
 import org.bukkit.Bukkit;
@@ -113,15 +114,16 @@ public final class BuildMartBlueprintWorkshop {
                 || manager.getSession(player) != session
                 || !(session.getTarget().config() instanceof BuildMartConfig config)) return;
         if (!validName(id)) {
-            CoreMessages.sendAdminError(player, MessageConfig.BUILD_MART_EDITOR_INVALID_NAME);
+            CoreMessages.sendAdminError(player, BuildMartMessages.BUILD_MART_EDITOR_INVALID_NAME);
             return;
         }
         if (session.getBlueprintWorkshop() != null) {
-            CoreMessages.sendAdminError(player, MessageConfig.BUILD_MART_EDITOR_FINISH_FIRST);
+            CoreMessages.sendAdminError(player, BuildMartMessages.BUILD_MART_EDITOR_FINISH_FIRST);
             return;
         }
         if (!session.getTarget().canSaveMap()) {
-            CoreMessages.sendAdminError(player, MessageConfig.MAP_EDITOR_BUILD_INSTANCE_RUNNING);
+            CoreMessages.sendAdminError(
+                    player, MapEditorMessages.MAP_EDITOR_BUILD_INSTANCE_RUNNING);
             return;
         }
         World world = Bukkit.getWorld(session.getTarget().worldName());
@@ -132,7 +134,7 @@ public final class BuildMartBlueprintWorkshop {
                 || base.getNormalBuildAnchors().isEmpty()
                 || base.getNormalSubmitAnchors().getFirst() == null
                 || config.getHubPortalPoint() == null) {
-            CoreMessages.sendAdminError(player, MessageConfig.BUILD_MART_EDITOR_SETUP_MISSING);
+            CoreMessages.sendAdminError(player, BuildMartMessages.BUILD_MART_EDITOR_SETUP_MISSING);
             return;
         }
         Location floor = bind(base.getNormalBuildAnchors().getFirst(), world);
@@ -141,7 +143,7 @@ public final class BuildMartBlueprintWorkshop {
         if (!world.equals(floor.getWorld())
                 || !world.equals(button.getWorld())
                 || !world.equals(hub.getWorld())) {
-            CoreMessages.sendAdminError(player, MessageConfig.BUILD_MART_EDITOR_SETUP_MISSING);
+            CoreMessages.sendAdminError(player, BuildMartMessages.BUILD_MART_EDITOR_SETUP_MISSING);
             return;
         }
         var workshop =
@@ -157,7 +159,7 @@ public final class BuildMartBlueprintWorkshop {
                                         ? Files.readAllBytes(workshop.file)
                                         : null;
                         if ((previous == null) != (workshop.baseline == null))
-                            throw new IOException(MessageConfig.BUILD_MART_EDITOR_CONFLICT);
+                            throw new IOException(BuildMartMessages.BUILD_MART_EDITOR_CONFLICT);
                         workshop.main(() -> workshop.place(player));
                     } catch (Exception error) {
                         workshop.main(
@@ -166,8 +168,8 @@ public final class BuildMartBlueprintWorkshop {
                                     workshop.close();
                                     CoreMessages.sendAdminError(
                                             player,
-                                            MessageConfig.BUILD_MART_BLUEPRINT_SAVE_FAILED.replace(
-                                                    "%detail%", detail(error)));
+                                            BuildMartMessages.BUILD_MART_BLUEPRINT_SAVE_FAILED
+                                                    .replace("%detail%", detail(error)));
                                 });
                     }
                 });
@@ -195,17 +197,18 @@ public final class BuildMartBlueprintWorkshop {
             if (previous == null) ReferenceBuilder.clearBuildArea(floor);
             else ReferenceBuilder.paste(previous, floor);
             if (!player.teleport(floor.clone().add(3.5, 8, 3.5)))
-                throw new IllegalStateException(MessageConfig.MAP_EDITOR_SESSION_TELEPORT_FAILED);
+                throw new IllegalStateException(
+                        MapEditorMessages.MAP_EDITOR_SESSION_TELEPORT_FAILED);
             player.setFlying(true);
             busy = false;
             PrepareModeInventory.refresh(player, session);
             CoreMessages.sendAdminInfo(
-                    player, MessageConfig.BUILD_MART_EDITOR_STARTED.replace("%name%", name()));
+                    player, BuildMartMessages.BUILD_MART_EDITOR_STARTED.replace("%name%", name()));
         } catch (Exception error) {
             close();
             CoreMessages.sendAdminError(
                     player,
-                    MessageConfig.BUILD_MART_BLUEPRINT_SAVE_FAILED.replace(
+                    BuildMartMessages.BUILD_MART_BLUEPRINT_SAVE_FAILED.replace(
                             "%detail%", detail(error)));
         }
     }
@@ -237,7 +240,7 @@ public final class BuildMartBlueprintWorkshop {
                 || !owner.equals(player.getUniqueId())
                 || !player.hasPermission(ChampionshipPermissions.ADMIN)) return;
         if (busy) {
-            CoreMessages.sendAdminInfo(player, MessageConfig.BUILD_MART_EDITOR_BUSY);
+            CoreMessages.sendAdminInfo(player, BuildMartMessages.BUILD_MART_EDITOR_BUSY);
             return;
         }
         switch (action) {
@@ -247,7 +250,7 @@ public final class BuildMartBlueprintWorkshop {
             case "steps" -> BuildMartBlueprintGui.open(manager, player, session, 0);
             default ->
                     CoreMessages.sendAdminError(
-                            player, MessageConfig.BUILD_MART_EDITOR_FINISH_FIRST);
+                            player, BuildMartMessages.BUILD_MART_EDITOR_FINISH_FIRST);
         }
     }
 
@@ -256,11 +259,12 @@ public final class BuildMartBlueprintWorkshop {
                 || !owner.equals(player.getUniqueId())
                 || !player.hasPermission(ChampionshipPermissions.ADMIN)) return;
         if (busy) {
-            CoreMessages.sendAdminInfo(player, MessageConfig.BUILD_MART_EDITOR_BUSY);
+            CoreMessages.sendAdminInfo(player, BuildMartMessages.BUILD_MART_EDITOR_BUSY);
             return;
         }
         if (!session.getTarget().canSaveMap()) {
-            CoreMessages.sendAdminError(player, MessageConfig.MAP_EDITOR_BUILD_INSTANCE_RUNNING);
+            CoreMessages.sendAdminError(
+                    player, MapEditorMessages.MAP_EDITOR_BUILD_INSTANCE_RUNNING);
             return;
         }
         List<BlueprintBlock> blocks = new ArrayList<>();
@@ -272,9 +276,9 @@ public final class BuildMartBlueprintWorkshop {
                     if (!block.getBlockData().isSupported(block.getLocation())) {
                         CoreMessages.sendAdminError(
                                 player,
-                                MessageConfig.BUILD_MART_BLUEPRINT_SAVE_FAILED.replace(
+                                BuildMartMessages.BUILD_MART_BLUEPRINT_SAVE_FAILED.replace(
                                         "%detail%",
-                                        MessageConfig.BUILD_MART_EDITOR_UNSUPPORTED.replace(
+                                        BuildMartMessages.BUILD_MART_EDITOR_UNSUPPORTED.replace(
                                                 "%position%", "(" + x + "," + y + "," + z + ")")));
                         return;
                     }
@@ -287,7 +291,8 @@ public final class BuildMartBlueprintWorkshop {
                                             .clone()));
                 }
         if (blocks.isEmpty()) {
-            CoreMessages.sendAdminError(player, MessageConfig.BUILD_MART_BLUEPRINT_EMPTY_SELECTION);
+            CoreMessages.sendAdminError(
+                    player, BuildMartMessages.BUILD_MART_BLUEPRINT_EMPTY_SELECTION);
             return;
         }
         Map<BuildMartBlueprintReview.Position, BlockData> floorStates = new HashMap<>();
@@ -302,7 +307,7 @@ public final class BuildMartBlueprintWorkshop {
                 new BuildMartBlueprint(
                         id, name(), previous == null ? 1 : previous.getStars(), blocks);
         busy = true;
-        CoreMessages.sendAdminInfo(player, MessageConfig.BUILD_MART_EDITOR_REVIEWING);
+        CoreMessages.sendAdminInfo(player, BuildMartMessages.BUILD_MART_EDITOR_REVIEWING);
         BuildMartConfig config = (BuildMartConfig) session.getTarget().config();
         async(
                 () -> {
@@ -323,7 +328,8 @@ public final class BuildMartBlueprintWorkshop {
         if (!active()) return;
         if (!inventory.available() || inventory.materials().isEmpty()) {
             busy = false;
-            CoreMessages.sendAdminError(player, MessageConfig.BUILD_MART_EDITOR_MANIFEST_MISSING);
+            CoreMessages.sendAdminError(
+                    player, BuildMartMessages.BUILD_MART_EDITOR_MANIFEST_MISSING);
             return;
         }
         var audit = BuildMartBlueprintAuditor.audit(candidate, inventory);
@@ -331,7 +337,7 @@ public final class BuildMartBlueprintWorkshop {
             busy = false;
             CoreMessages.sendAdminError(
                     player,
-                    MessageConfig.BUILD_MART_EDITOR_MATERIALS_REJECTED.replace(
+                    BuildMartMessages.BUILD_MART_EDITOR_MATERIALS_REJECTED.replace(
                             "%materials%",
                             audit.uncoveredMaterials().stream()
                                     .map(m -> m.getKey().toString())
@@ -360,7 +366,8 @@ public final class BuildMartBlueprintWorkshop {
                                     if (!invisible.isEmpty())
                                         CoreMessages.sendAdminInfo(
                                                 player,
-                                                MessageConfig.BUILD_MART_EDITOR_INVISIBLE_WARNING
+                                                BuildMartMessages
+                                                        .BUILD_MART_EDITOR_INVISIBLE_WARNING
                                                         .replace(
                                                                 "%count%",
                                                                 String.valueOf(invisible.size()))
@@ -376,7 +383,7 @@ public final class BuildMartBlueprintWorkshop {
                                     returnToHub(player);
                                     CoreMessages.sendAdminSuccess(
                                             player,
-                                            MessageConfig.BUILD_MART_EDITOR_SAVED
+                                            BuildMartMessages.BUILD_MART_EDITOR_SAVED
                                                     .replace("%name%", saved.getDisplayName())
                                                     .replace(
                                                             "%blocks%",
@@ -405,10 +412,10 @@ public final class BuildMartBlueprintWorkshop {
             throws Exception {
         synchronized (WRITE_LOCK) {
             if (cancelled.getAsBoolean())
-                throw new IOException(MessageConfig.BUILD_MART_EDITOR_CANCELLED);
+                throw new IOException(BuildMartMessages.BUILD_MART_EDITOR_CANCELLED);
             byte[] current = Files.exists(file) ? Files.readAllBytes(file) : null;
             if (!Arrays.equals(current, baseline))
-                throw new IOException(MessageConfig.BUILD_MART_EDITOR_CONFLICT);
+                throw new IOException(BuildMartMessages.BUILD_MART_EDITOR_CONFLICT);
             YamlConfiguration yaml = new YamlConfiguration();
             if (baseline != null) yaml.loadFromString(new String(baseline, StandardCharsets.UTF_8));
             yaml.set("name", name);
@@ -419,7 +426,7 @@ public final class BuildMartBlueprintWorkshop {
             try {
                 Files.writeString(temporary, yaml.saveToString(), StandardCharsets.UTF_8);
                 if (cancelled.getAsBoolean())
-                    throw new IOException(MessageConfig.BUILD_MART_EDITOR_CANCELLED);
+                    throw new IOException(BuildMartMessages.BUILD_MART_EDITOR_CANCELLED);
                 try {
                     Files.move(
                             temporary,
@@ -439,7 +446,8 @@ public final class BuildMartBlueprintWorkshop {
         if (!active()) return;
         busy = false;
         CoreMessages.sendAdminError(
-                player, MessageConfig.BUILD_MART_BLUEPRINT_SAVE_FAILED.replace("%detail%", reason));
+                player,
+                BuildMartMessages.BUILD_MART_BLUEPRINT_SAVE_FAILED.replace("%detail%", reason));
     }
 
     public void cancel(Player player) {
@@ -447,12 +455,12 @@ public final class BuildMartBlueprintWorkshop {
                 || !owner.equals(player.getUniqueId())
                 || !player.hasPermission(ChampionshipPermissions.ADMIN)) return;
         if (busy) {
-            CoreMessages.sendAdminInfo(player, MessageConfig.BUILD_MART_EDITOR_BUSY);
+            CoreMessages.sendAdminInfo(player, BuildMartMessages.BUILD_MART_EDITOR_BUSY);
             return;
         }
         close();
         returnToHub(player);
-        CoreMessages.sendAdminInfo(player, MessageConfig.BUILD_MART_EDITOR_CANCELLED);
+        CoreMessages.sendAdminInfo(player, BuildMartMessages.BUILD_MART_EDITOR_CANCELLED);
     }
 
     /**
@@ -471,7 +479,8 @@ public final class BuildMartBlueprintWorkshop {
 
     private void returnToHub(Player player) {
         if (!player.teleport(hub))
-            CoreMessages.sendAdminError(player, MessageConfig.MAP_EDITOR_SESSION_TELEPORT_FAILED);
+            CoreMessages.sendAdminError(
+                    player, MapEditorMessages.MAP_EDITOR_SESSION_TELEPORT_FAILED);
         PrepareModeInventory.refresh(player, session);
     }
 

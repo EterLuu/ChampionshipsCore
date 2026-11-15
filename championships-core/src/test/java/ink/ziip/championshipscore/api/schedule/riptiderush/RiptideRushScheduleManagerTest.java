@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.schedule.riptiderush;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
@@ -9,12 +11,8 @@ import java.util.*;
 class RiptideRushScheduleManagerTest {
     @Test
     void onlyIntermediateRoundsSkipTheSeparateResultDisplayWindow() throws Exception {
-        var field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-        field.setAccessible(true);
-        var schedule =
-                (RiptideRushScheduleManager)
-                        ((sun.misc.Unsafe) field.get(null))
-                                .allocateInstance(RiptideRushScheduleManager.class);
+
+        var schedule = allocate(RiptideRushScheduleManager.class);
         assertEquals(0L, schedule.resultDisplayTicks(true));
         assertEquals(200L, schedule.resultDisplayTicks(false));
     }

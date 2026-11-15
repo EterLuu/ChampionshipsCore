@@ -18,6 +18,9 @@ compass:
   target_offline: "&cThat teammate has gone offline."
   teleport_success: "&aTeleported to &f{0}&a."
 remix:
+  blind-revealed: "&eA hidden task has been revealed!"
+  finale-locked: "&cA task has been permanently locked!"
+  variation-refreshed: "&eAll incomplete tasks have been refreshed!"
   nether:
     name: "Nether"
     description: "Everyone starts in the Nether; cards favor Nether tasks"

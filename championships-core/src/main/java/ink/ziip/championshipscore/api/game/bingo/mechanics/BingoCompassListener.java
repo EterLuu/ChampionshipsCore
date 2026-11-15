@@ -6,6 +6,7 @@ import ink.ziip.championshipscore.api.game.bingo.game.BingoRound;
 import ink.ziip.championshipscore.api.game.bingo.runtime.BingoArea;
 import ink.ziip.championshipscore.api.gui.PlayerListMenuConfig;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.platform.bukkit.gui.PlayerListMenu;
 import ink.ziip.championshipscore.platform.bukkit.text.ComponentTemplates;
@@ -107,7 +108,7 @@ public final class BingoCompassListener extends BaseListener {
                 MessageConfig.codeText("bingo-compass-listener.no-teammates"),
                 Map.of(
                         "%message%",
-                        LegacyText.component(MessageConfig.MAP_EDITOR_BINGO_NO_TEAMMATES)));
+                        LegacyText.component(MapEditorMessages.MAP_EDITOR_BINGO_NO_TEAMMATES)));
     }
 
     @EventHandler

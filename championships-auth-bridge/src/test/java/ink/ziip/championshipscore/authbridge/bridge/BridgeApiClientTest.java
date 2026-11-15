@@ -1,0 +1,198 @@
+package ink.ziip.championshipscore.authbridge.bridge;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.sun.net.httpserver.HttpServer;
+
+import org.junit.jupiter.api.Test;
+
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.time.Duration;
+import java.util.HexFormat;
+import java.util.concurrent.atomic.AtomicReference;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+
+class BridgeApiClientTest {
+    private static final String SECRET = "0123456789abcdef0123456789abcdef";
+    private static final Duration TIMEOUT = Duration.ofSeconds(1);
+
+    @Test
+    void transportConfigurationAllowsTlsAndLoopbackAndRequiresOptInForRemoteHttp() {
+        assertThrows(IllegalArgumentException.class, () -> client("http://cc-web:3000", false));
+        assertDoesNotThrow(() -> client("http://cc-web:3000", true));
+        assertDoesNotThrow(() -> client("http://127.0.0.1:3000", false));
+        assertDoesNotThrow(() -> client("https://accounts.example.test", false));
+    }
+
+    @Test
+    void acknowledgesCursorWithTheExactSignedBody() throws Exception {
+        AtomicReference<String> capturedBody = new AtomicReference<>();
+        AtomicReference<String> capturedSignature = new AtomicReference<>();
+        AtomicReference<String> capturedTimestamp = new AtomicReference<>();
+        AtomicReference<String> capturedRequestId = new AtomicReference<>();
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext(
+                "/api/internal/bridge/ack",
+                exchange -> {
+                    capturedBody.set(
+                            new String(
+                                    exchange.getRequestBody().readAllBytes(),
+                                    StandardCharsets.UTF_8));
+                    capturedSignature.set(exchange.getRequestHeaders().getFirst("X-CC-Signature"));
+                    capturedTimestamp.set(exchange.getRequestHeaders().getFirst("X-CC-Timestamp"));
+                    capturedRequestId.set(exchange.getRequestHeaders().getFirst("X-CC-Request-Id"));
+                    exchange.sendResponseHeaders(204, -1);
+                    exchange.close();
+                });
+        server.start();
+        try {
+            BridgeApiClient client =
+                    client("http://127.0.0.1:" + server.getAddress().getPort(), false);
+
+            client.acknowledge("42");
+
+            String expectedBody = "{\"through\":\"42\"}";
+            assertEquals(expectedBody, capturedBody.get());
+            assertEquals(
+                    signature(
+                            "POST",
+                            "/api/internal/bridge/ack",
+                            capturedTimestamp.get(),
+                            capturedRequestId.get(),
+                            expectedBody),
+                    capturedSignature.get());
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
+    void requestsSignedBindingSnapshot() throws Exception {
+        AtomicReference<String> capturedSignature = new AtomicReference<>();
+        AtomicReference<String> capturedTimestamp = new AtomicReference<>();
+        AtomicReference<String> capturedRequestId = new AtomicReference<>();
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext(
+                "/api/internal/bridge/snapshot",
+                exchange -> {
+                    capturedSignature.set(exchange.getRequestHeaders().getFirst("X-CC-Signature"));
+                    capturedTimestamp.set(exchange.getRequestHeaders().getFirst("X-CC-Timestamp"));
+                    capturedRequestId.set(exchange.getRequestHeaders().getFirst("X-CC-Request-Id"));
+                    byte[] body = "{\"players\":[]}".getBytes(StandardCharsets.UTF_8);
+                    exchange.sendResponseHeaders(200, body.length);
+                    exchange.getResponseBody().write(body);
+                    exchange.close();
+                });
+        server.start();
+        try {
+            BridgeApiClient client =
+                    client("http://127.0.0.1:" + server.getAddress().getPort(), false);
+
+            assertEquals(0, client.snapshot().players().size());
+            assertEquals(
+                    signature(
+                            "GET",
+                            "/api/internal/bridge/snapshot",
+                            capturedTimestamp.get(),
+                            capturedRequestId.get(),
+                            ""),
+                    capturedSignature.get());
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
+    void reportsCursorRejectionsWithCcWebErrorCodes() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext(
+                "/api/internal/bridge/ack",
+                exchange -> respond(exchange, 409, "CURSOR_AHEAD_OF_OUTBOX", "Conflict"));
+        server.createContext(
+                "/api/internal/bridge/changes",
+                exchange ->
+                        respond(
+                                exchange,
+                                exchange.getRequestURI().getQuery().startsWith("after=bad")
+                                        ? 400
+                                        : 401,
+                                exchange.getRequestURI().getQuery().startsWith("after=bad")
+                                        ? "INVALID_CURSOR"
+                                        : "Unauthorized",
+                                "Error"));
+        server.start();
+        try {
+            BridgeApiClient client =
+                    client("http://127.0.0.1:" + server.getAddress().getPort(), false);
+
+            BridgeApiException ahead =
+                    assertThrows(BridgeApiException.class, () -> client.acknowledge("99"));
+            assertEquals(409, ahead.status());
+            assertEquals("CURSOR_AHEAD_OF_OUTBOX", ahead.code());
+            assertTrue(ahead.rejectsCursor());
+
+            BridgeApiException malformed =
+                    assertThrows(BridgeApiException.class, () -> client.changesAfter("bad"));
+            assertTrue(malformed.rejectsCursor());
+
+            // Credential failures keep retrying instead of discarding local progress.
+            BridgeApiException unauthorized =
+                    assertThrows(BridgeApiException.class, () -> client.changesAfter("5"));
+            assertEquals(401, unauthorized.status());
+            assertNull(unauthorized.code());
+            assertFalse(unauthorized.rejectsCursor());
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    private static void respond(
+            com.sun.net.httpserver.HttpExchange exchange, int status, String code, String error)
+            throws java.io.IOException {
+        byte[] body =
+                ("{\"message\":\""
+                                + code
+                                + "\",\"error\":\""
+                                + error
+                                + "\",\"statusCode\":"
+                                + status
+                                + "}")
+                        .getBytes(StandardCharsets.UTF_8);
+        exchange.getResponseHeaders().add("Content-Type", "application/json");
+        exchange.sendResponseHeaders(status, body.length);
+        exchange.getResponseBody().write(body);
+        exchange.close();
+    }
+
+    private static BridgeApiClient client(String url, boolean allowInsecurePrivateHttp) {
+        return new BridgeApiClient(
+                url, "cc-core", SECRET, allowInsecurePrivateHttp, TIMEOUT, TIMEOUT);
+    }
+
+    private static String signature(
+            String method, String path, String timestamp, String requestId, String body)
+            throws Exception {
+        String bodyHash =
+                HexFormat.of()
+                        .formatHex(
+                                MessageDigest.getInstance("SHA-256")
+                                        .digest(body.getBytes(StandardCharsets.UTF_8)));
+        Mac mac = Mac.getInstance("HmacSHA256");
+        mac.init(new SecretKeySpec(SECRET.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+        return HexFormat.of()
+                .formatHex(
+                        mac.doFinal(
+                                (method + "\n" + path + "\n" + timestamp + "\n" + requestId + "\n"
+                                                + bodyHash)
+                                        .getBytes(StandardCharsets.UTF_8)));
+    }
+}

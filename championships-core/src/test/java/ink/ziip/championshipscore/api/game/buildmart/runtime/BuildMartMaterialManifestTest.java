@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.buildmart.runtime;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.api.game.buildmart.config.BuildMartConfig;
@@ -60,12 +62,8 @@ class BuildMartMaterialManifestTest {
     }
 
     private TestConfig fixture() throws Exception {
-        var unsafeField = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-        unsafeField.setAccessible(true);
-        var config =
-                (TestConfig)
-                        ((sun.misc.Unsafe) unsafeField.get(null))
-                                .allocateInstance(TestConfig.class);
+
+        var config = allocate(TestConfig.class);
         config.manifest = directory.resolve("manifest.yml").toFile();
         config.snapshot = directory.resolve("zone.schem").toFile();
         Files.writeString(config.snapshot.toPath(), "snapshot");

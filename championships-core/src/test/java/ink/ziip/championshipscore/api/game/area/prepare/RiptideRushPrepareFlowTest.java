@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
@@ -96,12 +98,8 @@ class RiptideRushPrepareFlowTest {
     }
 
     private static PrepareSession session() throws Exception {
-        var field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-        field.setAccessible(true);
-        var plugin =
-                (ChampionshipsCore)
-                        ((sun.misc.Unsafe) field.get(null))
-                                .allocateInstance(ChampionshipsCore.class);
+
+        var plugin = allocate(ChampionshipsCore.class);
         var config = new RiptideRushConfig(plugin, "test");
         var yaml = new YamlConfiguration();
         try (var reader =

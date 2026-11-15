@@ -3,7 +3,7 @@ package ink.ziip.championshipscore.api.game.bingo.mechanics;
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.configuration.ConfigurationStateExtension;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.support.MessageConfigurations;
 
@@ -22,7 +22,7 @@ class BingoCompassPresentationTest {
         assertEquals(
                 LegacyText.serialize(
                         LegacyText.component(
-                                MessageConfig.MAP_EDITOR_BINGO_NO_TEAMMATES,
+                                MapEditorMessages.MAP_EDITOR_BINGO_NO_TEAMMATES,
                                 NamedTextColor.YELLOW)),
                 LegacyText.serialize(BingoCompassListener.noTeammatesMessage()));
 
@@ -42,7 +42,7 @@ class BingoCompassPresentationTest {
         assertEquals(
                 LegacyText.serialize(
                         LegacyText.component(
-                                MessageConfig.MAP_EDITOR_BINGO_NO_TEAMMATES,
+                                MapEditorMessages.MAP_EDITOR_BINGO_NO_TEAMMATES,
                                 NamedTextColor.YELLOW)),
                 LegacyText.serialize(BingoCompassListener.noTeammatesMessage()));
     }

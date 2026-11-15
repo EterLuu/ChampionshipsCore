@@ -6,12 +6,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.configuration.ConfigurationStateExtension;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.DailyMessages;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -22,11 +23,11 @@ import java.util.UUID;
 class DailyTeamAllocationTest {
     @org.junit.jupiter.api.BeforeAll
     static void configureTeamNames() {
-        MessageConfig.DAILY_TEAM_NAMES =
+        DailyMessages.DAILY_TEAM_NAMES =
                 java.util.List.of(
                         "红", "绿", "蓝", "黄", "青", "紫", "橙", "白", "黄绿", "粉红", "淡蓝", "品红", "灰", "黑",
                         "棕", "浅灰");
-        MessageConfig.DAILY_TEAM_SUFFIX = "队";
+        DailyMessages.DAILY_TEAM_SUFFIX = "队";
     }
 
     private static final DailyRules RULES = new DailyRules(2, 16, 4, 4, 5);
@@ -102,14 +103,11 @@ class DailyTeamAllocationTest {
             List<DailyQueue.Group> groups = solos(count);
             List<Set<UUID>> teams =
                     DailyManager.allocate(groups, LASER_RULES, GameTypeEnum.LaserShowdown);
-            assertEquals(Math.min(count, 16), teams.size(), "players=" + count);
-            assertEquals(count, teams.stream().mapToInt(Set::size).sum());
-            assertEquals(count, teams.stream().flatMap(Set::stream).distinct().count());
-            assertTrue(teams.stream().allMatch(team -> !team.isEmpty() && team.size() == 1));
-            assertTrue(
-                    teams.stream().mapToInt(Set::size).max().orElseThrow()
-                                    - teams.stream().mapToInt(Set::size).min().orElseThrow()
-                            <= 1);
+            assertEquals(Collections.nCopies(count, 1), sizes(teams), "players=" + count);
+            assertEquals(
+                    count,
+                    teams.stream().flatMap(Set::stream).distinct().count(),
+                    "players=" + count);
         }
     }
 
@@ -135,8 +133,6 @@ class DailyTeamAllocationTest {
         groups.add(group(sizedPlayers(4)));
         groups.add(group(sizedPlayers(3)));
         groups.addAll(solos(9));
-        assertEquals(
-                16, DailyManager.allocate(groups, LASER_RULES, GameTypeEnum.LaserShowdown).size());
         assertEquals(
                 List.of(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
                 sizes(DailyManager.allocate(groups, LASER_RULES, GameTypeEnum.LaserShowdown)));

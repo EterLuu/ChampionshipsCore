@@ -6,6 +6,7 @@ import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.sulfursoccer.runtime.SulfurSoccerArea;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.EventMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -57,7 +58,7 @@ final class FinaleAreaControlSubCommand extends BaseSubCommand {
         var manager = plugin.getGameManager().getAreaManager(definition.gameType());
         BaseGameInstance area = manager == null ? null : manager.getArea(args[0]);
         if (area == null) {
-            CoreMessages.sendAdminError(sender, MessageConfig.FINALE_DODGEBOLT_AREA_MISSING);
+            CoreMessages.sendAdminError(sender, EventMessages.FINALE_DODGEBOLT_AREA_MISSING);
             return true;
         }
         boolean success = false;
@@ -92,16 +93,16 @@ final class FinaleAreaControlSubCommand extends BaseSubCommand {
         if (success) {
             CoreMessages.sendAdminSuccess(
                     sender,
-                    MessageConfig.FINALE_DODGEBOLT_CONTROL_EXECUTED.replace(
+                    EventMessages.FINALE_DODGEBOLT_CONTROL_EXECUTED.replace(
                             "%command%", commandName));
         } else {
             CoreMessages.sendAdminError(
                     sender,
                     teamArgument
-                            ? MessageConfig.FINALE_DODGEBOLT_FORCE_WIN_INVALID
+                            ? EventMessages.FINALE_DODGEBOLT_FORCE_WIN_INVALID
                             : playerArgument
-                                    ? MessageConfig.FINALE_DODGEBOLT_ELIMINATION_INVALID
-                                    : MessageConfig.FINALE_DODGEBOLT_CONTROL_STATE_DENIED);
+                                    ? EventMessages.FINALE_DODGEBOLT_ELIMINATION_INVALID
+                                    : EventMessages.FINALE_DODGEBOLT_CONTROL_STATE_DENIED);
         }
         return true;
     }

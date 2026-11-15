@@ -9,7 +9,7 @@ import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.game.spatial.TeleportPositions;
 import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.GameMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 
 import lombok.Getter;
@@ -110,14 +110,14 @@ public abstract class BaseMultiTeamGameInstance extends BaseGameInstance {
         StringBuilder stringBuilder = new StringBuilder();
 
         stringBuilder
-                .append(MessageConfig.GAME_BOARD_BAR.replace("%game%", gameTypeEnum.toString()))
+                .append(GameMessages.GAME_BOARD_BAR.replace("%game%", gameTypeEnum.toString()))
                 .append("\n");
 
         int i = 1;
         for (Map.Entry<ChampionshipTeam, Double> entry : list) {
             if (i > 5) break;
             String row =
-                    MessageConfig.GAME_BOARD_RWO
+                    GameMessages.GAME_BOARD_RWO
                             .replace("%team_rank%", String.valueOf(i))
                             .replace("%team%", entry.getKey().getColoredName())
                             .replace("%team_point%", LegacyText.formatPoints(entry.getValue()));

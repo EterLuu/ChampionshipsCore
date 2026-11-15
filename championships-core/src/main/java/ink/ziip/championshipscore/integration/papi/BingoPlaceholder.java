@@ -6,6 +6,7 @@ import ink.ziip.championshipscore.api.game.bingo.runtime.BingoArea;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.ScoreMessages;
 
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -56,7 +57,7 @@ public class BingoPlaceholder extends BaseGamePlaceholder<BingoArea> {
                     params.equals("current_time") ? "" : params.substring("current_time_".length());
             BingoArea area = resolveAreaByName(areaName, offlinePlayer);
             if (area == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             return areaTimer(area);
         }
@@ -70,12 +71,12 @@ public class BingoPlaceholder extends BaseGamePlaceholder<BingoArea> {
             BingoArea area = resolveAreaByName(areaName, offlinePlayer);
             Player player = offlinePlayer == null ? null : offlinePlayer.getPlayer();
             if (area == null || player == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             BingoRound round = area.getRound();
             ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
             if (round == null || team == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             return String.valueOf(round.completedCount(team));
         }
@@ -101,15 +102,15 @@ public class BingoPlaceholder extends BaseGamePlaceholder<BingoArea> {
     /** Single leaderboard entry: {@code "name: score"} for the team at {@code index} (0-based). */
     private String rankEntry(BingoArea area, int index) {
         if (area == null) {
-            return MessageConfig.PLACEHOLDER_NONE;
+            return ScoreMessages.PLACEHOLDER_NONE;
         }
         BingoRound round = area.getRound();
         if (round == null) {
-            return MessageConfig.PLACEHOLDER_NONE;
+            return ScoreMessages.PLACEHOLDER_NONE;
         }
         List<ChampionshipTeam> ranked = round.rankedTeams();
         if (index >= ranked.size()) {
-            return MessageConfig.PLACEHOLDER_NONE;
+            return ScoreMessages.PLACEHOLDER_NONE;
         }
         ChampionshipTeam team = ranked.get(index);
         return MessageConfig.codeText(

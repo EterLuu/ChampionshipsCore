@@ -1819,6 +1819,8 @@ code-text:
   parkour-warrior-team-area:
     start-formal-preparation-1: "Parkour Warrior 进行中只能看见本队玩家"
   riptide-rush-config:
+    invalid-layout: "自适应长度须为16–4096格且最短不大于最长；衔接时间0–10秒、净距2–64格，时间余量须小于比赛限时"
+    plan-outside-reserve: "赛道计划超出地图预留范围，请重新生成预览"
     stopped-child-weight-1: "不是停船挑战子类"
     set-stopped-child-weight-1: "子类权重须为0–100"
     save-building-1: "该变体已不存在"
@@ -1852,6 +1854,7 @@ code-text:
     display-name-6: "左"
     display-name-7: "%arg1%连墙（%arg2%）"
   riptide-course-planner:
+    adaptive-no-fit: "在 %arg1%–%arg2% 格预留范围和 %arg3% 秒航程预算内未找到满足关卡配额、难度与安全间距的方案；请检查关卡池或扩大地图预留范围"
     template-preview-1: "请先编辑并保存建筑，再试玩此变体"
     template-preview-2: "单关试玩需要更长的航道"
     template-preview-3: "此变体在试玩位置没有足够的换位时间，请调整速度或建筑长度后试玩"
@@ -1924,6 +1927,16 @@ code-text:
     variant-name-50: "骷髅冲刺"
     variant-name-51: "蜘蛛冲刺"
     variant-name-52: "苦力怕冲刺"
+    variant-name-53: "双星公转"
+    variant-name-54: "中心放流"
+    variant-name-55: "岸线接力"
+    variant-name-56: "三径轮转"
+    variant-name-57: "双岸延音"
+    variant-name-58: "行进休止"
+    variant-name-59: "窄宽应答"
+    variant-name-60: "间列脉冲"
+    variant-name-61: "侧门切分"
+    variant-name-62: "中庭回声"
     parse-1: "未命名"
   riptide-level-type:
     math-1: "解题"
@@ -2625,7 +2638,7 @@ code-text:
     send-flags-2: "发光元数据发送失败 | %arg1%"
   arena-world-listener:
     on-entities-load-1: "清场"
-    on-entities-load-2: "小游戏世界=%arg1% 移除地图残留动物=%arg2%"
+    on-entities-load-2: "小游戏世界=%arg1% 移除非玩法生物=%arg2%"
   world-manager:
     load-1: "大厅"
     load-2: "大厅世界未加载"

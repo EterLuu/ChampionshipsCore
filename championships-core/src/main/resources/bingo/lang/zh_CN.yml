@@ -18,6 +18,9 @@ compass:
   target_offline: "&c该队友已下线。"
   teleport_success: "&a已传送到&f{0}&a。"
 remix:
+  blind-revealed: "&e一个隐藏任务已揭晓！"
+  finale-locked: "&c一个任务已被永久封锁！"
+  variation-refreshed: "&e所有未完成任务已刷新！"
   nether:
     name: "下界"
     description: "全员在下界开局，卡片偏向下界任务"

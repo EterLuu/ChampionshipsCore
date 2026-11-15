@@ -10,6 +10,7 @@ import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.game.spatial.TeleportPositions;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.config.message.DodgeboltMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.location.LocationConfig;
 import ink.ziip.championshipscore.platform.bukkit.scoreboard.TeamColors;
@@ -152,9 +153,9 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         paused = false;
         restoreParticipantCollisions();
         announceGamePreparation(
-                MessageConfig.DODGEBOLT_START_PREPARATION,
-                MessageConfig.DODGEBOLT_START_PREPARATION_TITLE,
-                MessageConfig.DODGEBOLT_START_PREPARATION_SUBTITLE);
+                DodgeboltMessages.DODGEBOLT_START_PREPARATION,
+                DodgeboltMessages.DODGEBOLT_START_PREPARATION_TITLE,
+                DodgeboltMessages.DODGEBOLT_START_PREPARATION_SUBTITLE);
         prepareRound();
     }
 
@@ -189,9 +190,9 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         updateScoreBar();
         startFinalCountdown(
                 countdownSeconds,
-                MessageConfig.DODGEBOLT_GAME_START_SOON_TITLE,
-                MessageConfig.DODGEBOLT_GAME_START_TITLE,
-                MessageConfig.DODGEBOLT_GAME_START_SUBTITLE,
+                DodgeboltMessages.DODGEBOLT_GAME_START_SOON_TITLE,
+                DodgeboltMessages.DODGEBOLT_GAME_START_TITLE,
+                DodgeboltMessages.DODGEBOLT_GAME_START_SUBTITLE,
                 this::beginRound);
     }
 
@@ -326,7 +327,9 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         teleportToSpectatorArea(player);
         eliminationsThisRound++;
         sendMessageToAllGamePlayers(
-                (arrowHit ? MessageConfig.DODGEBOLT_HIT : MessageConfig.DODGEBOLT_ELIMINATED)
+                (arrowHit
+                                ? DodgeboltMessages.DODGEBOLT_HIT
+                                : DodgeboltMessages.DODGEBOLT_ELIMINATED)
                         .replace("%player%", CoreMessages.formatPlayerName(player)));
         playSoundToAllGamePlayers(Sound.ENTITY_PLAYER_ATTACK_CRIT, 0.9F, 1.2F);
 
@@ -367,7 +370,8 @@ public final class DodgeboltArea extends BasePairedGameInstance {
                 disconnected == null
                         ? MessageConfig.codeText("dodgebolt-area.pause-match-1")
                         : CoreMessages.formatPlayerName(disconnected);
-        sendMessageToAllGamePlayers(MessageConfig.DODGEBOLT_PAUSED.replace("%player%", playerName));
+        sendMessageToAllGamePlayers(
+                DodgeboltMessages.DODGEBOLT_PAUSED.replace("%player%", playerName));
         sendPauseTitle(disconnected);
         updateScoreBar();
         return true;
@@ -379,8 +383,8 @@ public final class DodgeboltArea extends BasePairedGameInstance {
                         ? MessageConfig.codeText("dodgebolt-area.pause-match-1")
                         : CoreMessages.formatPlayerName(disconnected);
         sendTitleToAllGamePlayers(
-                MessageConfig.DODGEBOLT_PAUSED_TITLE,
-                MessageConfig.DODGEBOLT_PAUSED_SUBTITLE.replace("%player%", playerName));
+                DodgeboltMessages.DODGEBOLT_PAUSED_TITLE,
+                DodgeboltMessages.DODGEBOLT_PAUSED_SUBTITLE.replace("%player%", playerName));
     }
 
     public boolean resumeMatch() {
@@ -401,9 +405,10 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         }
         paused = false;
         pauseLocations.clear();
-        sendMessageToAllGamePlayers(MessageConfig.DODGEBOLT_RESUMED);
+        sendMessageToAllGamePlayers(DodgeboltMessages.DODGEBOLT_RESUMED);
         sendTitleToAllGamePlayers(
-                MessageConfig.DODGEBOLT_RESUMED_TITLE, MessageConfig.DODGEBOLT_RESUMED_SUBTITLE);
+                DodgeboltMessages.DODGEBOLT_RESUMED_TITLE,
+                DodgeboltMessages.DODGEBOLT_RESUMED_SUBTITLE);
         updateScoreBar();
         return true;
     }
@@ -414,7 +419,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         cancelRoundTasks();
         paused = false;
         setGameStageEnum(GameStageEnum.STOPPING);
-        sendMessageToAllGamePlayers(MessageConfig.DODGEBOLT_ROUND_RESTARTED);
+        sendMessageToAllGamePlayers(DodgeboltMessages.DODGEBOLT_ROUND_RESTARTED);
         scheduleRoundTransition(() -> prepareRound(5), 20L);
         return true;
     }
@@ -448,14 +453,14 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         else leftWins++;
         ChampionshipTeam winningTeam = teamOf(winner);
         sendMessageToAllGamePlayers(
-                MessageConfig.DODGEBOLT_ROUND_WIN
+                DodgeboltMessages.DODGEBOLT_ROUND_WIN
                         .replace("%round%", String.valueOf(roundNumber))
                         .replace("%team%", winningTeam == null ? "-" : winningTeam.getColoredName())
                         .replace("%right_wins%", String.valueOf(rightWins))
                         .replace("%left_wins%", String.valueOf(leftWins)));
         sendTitleToAllGamePlayers(
-                MessageConfig.DODGEBOLT_ROUND_WIN_TITLE,
-                MessageConfig.DODGEBOLT_ROUND_WIN_SUBTITLE
+                DodgeboltMessages.DODGEBOLT_ROUND_WIN_TITLE,
+                DodgeboltMessages.DODGEBOLT_ROUND_WIN_SUBTITLE
                         .replace("%team%", winningTeam == null ? "-" : winningTeam.getColoredName())
                         .replace("%right_wins%", String.valueOf(rightWins))
                         .replace("%left_wins%", String.valueOf(leftWins)));
@@ -472,7 +477,7 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         int countdownSeconds = Math.max(1, getGameConfig().getRoundRestartDelay()) + 5;
         prepareRound(countdownSeconds);
         updateGameTimerBossBar(
-                MessageConfig.DODGEBOLT_NEXT_ROUND
+                DodgeboltMessages.DODGEBOLT_NEXT_ROUND
                         .replace("%round%", String.valueOf(roundNumber))
                         .replace("%time%", CoreMessages.bossBarTime(countdownSeconds)),
                 countdownSeconds,
@@ -487,23 +492,24 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         if (isSettlementAllowed() && champion != null) {
             String score = rightWins + " - " + leftWins;
             CoreMessages.sendMessageToAllPlayers(
-                    MessageConfig.DODGEBOLT_CHAMPION
+                    DodgeboltMessages.DODGEBOLT_CHAMPION
                             .replace("%team%", champion.getColoredName())
                             .replace("%score%", score));
             CoreMessages.sendTitleToAllPlayers(
-                    MessageConfig.DODGEBOLT_CHAMPION_TITLE,
-                    MessageConfig.DODGEBOLT_CHAMPION_SUBTITLE
+                    DodgeboltMessages.DODGEBOLT_CHAMPION_TITLE,
+                    DodgeboltMessages.DODGEBOLT_CHAMPION_SUBTITLE
                             .replace("%team%", champion.getColoredName())
                             .replace("%score%", score),
                     100);
             launchChampionFireworks(champion);
         } else if (isSettlementAllowed()) {
-            CoreMessages.sendMessageToAllPlayers(MessageConfig.DODGEBOLT_STOPPED);
+            CoreMessages.sendMessageToAllPlayers(DodgeboltMessages.DODGEBOLT_STOPPED);
         }
         // Keep the unified "game over" title authoritative; champion details remain in
         // chat/fireworks.
         announceGameEnd(
-                MessageConfig.DODGEBOLT_GAME_END_TITLE, MessageConfig.DODGEBOLT_GAME_END_SUBTITLE);
+                DodgeboltMessages.DODGEBOLT_GAME_END_TITLE,
+                DodgeboltMessages.DODGEBOLT_GAME_END_SUBTITLE);
         restoreParticipantCollisions();
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
         resetPlayerHealthFoodEffectLevelInventory();
@@ -619,7 +625,8 @@ public final class DodgeboltArea extends BasePairedGameInstance {
 
     private void sendShrinkWarningActionBar(int seconds) {
         sendActionBarToAllGamePlayers(
-                MessageConfig.DODGEBOLT_SHRINK_WARNING.replace("%time%", String.valueOf(seconds)));
+                DodgeboltMessages.DODGEBOLT_SHRINK_WARNING.replace(
+                        "%time%", String.valueOf(seconds)));
         playSoundToAllGamePlayers(Sound.BLOCK_ANVIL_USE, 0.9F, 1.0F);
     }
 
@@ -646,11 +653,11 @@ public final class DodgeboltArea extends BasePairedGameInstance {
         layersRemoved = Math.min(layersRemoved, getGameConfig().getMaxShrinkLevels() - shrinkLevel);
         shrinkLevel += Math.max(0, layersRemoved);
         sendActionBarToAllGamePlayers(
-                MessageConfig.DODGEBOLT_SHRINK
+                DodgeboltMessages.DODGEBOLT_SHRINK
                         .replace("%level%", String.valueOf(shrinkLevel))
                         .replace("%max%", String.valueOf(getGameConfig().getMaxShrinkLevels())));
         sendMessageToAllGamePlayers(
-                MessageConfig.DODGEBOLT_SHRINK
+                DodgeboltMessages.DODGEBOLT_SHRINK
                         .replace("%level%", String.valueOf(shrinkLevel))
                         .replace("%max%", String.valueOf(getGameConfig().getMaxShrinkLevels())));
         playSoundToAllGamePlayers(Sound.BLOCK_ANVIL_USE, 1.0F, 0.8F);
@@ -996,9 +1003,11 @@ public final class DodgeboltArea extends BasePairedGameInstance {
 
     private void updateScoreBar() {
         String state =
-                paused ? MessageConfig.DODGEBOLT_STATE_PAUSED : MessageConfig.DODGEBOLT_STATE_LIVE;
+                paused
+                        ? DodgeboltMessages.DODGEBOLT_STATE_PAUSED
+                        : DodgeboltMessages.DODGEBOLT_STATE_LIVE;
         updateGameTimerBossBar(
-                MessageConfig.DODGEBOLT_SCORE_BAR
+                DodgeboltMessages.DODGEBOLT_SCORE_BAR
                         .replace("%round%", String.valueOf(roundNumber))
                         .replace(
                                 "%right%",

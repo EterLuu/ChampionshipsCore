@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.command.admin;
 import ink.ziip.championshipscore.api.chat.MuteDuration;
 import ink.ziip.championshipscore.api.player.identity.PlayerUuidLookupException;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.AdminMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
@@ -65,16 +66,16 @@ public final class AdminMuteSubCommand extends BaseSubCommand {
                 duration = MuteDuration.parseMillis(args[1]);
                 Math.addExact(System.currentTimeMillis(), duration);
             } catch (IllegalArgumentException | ArithmeticException error) {
-                CoreMessages.sendAdminError(sender, MessageConfig.ADMIN_MUTE_INVALID_DURATION);
+                CoreMessages.sendAdminError(sender, AdminMessages.ADMIN_MUTE_INVALID_DURATION);
                 return true;
             }
         }
         String reason =
                 args.length > required
                         ? String.join(" ", Arrays.copyOfRange(args, required, args.length))
-                        : MessageConfig.MUTE_DEFAULT_REASON;
+                        : AdminMessages.MUTE_DEFAULT_REASON;
         final String moderationReason =
-                reason == null || reason.isBlank() ? MessageConfig.MUTE_DEFAULT_REASON : reason;
+                reason == null || reason.isBlank() ? AdminMessages.MUTE_DEFAULT_REASON : reason;
         long requestedDuration = duration;
         CompletionStage<?> operation =
                 action == Action.UNMUTE
@@ -103,22 +104,22 @@ public final class AdminMuteSubCommand extends BaseSubCommand {
                                             CoreMessages.sendAdminError(
                                                     sender,
                                                     (cause instanceof PlayerUuidLookupException
-                                                                    ? MessageConfig
+                                                                    ? AdminMessages
                                                                             .ADMIN_MUTE_LOOKUP_FAILED
-                                                                    : MessageConfig
+                                                                    : AdminMessages
                                                                             .ADMIN_MUTE_SAVE_FAILED)
                                                             .replace("%player%", name));
                                             return;
                                         }
                                         String feedback =
                                                 switch (action) {
-                                                    case MUTE -> MessageConfig.ADMIN_MUTE_SET;
+                                                    case MUTE -> AdminMessages.ADMIN_MUTE_SET;
                                                     case TEMPMUTE ->
-                                                            MessageConfig.ADMIN_TEMP_MUTE_SET;
+                                                            AdminMessages.ADMIN_TEMP_MUTE_SET;
                                                     case UNMUTE ->
                                                             Boolean.TRUE.equals(result)
-                                                                    ? MessageConfig.ADMIN_UNMUTE_SET
-                                                                    : MessageConfig
+                                                                    ? AdminMessages.ADMIN_UNMUTE_SET
+                                                                    : AdminMessages
                                                                             .ADMIN_MUTE_NOT_MUTED;
                                                 };
                                         CoreMessages.sendAdminSuccess(
@@ -136,10 +137,10 @@ public final class AdminMuteSubCommand extends BaseSubCommand {
                                             String notice =
                                                     switch (action) {
                                                         case MUTE ->
-                                                                MessageConfig.CHAT_MUTED_PERMANENT;
+                                                                AdminMessages.CHAT_MUTED_PERMANENT;
                                                         case TEMPMUTE ->
-                                                                MessageConfig.CHAT_MUTED_TEMPORARY;
-                                                        case UNMUTE -> MessageConfig.CHAT_UNMUTED;
+                                                                AdminMessages.CHAT_MUTED_TEMPORARY;
+                                                        case UNMUTE -> AdminMessages.CHAT_UNMUTED;
                                                     };
                                             target.sendMessage(
                                                     LegacyText.component(

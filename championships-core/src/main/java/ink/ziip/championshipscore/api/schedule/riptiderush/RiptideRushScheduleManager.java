@@ -36,7 +36,7 @@ public final class RiptideRushScheduleManager extends BaseSingleGameSchedule {
     }
 
     @Override
-    public void startGame() {
+    public boolean startGame() {
         if (!enabled) {
             roundMaps = roundMaps(FormalEventMapResolver.maps(plugin, gameTypeEnum));
             if (roundMaps.isEmpty()) {
@@ -44,10 +44,10 @@ public final class RiptideRushScheduleManager extends BaseSingleGameSchedule {
                         .warning(
                                 MessageConfig.codeText(
                                         "riptide-rush-schedule-manager.start-game-1"));
-                return;
+                return false;
             }
         }
-        super.startGame();
+        return super.startGame();
     }
 
     static java.util.List<String> roundMaps(java.util.List<String> maps) {

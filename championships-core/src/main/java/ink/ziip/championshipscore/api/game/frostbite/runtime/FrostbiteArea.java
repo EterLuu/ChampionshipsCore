@@ -12,6 +12,8 @@ import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.configuration.config.message.FrostbiteMessages;
+import ink.ziip.championshipscore.configuration.config.message.GameMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
@@ -220,7 +222,7 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
                 spawn(player, false);
                 player.sendMessage(
                         LegacyText.component(
-                                MessageConfig.FROSTBITE_ARENA
+                                FrostbiteMessages.FROSTBITE_ARENA
                                         .replace(
                                                 "%arena%",
                                                 Integer.toString(round.seats().get(id).arena() + 1))
@@ -231,13 +233,13 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
             }
             createPickups();
             announceGamePreparation(
-                    MessageConfig.FROSTBITE_START_PREPARATION,
-                    MessageConfig.FROSTBITE_START_PREPARATION_TITLE,
-                    MessageConfig.FROSTBITE_START_PREPARATION_SUBTITLE);
+                    FrostbiteMessages.FROSTBITE_START_PREPARATION,
+                    FrostbiteMessages.FROSTBITE_START_PREPARATION_TITLE,
+                    FrostbiteMessages.FROSTBITE_START_PREPARATION_SUBTITLE);
             startFinalCountdown(
-                    MessageConfig.GAME_FROSTBITE,
-                    MessageConfig.FROSTBITE_GAME_START_TITLE,
-                    MessageConfig.FROSTBITE_GAME_START_SUBTITLE,
+                    GameMessages.GAME_FROSTBITE,
+                    FrostbiteMessages.FROSTBITE_GAME_START_TITLE,
+                    FrostbiteMessages.FROSTBITE_GAME_START_SUBTITLE,
                     this::begin);
         } catch (RuntimeException failure) {
             logGame(
@@ -257,7 +259,7 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
                         remaining -> {
                             timer = remaining;
                             updateGameTimerBossBar(
-                                    MessageConfig.FROSTBITE_BOSS_BAR.replace(
+                                    FrostbiteMessages.FROSTBITE_BOSS_BAR.replace(
                                             "%time%", CoreMessages.bossBarTime(remaining)),
                                     remaining,
                                     getGameConfig().getTimer());
@@ -332,7 +334,7 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
                     p.setFreezeTicks(130);
                     p.sendActionBar(
                             LegacyText.component(
-                                    MessageConfig.FROSTBITE_FROZEN_ACTIONBAR
+                                    FrostbiteMessages.FROSTBITE_FROZEN_ACTIONBAR
                                             .replace(
                                                     "%seconds%",
                                                     String.format(
@@ -352,7 +354,7 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
                             LegacyText.component(
                                     hint != null
                                             ? hint
-                                            : MessageConfig.FROSTBITE_STATUS_ACTIONBAR
+                                            : FrostbiteMessages.FROSTBITE_STATUS_ACTIONBAR
                                                     .replace(
                                                             "%kills%",
                                                             Integer.toString(round.kills(id)))
@@ -435,7 +437,7 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
                         ? CoreMessages.formatPlayerName(killer)
                         : CoreMessages.formatPlayerName(killerPlayer);
         sendMessageToAllGamePlayers(
-                MessageConfig.FROSTBITE_KILL
+                FrostbiteMessages.FROSTBITE_KILL
                         .replace("%killer%", killerName)
                         .replace("%victim%", victimName));
         if (killerPlayer != null)
@@ -453,8 +455,8 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
         spawn(p, true);
         showRespawnGlow(id);
         p.sendTitle(
-                LegacyText.translateColorCodes(MessageConfig.FROSTBITE_RESPAWN_TITLE),
-                LegacyText.translateColorCodes(MessageConfig.FROSTBITE_RESPAWN_SUBTITLE),
+                LegacyText.translateColorCodes(FrostbiteMessages.FROSTBITE_RESPAWN_TITLE),
+                LegacyText.translateColorCodes(FrostbiteMessages.FROSTBITE_RESPAWN_SUBTITLE),
                 0,
                 20,
                 5);
@@ -595,7 +597,8 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
             round.thaw(victim.getUniqueId());
             equipTeamArmor(victim);
             updateHeatState(victim);
-            victim.sendActionBar(LegacyText.component(MessageConfig.FROSTBITE_PHOENIX_CONSUMED));
+            victim.sendActionBar(
+                    LegacyText.component(FrostbiteMessages.FROSTBITE_PHOENIX_CONSUMED));
             return true;
         }
         applyFrozenState(victim);
@@ -611,7 +614,8 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
             thaw(victim);
             teleport(victim, returnLocation);
             victim.setFallDistance(0);
-            victim.sendActionBar(LegacyText.component(MessageConfig.FROSTBITE_CAMPFIRE_RETURNED));
+            victim.sendActionBar(
+                    LegacyText.component(FrostbiteMessages.FROSTBITE_CAMPFIRE_RETURNED));
             return true;
         }
         Player attackerPlayer = Bukkit.getPlayer(attacker);
@@ -620,11 +624,11 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
                     attackerPlayer.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 1F, 1.25F);
             attackerPlayer.sendActionBar(
                     LegacyText.component(
-                            MessageConfig.FROSTBITE_FREEZE_SUCCESS.replace(
+                            FrostbiteMessages.FROSTBITE_FREEZE_SUCCESS.replace(
                                     "%player%", CoreMessages.formatPlayerName(victim))));
         }
         sendMessageToAllGamePlayers(
-                MessageConfig.FROSTBITE_FREEZE
+                FrostbiteMessages.FROSTBITE_FREEZE
                         .replace("%attacker%", CoreMessages.formatPlayerName(attacker))
                         .replace("%victim%", CoreMessages.formatPlayerName(victim)));
         return true;
@@ -667,7 +671,7 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
                 .spawnParticle(
                         Particle.SNOWFLAKE, victim.getLocation().add(0, 1, 0), 25, .4, .7, .4, .02);
         victim.playSound(victim.getLocation(), Sound.BLOCK_GLASS_BREAK, 1, .7F);
-        victim.sendActionBar(LegacyText.component(MessageConfig.FROSTBITE_FROZEN));
+        victim.sendActionBar(LegacyText.component(FrostbiteMessages.FROSTBITE_FROZEN));
     }
 
     private void thaw(Player p) {
@@ -1176,7 +1180,8 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
             addPlayerPointsToDatabase();
         }
         setGameStageEnum(GameStageEnum.END);
-        announceGameEnd(MessageConfig.FROSTBITE_END_TITLE, MessageConfig.FROSTBITE_END_SUBTITLE);
+        announceGameEnd(
+                FrostbiteMessages.FROSTBITE_END_TITLE, FrostbiteMessages.FROSTBITE_END_SUBTITLE);
         beginPostGameSettlement();
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
         resetPlayerHealthFoodEffectLevelInventory();
@@ -1256,7 +1261,10 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
         round = null;
         ending = false;
         timer = 0;
-        preloadMap();
+        // Frostbite never changes terrain: stopRuntime removes every temporary prop, projectile,
+        // cloud and supply display. Keep the loaded world for the next round; unloading it would
+        // evacuate both the held participants and the spectators to the lobby.
+        if (!isRoundTransitionPending()) preloadMap();
     }
 
     @Override

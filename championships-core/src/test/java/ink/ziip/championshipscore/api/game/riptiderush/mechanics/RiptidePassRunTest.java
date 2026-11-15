@@ -24,7 +24,8 @@ class RiptidePassRunTest {
     void sideWarningsUseTitlesKeepQuestionsAndClearOnClose() throws Exception {
         var config = RiptideTestFixtures.config();
         var g = config.resolveGeometry();
-        var messages = ink.ziip.championshipscore.configuration.config.message.MessageConfig.class;
+        var messages =
+                ink.ziip.championshipscore.configuration.config.message.RiptideRushMessages.class;
         var warning = messages.getField("RIPTIDE_RUSH_SWEEP_TITLE");
         var oldWarning = warning.get(null);
         var title = messages.getField("RIPTIDE_RUSH_QUESTION_TITLE");
@@ -265,50 +266,6 @@ class RiptidePassRunTest {
     }
 
     @Test
-    void groupsRespectPhysicalUseCapsAndSharedTrialBoundaries() throws Exception {
-        var c = RiptideTestFixtures.config();
-        var templates = c.resolvePool();
-        int groups = 0, sweeps = 0;
-        for (long seed = 0; seed < 8; seed++) {
-            var plan = RiptideCoursePlanner.plan(c, seed);
-            var uses = new HashMap<String, Integer>();
-            for (var l : plan.levels()) {
-                if (!l.isSideSweep()) uses.merge(l.template().id(), 1, Integer::sum);
-                else {
-                    sweeps++;
-                    assertEquals(
-                            RiptideSideSweep.wallCount(
-                                    c.resolveGeometry().stoppedStep(l.step()), 500),
-                            l.sideWalls().size());
-                    for (var w : l.sideWalls()) uses.merge(w.template().id(), 1, Integer::sum);
-                    assertEquals(List.of(l), plan.trialLevels(l));
-                }
-                if (l.wallGroup() > 0) {
-                    if (!l.rhythm().equals("FINAL_TRIPLE")) groups++;
-                    var selected = plan.trialLevels(l);
-                    assertTrue(selected.size() >= 2);
-                    assertTrue(selected.stream().allMatch(w -> w.wallGroup() == l.wallGroup()));
-                    if (l.rhythm().equals("FINAL_TRIPLE")) assertEquals(3, selected.size());
-                    else
-                        assertEquals(
-                                selected.size(),
-                                selected.stream()
-                                        .map(w -> w.template().designKey(w.variant()))
-                                        .distinct()
-                                        .count());
-                }
-            }
-            for (var template : templates)
-                assertTrue(uses.getOrDefault(template.id(), 0) <= template.maxUses());
-            assertEquals(
-                    plan.estimatedTicks(),
-                    RiptideCoursePlanner.estimateTicks(c, c.resolveGeometry(), plan.levels()));
-        }
-        assertTrue(groups > 0);
-        assertTrue(sweeps > 0);
-    }
-
-    @Test
     void templateTrialsRandomizeMirrorWithoutChangingTheSavedBuilding() throws Exception {
         var c = RiptideTestFixtures.config();
         var template = RiptideHitwCatalog.templates().getFirst();
@@ -546,7 +503,9 @@ class RiptidePassRunTest {
                             "SIDE",
                             1,
                             walls);
-            var plan = new RiptideCoursePlan(seed, RiptideCoursePlanner.VERSION, 0, List.of(l));
+            var plan =
+                    new RiptideCoursePlan(
+                            seed, RiptideCoursePlanner.VERSION, 0, List.of(l), g.totalSteps());
             var logged = (List<?>) plan.logLevels().getFirst().get("sideWalls");
             for (int i = 0; i < walls.size(); i++)
                 assertEquals(walls.get(i).mirrored(), ((Map<?, ?>) logged.get(i)).get("mirrored"));

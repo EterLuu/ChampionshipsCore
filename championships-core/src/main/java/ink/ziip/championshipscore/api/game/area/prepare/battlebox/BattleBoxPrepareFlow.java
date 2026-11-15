@@ -14,7 +14,7 @@ import ink.ziip.championshipscore.api.game.config.GameSpawnResolver;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -138,7 +138,7 @@ public class BattleBoxPrepareFlow extends PrepareFlowDefinition {
                             cfg(a).setAreaPos2(sel[1]);
                         },
                         CoreMessages.formatAdminSuccess(
-                                MessageConfig.MAP_EDITOR_STEP_GENERAL_SITE_BOUNDARY_SET)));
+                                MapEditorMessages.MAP_EDITOR_STEP_GENERAL_SITE_BOUNDARY_SET)));
 
         steps.add(
                 new StandAndRunStep(
@@ -154,7 +154,7 @@ public class BattleBoxPrepareFlow extends PrepareFlowDefinition {
                         a -> cfg(a).getSpectatorSpawnPoint() != null,
                         (a, loc) -> cfg(a).setSpectatorSpawnPoint(loc),
                         CoreMessages.formatAdminSuccess(
-                                MessageConfig.MAP_EDITOR_STEP_SPECTATOR_SPAWN_POINT_SET)));
+                                MapEditorMessages.MAP_EDITOR_STEP_SPECTATOR_SPAWN_POINT_SET)));
 
         steps.add(
                 new StandAndRunStep(
@@ -170,7 +170,7 @@ public class BattleBoxPrepareFlow extends PrepareFlowDefinition {
                         a -> cfg(a).getRightSpawnPoint() != null,
                         (a, loc) -> cfg(a).setRightSpawnPoint(loc),
                         CoreMessages.formatAdminSuccess(
-                                MessageConfig.MAP_EDITOR_BB_SPAWN_RIGHT_SET)));
+                                MapEditorMessages.MAP_EDITOR_BB_SPAWN_RIGHT_SET)));
 
         steps.add(
                 new StandAndRunStep(
@@ -186,7 +186,7 @@ public class BattleBoxPrepareFlow extends PrepareFlowDefinition {
                         a -> cfg(a).getLeftSpawnPoint() != null,
                         (a, loc) -> cfg(a).setLeftSpawnPoint(loc),
                         CoreMessages.formatAdminSuccess(
-                                MessageConfig.MAP_EDITOR_BB_SPAWN_LEFT_SET)));
+                                MapEditorMessages.MAP_EDITOR_BB_SPAWN_LEFT_SET)));
 
         steps.add(
                 new StandAndRunStep(
@@ -202,7 +202,7 @@ public class BattleBoxPrepareFlow extends PrepareFlowDefinition {
                         a -> cfg(a).getRightPrepareSpot() != null,
                         (a, loc) -> cfg(a).setRightPrepareSpot(loc),
                         CoreMessages.formatAdminSuccess(
-                                MessageConfig.MAP_EDITOR_BB_PREPARE_RIGHT_SET)));
+                                MapEditorMessages.MAP_EDITOR_BB_PREPARE_RIGHT_SET)));
 
         steps.add(
                 new StandAndRunStep(
@@ -218,7 +218,7 @@ public class BattleBoxPrepareFlow extends PrepareFlowDefinition {
                         a -> cfg(a).getLeftPrepareSpot() != null,
                         (a, loc) -> cfg(a).setLeftPrepareSpot(loc),
                         CoreMessages.formatAdminSuccess(
-                                MessageConfig.MAP_EDITOR_BB_PREPARE_LEFT_SET)));
+                                MapEditorMessages.MAP_EDITOR_BB_PREPARE_LEFT_SET)));
 
         steps.add(
                 new WeSelectionStep(
@@ -236,7 +236,7 @@ public class BattleBoxPrepareFlow extends PrepareFlowDefinition {
                             cfg(a).setWoolPos1(sel[0]);
                             cfg(a).setWoolPos2(sel[1]);
                         },
-                        CoreMessages.formatAdminSuccess(MessageConfig.MAP_EDITOR_BB_WOOL_SET)));
+                        CoreMessages.formatAdminSuccess(MapEditorMessages.MAP_EDITOR_BB_WOOL_SET)));
 
         steps.add(
                 new ListStep(

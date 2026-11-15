@@ -4,7 +4,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.config.FourArenaConfig;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -38,7 +38,7 @@ public final class FourArenaSchematicStep extends SchematicStep {
     public String capture(@NotNull PrepareSession session, @NotNull Player player) {
         if (!session.getTarget().canSaveMap())
             return CoreMessages.formatAdminError(
-                    MessageConfig.MAP_EDITOR_STEP_ARENA_INSTANCE_RUNNING);
+                    MapEditorMessages.MAP_EDITOR_STEP_ARENA_INSTANCE_RUNNING);
         return super.capture(session, player);
     }
 

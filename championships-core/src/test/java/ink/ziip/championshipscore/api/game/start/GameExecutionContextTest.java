@@ -4,41 +4,36 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.api.game.model.GameRunMode;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class GameExecutionContextTest {
-    @Test
-    void testEventKeepsEventGameplayShapeButNeverFormalSettlement() {
-        GameExecutionContext context = GameExecutionContext.forRunMode(GameRunMode.TEST_EVENT);
+    @ParameterizedTest(name = "{0}")
+    @CsvSource({
+        "GAME, STANDALONE, NORMAL, false, false, false",
+        "EVENT, FORMAL_EVENT, FORMAL_RANK, false, true, true",
+        "DAILY, STANDALONE, DAILY, false, false, false",
+        // Standalone tests use the normal settlement writer but never formal rank.
+        "TEST, STANDALONE, TEST, true, true, false",
+        // Test events keep the event gameplay shape without formal settlement.
+        "TEST_EVENT, TEST_EVENT, TEST, true, true, false"
+    })
+    void runModeSelectsFlowAndSettlement(
+            GameRunMode mode,
+            GameFlow flow,
+            SettlementPolicy settlement,
+            boolean test,
+            boolean writesSettlement,
+            boolean formalEvent) {
+        GameExecutionContext context = GameExecutionContext.forRunMode(mode);
 
-        assertEquals(GameRunMode.TEST_EVENT, context.runMode());
-        assertEquals(GameFlow.TEST_EVENT, context.flow());
-        assertEquals(SettlementPolicy.TEST, context.settlement());
-        assertTrue(context.test());
-        assertTrue(context.writesSettlement());
-        assertFalse(context.formalEvent());
-    }
-
-    @Test
-    void standaloneTestUsesTheNormalSettlementWriter() {
-        GameExecutionContext context = GameExecutionContext.forRunMode(GameRunMode.TEST);
-
-        assertTrue(context.test());
-        assertTrue(context.writesSettlement());
-        assertFalse(context.formalEvent());
-    }
-
-    @Test
-    void existingModesKeepTheirOriginalContext() {
-        GameExecutionContext game = GameExecutionContext.forRunMode(GameRunMode.GAME);
-        GameExecutionContext event = GameExecutionContext.forRunMode(GameRunMode.EVENT);
-        GameExecutionContext daily = GameExecutionContext.forRunMode(GameRunMode.DAILY);
-
-        assertEquals(GameFlow.STANDALONE, game.flow());
-        assertEquals(SettlementPolicy.NORMAL, game.settlement());
-        assertEquals(GameFlow.FORMAL_EVENT, event.flow());
-        assertEquals(SettlementPolicy.FORMAL_RANK, event.settlement());
-        assertEquals(GameFlow.STANDALONE, daily.flow());
-        assertEquals(SettlementPolicy.DAILY, daily.settlement());
+        assertAll(
+                mode.name(),
+                () -> assertEquals(mode, context.runMode()),
+                () -> assertEquals(flow, context.flow()),
+                () -> assertEquals(settlement, context.settlement()),
+                () -> assertEquals(test, context.test()),
+                () -> assertEquals(writesSettlement, context.writesSettlement()),
+                () -> assertEquals(formalEvent, context.formalEvent()));
     }
 }

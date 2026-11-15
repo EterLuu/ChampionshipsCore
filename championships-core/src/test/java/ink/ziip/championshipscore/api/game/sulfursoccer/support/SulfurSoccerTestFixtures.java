@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.sulfursoccer.support;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.api.game.sulfursoccer.config.SulfurSoccerConfig;
@@ -15,12 +17,8 @@ public final class SulfurSoccerTestFixtures {
     private SulfurSoccerTestFixtures() {}
 
     public static SulfurSoccerConfig config() throws Exception {
-        var unsafeField = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-        unsafeField.setAccessible(true);
-        var unsafe = (sun.misc.Unsafe) unsafeField.get(null);
-        var plugin =
-                (ink.ziip.championshipscore.ChampionshipsCore)
-                        unsafe.allocateInstance(ink.ziip.championshipscore.ChampionshipsCore.class);
+
+        var plugin = allocate(ink.ziip.championshipscore.ChampionshipsCore.class);
         var config = new SulfurSoccerConfig(plugin, "soccer");
         var yaml = new YamlConfiguration();
         yaml.set("world-name", "soccer");

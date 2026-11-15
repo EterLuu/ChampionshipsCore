@@ -69,6 +69,36 @@ final class RiptideRhythmGate {
                     beat == 0
                             ? side <= 0
                             : beat == 1 ? side >= 0 : beat == 2 ? side <= 1 : side >= -1;
+            case "TWIN_ORBIT" -> beat == 0 ? distance == 2 : beat == 2 ? side == 0 : distance == 1;
+            case "CENTER_RELEASE" ->
+                    beat == 0
+                            ? distance <= 1
+                            : beat == 1 ? side >= -1 : beat == 2 ? true : side <= 1;
+            case "EDGE_RELAY" ->
+                    beat == 0
+                            ? side <= -2
+                            : beat == 1
+                                    ? side == -1 || side == 0
+                                    : beat == 2 ? side == 0 || side == 1 : side >= 2;
+            case "THREE_LANES" ->
+                    beat == 0
+                            ? side <= -2
+                            : beat == 1 ? side == 0 : beat == 2 ? side >= 2 : distance <= 1;
+            case "SPLIT_HOLD" -> beat < 2 ? distance >= 2 : beat == 2 ? distance <= 1 : true;
+            case "TRAVEL_PAUSE" ->
+                    beat == 0 ? side < 0 : beat == 1 ? distance <= 1 : beat == 2 ? false : side > 0;
+            case "NARROW_WIDE" ->
+                    beat == 0
+                            ? side == -1
+                            : beat == 1 ? side < 0 : beat == 2 ? side == 1 : side > 0;
+            case "CHECKER_PULSE" ->
+                    beat == 0
+                            ? distance % 2 == 0
+                            : beat == 1 ? distance % 2 == 1 : beat == 2 ? distance <= 1 : true;
+            case "SIDE_LOCK" ->
+                    beat == 0 ? side < 0 : beat == 1 ? false : beat == 2 ? side > 0 : distance <= 1;
+            case "CENTER_ECHO" ->
+                    beat == 0 || beat == 2 ? distance <= 1 : beat == 1 ? side <= -2 : side >= 2;
             default -> phase < .65;
         };
     }

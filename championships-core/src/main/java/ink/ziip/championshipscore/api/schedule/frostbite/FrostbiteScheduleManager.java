@@ -10,16 +10,16 @@ public final class FrostbiteScheduleManager extends BaseSingleGameSchedule {
     private java.util.List<String> roundMaps = java.util.List.of();
 
     @Override
-    public void startGame() {
+    public boolean startGame() {
         if (!enabled) {
             roundMaps = roundMaps(FormalEventMapResolver.maps(plugin, gameTypeEnum));
             if (roundMaps.isEmpty()) {
                 plugin.getLogger()
                         .warning(MessageConfig.codeText("frostbite-schedule-manager.start-game-1"));
-                return;
+                return false;
             }
         }
-        super.startGame();
+        return super.startGame();
     }
 
     static java.util.List<String> roundMaps(java.util.List<String> maps) {

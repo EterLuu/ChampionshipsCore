@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.api.event.EventStateStore;
 import ink.ziip.championshipscore.api.event.EventTeamImport;
 import ink.ziip.championshipscore.api.team.entry.TeamImportEntry;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.EventMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -34,7 +35,7 @@ public final class EventTeamImportSubCommand extends BaseSubCommand {
             sendUsage(sender);
             return true;
         }
-        CoreMessages.sendAdminInfo(sender, MessageConfig.EVENT_IMPORT_VALIDATING);
+        CoreMessages.sendAdminInfo(sender, EventMessages.EVENT_IMPORT_VALIDATING);
         Bukkit.getScheduler()
                 .runTaskAsynchronously(
                         plugin,
@@ -53,7 +54,7 @@ public final class EventTeamImportSubCommand extends BaseSubCommand {
                                                         error(
                                                                 sender,
                                                                 failure == null
-                                                                        ? MessageConfig
+                                                                        ? EventMessages
                                                                                 .EVENT_IMPORT_DATABASE_FAILED
                                                                         : failure.getMessage());
                                                         return;
@@ -82,13 +83,13 @@ public final class EventTeamImportSubCommand extends BaseSubCommand {
                                                                                         .getMessage());
                                                         error(
                                                                 sender,
-                                                                MessageConfig
+                                                                EventMessages
                                                                         .EVENT_IMPORT_STATE_SAVE_FAILED);
                                                         return;
                                                     }
                                                     success(
                                                             sender,
-                                                            MessageConfig.EVENT_IMPORT_COMPLETED
+                                                            EventMessages.EVENT_IMPORT_COMPLETED
                                                                     .replace(
                                                                             "%event%",
                                                                             String.valueOf(
@@ -136,14 +137,14 @@ public final class EventTeamImportSubCommand extends BaseSubCommand {
 
     private void error(CommandSender sender, String message) {
         String detail =
-                message == null || message.isBlank() ? MessageConfig.EVENT_UNKNOWN_ERROR : message;
+                message == null || message.isBlank() ? EventMessages.EVENT_UNKNOWN_ERROR : message;
         Bukkit.getScheduler()
                 .runTask(
                         plugin,
                         () ->
                                 CoreMessages.sendAdminError(
                                         sender,
-                                        MessageConfig.EVENT_IMPORT_FAILED.replace(
+                                        EventMessages.EVENT_IMPORT_FAILED.replace(
                                                 "%detail%", detail)));
     }
 }

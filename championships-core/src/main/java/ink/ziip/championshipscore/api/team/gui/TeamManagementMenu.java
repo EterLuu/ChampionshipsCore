@@ -11,7 +11,7 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.api.team.TeamManager;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.TeamMessages;
 import ink.ziip.championshipscore.platform.bukkit.scoreboard.TeamColors;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -188,7 +188,7 @@ public final class TeamManagementMenu implements Listener {
         if (team == null) {
             CoreMessages.sendAdminError(
                     player,
-                    MessageConfig.TEAM_GUI_THE_TEAM_NO_LONGER_EXISTS.replace("%team%", teamName));
+                    TeamMessages.TEAM_GUI_THE_TEAM_NO_LONGER_EXISTS.replace("%team%", teamName));
             openOverview(player, 0);
             return;
         }
@@ -245,7 +245,7 @@ public final class TeamManagementMenu implements Listener {
         if (team.getMembers().size() >= CCConfig.TEAM_MAX_MEMBERS) {
             CoreMessages.sendAdminError(
                     player,
-                    MessageConfig
+                    TeamMessages
                             .TEAM_GUI_THE_NUMBER_OF_PEOPLE_IN_THE_TEAM_HAS_REACHED_THE_UPPER_LIMIT
                             .replace("%limit%", String.valueOf(CCConfig.TEAM_MAX_MEMBERS)));
             openTeam(player, teamName, 0);
@@ -438,7 +438,7 @@ public final class TeamManagementMenu implements Listener {
         if (team.getMembers().size() >= CCConfig.TEAM_MAX_MEMBERS) {
             CoreMessages.sendAdminError(
                     player,
-                    MessageConfig
+                    TeamMessages
                             .TEAM_GUI_THE_NUMBER_OF_PEOPLE_IN_THE_TEAM_HAS_REACHED_THE_UPPER_LIMIT
                             .replace("%limit%", String.valueOf(CCConfig.TEAM_MAX_MEMBERS)));
             openTeam(player, teamName, 0);
@@ -455,7 +455,7 @@ public final class TeamManagementMenu implements Listener {
                                     if (knownPlayers == null) {
                                         CoreMessages.sendAdminError(
                                                 player,
-                                                MessageConfig
+                                                TeamMessages
                                                         .TEAM_GUI_UNABLE_TO_READ_PLAYER_HISTORY);
                                         openTeam(player, teamName, 0);
                                         return;
@@ -642,7 +642,7 @@ public final class TeamManagementMenu implements Listener {
                                     if (!player.hasPermission(ChampionshipPermissions.ADMIN)) {
                                         CoreMessages.sendAdminError(
                                                 player,
-                                                MessageConfig
+                                                TeamMessages
                                                         .TEAM_GUI_YOU_NO_LONGER_HAVE_PERMISSION_TO_USE_THE_TEAM_MANAGEMENT_INTERFACE);
                                     }
                                 }));
@@ -663,7 +663,7 @@ public final class TeamManagementMenu implements Listener {
             player.closeInventory();
             CoreMessages.sendAdminError(
                     player,
-                    MessageConfig
+                    TeamMessages
                             .TEAM_GUI_YOU_NO_LONGER_HAVE_PERMISSION_TO_USE_THE_TEAM_MANAGEMENT_INTERFACE);
             return;
         }
@@ -746,8 +746,8 @@ public final class TeamManagementMenu implements Listener {
             CoreMessages.sendAdminError(
                     player,
                     team == null
-                            ? MessageConfig.TEAM_GUI_TEAM_NOT_FOUND_FEEDBACK
-                            : MessageConfig
+                            ? TeamMessages.TEAM_GUI_TEAM_NOT_FOUND_FEEDBACK
+                            : TeamMessages
                                     .TEAM_GUI_THE_NUMBER_OF_PEOPLE_IN_THE_TEAM_HAS_REACHED_THE_UPPER_LIMIT
                                     .replace("%limit%", String.valueOf(CCConfig.TEAM_MAX_MEMBERS)));
             openTeam(player, holder.teamName, holder.page);
@@ -880,7 +880,7 @@ public final class TeamManagementMenu implements Listener {
             if (plugin.getTeamManager().getTeam(holder.teamName) != null) {
                 CoreMessages.sendAdminError(
                         player,
-                        MessageConfig.TEAM_GUI_TEAM_NAME_ALREADY_EXISTS.replace(
+                        TeamMessages.TEAM_GUI_TEAM_NAME_ALREADY_EXISTS.replace(
                                 "%team%", holder.teamName));
                 openOverview(player, 0);
                 return;
@@ -891,7 +891,7 @@ public final class TeamManagementMenu implements Listener {
             if (colorUsed) {
                 CoreMessages.sendAdminError(
                         player,
-                        MessageConfig
+                        TeamMessages
                                 .TEAM_GUI_THIS_COLOR_HAS_JUST_BEEN_TAKEN_BY_ANOTHER_TEAM_PLEASE_CHOOSE_AGAIN);
                 openColorPicker(player, holder.teamName);
                 return;
@@ -924,7 +924,7 @@ public final class TeamManagementMenu implements Listener {
                                         if (created) {
                                             CoreMessages.sendAdminSuccess(
                                                     player,
-                                                    MessageConfig.TEAM_GUI_TEAM_CREATED
+                                                    TeamMessages.TEAM_GUI_TEAM_CREATED
                                                             .replace(
                                                                     "%color%",
                                                                     TeamMenuItems.colorHex(
@@ -935,7 +935,7 @@ public final class TeamManagementMenu implements Listener {
                                         } else {
                                             CoreMessages.sendAdminError(
                                                     player,
-                                                    MessageConfig
+                                                    TeamMessages
                                                             .TEAM_GUI_FAILED_TO_CREATE_TEAM_NAME_OR_COLOR_MAY_ALREADY_BE_TAKEN);
                                             openOverview(player, 0);
                                         }
@@ -956,7 +956,7 @@ public final class TeamManagementMenu implements Listener {
                 if (plugin.getTeamManager().getTeam(holder.teamName) == null) {
                     CoreMessages.sendAdminError(
                             player,
-                            MessageConfig.TEAM_GUI_THE_TEAM_NO_LONGER_EXISTS.replace(
+                            TeamMessages.TEAM_GUI_THE_TEAM_NO_LONGER_EXISTS.replace(
                                     "%team%", holder.teamName));
                 } else {
                     plugin.getTeamManager()
@@ -979,7 +979,7 @@ public final class TeamManagementMenu implements Listener {
                                                                 .DELETED) {
                                                     CoreMessages.sendAdminSuccess(
                                                             player,
-                                                            MessageConfig.TEAM_GUI_TEAM_DELETED
+                                                            TeamMessages.TEAM_GUI_TEAM_DELETED
                                                                     .replace(
                                                                             "%team%",
                                                                             holder.teamName));
@@ -987,7 +987,7 @@ public final class TeamManagementMenu implements Listener {
                                                 } else {
                                                     CoreMessages.sendAdminError(
                                                             player,
-                                                            MessageConfig
+                                                            TeamMessages
                                                                     .TEAM_GUI_UNABLE_TO_DELETE_TEAM_TEAM_MAY_BE_IN_GAME);
                                                 }
                                                 openOverview(player, 0);
@@ -1012,7 +1012,7 @@ public final class TeamManagementMenu implements Listener {
                                             if (deleted) {
                                                 CoreMessages.sendAdminSuccess(
                                                         player,
-                                                        MessageConfig.TEAM_GUI_MEMBER_REMOVED
+                                                        TeamMessages.TEAM_GUI_MEMBER_REMOVED
                                                                 .replace("%team%", holder.teamName)
                                                                 .replace(
                                                                         "%player%",
@@ -1021,7 +1021,7 @@ public final class TeamManagementMenu implements Listener {
                                             } else {
                                                 CoreMessages.sendAdminError(
                                                         player,
-                                                        MessageConfig
+                                                        TeamMessages
                                                                 .TEAM_GUI_REMOVAL_FAILED_TEAM_OR_MEMBER_STATUS_MAY_HAVE_CHANGED);
                                             }
                                             openTeam(player, holder.teamName, holder.returnPage);
@@ -1036,7 +1036,7 @@ public final class TeamManagementMenu implements Listener {
                 }
                 CoreMessages.sendAdminSuccess(
                         player,
-                        MessageConfig.TEAM_GUI_ALL_TEAMS_TELEPORTED.replace(
+                        TeamMessages.TEAM_GUI_ALL_TEAMS_TELEPORTED.replace(
                                 "%count%", String.valueOf(players)));
                 success(player);
                 openOverview(player, holder.returnPage);
@@ -1053,20 +1053,20 @@ public final class TeamManagementMenu implements Listener {
 
     private String validateInput(InputPurpose purpose, String text) {
         if (purpose == InputPurpose.CREATE_TEAM) {
-            if (text.isBlank()) return MessageConfig.TEAM_GUI_TEAM_NAME_CANNOT_BE_EMPTY;
+            if (text.isBlank()) return TeamMessages.TEAM_GUI_TEAM_NAME_CANNOT_BE_EMPTY;
             if (text.length() > 64 || text.chars().anyMatch(Character::isISOControl)) {
-                return MessageConfig
+                return TeamMessages
                         .TEAM_GUI_TEAM_NAMES_CANNOT_EXCEED_64_CHARACTERS_AND_CANNOT_CONTAIN_CONTROL_CHARACTERS;
             }
             if (plugin.getTeamManager().getTeamList().stream()
                     .anyMatch(team -> team.getName().equalsIgnoreCase(text))) {
-                return MessageConfig.TEAM_GUI_TEAM_NAME_ALREADY_EXISTS.replace("%team%", text);
+                return TeamMessages.TEAM_GUI_TEAM_NAME_ALREADY_EXISTS.replace("%team%", text);
             }
             return null;
         }
         return text.matches("[A-Za-z0-9_]{3,16}")
                 ? null
-                : MessageConfig.TEAM_GUI_PLEASE_ENTER_A_VALID_MINECRAFT_PLAYER_NAME;
+                : TeamMessages.TEAM_GUI_PLEASE_ENTER_A_VALID_MINECRAFT_PLAYER_NAME;
     }
 
     private void addMember(
@@ -1081,14 +1081,14 @@ public final class TeamManagementMenu implements Listener {
         if (team == null) {
             CoreMessages.sendAdminError(
                     admin,
-                    MessageConfig.TEAM_GUI_THE_TEAM_NO_LONGER_EXISTS.replace("%team%", teamName));
+                    TeamMessages.TEAM_GUI_THE_TEAM_NO_LONGER_EXISTS.replace("%team%", teamName));
             openOverview(admin, 0);
             return;
         }
         if (team.getMembers().size() >= CCConfig.TEAM_MAX_MEMBERS) {
             CoreMessages.sendAdminError(
                     admin,
-                    MessageConfig
+                    TeamMessages
                             .TEAM_GUI_THE_NUMBER_OF_PEOPLE_IN_THE_TEAM_HAS_REACHED_THE_UPPER_LIMIT
                             .replace("%limit%", String.valueOf(CCConfig.TEAM_MAX_MEMBERS)));
         } else {
@@ -1106,7 +1106,7 @@ public final class TeamManagementMenu implements Listener {
                                 if (added) {
                                     CoreMessages.sendAdminSuccess(
                                             admin,
-                                            MessageConfig.TEAM_GUI_PLAYER_JOINED
+                                            TeamMessages.TEAM_GUI_PLAYER_JOINED
                                                     .replace("%player%", memberName)
                                                     .replace("%color%", team.getColorCode())
                                                     .replace("%team%", team.getName()));
@@ -1140,7 +1140,7 @@ public final class TeamManagementMenu implements Listener {
         if (team.getMembers().size() >= CCConfig.TEAM_MAX_MEMBERS) {
             CoreMessages.sendAdminError(
                     admin,
-                    MessageConfig
+                    TeamMessages
                             .TEAM_GUI_THE_NUMBER_OF_PEOPLE_IN_THE_TEAM_HAS_REACHED_THE_UPPER_LIMIT
                             .replace("%limit%", String.valueOf(CCConfig.TEAM_MAX_MEMBERS)));
             openTeam(admin, teamName, 0);
@@ -1157,7 +1157,7 @@ public final class TeamManagementMenu implements Listener {
                                         if (added) {
                                             CoreMessages.sendAdminSuccess(
                                                     admin,
-                                                    MessageConfig.TEAM_GUI_OFFLINE_PLAYER_JOINED
+                                                    TeamMessages.TEAM_GUI_OFFLINE_PLAYER_JOINED
                                                             .replace("%player%", memberName)
                                                             .replace("%color%", team.getColorCode())
                                                             .replace("%team%", team.getName()));
@@ -1177,16 +1177,16 @@ public final class TeamManagementMenu implements Listener {
 
     private static String memberAddFailureText(@NotNull TeamManager.MemberAddResult result) {
         return switch (result) {
-            case INVALID_PLAYER_NAME -> MessageConfig.TEAM_GUI_ADD_MEMBER_INVALID_PLAYER_NAME;
-            case TEAM_NOT_FOUND -> MessageConfig.TEAM_GUI_ADD_MEMBER_TEAM_NOT_FOUND;
-            case TEAM_FULL -> MessageConfig.TEAM_GUI_ADD_MEMBER_TEAM_FULL;
-            case OPERATION_IN_PROGRESS -> MessageConfig.TEAM_GUI_ADD_MEMBER_OPERATION_IN_PROGRESS;
-            case PLAYER_NOT_FOUND -> MessageConfig.TEAM_GUI_ADD_MEMBER_PLAYER_NOT_REGISTERED;
+            case INVALID_PLAYER_NAME -> TeamMessages.TEAM_GUI_ADD_MEMBER_INVALID_PLAYER_NAME;
+            case TEAM_NOT_FOUND -> TeamMessages.TEAM_GUI_ADD_MEMBER_TEAM_NOT_FOUND;
+            case TEAM_FULL -> TeamMessages.TEAM_GUI_ADD_MEMBER_TEAM_FULL;
+            case OPERATION_IN_PROGRESS -> TeamMessages.TEAM_GUI_ADD_MEMBER_OPERATION_IN_PROGRESS;
+            case PLAYER_NOT_FOUND -> TeamMessages.TEAM_GUI_ADD_MEMBER_PLAYER_NOT_REGISTERED;
             case PROFILE_SERVICE_UNAVAILABLE ->
-                    MessageConfig.TEAM_GUI_ADD_MEMBER_PROFILE_SERVICE_UNAVAILABLE;
+                    TeamMessages.TEAM_GUI_ADD_MEMBER_PROFILE_SERVICE_UNAVAILABLE;
             case IDENTITY_CONFLICT, ALREADY_MEMBER ->
-                    MessageConfig.TEAM_GUI_ADD_MEMBER_IDENTITY_CONFLICT;
-            case DATABASE_ERROR -> MessageConfig.TEAM_GUI_ADD_MEMBER_DATABASE_ERROR;
+                    TeamMessages.TEAM_GUI_ADD_MEMBER_IDENTITY_CONFLICT;
+            case DATABASE_ERROR -> TeamMessages.TEAM_GUI_ADD_MEMBER_DATABASE_ERROR;
             case ADDED -> "";
         };
     }
@@ -1202,7 +1202,7 @@ public final class TeamManagementMenu implements Listener {
         if (target == null) {
             CoreMessages.sendAdminError(
                     admin,
-                    MessageConfig.TEAM_GUI_THE_TARGET_TEAM_NO_LONGER_EXISTS.replace(
+                    TeamMessages.TEAM_GUI_THE_TARGET_TEAM_NO_LONGER_EXISTS.replace(
                             "%team%", targetTeamName));
             openQuickPlayers(admin, returnPage);
             return;
@@ -1219,7 +1219,7 @@ public final class TeamManagementMenu implements Listener {
                                         case SUCCESS -> {
                                             CoreMessages.sendAdminSuccess(
                                                     admin,
-                                                    MessageConfig.TEAM_GUI_PLAYER_MOVED
+                                                    TeamMessages.TEAM_GUI_PLAYER_MOVED
                                                             .replace("%player%", memberName)
                                                             .replace(
                                                                     "%color%",
@@ -1231,27 +1231,27 @@ public final class TeamManagementMenu implements Listener {
                                         case SAME_TEAM -> {
                                             CoreMessages.sendAdminError(
                                                     admin,
-                                                    MessageConfig
+                                                    TeamMessages
                                                             .TEAM_GUI_THE_PLAYER_IS_ALREADY_ON_THE_TEAM);
                                             openTargetTeams(admin, uuid, memberName, returnPage);
                                         }
                                         case TARGET_FULL -> {
                                             CoreMessages.sendAdminError(
                                                     admin,
-                                                    MessageConfig.TEAM_GUI_THE_TARGET_TEAM_IS_FULL);
+                                                    TeamMessages.TEAM_GUI_THE_TARGET_TEAM_IS_FULL);
                                             openTargetTeams(admin, uuid, memberName, returnPage);
                                         }
                                         case TEAM_ACTIVE -> {
                                             CoreMessages.sendAdminError(
                                                     admin,
-                                                    MessageConfig
+                                                    TeamMessages
                                                             .TEAM_GUI_THE_PLAYER_S_CURRENT_TEAM_OR_TARGET_TEAM_IS_CURRENTLY_IN_THE_GAME_CANNOT_CHANGE_TEAMS);
                                             openTargetTeams(admin, uuid, memberName, returnPage);
                                         }
                                         case INVALID_PLAYER, FAILED -> {
                                             CoreMessages.sendAdminError(
                                                     admin,
-                                                    MessageConfig
+                                                    TeamMessages
                                                             .TEAM_GUI_TEAM_TRANSFER_FAILED_DATABASE_OR_PLAYER_STATUS_MAY_HAVE_CHANGED);
                                             openTargetTeams(admin, uuid, memberName, returnPage);
                                         }
@@ -1270,7 +1270,7 @@ public final class TeamManagementMenu implements Listener {
         team.teleportAllPlayers(admin.getLocation());
         CoreMessages.sendAdminSuccess(
                 admin,
-                MessageConfig.TEAM_GUI_TEAM_TELEPORTED
+                TeamMessages.TEAM_GUI_TEAM_TELEPORTED
                         .replace("%color%", team.getColorCode())
                         .replace("%team%", team.getName())
                         .replace("%count%", String.valueOf(online)));

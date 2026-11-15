@@ -2,7 +2,7 @@ package ink.ziip.championshipscore.api.game.sulfursoccer.runtime;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.SulfurSoccerMessages;
 
 import io.papermc.paper.event.entity.EntityCollideWithEntityEvent;
 import io.papermc.paper.event.entity.EntityKnockbackEvent;
@@ -135,7 +135,7 @@ public final class SulfurSoccerHandler extends BaseListener {
                 || !area.canKick(event.getPlayer())
                 || !area.validPearlDestination(event.getTo())) {
             event.setCancelled(true);
-            event.getPlayer().sendMessage(MessageConfig.SULFUR_SOCCER_PEARL_REJECTED);
+            event.getPlayer().sendMessage(SulfurSoccerMessages.SULFUR_SOCCER_PEARL_REJECTED);
         } else event.getPlayer().setFallDistance(0);
     }
 

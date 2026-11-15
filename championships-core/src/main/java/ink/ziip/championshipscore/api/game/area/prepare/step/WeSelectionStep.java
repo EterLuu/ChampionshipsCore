@@ -4,7 +4,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
 import net.kyori.adventure.text.Component;
@@ -54,7 +54,7 @@ public class WeSelectionStep extends PrepareStep {
             selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, true);
         } catch (Exception e) {
             return CoreMessages.formatAdminError(
-                    MessageConfig.MAP_EDITOR_STEP_SELECT_TWO_WORLDEDIT_ENDPOINTS);
+                    MapEditorMessages.MAP_EDITOR_STEP_SELECT_TWO_WORLDEDIT_ENDPOINTS);
         }
         setter.accept(session.getTarget(), selection);
         session.markDirty();

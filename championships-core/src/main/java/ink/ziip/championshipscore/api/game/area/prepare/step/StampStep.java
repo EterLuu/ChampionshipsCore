@@ -8,7 +8,7 @@ import ink.ziip.championshipscore.api.game.arena.ArenaGrid;
 import ink.ziip.championshipscore.api.game.arena.ArenaPreparer;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -200,27 +200,28 @@ public class StampStep extends PrepareStep {
     public String stamp(@NotNull PrepareSession session, @NotNull Player player, int count) {
         if (count < 1) {
             return CoreMessages.formatAdminError(
-                    MessageConfig.MAP_EDITOR_STEP_ARENA_COUNT_POSITIVE);
+                    MapEditorMessages.MAP_EDITOR_STEP_ARENA_COUNT_POSITIVE);
         }
         if (count > maxCount) {
             return CoreMessages.formatAdminError(
-                    MessageConfig.MAP_EDITOR_STEP_ARENA_MAX_COUNT.replace(
+                    MapEditorMessages.MAP_EDITOR_STEP_ARENA_MAX_COUNT.replace(
                             "%max%", String.valueOf(maxCount)));
         }
         File file = fileResolver.apply(session.getPlugin());
         if (!file.isFile()) {
             return CoreMessages.formatAdminError(
-                    MessageConfig.MAP_EDITOR_STEP_ARENA_TEMPLATE_MISSING);
+                    MapEditorMessages.MAP_EDITOR_STEP_ARENA_TEMPLATE_MISSING);
         }
         String worldName = session.getTarget().worldName();
         World world = Bukkit.getWorld(worldName);
         if (world == null) {
             return CoreMessages.formatAdminError(
-                    MessageConfig.MAP_EDITOR_STEP_WORLD_NOT_LOADED.replace("%world%", worldName));
+                    MapEditorMessages.MAP_EDITOR_STEP_WORLD_NOT_LOADED.replace(
+                            "%world%", worldName));
         }
         if (!session.getTarget().canSaveMap()) {
             return CoreMessages.formatAdminError(
-                    MessageConfig.MAP_EDITOR_STEP_ARENA_INSTANCE_RUNNING);
+                    MapEditorMessages.MAP_EDITOR_STEP_ARENA_INSTANCE_RUNNING);
         }
         ArenaGrid resolvedGrid;
         try {
@@ -234,7 +235,7 @@ public class StampStep extends PrepareStep {
             if (sizeWriter != null) sizeWriter.accept(session.getTarget(), size);
         } catch (Exception e) {
             return CoreMessages.formatAdminError(
-                    MessageConfig.MAP_EDITOR_STEP_ARENA_GENERATE_FAILED.replace(
+                    MapEditorMessages.MAP_EDITOR_STEP_ARENA_GENERATE_FAILED.replace(
                             "%detail%", e.getMessage()));
         }
 
@@ -246,10 +247,10 @@ public class StampStep extends PrepareStep {
         session.setStamped(true);
         return CoreMessages.formatAdminSuccess(
                 keepSourceCopy
-                        ? MessageConfig.MAP_EDITOR_STEP_ARENA_TOTAL_SET
+                        ? MapEditorMessages.MAP_EDITOR_STEP_ARENA_TOTAL_SET
                                 .replace("%count%", String.valueOf(count))
                                 .replace("%copies%", String.valueOf(Math.max(0, count - 1)))
-                        : MessageConfig.MAP_EDITOR_STEP_ARENA_GENERATED.replace(
+                        : MapEditorMessages.MAP_EDITOR_STEP_ARENA_GENERATED.replace(
                                 "%count%", String.valueOf(count)));
     }
 }

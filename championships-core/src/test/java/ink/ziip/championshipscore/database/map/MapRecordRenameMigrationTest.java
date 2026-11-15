@@ -25,25 +25,25 @@ class MapRecordRenameMigrationTest {
                 MapRecordRenameMigration.migrate(
                         connection, GameTypeEnum.AceRace, "acerace", "clouds", "王牌竞速", "clouds");
 
-        assertEquals(1, counts.playerPoints());
-        assertEquals(2, counts.dailyResults());
-        assertEquals(4, counts.dailyRecords());
-        assertEquals(List.of("clouds", "AceRace", "王牌竞速"), calls.get(0).parameters());
-        assertEquals(List.of("clouds", "AceRace", "acerace"), calls.get(1).parameters());
+        assertEquals(new MapRecordRenameMigration.Counts(1, 2, 4, 3, 0), counts);
+        assertEquals(
+                List.of(
+                        List.of("clouds", "AceRace", "王牌竞速"),
+                        List.of("clouds", "AceRace", "acerace"),
+                        List.of("clouds", "AceRace", "acerace"),
+                        List.of("AceRace", "acerace"),
+                        List.of("clouds", "AceRace", "acerace"),
+                        List.of("AceRace", "acerace")),
+                calls.stream().map(SqlCall::parameters).toList());
         assertTrue(calls.get(2).sql().contains("ON DUPLICATE KEY UPDATE"));
         assertTrue(calls.get(2).sql().contains("FROM `daily_player_records` AS source"));
         assertTrue(calls.get(2).sql().contains("`daily_player_records`.`durationMs`"));
-        assertEquals(List.of("clouds", "AceRace", "acerace"), calls.get(2).parameters());
-        assertEquals(List.of("AceRace", "acerace"), calls.get(3).parameters());
         assertTrue(calls.get(4).sql().contains("INSERT INTO `daily_map_player_stats`"));
         assertTrue(
                 calls.get(4)
                         .sql()
                         .contains(
                                 "`gamesPlayed`=`daily_map_player_stats`.`gamesPlayed`+VALUES(`gamesPlayed`)"));
-        assertEquals(List.of("clouds", "AceRace", "acerace"), calls.get(4).parameters());
-        assertEquals(List.of("AceRace", "acerace"), calls.get(5).parameters());
-        assertEquals(3, counts.dailyMapStats());
     }
 
     private static Connection connection(List<SqlCall> calls) {

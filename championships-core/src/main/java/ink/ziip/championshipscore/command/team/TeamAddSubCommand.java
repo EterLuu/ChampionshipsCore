@@ -1,7 +1,9 @@
 package ink.ziip.championshipscore.command.team;
 
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.AdminMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.TeamMessages;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -35,14 +37,14 @@ public class TeamAddSubCommand extends BaseSubCommand {
                         created -> {
                             String message =
                                     (created
-                                                    ? MessageConfig.TEAM_SUCCESSFULLY_ADDED
-                                                    : MessageConfig.TEAM_ADDED_FAILED)
+                                                    ? TeamMessages.TEAM_SUCCESSFULLY_ADDED
+                                                    : TeamMessages.TEAM_ADDED_FAILED)
                                             .replace("%team%", args[0]);
                             if (!created)
                                 message =
                                         message.replace(
                                                 "%reason%",
-                                                MessageConfig.REASON_TEAM_ALREADY_EXIST);
+                                                AdminMessages.REASON_TEAM_ALREADY_EXIST);
                             sender.sendMessage(message);
                         });
         return true;

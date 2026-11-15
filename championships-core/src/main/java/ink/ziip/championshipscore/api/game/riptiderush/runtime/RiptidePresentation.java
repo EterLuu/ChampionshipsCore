@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.game.riptiderush.runtime;
 import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptideColorFloorRun;
 import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptideDodgeRun;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.RiptideRushMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 
 import net.kyori.adventure.text.Component;
@@ -21,12 +22,12 @@ final class RiptidePresentation {
         Component title =
                 LegacyText.component(
                         run.preparing()
-                                ? MessageConfig.RIPTIDE_RUSH_FLOOR_INTRO_TITLE
-                                : MessageConfig.RIPTIDE_RUSH_FLOOR_TITLE.replace(
+                                ? RiptideRushMessages.RIPTIDE_RUSH_FLOOR_INTRO_TITLE
+                                : RiptideRushMessages.RIPTIDE_RUSH_FLOOR_TITLE.replace(
                                         "%seconds%", seconds(run.remainingTicks())));
         Component actionbar =
                 LegacyText.component(
-                                MessageConfig.RIPTIDE_RUSH_FLOOR_ACTIONBAR
+                                RiptideRushMessages.RIPTIDE_RUSH_FLOOR_ACTIONBAR
                                         .replace("%round%", String.valueOf(run.roundNumber()))
                                         .replace("%rounds%", String.valueOf(run.roundCount())))
                         .replaceText(
@@ -51,19 +52,19 @@ final class RiptidePresentation {
         if (!accelerationBreak && !shieldBreak) return target;
         return LegacyText.component(
                         (accelerationBreak
-                                        ? MessageConfig.RIPTIDE_RUSH_SPEED_SHIELD_BREAK
-                                        : MessageConfig.RIPTIDE_RUSH_SHIELD_BROKEN)
+                                        ? RiptideRushMessages.RIPTIDE_RUSH_SPEED_SHIELD_BREAK
+                                        : RiptideRushMessages.RIPTIDE_RUSH_SHIELD_BROKEN)
                                 + MessageConfig.codeText("riptide-presentation.floor-separator"))
                 .append(target);
     }
 
     static String dodgeTitle(RiptideDodgeRun run) {
-        return MessageConfig.RIPTIDE_RUSH_DODGE_TITLE.replace(
+        return RiptideRushMessages.RIPTIDE_RUSH_DODGE_TITLE.replace(
                 "%direction%", run.direction().arrivalSide());
     }
 
     static String dodgeActionbar(int remainingTicks) {
-        return MessageConfig.RIPTIDE_RUSH_DODGE_ACTIONBAR.replace(
+        return RiptideRushMessages.RIPTIDE_RUSH_DODGE_ACTIONBAR.replace(
                 "%seconds%", seconds(remainingTicks));
     }
 

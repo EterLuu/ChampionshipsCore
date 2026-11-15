@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.configuration.config;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
@@ -128,11 +130,5 @@ class ConfigurationLoadingTest {
         loader.setAccessible(true);
         loader.set(plugin, ConfigurationLoadingTest.class.getClassLoader());
         return plugin;
-    }
-
-    private static <T> T allocate(Class<T> type) throws Exception {
-        var field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-        field.setAccessible(true);
-        return type.cast(((sun.misc.Unsafe) field.get(null)).allocateInstance(type));
     }
 }

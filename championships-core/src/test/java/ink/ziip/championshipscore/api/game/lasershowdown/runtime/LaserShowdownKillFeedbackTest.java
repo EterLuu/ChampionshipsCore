@@ -1,12 +1,14 @@
 package ink.ziip.championshipscore.api.game.lasershowdown.runtime;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+import static ink.ziip.championshipscore.support.TestObjects.set;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Field;
 import java.util.List;
 import java.util.UUID;
 
@@ -47,26 +49,9 @@ class LaserShowdownKillFeedbackTest {
     }
 
     private static LaserShowdownTeamArea area() throws Exception {
-        var field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-        field.setAccessible(true);
-        var area =
-                (LaserShowdownTeamArea)
-                        ((sun.misc.Unsafe) field.get(null))
-                                .allocateInstance(LaserShowdownTeamArea.class);
+
+        var area = allocate(LaserShowdownTeamArea.class);
         set(area, "startGeneration", 7L);
         return area;
-    }
-
-    private static void set(Object target, String name, Object value) throws Exception {
-        for (Class<?> type = target.getClass(); type != null; type = type.getSuperclass()) {
-            try {
-                Field field = type.getDeclaredField(name);
-                field.setAccessible(true);
-                field.set(target, value);
-                return;
-            } catch (NoSuchFieldException ignored) {
-            }
-        }
-        throw new NoSuchFieldException(name);
     }
 }

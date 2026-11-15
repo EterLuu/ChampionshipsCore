@@ -12,7 +12,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.gui.ListStepGui;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.GuiText;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -76,7 +76,7 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
         int defaultFallY = gate.pos1().getBlockY();
         CoreMessages.sendAdminInfo(
                 player,
-                MessageConfig.MAP_EDITOR_ACE_PROGRESS_FALL_INPUT.replace(
+                MapEditorMessages.MAP_EDITOR_ACE_PROGRESS_FALL_INPUT.replace(
                         "%fall%", String.valueOf(defaultFallY)));
         AnvilInputGui.openInteger(
                 player,
@@ -104,7 +104,7 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
                                     reload(session);
                                     CoreMessages.sendAdminSuccess(
                                             player,
-                                            MessageConfig.MAP_EDITOR_ACE_PROGRESS_ADDED
+                                            MapEditorMessages.MAP_EDITOR_ACE_PROGRESS_ADDED
                                                     .replace("%order%", String.valueOf(order))
                                                     .replace("%fall%", String.valueOf(fallY))
                                                     .replace(
@@ -175,7 +175,7 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
         AceRaceEquipment current = AceRaceEquipment.fromConfig(existing.getString("equipment"));
         CoreMessages.sendAdminInfo(
                 player,
-                MessageConfig.MAP_EDITOR_ACE_PROGRESS_EDIT_INPUT.replace(
+                MapEditorMessages.MAP_EDITOR_ACE_PROGRESS_EDIT_INPUT.replace(
                         "%fall%", String.valueOf(defaultFallY)));
         AnvilInputGui.openInteger(
                 player,
@@ -196,7 +196,7 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
                                     if (progressPoint == null) {
                                         CoreMessages.sendAdminError(
                                                 player,
-                                                MessageConfig.MAP_EDITOR_ACE_PROGRESS_MISSING);
+                                                MapEditorMessages.MAP_EDITOR_ACE_PROGRESS_MISSING);
                                         return;
                                     }
                                     writeProgressPoint(
@@ -205,7 +205,7 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
                                     reload(session);
                                     CoreMessages.sendAdminSuccess(
                                             player,
-                                            MessageConfig.MAP_EDITOR_ACE_PROGRESS_UPDATED
+                                            MapEditorMessages.MAP_EDITOR_ACE_PROGRESS_UPDATED
                                                     .replace("%order%", String.valueOf(order))
                                                     .replace("%fall%", String.valueOf(fallY))
                                                     .replace(
@@ -237,7 +237,7 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
     public void editEquipment(@NotNull PrepareSession session, @NotNull Player player, int index) {
         ConfigurationSection progressPoint = progressPoint(session, index);
         if (progressPoint == null) {
-            CoreMessages.sendAdminError(player, MessageConfig.MAP_EDITOR_ACE_PROGRESS_MISSING);
+            CoreMessages.sendAdminError(player, MapEditorMessages.MAP_EDITOR_ACE_PROGRESS_MISSING);
             return;
         }
         AceRaceEquipment current =
@@ -250,7 +250,7 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
                     ConfigurationSection selected = progressPoint(session, index);
                     if (selected == null) {
                         CoreMessages.sendAdminError(
-                                player, MessageConfig.MAP_EDITOR_ACE_PROGRESS_MISSING);
+                                player, MapEditorMessages.MAP_EDITOR_ACE_PROGRESS_MISSING);
                         return;
                     }
                     selected.set("equipment", equipment.configValue());
@@ -258,7 +258,7 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
                     reload(session);
                     CoreMessages.sendAdminSuccess(
                             player,
-                            MessageConfig.MAP_EDITOR_ACE_PROGRESS_EQUIPMENT_UPDATED
+                            MapEditorMessages.MAP_EDITOR_ACE_PROGRESS_EQUIPMENT_UPDATED
                                     .replace(
                                             "%order%",
                                             String.valueOf(selected.getInt("order", index + 1)))
@@ -274,7 +274,7 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
         List<String> keys = orderedKeys(root);
         if (index < 0 || index >= keys.size() || newOrder < 1 || newOrder > keys.size())
             return CoreMessages.formatAdminError(
-                    MessageConfig.MAP_EDITOR_STEP_SERIAL_NUMBER_BETWEEN.replace(
+                    MapEditorMessages.MAP_EDITOR_STEP_SERIAL_NUMBER_BETWEEN.replace(
                             "%max%", String.valueOf(keys.size())));
         String moved = keys.remove(index);
         keys.add(newOrder - 1, moved);
@@ -282,7 +282,7 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
         session.markDirty();
         reload(session);
         return CoreMessages.formatAdminSuccess(
-                MessageConfig.MAP_EDITOR_ACE_PROGRESS_ADJUSTED.replace(
+                MapEditorMessages.MAP_EDITOR_ACE_PROGRESS_ADJUSTED.replace(
                         "%order%", String.valueOf(newOrder)));
     }
 
@@ -297,7 +297,7 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
         session.markDirty();
         reload(session);
         return CoreMessages.formatAdminSuccess(
-                MessageConfig.MAP_EDITOR_ACE_PROGRESS_DELETED.replace(
+                MapEditorMessages.MAP_EDITOR_ACE_PROGRESS_DELETED.replace(
                         "%index%", String.valueOf(index + 1)));
     }
 
@@ -306,14 +306,16 @@ public final class AceRaceProgressPointListStep extends PrepareStep {
         try {
             selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, true);
         } catch (Exception exception) {
-            CoreMessages.sendAdminError(player, MessageConfig.MAP_EDITOR_ACE_PROGRESS_SELECT_FIRST);
+            CoreMessages.sendAdminError(
+                    player, MapEditorMessages.MAP_EDITOR_ACE_PROGRESS_SELECT_FIRST);
             return null;
         }
         int spanX = Math.abs(selection[0].getBlockX() - selection[1].getBlockX());
         int spanY = Math.abs(selection[0].getBlockY() - selection[1].getBlockY());
         int spanZ = Math.abs(selection[0].getBlockZ() - selection[1].getBlockZ());
         if (spanY != 0 || (spanX > 0 && spanZ > 0) || (spanX == 0 && spanZ == 0)) {
-            CoreMessages.sendAdminError(player, MessageConfig.MAP_EDITOR_ACE_PROGRESS_LINE_INVALID);
+            CoreMessages.sendAdminError(
+                    player, MapEditorMessages.MAP_EDITOR_ACE_PROGRESS_LINE_INVALID);
             return null;
         }
         return new Gate(selection[0].clone(), selection[1].clone());

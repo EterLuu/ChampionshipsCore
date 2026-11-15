@@ -1,0 +1,31 @@
+package ink.ziip.championshipscore.api.event;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+
+class EventStateStoreTest {
+    @Test
+    void activeEventAllowsOnlyItsConfiguredGames() {
+        EventStateStore.ActiveEvent event =
+                new EventStateStore.ActiveEvent(
+                        "id",
+                        "s4cc",
+                        "赛事",
+                        false,
+                        List.of(
+                                new EventStateStore.EventGame(GameTypeEnum.Bingo, "default", "宾果"),
+                                new EventStateStore.EventGame(
+                                        GameTypeEnum.BuildMart, "default", "建造市场")),
+                        List.of(1D, 1.5D));
+
+        assertTrue(event.allows(GameTypeEnum.Bingo));
+        assertTrue(event.allows(GameTypeEnum.BuildMart));
+        assertFalse(event.allows(GameTypeEnum.TGTTOS));
+    }
+}

@@ -5,7 +5,7 @@ import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.game.battlebox.model.BBWeaponKitEnum;
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.BattleBoxMessages;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -68,11 +68,11 @@ public class BattleBoxHandler extends BaseListener {
                         if (type != null) {
                             if (battleBoxArea.setPlayerWeaponKit(player, type)) {
                                 player.sendMessage(
-                                        MessageConfig.BATTLE_BOX_KIT_CHOOSE.replace(
+                                        BattleBoxMessages.BATTLE_BOX_KIT_CHOOSE.replace(
                                                 "%kit%", type.toString()));
                             } else {
                                 player.sendMessage(
-                                        MessageConfig.BATTLE_BOX_KIT_ALREADY_CHOOSE.replace(
+                                        BattleBoxMessages.BATTLE_BOX_KIT_ALREADY_CHOOSE.replace(
                                                 "%kit%", type.toString()));
                             }
                         }

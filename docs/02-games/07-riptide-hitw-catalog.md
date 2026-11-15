@@ -4,7 +4,7 @@
 
 ## 来源与适配
 
-内置 [目录资源](../../championships-core/src/main/resources/riptiderush/hitw-walls.json) 为 v4，来源于 [MCC Island Wiki 的 Hole in the Wall 页面](https://mccisland.wiki/Hole_in_the_Wall) 修订 32764，包含 13 个子地图的 354 条来源记录。来源 E/D/X 标签标识来源分组，目录的难度值按有效通行截面积评级。
+内置 [目录资源](../../championships-core/src/main/resources/riptiderush/hitw-walls.json) 为 v5，包含 354 条 Wiki 来源记录和 10 个 ChampionshipsCore 原创墙体。Wiki 记录来源于 [MCC Island Wiki 的 Hole in the Wall 页面](https://mccisland.wiki/Hole_in_the_Wall) 修订 32764，覆盖 13 个子地图。来源 E/D/X 标签标识来源分组，目录的难度值按有效通行截面积评级。
 
 内置建筑快照宽 15 格、高 5 格，包含完整 BlockData 与通行元数据。管理员自建建筑按编辑器尺寸校验，不受该内置尺寸描述约束。保存尺寸、木筏内的可通行区域和实体碰撞空间分别处理，不能用建筑外框宽度代替可通行面积。
 
@@ -23,6 +23,27 @@
 运行时读取关卡池保存的 `difficulty`（1–3），编辑器允许管理员调整；保存建筑不会自动重新计算难度。修改后的建筑需要重新评估难度并试玩。
 
 连续墙还需检查换位和动作时间。只有快照完全匹配目录的建筑才使用目录通行元数据，改过的建筑不能沿用原图洞口判断；未知洞口的自建建筑仅单独出现。
+
+## 原创墙体
+
+以下 10 个墙体同时进入穿越与侧向共用的 PASS 池，每局同一建筑最多使用一次。洞口均位于七格甲板内，支持左右镜像；难度仍按有效通行面积确定。
+
+| ID | 名称 | 难度 | 通行面积（格²） |
+| --- | --- | --- | --- |
+| `riptide_tidal_arch` | 潮汐拱廊 | 1 | 9 |
+| `riptide_twin_harbor` | 双港分流 | 1 | 10 |
+| `riptide_offset_steps` | 错阶航道 | 1 | 6 |
+| `riptide_split_levels` | 高低岔口 | 1 | 6 |
+| `riptide_low_bridge` | 低桥伏行 | 2 | 4.5 |
+| `riptide_harbor_notch` | 半阶舷窗 | 2 | 3.0 |
+| `riptide_jump_fork` | 双礁跃门 | 2 | 4 |
+| `riptide_duck_or_jump` | 俯跃双选 | 2 | 3.5 |
+| `riptide_needle_step` | 窄阶潜口 | 3 | 1.5 |
+| `riptide_low_keyhole` | 偏心锁眼 | 3 | 1.5 |
+
+潮汐拱廊提供中央三格高通道；双港分流提供两侧不同净高的平走口。错阶航道组合半格台阶与一格跳口，高低岔口组合平走口与双格跳口。低桥伏行需要中央潜行；半阶舷窗需要登上半格台阶后潜行。双礁跃门提供左右单格跳口；俯跃双选可选潜行或跳跃；窄阶潜口与偏心锁眼分别考验半阶潜行和偏侧潜行。
+
+已有地图的池是独立快照。加入新设计时，仅添加缺失 ID 的条目，保留原条目、权重、启停、建筑、配额和布局；确认添加后将 `course.hitw-catalog-version` 标为 5。插件不会自动覆盖或补写已保存的池。
 
 ## 验证
 

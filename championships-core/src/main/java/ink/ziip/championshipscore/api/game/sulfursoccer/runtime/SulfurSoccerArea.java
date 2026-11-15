@@ -13,7 +13,9 @@ import ink.ziip.championshipscore.api.game.sulfursoccer.mechanics.SulfurSoccerSh
 import ink.ziip.championshipscore.api.game.sulfursoccer.mechanics.SulfurSoccerSpawns;
 import ink.ziip.championshipscore.api.game.sulfursoccer.model.SulfurSoccerSide;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.config.message.GameMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.SulfurSoccerMessages;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
 import org.bukkit.*;
@@ -141,16 +143,16 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
     public String getStateText() {
         if (getGameStageEnum() == GameStageEnum.END)
             return state(
-                    MessageConfig.SULFUR_SOCCER_STATE_END,
+                    SulfurSoccerMessages.SULFUR_SOCCER_STATE_END,
                     MessageConfig.codeText("sulfur-soccer-area.get-state-text-1"));
         if (paused)
             return state(
-                    MessageConfig.SULFUR_SOCCER_STATE_PAUSED,
+                    SulfurSoccerMessages.SULFUR_SOCCER_STATE_PAUSED,
                     MessageConfig.codeText("sulfur-soccer-area.get-state-text-2"));
         if (isWarmingUp())
             return scoreText(
                     state(
-                                    MessageConfig.SULFUR_SOCCER_STATE_WARMUP,
+                                    SulfurSoccerMessages.SULFUR_SOCCER_STATE_WARMUP,
                                     MessageConfig.codeText("sulfur-soccer-area.get-state-text-3"))
                             .replace("%time%", warmupTime()));
         if (isShootout()) {
@@ -162,13 +164,13 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
                                     : MessageConfig.codeText("sulfur-soccer-area.get-state-text-4");
             return penaltyText(
                             state(
-                                    MessageConfig.SULFUR_SOCCER_STATE_SHOOTOUT,
+                                    SulfurSoccerMessages.SULFUR_SOCCER_STATE_SHOOTOUT,
                                     MessageConfig.codeText("sulfur-soccer-area.get-state-text-7")))
                     .replace("%phase%", phase);
         }
         return scoreText(
                 state(
-                        MessageConfig.SULFUR_SOCCER_STATE_REGULATION,
+                        SulfurSoccerMessages.SULFUR_SOCCER_STATE_REGULATION,
                         MessageConfig.codeText("sulfur-soccer-area.get-state-text-8")));
     }
 
@@ -300,7 +302,7 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
                     MessageConfig.codeText("sulfur-soccer-area.start-game-preparation-1"),
                     failure.getMessage());
             sendMessageToAllGamePlayers(
-                    MessageConfig.SULFUR_SOCCER_START_FAILED + " " + failure.getMessage());
+                    SulfurSoccerMessages.SULFUR_SOCCER_START_FAILED + " " + failure.getMessage());
             abortAndReset();
             return;
         }
@@ -332,7 +334,7 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
                     MessageConfig.codeText("sulfur-soccer-area.start-game-preparation-2"),
                     failure.getMessage());
             sendMessageToAllGamePlayers(
-                    MessageConfig.SULFUR_SOCCER_START_FAILED + " " + failure.getMessage());
+                    SulfurSoccerMessages.SULFUR_SOCCER_START_FAILED + " " + failure.getMessage());
             abortAndReset();
             return;
         }
@@ -452,10 +454,10 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
                 () ->
                         startFinalCountdown(
                                 getGameConfig().getKickoffCountdown(),
-                                MessageConfig.GAME_SULFUR_SOCCER,
+                                GameMessages.GAME_SULFUR_SOCCER,
                                 openingKickoff
-                                        ? MessageConfig.SULFUR_SOCCER_OPENING_TITLE
-                                        : MessageConfig.SULFUR_SOCCER_RESTART_TITLE,
+                                        ? SulfurSoccerMessages.SULFUR_SOCCER_OPENING_TITLE
+                                        : SulfurSoccerMessages.SULFUR_SOCCER_RESTART_TITLE,
                                 "",
                                 this::beginPlay);
         if (showGoal) {
@@ -485,7 +487,7 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
     @Override
     protected String getFinalCountdownTitle(int seconds) {
         return openingKickoff
-                ? MessageConfig.SULFUR_SOCCER_UPCOMING_TITLE
+                ? SulfurSoccerMessages.SULFUR_SOCCER_UPCOMING_TITLE
                 : super.getFinalCountdownTitle(seconds);
     }
 
@@ -504,7 +506,7 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
         startPearlCooldown();
         spawnBall();
         tickTask = scheduler.runTaskTimer(plugin, this::tick, 1L, 1L);
-        sendMessageToAllGamePlayers(MessageConfig.SULFUR_SOCCER_WARMUP_START);
+        sendMessageToAllGamePlayers(SulfurSoccerMessages.SULFUR_SOCCER_WARMUP_START);
         updateScore();
     }
 
@@ -587,7 +589,7 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
             removeBall();
             removePearls();
             if (match.winner() != null) {
-                sendMessageToAllGamePlayers(scoreText(MessageConfig.SULFUR_SOCCER_TIME_UP));
+                sendMessageToAllGamePlayers(scoreText(SulfurSoccerMessages.SULFUR_SOCCER_TIME_UP));
                 finishWithWinner(match.winner());
             } else beginShootout();
             return;
@@ -636,11 +638,11 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
         ChampionshipTeam scoringTeam =
                 defending == SulfurSoccerSide.RIGHT ? leftChampionshipTeam : rightChampionshipTeam;
         sendMessageToAllGamePlayers(
-                scoreText(MessageConfig.SULFUR_SOCCER_GOAL)
+                scoreText(SulfurSoccerMessages.SULFUR_SOCCER_GOAL)
                         .replace("%team%", scoringTeam.getColoredName()));
         sendTitleToAllGamePlayers(
-                MessageConfig.SULFUR_SOCCER_GOAL_TITLE,
-                scoreText(MessageConfig.SULFUR_SOCCER_GOAL_SUBTITLE)
+                SulfurSoccerMessages.SULFUR_SOCCER_GOAL_TITLE,
+                scoreText(SulfurSoccerMessages.SULFUR_SOCCER_GOAL_SUBTITLE)
                         .replace("%team%", scoringTeam.getColoredName()));
         playSoundToAllGamePlayers(Sound.ENTITY_PLAYER_LEVELUP, 1F, 1F);
         if (match.winner() != null) {
@@ -653,7 +655,7 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
     private void resetLostBall() {
         if (isWarmingUp()) spawnBall();
         else {
-            sendMessageToAllGamePlayers(MessageConfig.SULFUR_SOCCER_BALL_RESET);
+            sendMessageToAllGamePlayers(SulfurSoccerMessages.SULFUR_SOCCER_BALL_RESET);
             prepareKickoff();
         }
     }
@@ -706,7 +708,7 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
                         .toList();
         shootout = new SulfurSoccerShootout(right, left);
         setGameStageEnum(GameStageEnum.PROGRESS);
-        sendMessageToAllGamePlayers(scoreText(MessageConfig.SULFUR_SOCCER_SHOOTOUT_START));
+        sendMessageToAllGamePlayers(scoreText(SulfurSoccerMessages.SULFUR_SOCCER_SHOOTOUT_START));
         preparePenalty();
     }
 
@@ -720,7 +722,7 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
         spawnBall(layout.ball().toLocation(Bukkit.getWorld(getWorldName())));
         // An unstruck cube stays still throughout preparation and aiming.
         ball.setGravity(false);
-        sendMessageToAllGamePlayers(penaltyText(MessageConfig.SULFUR_SOCCER_PENALTY_TURN));
+        sendMessageToAllGamePlayers(penaltyText(SulfurSoccerMessages.SULFUR_SOCCER_PENALTY_TURN));
         updateScore();
     }
 
@@ -767,11 +769,11 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
         String result =
                 penaltyText(
                         scored
-                                ? MessageConfig.SULFUR_SOCCER_PENALTY_GOAL
-                                : MessageConfig.SULFUR_SOCCER_PENALTY_MISS);
+                                ? SulfurSoccerMessages.SULFUR_SOCCER_PENALTY_GOAL
+                                : SulfurSoccerMessages.SULFUR_SOCCER_PENALTY_MISS);
         shootout.finishAttempt(scored);
         sendMessageToAllGamePlayers(result);
-        sendMessageToAllGamePlayers(penaltyText(MessageConfig.SULFUR_SOCCER_PENALTY_SCORE));
+        sendMessageToAllGamePlayers(penaltyText(SulfurSoccerMessages.SULFUR_SOCCER_PENALTY_SCORE));
         if (shootout.winner() != null) finishWithWinner(shootout.winner());
         else preparePenalty();
     }
@@ -841,7 +843,9 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
             previousBallCenter = ball.getBoundingBox().getCenter();
         }
         sendMessageToAllGamePlayers(
-                paused ? MessageConfig.SULFUR_SOCCER_PAUSED : MessageConfig.SULFUR_SOCCER_RESUMED);
+                paused
+                        ? SulfurSoccerMessages.SULFUR_SOCCER_PAUSED
+                        : SulfurSoccerMessages.SULFUR_SOCCER_RESUMED);
         updateScore();
     }
 
@@ -876,18 +880,18 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
     private void updateScore() {
         if (isShootout() && !paused) {
             sendActionBarToAllGamePlayers(
-                    penaltyText(MessageConfig.SULFUR_SOCCER_PENALTY_SCORE)
+                    penaltyText(SulfurSoccerMessages.SULFUR_SOCCER_PENALTY_SCORE)
                             + MessageConfig.codeText("sulfur-soccer-area.penalty-separator")
                             + getStateText());
             return;
         }
         String text =
                 paused
-                        ? MessageConfig.SULFUR_SOCCER_PAUSED
+                        ? SulfurSoccerMessages.SULFUR_SOCCER_PAUSED
                         : isWarmingUp()
-                                ? MessageConfig.SULFUR_SOCCER_WARMUP_TIME.replace(
+                                ? SulfurSoccerMessages.SULFUR_SOCCER_WARMUP_TIME.replace(
                                         "%time%", warmupTime())
-                                : MessageConfig.SULFUR_SOCCER_SCORE;
+                                : SulfurSoccerMessages.SULFUR_SOCCER_SCORE;
         sendActionBarToAllGamePlayers(scoreText(text));
     }
 
@@ -1084,25 +1088,27 @@ public final class SulfurSoccerArea extends BasePairedGameInstance {
         if (isSettlementAllowed()) {
             if (champion != null)
                 CoreMessages.sendMessageToAllPlayers(
-                        scoreText(MessageConfig.SULFUR_SOCCER_CHAMPION)
+                        scoreText(SulfurSoccerMessages.SULFUR_SOCCER_CHAMPION)
                                         .replace("%team%", champion.getColoredName())
                                 + (shootout != null
                                         ? " "
                                                 + penaltyText(
-                                                        MessageConfig.SULFUR_SOCCER_PENALTY_SCORE)
+                                                        SulfurSoccerMessages
+                                                                .SULFUR_SOCCER_PENALTY_SCORE)
                                         : ""));
-            else sendMessageToAllGamePlayers(MessageConfig.SULFUR_SOCCER_STOPPED);
+            else sendMessageToAllGamePlayers(SulfurSoccerMessages.SULFUR_SOCCER_STOPPED);
         }
         announceGameEnd(
-                MessageConfig.SULFUR_SOCCER_END_TITLE,
+                SulfurSoccerMessages.SULFUR_SOCCER_END_TITLE,
                 champion == null
                         ? ""
-                        : scoreText(MessageConfig.SULFUR_SOCCER_CHAMPION_SUBTITLE)
+                        : scoreText(SulfurSoccerMessages.SULFUR_SOCCER_CHAMPION_SUBTITLE)
                                         .replace("%team%", champion.getColoredName())
                                 + (shootout != null
                                         ? " "
                                                 + penaltyText(
-                                                        MessageConfig.SULFUR_SOCCER_PENALTY_SCORE)
+                                                        SulfurSoccerMessages
+                                                                .SULFUR_SOCCER_PENALTY_SCORE)
                                         : ""));
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
         resetPlayerHealthFoodEffectLevelInventory();

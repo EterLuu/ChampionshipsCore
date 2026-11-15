@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.command.admin;
 
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.AdminMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -35,7 +36,7 @@ public class AdminTeleportationSubCommand extends BaseSubCommand {
             return true;
         }
         if (!(sender instanceof Player player)) {
-            CoreMessages.sendAdminError(sender, MessageConfig.COMMAND_PLAYER_ONLY);
+            CoreMessages.sendAdminError(sender, AdminMessages.COMMAND_PLAYER_ONLY);
             return true;
         }
         int teleported = 0;
@@ -58,7 +59,7 @@ public class AdminTeleportationSubCommand extends BaseSubCommand {
             ChampionshipTeam team = plugin.getTeamManager().getTeam(target);
             if (team == null) {
                 CoreMessages.sendAdminError(
-                        sender, MessageConfig.ADMIN_TEAM_MISSING.replace("%team%", target));
+                        sender, AdminMessages.ADMIN_TEAM_MISSING.replace("%team%", target));
                 return true;
             }
             for (Player teamPlayer : team.getOnlinePlayers()) {
@@ -68,7 +69,7 @@ public class AdminTeleportationSubCommand extends BaseSubCommand {
 
         CoreMessages.sendAdminSuccess(
                 sender,
-                MessageConfig.ADMIN_TELEPORTED_PLAYERS.replace(
+                AdminMessages.ADMIN_TELEPORTED_PLAYERS.replace(
                         "%count%", String.valueOf(teleported)));
 
         return true;

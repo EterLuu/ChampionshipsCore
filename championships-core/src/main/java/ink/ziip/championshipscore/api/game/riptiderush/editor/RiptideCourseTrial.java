@@ -22,6 +22,7 @@ import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptideRhythmRu
 import ink.ziip.championshipscore.api.game.riptiderush.runtime.RiptideDeparture;
 import ink.ziip.championshipscore.api.game.riptiderush.runtime.RiptideFallCheck;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.RiptideRushMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -99,7 +100,7 @@ public final class RiptideCourseTrial implements Listener {
         this.player = player;
         this.session = session;
         config = (RiptideRushConfig) session.getTarget().config();
-        geometry = config.resolveGeometry();
+        geometry = config.resolveGeometry(plan);
         returnTo = player.getLocation().clone();
         oldMode = player.getGameMode();
         oldFlight = player.getAllowFlight();
@@ -184,24 +185,26 @@ public final class RiptideCourseTrial implements Listener {
                                                                 "riptide-course-trial.start-1"),
                                                         error);
                                         trial.finish(
-                                                MessageConfig.RIPTIDE_RUSH_TRIAL_ABORTED.replace(
-                                                        "%reason%",
-                                                        String.valueOf(error.getMessage())));
+                                                RiptideRushMessages.RIPTIDE_RUSH_TRIAL_ABORTED
+                                                        .replace(
+                                                                "%reason%",
+                                                                String.valueOf(
+                                                                        error.getMessage())));
                                     }
                                 },
                                 1L,
                                 1L);
-        CoreMessages.sendAdminInfo(player, MessageConfig.RIPTIDE_RUSH_TRIAL_START);
+        CoreMessages.sendAdminInfo(player, RiptideRushMessages.RIPTIDE_RUSH_TRIAL_START);
     }
 
     public static void stop(Player player) {
         var trial = ACTIVE.get(player.getUniqueId());
-        if (trial != null) trial.finish(MessageConfig.RIPTIDE_RUSH_TRIAL_EXIT);
+        if (trial != null) trial.finish(RiptideRushMessages.RIPTIDE_RUSH_TRIAL_EXIT);
     }
 
     public static void stopAll() {
         for (var trial : List.copyOf(ACTIVE.values()))
-            trial.finish(MessageConfig.RIPTIDE_RUSH_TRIAL_FINISHED);
+            trial.finish(RiptideRushMessages.RIPTIDE_RUSH_TRIAL_FINISHED);
     }
 
     private void tick() {
@@ -210,14 +213,14 @@ public final class RiptideCourseTrial implements Listener {
                 || manager.getSession(player) != session
                 || !player.hasPermission("cc.admin")
                 || !session.getTarget().worldName().equals(player.getWorld().getName())) {
-            finish(MessageConfig.RIPTIDE_RUSH_TRIAL_EXIT);
+            finish(RiptideRushMessages.RIPTIDE_RUSH_TRIAL_EXIT);
             return;
         }
         if (countdown > 0) {
             if (countdown % 20 == 0)
                 player.sendTitle(
                         Integer.toString(countdown / 20),
-                        MessageConfig.RIPTIDE_RUSH_TRIAL_COUNTDOWN,
+                        RiptideRushMessages.RIPTIDE_RUSH_TRIAL_COUNTDOWN,
                         0,
                         21,
                         0);
@@ -235,7 +238,7 @@ public final class RiptideCourseTrial implements Listener {
                 player.isInWater() || player.isInLava(),
                 RiptideFallCheck.deckPresent(geometry, feet, step),
                 Bukkit.getCurrentTick())) {
-            finish(MessageConfig.RIPTIDE_RUSH_TRIAL_FALL);
+            finish(RiptideRushMessages.RIPTIDE_RUSH_TRIAL_FALL);
             return;
         }
         courseReveal.tick(step);
@@ -245,11 +248,12 @@ public final class RiptideCourseTrial implements Listener {
             if (answer.result() != RiptideMathRun.Result.CORRECT) {
                 finish(
                         answer.result() == RiptideMathRun.Result.WRONG
-                                ? MessageConfig.RIPTIDE_RUSH_TRIAL_WRONG_ANSWER
-                                : MessageConfig.RIPTIDE_RUSH_TRIAL_MISSED_GATE);
+                                ? RiptideRushMessages.RIPTIDE_RUSH_TRIAL_WRONG_ANSWER
+                                : RiptideRushMessages.RIPTIDE_RUSH_TRIAL_MISSED_GATE);
                 return;
             }
-            player.sendActionBar(LegacyText.component(MessageConfig.RIPTIDE_RUSH_MATH_CORRECT));
+            player.sendActionBar(
+                    LegacyText.component(RiptideRushMessages.RIPTIDE_RUSH_MATH_CORRECT));
         }
         answers.clear();
         boolean waitingToDepart = departure.tick();
@@ -258,17 +262,18 @@ public final class RiptideCourseTrial implements Listener {
         } else if (passRun.active()) {
             var sideAnswers = passRun.tick(List.of(player));
             if (sideAnswers.stream().anyMatch(a -> !a.correct())) {
-                finish(MessageConfig.RIPTIDE_RUSH_TRIAL_SIDE_ANSWER);
+                finish(RiptideRushMessages.RIPTIDE_RUSH_TRIAL_SIDE_ANSWER);
                 return;
             }
             if (!sideAnswers.isEmpty())
-                player.sendActionBar(LegacyText.component(MessageConfig.RIPTIDE_RUSH_MATH_CORRECT));
+                player.sendActionBar(
+                        LegacyText.component(RiptideRushMessages.RIPTIDE_RUSH_MATH_CORRECT));
             if (!passRun.active()) departure.begin();
         } else if (floor != null) {
             boolean preparing = floor.preparing();
             if (floor.tick()) {
                 if (!floor.matches(player.getLocation(), geometry, step)) {
-                    finish(MessageConfig.RIPTIDE_RUSH_TRIAL_WRONG_FLOOR);
+                    finish(RiptideRushMessages.RIPTIDE_RUSH_TRIAL_WRONG_FLOOR);
                     return;
                 }
                 if (floor.advance()) paintFloor();
@@ -360,7 +365,7 @@ public final class RiptideCourseTrial implements Listener {
             player.sendActionBar(
                     LegacyText.component(
                             departure.active()
-                                    ? MessageConfig.RIPTIDE_RUSH_DEPARTURE_ACTIONBAR
+                                    ? RiptideRushMessages.RIPTIDE_RUSH_DEPARTURE_ACTIONBAR
                                     : ""));
         if (!departure.active()
                 && !waitingToDepart
@@ -369,10 +374,10 @@ public final class RiptideCourseTrial implements Listener {
                 && dodgeTicks == 0
                 && !passRun.active())
             finish(
-                    MessageConfig.RIPTIDE_RUSH_TRIAL_COMPLETED.replace(
+                    RiptideRushMessages.RIPTIDE_RUSH_TRIAL_COMPLETED.replace(
                             "%seconds%", String.format(Locale.ROOT, "%.2f", elapsed / 20D)));
         else if (elapsed >= config.getTimer() * 20)
-            finish(MessageConfig.RIPTIDE_RUSH_TRIAL_TIMEOUT);
+            finish(RiptideRushMessages.RIPTIDE_RUSH_TRIAL_TIMEOUT);
     }
 
     private Material trail() {
@@ -391,8 +396,8 @@ public final class RiptideCourseTrial implements Listener {
                 Title.title(
                         LegacyText.component(
                                 floor.preparing()
-                                        ? MessageConfig.RIPTIDE_RUSH_FLOOR_INTRO_TITLE
-                                        : MessageConfig.RIPTIDE_RUSH_FLOOR_TITLE.replace(
+                                        ? RiptideRushMessages.RIPTIDE_RUSH_FLOOR_INTRO_TITLE
+                                        : RiptideRushMessages.RIPTIDE_RUSH_FLOOR_TITLE.replace(
                                                 "%seconds%",
                                                 String.format(
                                                         Locale.ROOT,
@@ -405,7 +410,7 @@ public final class RiptideCourseTrial implements Listener {
                                 Duration.ZERO)));
         player.sendActionBar(
                 LegacyText.component(
-                                MessageConfig.RIPTIDE_RUSH_FLOOR_ACTIONBAR
+                                RiptideRushMessages.RIPTIDE_RUSH_FLOOR_ACTIONBAR
                                         .replace("%round%", Integer.toString(floor.roundNumber()))
                                         .replace("%rounds%", Integer.toString(floor.roundCount())))
                         .replaceText(
@@ -428,7 +433,7 @@ public final class RiptideCourseTrial implements Listener {
         dodgeTicks = RiptideDodgeRun.DURATION_TICKS;
         player.resetTitle();
         player.sendTitle(
-                MessageConfig.RIPTIDE_RUSH_DODGE_TITLE.replace(
+                RiptideRushMessages.RIPTIDE_RUSH_DODGE_TITLE.replace(
                         "%direction%", dodgeRun.direction().arrivalSide()),
                 "",
                 0,
@@ -443,7 +448,7 @@ public final class RiptideCourseTrial implements Listener {
         }
         for (var collision : dodgeEntities.tick(dodgeRun)) {
             if (collision.overlaps(player.getBoundingBox())) {
-                finish(MessageConfig.RIPTIDE_RUSH_TRIAL_DODGE);
+                finish(RiptideRushMessages.RIPTIDE_RUSH_TRIAL_DODGE);
                 return;
             }
         }
@@ -454,7 +459,7 @@ public final class RiptideCourseTrial implements Listener {
         } else if (elapsed % 10 == 0)
             player.sendActionBar(
                     LegacyText.component(
-                            MessageConfig.RIPTIDE_RUSH_DODGE_ACTIONBAR.replace(
+                            RiptideRushMessages.RIPTIDE_RUSH_DODGE_ACTIONBAR.replace(
                                     "%seconds%",
                                     String.format(Locale.ROOT, "%.1f", dodgeTicks / 20D))));
     }
@@ -536,7 +541,9 @@ public final class RiptideCourseTrial implements Listener {
         e.setCancelled(true);
         // Restore the saved inventory after the cancelled swap event has finished processing.
         Bukkit.getScheduler()
-                .runTask(session.getPlugin(), () -> finish(MessageConfig.RIPTIDE_RUSH_TRIAL_EXIT));
+                .runTask(
+                        session.getPlugin(),
+                        () -> finish(RiptideRushMessages.RIPTIDE_RUSH_TRIAL_EXIT));
     }
 
     @EventHandler

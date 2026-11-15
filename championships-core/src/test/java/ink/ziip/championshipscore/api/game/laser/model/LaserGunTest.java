@@ -4,6 +4,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.bukkit.Material;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+
+import java.util.List;
 
 class LaserGunTest {
     @Test
@@ -19,32 +23,46 @@ class LaserGunTest {
         assertEquals(99D, LaserGun.RIFLE.damage(LaserGun.HitRegion.HEAD, 80), 1e-9);
     }
 
-    @Test
-    void weaponsExposeTransportRolesAndRequestedMagazineTimings() {
-        assertEquals(Material.GOLDEN_SHOVEL, LaserGun.SNIPER.material());
-        assertEquals(2, LaserGun.SNIPER.magazine());
-        assertEquals(80, LaserGun.SNIPER.reloadTicks());
-        assertEquals(2.75D, LaserGun.SNIPER.shotsPerSecond());
-        assertEquals(12, LaserGun.RIFLE.magazine());
-        assertEquals(50, LaserGun.RIFLE.reloadTicks());
-        assertEquals(35, LaserGun.SMG.magazine());
-        assertEquals(40, LaserGun.SMG.reloadTicks());
-        assertEquals(Material.IRON_SPEAR, LaserGun.SMG.material());
-        assertEquals(60, LaserGun.MACHINE.magazine());
-        assertEquals(70, LaserGun.MACHINE.reloadTicks());
-        assertEquals(Material.STONE_SPEAR, LaserGun.MACHINE.material());
-        assertEquals(7, LaserGun.SHOTGUN.magazine());
-        assertEquals(50, LaserGun.SHOTGUN.reloadTicks());
-        assertEquals(3.5D, LaserGun.SHOTGUN.shotsPerSecond());
-        assertEquals(5.25D, LaserGun.RIFLE.shotsPerSecond());
-        assertEquals(15.0D, LaserGun.SMG.shotsPerSecond());
-        assertEquals(15.0D, LaserGun.MACHINE.shotsPerSecond());
-        assertEquals(8, LaserGun.SHOTGUN.pellets());
-        assertEquals(80, LaserGun.SMG.range());
-        assertEquals(80, LaserGun.MACHINE.range());
-        assertEquals(16, LaserGun.SHOTGUN.range());
-        assertEquals(22.0D, LaserGun.MACHINE.damage(LaserGun.HitRegion.BODY, 0));
-        assertEquals(16.5D, LaserGun.MACHINE.damage(LaserGun.HitRegion.BODY, 80));
+    @ParameterizedTest
+    @CsvSource({
+        "SNIPER, GOLDEN_SHOVEL, 2, 80, 2.75, 1, 80, 160, 90, 75",
+        "RIFLE, COPPER_HOE, 12, 50, 5.25, 1, 80, 110, 34, 22",
+        "SMG, IRON_SPEAR, 35, 40, 15.0, 1, 80, 45, 18, 11",
+        "MACHINE, STONE_SPEAR, 60, 70, 15.0, 1, 80, 45, 22, 14",
+        "SHOTGUN, DIAMOND_AXE, 7, 50, 3.5, 8, 16, 26, 18, 10"
+    })
+    void weaponsUseRequestedTransportMagazineCadenceAndPointBlankDamage(
+            LaserGun gun,
+            Material material,
+            int magazine,
+            int reloadTicks,
+            double shotsPerSecond,
+            int pellets,
+            int range,
+            double head,
+            double body,
+            double legs) {
+        assertEquals(
+                List.of(
+                        material,
+                        magazine,
+                        reloadTicks,
+                        shotsPerSecond,
+                        pellets,
+                        range,
+                        head,
+                        body,
+                        legs),
+                List.of(
+                        gun.material(),
+                        gun.magazine(),
+                        gun.reloadTicks(),
+                        gun.shotsPerSecond(),
+                        gun.pellets(),
+                        gun.range(),
+                        gun.damage(LaserGun.HitRegion.HEAD, 0),
+                        gun.damage(LaserGun.HitRegion.BODY, 0),
+                        gun.damage(LaserGun.HitRegion.LEGS, 0)));
     }
 
     @Test
@@ -66,26 +84,9 @@ class LaserGunTest {
         assertTrue(machineLoss > smgLoss);
         assertEquals(0.50D, smgLoss, 1.0E-9);
         assertEquals(0.75D, machineLoss, 1.0E-9);
+        assertEquals(16.5D, LaserGun.MACHINE.damage(LaserGun.HitRegion.BODY, 80), 1.0E-9D);
         assertEquals(86.4D, LaserGun.SNIPER.damage(LaserGun.HitRegion.BODY, 80), 1.0E-9D);
         assertTrue(LaserGun.SNIPER.damage(LaserGun.HitRegion.HEAD, 80) > 100.0D);
-    }
-
-    @Test
-    void sniperHitsUseRequestedHeadBodyAndLegDamage() {
-        assertEquals(160.0D, LaserGun.SNIPER.damage(LaserGun.HitRegion.HEAD, 0));
-        assertEquals(90.0D, LaserGun.SNIPER.damage(LaserGun.HitRegion.BODY, 0));
-        assertEquals(75.0D, LaserGun.SNIPER.damage(LaserGun.HitRegion.LEGS, 0));
-    }
-
-    @Test
-    void hitRegionsHaveAClearHeadBodyLegsDamageOrder() {
-        for (LaserGun gun : LaserGun.values()) {
-            double head = gun.damage(LaserGun.HitRegion.HEAD, 0);
-            double body = gun.damage(LaserGun.HitRegion.BODY, 0);
-            double legs = gun.damage(LaserGun.HitRegion.LEGS, 0);
-            assertTrue(head > body, gun + " head damage should exceed body damage");
-            assertTrue(body > legs, gun + " body damage should exceed leg damage");
-        }
     }
 
     @Test

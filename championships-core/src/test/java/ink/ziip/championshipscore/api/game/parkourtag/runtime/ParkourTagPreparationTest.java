@@ -1,5 +1,8 @@
 package ink.ziip.championshipscore.api.game.parkourtag.runtime;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+import static ink.ziip.championshipscore.support.TestObjects.set;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
@@ -26,7 +29,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.InputStreamReader;
-import java.lang.reflect.Field;
 import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -274,27 +276,5 @@ class ParkourTagPreparationTest {
         public List<Player> getOnlinePlayers() {
             return onlinePlayers;
         }
-    }
-
-    private static Field field(Class<?> type, String name) throws Exception {
-        for (; type != null; type = type.getSuperclass()) {
-            try {
-                var field = type.getDeclaredField(name);
-                field.setAccessible(true);
-                return field;
-            } catch (NoSuchFieldException ignored) {
-            }
-        }
-        throw new NoSuchFieldException(name);
-    }
-
-    private static void set(Object target, String name, Object value) throws Exception {
-        field(target.getClass(), name).set(target, value);
-    }
-
-    private static <T> T allocate(Class<T> type) throws Exception {
-        return type.cast(
-                ((sun.misc.Unsafe) field(sun.misc.Unsafe.class, "theUnsafe").get(null))
-                        .allocateInstance(type));
     }
 }

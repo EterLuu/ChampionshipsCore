@@ -4,7 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.game.skywars.runtime.SkyWarsTeamArea;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.ScoreMessages;
 
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -34,7 +34,7 @@ public class SkyWarsPlaceholder extends BaseGamePlaceholder<SkyWarsTeamArea> {
             SkyWarsTeamArea skyWarsTeamArea =
                     resolveArea(params, "area_survived_players_", offlinePlayer);
             if (skyWarsTeamArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             return String.valueOf(skyWarsTeamArea.getSurvivedPlayerNums());
         }
@@ -42,7 +42,7 @@ public class SkyWarsPlaceholder extends BaseGamePlaceholder<SkyWarsTeamArea> {
             SkyWarsTeamArea skyWarsTeamArea =
                     resolveArea(params, "area_survived_teams_", offlinePlayer);
             if (skyWarsTeamArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             return String.valueOf(skyWarsTeamArea.getSurvivedTeamNums());
         }
@@ -50,13 +50,13 @@ public class SkyWarsPlaceholder extends BaseGamePlaceholder<SkyWarsTeamArea> {
         /* Player required placeholders */
 
         Player player = offlinePlayer.getPlayer();
-        if (player == null) return MessageConfig.PLACEHOLDER_NONE;
+        if (player == null) return ScoreMessages.PLACEHOLDER_NONE;
 
         if (params.startsWith("player_border_distance_")) {
             SkyWarsTeamArea skyWarsTeamArea =
                     resolveArea(params, "player_border_distance_", offlinePlayer);
             if (skyWarsTeamArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             if (skyWarsTeamArea.getGameStageEnum() != GameStageEnum.PROGRESS) {
                 return String.valueOf(0);

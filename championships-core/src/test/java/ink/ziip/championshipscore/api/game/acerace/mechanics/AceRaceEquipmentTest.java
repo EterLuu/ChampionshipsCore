@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.acerace.mechanics;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
@@ -23,12 +25,8 @@ class AceRaceEquipmentTest {
     @Test
     void labelsFollowReloadWithoutChangingThePersistedEquipmentValue() throws Exception {
         AceRaceEquipment.ELYTRA.displayName();
-        var field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-        field.setAccessible(true);
-        var core =
-                (ChampionshipsCore)
-                        ((sun.misc.Unsafe) field.get(null))
-                                .allocateInstance(ChampionshipsCore.class);
+
+        var core = allocate(ChampionshipsCore.class);
         var config = new MessageConfig(core);
         var document =
                 YamlConfiguration.loadConfiguration(

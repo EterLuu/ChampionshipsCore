@@ -8,6 +8,7 @@ import ink.ziip.championshipscore.api.game.buildmart.config.BuildMartConfig;
 import ink.ziip.championshipscore.api.game.buildmart.mechanics.BuildMartCopperPolicy;
 import ink.ziip.championshipscore.api.game.buildmart.runtime.BuildMartMaterialManifest;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.BuildMartMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -60,7 +61,8 @@ public final class BuildMartBlueprintCreateSubCommand extends BaseSubCommand {
                 return true;
             }
             if (overriddenStars < 1 || overriddenStars > 5) {
-                CoreMessages.sendAdminError(sender, MessageConfig.BUILD_MART_BLUEPRINT_STARS_RANGE);
+                CoreMessages.sendAdminError(
+                        sender, BuildMartMessages.BUILD_MART_BLUEPRINT_STARS_RANGE);
                 return true;
             }
         }
@@ -70,7 +72,7 @@ public final class BuildMartBlueprintCreateSubCommand extends BaseSubCommand {
             selection = plugin.getWorldEditManager().getPlayerSelection(player, true);
         } catch (Exception exception) {
             CoreMessages.sendAdminError(
-                    sender, MessageConfig.BUILD_MART_BLUEPRINT_SELECTION_READ_FAILED);
+                    sender, BuildMartMessages.BUILD_MART_BLUEPRINT_SELECTION_READ_FAILED);
             return true;
         }
         Vector min = Vector.getMinimum(selection[0], selection[1]);
@@ -83,7 +85,7 @@ public final class BuildMartBlueprintCreateSubCommand extends BaseSubCommand {
         if (sizeY > MAX_SIZE) {
             CoreMessages.sendAdminError(
                     sender,
-                    MessageConfig.BUILD_MART_BLUEPRINT_HEIGHT_LIMIT
+                    BuildMartMessages.BUILD_MART_BLUEPRINT_HEIGHT_LIMIT
                             .replace("%limit%", String.valueOf(MAX_SIZE))
                             .replace("%current%", String.valueOf(sizeY)));
             return true;
@@ -91,7 +93,7 @@ public final class BuildMartBlueprintCreateSubCommand extends BaseSubCommand {
         if (sizeX > MAX_SIZE || sizeZ > MAX_SIZE) {
             CoreMessages.sendAdminError(
                     sender,
-                    MessageConfig.BUILD_MART_BLUEPRINT_FOOTPRINT_LIMIT
+                    BuildMartMessages.BUILD_MART_BLUEPRINT_FOOTPRINT_LIMIT
                             .replace("%limit%", String.valueOf(MAX_SIZE))
                             .replace("%x%", String.valueOf(sizeX))
                             .replace("%z%", String.valueOf(sizeZ)));
@@ -108,7 +110,7 @@ public final class BuildMartBlueprintCreateSubCommand extends BaseSubCommand {
                     if (!block.getBlockData().isSupported(block.getLocation())) {
                         CoreMessages.sendAdminError(
                                 sender,
-                                MessageConfig.BUILD_MART_BLUEPRINT_SAVE_FAILED.replace(
+                                BuildMartMessages.BUILD_MART_BLUEPRINT_SAVE_FAILED.replace(
                                         "%detail%",
                                         MessageConfig.codeText(
                                                 "build-mart-blueprint-create-sub-command.on-command-1",
@@ -127,7 +129,7 @@ public final class BuildMartBlueprintCreateSubCommand extends BaseSubCommand {
                     if (blocks.size() > MAX_BLOCKS) {
                         CoreMessages.sendAdminError(
                                 sender,
-                                MessageConfig.BUILD_MART_BLUEPRINT_BLOCK_LIMIT.replace(
+                                BuildMartMessages.BUILD_MART_BLUEPRINT_BLOCK_LIMIT.replace(
                                         "%limit%", String.valueOf(MAX_BLOCKS)));
                         return true;
                     }
@@ -135,7 +137,8 @@ public final class BuildMartBlueprintCreateSubCommand extends BaseSubCommand {
             }
         }
         if (blocks.isEmpty()) {
-            CoreMessages.sendAdminError(sender, MessageConfig.BUILD_MART_BLUEPRINT_EMPTY_SELECTION);
+            CoreMessages.sendAdminError(
+                    sender, BuildMartMessages.BUILD_MART_BLUEPRINT_EMPTY_SELECTION);
             return true;
         }
 
@@ -163,7 +166,7 @@ public final class BuildMartBlueprintCreateSubCommand extends BaseSubCommand {
         } catch (Exception exception) {
             CoreMessages.sendAdminError(
                     sender,
-                    MessageConfig.BUILD_MART_BLUEPRINT_SAVE_FAILED.replace(
+                    BuildMartMessages.BUILD_MART_BLUEPRINT_SAVE_FAILED.replace(
                             "%detail%", String.valueOf(exception.getMessage())));
             return true;
         }
@@ -172,8 +175,8 @@ public final class BuildMartBlueprintCreateSubCommand extends BaseSubCommand {
         CoreMessages.sendAdminSuccess(
                 sender,
                 (overriddenStars == null
-                                ? MessageConfig.BUILD_MART_BLUEPRINT_EXPORTED_AUTO
-                                : MessageConfig.BUILD_MART_BLUEPRINT_EXPORTED_MANUAL)
+                                ? BuildMartMessages.BUILD_MART_BLUEPRINT_EXPORTED_AUTO
+                                : BuildMartMessages.BUILD_MART_BLUEPRINT_EXPORTED_MANUAL)
                         .replace("%name%", name)
                         .replace("%stars%", String.valueOf(stars))
                         .replace("%blocks%", String.valueOf(blocks.size())));
@@ -184,7 +187,7 @@ public final class BuildMartBlueprintCreateSubCommand extends BaseSubCommand {
             BuildMartBlueprintAuditSubCommand.showAudit(sender, audit, config);
             if (overriddenStars != null && overriddenStars != suggestedStars) {
                 CoreMessages.sendAdminError(
-                        sender, MessageConfig.BUILD_MART_BLUEPRINT_OVERRIDE_NOT_SUGGESTED);
+                        sender, BuildMartMessages.BUILD_MART_BLUEPRINT_OVERRIDE_NOT_SUGGESTED);
             }
         }
         return true;

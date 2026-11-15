@@ -5,7 +5,7 @@ import ink.ziip.championshipscore.api.game.acerace.runtime.AceRaceArea;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 
 import net.kyori.adventure.text.Component;
@@ -91,13 +91,13 @@ public final class AceRaceRespawnPointListStep extends ListStep {
         int count = config.ensureRespawnPoints().size();
         if (index < 0 || index >= count || newOrder < 1 || newOrder > count)
             return ink.ziip.championshipscore.presentation.text.CoreMessages.formatAdminError(
-                    MessageConfig.MAP_EDITOR_STEP_SERIAL_NUMBER_BETWEEN.replace(
+                    MapEditorMessages.MAP_EDITOR_STEP_SERIAL_NUMBER_BETWEEN.replace(
                             "%max%", String.valueOf(count)));
         config.moveRespawnPoint(index, newOrder);
         session.markDirty();
         String result =
                 ink.ziip.championshipscore.presentation.text.CoreMessages.formatAdminSuccess(
-                        MessageConfig.MAP_EDITOR_STEP_POINT_ADJUSTED_TO.replace(
+                        MapEditorMessages.MAP_EDITOR_STEP_POINT_ADJUSTED_TO.replace(
                                 "%order%", String.valueOf(newOrder)));
         reload(session);
         return result;
@@ -111,7 +111,7 @@ public final class AceRaceRespawnPointListStep extends ListStep {
         session.markDirty();
         String result =
                 ink.ziip.championshipscore.presentation.text.CoreMessages.formatAdminSuccess(
-                        MessageConfig.MAP_EDITOR_STEP_DELETED.replace(
+                        MapEditorMessages.MAP_EDITOR_STEP_DELETED.replace(
                                 "%order%", String.valueOf(index + 1)));
         reload(session);
         return result;
@@ -136,7 +136,7 @@ public final class AceRaceRespawnPointListStep extends ListStep {
         if (area == null || !area.setRespawnPointBinding(index, binding)) return null;
         session.markDirty();
         return ink.ziip.championshipscore.presentation.text.CoreMessages.formatAdminSuccess(
-                MessageConfig.MAP_EDITOR_ACE_RESPAWN_BOUND.replace(
+                MapEditorMessages.MAP_EDITOR_ACE_RESPAWN_BOUND.replace(
                         "%binding%",
                         binding < 0
                                 ? GuiConfig.text(

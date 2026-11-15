@@ -4,6 +4,8 @@ import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.AdminMessages;
+import ink.ziip.championshipscore.configuration.config.message.GameMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -36,7 +38,7 @@ public class SpectateSubCommand extends BaseSubCommand {
             @NotNull String label,
             @NotNull String[] args) {
         if (!(sender instanceof Player player)) {
-            CoreMessages.sendAdminError(sender, MessageConfig.COMMAND_PLAYER_ONLY);
+            CoreMessages.sendAdminError(sender, AdminMessages.COMMAND_PLAYER_ONLY);
             return true;
         }
         if (args.length > 3) {
@@ -59,9 +61,9 @@ public class SpectateSubCommand extends BaseSubCommand {
                 return true;
             }
             if (plugin.getGameManager().leaveSpectating(player)) {
-                sender.sendMessage(MessageConfig.SPECTATOR_LEAVING_AREA);
+                sender.sendMessage(GameMessages.SPECTATOR_LEAVING_AREA);
             } else {
-                sender.sendMessage(MessageConfig.SPECTATOR_CANT_LEAVING_AREA);
+                sender.sendMessage(GameMessages.SPECTATOR_CANT_LEAVING_AREA);
             }
             return true;
         }
@@ -75,7 +77,7 @@ public class SpectateSubCommand extends BaseSubCommand {
                 return true;
             }
             if (!plugin.getGameManager().isGameEnabled(gameTypeEnum)) {
-                CoreMessages.sendAdminError(sender, MessageConfig.SPECTATOR_GAME_DISABLED);
+                CoreMessages.sendAdminError(sender, GameMessages.SPECTATOR_GAME_DISABLED);
                 return true;
             }
             List<BaseGameInstance> candidates =
@@ -96,9 +98,9 @@ public class SpectateSubCommand extends BaseSubCommand {
                 CoreMessages.sendAdminError(
                         sender,
                         args.length == 3
-                                ? MessageConfig.SPECTATOR_INSTANCE_MISSING.replace(
+                                ? GameMessages.SPECTATOR_INSTANCE_MISSING.replace(
                                         "%instance%", args[2])
-                                : MessageConfig.SPECTATOR_AREA_UNAVAILABLE);
+                                : GameMessages.SPECTATOR_AREA_UNAVAILABLE);
                 return true;
             }
             join(player, baseArea);
@@ -169,13 +171,13 @@ public class SpectateSubCommand extends BaseSubCommand {
     private void join(@NotNull Player player, @NotNull BaseGameInstance target) {
         if (plugin.getGameManager().selectSpectatorArea(player, target)) {
             player.sendMessage(
-                    MessageConfig.SPECTATOR_JOIN_AREA
+                    GameMessages.SPECTATOR_JOIN_AREA
                             .replace("%game%", target.getGameTypeEnum().toString())
                             .replace(
                                     "%area%",
                                     plugin.getGameManager().getSpectatorDisplayName(target)));
         } else {
-            player.sendMessage(MessageConfig.SPECTATOR_CANT_JOIN_AREA);
+            player.sendMessage(GameMessages.SPECTATOR_CANT_JOIN_AREA);
         }
     }
 }

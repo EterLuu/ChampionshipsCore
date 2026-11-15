@@ -7,7 +7,7 @@ import ink.ziip.championshipscore.api.finale.FinaleGameRegistry;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.entry.TeamImportEntry;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.EventMessages;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -60,11 +60,11 @@ final class EventCommandSupport {
                 || imported.event().title() == null
                 || !imported.event().slug().matches("[a-z0-9][a-z0-9-]{1,31}")
                 || imported.event().title().isBlank())
-            throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_INCOMPLETE);
+            throw new IllegalArgumentException(EventMessages.EVENT_IMPORT_INCOMPLETE);
         if (imported.event().games() == null
                 || imported.event().games().isEmpty()
                 || imported.event().games().size() > 16)
-            throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_GAMES_EMPTY);
+            throw new IllegalArgumentException(EventMessages.EVENT_IMPORT_GAMES_EMPTY);
         Set<GameTypeEnum> eventGames = new HashSet<>();
         for (EventTeamImport.Game configured : imported.event().games()) {
             GameTypeEnum game =
@@ -73,13 +73,13 @@ final class EventCommandSupport {
                             : GameTypeEnum.fromCommand(configured.key());
             if (game == null || !eventGames.add(game))
                 throw new IllegalArgumentException(
-                        MessageConfig.EVENT_IMPORT_GAME_INVALID.replace(
+                        EventMessages.EVENT_IMPORT_GAME_INVALID.replace(
                                 "%game%", configured == null ? "null" : configured.key()));
             if (configured.label() == null
                     || configured.label().isBlank()
                     || configured.label().length() > 80)
                 throw new IllegalArgumentException(
-                        MessageConfig.EVENT_IMPORT_VARIANT_INVALID.replace(
+                        EventMessages.EVENT_IMPORT_VARIANT_INVALID.replace(
                                 "%game%", configured.key()));
         }
         if (imported.event().roundMultipliers() == null
@@ -87,16 +87,16 @@ final class EventCommandSupport {
                         != eventGames.stream()
                                 .filter(game -> !FinaleGameRegistry.isRegistered(game))
                                 .count())
-            throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_MULTIPLIER_COUNT_INVALID);
+            throw new IllegalArgumentException(EventMessages.EVENT_IMPORT_MULTIPLIER_COUNT_INVALID);
         for (Double multiplier : imported.event().roundMultipliers()) {
             if (multiplier == null
                     || !Double.isFinite(multiplier)
                     || multiplier < 0D
                     || multiplier > 100D)
-                throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_MULTIPLIER_INVALID);
+                throw new IllegalArgumentException(EventMessages.EVENT_IMPORT_MULTIPLIER_INVALID);
         }
         if (imported.teams().isEmpty() || imported.teams().size() > TEAM_COLORS.size())
-            throw new IllegalArgumentException(MessageConfig.EVENT_IMPORT_TEAM_COUNT_INVALID);
+            throw new IllegalArgumentException(EventMessages.EVENT_IMPORT_TEAM_COUNT_INVALID);
         Set<String> names = new HashSet<>();
         Set<String> colors = new HashSet<>();
         Set<UUID> uuids = new HashSet<>();
@@ -109,21 +109,21 @@ final class EventCommandSupport {
                     || name.length() > 64
                     || name.chars().anyMatch(Character::isISOControl))
                 throw new IllegalArgumentException(
-                        MessageConfig.EVENT_IMPORT_TEAM_NAME_INVALID.replace("%team%", name));
+                        EventMessages.EVENT_IMPORT_TEAM_NAME_INVALID.replace("%team%", name));
             if (!names.add(name.toLowerCase(Locale.ROOT)))
                 throw new IllegalArgumentException(
-                        MessageConfig.EVENT_IMPORT_TEAM_NAME_DUPLICATE.replace("%team%", name));
+                        EventMessages.EVENT_IMPORT_TEAM_NAME_DUPLICATE.replace("%team%", name));
             if (!colors.add(color))
                 throw new IllegalArgumentException(
-                        MessageConfig.EVENT_IMPORT_TEAM_COLOR_DUPLICATE.replace("%color%", color));
+                        EventMessages.EVENT_IMPORT_TEAM_COLOR_DUPLICATE.replace("%color%", color));
             String expectedHex = TEAM_COLORS.get(color);
             if (expectedHex == null || !expectedHex.equalsIgnoreCase(team.colorHex()))
                 throw new IllegalArgumentException(
-                        MessageConfig.EVENT_IMPORT_TEAM_COLOR_FIXED.replace("%color%", color));
+                        EventMessages.EVENT_IMPORT_TEAM_COLOR_FIXED.replace("%color%", color));
             if (team.members().isEmpty()
                     || team.members().size() > CCConfig.TEAM_MAX_EVENT_ROSTER_MEMBERS)
                 throw new IllegalArgumentException(
-                        MessageConfig.EVENT_IMPORT_TEAM_SIZE_INVALID
+                        EventMessages.EVENT_IMPORT_TEAM_SIZE_INVALID
                                 .replace("%team%", name)
                                 .replace("%min%", "1")
                                 .replace(
@@ -133,19 +133,19 @@ final class EventCommandSupport {
             for (EventTeamImport.Member member : team.members()) {
                 if (!member.username().matches("[A-Za-z0-9_]{3,16}"))
                     throw new IllegalArgumentException(
-                            MessageConfig.EVENT_IMPORT_USERNAME_INVALID.replace(
+                            EventMessages.EVENT_IMPORT_USERNAME_INVALID.replace(
                                     "%player%", member.username()));
                 UUID uuid;
                 try {
                     uuid = UUID.fromString(member.uuid());
                 } catch (IllegalArgumentException failure) {
                     throw new IllegalArgumentException(
-                            MessageConfig.EVENT_IMPORT_UUID_INVALID.replace(
+                            EventMessages.EVENT_IMPORT_UUID_INVALID.replace(
                                     "%player%", member.username()));
                 }
                 if (!uuids.add(uuid) || !usernames.add(member.username().toLowerCase(Locale.ROOT)))
                     throw new IllegalArgumentException(
-                            MessageConfig.EVENT_IMPORT_PLAYER_DUPLICATE.replace(
+                            EventMessages.EVENT_IMPORT_PLAYER_DUPLICATE.replace(
                                     "%player%", member.username()));
                 members.add(
                         new TeamImportEntry.Member(uuid, member.username(), member.isSubstitute()));

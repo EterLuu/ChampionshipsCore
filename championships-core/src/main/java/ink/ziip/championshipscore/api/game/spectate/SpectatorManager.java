@@ -8,7 +8,7 @@ import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.manager.GameManager;
 import ink.ziip.championshipscore.api.gui.PlayerListMenuConfig;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.platform.bukkit.gui.PlayerListMenu;
 import ink.ziip.championshipscore.platform.bukkit.player.SpectatorStateService;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
@@ -498,7 +498,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
                         .runTask(plugin, () -> openPlayerTeleportMenu(player, session));
         } else if (slot == hotbarSlot("leave", 5)) {
             if (gameManager.leaveSpectating(player))
-                feedback(player, MessageConfig.SPECTATOR_LEFT, "left", 0.8F);
+                feedback(player, MapEditorMessages.SPECTATOR_LEFT, "left", 0.8F);
         } else if (slot == hotbarSlot("flight-speed", 7)) {
             adjustFlySpeed(player, rightClick ? -.05F : .05F);
         } else if (slot == hotbarSlot("venue-selector", 8)) {
@@ -936,8 +936,8 @@ public final class SpectatorManager extends BaseManager implements Listener {
         feedback(
                 player,
                 enabled
-                        ? MessageConfig.SPECTATOR_NIGHT_VISION_ENABLED
-                        : MessageConfig.SPECTATOR_NIGHT_VISION_DISABLED,
+                        ? MapEditorMessages.SPECTATOR_NIGHT_VISION_ENABLED
+                        : MapEditorMessages.SPECTATOR_NIGHT_VISION_DISABLED,
                 enabled ? "night-vision-enabled" : "night-vision-disabled",
                 enabled ? 1.2F : 0.8F);
     }
@@ -990,7 +990,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
                     if (success)
                         feedback(
                                 player,
-                                MessageConfig.SPECTATOR_TELEPORTED_TO_PLAYER.replace(
+                                MapEditorMessages.SPECTATOR_TELEPORTED_TO_PLAYER.replace(
                                         "%player%", name),
                                 "teleported",
                                 1.2F);
@@ -1004,7 +1004,7 @@ public final class SpectatorManager extends BaseManager implements Listener {
         if (session != null && session.external()) applyExternalControlItems(player, session);
         feedback(
                 player,
-                MessageConfig.SPECTATOR_FLIGHT_SPEED.replace("%speed%", speedText(player)),
+                MapEditorMessages.SPECTATOR_FLIGHT_SPEED.replace("%speed%", speedText(player)),
                 "speed",
                 delta > 0 ? 1.25F : 0.8F);
     }

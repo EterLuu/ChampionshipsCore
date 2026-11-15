@@ -9,19 +9,17 @@ import ink.ziip.championshipscore.api.game.model.GameRunMode;
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.game.spatial.LobbyReturnLocations;
-import ink.ziip.championshipscore.api.game.spatial.TeleportPositions;
 import ink.ziip.championshipscore.api.game.start.ArenaSelection;
 import ink.ziip.championshipscore.api.game.start.GameExecutionContext;
 import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
 import ink.ziip.championshipscore.api.player.PlayerManager;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.configuration.config.message.GameMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 import ink.ziip.championshipscore.platform.bukkit.player.PlayerStateService;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
-import ink.ziip.championshipscore.presentation.text.CoreMessages;
-import ink.ziip.championshipscore.shared.presentation.RuleIntroductionTimeline;
 
 import org.bukkit.*;
 import org.bukkit.boss.BarColor;
@@ -41,15 +39,12 @@ import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
-import java.util.function.Supplier;
 import java.util.logging.Level;
 
 public abstract class BaseGameInstance {
@@ -77,8 +72,7 @@ public abstract class BaseGameInstance {
     private boolean postGamePending;
     private boolean postGameFinalizing;
     private volatile CompletableFuture<Void> coordinatedStartGate;
-    private CompletableFuture<Boolean> activeMapLoad = CompletableFuture.completedFuture(true);
-    private long mapLoadGeneration;
+    private final GameMapLifecycle mapLifecycle;
     private volatile boolean disposed;
     private ParticipantCallbacks participantCallbacks;
 
@@ -87,24 +81,12 @@ public abstract class BaseGameInstance {
      */
     protected static final int INTRODUCTION_DURATION = 90;
 
-    private static final int INTRODUCTION_TITLE_DURATION_SECONDS = 5;
+    /** Allocated when this instance first arms or starts preparation. */
+    private volatile GamePreparation preparation;
 
-    /** True while players are gathered at the introduction spawn point for the rules broadcast. */
-    protected volatile boolean introductionPhase = false;
-
-    protected BukkitTask introductionTask;
-    private boolean introductionEnabledForNextStart;
-    private int preparationCountdownDuration;
-
-    /** Final five-second countdown, isolated from every game's live timer. */
-    protected BukkitTask finalCountdownTask;
-
-    private final CountdownBlockDisappearance countdownBlockDisappearance;
+    final CountdownBlockDisappearance countdownBlockDisappearance;
     private static final long POST_GAME_RESULT_DISPLAY_TICKS = 200L;
     private BukkitTask postGameRoutingTask;
-
-    private static final Note BIT_C4 = Note.natural(0, Note.Tone.C);
-    private static final Note BIT_C5 = Note.natural(1, Note.Tone.C);
 
     protected BaseListener gameHandler;
     protected BaseGameConfig gameConfig;
@@ -128,6 +110,7 @@ public abstract class BaseGameInstance {
         gameHandler.bindGameInstance(this);
         this.gameConfig = gameConfig;
         this.countdownBlockDisappearance = new CountdownBlockDisappearance(plugin, this);
+        this.mapLifecycle = new GameMapLifecycle(this);
 
         gameInstanceHandler = new GameInstanceHandler(plugin, this);
         gameInstanceHandler.register();
@@ -185,8 +168,7 @@ public abstract class BaseGameInstance {
             startPreloadFuture.complete(null);
         arenaSelection = ArenaSelection.all();
         disposed = true;
-        mapLoadGeneration++;
-        if (!activeMapLoad.isDone()) activeMapLoad.complete(false);
+        mapLifecycle.dispose();
         releaseStartChunks();
         cancelIntroduction();
         cancelFinalCountdown();
@@ -534,197 +516,12 @@ public abstract class BaseGameInstance {
     }
 
     public CompletableFuture<Boolean> loadMap(World.Environment environment) {
-        if (!Bukkit.isPrimaryThread()) return runOnMain(() -> loadMap(environment));
-        if (disposed || !plugin.isLoaded() || !plugin.isEnabled())
-            return CompletableFuture.completedFuture(false);
-        if (!activeMapLoad.isDone()) return activeMapLoad;
-
-        CompletableFuture<Boolean> result = new CompletableFuture<>();
-        activeMapLoad = result;
-        long generation = ++mapLoadGeneration;
-        long startedAt = System.nanoTime();
-
-        clearBossBars();
-        teleportAllSpectators(getLobbyLocation());
-
-        setGameStageEnum(GameStageEnum.END);
-        getGameHandler().unRegister();
-        logGame(
-                Level.INFO,
-                MessageConfig.codeText("base-game-instance.load-map-1"),
-                MessageConfig.codeText("base-game-instance.load-map-2", getWorldName()));
-
-        // Repair the published template and preserve the current world before reload deletes either
-        // copy.
-        if (!plugin.getWorldManager().prepareWorldForFirstLoad(getWorldName())) {
-            logGame(
-                    Level.SEVERE,
-                    MessageConfig.codeText("base-game-instance.load-map-1"),
-                    MessageConfig.codeText("base-game-instance.load-map-3", getWorldName()));
-            result.complete(false);
-            return result;
-        }
-
-        File target = plugin.getWorldManager().getWorldFolder(getWorldName());
-        World loadedWorld = plugin.getServer().getWorld(getWorldName());
-        if (loadedWorld != null && !plugin.getWorldManager().unloadWorld(getWorldName(), false)) {
-            logGame(
-                    Level.SEVERE,
-                    MessageConfig.codeText("base-game-instance.load-map-1"),
-                    MessageConfig.codeText("base-game-instance.load-map-4", getWorldName()));
-            result.complete(false);
-            return result;
-        }
-        long unloadedAt = System.nanoTime();
-
-        File maps = new File(plugin.getDataFolder(), "maps");
-        File source = new File(maps, getWorldName());
-        runAsyncFileOperation(() -> replaceWorldFiles(source, target))
-                .thenCompose(
-                        filesReady ->
-                                runOnMain(
-                                        () ->
-                                                CompletableFuture.completedFuture(
-                                                        finishMapLoad(
-                                                                environment,
-                                                                generation,
-                                                                startedAt,
-                                                                unloadedAt,
-                                                                filesReady))))
-                .whenComplete(
-                        (success, error) -> {
-                            if (error != null)
-                                logGame(
-                                        Level.SEVERE,
-                                        MessageConfig.codeText("base-game-instance.load-map-1"),
-                                        MessageConfig.codeText(
-                                                "base-game-instance.load-map-5",
-                                                getWorldName(),
-                                                error.getMessage()));
-                            result.complete(error == null && Boolean.TRUE.equals(success));
-                        });
-        return result;
+        return mapLifecycle.loadMap(environment);
     }
 
-    private boolean finishMapLoad(
-            World.Environment environment,
-            long generation,
-            long startedAt,
-            long unloadedAt,
-            boolean filesReady) {
-        if (disposed
-                || generation != mapLoadGeneration
-                || !plugin.isLoaded()
-                || !plugin.isEnabled()) return false;
-        if (!filesReady) {
-            logGame(
-                    Level.SEVERE,
-                    MessageConfig.codeText("base-game-instance.load-map-1"),
-                    MessageConfig.codeText("base-game-instance.finish-map-load-1", getWorldName()));
-            return false;
-        }
-        long filesReadyAt = System.nanoTime();
-        if (!plugin.getWorldManager().loadWorld(getWorldName(), environment, false)) {
-            logGame(
-                    Level.SEVERE,
-                    MessageConfig.codeText("base-game-instance.load-map-1"),
-                    MessageConfig.codeText("base-game-instance.finish-map-load-2", getWorldName()));
-            return false;
-        }
-
-        if (!getGameConfig().reloadConfigurationChecked(plugin.getFolder())) {
-            logGame(
-                    Level.SEVERE,
-                    MessageConfig.codeText("base-game-instance.finish-map-load-3"),
-                    MessageConfig.codeText("base-game-instance.finish-map-load-4", getWorldName()));
-            return false;
-        }
-        getGameHandler().register();
-        setGameStageEnum(GameStageEnum.WAITING);
-        long finishedAt = System.nanoTime();
-        logGame(
-                Level.INFO,
-                MessageConfig.codeText("base-game-instance.load-map-1"),
-                MessageConfig.codeText(
-                        "base-game-instance.finish-map-load-5",
-                        getWorldName(),
-                        elapsedMillis(startedAt, unloadedAt),
-                        elapsedMillis(unloadedAt, filesReadyAt),
-                        elapsedMillis(filesReadyAt, finishedAt)));
-        teleportAllSpectators(getSpectatorSpawnLocation());
-        return true;
-    }
-
-    private boolean replaceWorldFiles(File source, File target) {
-        if (target.exists() && !plugin.getWorldManager().deleteWorldFiles(target)) return false;
-        if (plugin.getWorldManager().copyWorldFiles(source, target)) return true;
-        plugin.getWorldManager().deleteWorldFiles(target);
-        return false;
-    }
-
-    private long elapsedMillis(long startedAt, long finishedAt) {
-        return java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(finishedAt - startedAt);
-    }
-
-    /**
-     * Restores a published map template when one exists. New maps deliberately have no template
-     * until prepare publishes their first revision, so reopening the server must keep their
-     * editable draft world instead of deleting it and then failing a template copy.
-     */
+    /** Loads the published template, or preserves the editable world of an unpublished map. */
     public final CompletableFuture<Boolean> loadPublishedMapOrDraft(World.Environment environment) {
-        if (!Bukkit.isPrimaryThread()) return runOnMain(() -> loadPublishedMapOrDraft(environment));
-        if (!getGameConfig().reloadConfigurationChecked(plugin.getFolder()))
-            return CompletableFuture.completedFuture(false);
-        if (getGameConfig().isWorldBindingPending()) {
-            getGameHandler().register();
-            setGameStageEnum(GameStageEnum.WAITING);
-            logGame(
-                    Level.INFO,
-                    MessageConfig.codeText("base-game-instance.load-map-1"),
-                    MessageConfig.codeText("base-game-instance.load-published-map-or-draft-1"));
-            return CompletableFuture.completedFuture(true);
-        }
-        File template = new File(new File(plugin.getDataFolder(), "maps"), getWorldName());
-        if (getGameConfig().isPrepareReady() && template.isDirectory()) return loadMap(environment);
-
-        if (getGameConfig().isPrepareReady()) {
-            getGameConfig().beginPrepareDraft();
-            logGame(
-                    Level.SEVERE,
-                    MessageConfig.codeText("base-game-instance.load-map-1"),
-                    MessageConfig.codeText(
-                            "base-game-instance.load-published-map-or-draft-2",
-                            template.getPath()));
-        }
-        return CompletableFuture.completedFuture(loadDraftWorld(environment));
-    }
-
-    private boolean loadDraftWorld(World.Environment environment) {
-        clearBossBars();
-        teleportAllSpectators(getLobbyLocation());
-        setGameStageEnum(GameStageEnum.END);
-        getGameHandler().unRegister();
-        logGame(
-                Level.INFO,
-                MessageConfig.codeText("base-game-instance.load-map-1"),
-                MessageConfig.codeText("base-game-instance.load-draft-world-1", getWorldName()));
-
-        if (!plugin.getWorldManager().loadWorld(getWorldName(), environment, false)) {
-            logGame(
-                    Level.SEVERE,
-                    MessageConfig.codeText("base-game-instance.load-map-1"),
-                    MessageConfig.codeText(
-                            "base-game-instance.load-draft-world-2", getWorldName()));
-            return false;
-        }
-
-        getGameHandler().register();
-        setGameStageEnum(GameStageEnum.WAITING);
-        logGame(
-                Level.INFO,
-                MessageConfig.codeText("base-game-instance.load-map-1"),
-                MessageConfig.codeText("base-game-instance.load-draft-world-3"));
-        return true;
+        return mapLifecycle.loadPublishedMapOrDraft(environment);
     }
 
     /**
@@ -742,256 +539,7 @@ public abstract class BaseGameInstance {
     }
 
     public CompletableFuture<Boolean> saveMap(World.Environment environment) {
-        if (!Bukkit.isPrimaryThread()) return runOnMain(() -> saveMap(environment));
-        if (!canSaveMap()) {
-            logGame(
-                    Level.WARNING,
-                    MessageConfig.codeText("base-game-instance.load-map-1"),
-                    MessageConfig.codeText("base-game-instance.save-map-1"));
-            return CompletableFuture.completedFuture(false);
-        }
-
-        setGameStageEnum(GameStageEnum.END);
-        logGame(
-                Level.INFO,
-                MessageConfig.codeText("base-game-instance.load-map-1"),
-                MessageConfig.codeText("base-game-instance.save-map-2", getWorldName()));
-        teleportAllSpectators(getLobbyLocation());
-
-        World editWorld = plugin.getServer().getWorld(getWorldName());
-        if (editWorld == null) {
-            setGameStageEnum(GameStageEnum.WAITING);
-            logGame(
-                    Level.WARNING,
-                    MessageConfig.codeText("base-game-instance.load-map-1"),
-                    MessageConfig.codeText("base-game-instance.save-map-3", getWorldName()));
-            return CompletableFuture.completedFuture(false);
-        }
-        for (Player player : editWorld.getPlayers()) {
-            player.teleport(
-                    TeleportPositions.getScatteredLobbyLocation(CCConfig.LOBBY_LOCATION, player));
-        }
-
-        // Unload world but not remove files
-        if (!plugin.getWorldManager().unloadWorld(getWorldName(), true)) {
-            setGameStageEnum(GameStageEnum.WAITING);
-            logGame(
-                    Level.SEVERE,
-                    MessageConfig.codeText("base-game-instance.load-map-1"),
-                    MessageConfig.codeText("base-game-instance.save-map-4", getWorldName()));
-            return CompletableFuture.completedFuture(false);
-        }
-
-        File dataDirectory = new File(plugin.getDataFolder(), "maps");
-        File target = new File(dataDirectory, getWorldName());
-        File source = plugin.getWorldManager().getWorldFolder(getWorldName());
-        String transaction = ".prepare-" + getWorldName() + "-" + UUID.randomUUID();
-        File staging = new File(dataDirectory, transaction + "-staging");
-        File backup = new File(dataDirectory, transaction + "-previous");
-
-        return runAsyncFileOperation(() -> stagePublishedTemplate(source, target, staging, backup))
-                .thenCompose(
-                        staged ->
-                                runOnMain(
-                                        () -> {
-                                            if (!staged) {
-                                                boolean draftLoaded = loadDraftWorld(environment);
-                                                if (!draftLoaded)
-                                                    logGame(
-                                                            Level.SEVERE,
-                                                            MessageConfig.codeText(
-                                                                    "base-game-instance.load-map-1"),
-                                                            MessageConfig.codeText(
-                                                                    "base-game-instance.save-map-5",
-                                                                    getWorldName()));
-                                                return CompletableFuture.completedFuture(false);
-                                            }
-                                            return loadMap(environment)
-                                                    .thenCompose(
-                                                            loaded -> {
-                                                                if (loaded)
-                                                                    return runAsyncFileOperation(
-                                                                            () -> {
-                                                                                if (backup.exists()
-                                                                                        && !plugin.getWorldManager()
-                                                                                                .deleteWorldFiles(
-                                                                                                        backup))
-                                                                                    logGame(
-                                                                                            Level
-                                                                                                    .WARNING,
-                                                                                            MessageConfig
-                                                                                                    .codeText(
-                                                                                                            "base-game-instance.load-map-1"),
-                                                                                            MessageConfig
-                                                                                                    .codeText(
-                                                                                                            "base-game-instance.save-map-6",
-                                                                                                            backup
-                                                                                                                    .getPath()));
-                                                                                return true;
-                                                                            });
-                                                                return rollbackPublishedTemplate(
-                                                                        environment,
-                                                                        source,
-                                                                        target,
-                                                                        backup);
-                                                            });
-                                        }));
-    }
-
-    private boolean stagePublishedTemplate(File source, File target, File staging, File backup) {
-        if (!plugin.getWorldManager().copyWorldFiles(source, staging)) {
-            plugin.getWorldManager().deleteWorldFiles(staging);
-            logGame(
-                    Level.SEVERE,
-                    MessageConfig.codeText("base-game-instance.load-map-1"),
-                    MessageConfig.codeText(
-                            "base-game-instance.stage-published-template-1", getWorldName()));
-            return false;
-        }
-        try {
-            if (target.exists()) java.nio.file.Files.move(target.toPath(), backup.toPath());
-            java.nio.file.Files.move(staging.toPath(), target.toPath());
-        } catch (Exception exception) {
-            plugin.getWorldManager().deleteWorldFiles(staging);
-            try {
-                if (!target.exists() && backup.exists())
-                    java.nio.file.Files.move(backup.toPath(), target.toPath());
-            } catch (Exception rollback) {
-                logGame(
-                        Level.SEVERE,
-                        MessageConfig.codeText("base-game-instance.load-map-1"),
-                        MessageConfig.codeText(
-                                "base-game-instance.stage-published-template-2",
-                                rollback.getMessage()));
-            }
-            logGame(
-                    Level.SEVERE,
-                    MessageConfig.codeText("base-game-instance.load-map-1"),
-                    MessageConfig.codeText(
-                            "base-game-instance.stage-published-template-3",
-                            exception.getMessage()));
-            return false;
-        }
-        if (!plugin.getWorldManager().deleteWorldFiles(source))
-            logGame(
-                    Level.WARNING,
-                    MessageConfig.codeText("base-game-instance.load-map-1"),
-                    MessageConfig.codeText(
-                            "base-game-instance.stage-published-template-4", source.getPath()));
-        return true;
-    }
-
-    private CompletableFuture<Boolean> rollbackPublishedTemplate(
-            World.Environment environment, File source, File target, File backup) {
-        if (!backup.exists()) return CompletableFuture.completedFuture(false);
-        World loadedWorld = plugin.getServer().getWorld(getWorldName());
-        if (loadedWorld != null && !plugin.getWorldManager().unloadWorld(getWorldName(), false)) {
-            logGame(
-                    Level.SEVERE,
-                    MessageConfig.codeText("base-game-instance.load-map-1"),
-                    MessageConfig.codeText("base-game-instance.rollback-published-template-1"));
-            return CompletableFuture.completedFuture(false);
-        }
-        return runAsyncFileOperation(
-                        () -> {
-                            if (!plugin.getWorldManager().deleteWorldFiles(source)
-                                    || !plugin.getWorldManager().deleteWorldFiles(target))
-                                return false;
-                            try {
-                                java.nio.file.Files.move(backup.toPath(), target.toPath());
-                                return true;
-                            } catch (Exception exception) {
-                                logGame(
-                                        Level.SEVERE,
-                                        MessageConfig.codeText("base-game-instance.load-map-1"),
-                                        MessageConfig.codeText(
-                                                "base-game-instance.rollback-published-template-3",
-                                                exception.getMessage()));
-                                return false;
-                            }
-                        })
-                .thenCompose(
-                        restored ->
-                                runOnMain(
-                                        () -> {
-                                            if (!restored)
-                                                return CompletableFuture.completedFuture(false);
-                                            return loadMap(environment)
-                                                    .thenApply(
-                                                            ignored -> {
-                                                                logGame(
-                                                                        Level.SEVERE,
-                                                                        MessageConfig.codeText(
-                                                                                "base-game-instance.load-map-1"),
-                                                                        MessageConfig.codeText(
-                                                                                "base-game-instance.rollback-published-template-2"));
-                                                                return false;
-                                                            });
-                                        }));
-    }
-
-    private CompletableFuture<Boolean> runAsyncFileOperation(BooleanSupplier operation) {
-        CompletableFuture<Boolean> result = new CompletableFuture<>();
-        if (disposed || !plugin.isLoaded() || !plugin.isEnabled()) {
-            result.complete(false);
-            return result;
-        }
-        try {
-            scheduler.runTaskAsynchronously(
-                    plugin,
-                    () -> {
-                        try {
-                            result.complete(operation.getAsBoolean());
-                        } catch (Throwable throwable) {
-                            logGame(
-                                    Level.SEVERE,
-                                    MessageConfig.codeText("base-game-instance.load-map-1"),
-                                    MessageConfig.codeText(
-                                            "base-game-instance.run-async-file-operation-2",
-                                            throwable.getMessage()));
-                            result.complete(false);
-                        }
-                    });
-        } catch (RuntimeException exception) {
-            logGame(
-                    Level.SEVERE,
-                    MessageConfig.codeText("base-game-instance.load-map-1"),
-                    MessageConfig.codeText(
-                            "base-game-instance.run-async-file-operation-1",
-                            exception.getMessage()));
-            result.complete(false);
-        }
-        return result;
-    }
-
-    private CompletableFuture<Boolean> runOnMain(Supplier<CompletableFuture<Boolean>> operation) {
-        if (Bukkit.isPrimaryThread()) return operation.get();
-        CompletableFuture<Boolean> result = new CompletableFuture<>();
-        if (disposed || !plugin.isLoaded() || !plugin.isEnabled()) {
-            result.complete(false);
-            return result;
-        }
-        try {
-            scheduler.runTask(
-                    plugin,
-                    () -> {
-                        try {
-                            operation
-                                    .get()
-                                    .whenComplete(
-                                            (success, error) -> {
-                                                if (error != null)
-                                                    result.completeExceptionally(error);
-                                                else result.complete(success);
-                                            });
-                        } catch (Throwable throwable) {
-                            result.completeExceptionally(throwable);
-                        }
-                    });
-        } catch (RuntimeException exception) {
-            result.complete(false);
-        }
-        return result;
+        return mapLifecycle.saveMap(environment);
     }
 
     private BossBar createBossBar(String title, BarColor color, BarStyle style) {
@@ -1017,7 +565,7 @@ public abstract class BaseGameInstance {
     public void clearBossBars() {
         for (BossBar bossBar : new ArrayList<>(bossBars.values())) bossBar.removeAll();
         bossBars.clear();
-        preparationCountdownDuration = 0;
+        if (preparation != null) preparation.clearCountdownDuration();
     }
 
     protected final void removePlayerFromBossBars(Player player) {
@@ -1061,7 +609,7 @@ public abstract class BaseGameInstance {
 
     protected void clearGameTimerBossBar() {
         removeBossBar(GAME_TIMER_BOSS_BAR);
-        preparationCountdownDuration = 0;
+        if (preparation != null) preparation.clearCountdownDuration();
     }
 
     public void setBossBar(String name, String title) {
@@ -1131,6 +679,29 @@ public abstract class BaseGameInstance {
         return postGamePending;
     }
 
+    /**
+     * Reconnects during the result window still belong to the arena until settlement releases it.
+     */
+    public final boolean restorePostGameParticipant(@NotNull Player player) {
+        if (!postGamePending
+                || getGameStageEnum() != GameStageEnum.END
+                || disposed
+                || !plugin.isLoaded()
+                || Bukkit.getPlayer(player.getUniqueId()) != player
+                || plugin.getGameManager().getBasePlayerArea(player.getUniqueId()) != this)
+            return false;
+        sanitizeParticipantForLobby(player, false);
+        restoreArenaWaitingLocation(player);
+        return true;
+    }
+
+    protected void restoreArenaWaitingLocation(Player player) {
+        Location destination = getSpectatorSpawnLocation();
+        if (destination != null
+                && destination.getWorld() != null
+                && !destination.getWorld().equals(player.getWorld())) player.teleport(destination);
+    }
+
     public final boolean isRoundTransitionPending() {
         return roundTransitionPending;
     }
@@ -1185,6 +756,7 @@ public abstract class BaseGameInstance {
             plugin.getScheduleManager().unregisterPendingEventInstance(this);
         cancelPostGameRouting();
         roundTransitionPending = nextEventRound;
+        onPostGameSettlement(nextEventRound);
 
         Consumer<BaseGameInstance> testCompletion = testCompletionListener;
         if (testCompletion != null) {
@@ -1230,6 +802,9 @@ public abstract class BaseGameInstance {
         }
     }
 
+    /** Execution backends release their players only when Core settles the complete flow. */
+    protected void onPostGameSettlement(boolean nextEventRound) {}
+
     protected final void cancelPostGameRoutingBeforeStart() {
         cancelPostGameRouting();
         postGamePending = false;
@@ -1244,7 +819,7 @@ public abstract class BaseGameInstance {
     }
 
     public boolean isIntroductionPhase() {
-        return introductionPhase;
+        return preparation != null && preparation.isIntroductionActive();
     }
 
     /** Whether participants should be held in place during the final five-second countdown. */
@@ -1253,7 +828,7 @@ public abstract class BaseGameInstance {
     }
 
     public void setIntroductionEnabledForNextStart(boolean enabled) {
-        introductionEnabledForNextStart = enabled;
+        preparation().setIntroductionEnabled(enabled);
     }
 
     /**
@@ -1266,66 +841,12 @@ public abstract class BaseGameInstance {
      * onComplete} runs immediately.
      */
     protected void startGameIntroduction(@NotNull Runnable onComplete) {
-        // Rule presentation belongs to event-shaped lifecycles (formal EVENT and TEST_EVENT).
-        // Standalone game starts may select their participants, but must never turn into an
-        // event-wide audience action.
-        boolean showIntroduction = isEventRun() && introductionEnabledForNextStart;
-        introductionEnabledForNextStart = false;
-        if (!showIntroduction) {
-            onComplete.run();
-            return;
-        }
+        preparation().startIntroduction(onComplete);
+    }
 
-        List<List<String>> rules = getIntroductionRules();
-        boolean interactive = isInteractiveIntroduction();
-        Location introductionSpawnPoint = resolveIntroductionSpawnPoint();
-        if ((!interactive && (rules == null || rules.isEmpty()))
-                || introductionSpawnPoint == null) {
-            onComplete.run();
-            return;
-        }
-
-        introductionPhase = true;
-        onIntroductionStarted();
-        applyIntroductionGameModeToAllParticipants();
-        teleportAllPlayers(introductionSpawnPoint);
-        if (!interactive)
-            sendTimedTitleToAllGamePlayers(
-                    MessageConfig.GAME_INTRODUCTION_TITLE.replace(
-                            "%game%", gameTypeEnum.toString()),
-                    "",
-                    INTRODUCTION_TITLE_DURATION_SECONDS * 20);
-
-        final int[] remain = {INTRODUCTION_DURATION};
-
-        introductionTask =
-                scheduler.runTaskTimer(
-                        plugin,
-                        () -> {
-                            int elapsed = INTRODUCTION_DURATION - remain[0];
-                            int section =
-                                    interactive
-                                            ? -1
-                                            : RuleIntroductionTimeline.sectionAt(
-                                                    elapsed, INTRODUCTION_DURATION, rules.size());
-                            if (section >= 0) broadcastRuleSection(rules.get(section));
-
-                            showPreparationCountdown(remain[0]);
-
-                            if (remain[0] == 0) {
-                                cancelIntroduction();
-                                clearGameTimerBossBar();
-                                // The game may have been ended during the introduction (stop
-                                // command / force end).
-                                if (getGameStageEnum() == GameStageEnum.PREPARATION)
-                                    onComplete.run();
-                                return;
-                            }
-
-                            remain[0]--;
-                        },
-                        0,
-                        20L);
+    private GamePreparation preparation() {
+        if (preparation == null) preparation = new GamePreparation(this);
+        return preparation;
     }
 
     /**
@@ -1355,6 +876,7 @@ public abstract class BaseGameInstance {
 
     public void prepareParticipantForNextRound(@NotNull Player player) {
         sanitizeParticipantForLobby(player, false);
+        restoreArenaWaitingLocation(player);
     }
 
     /** A dedicated viewpoint is optional; every playable map already defines a spectator spawn. */
@@ -1379,7 +901,7 @@ public abstract class BaseGameInstance {
      */
     public boolean isSharedPreGameRecoveryPhase() {
         return getGameStageEnum() == GameStageEnum.LOADING
-                || (getGameStageEnum() == GameStageEnum.PREPARATION && introductionPhase);
+                || (getGameStageEnum() == GameStageEnum.PREPARATION && isIntroductionPhase());
     }
 
     /**
@@ -1392,15 +914,11 @@ public abstract class BaseGameInstance {
             applyIntroductionGameMode(player);
             player.setFallDistance(0f);
             player.setFireTicks(0);
-            Location lobby = getLobbyLocation();
-            // A reconnecting participant normally already stands in the lobby where they left it;
-            // only return them to the remembered lobby position when they are somewhere else.
-            if (lobby != null
-                    && lobby.getWorld() != null
-                    && !player.getWorld().equals(lobby.getWorld())) teleportToLobby(player);
+            // Loading may be the next round of an event. Keep the saved location until the
+            // prepared arena takes over instead of taking a detour through the lobby.
             return true;
         }
-        if (stage == GameStageEnum.PREPARATION && introductionPhase) {
+        if (stage == GameStageEnum.PREPARATION && isIntroductionPhase()) {
             Location introductionSpawnPoint = resolveIntroductionSpawnPoint();
             if (introductionSpawnPoint == null) return false;
             player.setGameMode(GameMode.ADVENTURE);
@@ -1414,7 +932,7 @@ public abstract class BaseGameInstance {
         return false;
     }
 
-    private void applyIntroductionGameModeToAllParticipants() {
+    void applyIntroductionGameModeToAllParticipants() {
         for (UUID uuid : getParticipantUniqueIds()) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null) applyIntroductionGameMode(player);
@@ -1434,7 +952,7 @@ public abstract class BaseGameInstance {
         }
     }
 
-    private void broadcastRuleSection(@NotNull List<String> lines) {
+    void broadcastRuleSection(@NotNull List<String> lines) {
         for (String line : lines) sendMessageToAllGamePlayers(LegacyText.translateColorCodes(line));
         playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1F);
     }
@@ -1442,7 +960,7 @@ public abstract class BaseGameInstance {
     /**
      * Sends one title to this instance's participants and spectators with an exact stay duration.
      */
-    private void sendTimedTitleToAllGamePlayers(String title, String subtitle, int stayTicks) {
+    void sendTimedTitleToAllGamePlayers(String title, String subtitle, int stayTicks) {
         Set<UUID> viewers = new LinkedHashSet<>(getParticipantUniqueIds());
         viewers.addAll(spectators);
         for (UUID uuid : viewers) {
@@ -1463,15 +981,7 @@ public abstract class BaseGameInstance {
     }
 
     protected void showPreparationCountdown(int seconds) {
-        int remaining = Math.max(0, seconds);
-        if (preparationCountdownDuration <= 0 || remaining > preparationCountdownDuration)
-            preparationCountdownDuration = Math.max(1, remaining);
-        updateGameTimerBossBar(
-                MessageConfig.GAME_PREPARATION_COUNT_DOWN
-                        .replace("%game%", gameTypeEnum.toString())
-                        .replace("%time%", CoreMessages.bossBarTime(remaining)),
-                remaining,
-                preparationCountdownDuration);
+        preparation().showCountdown(seconds);
     }
 
     /** Runs the default five-second final countdown. */
@@ -1524,57 +1034,15 @@ public abstract class BaseGameInstance {
             boolean playCountdownSound,
             boolean transitionToProgress,
             @NotNull Runnable onStart) {
-        cancelFinalCountdown();
-        clearGameTimerBossBar();
-        changeLevelForAllGamePlayers(0);
-        setGameStageEnum(GameStageEnum.COUNTDOWN);
-        int duration = Math.max(0, countdownSeconds);
-        countdownBlockDisappearance.start(duration);
-        logGame(
-                Level.INFO,
-                MessageConfig.codeText("base-game-instance.reset-game-1"),
-                MessageConfig.codeText("base-game-instance.start-final-countdown-1", duration));
-        final int[] remaining = {duration};
-
-        finalCountdownTask =
-                scheduler.runTaskTimer(
-                        plugin,
-                        () -> {
-                            int seconds = remaining[0];
-                            if (seconds > 0) {
-                                String title = getFinalCountdownTitle(seconds);
-                                String subtitle = getFinalCountdownSubtitle(gameTitle, seconds);
-                                sendTitleToAllGamePlayers(title, subtitle);
-                                if (playCountdownSound) playCountdownBit(BIT_C4);
-                                remaining[0]--;
-                                return;
-                            }
-
-                            if (finalCountdownTask != null) finalCountdownTask.cancel();
-                            finalCountdownTask = null;
-                            if (getGameStageEnum() != GameStageEnum.COUNTDOWN) return;
-
-                            if (transitionToProgress) setGameStageEnum(GameStageEnum.PROGRESS);
-                            try {
-                                onStart.run();
-                            } catch (Throwable failure) {
-                                logGame(
-                                        Level.SEVERE,
-                                        MessageConfig.codeText("base-game-instance.reset-game-1"),
-                                        MessageConfig.codeText(
-                                                "base-game-instance.start-final-countdown-2",
-                                                failure.getMessage()));
-                                abortAndReset();
-                                return;
-                            }
-                            if (transitionToProgress
-                                    && getGameStageEnum() == GameStageEnum.PROGRESS) {
-                                announceGameStart(startTitle, startSubtitle);
-                                if (playCountdownSound) playCountdownBit(BIT_C5);
-                            }
-                        },
-                        0L,
-                        20L);
+        preparation()
+                .startCountdown(
+                        countdownSeconds,
+                        gameTitle,
+                        startTitle,
+                        startSubtitle,
+                        playCountdownSound,
+                        transitionToProgress,
+                        onStart);
     }
 
     /**
@@ -1620,26 +1088,23 @@ public abstract class BaseGameInstance {
     }
 
     public void cancelFinalCountdown() {
-        if (finalCountdownTask != null) {
-            finalCountdownTask.cancel();
-            finalCountdownTask = null;
-        }
+        if (preparation != null) preparation.cancelCountdown();
         countdownBlockDisappearance.cancel();
     }
 
     protected String getFinalCountdownSubtitle(String gameTitle) {
-        return MessageConfig.GAME_START_COUNT_DOWN_SUBTITLE.replace("%game%", gameTitle);
+        return GameMessages.GAME_START_COUNT_DOWN_SUBTITLE.replace("%game%", gameTitle);
     }
 
     protected String getFinalCountdownTitle(int seconds) {
-        return MessageConfig.GAME_START_COUNT_DOWN_TITLE.replace("%time%", String.valueOf(seconds));
+        return GameMessages.GAME_START_COUNT_DOWN_TITLE.replace("%time%", String.valueOf(seconds));
     }
 
     protected String getFinalCountdownSubtitle(String gameTitle, int seconds) {
         return getFinalCountdownSubtitle(gameTitle);
     }
 
-    private void playCountdownBit(Note note) {
+    void playCountdownBit(Note note) {
         playNoteToAllGamePlayers(Instrument.BIT, note);
         for (Player spectator : getOnlineSpectators()) {
             spectator.playNote(spectator.getLocation(), Instrument.BIT, note);
@@ -1648,7 +1113,7 @@ public abstract class BaseGameInstance {
 
     protected void announceGameStart(String title, String subtitle) {
         sendActionBarToAllGamePlayers(
-                MessageConfig.GAME_START_ACTION_BAR.replace("%game%", gameTypeEnum.toString()));
+                GameMessages.GAME_START_ACTION_BAR.replace("%game%", gameTypeEnum.toString()));
         sendTitleToAllGamePlayers(title, subtitle);
         logGame(
                 Level.INFO,
@@ -1666,15 +1131,15 @@ public abstract class BaseGameInstance {
             return;
         }
         sendActionBarToAllGamePlayers(
-                MessageConfig.GAME_END_ACTION_BAR.replace("%game%", gameTypeEnum.toString()));
+                GameMessages.GAME_END_ACTION_BAR.replace("%game%", gameTypeEnum.toString()));
         boolean hasNextRound =
                 isFormalEventRun()
                         && plugin.getScheduleManager() != null
                         && plugin.getScheduleManager().hasNextRound(gameTypeEnum);
         String completionTitle =
                 hasNextRound
-                        ? MessageConfig.GAME_ROUND_COMPLETE_TITLE
-                        : MessageConfig.GAME_ROUND_END_TITLE;
+                        ? GameMessages.GAME_ROUND_COMPLETE_TITLE
+                        : GameMessages.GAME_ROUND_END_TITLE;
         sendTitleToAllGamePlayers(completionTitle, subtitle);
         logGame(
                 Level.INFO,
@@ -1698,13 +1163,7 @@ public abstract class BaseGameInstance {
 
     /** Cancels a running rule-introduction phase (task + flag); safe to call at any time. */
     public void cancelIntroduction() {
-        if (introductionTask != null) {
-            introductionTask.cancel();
-            introductionTask = null;
-        }
-        boolean wasActive = introductionPhase;
-        introductionPhase = false;
-        if (wasActive) onIntroductionStopped();
+        if (preparation != null) preparation.cancelIntroduction();
     }
 
     /** Optional game-owned activity; the shared introduction still owns timing and recovery. */
@@ -1720,7 +1179,7 @@ public abstract class BaseGameInstance {
      */
     public Location getPreparationTeleportLocation(@NotNull Location fallback) {
         Location introductionSpawnPoint = resolveIntroductionSpawnPoint();
-        if (introductionPhase && introductionSpawnPoint != null) return introductionSpawnPoint;
+        if (isIntroductionPhase() && introductionSpawnPoint != null) return introductionSpawnPoint;
         return fallback;
     }
 
@@ -1978,11 +1437,12 @@ public abstract class BaseGameInstance {
      * finished and the instance is ready again.
      */
     public CompletableFuture<Boolean> abortAndReset() {
-        if (!Bukkit.isPrimaryThread()) return runOnMain(this::abortAndReset);
+        if (!Bukkit.isPrimaryThread()) return mapLifecycle.runOnMain(this::abortAndReset);
         if (disposed) return CompletableFuture.completedFuture(false);
+        if (!mapLifecycle.activeOperation().isDone())
+            return mapLifecycle.activeOperation().thenApply(Boolean.TRUE::equals);
         if (getGameStageEnum() == GameStageEnum.WAITING)
             return CompletableFuture.completedFuture(true);
-        if (!activeMapLoad.isDone()) return activeMapLoad.thenApply(Boolean.TRUE::equals);
 
         settlementSuppressed = true;
         try {
@@ -1990,12 +1450,13 @@ public abstract class BaseGameInstance {
             // A few implementations legitimately ignore END. If there is no reset already in
             // flight,
             // force the common reset so an interrupted transition cannot remain stuck in END.
-            if (getGameStageEnum() != GameStageEnum.WAITING && activeMapLoad.isDone()) resetGame();
+            if (getGameStageEnum() != GameStageEnum.WAITING
+                    && mapLifecycle.activeOperation().isDone()) resetGame();
         } finally {
             settlementSuppressed = false;
         }
 
-        CompletableFuture<Boolean> completion = activeMapLoad;
+        CompletableFuture<Boolean> completion = mapLifecycle.activeOperation();
         return completion.thenApply(
                 success ->
                         Boolean.TRUE.equals(success)

@@ -2,6 +2,8 @@ package ink.ziip.championshipscore.command;
 
 import ink.ziip.championshipscore.api.daily.DailyStatSnapshot;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.configuration.config.message.AdminMessages;
+import ink.ziip.championshipscore.configuration.config.message.DailyMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
@@ -30,7 +32,7 @@ public final class DailySubCommand extends BaseSubCommand {
             @NotNull String label,
             @NotNull String[] args) {
         if (!(sender instanceof Player player)) {
-            CoreMessages.sendAdminError(sender, MessageConfig.COMMAND_PLAYER_ONLY);
+            CoreMessages.sendAdminError(sender, AdminMessages.COMMAND_PLAYER_ONLY);
             return true;
         }
         if (args.length < 1) {
@@ -41,25 +43,25 @@ public final class DailySubCommand extends BaseSubCommand {
             if (!plugin.getDailyManager().leavePlay(player.getUniqueId()))
                 message(
                         sender,
-                        ink.ziip.championshipscore.configuration.config.message.MessageConfig
+                        ink.ziip.championshipscore.configuration.config.message.DailyMessages
                                 .DAILY_NOT_IN_PLAY);
             return true;
         }
         if (args[0].equalsIgnoreCase("stats")) {
             GameTypeEnum game = args.length > 1 ? parseGame(args[1]) : null;
             if (args.length > 1 && game == null) {
-                message(sender, MessageConfig.COMMAND_UNKNOWN_GAME);
+                message(sender, AdminMessages.COMMAND_UNKNOWN_GAME);
                 return true;
             }
             DailyStatSnapshot stat =
                     plugin.getDailyManager().statsManager().stat(player.getUniqueId(), game);
             message(
                     sender,
-                    MessageConfig.COMMAND_DAILY_STATS
+                    AdminMessages.COMMAND_DAILY_STATS
                             .replace(
                                     "%game%",
                                     game == null
-                                            ? MessageConfig.DAILY_MODE_CHAMPIONSHIP
+                                            ? DailyMessages.DAILY_MODE_CHAMPIONSHIP
                                             : game.toString())
                             .replace("%games%", String.valueOf(stat.gamesPlayed())));
             return true;

@@ -92,7 +92,7 @@ public class AceRaceHandler extends BaseListener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPreviewCrystalInteract(PlayerInteractEntityEvent event) {
         if (!(event.getRightClicked() instanceof EnderCrystal crystal)) return;
-        int index = aceRaceArea.mapEditPreviewRespawnIndex(crystal);
+        int index = aceRaceArea.mapEditPreviewRespawnIndex(event.getPlayer(), crystal);
         if (index < 0) return;
         event.setCancelled(true);
         PrepareSession session = plugin.getPrepareSessionManager().getSession(event.getPlayer());

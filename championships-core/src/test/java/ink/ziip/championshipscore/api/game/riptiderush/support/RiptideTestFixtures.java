@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.riptiderush.support;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import ink.ziip.championshipscore.api.game.riptiderush.config.RiptideRushConfig;
@@ -38,12 +40,8 @@ public final class RiptideTestFixtures {
 
     public static RiptideRushConfig config() throws Exception {
         // Only configuration parsing is exercised; avoid JavaPlugin's server-only constructor.
-        var field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-        field.setAccessible(true);
-        var unsafe = (sun.misc.Unsafe) field.get(null);
-        var plugin =
-                (ink.ziip.championshipscore.ChampionshipsCore)
-                        unsafe.allocateInstance(ink.ziip.championshipscore.ChampionshipsCore.class);
+
+        var plugin = allocate(ink.ziip.championshipscore.ChampionshipsCore.class);
         var c = new RiptideRushConfig(plugin, "raft-test");
         var yaml = defaults();
         c.loadFromConfiguration(yaml);

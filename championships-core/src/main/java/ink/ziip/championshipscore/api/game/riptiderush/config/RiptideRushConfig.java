@@ -3,6 +3,8 @@ package ink.ziip.championshipscore.api.game.riptiderush.config;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
 import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideCourseGeometry;
+import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideCoursePlan;
+import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideFinishPlatform;
 import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideHitwCatalog;
 import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideLevelTemplate;
 import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideLevelType;
@@ -53,6 +55,47 @@ public class RiptideRushConfig extends BaseGameConfig {
 
     @ConfigOption(path = "finish-point", nullable = true)
     private Location finishPoint;
+
+    @ConfigOption(path = "course.finish-platform.building")
+    private String finishPlatformBuilding = "";
+
+    @ConfigOption(path = "course.finish-platform.background")
+    private String finishPlatformBackground = "";
+
+    private String resolvedFinishBuilding;
+    private String resolvedFinishBackground;
+    private RiptideFinishPlatform resolvedFinishPlatform;
+
+    public RiptideFinishPlatform resolveFinishPlatform() {
+        if (finishPlatformBuilding.isEmpty() && finishPlatformBackground.isEmpty()) return null;
+        if (!finishPlatformBuilding.equals(resolvedFinishBuilding)
+                || !finishPlatformBackground.equals(resolvedFinishBackground)) {
+            var platform =
+                    new RiptideFinishPlatform(finishPlatformBuilding, finishPlatformBackground);
+            resolvedFinishPlatform = platform;
+            resolvedFinishBuilding = finishPlatformBuilding;
+            resolvedFinishBackground = finishPlatformBackground;
+        }
+        return resolvedFinishPlatform;
+    }
+
+    @ConfigOption(path = "course.layout.adaptive")
+    private boolean adaptiveLayout;
+
+    @ConfigOption(path = "course.layout.minimum-length")
+    private int minimumCourseLength = 500;
+
+    @ConfigOption(path = "course.layout.maximum-length")
+    private int maximumCourseLength = 650;
+
+    @ConfigOption(path = "course.layout.transition-seconds")
+    private double transitionSeconds = 1.5;
+
+    @ConfigOption(path = "course.layout.clearance-blocks")
+    private int clearanceBlocks = 6;
+
+    @ConfigOption(path = "course.layout.time-reserve-seconds")
+    private int timeReserveSeconds = 10;
 
     @ConfigOption(path = "course.wall-groups")
     private boolean wallGroups = true;
@@ -416,6 +459,7 @@ public class RiptideRushConfig extends BaseGameConfig {
     private int maximumOperand;
 
     public RiptideCourseGeometry resolveGeometry() {
+        validateLayout();
         if (startPoint == null || finishPoint == null)
             throw new IllegalArgumentException("start and finish are required");
         // Draft configs are read before their world is loaded. Resolve against the current
@@ -429,14 +473,56 @@ public class RiptideRushConfig extends BaseGameConfig {
             startPoint.setWorld(world);
             finishPoint.setWorld(world);
         }
-        return RiptideCourseGeometry.resolve(
-                startPoint.clone(), finishPoint.clone(), raftWidth, raftLength);
+        var geometry =
+                RiptideCourseGeometry.resolve(
+                        startPoint.clone(), finishPoint.clone(), raftWidth, raftLength);
+        return adaptiveLayout ? geometry.withLength(minimumCourseLength) : geometry;
+    }
+
+    public void validateLayout() {
+        if (!adaptiveLayout) return;
+        if (minimumCourseLength < 16
+                || maximumCourseLength < minimumCourseLength
+                || maximumCourseLength > 4096
+                || !Double.isFinite(transitionSeconds)
+                || transitionSeconds < 0
+                || transitionSeconds > 10
+                || clearanceBlocks < 2
+                || clearanceBlocks > 64
+                || timeReserveSeconds < 0
+                || timeReserveSeconds >= timer)
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-rush-config.invalid-layout"));
+    }
+
+    /** The entire reserved corridor must remain inside the map's owned area. */
+    public RiptideCourseGeometry resolveGenerationGeometry() {
+        validateLayout();
+        var geometry = resolveGeometry();
+        var reserved = adaptiveLayout ? geometry.withLength(maximumCourseLength) : geometry;
+        var platform = resolveFinishPlatform();
+        if (platform != null)
+            platform.validate(geometry.totalSteps(), reserved.totalSteps(), geometry.halfLength());
+        return reserved;
+    }
+
+    public RiptideCourseGeometry resolveGeometry(RiptideCoursePlan plan) {
+        var reserved = resolveGenerationGeometry();
+        if (plan.totalSteps() > reserved.totalSteps())
+            throw new IllegalArgumentException(
+                    MessageConfig.codeText("riptide-rush-config.plan-outside-reserve"));
+        return reserved.withLength(plan.totalSteps());
     }
 
     @Override
     public @Nullable Vector getAreaPos1() {
         try {
-            return resolveGeometry().areaMinimum(Math.max(2, obstacleMargin), 12);
+            var geometry = resolveGenerationGeometry();
+            var minimum = geometry.areaMinimum(Math.max(2, obstacleMargin), 12);
+            var platform = resolveFinishPlatform();
+            return platform == null
+                    ? minimum
+                    : Vector.getMinimum(minimum, platform.backgroundBounds().minimum(geometry));
         } catch (RuntimeException ignored) {
             return null;
         }
@@ -445,8 +531,14 @@ public class RiptideRushConfig extends BaseGameConfig {
     @Override
     public @Nullable Vector getAreaPos2() {
         try {
-            return resolveGeometry()
-                    .areaMaximum(Math.max(2, obstacleMargin), Math.max(12, clearHeight + 3));
+            var geometry = resolveGenerationGeometry();
+            var maximum =
+                    geometry.areaMaximum(
+                            Math.max(2, obstacleMargin), Math.max(12, clearHeight + 3));
+            var platform = resolveFinishPlatform();
+            return platform == null
+                    ? maximum
+                    : Vector.getMaximum(maximum, platform.backgroundBounds().maximum(geometry));
         } catch (RuntimeException ignored) {
             return null;
         }

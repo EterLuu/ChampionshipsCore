@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.manager;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
@@ -33,11 +35,9 @@ class GameManagerRoundTransitionTest {
 
     @Test
     void endingScheduleReleasesOfflineRoundHoldsWithoutTouchingOtherGames() throws Exception {
-        var field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-        field.setAccessible(true);
-        var unsafe = (sun.misc.Unsafe) field.get(null);
-        var manager = (GameManager) unsafe.allocateInstance(GameManager.class);
-        var plugin = (ChampionshipsCore) unsafe.allocateInstance(ChampionshipsCore.class);
+
+        var manager = allocate(GameManager.class);
+        var plugin = allocate(ChampionshipsCore.class);
         set(
                 ChampionshipsCore.class,
                 plugin,
@@ -46,8 +46,8 @@ class GameManagerRoundTransitionTest {
         var spectators = new SpectatorManager(plugin, manager);
         set(GameManager.class, manager, "spectatorManager", spectators);
         set(GameManager.class, manager, "playerSpectatorStatus", new HashMap<>());
-        var riptide = (RiptideRushArea) unsafe.allocateInstance(RiptideRushArea.class);
-        var other = (RiptideRushArea) unsafe.allocateInstance(RiptideRushArea.class);
+        var riptide = allocate(RiptideRushArea.class);
+        var other = allocate(RiptideRushArea.class);
         set(BaseGameInstance.class, riptide, "gameTypeEnum", GameTypeEnum.RiptideRush);
         set(BaseGameInstance.class, other, "gameTypeEnum", GameTypeEnum.TNTRun);
         var holdType =

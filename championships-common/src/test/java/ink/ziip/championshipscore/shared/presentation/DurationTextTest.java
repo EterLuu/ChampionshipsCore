@@ -37,12 +37,35 @@ class DurationTextTest {
     }
 
     @Test
-    void localizedBossBarsUseTheSameThresholdAndOrdinaryClocksKeepTheirOriginalFormat() {
+    void localizedBossBarsUseTheSameThreshold() {
         assertEquals("60s", DurationText.bossBarSeconds(60, "%seconds%s", "%minutes%m %seconds%s"));
         assertEquals(
                 "1m 1s", DurationText.bossBarSeconds(61, "%seconds%s", "%minutes%m %seconds%s"));
         assertEquals(
                 "11m 40s", DurationText.bossBarSeconds(700, "%seconds%s", "%minutes%m %seconds%s"));
-        assertEquals("11:40", DurationText.minutesSeconds(700));
+    }
+
+    @Test
+    void ordinaryCountdownsUsePaddedMinutesAndSecondsAndClampNegativeValues() {
+        var examples =
+                Map.of(
+                        -1L,
+                        "00:00",
+                        0L,
+                        "00:00",
+                        7L,
+                        "00:07",
+                        599L,
+                        "09:59",
+                        700L,
+                        "11:40",
+                        12 * 60L + 56,
+                        "12:56");
+        examples.forEach(
+                (seconds, expected) ->
+                        assertEquals(
+                                expected,
+                                DurationText.minutesSeconds(seconds),
+                                seconds.toString()));
     }
 }

@@ -151,24 +151,23 @@ class RiptideBlueprintTest {
     }
 
     @Test
-    void mathAndFloorPreserveMechanicClearance() {
-        var gate = new boolean[7][7][6];
-        for (int y = 0; y < 3; y++) gate[3][3][y] = true;
-        assertDoesNotThrow(() -> validateClearance(gate, RiptideLevelType.MATH));
-        gate[3][1][2] = true;
+    void clearanceOnlyChecksTheMathPlaneAndFloorHeadroom() {
+        // Seven-slice legacy footprint: the centre pillar is allowed, the answer lane and the deck
+        // are not.
+        var shortGate = new boolean[7][7][6];
+        for (int y = 0; y < 3; y++) shortGate[3][3][y] = true;
+        assertDoesNotThrow(() -> validateClearance(shortGate, RiptideLevelType.MATH));
+        shortGate[3][1][2] = true;
         assertThrows(
                 IllegalArgumentException.class,
-                () -> validateClearance(gate, RiptideLevelType.MATH));
+                () -> validateClearance(shortGate, RiptideLevelType.MATH));
         var deck = new boolean[7][7][6];
         assertDoesNotThrow(() -> validateClearance(deck, RiptideLevelType.COLOR_FLOOR));
         deck[0][0][0] = true;
         assertThrows(
                 IllegalArgumentException.class,
                 () -> validateClearance(deck, RiptideLevelType.COLOR_FLOOR));
-    }
-
-    @Test
-    void clearanceOnlyChecksTheMathPlaneAndFloorHeadroom() {
+        // Fifteen-slice expanded footprint.
         var shape = new boolean[15][7][12];
         for (int x = 0; x < 7; x++) for (int y = 0; y < 12; y++) shape[13][x][y] = true;
         assertDoesNotThrow(() -> validateClearance(shape, RiptideLevelType.PASS));

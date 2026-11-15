@@ -10,16 +10,34 @@ import ink.ziip.championshipscore.logging.LogText;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.UUID;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class RankDaoImpl implements RankDao {
-    private final ChampionshipsCore plugin = ChampionshipsCore.getInstance();
+    @FunctionalInterface
+    interface Connections {
+        Connection open() throws SQLException;
+    }
+
+    private final Connections connections;
+    private final Logger logger;
+
+    public RankDaoImpl(ChampionshipsCore plugin) {
+        this(() -> plugin.getDatabaseManager().getConnection(), plugin.getLogger());
+    }
+
+    RankDaoImpl(Connections connections, Logger logger) {
+        this.connections = Objects.requireNonNull(connections);
+        this.logger = Objects.requireNonNull(logger);
+    }
 
     @Override
     public Optional<List<PlayerPointEntry>> getAllValidPlayerPoints() {
-        try (Connection connection = plugin.getDatabaseManager().getConnection();
+        try (Connection connection = connections.open();
                 PreparedStatement statement =
                         connection.prepareStatement(
                                 """
@@ -65,7 +83,7 @@ public class RankDaoImpl implements RankDao {
     @Override
     public boolean addPlayerPoints(List<PlayerPointEntry> playerPointEntries) {
         if (playerPointEntries.isEmpty()) return true;
-        try (Connection connection = plugin.getDatabaseManager().getConnection()) {
+        try (Connection connection = connections.open()) {
             connection.setAutoCommit(false);
             try {
                 try (PreparedStatement statement =
@@ -94,20 +112,18 @@ public class RankDaoImpl implements RankDao {
                 }
                 connection.commit();
                 for (PlayerPointEntry entry : playerPointEntries) {
-                    plugin.getLogger()
-                            .log(
-                                    Level.INFO,
-                                    LogText.formatModuleLog(
-                                            "Database",
-                                            MessageConfig.codeText(
-                                                    "rank-dao-impl.add-player-points-2"),
-                                            MessageConfig.codeText(
-                                                    "rank-dao-impl.add-player-points-3",
-                                                    entry.getUsername(),
-                                                    entry.getTeam(),
-                                                    entry.getGame().name(),
-                                                    entry.getArea(),
-                                                    entry.getPoints())));
+                    logger.log(
+                            Level.INFO,
+                            LogText.formatModuleLog(
+                                    "Database",
+                                    MessageConfig.codeText("rank-dao-impl.add-player-points-2"),
+                                    MessageConfig.codeText(
+                                            "rank-dao-impl.add-player-points-3",
+                                            entry.getUsername(),
+                                            entry.getTeam(),
+                                            entry.getGame().name(),
+                                            entry.getArea(),
+                                            entry.getPoints())));
                 }
             } catch (SQLException failure) {
                 try {
@@ -126,7 +142,7 @@ public class RankDaoImpl implements RankDao {
 
     @Override
     public Optional<List<GameStatusEntry>> getGameStatusList() {
-        try (Connection connection = plugin.getDatabaseManager().getConnection()) {
+        try (Connection connection = connections.open()) {
             try (PreparedStatement statement =
                     connection.prepareStatement(
                             """
@@ -156,78 +172,87 @@ public class RankDaoImpl implements RankDao {
     }
 
     @Override
-    public int getGameStatusOrder(GameTypeEnum gameTypeEnum) {
-        try (Connection connection = plugin.getDatabaseManager().getConnection()) {
-            try (PreparedStatement statement =
-                    connection.prepareStatement(
-                            """
-                            SELECT `id`, `time`, `game`, `order`
-                            FROM `game_status`
-                            WHERE game=?
-                            """)) {
-                statement.setString(1, gameTypeEnum.name());
-                final ResultSet resultSet = statement.executeQuery();
-                if (resultSet.next()) {
-                    return resultSet.getInt("order");
-                }
-                return -1;
+    public OptionalInt getGameStatusOrder(GameTypeEnum game) {
+        try (Connection connection = connections.open();
+                PreparedStatement statement =
+                        connection.prepareStatement(
+                                "SELECT `order` FROM `game_status` WHERE `game`=?")) {
+            statement.setString(1, game.name());
+            try (ResultSet result = statement.executeQuery()) {
+                return result.next() ? OptionalInt.of(result.getInt("order")) : OptionalInt.empty();
             }
-        } catch (SQLException exception) {
-            logFailure(MessageConfig.codeText("rank-dao-impl.get-game-status-order-1"), exception);
-            return -1;
+        } catch (SQLException failure) {
+            throw new IllegalStateException("Unable to query game order", failure);
         }
     }
 
     @Override
-    public void addGameStatus(GameStatusEntry gameStatusEntry) {
-        try (Connection connection = plugin.getDatabaseManager().getConnection()) {
-            try (PreparedStatement statement =
-                    connection.prepareStatement(
-                            """
-                            INSERT INTO `game_status` (`time`, `game`, `order`)
-                            VALUES (?,?,?);
-                            """,
-                            Statement.RETURN_GENERATED_KEYS)) {
-                statement.setString(1, gameStatusEntry.getTime());
-                statement.setString(2, gameStatusEntry.getGame().name());
-                statement.setInt(3, gameStatusEntry.getOrder());
-                int affectedRows = statement.executeUpdate();
-                if (affectedRows > 0) {
-                    try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
-                        if (generatedKeys.next()) {
-                            generatedKeys.getInt(1);
-                        } else {
-                        }
-                    }
-                } else {
-                }
-            }
-        } catch (SQLException exception) {
-            logFailure(MessageConfig.codeText("rank-dao-impl.add-game-status-1"), exception);
+    public void addGameStatus(GameStatusEntry entry) {
+        try (Connection connection = connections.open();
+                PreparedStatement statement =
+                        connection.prepareStatement(
+                                "INSERT INTO `game_status` (`time`, `game`, `order`) VALUES"
+                                        + " (?,?,?)")) {
+            statement.setString(1, entry.getTime());
+            statement.setString(2, entry.getGame().name());
+            statement.setInt(3, entry.getOrder());
+            if (statement.executeUpdate() != 1)
+                throw new SQLException("Game order was not inserted");
+        } catch (SQLException failure) {
+            throw new IllegalStateException("Unable to insert game order", failure);
         }
     }
 
     @Override
-    public void deleteGameStatus(GameTypeEnum gameTypeEnum) {
-        try (Connection connection = plugin.getDatabaseManager().getConnection()) {
-            try (PreparedStatement statement =
-                    connection.prepareStatement(
-                            """
-                            DELETE
-                            FROM `game_status`
-                            WHERE `game`=?
-                            """)) {
-                statement.setString(1, gameTypeEnum.name());
-                statement.executeUpdate();
+    public void resetGameStatus() {
+        GameTypeEnum[] games = GameTypeEnum.values();
+        String placeholders = String.join(",", java.util.Collections.nCopies(games.length, "?"));
+        try (Connection connection = connections.open();
+                PreparedStatement statement =
+                        connection.prepareStatement(
+                                "DELETE FROM `game_status` WHERE `game` IN ("
+                                        + placeholders
+                                        + ")")) {
+            for (int i = 0; i < games.length; i++) statement.setString(i + 1, games[i].name());
+            statement.executeUpdate();
+        } catch (SQLException failure) {
+            throw new IllegalStateException("Unable to reset game order", failure);
+        }
+    }
+
+    @Override
+    public void deleteGameRecords(GameTypeEnum game) {
+        try (Connection connection = connections.open()) {
+            connection.setAutoCommit(false);
+            try {
+                try (PreparedStatement status =
+                                connection.prepareStatement(
+                                        "DELETE FROM `game_status` WHERE `game`=?");
+                        PreparedStatement points =
+                                connection.prepareStatement(
+                                        "UPDATE `player_points` SET `valid`=0 WHERE `game`=?")) {
+                    status.setString(1, game.name());
+                    points.setString(1, game.name());
+                    status.executeUpdate();
+                    points.executeUpdate();
+                }
+                connection.commit();
+            } catch (SQLException failure) {
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackFailure) {
+                    failure.addSuppressed(rollbackFailure);
+                }
+                throw failure;
             }
-        } catch (SQLException exception) {
-            logFailure(MessageConfig.codeText("rank-dao-impl.delete-game-status-1"), exception);
+        } catch (SQLException failure) {
+            throw new IllegalStateException("Unable to delete game records", failure);
         }
     }
 
     @Override
     public void deletePlayerPoints(UUID uuid, GameTypeEnum gameTypeEnum) {
-        try (Connection connection = plugin.getDatabaseManager().getConnection()) {
+        try (Connection connection = connections.open()) {
             try (PreparedStatement statement =
                     connection.prepareStatement(
                             """
@@ -240,13 +265,13 @@ public class RankDaoImpl implements RankDao {
                 statement.executeUpdate();
             }
         } catch (SQLException exception) {
-            logFailure(MessageConfig.codeText("rank-dao-impl.delete-player-points-1"), exception);
+            throw new IllegalStateException("Unable to delete player points", exception);
         }
     }
 
     @Override
     public void deleteTeamPoints(int teamId, GameTypeEnum gameTypeEnum) {
-        try (Connection connection = plugin.getDatabaseManager().getConnection()) {
+        try (Connection connection = connections.open()) {
             try (PreparedStatement statement =
                     connection.prepareStatement(
                             """
@@ -259,36 +284,17 @@ public class RankDaoImpl implements RankDao {
                 statement.executeUpdate();
             }
         } catch (SQLException exception) {
-            logFailure(MessageConfig.codeText("rank-dao-impl.delete-team-points-1"), exception);
-        }
-    }
-
-    @Override
-    public void deleteGamePoints(GameTypeEnum gameTypeEnum) {
-        try (Connection connection = plugin.getDatabaseManager().getConnection()) {
-            try (PreparedStatement statement =
-                    connection.prepareStatement(
-                            """
-                            UPDATE `player_points`
-                            SET `valid`=0
-                            WHERE `game`=?
-                            """)) {
-                statement.setString(1, gameTypeEnum.name());
-                statement.executeUpdate();
-            }
-        } catch (SQLException exception) {
-            logFailure(MessageConfig.codeText("rank-dao-impl.delete-game-points-1"), exception);
+            throw new IllegalStateException("Unable to delete team points", exception);
         }
     }
 
     private void logFailure(String operation, SQLException exception) {
-        plugin.getLogger()
-                .log(
-                        Level.SEVERE,
-                        LogText.formatModuleLog(
-                                "Database",
-                                MessageConfig.codeText("rank-dao-impl.add-player-points-2"),
-                                MessageConfig.codeText("rank-dao-impl.log-failure-1", operation)),
-                        exception);
+        logger.log(
+                Level.SEVERE,
+                LogText.formatModuleLog(
+                        "Database",
+                        MessageConfig.codeText("rank-dao-impl.add-player-points-2"),
+                        MessageConfig.codeText("rank-dao-impl.log-failure-1", operation)),
+                exception);
     }
 }

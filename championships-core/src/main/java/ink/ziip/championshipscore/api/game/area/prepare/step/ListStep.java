@@ -6,7 +6,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.api.game.spatial.TeleportPositions;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.configuration.location.LocationConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -71,7 +71,7 @@ public class ListStep extends PrepareStep {
                 LocationConfig.asString(TeleportPositions.centerOnBlock(player.getLocation())));
         session.markDirty();
         return CoreMessages.formatAdminSuccess(
-                MessageConfig.MAP_EDITOR_STEP_POINT_ADDED_CURRENT.replace(
+                MapEditorMessages.MAP_EDITOR_STEP_POINT_ADDED_CURRENT.replace(
                         "%count%", String.valueOf(listCount(session))));
     }
 
@@ -79,7 +79,8 @@ public class ListStep extends PrepareStep {
     public String listClear(@NotNull PrepareSession session, @NotNull Player player) {
         clearer.accept(session.getTarget());
         session.markDirty();
-        return CoreMessages.formatAdminSuccess(MessageConfig.MAP_EDITOR_STEP_POINT_LIST_CLEARED);
+        return CoreMessages.formatAdminSuccess(
+                MapEditorMessages.MAP_EDITOR_STEP_POINT_LIST_CLEARED);
     }
 
     @Override
@@ -113,7 +114,7 @@ public class ListStep extends PrepareStep {
         setter.accept(session.getTarget(), values);
         session.markDirty();
         return CoreMessages.formatAdminSuccess(
-                MessageConfig.MAP_EDITOR_STEP_UPDATED.replace(
+                MapEditorMessages.MAP_EDITOR_STEP_UPDATED.replace(
                         "%order%", String.valueOf(index + 1)));
     }
 
@@ -123,14 +124,14 @@ public class ListStep extends PrepareStep {
         List<String> values = values(session);
         if (index < 0 || index >= values.size() || newOrder < 1 || newOrder > values.size())
             return CoreMessages.formatAdminError(
-                    MessageConfig.MAP_EDITOR_STEP_SERIAL_NUMBER_BETWEEN.replace(
+                    MapEditorMessages.MAP_EDITOR_STEP_SERIAL_NUMBER_BETWEEN.replace(
                             "%max%", String.valueOf(values.size())));
         String value = values.remove(index);
         values.add(newOrder - 1, value);
         setter.accept(session.getTarget(), values);
         session.markDirty();
         return CoreMessages.formatAdminSuccess(
-                MessageConfig.MAP_EDITOR_STEP_POINT_ADJUSTED_TO.replace(
+                MapEditorMessages.MAP_EDITOR_STEP_POINT_ADJUSTED_TO.replace(
                         "%order%", String.valueOf(newOrder)));
     }
 
@@ -142,7 +143,7 @@ public class ListStep extends PrepareStep {
         setter.accept(session.getTarget(), values);
         session.markDirty();
         return CoreMessages.formatAdminSuccess(
-                MessageConfig.MAP_EDITOR_STEP_DELETED.replace(
+                MapEditorMessages.MAP_EDITOR_STEP_DELETED.replace(
                         "%order%", String.valueOf(index + 1)));
     }
 

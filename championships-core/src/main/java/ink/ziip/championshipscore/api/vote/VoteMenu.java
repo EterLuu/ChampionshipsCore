@@ -5,8 +5,8 @@ import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.api.gui.MenuInventory;
 import ink.ziip.championshipscore.api.gui.MenuLayout;
 import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
+import ink.ziip.championshipscore.configuration.config.message.DailyMessages;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import net.kyori.adventure.text.Component;
 
@@ -87,7 +87,7 @@ final class VoteMenu implements Listener {
         GameTypeEnum gameType = holder.gamesBySlot.get(event.getRawSlot());
         if (gameType == null) return;
         if (holder.previewOnly) {
-            player.sendMessage(MessageConfig.VOTE_VOTE_FAILED_ADMIN);
+            player.sendMessage(DailyMessages.VOTE_VOTE_FAILED_ADMIN);
             return;
         }
         manager.vote(player, gameType);

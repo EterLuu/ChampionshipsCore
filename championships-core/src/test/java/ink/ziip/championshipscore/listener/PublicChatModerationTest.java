@@ -1,5 +1,10 @@
 package ink.ziip.championshipscore.listener;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+import static ink.ziip.championshipscore.support.TestObjects.field;
+import static ink.ziip.championshipscore.support.TestObjects.proxy;
+import static ink.ziip.championshipscore.support.TestObjects.set;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
@@ -13,7 +18,9 @@ import ink.ziip.championshipscore.api.team.TeamManager;
 import ink.ziip.championshipscore.command.MainCommand;
 import ink.ziip.championshipscore.command.admin.AdminMainCommand;
 import ink.ziip.championshipscore.configuration.ConfigurationStateExtension;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.AdminMessages;
+import ink.ziip.championshipscore.configuration.config.message.ScoreMessages;
+import ink.ziip.championshipscore.configuration.config.message.ServerMessages;
 import ink.ziip.championshipscore.protocol.CrossServerChatMessage;
 
 import io.papermc.paper.chat.ChatRenderer;
@@ -35,9 +42,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Proxy;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -144,20 +148,20 @@ class PublicChatModerationTest {
                                     }
                                     default -> throw new AssertionError(m.getName());
                                 });
-        MessageConfig.NO_PERMISSION = "denied";
-        MessageConfig.COMMAND_USAGE = "usage %usage% %description%";
-        MessageConfig.MUTE_DEFAULT_REASON = "default reason";
-        MessageConfig.ADMIN_MUTE_SET = "muted %player% %reason%";
-        MessageConfig.ADMIN_TEMP_MUTE_SET = "tempmuted %player% %duration% %reason%";
-        MessageConfig.ADMIN_UNMUTE_SET = "unmuted %player%";
-        MessageConfig.ADMIN_MUTE_NOT_MUTED = "not muted %player%";
-        MessageConfig.ADMIN_MUTE_INVALID_DURATION = "invalid duration";
-        MessageConfig.ADMIN_MUTE_LOOKUP_FAILED = "lookup failed %player%";
-        MessageConfig.ADMIN_MUTE_SAVE_FAILED = "save failed";
-        MessageConfig.CHAT_MUTED_PERMANENT = "public chat muted: %reason%";
-        MessageConfig.CHAT_MUTED_TEMPORARY = "public chat muted: %remaining% %reason%";
-        MessageConfig.CHAT_UNMUTED = "public chat unmuted";
-        MessageConfig.CHAT_TEAM_PREFIX = "[Team] ";
+        ServerMessages.NO_PERMISSION = "denied";
+        AdminMessages.COMMAND_USAGE = "usage %usage% %description%";
+        AdminMessages.MUTE_DEFAULT_REASON = "default reason";
+        AdminMessages.ADMIN_MUTE_SET = "muted %player% %reason%";
+        AdminMessages.ADMIN_TEMP_MUTE_SET = "tempmuted %player% %duration% %reason%";
+        AdminMessages.ADMIN_UNMUTE_SET = "unmuted %player%";
+        AdminMessages.ADMIN_MUTE_NOT_MUTED = "not muted %player%";
+        AdminMessages.ADMIN_MUTE_INVALID_DURATION = "invalid duration";
+        AdminMessages.ADMIN_MUTE_LOOKUP_FAILED = "lookup failed %player%";
+        AdminMessages.ADMIN_MUTE_SAVE_FAILED = "save failed";
+        AdminMessages.CHAT_MUTED_PERMANENT = "public chat muted: %reason%";
+        AdminMessages.CHAT_MUTED_TEMPORARY = "public chat muted: %remaining% %reason%";
+        AdminMessages.CHAT_UNMUTED = "public chat unmuted";
+        AdminMessages.CHAT_TEAM_PREFIX = "[Team] ";
         commands = new MainCommand();
         commands.addSubCommand(new AdminMainCommand());
     }
@@ -273,8 +277,8 @@ class PublicChatModerationTest {
         set(plugin, "gameManager", allocate(TestGames.class));
         var daily = allocate(ink.ziip.championshipscore.api.daily.DailyManager.class);
         set(plugin, "dailyManager", daily);
-        MessageConfig.PRESENTATION_DAILY_LOBBY = "大厅";
-        MessageConfig.PLACEHOLDER_SPECTATOR = "旁观";
+        ScoreMessages.PRESENTATION_DAILY_LOBBY = "大厅";
+        ScoreMessages.PLACEHOLDER_SPECTATOR = "旁观";
         var listener = allocate(PlayerListener.class);
         set(listener, "plugin", plugin);
         for (boolean dailyMode : new boolean[] {false, true}) {
@@ -418,32 +422,5 @@ class PublicChatModerationTest {
         public BaseGameInstance getPlayerSpectatorStatus(UUID id) {
             return null;
         }
-    }
-
-    private static <T> T proxy(Class<T> type, InvocationHandler handler) {
-        return type.cast(
-                Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[] {type}, handler));
-    }
-
-    private static <T> T allocate(Class<T> type) throws Exception {
-        return type.cast(
-                ((sun.misc.Unsafe) field(sun.misc.Unsafe.class, "theUnsafe").get(null))
-                        .allocateInstance(type));
-    }
-
-    private static void set(Object target, String name, Object value) throws Exception {
-        field(target.getClass(), name).set(target, value);
-    }
-
-    private static Field field(Class<?> type, String name) throws NoSuchFieldException {
-        for (Class<?> current = type; current != null; current = current.getSuperclass()) {
-            try {
-                Field field = current.getDeclaredField(name);
-                field.setAccessible(true);
-                return field;
-            } catch (NoSuchFieldException ignored) {
-            }
-        }
-        throw new NoSuchFieldException(name);
     }
 }

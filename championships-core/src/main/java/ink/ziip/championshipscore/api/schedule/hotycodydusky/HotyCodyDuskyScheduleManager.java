@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.game.model.GameRunMode;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.api.schedule.FormalSchedule;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
@@ -17,7 +18,7 @@ import org.bukkit.scheduler.BukkitTask;
 
 import java.util.*;
 
-public class HotyCodyDuskyScheduleManager extends BaseManager {
+public class HotyCodyDuskyScheduleManager extends BaseManager implements FormalSchedule {
     private long scheduleGeneration;
     private static final int ROUND_TRANSITION_SECONDS = 10;
     private final int hotyCodyDuskyRounds = 3;
@@ -49,10 +50,10 @@ public class HotyCodyDuskyScheduleManager extends BaseManager {
         }
     }
 
-    public void startHotyCodyDusky() {
+    public boolean startGame() {
         if (enabled) {
             endSchedule();
-            return;
+            return false;
         }
 
         plugin.getScheduleManager().addRound(GameTypeEnum.HotyCodyDusky);
@@ -90,6 +91,7 @@ public class HotyCodyDuskyScheduleManager extends BaseManager {
                         },
                         0,
                         20L);
+        return enabled;
     }
 
     public void startHotyCodyDuskyRound() {

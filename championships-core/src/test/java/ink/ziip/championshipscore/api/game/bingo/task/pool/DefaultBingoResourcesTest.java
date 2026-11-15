@@ -406,49 +406,22 @@ class DefaultBingoResourcesTest {
                                 Logger.getLogger(DefaultBingoResourcesTest.class.getName()),
                                 "default.yml");
 
-        assertEquals(Difficulty.EASY, tierlist.resolve("mine:STONE").orElseThrow());
-        assertEquals(Difficulty.VERY_HARD, tierlist.resolve("mine:ANCIENT_DEBRIS").orElseThrow());
-        assertEquals(Difficulty.HARD, tierlist.resolve("event:craft_unique::50").orElseThrow());
-        assertEquals(
-                Difficulty.MEDIUM,
-                tierlist.resolve("event:break_item:WOODEN_PICKAXE").orElseThrow());
-        assertEquals(Difficulty.MEDIUM, tierlist.resolve("MUSIC_DISC_13").orElseThrow());
-        assertEquals(Difficulty.MEDIUM, tierlist.resolve("MUSIC_DISC_CAT").orElseThrow());
-        assertEquals(Difficulty.MEDIUM, tierlist.resolve("set:MUSIC_DISC_CAT").orElseThrow());
-        assertEquals(Difficulty.HARD, tierlist.resolve("MUSIC_DISC_OTHERSIDE").orElseThrow());
-        assertEquals(Difficulty.HARD, tierlist.resolve("MUSIC_DISC_PIGSTEP").orElseThrow());
-        assertEquals(Difficulty.HARD, tierlist.resolve("MUSIC_DISC_PRECIPICE").orElseThrow());
-        assertEquals(Difficulty.HARD, tierlist.resolve("MUSIC_DISC_TEARS").orElseThrow());
-        assertEquals(Difficulty.HARD, tierlist.resolve("MUSIC_DISC_RELIC").orElseThrow());
-        assertEquals(Difficulty.VERY_HARD, tierlist.resolve("MUSIC_DISC_BOUNCE").orElseThrow());
-        assertEquals(Difficulty.VERY_HARD, tierlist.resolve("MUSIC_DISC_CREATOR").orElseThrow());
-        assertEquals(
-                Difficulty.VERY_HARD,
-                tierlist.resolve("MUSIC_DISC_CREATOR_MUSIC_BOX").orElseThrow());
-        assertEquals(
-                Difficulty.VERY_HARD, tierlist.resolve("MUSIC_DISC_LAVA_CHICKEN").orElseThrow());
-        assertEquals(
-                Difficulty.MEDIUM,
-                tierlist.resolve("set:SENTRY_ARMOR_TRIM_SMITHING_TEMPLATE").orElseThrow());
-        EXPECTED_SMITHING_TEMPLATE_DIFFICULTIES.forEach(
-                (objectiveId, difficulty) ->
-                        assertEquals(
-                                difficulty,
-                                tierlist.resolve(objectiveId).orElseThrow(),
-                                objectiveId));
-        assertEquals(
-                Difficulty.VERY_HARD, tierlist.resolve("event:wear_full_enchanted:").orElseThrow());
+        var expected = new java.util.LinkedHashMap<String, Difficulty>();
         for (String objective :
                 List.of(
+                        "mine:STONE",
                         "WHITE_CUSHION",
                         "LIGHT_BLUE_WOOL_STAIRS",
                         "set:WHITE_WOOL_SLAB",
                         "STRAW_BED",
-                        "stat:SLEEP_IN_STRAW_BED")) {
-            assertEquals(Difficulty.EASY, tierlist.resolve(objective).orElseThrow(), objective);
-        }
+                        "stat:SLEEP_IN_STRAW_BED")) expected.put(objective, Difficulty.EASY);
         for (String objective :
                 List.of(
+                        "event:break_item:WOODEN_PICKAXE",
+                        "MUSIC_DISC_13",
+                        "MUSIC_DISC_CAT",
+                        "set:MUSIC_DISC_CAT",
+                        "set:SENTRY_ARMOR_TRIM_SMITHING_TEMPLATE",
                         "POPLAR_LOG",
                         "STRIPPED_POPLAR_WOOD",
                         "RED_POPLAR_LEAVES",
@@ -456,18 +429,39 @@ class DefaultBingoResourcesTest {
                         "RED_SHRUB",
                         "GRAY_CONCRETE_STAIRS",
                         "set:WHITE_CONCRETE_SLAB",
-                        "event:visit_biomes:DAPPLED_FOREST")) {
-            assertEquals(Difficulty.MEDIUM, tierlist.resolve(objective).orElseThrow(), objective);
-        }
+                        "event:visit_biomes:DAPPLED_FOREST"))
+            expected.put(objective, Difficulty.MEDIUM);
         for (String objective :
                 List.of(
                         "all:RED_MUSHROOM",
                         "ABANDONED_CAMP_MAP",
                         "BURIED_TREASURE_MAP",
-                        "set:BURIED_TREASURE_MAP")) {
-            assertEquals(Difficulty.ADVANCED, tierlist.resolve(objective).orElseThrow(), objective);
-        }
-        assertEquals(Difficulty.HARD, tierlist.resolve("BURIED_ANCIENT_CITY_MAP").orElseThrow());
+                        "set:BURIED_TREASURE_MAP")) expected.put(objective, Difficulty.ADVANCED);
+        for (String objective :
+                List.of(
+                        "event:craft_unique::50",
+                        "MUSIC_DISC_OTHERSIDE",
+                        "MUSIC_DISC_PIGSTEP",
+                        "MUSIC_DISC_PRECIPICE",
+                        "MUSIC_DISC_TEARS",
+                        "MUSIC_DISC_RELIC",
+                        "BURIED_ANCIENT_CITY_MAP")) expected.put(objective, Difficulty.HARD);
+        for (String objective :
+                List.of(
+                        "mine:ANCIENT_DEBRIS",
+                        "MUSIC_DISC_BOUNCE",
+                        "MUSIC_DISC_CREATOR",
+                        "MUSIC_DISC_CREATOR_MUSIC_BOX",
+                        "MUSIC_DISC_LAVA_CHICKEN",
+                        "event:wear_full_enchanted:"))
+            expected.put(objective, Difficulty.VERY_HARD);
+        expected.putAll(EXPECTED_SMITHING_TEMPLATE_DIFFICULTIES);
+        var actual = new java.util.LinkedHashMap<String, Difficulty>();
+        expected.keySet()
+                .forEach(
+                        objective ->
+                                actual.put(objective, tierlist.resolve(objective).orElse(null)));
+        assertEquals(expected, actual);
     }
 
     /**

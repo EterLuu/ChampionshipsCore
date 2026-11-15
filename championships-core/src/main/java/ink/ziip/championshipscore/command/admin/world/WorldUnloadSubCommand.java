@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.command.admin.world;
 
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.AdminMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -36,11 +37,11 @@ public class WorldUnloadSubCommand extends BaseSubCommand {
         World world = Bukkit.getWorld(args[0]);
         if (world == null) {
             CoreMessages.sendAdminError(
-                    sender, MessageConfig.ADMIN_WORLD_NOT_LOADED.replace("%world%", args[0]));
+                    sender, AdminMessages.ADMIN_WORLD_NOT_LOADED.replace("%world%", args[0]));
             return true;
         }
         if (plugin.getWorldManager().isMainWorld(world)) {
-            CoreMessages.sendAdminError(sender, MessageConfig.ADMIN_WORLD_MAIN_PROTECTED_UNLOAD);
+            CoreMessages.sendAdminError(sender, AdminMessages.ADMIN_WORLD_MAIN_PROTECTED_UNLOAD);
             return true;
         }
 
@@ -48,19 +49,19 @@ public class WorldUnloadSubCommand extends BaseSubCommand {
         if (!plugin.getWorldManager().unloadWorld(world.getName(), true)) {
             CoreMessages.sendAdminError(
                     sender,
-                    MessageConfig.ADMIN_WORLD_UNLOAD_FAILED.replace("%world%", world.getName()));
+                    AdminMessages.ADMIN_WORLD_UNLOAD_FAILED.replace("%world%", world.getName()));
             return true;
         }
 
         CoreMessages.sendAdminSuccess(
                 sender,
-                MessageConfig.ADMIN_WORLD_UNLOADED
+                AdminMessages.ADMIN_WORLD_UNLOADED
                         .replace("%world%", world.getName())
                         .replace(
                                 "%moved%",
                                 movedPlayers == 0
                                         ? ""
-                                        : MessageConfig.ADMIN_WORLD_MOVED_PLAYERS.replace(
+                                        : AdminMessages.ADMIN_WORLD_MOVED_PLAYERS.replace(
                                                 "%count%", String.valueOf(movedPlayers))));
         return true;
     }

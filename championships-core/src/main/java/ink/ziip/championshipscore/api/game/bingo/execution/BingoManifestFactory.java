@@ -11,7 +11,12 @@ import ink.ziip.championshipscore.api.game.bingo.util.MessageService;
 import ink.ziip.championshipscore.api.game.model.GameRunMode;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.config.message.AdminMessages;
+import ink.ziip.championshipscore.configuration.config.message.BingoMessages;
+import ink.ziip.championshipscore.configuration.config.message.DailyMessages;
+import ink.ziip.championshipscore.configuration.config.message.GameMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.ScoreMessages;
 import ink.ziip.championshipscore.protocol.BingoContentCatalog;
 import ink.ziip.championshipscore.protocol.BingoDimension;
 import ink.ziip.championshipscore.protocol.BingoIntroductionMode;
@@ -247,12 +252,12 @@ public final class BingoManifestFactory {
                                 ink.ziip.championshipscore.shared.presentation
                                         .PlayerListPresentation.SPECTATOR_PREFIX));
         messages.put("game.name", GameTypeEnum.Bingo.toString());
-        messages.put("game.preparation-countdown", MessageConfig.GAME_PREPARATION_COUNT_DOWN);
-        messages.put("game.introduction-title", MessageConfig.GAME_INTRODUCTION_TITLE);
-        messages.put("game.start-countdown-title", MessageConfig.GAME_START_COUNT_DOWN_TITLE);
-        messages.put("game.start-countdown-subtitle", MessageConfig.GAME_START_COUNT_DOWN_SUBTITLE);
-        messages.put("game.start-action-bar", MessageConfig.GAME_START_ACTION_BAR);
-        messages.put("game.end-action-bar", MessageConfig.GAME_END_ACTION_BAR);
+        messages.put("game.preparation-countdown", GameMessages.GAME_PREPARATION_COUNT_DOWN);
+        messages.put("game.introduction-title", GameMessages.GAME_INTRODUCTION_TITLE);
+        messages.put("game.start-countdown-title", GameMessages.GAME_START_COUNT_DOWN_TITLE);
+        messages.put("game.start-countdown-subtitle", GameMessages.GAME_START_COUNT_DOWN_SUBTITLE);
+        messages.put("game.start-action-bar", GameMessages.GAME_START_ACTION_BAR);
+        messages.put("game.end-action-bar", GameMessages.GAME_END_ACTION_BAR);
         boolean hasNextRound =
                 runMode == GameRunMode.EVENT
                         && plugin.getScheduleManager() != null
@@ -260,50 +265,50 @@ public final class BingoManifestFactory {
         messages.put(
                 "game.completion-title",
                 hasNextRound
-                        ? MessageConfig.GAME_ROUND_COMPLETE_TITLE
-                        : MessageConfig.GAME_ROUND_END_TITLE);
-        messages.put("bingo.start-preparation", MessageConfig.BINGO_START_PREPARATION);
-        messages.put("bingo.start-preparation-title", MessageConfig.BINGO_START_PREPARATION_TITLE);
+                        ? GameMessages.GAME_ROUND_COMPLETE_TITLE
+                        : GameMessages.GAME_ROUND_END_TITLE);
+        messages.put("bingo.start-preparation", BingoMessages.BINGO_START_PREPARATION);
+        messages.put("bingo.start-preparation-title", BingoMessages.BINGO_START_PREPARATION_TITLE);
         messages.put(
-                "bingo.start-preparation-subtitle", MessageConfig.BINGO_START_PREPARATION_SUBTITLE);
-        messages.put("bingo.game-start", MessageConfig.BINGO_GAME_START);
-        messages.put("bingo.game-start-title", MessageConfig.BINGO_GAME_START_TITLE);
-        messages.put("bingo.game-start-subtitle", MessageConfig.BINGO_GAME_START_SUBTITLE);
-        messages.put("bingo.game-end", MessageConfig.BINGO_GAME_END);
-        messages.put("bingo.game-end-title", MessageConfig.BINGO_GAME_END_TITLE);
-        messages.put("bingo.game-end-subtitle", MessageConfig.BINGO_GAME_END_SUBTITLE);
-        messages.put("bingo.timer", MessageConfig.BINGO_ACTION_BAR_COUNT_DOWN);
-        messages.put("bingo.timer-pvp", MessageConfig.BINGO_ACTION_BAR_COUNT_DOWN_PVP);
+                "bingo.start-preparation-subtitle", BingoMessages.BINGO_START_PREPARATION_SUBTITLE);
+        messages.put("bingo.game-start", BingoMessages.BINGO_GAME_START);
+        messages.put("bingo.game-start-title", BingoMessages.BINGO_GAME_START_TITLE);
+        messages.put("bingo.game-start-subtitle", BingoMessages.BINGO_GAME_START_SUBTITLE);
+        messages.put("bingo.game-end", BingoMessages.BINGO_GAME_END);
+        messages.put("bingo.game-end-title", BingoMessages.BINGO_GAME_END_TITLE);
+        messages.put("bingo.game-end-subtitle", BingoMessages.BINGO_GAME_END_SUBTITLE);
+        messages.put("bingo.timer", BingoMessages.BINGO_ACTION_BAR_COUNT_DOWN);
+        messages.put("bingo.timer-pvp", BingoMessages.BINGO_ACTION_BAR_COUNT_DOWN_PVP);
         messages.put(
-                "bingo.timer-protection", MessageConfig.BINGO_ACTION_BAR_COUNT_DOWN_PROTECTION);
-        messages.put("bingo.pvp-protection", MessageConfig.BINGO_PVP_PROTECTION);
-        messages.put("bingo.pvp-active", MessageConfig.BINGO_PVP_ACTIVE);
-        messages.put("bingo.pvp-countdown", MessageConfig.BINGO_PVP_START_COUNT_DOWN);
-        messages.put("bingo.pvp-started", MessageConfig.BINGO_PVP_STARTED);
-        messages.put("bingo.task-completed", MessageConfig.BINGO_TASK_COMPLETED);
-        messages.put("bingo.game-winner", MessageConfig.BINGO_GAME_WINNER);
-        messages.put("papi.none", MessageConfig.PLACEHOLDER_NONE);
-        messages.put("papi.spectator", MessageConfig.PLACEHOLDER_SPECTATOR);
+                "bingo.timer-protection", BingoMessages.BINGO_ACTION_BAR_COUNT_DOWN_PROTECTION);
+        messages.put("bingo.pvp-protection", BingoMessages.BINGO_PVP_PROTECTION);
+        messages.put("bingo.pvp-active", BingoMessages.BINGO_PVP_ACTIVE);
+        messages.put("bingo.pvp-countdown", BingoMessages.BINGO_PVP_START_COUNT_DOWN);
+        messages.put("bingo.pvp-started", BingoMessages.BINGO_PVP_STARTED);
+        messages.put("bingo.task-completed", BingoMessages.BINGO_TASK_COMPLETED);
+        messages.put("bingo.game-winner", BingoMessages.BINGO_GAME_WINNER);
+        messages.put("papi.none", ScoreMessages.PLACEHOLDER_NONE);
+        messages.put("papi.spectator", ScoreMessages.PLACEHOLDER_SPECTATOR);
         messages.putAll(MessageConfig.playerTextFormat().attributes());
-        messages.put("presentation.daily-game", MessageConfig.PRESENTATION_DAILY_GAME);
-        messages.put("presentation.tab.team-footer", MessageConfig.PRESENTATION_TAB_TEAM_FOOTER);
+        messages.put("presentation.daily-game", ScoreMessages.PRESENTATION_DAILY_GAME);
+        messages.put("presentation.tab.team-footer", ScoreMessages.PRESENTATION_TAB_TEAM_FOOTER);
         messages.put(
                 "presentation.tab.daily-team-footer",
-                MessageConfig.PRESENTATION_TAB_DAILY_TEAM_FOOTER);
+                ScoreMessages.PRESENTATION_TAB_DAILY_TEAM_FOOTER);
         messages.put(
                 "presentation.tab.current-game-footer",
-                MessageConfig.PRESENTATION_TAB_CURRENT_GAME_FOOTER);
-        messages.put("chat.team.prefix", MessageConfig.CHAT_TEAM_PREFIX);
-        messages.put("prefix", runMode == GameRunMode.DAILY ? MessageConfig.DAILY_PREFIX : "");
-        messages.put("chat.team.usage", MessageConfig.CHAT_TEAM_USAGE);
-        messages.put("chat.team.unavailable", MessageConfig.CHAT_TEAM_UNAVAILABLE);
-        messages.put("sidebar.status.waiting", MessageConfig.AREA_STATUS_WAITING);
-        messages.put("sidebar.status.loading", MessageConfig.AREA_STATUS_LOADING);
-        messages.put("sidebar.status.preparation", MessageConfig.AREA_STATUS_PREPARATION);
-        messages.put("sidebar.status.countdown", MessageConfig.AREA_STATUS_COUNTDOWN);
-        messages.put("sidebar.status.progress", MessageConfig.AREA_STATUS_PROGRESS);
-        messages.put("sidebar.status.stopping", MessageConfig.AREA_STATUS_STOPPING);
-        messages.put("sidebar.status.end", MessageConfig.AREA_STATUS_END);
+                ScoreMessages.PRESENTATION_TAB_CURRENT_GAME_FOOTER);
+        messages.put("chat.team.prefix", AdminMessages.CHAT_TEAM_PREFIX);
+        messages.put("prefix", runMode == GameRunMode.DAILY ? DailyMessages.DAILY_PREFIX : "");
+        messages.put("chat.team.usage", AdminMessages.CHAT_TEAM_USAGE);
+        messages.put("chat.team.unavailable", AdminMessages.CHAT_TEAM_UNAVAILABLE);
+        messages.put("sidebar.status.waiting", GameMessages.AREA_STATUS_WAITING);
+        messages.put("sidebar.status.loading", GameMessages.AREA_STATUS_LOADING);
+        messages.put("sidebar.status.preparation", GameMessages.AREA_STATUS_PREPARATION);
+        messages.put("sidebar.status.countdown", GameMessages.AREA_STATUS_COUNTDOWN);
+        messages.put("sidebar.status.progress", GameMessages.AREA_STATUS_PROGRESS);
+        messages.put("sidebar.status.stopping", GameMessages.AREA_STATUS_STOPPING);
+        messages.put("sidebar.status.end", GameMessages.AREA_STATUS_END);
         for (String key :
                 List.of(
                         "card.title",

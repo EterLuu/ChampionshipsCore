@@ -43,6 +43,7 @@ import ink.ziip.championshipscore.api.schedule.model.TwoVTwoVector;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.MainCommand;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.configuration.config.message.GameMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 
@@ -89,6 +90,7 @@ public class GameManager extends BaseManager {
     private final Map<UUID, RemoteBingoInstance> remoteBingoInstances = new ConcurrentHashMap<>();
     private final Map<BaseGameInstance, Set<ChampionshipTeam>> pendingFinaleAudience =
             new ConcurrentHashMap<>();
+    private final GameHotReload hotReload = new GameHotReload(new ReloadHost());
     private final GameManagerHandler gameManagerHandler;
     private final SpectateMenu spectateMenu;
     @Getter private final SpectatorManager spectatorManager;
@@ -241,7 +243,18 @@ public class GameManager extends BaseManager {
         BaseGameInstanceManager<? extends BaseGameInstance> manager =
                 areaManagers.get(gameTypeEnum);
         if (manager == null || !loadedGameManagers.add(gameTypeEnum)) return false;
-        manager.load();
+        try {
+            manager.load();
+        } catch (RuntimeException | Error failure) {
+            try {
+                manager.unload();
+                loadedGameManagers.remove(gameTypeEnum);
+            } catch (RuntimeException | Error cleanupFailure) {
+                // Keep ownership visible if partial registration could not be cleaned up.
+                failure.addSuppressed(cleanupFailure);
+            }
+            throw failure;
+        }
         plugin.getLogger()
                 .log(
                         Level.INFO,
@@ -330,153 +343,88 @@ public class GameManager extends BaseManager {
             throw new IllegalStateException("GameManager hot reload must run on the server thread");
 
         enabledGames = null;
-        Set<GameTypeEnum> currentlyEnabled = Set.copyOf(getEnabledGames());
-        Set<GameTypeEnum> managersToDisable = EnumSet.noneOf(GameTypeEnum.class);
-        for (GameTypeEnum gameType : previouslyEnabled) {
-            if (!currentlyEnabled.contains(gameType) && loadedGameManagers.contains(gameType))
-                managersToDisable.add(gameType);
-        }
-        Set<GameTypeEnum> managersToEnable = EnumSet.noneOf(GameTypeEnum.class);
-        for (GameTypeEnum gameType : currentlyEnabled) {
-            if (!loadedGameManagers.contains(gameType)) managersToEnable.add(gameType);
+        return hotReload.reload(previouslyEnabled, Set.copyOf(getEnabledGames()));
+    }
+
+    /** Adapts the existing registries and arena lifecycle without storing a second registry. */
+    private final class ReloadHost implements GameHotReload.Host {
+        public Set<GameTypeEnum> loadedGames() {
+            return Set.copyOf(loadedGameManagers);
         }
 
-        int resetInstances = 0;
-        int remoteMatchesStopped = 0;
-
-        Set<ink.ziip.championshipscore.api.game.config.BaseGameConfig> activeConfigurations =
-                Collections.newSetFromMap(new IdentityHashMap<>());
-        for (GameTypeEnum gameType : Set.copyOf(loadedGameManagers)) {
-            if (managersToDisable.contains(gameType)) continue;
-            BaseGameInstanceManager<? extends BaseGameInstance> manager =
-                    areaManagers.get(gameType);
-            if (manager == null) continue;
-            for (BaseGameInstance instance : manager.getRuntimeInstances()) {
-                if (instance.getGameStageEnum() != GameStageEnum.WAITING
-                        || instance.hasPendingPreparation())
-                    activeConfigurations.add(instance.getGameConfig());
-            }
+        public List<? extends GameHotReload.Area> instances(GameTypeEnum type) {
+            var manager = areaManagers.get(type);
+            if (manager == null) return List.of();
+            return manager.getRuntimeInstances().stream().map(ReloadArea::new).toList();
         }
 
-        int reloadedConfigurations = 0;
-        int failedConfigurations = 0;
-        int reusedInstances = 0;
-        Set<ink.ziip.championshipscore.api.game.config.BaseGameConfig> visitedConfigurations =
-                Collections.newSetFromMap(new IdentityHashMap<>());
-        List<CompletableFuture<Boolean>> resets = new ArrayList<>();
-        for (GameTypeEnum gameType : Set.copyOf(loadedGameManagers)) {
-            BaseGameInstanceManager<? extends BaseGameInstance> manager =
-                    areaManagers.get(gameType);
-            if (manager == null) continue;
-            boolean disabling = managersToDisable.contains(gameType);
-            for (BaseGameInstance instance : manager.getRuntimeInstances()) {
-                if (instance.getGameStageEnum() == GameStageEnum.WAITING
-                        && !instance.hasPendingPreparation()) {
-                    if (!disabling
-                            && !activeConfigurations.contains(instance.getGameConfig())
-                            && visitedConfigurations.add(instance.getGameConfig())) {
-                        if (instance.getGameConfig().reloadConfigurationChecked(plugin.getFolder()))
-                            reloadedConfigurations++;
-                        else failedConfigurations++;
-                    }
-                    if (!disabling) reusedInstances++;
-                    continue;
-                }
-                if (plugin.getDailyManager() != null) plugin.getDailyManager().abort(instance);
-                resets.add(instance.abortAndReset());
-                resetInstances++;
-            }
+        public int activeRemoteMatches() {
+            return (int)
+                    remoteBingoInstances.values().stream()
+                            .filter(
+                                    instance ->
+                                            instance.getGameStageEnum() != GameStageEnum.WAITING)
+                            .count();
         }
 
-        for (RemoteBingoInstance instance : remoteBingoInstances.values()) {
-            if (instance.getGameStageEnum() != GameStageEnum.WAITING) remoteMatchesStopped++;
+        public CompletionStage<Void> stopRemoteMatches() {
+            return bingoExecutionRouter.forceEnd("configuration-reload");
         }
-        CompletableFuture<Void> remoteStop =
-                remoteMatchesStopped > 0
-                        ? bingoExecutionRouter
-                                .forceEnd("configuration-reload")
-                                .toCompletableFuture()
-                        : CompletableFuture.completedFuture(null);
 
-        int finalReusedInstances = reusedInstances;
-        int finalResetInstances = resetInstances;
-        int finalRemoteMatchesStopped = remoteMatchesStopped;
-        int finalReloadedConfigurations = reloadedConfigurations;
-        int finalFailedConfigurations = failedConfigurations;
-        CompletableFuture<?>[] operations = new CompletableFuture<?>[resets.size() + 1];
-        for (int index = 0; index < resets.size(); index++) operations[index] = resets.get(index);
-        operations[operations.length - 1] = remoteStop;
-        CompletableFuture<ReloadReport> result = new CompletableFuture<>();
-        CompletableFuture.allOf(operations)
-                .whenComplete(
-                        (ignored, operationFailure) -> {
-                            Runnable finish =
-                                    () -> {
-                                        try {
-                                            int failedResets =
-                                                    (int)
-                                                            resets.stream()
-                                                                    .filter(
-                                                                            reset ->
-                                                                                    reset
-                                                                                                    .isCompletedExceptionally()
-                                                                                            || !Boolean
-                                                                                                    .TRUE
-                                                                                                    .equals(
-                                                                                                            reset
-                                                                                                                    .getNow(
-                                                                                                                            false)))
-                                                                    .count();
-                                            int disabledManagers = 0;
-                                            if (managersToDisable.contains(GameTypeEnum.Bingo)
-                                                    && plugin.getRemoteBingoManager() != null) {
-                                                plugin.getRemoteBingoManager().unload();
-                                            }
-                                            for (GameTypeEnum gameType : managersToDisable) {
-                                                if (!loadedGameManagers.remove(gameType)) continue;
-                                                BaseGameInstanceManager<? extends BaseGameInstance>
-                                                        manager = areaManagers.get(gameType);
-                                                if (manager != null) manager.unload();
-                                                disabledManagers++;
-                                            }
-                                            int enabledManagers = 0;
-                                            for (GameTypeEnum gameType : managersToEnable) {
-                                                if (loadGameManager(gameType)) enabledManagers++;
-                                            }
-                                            if (managersToEnable.contains(GameTypeEnum.Bingo)
-                                                    && loadedGameManagers.contains(
-                                                            GameTypeEnum.Bingo)
-                                                    && plugin.getRemoteBingoManager() != null) {
-                                                plugin.getRemoteBingoManager().load();
-                                            }
-                                            if (operationFailure != null) {
-                                                result.completeExceptionally(operationFailure);
-                                                return;
-                                            }
-                                            result.complete(
-                                                    new ReloadReport(
-                                                            finalReusedInstances,
-                                                            finalResetInstances,
-                                                            failedResets,
-                                                            finalReloadedConfigurations,
-                                                            finalFailedConfigurations,
-                                                            enabledManagers,
-                                                            disabledManagers,
-                                                            finalRemoteMatchesStopped));
-                                        } catch (Throwable failure) {
-                                            result.completeExceptionally(failure);
-                                        }
-                                    };
-                            if (Bukkit.isPrimaryThread()) finish.run();
-                            else {
-                                try {
-                                    Bukkit.getScheduler().runTask(plugin, finish);
-                                } catch (RuntimeException schedulingFailure) {
-                                    result.completeExceptionally(schedulingFailure);
-                                }
-                            }
-                        });
-        return result;
+        public boolean disable(GameTypeEnum type) {
+            if (!loadedGameManagers.contains(type)) return false;
+            var manager = areaManagers.get(type);
+            if (manager != null) manager.unload();
+            loadedGameManagers.remove(type);
+            return true;
+        }
+
+        public boolean enable(GameTypeEnum type) {
+            return loadGameManager(type);
+        }
+
+        public void disableRemoteBingo() {
+            if (plugin.getRemoteBingoManager() != null) plugin.getRemoteBingoManager().unload();
+        }
+
+        public void enableRemoteBingo() {
+            if (loadedGameManagers.contains(GameTypeEnum.Bingo)
+                    && plugin.getRemoteBingoManager() != null)
+                plugin.getRemoteBingoManager().load();
+        }
+
+        public void execute(Runnable action) {
+            if (!plugin.isEnabled())
+                throw new IllegalStateException("plugin disabled during game reload");
+            if (Bukkit.isPrimaryThread()) action.run();
+            else Bukkit.getScheduler().runTask(plugin, action);
+        }
+    }
+
+    private final class ReloadArea implements GameHotReload.Area {
+        private final BaseGameInstance instance;
+
+        ReloadArea(BaseGameInstance instance) {
+            this.instance = instance;
+        }
+
+        public Object configuration() {
+            return instance.getGameConfig();
+        }
+
+        public boolean active() {
+            return instance.getGameStageEnum() != GameStageEnum.WAITING
+                    || instance.hasPendingPreparation();
+        }
+
+        public boolean reloadConfiguration() {
+            return instance.getGameConfig().reloadConfigurationChecked(plugin.getFolder());
+        }
+
+        public CompletionStage<Boolean> reset() {
+            if (plugin.getDailyManager() != null) plugin.getDailyManager().abort(instance);
+            return instance.abortAndReset();
+        }
     }
 
     public void initializeOnlinePlayer(@NotNull Player player) {
@@ -488,6 +436,7 @@ public class GameManager extends BaseManager {
 
     @Override
     public void load() {
+        hotReload.open();
         for (GameTypeEnum gameType : areaManagers.keySet()) {
             if (isGameEnabled(gameType)) {
                 loadGameManager(gameType);
@@ -511,6 +460,7 @@ public class GameManager extends BaseManager {
 
     @Override
     public void unload() {
+        hotReload.close();
         spectateMenu.stop();
         spectatorManager.unload();
         playerSpectatorStatus.clear();
@@ -933,7 +883,7 @@ public class GameManager extends BaseManager {
                                     forcePartialDodgeboltRoster)
                             : teamArea.tryStartGame(rightChampionshipTeam, leftChampionshipTeam);
         } catch (RuntimeException failure) {
-            rollbackPairStart(List.of(teamArea));
+            rollbackPairStart(List.of(teamArea), failure);
             teamArea.prepareRunMode(GameRunMode.GAME);
             teamArea.setIntroductionEnabledForNextStart(false);
             throw failure;
@@ -1038,7 +988,7 @@ public class GameManager extends BaseManager {
         try {
             started = singleTeamArea.tryStartGame(championshipTeams);
         } catch (RuntimeException failure) {
-            rollbackPairStart(List.of(singleTeamArea));
+            rollbackPairStart(List.of(singleTeamArea), failure);
             singleTeamArea.prepareRunMode(GameRunMode.GAME);
             singleTeamArea.setIntroductionEnabledForNextStart(false);
             throw failure;
@@ -1356,6 +1306,17 @@ public class GameManager extends BaseManager {
         // formal-event spectators into the test match.
         if (instance.getRunMode() != GameRunMode.EVENT) return Set.of();
         Set<UUID> result = new LinkedHashSet<>();
+        for (var entry : List.copyOf(spectatorTransitionHolds.entrySet())) {
+            BaseGameInstance previous = entry.getValue().instance();
+            if (!(previous instanceof RemoteBingoInstance)
+                    || previous == instance
+                    || entry.getValue().runMode() != GameRunMode.EVENT) continue;
+            if (!spectatorTransitionHolds.remove(entry.getKey(), entry.getValue())) continue;
+            previous.onlyRemoveSpectatorFromList(entry.getKey());
+            playerSpectatorStatus.put(entry.getKey(), instance);
+            instance.addSpectatorWithoutTeleport(entry.getKey());
+            result.add(entry.getKey());
+        }
         for (Player player : org.bukkit.Bukkit.getOnlinePlayers()) {
             if (plugin.getTeamManager().getTeamByPlayer(player) != null) continue;
             UUID playerId = player.getUniqueId();
@@ -1410,88 +1371,31 @@ public class GameManager extends BaseManager {
             @NotNull ArenaSelection arenaSelection,
             boolean introduction,
             @NotNull GameRunMode mode) {
-        if (mode == GameRunMode.EVENT && plugin.getScheduleManager() != null) {
-            arenaSelection = plugin.getScheduleManager().selectedArenas(game);
-        }
-        if (!isGameEnabled(game)
-                || !plugin.getPrepareSessionManager().canStart(game, map)
-                || pairs.isEmpty()) return null;
-        Set<ChampionshipTeam> teams = new LinkedHashSet<>();
-        for (var pair : pairs) {
-            if (pair == null
-                    || pair.getTeamOne() == null
-                    || pair.getTeamTwo() == null
-                    || !teams.add(pair.getTeamOne())
-                    || !teams.add(pair.getTeamTwo())) return null;
-        }
-        if (validateStartTeams(game, List.copyOf(teams), introduction, mode) != null) return null;
-        BaseGameInstanceManager<?> manager = areaManagers.get(game);
-        if (manager == null) return null;
-        List<BasePairedGameInstance> pool =
-                manager.getMapInstances(map).stream()
-                        .filter(BasePairedGameInstance.class::isInstance)
-                        .map(BasePairedGameInstance.class::cast)
-                        .sorted(Comparator.comparingInt(BaseGameInstance::getCopyIndex))
-                        .toList();
-        if (pool.isEmpty()) return null;
-        List<BasePairedGameInstance> selected;
-        try {
-            selected =
-                    ink.ziip.championshipscore.api.game.start.StartTargets.copies(
-                            pool, arenaSelection, pairs.size());
-            for (var instance : selected)
-                if (instance instanceof LaserBoxArea laser) laser.getGameConfig().validate();
-        } catch (IllegalArgumentException failure) {
-            return null;
-        }
-        CompletableFuture<Void> gate = new CompletableFuture<>();
-        selected.forEach(instance -> instance.coordinateStartWith(gate));
-        for (var team : teams) for (UUID id : team.getMembers()) removeSpectator(id);
-        List<BasePairedGameInstance> started = new ArrayList<>();
-        try {
-            for (int i = 0; i < pairs.size(); i++) {
-                var instance = selected.get(i);
-                var pair = pairs.get(i);
-                instance.prepareRunMode(mode);
-                instance.setIntroductionEnabledForNextStart(introduction);
-                started.add(instance);
-                if (!instance.tryStartGame(pair.getTeamOne(), pair.getTeamTwo())) {
-                    rollbackPairStart(started);
-                    instance.prepareRunMode(GameRunMode.GAME);
-                    instance.setIntroductionEnabledForNextStart(false);
-                    selected.forEach(slot -> slot.coordinateStartWith(null));
-                    gate.complete(null);
-                    return null;
-                }
-                teamStatus.put(pair.getTeamOne(), instance);
-                teamStatus.put(pair.getTeamTwo(), instance);
-                addPlayerStatusByTeam(pair.getTeamOne(), instance);
-                addPlayerStatusByTeam(pair.getTeamTwo(), instance);
-            }
-        } catch (RuntimeException failure) {
-            rollbackPairStart(started);
-            selected.forEach(slot -> slot.coordinateStartWith(null));
-            gate.complete(null);
-            throw failure;
-        }
-        CompletableFuture.allOf(
-                        selected.stream()
-                                .map(BaseGameInstance::getStartPreloadFuture)
-                                .toArray(CompletableFuture[]::new))
-                .whenComplete(
-                        (unused, failure) ->
-                                plugin.getServer()
-                                        .getScheduler()
-                                        .runTask(plugin, () -> gate.complete(null)));
-        focusSpectatorsOn(selected.getFirst());
-        return selected;
+        return new PairedGameStart(plugin, this)
+                .start(game, map, pairs, arenaSelection, introduction, mode);
     }
 
-    private void rollbackPairStart(List<? extends BaseGameInstance> started) {
-        for (var instance : started) {
-            teamStatus.entrySet().removeIf(entry -> entry.getValue() == instance);
-            playerStatus.entrySet().removeIf(entry -> entry.getValue() == instance);
-            instance.abortAndReset();
+    void releaseStartRegistrations(BaseGameInstance instance) {
+        teamStatus.entrySet().removeIf(entry -> entry.getValue() == instance);
+        playerStatus.entrySet().removeIf(entry -> entry.getValue() == instance);
+    }
+
+    private void rollbackPairStart(
+            List<? extends BaseGameInstance> started, RuntimeException failure) {
+        for (BaseGameInstance instance : started) {
+            releaseStartRegistrations(instance);
+            try {
+                instance.abortAndReset();
+            } catch (RuntimeException cleanup) {
+                if (cleanup != failure) failure.addSuppressed(cleanup);
+            }
+        }
+    }
+
+    void claimPairedStart(BasePairedGameInstance instance, TwoVTwoVector pair) {
+        for (var team : List.of(pair.getTeamOne(), pair.getTeamTwo())) {
+            teamStatus.put(team, instance);
+            addPlayerStatusByTeam(team, instance);
         }
     }
 
@@ -1685,7 +1589,8 @@ public class GameManager extends BaseManager {
      */
     public void holdSpectatorsForNextRound(@NotNull BaseGameInstance instance) {
         for (UUID uuid : instance.getSpectatorUniqueIds())
-            spectatorTransitionHolds.put(uuid, new SpectatorTransitionHold(instance));
+            spectatorTransitionHolds.put(
+                    uuid, new SpectatorTransitionHold(instance, instance.getRunMode()));
     }
 
     public boolean isWaitingForNextRound(@NotNull UUID uuid) {
@@ -1798,7 +1703,7 @@ public class GameManager extends BaseManager {
                 && team != null
                 && !player.hasPermission(ChampionshipPermissions.REFEREE)) {
             player.sendMessage(
-                    ink.ziip.championshipscore.configuration.config.message.MessageConfig
+                    ink.ziip.championshipscore.configuration.config.message.GameMessages
                             .SPECTATOR_IS_PLAYER);
             return false;
         }
@@ -1900,15 +1805,15 @@ public class GameManager extends BaseManager {
         String name = instance.getGameConfig().getAreaName();
         if (name == null || name.isBlank()) name = instance.getGameConfig().getConfigName();
         if (instance instanceof RemoteBingoInstance remote)
-            return MessageConfig.SPECTATOR_DISPLAY_REMOTE
+            return GameMessages.SPECTATOR_DISPLAY_REMOTE
                     .replace("%area%", name)
                     .replace("%token%", remote.matchId().toString().substring(0, 8));
         if (instance instanceof ParkourTagArea || instance instanceof BattleBoxArea)
-            return MessageConfig.SPECTATOR_DISPLAY_COPY
+            return GameMessages.SPECTATOR_DISPLAY_COPY
                     .replace("%area%", name)
                     .replace("%token%", Integer.toString(instance.getCopyIndex() + 1));
         if (instance instanceof ink.ziip.championshipscore.api.game.acerace.runtime.AceRaceArea)
-            return MessageConfig.SPECTATOR_DISPLAY_INSTANCE
+            return GameMessages.SPECTATOR_DISPLAY_INSTANCE
                     .replace("%area%", name)
                     .replace("%token%", Integer.toString(instance.getCopyIndex() + 1));
         return name;
@@ -1985,7 +1890,9 @@ public class GameManager extends BaseManager {
                                                         || (isHeldSpectator(
                                                                         entry.getKey(),
                                                                         entry.getValue())
-                                                                && entry.getValue().getRunMode()
+                                                                && spectatorTransitionHolds
+                                                                                .get(entry.getKey())
+                                                                                .runMode()
                                                                         == GameRunMode.EVENT)))
                         .toList();
         for (Map.Entry<UUID, BaseGameInstance> entry : entries) {
@@ -2000,8 +1907,7 @@ public class GameManager extends BaseManager {
                 .removeIf(
                         entry ->
                                 entry.getValue().instance().getGameTypeEnum() == gameType
-                                        && entry.getValue().instance().getRunMode()
-                                                == GameRunMode.EVENT);
+                                        && entry.getValue().runMode() == GameRunMode.EVENT);
     }
 
     public void clearSpectatorStatus(@NotNull UUID uuid, @NotNull BaseGameInstance expected) {
@@ -2035,7 +1941,7 @@ public class GameManager extends BaseManager {
         }
     }
 
-    private synchronized void focusSpectatorsOn(@NotNull BaseGameInstance startedInstance) {
+    synchronized void focusSpectatorsOn(@NotNull BaseGameInstance startedInstance) {
         // Test event spectators are admitted explicitly by TestSessionManager. Keeping this
         // automatic focus path formal-only prevents a test round from moving all unteamed players.
         if (startedInstance.getRunMode() != GameRunMode.EVENT) return;
@@ -2063,7 +1969,7 @@ public class GameManager extends BaseManager {
         }
     }
 
-    private boolean isHeldSpectator(@NotNull UUID uuid, @NotNull BaseGameInstance instance) {
+    boolean isHeldSpectator(@NotNull UUID uuid, @NotNull BaseGameInstance instance) {
         SpectatorTransitionHold hold = spectatorTransitionHolds.get(uuid);
         return hold != null && hold.instance() == instance;
     }
@@ -2253,5 +2159,5 @@ public class GameManager extends BaseManager {
 
     private record RoundTransitionHold(BaseGameInstance instance, GameRunMode mode) {}
 
-    private record SpectatorTransitionHold(BaseGameInstance instance) {}
+    private record SpectatorTransitionHold(BaseGameInstance instance, GameRunMode runMode) {}
 }

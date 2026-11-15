@@ -679,8 +679,19 @@ final class WorkerListener implements Listener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onFinalCountdownMove(PlayerMoveEvent event) {
         Location to = event.getTo();
-        if (to == null || !registry.isFinalCountdownPlayer(event.getPlayer().getUniqueId())) return;
-        ink.ziip.championshipscore.platform.bukkit.bingo.BingoCountdownMovement.constrain(event);
+        if (to == null
+                || event instanceof org.bukkit.event.player.PlayerTeleportEvent
+                || (!registry.isFinalCountdownPlayer(event.getPlayer().getUniqueId())
+                        && !registry.isEventWaitingPlayer(event.getPlayer().getUniqueId()))) return;
+        if (registry.isEventWaitingPlayer(event.getPlayer().getUniqueId())) {
+            Location held = event.getFrom().clone();
+            held.setYaw(to.getYaw());
+            held.setPitch(to.getPitch());
+            event.setTo(held);
+            event.getPlayer().setFallDistance(0);
+        } else
+            ink.ziip.championshipscore.platform.bukkit.bingo.BingoCountdownMovement.constrain(
+                    event);
     }
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
@@ -695,7 +706,7 @@ final class WorkerListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onRespawn(PlayerRespawnEvent event) {
-        Location location = registry.respawnLocation(event.getPlayer());
+        Location location = registry.respawnLocation(event);
         if (location == null) return;
         event.setRespawnLocation(location);
         registry.recoverRespawn(event.getPlayer(), false);

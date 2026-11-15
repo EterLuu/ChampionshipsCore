@@ -1,6 +1,8 @@
 package ink.ziip.championshipscore.worker;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ink.ziip.championshipscore.protocol.BingoTaskSpec;
@@ -9,7 +11,10 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.lang.reflect.Proxy;
 import java.util.Map;
@@ -355,6 +360,45 @@ class WorkerObjectivesTest {
                         objectives.matching(player, cell -> true),
                         statistic.name());
             }
+        }
+    }
+
+    @Nested
+    class ContentBaseline {
+        @Test
+        void acceptsMaterialsAndStatisticsAvailableOnTheDeployedWorker() {
+            assertDoesNotThrow(
+                    () ->
+                            new WorkerObjectives(
+                                    java.util.List.of(
+                                            new BingoTaskSpec(
+                                                    0,
+                                                    "straw-bed",
+                                                    "item",
+                                                    Map.of("material", "STRAW_BED")),
+                                            new BingoTaskSpec(
+                                                    1,
+                                                    "straw-sleep",
+                                                    "statistic",
+                                                    Map.of("statistic", "SLEEP_IN_STRAW_BED")))));
+        }
+
+        @ParameterizedTest
+        @CsvSource({"item, material, UNKNOWN_MATERIAL", "statistic, statistic, UNKNOWN_STATISTIC"})
+        void rejectsUnknownContentBeforeResolvingServerRegistriesOrPlayerProgress(
+                String type, String attribute, String value) {
+            var failure =
+                    assertThrows(
+                            IllegalArgumentException.class,
+                            () ->
+                                    new WorkerObjectives(
+                                            java.util.List.of(
+                                                    new BingoTaskSpec(
+                                                            0,
+                                                            "unknown",
+                                                            type,
+                                                            Map.of(attribute, value)))));
+            assertTrue(failure.getMessage().contains("26.3 worker content baseline"));
         }
     }
 

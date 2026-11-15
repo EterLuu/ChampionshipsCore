@@ -9,9 +9,10 @@ import ink.ziip.championshipscore.api.game.buildmart.config.BuildMartConfig;
 import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.api.gui.MenuInventory;
 import ink.ziip.championshipscore.api.gui.MenuLayout;
+import ink.ziip.championshipscore.configuration.config.message.BuildMartMessages;
 import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
 import net.kyori.adventure.text.Component;
@@ -62,7 +63,8 @@ public final class BuildMartBlueprintGui {
             return false;
         }
         if (!session.getTarget().canSaveMap()) {
-            CoreMessages.sendAdminError(player, MessageConfig.MAP_EDITOR_BUILD_INSTANCE_RUNNING);
+            CoreMessages.sendAdminError(
+                    player, MapEditorMessages.MAP_EDITOR_BUILD_INSTANCE_RUNNING);
             return false;
         }
         return true;
@@ -162,7 +164,8 @@ public final class BuildMartBlueprintGui {
                 workshop.cancel(player);
             } else if (holder.layout.index(holder.page, slot) >= 0
                     || slot == holder.layout.control("new"))
-                CoreMessages.sendAdminError(player, MessageConfig.BUILD_MART_EDITOR_FINISH_FIRST);
+                CoreMessages.sendAdminError(
+                        player, BuildMartMessages.BUILD_MART_EDITOR_FINISH_FIRST);
         } else if (slot == holder.layout.control("new")) {
             AnvilInputGui.openEditorText(
                     player,
@@ -171,9 +174,9 @@ public final class BuildMartBlueprintGui {
                     "",
                     name -> {
                         if (!available(manager, player, session))
-                            return MessageConfig.BUILD_MART_EDITOR_CANCELLED;
+                            return BuildMartMessages.BUILD_MART_EDITOR_CANCELLED;
                         if (!BuildMartBlueprintWorkshop.validName(name))
-                            return MessageConfig.BUILD_MART_EDITOR_INVALID_NAME;
+                            return BuildMartMessages.BUILD_MART_EDITOR_INVALID_NAME;
                         if (session
                                 .getPlugin()
                                 .getGameManager()
@@ -182,7 +185,7 @@ public final class BuildMartBlueprintGui {
                                 .getAll()
                                 .stream()
                                 .anyMatch(blueprint -> blueprint.getId().equalsIgnoreCase(name)))
-                            return MessageConfig.BUILD_MART_EDITOR_CONFLICT;
+                            return BuildMartMessages.BUILD_MART_EDITOR_CONFLICT;
                         return null;
                     },
                     name -> {

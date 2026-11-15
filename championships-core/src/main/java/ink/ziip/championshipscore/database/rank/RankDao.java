@@ -6,6 +6,7 @@ import ink.ziip.championshipscore.api.rank.entry.PlayerPointEntry;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.UUID;
 
 public interface RankDao {
@@ -23,15 +24,18 @@ public interface RankDao {
     /** Empty means the query failed; a present empty list is a valid event with zero rounds. */
     Optional<List<GameStatusEntry>> getGameStatusList();
 
-    int getGameStatusOrder(GameTypeEnum gameTypeEnum);
+    /** Empty means no row; database failures throw and must abort the queued operation. */
+    OptionalInt getGameStatusOrder(GameTypeEnum gameTypeEnum);
 
     void addGameStatus(GameStatusEntry gameStatusEntry);
 
-    void deleteGameStatus(GameTypeEnum gameTypeEnum);
+    /** Resets supported games in one statement; throws if the write fails. */
+    void resetGameStatus();
+
+    /** Deletes status and invalidates points in one transaction; throws if it cannot commit. */
+    void deleteGameRecords(GameTypeEnum gameTypeEnum);
 
     void deletePlayerPoints(UUID uuid, GameTypeEnum gameTypeEnum);
 
     void deleteTeamPoints(int teamId, GameTypeEnum gameTypeEnum);
-
-    void deleteGamePoints(GameTypeEnum gameTypeEnum);
 }

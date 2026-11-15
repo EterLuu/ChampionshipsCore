@@ -6,7 +6,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
 import ink.ziip.championshipscore.api.game.riptiderush.runtime.RiptideIntroductionArena;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -60,19 +60,20 @@ public final class RiptideIntroductionArenaStep extends PrepareStep {
         Location destination = arena == null ? null : arena.editorSpawn();
         if (destination == null || destination.getWorld() == null) {
             CoreMessages.sendAdminError(
-                    player, MessageConfig.MAP_EDITOR_RIPTIDE_INTRODUCTION_ARENA_UNAVAILABLE);
+                    player, MapEditorMessages.MAP_EDITOR_RIPTIDE_INTRODUCTION_ARENA_UNAVAILABLE);
             return;
         }
         player.closeInventory();
         if (!player.teleport(destination)) {
             CoreMessages.sendAdminError(
-                    player, MessageConfig.MAP_EDITOR_RIPTIDE_INTRODUCTION_ARENA_TELEPORT_FAILED);
+                    player,
+                    MapEditorMessages.MAP_EDITOR_RIPTIDE_INTRODUCTION_ARENA_TELEPORT_FAILED);
             return;
         }
         player.setGameMode(GameMode.CREATIVE);
         player.setAllowFlight(true);
         player.setFlying(true);
         CoreMessages.sendAdminInfo(
-                player, MessageConfig.MAP_EDITOR_RIPTIDE_INTRODUCTION_ARENA_TELEPORTED);
+                player, MapEditorMessages.MAP_EDITOR_RIPTIDE_INTRODUCTION_ARENA_TELEPORTED);
     }
 }

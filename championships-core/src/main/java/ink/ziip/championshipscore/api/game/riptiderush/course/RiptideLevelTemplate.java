@@ -138,7 +138,17 @@ public record RiptideLevelTemplate(
                             "DIAGONAL",
                             "DOUBLE_WINDOW",
                             "BACKBEAT",
-                            "QUICK_TURN");
+                            "QUICK_TURN",
+                            "TWIN_ORBIT",
+                            "CENTER_RELEASE",
+                            "EDGE_RELAY",
+                            "THREE_LANES",
+                            "SPLIT_HOLD",
+                            "TRAVEL_PAUSE",
+                            "NARROW_WIDE",
+                            "CHECKER_PULSE",
+                            "SIDE_LOCK",
+                            "CENTER_ECHO");
         };
     }
 
@@ -207,6 +217,18 @@ public record RiptideLevelTemplate(
             case "SKELETON" -> MessageConfig.codeText("riptide-level-template.variant-name-50");
             case "SPIDER" -> MessageConfig.codeText("riptide-level-template.variant-name-51");
             case "CREEPER" -> MessageConfig.codeText("riptide-level-template.variant-name-52");
+            case "TWIN_ORBIT" -> MessageConfig.codeText("riptide-level-template.variant-name-53");
+            case "CENTER_RELEASE" ->
+                    MessageConfig.codeText("riptide-level-template.variant-name-54");
+            case "EDGE_RELAY" -> MessageConfig.codeText("riptide-level-template.variant-name-55");
+            case "THREE_LANES" -> MessageConfig.codeText("riptide-level-template.variant-name-56");
+            case "SPLIT_HOLD" -> MessageConfig.codeText("riptide-level-template.variant-name-57");
+            case "TRAVEL_PAUSE" -> MessageConfig.codeText("riptide-level-template.variant-name-58");
+            case "NARROW_WIDE" -> MessageConfig.codeText("riptide-level-template.variant-name-59");
+            case "CHECKER_PULSE" ->
+                    MessageConfig.codeText("riptide-level-template.variant-name-60");
+            case "SIDE_LOCK" -> MessageConfig.codeText("riptide-level-template.variant-name-61");
+            case "CENTER_ECHO" -> MessageConfig.codeText("riptide-level-template.variant-name-62");
             default -> variant;
         };
     }

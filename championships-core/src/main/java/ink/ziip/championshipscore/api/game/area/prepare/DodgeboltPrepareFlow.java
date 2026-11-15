@@ -7,7 +7,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.step.WeSelectionStep;
 import ink.ziip.championshipscore.api.game.dodgebolt.config.DodgeboltConfig;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.configuration.location.LocationConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
@@ -181,9 +181,9 @@ public final class DodgeboltPrepareFlow extends SnapshotMapPrepareFlow {
                 GuiConfig.text("map-editor.menus.step-list.games.dodgebolt.items.left-arrow.title"),
                 config.getLeftArrowSpawnPoint());
         if (!isInSpectatorArea(config, config.getSpectatorSpawnPoint()))
-            errors.add(MessageConfig.MAP_EDITOR_DODGEBOLT_SPECTATOR_INSIDE);
+            errors.add(MapEditorMessages.MAP_EDITOR_DODGEBOLT_SPECTATOR_INSIDE);
         if (isInArea(config, config.getSpectatorSpawnPoint()))
-            errors.add(MessageConfig.MAP_EDITOR_DODGEBOLT_SPECTATOR_OUTSIDE);
+            errors.add(MapEditorMessages.MAP_EDITOR_DODGEBOLT_SPECTATOR_OUTSIDE);
         return errors;
     }
 
@@ -204,7 +204,7 @@ public final class DodgeboltPrepareFlow extends SnapshotMapPrepareFlow {
                 set,
                 setter,
                 CoreMessages.formatAdminSuccess(
-                        MessageConfig.MAP_EDITOR_DODGEBOLT_STEP_SET.replace("%name%", name)));
+                        MapEditorMessages.MAP_EDITOR_DODGEBOLT_STEP_SET.replace("%name%", name)));
     }
 
     private static StandAndRunStep location(
@@ -222,7 +222,7 @@ public final class DodgeboltPrepareFlow extends SnapshotMapPrepareFlow {
                 set,
                 setter,
                 CoreMessages.formatAdminSuccess(
-                        MessageConfig.MAP_EDITOR_DODGEBOLT_STEP_SET.replace("%name%", name)));
+                        MapEditorMessages.MAP_EDITOR_DODGEBOLT_STEP_SET.replace("%name%", name)));
     }
 
     private static ListStep list(
@@ -256,7 +256,7 @@ public final class DodgeboltPrepareFlow extends SnapshotMapPrepareFlow {
         int count = values == null ? 0 : values.size();
         if (count < minimum)
             errors.add(
-                    MessageConfig.MAP_EDITOR_DODGEBOLT_COUNT_REQUIRED
+                    MapEditorMessages.MAP_EDITOR_DODGEBOLT_COUNT_REQUIRED
                             .replace("%name%", name)
                             .replace("%minimum%", String.valueOf(minimum))
                             .replace("%count%", String.valueOf(count)));
@@ -264,7 +264,7 @@ public final class DodgeboltPrepareFlow extends SnapshotMapPrepareFlow {
 
     private static void requirePoint(List<String> errors, String name, String value) {
         if (!hasPoint(value))
-            errors.add(MessageConfig.MAP_EDITOR_DODGEBOLT_POINT_UNSET.replace("%name%", name));
+            errors.add(MapEditorMessages.MAP_EDITOR_DODGEBOLT_POINT_UNSET.replace("%name%", name));
     }
 
     private static boolean isInSpectatorArea(DodgeboltConfig config, Location location) {

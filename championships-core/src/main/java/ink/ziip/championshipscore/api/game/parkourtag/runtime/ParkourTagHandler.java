@@ -3,7 +3,7 @@ package ink.ziip.championshipscore.api.game.parkourtag.runtime;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.ParkourTagMessages;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -152,7 +152,7 @@ public class ParkourTagHandler extends BaseListener {
             if (mainHandItem.getType() == Material.FEATHER
                     || offHandItem.getType() == Material.FEATHER) {
                 player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 120, 1));
-                player.sendMessage(MessageConfig.PARKOUR_TAG_KITS_USE_FEATHER);
+                player.sendMessage(ParkourTagMessages.PARKOUR_TAG_KITS_USE_FEATHER);
                 mainHandItem.setAmount(0);
                 offHandItem.setAmount(0);
             }

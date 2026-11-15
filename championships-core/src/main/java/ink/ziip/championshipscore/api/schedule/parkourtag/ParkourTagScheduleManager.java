@@ -7,6 +7,7 @@ import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.game.parkourtag.runtime.ParkourTagArea;
 import ink.ziip.championshipscore.api.schedule.FormalEventMapResolver;
 import ink.ziip.championshipscore.api.schedule.FormalPairingScheduler;
+import ink.ziip.championshipscore.api.schedule.FormalSchedule;
 import ink.ziip.championshipscore.api.schedule.model.TwoVTwoVector;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
@@ -22,7 +23,7 @@ import org.bukkit.scheduler.BukkitTask;
 
 import java.util.*;
 
-public class ParkourTagScheduleManager extends BaseManager {
+public class ParkourTagScheduleManager extends BaseManager implements FormalSchedule {
     private long scheduleGeneration;
     private static final int ROUND_TRANSITION_SECONDS = 10;
     private final BukkitScheduler scheduler;
@@ -94,13 +95,13 @@ public class ParkourTagScheduleManager extends BaseManager {
         }
     }
 
-    public void startParkourTag() {
+    public boolean startGame() {
         if (enabled) {
             endSchedule();
-            return;
+            return false;
         }
 
-        if (!cycleGeneratePairs()) return;
+        if (!cycleGeneratePairs()) return false;
         scheduledMapName = FormalEventMapResolver.map(plugin, GameTypeEnum.ParkourTag, 1);
         if (scheduledMapName == null
                 || plugin.getGameManager().getParkourTagManager().getArea(scheduledMapName)
@@ -117,7 +118,7 @@ public class ParkourTagScheduleManager extends BaseManager {
                                     MessageConfig.codeText(
                                             "parkour-tag-schedule-manager.start-parkour-tag-2",
                                             scheduledMapName)));
-            return;
+            return false;
         }
         int requiredInstances = rounds.getFirst().size();
         long availableInstances =
@@ -147,7 +148,7 @@ public class ParkourTagScheduleManager extends BaseManager {
                                             requiredInstances,
                                             availableInstances)));
             scheduledMapName = null;
-            return;
+            return false;
         }
 
         plugin.getGameManager().getParkourTagManager().resetEventState();
@@ -188,6 +189,7 @@ public class ParkourTagScheduleManager extends BaseManager {
                         },
                         0,
                         20L);
+        return enabled;
     }
 
     public void startParkourTagRound() {

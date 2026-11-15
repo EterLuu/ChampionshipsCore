@@ -4,7 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.game.tntrun.runtime.TNTRunTeamArea;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.ScoreMessages;
 
 import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
@@ -33,7 +33,7 @@ public class TNTRunPlaceholder extends BaseGamePlaceholder<TNTRunTeamArea> {
             TNTRunTeamArea tntRunTeamArea =
                     resolveArea(params, "area_tnt_rain_countdown_", offlinePlayer);
             if (tntRunTeamArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             if (tntRunTeamArea.getGameStageEnum() != GameStageEnum.PROGRESS) {
                 return String.valueOf(0);
@@ -50,7 +50,7 @@ public class TNTRunPlaceholder extends BaseGamePlaceholder<TNTRunTeamArea> {
             TNTRunTeamArea tntRunTeamArea =
                     resolveArea(params, "area_survived_players_", offlinePlayer);
             if (tntRunTeamArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             return String.valueOf(tntRunTeamArea.getSurvivedPlayerNums());
         }

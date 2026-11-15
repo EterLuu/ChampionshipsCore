@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.command;
 
 import ink.ziip.championshipscore.api.game.model.ServerMode;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.ServerMessages;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
 import org.bukkit.command.Command;
@@ -46,7 +47,7 @@ public final class SwitchSubCommand extends BaseSubCommand {
         plugin.getDailyManager().switchMode(next);
         CoreMessages.sendAdminSuccess(
                 sender,
-                MessageConfig.SERVER_MODE_SWITCHED.replace(
+                ServerMessages.SERVER_MODE_SWITCHED.replace(
                         "%mode%", plugin.getDailyManager().modeDisplay()));
         return true;
     }

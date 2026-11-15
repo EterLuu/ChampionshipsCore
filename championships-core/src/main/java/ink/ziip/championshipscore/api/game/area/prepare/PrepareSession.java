@@ -9,7 +9,7 @@ import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.api.gui.MenuLayout;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -84,7 +84,7 @@ public class PrepareSession {
                                         || setup.config().getSpectatorSpawnPoint() != null,
                         (setup, location) -> setup.config().setIntroductionSpawnPoint(location),
                         CoreMessages.formatAdminSuccess(
-                                MessageConfig.MAP_EDITOR_STEP_INTRODUCTION_SPAWN_SET));
+                                MapEditorMessages.MAP_EDITOR_STEP_INTRODUCTION_SPAWN_SET));
 
         int spectatorSpawn = -1;
         int confirmWorld = -1;

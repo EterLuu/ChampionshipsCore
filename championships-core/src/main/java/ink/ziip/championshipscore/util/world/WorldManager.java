@@ -120,6 +120,7 @@ public class WorldManager extends BaseManager {
     @Override
     public void unload() {
         arenaListener.unRegister();
+        arenaWorlds.clear();
         // The main lobby is server-owned and must stay loaded.
     }
 
@@ -147,7 +148,8 @@ public class WorldManager extends BaseManager {
     /**
      * Loads an arena world with the standard minigame profile. Existing chunks are preserved; new
      * chunks are void. Natural mob/animal spawning is disabled, while entities deliberately spawned
-     * by game code or stored in the map remain available.
+     * by game code and non-mob map entities remain available. Environmental mobs stored in the map
+     * are removed as their entities load, including chunks already loaded at registration time.
      *
      * @return true when the world was loaded successfully
      */
@@ -183,6 +185,12 @@ public class WorldManager extends BaseManager {
         world.setGameRule(GameRules.PVP, true);
         world.setGameRule(GameRules.SEND_COMMAND_FEEDBACK, false);
         world.setGameRule(GameRules.SPAWN_MOBS, false);
+        world.setGameRule(GameRules.SPAWN_MONSTERS, false);
+        world.setGameRule(GameRules.SPAWN_PATROLS, false);
+        world.setGameRule(GameRules.SPAWN_PHANTOMS, false);
+        world.setGameRule(GameRules.SPAWN_WARDENS, false);
+        world.setGameRule(GameRules.SPAWNER_BLOCKS_WORK, false);
+        world.setGameRule(GameRules.RAIDS, false);
         disableWanderingTraders(world);
         world.setGameRule(GameRules.MOB_GRIEFING, true);
         world.setGameRule(GameRules.SHOW_DEATH_MESSAGES, false);
@@ -204,7 +212,8 @@ public class WorldManager extends BaseManager {
                                         world.getAllowMonsters(),
                                         world.getAllowAnimals(),
                                         world.getGameRuleValue(GameRules.SPAWN_MOBS))));
-        arenaWorlds.add(worldName);
+        arenaWorlds.add(world.getName());
+        arenaListener.removeLeftovers(world, world.getEntities());
         return true;
     }
 
@@ -240,6 +249,7 @@ public class WorldManager extends BaseManager {
         // immediate-respawn setting; do not override that policy with the ordinary arena default.
         BingoWorldRules.configure(world);
         BingoWorldRules.applyPhase(world, BingoWorldRules.Phase.RUNNING, false);
+        arenaWorlds.remove(world.getName());
         plugin.getLogger()
                 .log(
                         Level.INFO,
@@ -707,7 +717,7 @@ public class WorldManager extends BaseManager {
             player.teleport(
                     TeleportPositions.getScatteredLobbyLocation(CCConfig.LOBBY_LOCATION, player));
         boolean unloaded = plugin.getServer().unloadWorld(world, save);
-        if (unloaded) arenaWorlds.remove(worldName);
+        if (unloaded) arenaWorlds.remove(world.getName());
         return unloaded;
     }
 

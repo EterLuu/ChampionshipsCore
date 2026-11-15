@@ -24,6 +24,51 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 class RiptideCourseGeneratorTest {
     @Test
+    void shorterRerollClearsTheReservedTailAndMovesTheFinishInEveryDirection() throws Exception {
+        var serverField = Bukkit.class.getDeclaredField("server");
+        serverField.setAccessible(true);
+        Object previousServer = serverField.get(null);
+        try {
+            for (int[] axis : new int[][] {{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
+                var world = new TestWorld();
+                var c = config(world, axis);
+                c.setAdaptiveLayout(true);
+                var g = c.resolveGenerationGeometry();
+                var scheduler = new Scheduler(world);
+                serverField.set(null, scheduler.server);
+                Plugin plugin =
+                        (Plugin)
+                                Proxy.newProxyInstance(
+                                        Plugin.class.getClassLoader(),
+                                        new Class<?>[] {Plugin.class},
+                                        (p, m, a) -> null);
+                for (int length : List.of(650, 500)) {
+                    var plan =
+                            new RiptideCoursePlan(
+                                    1, RiptideCoursePlanner.VERSION, 0, List.of(), length);
+                    var future =
+                            RiptideCourseGenerator.schedule(
+                                    plugin,
+                                    c,
+                                    plan,
+                                    Material.OAK_PLANKS,
+                                    Material.STONE,
+                                    () -> true);
+                    for (int tick = 0; !future.isDone() && tick < 200; tick++) scheduler.tick();
+                    assertTrue(future.isDone());
+                    assertTrue(future.join());
+                    assertEquals(Material.LIME_CONCRETE, world.at(g, length, 0, 5));
+                }
+                assertEquals(Material.AIR, world.at(g, 650, 0, 5));
+                assertEquals(Material.LIME_CONCRETE, world.at(g, 500, 0, 5));
+            }
+        } finally {
+            RiptideCourseGenerator.cancelAll();
+            serverField.set(null, previousServer);
+        }
+    }
+
+    @Test
     void clearingAnAlreadyEmptySliceDoesNotWriteAndOnlyOwnedNonAirCellsAreRemoved()
             throws Exception {
         var world = new TestWorld();
@@ -91,7 +136,7 @@ class RiptideCourseGeneratorTest {
             RiptideCourseGenerator.build(
                     world.world,
                     g,
-                    new RiptideCoursePlan(1, 28, 0, levels),
+                    new RiptideCoursePlan(1, 28, 0, levels, g.totalSteps()),
                     Material.OAK_PLANKS,
                     Material.STONE);
             for (var level : levels) {

@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.command.event;
 
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.EventMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -33,10 +34,10 @@ public final class EventUndoSubCommand extends BaseSubCommand {
         }
         GameTypeEnum latest = plugin.getScheduleManager().deleteLatestGame();
         if (latest == null)
-            CoreMessages.sendAdminError(sender, MessageConfig.EVENT_UNDO_UNAVAILABLE);
+            CoreMessages.sendAdminError(sender, EventMessages.EVENT_UNDO_UNAVAILABLE);
         else
             CoreMessages.sendAdminSuccess(
-                    sender, MessageConfig.EVENT_UNDO_STARTED.replace("%game%", latest.name()));
+                    sender, EventMessages.EVENT_UNDO_STARTED.replace("%game%", latest.name()));
         return true;
     }
 

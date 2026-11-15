@@ -7,19 +7,28 @@ import static org.junit.jupiter.api.Assertions.*;
 import ink.ziip.championshipscore.api.daily.DailyBingoVoteController.Phase;
 import ink.ziip.championshipscore.api.gui.MenuLayout;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.ConfigurationStateExtension;
+import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.protocol.BingoDifficulty;
 import ink.ziip.championshipscore.protocol.BingoVariantRules;
+import ink.ziip.championshipscore.support.BingoMessages;
+import ink.ziip.championshipscore.support.MessageConfigurations;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Server;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
@@ -125,6 +134,50 @@ class DailyBingoVoteControllerTest {
         assertTrue(f.voters.contains(f.id));
         assertFalse(replacement.isDone());
         assertEquals(1, f.closes);
+    }
+
+    /** Title text for the remix announcement; it renders configured templates only once. */
+    @Nested
+    @ExtendWith(ConfigurationStateExtension.class)
+    class RemixTitle {
+        @TempDir Path directory;
+
+        @Test
+        void completeTemplatesReorderTranslatedArgumentsWithoutExpandingTheirLiteralTokens()
+                throws Exception {
+            var config = MessageConfigurations.defaults();
+            var custom = new YamlConfiguration();
+            custom.set("code-text.daily-bingo-vote-controller.remix-title", "&a[%title%]");
+            custom.set(
+                    "code-text.daily-bingo-vote-controller.remix-subtitle",
+                    "&7%description% / %name%");
+            config.loadFromConfiguration(custom);
+            var messages = BingoMessages.open(directory, "zh_CN");
+            try {
+                for (String locale : List.of("zh_CN", "en_US")) {
+                    messages.reload("", locale);
+                    var title =
+                            DailyBingoVoteController.remixTitle(
+                                    messages, "&aName %description%", "&bDescription");
+                    assertEquals(
+                            "[" + LegacyText.plainText(messages.tr("genesis.title")) + "]",
+                            LegacyText.plainText(LegacyText.serialize(title.title())));
+                    assertEquals(
+                            "Description / Name %description%",
+                            LegacyText.plainText(LegacyText.serialize(title.subtitle())));
+                    assertTrue(LegacyText.serialize(title.subtitle()).contains("§bDescription"));
+                    assertTrue(LegacyText.serialize(title.subtitle()).contains("§aName"));
+                }
+                custom.set("code-text.daily-bingo-vote-controller.remix-title", "");
+                custom.set("code-text.daily-bingo-vote-controller.remix-subtitle", "");
+                config.loadFromConfiguration(custom);
+                var empty = DailyBingoVoteController.remixTitle(messages, "name", "description");
+                assertEquals("", LegacyText.serialize(empty.title()));
+                assertEquals("", LegacyText.serialize(empty.subtitle()));
+            } finally {
+                messages.close();
+            }
+        }
     }
 
     @SuppressWarnings("unchecked")

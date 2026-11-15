@@ -1,5 +1,9 @@
 package ink.ziip.championshipscore.api.game.lasershowdown.runtime;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+import static ink.ziip.championshipscore.support.TestObjects.field;
+import static ink.ziip.championshipscore.support.TestObjects.set;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
@@ -117,6 +121,13 @@ class LaserShowdownRecoveryTest {
     }
 
     private static class Area extends LaserShowdownTeamArea {
+        boolean introductionPhase;
+
+        @Override
+        public boolean isIntroductionPhase() {
+            return introductionPhase;
+        }
+
         int teleports;
 
         private Area() {
@@ -208,26 +219,5 @@ class LaserShowdownRecoveryTest {
         public void close() throws Exception {
             field(Bukkit.class, "server").set(null, oldServer);
         }
-    }
-
-    private static Field field(Class<?> type, String name) throws Exception {
-        for (; type != null; type = type.getSuperclass())
-            try {
-                Field f = type.getDeclaredField(name);
-                f.setAccessible(true);
-                return f;
-            } catch (NoSuchFieldException ignored) {
-            }
-        throw new NoSuchFieldException(name);
-    }
-
-    private static void set(Object o, String n, Object v) throws Exception {
-        field(o.getClass(), n).set(o, v);
-    }
-
-    private static <T> T allocate(Class<T> t) throws Exception {
-        return t.cast(
-                ((sun.misc.Unsafe) field(sun.misc.Unsafe.class, "theUnsafe").get(null))
-                        .allocateInstance(t));
     }
 }

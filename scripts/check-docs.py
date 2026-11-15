@@ -28,27 +28,92 @@ SKIP_DIRS = {".git", "node_modules", "target", "versions", "libraries", ".paper"
 
 # Class-name suffixes that identify project types worth verifying.
 TYPE_SUFFIXES = (
-    "Manager", "Config", "Configuration", "Handler", "Command", "Enum", "Service",
-    "Dao", "DaoImpl", "Gui", "Menu", "Area", "Instance", "Listener", "Scheduler",
-    "Controller", "Resolver", "Registry", "Session", "Planner", "Definition",
-    "Provider", "Loader", "Task", "Token", "Event", "Rule", "Arguments", "Selection",
-    "Context", "Policy", "Snapshot", "Codec", "Transport", "Cache", "Store", "Factory",
-    "Adapter", "Parser", "Writer", "Reader", "Tracker", "Steps", "Flow", "Plan",
-    "Model", "Variant", "Engine", "Pool", "Gun", "Presentation", "Layout", "Page",
-    "Format", "Builder", "Support",
+    "Manager",
+    "Config",
+    "Configuration",
+    "Handler",
+    "Command",
+    "Enum",
+    "Service",
+    "Dao",
+    "DaoImpl",
+    "Gui",
+    "Menu",
+    "Area",
+    "Instance",
+    "Listener",
+    "Scheduler",
+    "Controller",
+    "Resolver",
+    "Registry",
+    "Session",
+    "Planner",
+    "Definition",
+    "Provider",
+    "Loader",
+    "Task",
+    "Token",
+    "Event",
+    "Rule",
+    "Arguments",
+    "Selection",
+    "Context",
+    "Policy",
+    "Snapshot",
+    "Codec",
+    "Transport",
+    "Cache",
+    "Store",
+    "Factory",
+    "Adapter",
+    "Parser",
+    "Writer",
+    "Reader",
+    "Tracker",
+    "Steps",
+    "Flow",
+    "Plan",
+    "Model",
+    "Variant",
+    "Engine",
+    "Pool",
+    "Gun",
+    "Presentation",
+    "Layout",
+    "Page",
+    "Format",
+    "Builder",
+    "Support",
 )
 
 # Identifiers that come from dependencies or other repositories.
 EXTERNAL_IDENTIFIERS = {
-    "AuthBridge", "AuthProxy", "ChampionshipsAuthBridge", "ChampionshipsAuthProxy",
-    "ChampionshipsBingoWorker", "FastBoard", "OfflinePlayer", "PhaseTracker", "Context",
+    "AuthBridge",
+    "AuthProxy",
+    "ChampionshipsAuthBridge",
+    "ChampionshipsAuthProxy",
+    "ChampionshipsBingoWorker",
+    "FastBoard",
+    "OfflinePlayer",
+    "PhaseTracker",
+    "Context",
 }
 
 # Runtime/config-relative paths that are not repository files.
 RUNTIME_PREFIXES = ("plugins/", "buildmart/", "sulfursoccer/", "riptiderush/", "test/")
 
-FILE_EXTS = (".java", ".json", ".yml", ".yaml", ".md", ".properties", ".sh",
-             ".py", ".jsonl", ".schem")
+FILE_EXTS = (
+    ".java",
+    ".json",
+    ".yml",
+    ".yaml",
+    ".md",
+    ".properties",
+    ".sh",
+    ".py",
+    ".jsonl",
+    ".schem",
+)
 
 
 def walk_files(predicate):
@@ -60,8 +125,9 @@ def walk_files(predicate):
 
 
 def markdown_files():
-    return [p for p in walk_files(lambda n: n.endswith(".md"))
-            if os.path.basename(p) != "AGENTS.md"]
+    return [
+        p for p in walk_files(lambda n: n.endswith(".md")) if os.path.basename(p) != "AGENTS.md"
+    ]
 
 
 def load_text(paths):
@@ -105,8 +171,7 @@ def check_links():
                 continue
             dest = resolve(path, target)
             if dest and not os.path.exists(dest):
-                problems.append(
-                    f"{os.path.relpath(path, ROOT)}: broken link -> {target}")
+                problems.append(f"{os.path.relpath(path, ROOT)}: broken link -> {target}")
     return problems
 
 
@@ -132,8 +197,7 @@ def check_paths():
                 continue
             candidate = repo_path_of(span)
             if candidate and not os.path.exists(candidate):
-                problems.append(
-                    f"{os.path.relpath(path, ROOT)}: missing path -> {span}")
+                problems.append(f"{os.path.relpath(path, ROOT)}: missing path -> {span}")
     return problems
 
 
@@ -145,8 +209,7 @@ def check_identifiers(java_classes):
                 continue
             if not name.endswith(TYPE_SUFFIXES):
                 continue
-            problems.append(
-                f"{os.path.relpath(path, ROOT)}: unknown type -> {name}")
+            problems.append(f"{os.path.relpath(path, ROOT)}: unknown type -> {name}")
     return problems
 
 
@@ -157,14 +220,14 @@ def check_config_keys(blob):
             key = key.strip()
             if not KEY_RE.match(key):
                 continue
-            if key.endswith((".toml", ".md", ".yml", ".yaml", ".json", ".java",
-                             ".properties", ".sh", ".py")):
+            if key.endswith(
+                (".toml", ".md", ".yml", ".yaml", ".json", ".java", ".properties", ".sh", ".py")
+            ):
                 continue
             last = key.split(".")[-1]
             if key in blob or last in blob:
                 continue
-            problems.append(
-                f"{os.path.relpath(path, ROOT)}: unknown config key -> {key}")
+            problems.append(f"{os.path.relpath(path, ROOT)}: unknown config key -> {key}")
     return problems
 
 
@@ -181,7 +244,8 @@ def parse_game_names(message_yml):
 def check_game_names():
     games_doc = os.path.join(DOCS, "02-games", "01-games.md")
     message_yml = os.path.join(
-        ROOT, "championships-core", "src", "main", "resources", "message.yml")
+        ROOT, "championships-core", "src", "main", "resources", "message.yml"
+    )
     if not os.path.exists(games_doc) or not os.path.exists(message_yml):
         return []
     names = parse_game_names(open(message_yml, encoding="utf-8").read())
@@ -196,14 +260,19 @@ def check_game_names():
         if expected is not None and expected != display:
             problems.append(
                 f"docs/02-games/01-games.md: {config} display name '{display}' "
-                f"!= message.yml '{expected}'")
+                f"!= message.yml '{expected}'"
+            )
     return problems
 
 
 def main():
     java_classes = {os.path.basename(p)[:-5] for p in walk_files(lambda n: n.endswith(".java"))}
-    blob = "\n".join(text for _, text in load_text(
-        walk_files(lambda n: n.endswith((".java", ".yml", ".yaml", ".json", ".properties")))))
+    blob = "\n".join(
+        text
+        for _, text in load_text(
+            walk_files(lambda n: n.endswith((".java", ".yml", ".yaml", ".json", ".properties")))
+        )
+    )
 
     problems = []
     problems += check_links()

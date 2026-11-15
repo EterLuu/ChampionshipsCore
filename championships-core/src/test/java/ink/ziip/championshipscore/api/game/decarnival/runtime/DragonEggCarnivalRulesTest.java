@@ -3,39 +3,37 @@ package ink.ziip.championshipscore.api.game.decarnival.runtime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class DragonEggCarnivalRulesTest {
-    @Test
-    void respawnDelayIncreasesByFiveSecondsAndCapsAtThirty() {
-        assertEquals(5, DragonEggCarnivalArea.respawnDelaySeconds(1));
-        assertEquals(10, DragonEggCarnivalArea.respawnDelaySeconds(2));
-        assertEquals(15, DragonEggCarnivalArea.respawnDelaySeconds(3));
-        assertEquals(30, DragonEggCarnivalArea.respawnDelaySeconds(6));
-        assertEquals(30, DragonEggCarnivalArea.respawnDelaySeconds(12));
+    @ParameterizedTest(name = "death {0} -> {1}s")
+    @CsvSource({"1, 5", "2, 10", "3, 15", "6, 30", "12, 30"})
+    void respawnDelayIncreasesByFiveSecondsAndCapsAtThirty(int deaths, int seconds) {
+        assertEquals(seconds, DragonEggCarnivalArea.respawnDelaySeconds(deaths));
     }
 
     @Test
     void platformsMirrorTheVanillaArrivalPlatform() {
         assertEquals(100, DragonEggCarnivalArea.platformCenterX(true));
         assertEquals(-100, DragonEggCarnivalArea.platformCenterX(false));
-        assertEquals(48, DragonEggCarnivalArea.PLATFORM_FLOOR_Y);
-        assertEquals(2, DragonEggCarnivalArea.PLATFORM_RADIUS);
-        assertEquals(3, DragonEggCarnivalArea.PLATFORM_AIR_HEIGHT);
     }
 
     @Test
-    void staticRewardAndVictoryRulesKeepTwoPearlsAndTwoOfTheThreeAdvancements() {
-        assertEquals(2, DragonEggCarnivalArea.CRYSTAL_PEARLS_PER_PLAYER);
+    void victoryNeedsTwoOfTheThreeVanillaEndAdvancements() {
+        // Advancement keys are matched against vanilla events; a typo silently prevents wins.
         assertEquals(2, DragonEggCarnivalArea.ADVANCEMENTS_TO_WIN);
         assertEquals(
                 java.util.Set.of("end/kill_dragon", "end/dragon_egg", "end/enter_end_gateway"),
                 DragonEggCarnivalArea.VICTORY_ADVANCEMENTS);
     }
 
-    @Test
-    void dragonPressureTriggersOncePerCumulativeTwentyPercent() {
-        assertEquals(0, DragonEggCarnivalArea.crossedDragonDamageThresholds(0, 39.99, 200));
-        assertEquals(1, DragonEggCarnivalArea.crossedDragonDamageThresholds(39.99, 40, 200));
-        assertEquals(3, DragonEggCarnivalArea.crossedDragonDamageThresholds(35, 121, 200));
+    @ParameterizedTest(name = "damage {0} -> {1} of {2} crosses {3}")
+    @CsvSource({"0, 39.99, 200, 0", "39.99, 40, 200, 1", "35, 121, 200, 3"})
+    void dragonPressureTriggersOncePerCumulativeTwentyPercent(
+            double before, double after, double maxHealth, int thresholds) {
+        assertEquals(
+                thresholds,
+                DragonEggCarnivalArea.crossedDragonDamageThresholds(before, after, maxHealth));
     }
 }

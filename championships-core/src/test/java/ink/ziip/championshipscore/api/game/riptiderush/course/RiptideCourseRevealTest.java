@@ -28,7 +28,7 @@ class RiptideCourseRevealTest {
                             case RHYTHM -> "PULSE";
                         };
                 var level = new RiptideCoursePlan.Level(1, 100, template, variant, 0, true, 1);
-                var plan = new RiptideCoursePlan(1, 1, 1, List.of(level));
+                var plan = new RiptideCoursePlan(1, 1, 1, List.of(level), g.totalSteps());
                 RiptideCourseGenerator.build(
                         world.world, g, plan, Material.OAK_PLANKS, Material.STONE);
                 var original = new HashMap<>(world.blocks);

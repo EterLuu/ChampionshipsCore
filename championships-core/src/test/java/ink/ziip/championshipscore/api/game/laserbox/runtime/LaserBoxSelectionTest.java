@@ -75,11 +75,25 @@ class LaserBoxSelectionTest {
                     }
                     case "disposed" -> set(f.area, "disposed", true);
                     case "end" -> set(f.area, "gameStageEnum", GameStageEnum.END);
-                    case "introduction" -> set(f.area, "introductionPhase", true);
+                    case "introduction" -> markIntroduction(f.area);
                 }
                 assertFalse(f.canSelect(), state);
             }
         }
+    }
+
+    private static void markIntroduction(LaserBoxArea area) throws Exception {
+        // This admission fixture does not run the teaching arena; GamePreparationTest owns ticks.
+        var getter =
+                ink.ziip.championshipscore.api.game.instance.BaseGameInstance.class
+                        .getDeclaredMethod("preparation");
+        getter.setAccessible(true);
+        Object preparation = getter.invoke(area);
+        var active = field(preparation.getClass(), "introduction");
+        var constructor =
+                active.getType().getDeclaredConstructor(long.class, long.class, int.class);
+        constructor.setAccessible(true);
+        active.set(preparation, constructor.newInstance(0L, 0L, 90));
     }
 
     private static final class Fixture implements AutoCloseable {

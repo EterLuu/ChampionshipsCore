@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.command.finale;
 import ink.ziip.championshipscore.api.finale.FinaleGameDefinition;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.EventMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -50,7 +51,7 @@ final class FinaleStartSubCommand extends BaseSubCommand {
         ChampionshipTeam right = optionCount == 3 ? plugin.getTeamManager().getTeam(args[1]) : null;
         ChampionshipTeam left = optionCount == 3 ? plugin.getTeamManager().getTeam(args[2]) : null;
         if (optionCount == 3 && (right == null || left == null || right.equals(left))) {
-            CoreMessages.sendAdminError(sender, MessageConfig.FINALE_START_TEAM_REQUIRED);
+            CoreMessages.sendAdminError(sender, EventMessages.FINALE_START_TEAM_REQUIRED);
             return true;
         }
         plugin.getScheduleManager()

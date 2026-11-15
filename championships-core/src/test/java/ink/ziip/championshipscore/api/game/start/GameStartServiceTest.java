@@ -1,10 +1,21 @@
 package ink.ziip.championshipscore.api.game.start;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+import static ink.ziip.championshipscore.support.TestObjects.field;
+import static ink.ziip.championshipscore.support.TestObjects.proxy;
+import static ink.ziip.championshipscore.support.TestObjects.set;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.api.game.acerace.AceRaceManager;
+import ink.ziip.championshipscore.api.game.acerace.config.AceRaceConfig;
+import ink.ziip.championshipscore.api.game.acerace.model.AceRaceCourse;
+import ink.ziip.championshipscore.api.game.acerace.runtime.AceRaceArea;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSessionManager;
 import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
+import ink.ziip.championshipscore.api.game.frostbite.FrostbiteManager;
+import ink.ziip.championshipscore.api.game.frostbite.config.FrostbiteConfig;
 import ink.ziip.championshipscore.api.game.frostbite.runtime.FrostbiteArea;
 import ink.ziip.championshipscore.api.game.hotycodydusky.config.HotyCodyDuskyConfig;
 import ink.ziip.championshipscore.api.game.hotycodydusky.runtime.HotyCodyDuskyTeamArea;
@@ -14,6 +25,7 @@ import ink.ziip.championshipscore.api.game.instance.paired.BasePairedGameInstanc
 import ink.ziip.championshipscore.api.game.lasershowdown.runtime.LaserShowdownTeamArea;
 import ink.ziip.championshipscore.api.game.manager.*;
 import ink.ziip.championshipscore.api.game.model.*;
+import ink.ziip.championshipscore.api.game.riptiderush.RiptideRushManager;
 import ink.ziip.championshipscore.api.game.riptiderush.config.RiptideRushConfig;
 import ink.ziip.championshipscore.api.game.riptiderush.runtime.RiptideRushArea;
 import ink.ziip.championshipscore.api.game.tntrun.config.TNTRunConfig;
@@ -21,9 +33,13 @@ import ink.ziip.championshipscore.api.game.tntrun.runtime.TNTRunTeamArea;
 import ink.ziip.championshipscore.api.schedule.ScheduleManager;
 import ink.ziip.championshipscore.api.schedule.model.TwoVTwoVector;
 import ink.ziip.championshipscore.api.team.*;
+import ink.ziip.championshipscore.api.visibility.PlayerVisibilityManager;
+import ink.ziip.championshipscore.configuration.config.message.GameMessages;
 
 import org.bukkit.*;
+import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitScheduler;
+import org.bukkit.scheduler.BukkitTask;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -185,6 +201,183 @@ class GameStartServiceTest {
                     assertFalse(result.started());
                     assertTrue(result.detail().contains("失败"));
                 });
+    }
+
+    private static final String ROSTER_MAP = "frosty_fjord";
+    private static final UUID ADMIN = new UUID(0, 1);
+    private static final UUID RED_ONLINE = new UUID(1, 1);
+    private static final UUID RED_OFFLINE = new UUID(1, 2);
+    private static final UUID BLUE_ONLINE = new UUID(2, 1);
+    private static final UUID BLUE_OFFLINE = new UUID(2, 2);
+    private static final Set<UUID> ROSTER =
+            Set.of(RED_ONLINE, RED_OFFLINE, BLUE_ONLINE, BLUE_OFFLINE);
+
+    /**
+     * Uses the real {@link GameManager} admission path: outsiders are rejected before any match
+     * ownership changes and {@code all} enrolls every team member, including offline ones.
+     */
+    @ParameterizedTest
+    @EnumSource(
+            value = GameTypeEnum.class,
+            names = {"FrostbiteFrenzy", "RiptideRush", "AceRace"})
+    void allTeamsStartEnrollsOfflineMembersAndRejectsOutsiders(GameTypeEnum game) throws Exception {
+        Field serverField = field(Bukkit.class, "server");
+        Object previousServer = serverField.get(null);
+        Field instanceField = field(ChampionshipsCore.class, "instance");
+        Object previousInstance = instanceField.get(null);
+        try {
+            Map<UUID, Player> online =
+                    Map.of(RED_ONLINE, player(RED_ONLINE), BLUE_ONLINE, player(BLUE_ONLINE));
+            BukkitTask task = proxy(BukkitTask.class, (p, m, a) -> null);
+            BukkitScheduler scheduler =
+                    proxy(
+                            BukkitScheduler.class,
+                            (p, m, a) -> {
+                                if (m.getName().equals("runTask")) return task;
+                                throw new AssertionError(
+                                        "Unexpected scheduler call: " + m.getName());
+                            });
+            serverField.set(
+                    null,
+                    proxy(
+                            Server.class,
+                            (p, m, a) ->
+                                    switch (m.getName()) {
+                                        case "getPlayer" -> online.get(a[0]);
+                                        case "isPrimaryThread" -> false;
+                                        case "getScheduler" -> scheduler;
+                                        default ->
+                                                throw new AssertionError(
+                                                        "Unexpected server call: " + m.getName());
+                                    }));
+
+            ChampionshipsCore plugin = allocate(ChampionshipsCore.class);
+            instanceField.set(null, plugin);
+            GameManager manager = allocate(GameManager.class);
+            set(manager, "plugin", plugin);
+            set(manager, "enabledGames", Set.of(game));
+            for (String name :
+                    List.of(
+                            "teamStatus",
+                            "playerStatus",
+                            "playerSpectatorStatus",
+                            "roundTransitionHolds",
+                            "spectatorTransitionHolds"))
+                set(manager, name, new ConcurrentHashMap<>());
+            set(plugin, "gameManager", manager);
+            set(plugin, "visibilityManager", new PlayerVisibilityManager(plugin));
+
+            ChampionshipTeam red = new RosterTeam(1, "red", Set.of(RED_ONLINE, RED_OFFLINE));
+            ChampionshipTeam blue = new RosterTeam(2, "blue", Set.of(BLUE_ONLINE, BLUE_OFFLINE));
+            TeamManager teamManager = allocate(TeamManager.class);
+            set(
+                    teamManager,
+                    "cachedTeams",
+                    new ConcurrentHashMap<>(Map.of("red", red, "blue", blue)));
+            set(teamManager, "pendingMemberTeamIds", Set.of());
+            set(teamManager, "pendingTeamDeletions", Set.of());
+            set(plugin, "teamManager", teamManager);
+
+            BaseGameConfig config =
+                    switch (game) {
+                        case FrostbiteFrenzy -> new FrostbiteConfig(plugin, ROSTER_MAP);
+                        case RiptideRush -> new RiptideRushConfig(plugin, ROSTER_MAP);
+                        case AceRace -> new AceRaceConfig(plugin, ROSTER_MAP);
+                        default -> throw new AssertionError(game);
+                    };
+            set(config, "preparePublished", true);
+            set(config, "prepareDirty", false);
+            BaseMultiTeamGameInstance area =
+                    switch (game) {
+                        case FrostbiteFrenzy -> allocate(FrostbiteArea.class);
+                        case RiptideRush -> allocate(RiptideRushArea.class);
+                        case AceRace -> allocate(AceRaceArea.class);
+                        default -> throw new AssertionError(game);
+                    };
+            if (game == GameTypeEnum.AceRace) set(area, "course", AceRaceCourse.EMPTY);
+            set(area, "plugin", plugin);
+            set(area, "scheduler", scheduler);
+            set(area, "gameConfig", config);
+            set(area, "gameTypeEnum", game);
+            set(area, "gameStageEnum", GameStageEnum.WAITING);
+            set(area, "gameTeams", new ArrayList<ChampionshipTeam>());
+            set(area, "gamePlayers", new ArrayList<UUID>());
+            set(area, "startChunkTickets", new HashSet<>());
+            BaseGameInstanceManager<?> gameAreas =
+                    switch (game) {
+                        case FrostbiteFrenzy -> new FrostbiteManager(plugin);
+                        case RiptideRush -> new RiptideRushManager(plugin);
+                        case AceRace -> new AceRaceManager(plugin);
+                        default -> throw new AssertionError(game);
+                    };
+            if (game == GameTypeEnum.AceRace)
+                set(
+                        gameAreas,
+                        "instancesByMap",
+                        new ConcurrentHashMap<>(Map.of(ROSTER_MAP, List.of(area))));
+            @SuppressWarnings("unchecked")
+            Map<String, BaseMultiTeamGameInstance> maps =
+                    (Map<String, BaseMultiTeamGameInstance>)
+                            field(BaseGameInstanceManager.class, "areas").get(gameAreas);
+            maps.put(ROSTER_MAP, area);
+            set(manager, "areaManagers", Map.of(game, gameAreas));
+            PrepareSessionManager prepare = allocate(PrepareSessionManager.class);
+            set(prepare, "plugin", plugin);
+            set(prepare, "mapLocks", Map.of());
+            set(plugin, "prepareSessionManager", prepare);
+
+            // Reject outsiders before detaching spectators or changing any match ownership.
+            set(manager, "playerSpectatorStatus", new ConcurrentHashMap<>(Map.of(ADMIN, area)));
+            assertFalse(manager.joinSingleTeamAreaForAllTeams(game, ROSTER_MAP, List.of(ADMIN)));
+            assertFalse(area.tryStartGame(List.of(red, blue), List.of(RED_ONLINE, ADMIN)));
+            assertEquals(GameStageEnum.WAITING, area.getGameStageEnum());
+            assertTrue(area.getParticipantUniqueIds().isEmpty());
+            assertNull(manager.getBasePlayerArea(ADMIN));
+            assertSame(area, manager.getPlayerSpectatorStatus(ADMIN));
+
+            GameMessages.GAME_SINGLE_GAME_START_SUCCESSFUL = "started %game% %area%";
+            GameMessages.GAME_SINGLE_GAME_START_FAILED = "failed %game% %area%";
+            GameMessages.GAME_FROSTBITE = "Frostbite";
+            GameMessages.GAME_RIPTIDE_RUSH = "RiptideRush";
+            GameMessages.GAME_ACE_RACE = "AceRace";
+            var result =
+                    new GameStartService(plugin)
+                            .startManual(
+                                    GameStartArguments.parse(
+                                            new String[] {game.commandName(), ROSTER_MAP, "all"},
+                                            false))
+                            .toCompletableFuture()
+                            .join();
+            assertTrue(result.started(), result.detail());
+            assertEquals(GameStageEnum.LOADING, area.getGameStageEnum());
+            assertEquals(ROSTER, Set.copyOf(area.getParticipantUniqueIds()));
+            assertEquals(Set.of(red, blue), Set.copyOf(area.getGameTeams()));
+            for (UUID id : ROSTER) assertSame(area, manager.getBasePlayerArea(id));
+            assertNull(manager.getBasePlayerArea(ADMIN));
+            assertSame(area, manager.getPlayerSpectatorStatus(ADMIN));
+        } finally {
+            serverField.set(null, previousServer);
+            instanceField.set(null, previousInstance);
+        }
+    }
+
+    private static Player player(UUID id) {
+        return proxy(
+                Player.class,
+                (p, m, a) ->
+                        switch (m.getName()) {
+                            case "getUniqueId" -> id;
+                            case "sendMessage" -> null;
+                            default ->
+                                    throw new AssertionError(
+                                            "Unexpected player call: " + m.getName());
+                        });
+    }
+
+    private static final class RosterTeam extends ChampionshipTeam {
+        RosterTeam(int id, String name, Set<UUID> members) {
+            super(id, name, name, "#FFFFFF", members, null);
+        }
     }
 
     private record Fixture(
@@ -527,26 +720,5 @@ class GameStartServiceTest {
         TestTeam(int id) {
             super(id, "team-" + id, "red", "#FFFFFF", Set.of(new UUID(id, 1)), null);
         }
-    }
-
-    private static Field field(Class<?> t, String n) throws Exception {
-        for (; t != null; t = t.getSuperclass())
-            try {
-                var f = t.getDeclaredField(n);
-                f.setAccessible(true);
-                return f;
-            } catch (NoSuchFieldException ignored) {
-            }
-        throw new NoSuchFieldException(n);
-    }
-
-    private static void set(Object o, String n, Object v) throws Exception {
-        field(o.getClass(), n).set(o, v);
-    }
-
-    private static <T> T allocate(Class<T> t) throws Exception {
-        return t.cast(
-                ((sun.misc.Unsafe) field(sun.misc.Unsafe.class, "theUnsafe").get(null))
-                        .allocateInstance(t));
     }
 }

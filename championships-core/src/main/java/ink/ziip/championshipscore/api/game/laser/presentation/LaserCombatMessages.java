@@ -1,7 +1,7 @@
 package ink.ziip.championshipscore.api.game.laser.presentation;
 
 import ink.ziip.championshipscore.api.game.laser.model.LaserGun;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.LaserBoxMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.shared.presentation.MessageTemplate;
 
@@ -21,18 +21,18 @@ public final class LaserCombatMessages {
         return MessageTemplate.render(
                 LaserGunItems.text(
                         region == LaserGun.HitRegion.HEAD
-                                ? MessageConfig.LASER_BOX_HEADSHOT
-                                : MessageConfig.LASER_BOX_HIT),
+                                ? LaserBoxMessages.LASER_BOX_HEADSHOT
+                                : LaserBoxMessages.LASER_BOX_HIT),
                 Map.of("%attacker%", attacker, "%victim%", victim, "%gun%", weapon));
     }
 
     public static void showRespawn(Player player, int remainingTicks) {
         player.sendTitle(
                 LegacyText.translateColorCodes(
-                        LaserGunItems.text(MessageConfig.LASER_BOX_RESPAWN_TITLE)),
+                        LaserGunItems.text(LaserBoxMessages.LASER_BOX_RESPAWN_TITLE)),
                 LegacyText.translateColorCodes(
                         MessageTemplate.render(
-                                LaserGunItems.text(MessageConfig.LASER_BOX_RESPAWN_SUBTITLE),
+                                LaserGunItems.text(LaserBoxMessages.LASER_BOX_RESPAWN_SUBTITLE),
                                 Map.of("%seconds%", Integer.toString((remainingTicks + 19) / 20)))),
                 0,
                 25,
@@ -43,17 +43,17 @@ public final class LaserCombatMessages {
         player.sendActionBar(
                 LegacyText.component(
                         MessageTemplate.render(
-                                LaserGunItems.text(MessageConfig.LASER_BOX_RELOAD_COMPLETE),
+                                LaserGunItems.text(LaserBoxMessages.LASER_BOX_RELOAD_COMPLETE),
                                 Map.of("%gun%", LaserGunItems.gunName(gun)))));
     }
 
     public static Component itemHint(String type) {
         String message =
                 switch (type) {
-                    case "grenade" -> MessageConfig.LASER_BOX_ITEM_GRENADE;
-                    case "strike" -> MessageConfig.LASER_BOX_ITEM_STRIKE;
-                    case "reveal" -> MessageConfig.LASER_BOX_ITEM_REVEAL;
-                    default -> MessageConfig.LASER_BOX_ITEM_SHIELD;
+                    case "grenade" -> LaserBoxMessages.LASER_BOX_ITEM_GRENADE;
+                    case "strike" -> LaserBoxMessages.LASER_BOX_ITEM_STRIKE;
+                    case "reveal" -> LaserBoxMessages.LASER_BOX_ITEM_REVEAL;
+                    default -> LaserBoxMessages.LASER_BOX_ITEM_SHIELD;
                 };
         return LegacyText.component(LaserGunItems.text(message))
                 .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE);

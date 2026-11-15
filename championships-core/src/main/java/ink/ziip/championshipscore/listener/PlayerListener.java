@@ -9,7 +9,10 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.api.test.TestSessionManager;
 import ink.ziip.championshipscore.api.test.auth.TestAuthGateway;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.configuration.config.message.AdminMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.ScoreMessages;
+import ink.ziip.championshipscore.configuration.config.message.ServerMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.ChatMessageText;
 import ink.ziip.championshipscore.platform.bukkit.text.CrossServerChatText;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
@@ -105,17 +108,17 @@ public class PlayerListener extends BaseListener {
         event.setCancelled(true);
         Player sender = event.getPlayer();
         if (message.isEmpty()) {
-            sender.sendMessage(LegacyText.component(MessageConfig.CHAT_TEAM_USAGE));
+            sender.sendMessage(LegacyText.component(AdminMessages.CHAT_TEAM_USAGE));
             return;
         }
         ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(sender);
         if (team == null) {
-            sender.sendMessage(LegacyText.component(MessageConfig.CHAT_TEAM_UNAVAILABLE));
+            sender.sendMessage(LegacyText.component(AdminMessages.CHAT_TEAM_UNAVAILABLE));
             return;
         }
         PlayerPresentation presentation = presentation(sender);
         Component line =
-                LegacyText.component(MessageConfig.CHAT_TEAM_PREFIX)
+                LegacyText.component(AdminMessages.CHAT_TEAM_PREFIX)
                         .append(presentation.chatLine(sender.getName(), Component.text(message)));
         team.getOnlinePlayers().forEach(player -> player.sendMessage(line));
     }
@@ -170,7 +173,7 @@ public class PlayerListener extends BaseListener {
                     LegacyComponentSerializer.legacySection()
                             .deserialize(
                                     LegacyText.translateColorCodes(
-                                            MessageConfig.IDENTITY_VERIFICATION_FAILED)));
+                                            AdminMessages.IDENTITY_VERIFICATION_FAILED)));
             event.setLoginResult(AsyncPlayerPreLoginEvent.Result.KICK_OTHER);
             return;
         }
@@ -186,7 +189,7 @@ public class PlayerListener extends BaseListener {
                         LegacyComponentSerializer.legacySection()
                                 .deserialize(
                                         LegacyText.translateColorCodes(
-                                                MessageConfig.IDENTITY_VERIFICATION_FAILED)));
+                                                AdminMessages.IDENTITY_VERIFICATION_FAILED)));
                 event.setLoginResult(AsyncPlayerPreLoginEvent.Result.KICK_OTHER);
                 return;
             }
@@ -207,7 +210,8 @@ public class PlayerListener extends BaseListener {
                 event.kickMessage(
                         LegacyComponentSerializer.legacySection()
                                 .deserialize(
-                                        LegacyText.translateColorCodes(MessageConfig.SERVER_FULL)));
+                                        LegacyText.translateColorCodes(
+                                                ServerMessages.SERVER_FULL)));
                 event.setLoginResult(AsyncPlayerPreLoginEvent.Result.KICK_FULL);
                 return;
             }
@@ -308,7 +312,7 @@ public class PlayerListener extends BaseListener {
                 LegacyComponentSerializer.legacySection()
                         .deserialize(
                                 LegacyText.translateColorCodes(
-                                        MessageConfig.IDENTITY_VERIFICATION_FAILED)));
+                                        AdminMessages.IDENTITY_VERIFICATION_FAILED)));
     }
 
     private void awaitTestAuthentication(
@@ -373,8 +377,8 @@ public class PlayerListener extends BaseListener {
                 shownArea = plugin.getGameManager().getPlayerSpectatorStatus(player.getUniqueId());
             String label =
                     shownArea == null
-                            ? MessageConfig.PRESENTATION_DAILY_LOBBY
-                            : MessageConfig.PRESENTATION_DAILY_GAME.replace(
+                            ? ScoreMessages.PRESENTATION_DAILY_LOBBY
+                            : ScoreMessages.PRESENTATION_DAILY_GAME.replace(
                                     "%game%", shownArea.getGameTypeEnum().toString());
             return new PlayerPresentation(
                     label,
@@ -383,7 +387,7 @@ public class PlayerListener extends BaseListener {
                     true,
                     MessageConfig.playerTextFormat());
         }
-        String label = team == null ? MessageConfig.PLACEHOLDER_SPECTATOR : team.getColoredName();
+        String label = team == null ? ScoreMessages.PLACEHOLDER_SPECTATOR : team.getColoredName();
         return new PlayerPresentation(
                 label,
                 team == null ? null : team.getColorCode(),

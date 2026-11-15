@@ -7,6 +7,7 @@ import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameI
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.config.message.HotyCodyDuskyMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -140,8 +141,8 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
         setGameStageEnum(GameStageEnum.END);
 
         announceGameEnd(
-                MessageConfig.HOTY_CODY_DUSKY_GAME_END_TITLE,
-                MessageConfig.HOTY_CODY_DUSKY_GAME_END_SUBTITLE);
+                HotyCodyDuskyMessages.HOTY_CODY_DUSKY_GAME_END_TITLE,
+                HotyCodyDuskyMessages.HOTY_CODY_DUSKY_GAME_END_SUBTITLE);
 
         beginPostGameSettlement();
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
@@ -229,9 +230,9 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
         resetPlayerHealthFoodEffectLevelInventory();
 
         announceGamePreparation(
-                MessageConfig.HOTY_CODY_DUSKY_START_PREPARATION,
-                MessageConfig.HOTY_CODY_DUSKY_START_PREPARATION_TITLE,
-                MessageConfig.HOTY_CODY_DUSKY_START_PREPARATION_SUBTITLE);
+                HotyCodyDuskyMessages.HOTY_CODY_DUSKY_START_PREPARATION,
+                HotyCodyDuskyMessages.HOTY_CODY_DUSKY_START_PREPARATION_TITLE,
+                HotyCodyDuskyMessages.HOTY_CODY_DUSKY_START_PREPARATION_SUBTITLE);
 
         startGameProgress();
     }
@@ -256,9 +257,9 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
 
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
         startFinalCountdown(
-                MessageConfig.HOTY_CODY_DUSKY_GAME_START_SOON_TITLE,
-                MessageConfig.HOTY_CODY_DUSKY_GAME_START_TITLE,
-                MessageConfig.HOTY_CODY_DUSKY_GAME_START_SUBTITLE,
+                HotyCodyDuskyMessages.HOTY_CODY_DUSKY_GAME_START_SOON_TITLE,
+                HotyCodyDuskyMessages.HOTY_CODY_DUSKY_GAME_START_TITLE,
+                HotyCodyDuskyMessages.HOTY_CODY_DUSKY_GAME_START_SUBTITLE,
                 this::beginGameProgress);
     }
 
@@ -276,7 +277,7 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
                         seconds -> {
                             timer = seconds;
                             updateGameTimerBossBar(
-                                    MessageConfig.HOTY_CODY_DUSKY_ACTION_BAR_COUNT_DOWN
+                                    HotyCodyDuskyMessages.HOTY_CODY_DUSKY_ACTION_BAR_COUNT_DOWN
                                             .replace("%time%", CoreMessages.bossBarTime(timer))
                                             .replace(
                                                     "%holder%",
@@ -415,11 +416,11 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
         }
         if (codyHolder == null)
             sendActionBarToAllGamePlayers(
-                    MessageConfig.HOTY_CODY_DUSKY_PLAYER_RECEIVED_CODY.replace(
+                    HotyCodyDuskyMessages.HOTY_CODY_DUSKY_PLAYER_RECEIVED_CODY.replace(
                             "%player%", CoreMessages.formatPlayerName(to)));
         else
             sendActionBarToAllGamePlayers(
-                    MessageConfig.HOTY_CODY_DUSKY_GIVE_CODY_TO_PLAYER
+                    HotyCodyDuskyMessages.HOTY_CODY_DUSKY_GIVE_CODY_TO_PLAYER
                             .replace("%to%", CoreMessages.formatPlayerName(to))
                             .replace("%from%", CoreMessages.formatPlayerName(codyHolder)));
         setCodyPlayer(to, first);
@@ -526,7 +527,7 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
         if (deathPlayer != null) {
             if (deathPlayer == championshipTeam.getMembers().size()) {
                 sendMessageToAllGamePlayers(
-                        MessageConfig.HOTY_CODY_DUSKY_WHOLE_TEAM_WAS_KILLED.replace(
+                        HotyCodyDuskyMessages.HOTY_CODY_DUSKY_WHOLE_TEAM_WAS_KILLED.replace(
                                 "%team%", championshipTeam.getColoredName()));
                 addPointsToAllSurvivePlayers();
             }
@@ -574,7 +575,7 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
 
         addDeathPlayer(player);
 
-        String message = MessageConfig.HOTY_CODY_DUSKY_PLAYER_DEATH;
+        String message = HotyCodyDuskyMessages.HOTY_CODY_DUSKY_PLAYER_DEATH;
 
         message = message.replace("%player%", CoreMessages.formatPlayerName(player));
         sendMessageToAllGamePlayers(message);
@@ -600,7 +601,7 @@ public class HotyCodyDuskyTeamArea extends BaseMultiTeamGameInstance {
         if (deathPlayer.contains(player.getUniqueId())) return;
 
         sendMessageToAllGamePlayers(
-                MessageConfig.HOTY_CODY_DUSKY_PLAYER_LEAVE.replace(
+                HotyCodyDuskyMessages.HOTY_CODY_DUSKY_PLAYER_LEAVE.replace(
                         "%player%", CoreMessages.formatPlayerName(player)));
         addDeathPlayer(player);
     }

@@ -7,7 +7,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.TGTTOSAreaTypeGui;
 import ink.ziip.championshipscore.api.game.tgttos.config.TGTTOSConfig;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -95,7 +95,7 @@ public final class TGTTOSAreaTypeStep extends PrepareStep {
         config(session).setAreaType(option.value());
         session.markDirty();
         return CoreMessages.formatAdminSuccess(
-                MessageConfig.MAP_EDITOR_TGT_AREA_TYPE_SET
+                MapEditorMessages.MAP_EDITOR_TGT_AREA_TYPE_SET
                         .replace("%value%", option.name())
                         .replace("%description%", option.description()));
     }

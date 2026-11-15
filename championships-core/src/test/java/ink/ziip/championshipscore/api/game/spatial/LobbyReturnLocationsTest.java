@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.spatial;
 
+import static ink.ziip.championshipscore.support.TestObjects.proxy;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import org.bukkit.Location;
@@ -13,7 +15,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -196,10 +197,5 @@ class LobbyReturnLocationsTest {
                                                         method.getName());
                                     });
         }
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <T> T proxy(Class<T> type, java.lang.reflect.InvocationHandler handler) {
-        return (T) Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[] {type}, handler);
     }
 }

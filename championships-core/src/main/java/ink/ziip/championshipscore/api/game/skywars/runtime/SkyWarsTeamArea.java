@@ -23,6 +23,7 @@ import ink.ziip.championshipscore.api.game.skywars.model.SkyWarsVariant;
 import ink.ziip.championshipscore.api.player.ChampionshipPlayer;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.SkyWarsMessages;
 import ink.ziip.championshipscore.configuration.location.LocationConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -77,6 +78,7 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
     private final SkyWarsVariantRegistry variantRegistry;
     private SkyWarsVariant resolvedVariant;
     private SkyWarsMapGeometry mapGeometry;
+    private SkyWarsArenaSnapshot eventSnapshot;
 
     @Override
     public void resetArea() {
@@ -89,11 +91,29 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
         borderCheckTask = null;
         lastTeamEndCheckScheduled = false;
 
-        preloadMap();
+        if (isRoundTransitionPending()) {
+            if (eventSnapshot == null)
+                throw new IllegalStateException("Missing SkyWars event arena snapshot");
+            try {
+                eventSnapshot.restore();
+            } finally {
+                closeEventSnapshot();
+            }
+            reloadShrinkTimes();
+        } else {
+            closeEventSnapshot();
+            preloadMap();
+        }
+    }
+
+    private void closeEventSnapshot() {
+        if (eventSnapshot != null) eventSnapshot.close();
+        eventSnapshot = null;
     }
 
     @Override
     public void dispose() {
+        closeEventSnapshot();
         cleanupHappyGhasts();
         super.dispose();
     }
@@ -214,6 +234,13 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
 
     @Override
     public void startGamePreparation() {
+        boolean needsRoundReset = isEventRun();
+        if (isFormalEventRun()) {
+            var schedule = plugin.getScheduleManager().getSkyWarsScheduleManager();
+            needsRoundReset = schedule.getSubRound() < schedule.getTotalRounds();
+        }
+        if (needsRoundReset && eventSnapshot == null)
+            eventSnapshot = SkyWarsArenaSnapshot.capture(mapGeometry());
         setGameStageEnum(GameStageEnum.PREPARATION);
 
         // Rule-introduction phase (if configured): gather players at the introduction spawn point
@@ -233,9 +260,9 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
         resetPlayerHealthFoodEffectLevelInventory();
 
         announceGamePreparation(
-                MessageConfig.SKY_WARS_START_PREPARATION,
-                MessageConfig.SKY_WARS_START_PREPARATION_TITLE,
-                MessageConfig.SKY_WARS_START_PREPARATION_SUBTITLE);
+                SkyWarsMessages.SKY_WARS_START_PREPARATION,
+                SkyWarsMessages.SKY_WARS_START_PREPARATION_TITLE,
+                SkyWarsMessages.SKY_WARS_START_PREPARATION_SUBTITLE);
 
         SkyWarsBoundaryRules boundary = variant().rules().boundary();
         setBorderShrinkTask(
@@ -284,9 +311,9 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
 
         startFinalCountdown(
                 variant().lifecycle().countdownSeconds(),
-                MessageConfig.SKY_WARS_GAME_START_SOON_TITLE,
-                MessageConfig.SKY_WARS_GAME_START_TITLE,
-                MessageConfig.SKY_WARS_GAME_START_SUBTITLE,
+                SkyWarsMessages.SKY_WARS_GAME_START_SOON_TITLE,
+                SkyWarsMessages.SKY_WARS_GAME_START_TITLE,
+                SkyWarsMessages.SKY_WARS_GAME_START_SUBTITLE,
                 this::beginGameProgress);
     }
 
@@ -321,9 +348,10 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
                             if (spawnHappyGhastTime != null && timer == spawnHappyGhastTime) {
                                 if (spawnTeamHappyGhasts() > 0) {
                                     sendMessageToAllGamePlayers(
-                                            MessageConfig.SKY_WARS_HAPPY_GHAST_SPAWNED);
+                                            SkyWarsMessages.SKY_WARS_HAPPY_GHAST_SPAWNED);
                                     sendActionBarToAllGamePlayers(
-                                            MessageConfig.SKY_WARS_HAPPY_GHAST_SPAWNED_ACTION_BAR);
+                                            SkyWarsMessages
+                                                    .SKY_WARS_HAPPY_GHAST_SPAWNED_ACTION_BAR);
                                     playSoundToAllGamePlayers(Sound.BLOCK_BELL_USE, 1, 1.2F);
                                 }
                             }
@@ -339,9 +367,9 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
                                             skyWarsShrink.getToRadius(),
                                             skyWarsShrink.getToHeight());
                                     sendMessageToAllGamePlayers(
-                                            MessageConfig.SKY_WARS_BOARD_SHRINK);
+                                            SkyWarsMessages.SKY_WARS_BOARD_SHRINK);
                                     sendActionBarToAllGamePlayers(
-                                            MessageConfig.SKY_WARS_BOARD_SHRINK);
+                                            SkyWarsMessages.SKY_WARS_BOARD_SHRINK);
                                     playSoundToAllGamePlayers(Sound.BLOCK_ANVIL_USE, 1, 12F);
                                 }
                                 if (timer == skyWarsShrink.getEndTime()) {
@@ -349,10 +377,10 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
                                     heightShrink = 0;
                                     shrink = 0;
                                     sendMessageToAllGamePlayers(
-                                            MessageConfig.SKY_WARS_STOP_BOARD_SHRINK);
+                                            SkyWarsMessages.SKY_WARS_STOP_BOARD_SHRINK);
                                     if (!hasShrinkStartingAt(timer))
                                         sendActionBarToAllGamePlayers(
-                                                MessageConfig.SKY_WARS_STOP_BOARD_SHRINK);
+                                                SkyWarsMessages.SKY_WARS_STOP_BOARD_SHRINK);
                                     playSoundToAllGamePlayers(Sound.BLOCK_BELL_USE, 1, 12F);
                                 }
                             }
@@ -360,9 +388,9 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
                             if (timer
                                     == variant().rules().disableHealthRegainAtRemainingSeconds()) {
                                 sendMessageToAllGamePlayers(
-                                        MessageConfig.SKY_WARS_DEDUCT_FOOD_LEVEL);
+                                        SkyWarsMessages.SKY_WARS_DEDUCT_FOOD_LEVEL);
                                 sendActionBarToAllGamePlayers(
-                                        MessageConfig.SKY_WARS_DEDUCT_FOOD_LEVEL);
+                                        SkyWarsMessages.SKY_WARS_DEDUCT_FOOD_LEVEL);
                             }
 
                             if (timer
@@ -379,7 +407,7 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
         boolean shrink = activeShrink() != null;
         boolean drain = timer <= variant().rules().disableHealthRegainAtRemainingSeconds();
         if (shrink && drain) {
-            return MessageConfig.SKY_WARS_BOSS_BAR_SHRINK_DRAIN
+            return SkyWarsMessages.SKY_WARS_BOSS_BAR_SHRINK_DRAIN
                     .replace("%time%", CoreMessages.bossBarTime(timer))
                     .replace(
                             "%shrink-time%",
@@ -387,7 +415,7 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
                                     Math.max(0, timer - activeShrink().getEndTime())));
         }
         if (shrink) {
-            return MessageConfig.SKY_WARS_BOSS_BAR_SHRINK
+            return SkyWarsMessages.SKY_WARS_BOSS_BAR_SHRINK
                     .replace("%time%", CoreMessages.bossBarTime(timer))
                     .replace(
                             "%shrink-time%",
@@ -395,9 +423,9 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
                                     Math.max(0, timer - activeShrink().getEndTime())));
         }
         if (drain)
-            return MessageConfig.SKY_WARS_BOSS_BAR_DRAIN.replace(
+            return SkyWarsMessages.SKY_WARS_BOSS_BAR_DRAIN.replace(
                     "%time%", CoreMessages.bossBarTime(timer));
-        return MessageConfig.SKY_WARS_BOSS_BAR.replace("%time%", CoreMessages.bossBarTime(timer));
+        return SkyWarsMessages.SKY_WARS_BOSS_BAR.replace("%time%", CoreMessages.bossBarTime(timer));
     }
 
     private void announceUpcomingTimedEvent() {
@@ -406,7 +434,7 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
             int warning = timer - happyGhastTime;
             if (warning >= 1 && warning <= 10) {
                 sendActionBarToAllGamePlayers(
-                        MessageConfig.SKY_WARS_HAPPY_GHAST_COUNT_DOWN.replace(
+                        SkyWarsMessages.SKY_WARS_HAPPY_GHAST_COUNT_DOWN.replace(
                                 "%time%", String.valueOf(warning)));
                 return;
             }
@@ -416,7 +444,7 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
             int warning = timer - shrinkTime.getStartTime();
             if (warning >= 1 && warning <= 10) {
                 sendActionBarToAllGamePlayers(
-                        MessageConfig.SKY_WARS_BOARD_SHRINK_COUNT_DOWN.replace(
+                        SkyWarsMessages.SKY_WARS_BOARD_SHRINK_COUNT_DOWN.replace(
                                 "%time%", String.valueOf(warning)));
                 return;
             }
@@ -425,7 +453,7 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
         int healthDrainWarning = timer - variant().rules().disableHealthRegainAtRemainingSeconds();
         if (healthDrainWarning >= 1 && healthDrainWarning <= 10) {
             sendActionBarToAllGamePlayers(
-                    MessageConfig.SKY_WARS_HEALTH_DRAIN_COUNT_DOWN.replace(
+                    SkyWarsMessages.SKY_WARS_HEALTH_DRAIN_COUNT_DOWN.replace(
                             "%time%", String.valueOf(healthDrainWarning)));
         }
     }
@@ -505,7 +533,7 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
                                         player.damage(1);
                                         championshipPlayer.setRedScreen();
                                         championshipPlayer.sendActionBar(
-                                                MessageConfig.SKY_WARS_OUT_OF_BORDER);
+                                                SkyWarsMessages.SKY_WARS_OUT_OF_BORDER);
                                     } else {
                                         championshipPlayer.removeRedScreen();
                                     }
@@ -602,7 +630,8 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
         setGameStageEnum(GameStageEnum.END);
 
         announceGameEnd(
-                MessageConfig.SKY_WARS_GAME_END_TITLE, MessageConfig.SKY_WARS_GAME_END_SUBTITLE);
+                SkyWarsMessages.SKY_WARS_GAME_END_TITLE,
+                SkyWarsMessages.SKY_WARS_GAME_END_SUBTITLE);
 
         beginPostGameSettlement();
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
@@ -638,7 +667,7 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
         if (deathPlayer != null) {
             if (deathPlayer == getParticipatingTeamSize(championshipTeam)) {
                 sendMessageToAllGamePlayers(
-                        MessageConfig.SKY_WARS_WHOLE_TEAM_WAS_KILLED.replace(
+                        SkyWarsMessages.SKY_WARS_WHOLE_TEAM_WAS_KILLED.replace(
                                 "%team%", championshipTeam.getColoredName()));
                 killTeamHappyGhast(championshipTeam);
                 if (addedPoints)
@@ -782,17 +811,17 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
 
             if (playerTeam == null || assailantTeam == null) return;
 
-            String message = MessageConfig.SKY_WARS_KILL_PLAYER;
+            String message = SkyWarsMessages.SKY_WARS_KILL_PLAYER;
 
             if (entityDamageEvent != null) {
                 EntityDamageEvent.DamageCause damageCause = entityDamageEvent.getCause();
                 if (damageCause == EntityDamageEvent.DamageCause.VOID) {
-                    message = MessageConfig.SKY_WARS_KILL_PLAYER_BY_VOID;
+                    message = SkyWarsMessages.SKY_WARS_KILL_PLAYER_BY_VOID;
                 }
             }
 
             if (playerTeam.equals(assailantTeam)) {
-                message = MessageConfig.SKY_WARS_KILL_TEAM_PLAYER;
+                message = SkyWarsMessages.SKY_WARS_KILL_TEAM_PLAYER;
                 message =
                         message.replace("%player%", CoreMessages.formatPlayerName(player))
                                 .replace("%killer%", CoreMessages.formatPlayerName(assailantUuid));
@@ -809,12 +838,12 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
             addPlayerPoints(assailantUuid, variant().scoring().kill());
         } else {
 
-            String message = MessageConfig.SKY_WARS_PLAYER_DEATH;
+            String message = SkyWarsMessages.SKY_WARS_PLAYER_DEATH;
 
             if (entityDamageEvent != null) {
                 EntityDamageEvent.DamageCause damageCause = entityDamageEvent.getCause();
                 if (damageCause == EntityDamageEvent.DamageCause.VOID) {
-                    message = MessageConfig.SKY_WARS_PLAYER_DEATH_BY_VOID;
+                    message = SkyWarsMessages.SKY_WARS_PLAYER_DEATH_BY_VOID;
                 }
             }
 
@@ -838,7 +867,7 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
         if (deathPlayer.contains(player.getUniqueId())) return;
 
         sendMessageToAllGamePlayers(
-                MessageConfig.SKY_WARS_PLAYER_LEAVE.replace(
+                SkyWarsMessages.SKY_WARS_PLAYER_LEAVE.replace(
                         "%player%", CoreMessages.formatPlayerName(player)));
         addDeathPlayer(player);
     }

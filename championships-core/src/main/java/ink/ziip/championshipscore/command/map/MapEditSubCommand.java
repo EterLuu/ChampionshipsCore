@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.command.map;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -39,20 +40,20 @@ public final class MapEditSubCommand extends BaseSubCommand {
         if (game == null) {
             CoreMessages.sendAdminError(
                     sender,
-                    MessageConfig.MAP_EDITOR_COMMAND_UNKNOWN_GAME.replace(
+                    MapEditorMessages.MAP_EDITOR_COMMAND_UNKNOWN_GAME.replace(
                             "%games%", supportedNames()));
             return true;
         }
         if (!plugin.getPrepareSessionManager().supports(game)) {
             CoreMessages.sendAdminError(
                     sender,
-                    MessageConfig.MAP_EDITOR_COMMAND_UNSUPPORTED_GAME.replace(
+                    MapEditorMessages.MAP_EDITOR_COMMAND_UNSUPPORTED_GAME.replace(
                             "%games%", supportedNames()));
             return true;
         }
         BaseGameInstanceManager<?> manager = plugin.getGameManager().getAreaManager(game);
         if (manager == null) {
-            CoreMessages.sendAdminError(sender, MessageConfig.MAP_EDITOR_COMMAND_NO_MANAGER);
+            CoreMessages.sendAdminError(sender, MapEditorMessages.MAP_EDITOR_COMMAND_NO_MANAGER);
             return true;
         }
         if (plugin.getGameManager().isGameManagerLoaded(game)) {
@@ -60,10 +61,10 @@ public final class MapEditSubCommand extends BaseSubCommand {
             return true;
         }
 
-        CoreMessages.sendAdminInfo(player, MessageConfig.MAP_EDITOR_COMMAND_LOADING_DISABLED);
+        CoreMessages.sendAdminInfo(player, MapEditorMessages.MAP_EDITOR_COMMAND_LOADING_DISABLED);
         if (!plugin.getGameManager().loadGameForEditing(game)) {
             CoreMessages.sendAdminError(
-                    sender, MessageConfig.MAP_EDITOR_COMMAND_MANAGER_LOAD_FAILED);
+                    sender, MapEditorMessages.MAP_EDITOR_COMMAND_MANAGER_LOAD_FAILED);
             return true;
         }
         plugin.getServer()

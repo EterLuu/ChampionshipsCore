@@ -14,12 +14,19 @@ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.lang.reflect.Field;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Stream;
 
 @ExtendWith(ConfigurationStateExtension.class)
 class GuiConfigParsingTest {
@@ -45,28 +52,6 @@ class GuiConfigParsingTest {
     }
 
     @Test
-    void equipmentMaterialConstraintsPreserveWeaponsButAllowCosmeticMenuAndUtilityChanges() {
-        var doc =
-                YamlConfiguration.loadConfiguration(Path.of("src/main/resources/gui.yml").toFile());
-        for (LaserGun gun : LaserGun.values()) {
-            String path = "laser.equipment.guns." + gun.id();
-            doc.set(path + ".material", "DIAMOND");
-            assertTrue(GuiConfig.validate(doc).stream().anyMatch(error -> error.contains(path)));
-            doc.set(path + ".material", gun.material().name());
-            doc.set(path + ".states.selected.material", "DIAMOND");
-            assertTrue(GuiConfig.validate(doc).stream().anyMatch(error -> error.contains(path)));
-            doc.set(path + ".states.selected.material", null);
-            doc.set("laser.menus.gun-selection.items.guns." + gun.id() + ".material", "DIAMOND");
-        }
-        doc.set("laser.equipment.ammo.material", "ARROW");
-        assertTrue(
-                GuiConfig.validate(doc).stream().anyMatch(error -> error.contains("ammunition")));
-        doc.set("laser.equipment.ammo.material", "SPECTRAL_ARROW");
-        doc.set("laser.equipment.laserbox.grenade.material", "EMERALD");
-        assertTrue(GuiConfig.validate(doc).isEmpty());
-    }
-
-    @Test
     void equippedWeaponTemplatesInheritFullListsAndKeepExplicitEmptyOverrides() {
         var defaults =
                 YamlConfiguration.loadConfiguration(Path.of("src/main/resources/gui.yml").toFile());
@@ -84,58 +69,6 @@ class GuiConfigParsingTest {
         doc.set(path + ".lore", null);
         assertEquals(6, GuiConfig.itemTemplate(doc, path, "idle").lore().size());
         assertTrue(GuiConfig.validate(doc).isEmpty());
-    }
-
-    @Test
-    void teamEmptyOverlaysCannotCoverControlsAndCenteredLayoutsAreValidatedForEveryList() {
-        var doc =
-                YamlConfiguration.loadConfiguration(Path.of("src/main/resources/gui.yml").toFile());
-        assertTrue(GuiConfig.validate(doc).isEmpty());
-        for (String name :
-                List.of(
-                        "overview",
-                        "members",
-                        "add-player",
-                        "known-player",
-                        "quick-assign",
-                        "target-team")) {
-            String path = "teams.menus." + name;
-            int original = doc.getInt(path + ".layout.overlay.empty");
-            doc.set(path + ".layout.overlay.empty", doc.getInt(path + ".items.close.slot"));
-            assertTrue(
-                    GuiConfig.validate(doc).stream()
-                            .anyMatch(error -> error.contains(path + ".layout.overlay.empty")),
-                    name);
-            doc.set(path + ".layout.overlay.empty", original);
-            doc.set(path + ".layout.content", null);
-            doc.set(path + ".layout.content.1", List.of(22));
-            doc.set(path + ".layout.content.2", List.of(20, 24));
-        }
-        assertTrue(GuiConfig.validate(doc).isEmpty());
-    }
-
-    @Test
-    void taskStyleValidationRejectsRevealingMasksAndInvalidFullSummary() {
-        var document =
-                YamlConfiguration.loadConfiguration(Path.of("src/main/resources/gui.yml").toFile());
-        String root = "games.bingo.menus.card";
-        assertTrue(GuiConfig.validate(document).isEmpty());
-        document.set(root + ".items.task.states.hidden.title", "secret 100%");
-        assertTrue(GuiConfig.validate(document).isEmpty());
-        document.set(root + ".items.task.states.hidden.title", "%description%");
-        assertTrue(
-                GuiConfig.validate(document).stream()
-                        .anyMatch(error -> error.contains("states.hidden")));
-        document.set(root + ".items.task.states.hidden.title", "?");
-        document.set(root + ".task-presentation.completion-summary", "not a list");
-        assertTrue(
-                GuiConfig.validate(document).stream()
-                        .anyMatch(error -> error.contains("completion-summary")));
-        document.set(root + ".task-presentation.completion-summary", List.of());
-        document.set(root + ".items.task.states.locked.material", "TASK");
-        assertTrue(
-                GuiConfig.validate(document).stream()
-                        .anyMatch(error -> error.contains("states.locked")));
     }
 
     @Test
@@ -166,76 +99,6 @@ class GuiConfigParsingTest {
     }
 
     @Test
-    void bingoCardsRequireEveryCellAndKeepSharedInfoOutsideActualTaskSlots() {
-        var document =
-                YamlConfiguration.loadConfiguration(Path.of("src/main/resources/gui.yml").toFile());
-        assertTrue(GuiConfig.validate(document).isEmpty());
-        String root = "games.bingo.menus.card";
-        document.set(root + ".screens.x3.layout.content", List.of(3, 4));
-        assertTrue(
-                GuiConfig.validate(document).stream()
-                        .anyMatch(error -> error.contains("exactly 9")));
-        document.set(root + ".screens.x3.layout.content", List.of(3, 4, 5, 12, 13, 14, 21, 22, 23));
-        document.set(root + ".items.info.slot", 3);
-        assertTrue(
-                GuiConfig.validate(document).stream()
-                        .anyMatch(error -> error.contains("info must fit")));
-        document.set(root + ".screens.x3.layout.footer.info", 0);
-        // A child override fixes only that screen: widths4/5 still have a collision with info3.
-        assertTrue(
-                GuiConfig.validate(document).stream()
-                        .anyMatch(
-                                error -> error.contains("x4") && error.contains("info must fit")));
-        document.set(root + ".items.info.slot", 0);
-        assertTrue(GuiConfig.validate(document).isEmpty());
-    }
-
-    @Test
-    void spectatorSelectorsValidateActualControlAndEmptyOverlayPriorities() {
-        var document =
-                YamlConfiguration.loadConfiguration(Path.of("src/main/resources/gui.yml").toFile());
-        assertTrue(GuiConfig.validate(document).isEmpty());
-        for (String screen :
-                List.of("venue-selector", "sub-arena-selector", "build-mart-selector")) {
-            String menu = "spectator.menus." + screen;
-            document.set(menu + ".layout.footer.next", 49);
-            assertTrue(
-                    GuiConfig.validate(document).stream()
-                            .anyMatch(
-                                    error -> error.contains(menu) && error.contains("share slot")));
-            document.set(menu + ".layout.footer.next", 2);
-            assertTrue(GuiConfig.validate(document).isEmpty());
-        }
-        String menu = "spectator.menus.venue-selector";
-        document.set(menu + ".layout.overlay.empty", 49);
-        assertTrue(
-                GuiConfig.validate(document).stream()
-                        .anyMatch(error -> error.contains(menu) && error.contains("empty")));
-        document.set(menu + ".layout.overlay.empty", 22);
-        assertTrue(GuiConfig.validate(document).isEmpty());
-    }
-
-    @Test
-    void bingoVoteChecksAllPhaseLayoutsAndSeparateOptionNavigation() {
-        var config =
-                YamlConfiguration.loadConfiguration(Path.of("src/main/resources/gui.yml").toFile());
-        assertTrue(GuiConfig.validate(config).isEmpty());
-        for (String phase : List.of("mode", "difficulty", "lines", "genesis")) {
-            String menu = "daily.menus.bingo-vote.screens." + phase;
-            config.set(menu + ".layout.content", List.of(16));
-            assertTrue(GuiConfig.validate(config).isEmpty());
-            config.set(menu + ".layout.content", List.of(19, 20, 21));
-            assertTrue(
-                    GuiConfig.validate(config).stream()
-                            .anyMatch(
-                                    error ->
-                                            error.contains(menu)
-                                                    && error.contains("content slot")));
-            config.set(menu + ".layout.content", List.of(16));
-        }
-    }
-
-    @Test
     void laserSelectionValidatesSparseCapacityAndInheritsCompleteSelectedLore() throws Exception {
         String menu = "laser.menus.gun-selection";
         var config =
@@ -251,79 +114,6 @@ class GuiConfigParsingTest {
         assertTrue(
                 GuiConfig.validate(config).stream()
                         .anyMatch(error -> error.contains("content slot")));
-    }
-
-    @Test
-    void prepareToolbarRejectsMainInventorySlotsAndDuplicateControlsWithoutWindowLayout() {
-        String menu = "map-editor.menus.prepare-toolbar";
-        var config =
-                YamlConfiguration.loadConfiguration(Path.of("src/main/resources/gui.yml").toFile());
-        assertFalse(config.isSet(menu + ".size"));
-        assertFalse(config.isSet(menu + ".layout"));
-        for (int slot : List.of(-1, 9, 36, 40, 53)) {
-            config.set(menu + ".items.status.slot", slot);
-            assertTrue(
-                    GuiConfig.validate(config).stream()
-                            .anyMatch(
-                                    error ->
-                                            error.contains(menu + ".items.status.slot")
-                                                    && error.contains("0 and 8")));
-        }
-        config.set(menu + ".items.status.slot", 1);
-        assertTrue(
-                GuiConfig.validate(config).stream()
-                        .anyMatch(error -> error.contains(menu) && error.contains("share slot")));
-        config.set(menu + ".items.teleport.slot", 0);
-        assertTrue(GuiConfig.validate(config).isEmpty());
-    }
-
-    @Test
-    void votingNavigationAndEmptyOverlayValidateWithoutConsumingCandidateCapacity() {
-        var config =
-                YamlConfiguration.loadConfiguration(Path.of("src/main/resources/gui.yml").toFile());
-        assertTrue(GuiConfig.validate(config).isEmpty());
-        String menu = "voting.menus.ballot";
-        config.set(menu + ".layout.content", List.of(22));
-        assertTrue(GuiConfig.validate(config).isEmpty());
-        config.set(menu + ".items.empty.slot", 49);
-        assertTrue(
-                GuiConfig.validate(config).stream()
-                        .anyMatch(error -> error.contains("empty") && error.contains("controls")));
-        config.set(menu + ".layout.overlay.empty", 21);
-        assertTrue(GuiConfig.validate(config).isEmpty());
-        config.set(menu + ".layout.overlay.empty", 49);
-        assertTrue(
-                GuiConfig.validate(config).stream()
-                        .anyMatch(error -> error.contains("overlay.empty")));
-        config.set(menu + ".layout.overlay.empty", null);
-        config.set(menu + ".items.empty.slot", 22);
-        config.set(menu + ".layout.content", List.of(45, 48, 49, 53));
-        assertTrue(
-                GuiConfig.validate(config).stream()
-                        .anyMatch(error -> error.contains("content slot")));
-    }
-
-    @Test
-    void voteBarRejectsInvalidLengthAndNonTextGlyphsBeforeReload() {
-        String base = "voting.menus.ballot.presentation";
-        for (Object value : List.of(0, -1, 65, "8")) {
-            var config =
-                    YamlConfiguration.loadConfiguration(
-                            Path.of("src/main/resources/gui.yml").toFile());
-            config.set(base + ".bar-length", value);
-            assertTrue(
-                    GuiConfig.validate(config).stream()
-                            .anyMatch(error -> error.contains("bar-length")));
-        }
-        var config =
-                YamlConfiguration.loadConfiguration(Path.of("src/main/resources/gui.yml").toFile());
-        config.set(base + ".bar-filled", 1);
-        config.set(base + ".bar-empty", List.of("."));
-        assertEquals(
-                2,
-                GuiConfig.validate(config).stream()
-                        .filter(error -> error.contains("bar-"))
-                        .count());
     }
 
     @Test
@@ -639,46 +429,369 @@ class GuiConfigParsingTest {
                         .anyMatch(e -> e.contains("overlaps a fixed control")));
     }
 
+    /**
+     * Each row applies its overrides to a fresh copy of the bundled gui.yml. Rows that continue a
+     * scenario repeat the earlier overrides, so every row is independently locatable.
+     */
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("bundledOverrides")
+    void bundledGuiOverridesAreValidatedAgainstTheirActualMenus(
+            String scenario, Map<String, Object> overrides, List<String> expectedError) {
+        var document = bundled();
+        overrides.forEach(document::set);
+        var errors = GuiConfig.validate(document);
+        if (expectedError.isEmpty()) assertEquals(List.of(), errors, scenario);
+        else
+            assertTrue(
+                    errors.stream()
+                            .anyMatch(error -> expectedError.stream().allMatch(error::contains)),
+                    scenario + " -> " + errors);
+    }
+
+    static Stream<Arguments> bundledOverrides() {
+        var gui = bundled();
+        var rows = new ArrayList<Arguments>();
+        rows.add(row("bundled gui", values()));
+
+        // Weapon materials are gameplay constraints; menu icons, ammunition and grenades are not.
+        var cosmetic = new ArrayList<Object>();
+        for (LaserGun gun : LaserGun.values()) {
+            String path = "laser.equipment.guns." + gun.id();
+            rows.add(
+                    row(
+                            "gun " + gun.id() + " material",
+                            values(path + ".material", "DIAMOND"),
+                            path));
+            rows.add(
+                    row(
+                            "gun " + gun.id() + " selected material",
+                            values(path + ".states.selected.material", "DIAMOND"),
+                            path));
+            cosmetic.addAll(
+                    Arrays.asList(
+                            path + ".material",
+                            gun.material().name(),
+                            path + ".states.selected.material",
+                            null,
+                            "laser.menus.gun-selection.items.guns." + gun.id() + ".material",
+                            "DIAMOND"));
+        }
+        var arrow = new ArrayList<>(cosmetic);
+        arrow.addAll(List.of("laser.equipment.ammo.material", "ARROW"));
+        rows.add(row("ammunition must stay an arrow", values(arrow.toArray()), "ammunition"));
+        var utility = new ArrayList<>(cosmetic);
+        utility.addAll(
+                List.of(
+                        "laser.equipment.ammo.material",
+                        "SPECTRAL_ARROW",
+                        "laser.equipment.laserbox.grenade.material",
+                        "EMERALD"));
+        rows.add(row("cosmetic and utility materials", values(utility.toArray())));
+
+        // Team empty overlays cannot cover controls; every list accepts centred layouts.
+        var centred = new ArrayList<Object>();
+        for (String name :
+                List.of(
+                        "overview",
+                        "members",
+                        "add-player",
+                        "known-player",
+                        "quick-assign",
+                        "target-team")) {
+            String path = "teams.menus." + name;
+            rows.add(
+                    row(
+                            "team " + name + " overlay on close",
+                            values(
+                                    path + ".layout.overlay.empty",
+                                    gui.getInt(path + ".items.close.slot")),
+                            path + ".layout.overlay.empty"));
+            centred.addAll(
+                    Arrays.asList(
+                            path + ".layout.content",
+                            null,
+                            path + ".layout.content.1",
+                            List.of(22),
+                            path + ".layout.content.2",
+                            List.of(20, 24)));
+        }
+        rows.add(row("centred team lists", values(centred.toArray())));
+
+        // Bingo task masks cannot reveal the task and the full summary must be a list.
+        String card = "games.bingo.menus.card";
+        String hidden = card + ".items.task.states.hidden.title";
+        String summary = card + ".task-presentation.completion-summary";
+        rows.add(row("literal percent in mask", values(hidden, "secret 100%")));
+        rows.add(row("revealing mask", values(hidden, "%description%"), "states.hidden"));
+        rows.add(
+                row(
+                        "summary not a list",
+                        values(hidden, "?", summary, "not a list"),
+                        "completion-summary"));
+        rows.add(
+                row(
+                        "invalid locked material",
+                        values(
+                                hidden,
+                                "?",
+                                summary,
+                                List.of(),
+                                card + ".items.task.states.locked.material",
+                                "TASK"),
+                        "states.locked"));
+
+        // Bingo cards need every cell; shared info must stay outside the actual task slots.
+        String x3 = card + ".screens.x3.layout";
+        var cells = List.of(3, 4, 5, 12, 13, 14, 21, 22, 23);
+        rows.add(row("x3 card missing cells", values(x3 + ".content", List.of(3, 4)), "exactly 9"));
+        rows.add(
+                row(
+                        "info inside x3 cells",
+                        values(x3 + ".content", cells, card + ".items.info.slot", 3),
+                        "info must fit"));
+        // A child override fixes only that screen: widths 4/5 still collide with info at 3.
+        rows.add(
+                row(
+                        "info fixed only for x3",
+                        values(
+                                x3 + ".content",
+                                cells,
+                                card + ".items.info.slot",
+                                3,
+                                x3 + ".footer.info",
+                                0),
+                        "x4",
+                        "info must fit"));
+        rows.add(
+                row(
+                        "info outside every card",
+                        values(
+                                x3 + ".content",
+                                cells,
+                                card + ".items.info.slot",
+                                0,
+                                x3 + ".footer.info",
+                                0)));
+
+        // Spectator selectors check their actual controls and empty overlay priorities.
+        var movedNext = new ArrayList<Object>();
+        for (String screen :
+                List.of("venue-selector", "sub-arena-selector", "build-mart-selector")) {
+            String menu = "spectator.menus." + screen;
+            rows.add(
+                    row(
+                            screen + " next on close",
+                            values(menu + ".layout.footer.next", 49),
+                            menu,
+                            "share slot"));
+            movedNext.addAll(List.of(menu + ".layout.footer.next", 2));
+        }
+        rows.add(row("spectator next moved", values(movedNext.toArray())));
+        String venue = "spectator.menus.venue-selector.layout.overlay.empty";
+        var coveredOverlay = new ArrayList<>(movedNext);
+        coveredOverlay.addAll(List.of(venue, 49));
+        rows.add(
+                row(
+                        "venue overlay on control",
+                        values(coveredOverlay.toArray()),
+                        "spectator.menus.venue-selector",
+                        "empty"));
+        var freeOverlay = new ArrayList<>(movedNext);
+        freeOverlay.addAll(List.of(venue, 22));
+        rows.add(row("venue overlay on content", values(freeOverlay.toArray())));
+
+        // Every Bingo vote phase checks its own layout and option navigation.
+        for (String phase : List.of("mode", "difficulty", "lines", "genesis")) {
+            String menu = "daily.menus.bingo-vote.screens." + phase;
+            rows.add(
+                    row(
+                            phase + " vote single slot",
+                            values(menu + ".layout.content", List.of(16))));
+            rows.add(
+                    row(
+                            phase + " vote on navigation",
+                            values(menu + ".layout.content", List.of(19, 20, 21)),
+                            menu,
+                            "content slot"));
+        }
+
+        // The prepare toolbar is a hotbar: no window layout, slots 0-8 and unique controls.
+        String toolbar = "map-editor.menus.prepare-toolbar.items";
+        for (int slot : List.of(-1, 9, 36, 40, 53))
+            rows.add(
+                    row(
+                            "toolbar status slot " + slot,
+                            values(toolbar + ".status.slot", slot),
+                            toolbar + ".status.slot",
+                            "0 and 8"));
+        rows.add(
+                row(
+                        "toolbar duplicate control",
+                        values(toolbar + ".status.slot", 1),
+                        "map-editor.menus.prepare-toolbar",
+                        "share slot"));
+        rows.add(
+                row(
+                        "toolbar controls swapped",
+                        values(toolbar + ".status.slot", 1, toolbar + ".teleport.slot", 0)));
+
+        // Voting navigation and empty overlays do not consume candidate capacity.
+        String ballot = "voting.menus.ballot";
+        rows.add(row("ballot single slot", values(ballot + ".layout.content", List.of(22))));
+        rows.add(
+                row(
+                        "ballot empty item on control",
+                        values(
+                                ballot + ".layout.content",
+                                List.of(22),
+                                ballot + ".items.empty.slot",
+                                49),
+                        "empty",
+                        "controls"));
+        rows.add(
+                row(
+                        "ballot empty overlay moved",
+                        values(
+                                ballot + ".layout.content",
+                                List.of(22),
+                                ballot + ".items.empty.slot",
+                                49,
+                                ballot + ".layout.overlay.empty",
+                                21)));
+        rows.add(
+                row(
+                        "ballot empty overlay on control",
+                        values(
+                                ballot + ".layout.content",
+                                List.of(22),
+                                ballot + ".items.empty.slot",
+                                49,
+                                ballot + ".layout.overlay.empty",
+                                49),
+                        "overlay.empty"));
+        rows.add(
+                row(
+                        "ballot content on controls",
+                        values(
+                                ballot + ".layout.overlay.empty",
+                                null,
+                                ballot + ".items.empty.slot",
+                                22,
+                                ballot + ".layout.content",
+                                List.of(45, 48, 49, 53)),
+                        "content slot"));
+        for (Object length : List.of(0, -1, 65, "8"))
+            rows.add(
+                    row(
+                            "vote bar length " + length,
+                            values(ballot + ".presentation.bar-length", length),
+                            "bar-length"));
+
+        // Daily lobby overlays and map preview limits.
+        rows.add(
+                row(
+                        "party overlay on control",
+                        values("daily.menus.party-screen.layout.overlay.empty", 45),
+                        "overlay.empty"));
+        for (Object limit : List.of(-1, "3"))
+            rows.add(
+                    row(
+                            "map preview limit " + limit,
+                            values(
+                                    "daily.menus.game-selection-screen.presentation.map-preview-limit",
+                                    limit),
+                            "map-preview-limit"));
+
+        // Map list capacity and empty overlay use the actual list controls.
+        String areas = "map-editor.menus.area-list.layout";
+        rows.add(
+                row(
+                        "area list content on controls",
+                        values(areas + ".content", List.of(47, 53)),
+                        "area-list.layout.content"));
+        rows.add(
+                row(
+                        "area list overlay on control",
+                        values(areas + ".content", List.of(47, 53), areas + ".overlay.empty", 47),
+                        "overlay.empty"));
+        return rows.stream();
+    }
+
+    @Test
+    void bundledPrepareToolbarHasNoWindowLayout() {
+        var gui = bundled();
+        assertFalse(gui.isSet("map-editor.menus.prepare-toolbar.size"));
+        assertFalse(gui.isSet("map-editor.menus.prepare-toolbar.layout"));
+    }
+
+    @Test
+    void voteBarGlyphsMustBeText() {
+        var config = bundled();
+        String base = "voting.menus.ballot.presentation";
+        config.set(base + ".bar-filled", 1);
+        config.set(base + ".bar-empty", List.of("."));
+        assertEquals(
+                2,
+                GuiConfig.validate(config).stream()
+                        .filter(error -> error.contains("bar-"))
+                        .count());
+    }
+
+    @Test
+    void spectatorHotbarCollisionsIncludeWorkerCardButNotMutuallyExclusiveCoreControls() {
+        var document = new YamlConfiguration();
+        document.set("spectator.hotbar.participant-controls.slot", 8);
+        document.set("spectator.hotbar.venue-selector.slot", 8);
+        assertEquals(List.of(), GuiConfig.validate(document));
+        document.set("spectator.hotbar.leave.slot", 8);
+        assertTrue(
+                GuiConfig.validate(document).stream()
+                        .anyMatch(error -> error.contains("share slot 8")));
+        document = new YamlConfiguration();
+        document.set("games.bingo.hotbar.spectator.card.slot", 4);
+        document.set("games.bingo.hotbar.spectator.speed.slot", 4);
+        assertTrue(
+                GuiConfig.validate(document).stream()
+                        .anyMatch(error -> error.contains("share slot 4")));
+    }
+
+    @Test
+    void spectatorHotbarRejectsInvalidSlotsAndNonTextFeedbackButAllowsEmptyText() {
+        for (Object invalid : List.of(-1, 9, "2", 1.5)) {
+            var document = new YamlConfiguration();
+            document.set("games.bingo.hotbar.spectator.card.slot", invalid);
+            assertFalse(GuiConfig.validate(document).isEmpty(), invalid.toString());
+        }
+        for (String key :
+                List.of(
+                        "spectator.feedback.speed",
+                        "games.bingo.hotbar.spectator.speed.feedback")) {
+            var document = new YamlConfiguration();
+            document.set(key, false);
+            assertFalse(GuiConfig.validate(document).isEmpty(), key);
+            document.set(key, "");
+            assertEquals(List.of(), GuiConfig.validate(document), key);
+        }
+    }
+
+    private static Arguments row(String scenario, Map<String, Object> overrides, String... error) {
+        return Arguments.of(scenario, overrides, List.of(error));
+    }
+
+    /** Ordered path/value pairs; a null value removes the path before later pairs apply. */
+    private static Map<String, Object> values(Object... pairs) {
+        var values = new LinkedHashMap<String, Object>();
+        for (int i = 0; i < pairs.length; i += 2) values.put((String) pairs[i], pairs[i + 1]);
+        return values;
+    }
+
+    private static YamlConfiguration bundled() {
+        return YamlConfiguration.loadConfiguration(Path.of("src/main/resources/gui.yml").toFile());
+    }
+
     private static void activate(YamlConfiguration document) throws ReflectiveOperationException {
         Field field = GuiConfig.class.getDeclaredField("active");
         field.setAccessible(true);
         field.set(null, document);
-    }
-
-    @Test
-    void dailyLobbyOverlayCannotCoverAFixedControlAndMapLimitMustBeNumeric() throws Exception {
-        var document =
-                YamlConfiguration.loadConfiguration(
-                        java.nio.file.Path.of("src/main/resources/gui.yml").toFile());
-        assertTrue(
-                GuiConfig.validate(document).isEmpty(),
-                () -> GuiConfig.validate(document).toString());
-        document.set("daily.menus.party-screen.layout.overlay.empty", 45);
-        assertTrue(
-                GuiConfig.validate(document).stream().anyMatch(e -> e.contains("overlay.empty")));
-        document.set("daily.menus.game-selection-screen.presentation.map-preview-limit", -1);
-        assertTrue(
-                GuiConfig.validate(document).stream()
-                        .anyMatch(e -> e.contains("map-preview-limit")));
-        document.set("daily.menus.game-selection-screen.presentation.map-preview-limit", "3");
-        assertTrue(
-                GuiConfig.validate(document).stream()
-                        .anyMatch(e -> e.contains("map-preview-limit")));
-    }
-
-    @Test
-    void mapListCapacityAndEmptyOverlayAreValidatedAgainstItsActualControls() {
-        var document =
-                YamlConfiguration.loadConfiguration(Path.of("src/main/resources/gui.yml").toFile());
-        assertTrue(
-                GuiConfig.validate(document).isEmpty(),
-                () -> GuiConfig.validate(document).toString());
-        document.set("map-editor.menus.area-list.layout.content", List.of(47, 53));
-        assertTrue(
-                GuiConfig.validate(document).stream()
-                        .anyMatch(e -> e.contains("area-list.layout.content")));
-        document.set("map-editor.menus.area-list.layout.overlay.empty", 47);
-        assertTrue(
-                GuiConfig.validate(document).stream().anyMatch(e -> e.contains("overlay.empty")));
     }
 }

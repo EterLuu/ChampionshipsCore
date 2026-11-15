@@ -10,11 +10,14 @@ import ink.ziip.championshipscore.api.rank.entry.PlayerPointEntry;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.ScoreMessages;
+import ink.ziip.championshipscore.database.rank.RankDao;
 import ink.ziip.championshipscore.database.rank.RankDaoImpl;
 import ink.ziip.championshipscore.database.sync.DatabaseSyncDomain;
 import ink.ziip.championshipscore.logging.LogText;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
+import ink.ziip.championshipscore.shared.presentation.MessageTemplate;
 import ink.ziip.championshipscore.util.concurrent.LifecycleTasks;
 
 import lombok.Getter;
@@ -80,7 +83,7 @@ public class RankManager extends BaseManager {
 
     private final Map<GameTypeEnum, BigDecimal> gameWeight = new ConcurrentHashMap<>();
     private final Map<GameTypeEnum, Double> gameTotalPoints = new ConcurrentHashMap<>();
-    private final RankDaoImpl rankDao = new RankDaoImpl();
+    private final RankDao rankDao;
     private final BukkitScheduler scheduler = Bukkit.getScheduler();
     private final LifecycleTasks rankTasks = new LifecycleTasks("cc-rank-database", 4096);
     private final AtomicBoolean periodicRefreshPending = new AtomicBoolean();
@@ -99,6 +102,7 @@ public class RankManager extends BaseManager {
 
     public RankManager(ChampionshipsCore championshipsCore) {
         super(championshipsCore);
+        rankDao = new RankDaoImpl(championshipsCore);
         pendingPointTransactions = new PendingPointTransactionStore(championshipsCore);
     }
 
@@ -236,15 +240,20 @@ public class RankManager extends BaseManager {
 
         StringBuilder stringBuilder = new StringBuilder();
 
-        stringBuilder.append(MessageConfig.RANK_TEAM_BOARD_BAR).append("\n");
+        stringBuilder.append(ScoreMessages.RANK_TEAM_BOARD_BAR).append("\n");
 
         int i = 1;
         for (Map.Entry<ChampionshipTeam, Double> entry : list) {
             String row =
-                    MessageConfig.RANK_TEAM_BOARD_ROW
-                            .replace("%team_rank%", String.valueOf(i))
-                            .replace("%team%", entry.getKey().getColoredName())
-                            .replace("%team_point%", LegacyText.formatPoints(entry.getValue()));
+                    MessageTemplate.render(
+                            ScoreMessages.RANK_TEAM_BOARD_ROW,
+                            Map.of(
+                                    "%team_rank%",
+                                    String.valueOf(i),
+                                    "%team%",
+                                    entry.getKey().getColoredName(),
+                                    "%team_point%",
+                                    LegacyText.formatPoints(entry.getValue())));
 
             stringBuilder.append(row).append("\n");
 
@@ -282,15 +291,20 @@ public class RankManager extends BaseManager {
 
         StringBuilder stringBuilder = new StringBuilder();
 
-        stringBuilder.append(MessageConfig.RANK_PLAYER_BOARD_BAR).append("\n");
+        stringBuilder.append(ScoreMessages.RANK_PLAYER_BOARD_BAR).append("\n");
 
         int i = 1;
         for (Map.Entry<UUID, Double> entry : list) {
             String row =
-                    MessageConfig.RANK_PLAYER_BOARD_ROW
-                            .replace("%player_rank%", String.valueOf(i))
-                            .replace("%player%", CoreMessages.formatPlayerName(entry.getKey()))
-                            .replace("%player_point%", LegacyText.formatPoints(entry.getValue()));
+                    MessageTemplate.render(
+                            ScoreMessages.RANK_PLAYER_BOARD_ROW,
+                            Map.of(
+                                    "%player_rank%",
+                                    String.valueOf(i),
+                                    "%player%",
+                                    CoreMessages.formatPlayerName(entry.getKey()),
+                                    "%player_point%",
+                                    LegacyText.formatPoints(entry.getValue())));
 
             stringBuilder.append(row).append("\n");
 
@@ -345,7 +359,7 @@ public class RankManager extends BaseManager {
         if (!isScoringGame(gameTypeEnum)) return;
         enqueueRankTask(
                 () -> {
-                    if (rankDao.getGameStatusOrder(gameTypeEnum) != -1) return;
+                    if (rankDao.getGameStatusOrder(gameTypeEnum).isPresent()) return;
 
                     GameStatusEntry gameStatusEntry =
                             GameStatusEntry.builder()
@@ -367,9 +381,7 @@ public class RankManager extends BaseManager {
     public void resetGameOrder() {
         enqueueRankTask(
                 () -> {
-                    for (GameTypeEnum gameTypeEnum : GameTypeEnum.values()) {
-                        rankDao.deleteGameStatus(gameTypeEnum);
-                    }
+                    rankDao.resetGameStatus();
                     rankTasks.token().publish(() -> gameOrder = Map.of());
                     publishRankChange("game-order-reset");
                 });
@@ -399,8 +411,7 @@ public class RankManager extends BaseManager {
     public void deleteGameRecords(GameTypeEnum gameTypeEnum) {
         enqueueRankTask(
                 () -> {
-                    rankDao.deleteGameStatus(gameTypeEnum);
-                    rankDao.deleteGamePoints(gameTypeEnum);
+                    rankDao.deleteGameRecords(gameTypeEnum);
                     rankTasks
                             .token()
                             .publish(
@@ -771,23 +782,23 @@ public class RankManager extends BaseManager {
                                         latestRankingSummaryAt = System.currentTimeMillis();
                                     });
 
-                    String winner = MessageConfig.PLACEHOLDER_NONE;
+                    String winner = ScoreMessages.PLACEHOLDER_NONE;
                     String winnerPoints = "0";
                     if (!gameLeaderboard.isEmpty()) {
                         winner = gameLeaderboard.get(0).getKey().getColoredName();
                         winnerPoints = LegacyText.formatPoints(gameLeaderboard.get(0).getValue());
                     }
                     String subtitle =
-                            MessageConfig.RANK_FINAL_SUBTITLE
-                                    .replace("%winner%", winner)
-                                    .replace("%points%", winnerPoints);
+                            MessageTemplate.render(
+                                    ScoreMessages.RANK_FINAL_SUBTITLE,
+                                    Map.of("%winner%", winner, "%points%", winnerPoints));
                     var token = rankTasks.token();
                     token.dispatch(
                             task -> scheduler.runTask(plugin, task),
                             () -> {
                                 CoreMessages.sendMessageToAllPlayers(summary);
                                 CoreMessages.sendTitleToAllPlayers(
-                                        MessageConfig.RANK_FINAL_TITLE, subtitle, 60);
+                                        ScoreMessages.RANK_FINAL_TITLE, subtitle, 60);
                                 CoreMessages.playSoundToAllPlayers(
                                         org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 0.8F, 1.1F);
                                 scheduler.runTaskLater(
@@ -795,7 +806,7 @@ public class RankManager extends BaseManager {
                                         () -> {
                                             if (token.isCurrent())
                                                 CoreMessages.sendActionBarToAllPlayers(
-                                                        MessageConfig.RANK_RECAP_HINT_ACTIONBAR);
+                                                        ScoreMessages.RANK_RECAP_HINT_ACTIONBAR);
                                         },
                                         60L);
                                 afterBroadcast.run();
@@ -807,7 +818,7 @@ public class RankManager extends BaseManager {
             GameTypeEnum gameTypeEnum, List<Map.Entry<ChampionshipTeam, Double>> gameLeaderboard) {
         StringBuilder result =
                 new StringBuilder(
-                                MessageConfig.RANK_FINAL_BOARD_BAR.replace(
+                                ScoreMessages.RANK_FINAL_BOARD_BAR.replace(
                                         "%game%", gameTypeEnum.toString()))
                         .append("\n");
 
@@ -815,16 +826,19 @@ public class RankManager extends BaseManager {
         for (int i = 0; i < rows; i++) {
             Map.Entry<ChampionshipTeam, Double> entry = gameLeaderboard.get(i);
             result.append(
-                            MessageConfig.RANK_TEAM_BOARD_ROW
-                                    .replace("%team_rank%", String.valueOf(i + 1))
-                                    .replace("%team%", entry.getKey().getColoredName())
-                                    .replace(
+                            MessageTemplate.render(
+                                    ScoreMessages.RANK_TEAM_BOARD_ROW,
+                                    Map.of(
+                                            "%team_rank%",
+                                            String.valueOf(i + 1),
+                                            "%team%",
+                                            entry.getKey().getColoredName(),
                                             "%team_point%",
-                                            LegacyText.formatPoints(entry.getValue())))
+                                            LegacyText.formatPoints(entry.getValue()))))
                     .append("\n");
         }
 
-        result.append(MessageConfig.RANK_FINAL_RECAP_HINT);
+        result.append(ScoreMessages.RANK_FINAL_RECAP_HINT);
         return result.toString();
     }
 
@@ -832,11 +846,11 @@ public class RankManager extends BaseManager {
     public void sendLatestRankingSummary(Player player) {
         String summary = latestRankingSummary;
         if (summary == null || summary.isBlank()) {
-            player.sendMessage(MessageConfig.RANK_NO_RECAP);
+            player.sendMessage(ScoreMessages.RANK_NO_RECAP);
             return;
         }
         player.sendMessage(summary);
-        CoreMessages.sendActionBar(player, MessageConfig.RANK_RECAP_SHOWN);
+        CoreMessages.sendActionBar(player, ScoreMessages.RANK_RECAP_SHOWN);
     }
 
     /** Replays a recent result to players who disconnected while it was announced. */
@@ -846,7 +860,7 @@ public class RankManager extends BaseManager {
                 || System.currentTimeMillis() - latestRankingSummaryAt > JOIN_RECAP_WINDOW_MILLIS)
             return;
         player.sendMessage(summary);
-        CoreMessages.sendActionBar(player, MessageConfig.RANK_TEAMBOARD_HINT);
+        CoreMessages.sendActionBar(player, ScoreMessages.RANK_TEAMBOARD_HINT);
     }
 
     private void queuePeriodicRefresh() {
@@ -980,17 +994,22 @@ public class RankManager extends BaseManager {
 
         stringBuilder
                 .append(
-                        MessageConfig.RANK_GAME_TEAM_BOARD_BAR.replace(
+                        ScoreMessages.RANK_GAME_TEAM_BOARD_BAR.replace(
                                 "%game%", gameTypeEnum.toString()))
                 .append("\n");
 
         int i = 1;
         for (Map.Entry<ChampionshipTeam, Double> entry : list) {
             String row =
-                    MessageConfig.RANK_TEAM_BOARD_ROW
-                            .replace("%team_rank%", String.valueOf(i))
-                            .replace("%team%", entry.getKey().getColoredName())
-                            .replace("%team_point%", LegacyText.formatPoints(entry.getValue()));
+                    MessageTemplate.render(
+                            ScoreMessages.RANK_TEAM_BOARD_ROW,
+                            Map.of(
+                                    "%team_rank%",
+                                    String.valueOf(i),
+                                    "%team%",
+                                    entry.getKey().getColoredName(),
+                                    "%team_point%",
+                                    LegacyText.formatPoints(entry.getValue())));
 
             stringBuilder.append(row).append("\n");
 
@@ -1023,17 +1042,20 @@ public class RankManager extends BaseManager {
     public String getGameWeightInfo() {
         StringBuilder stringBuilder = new StringBuilder();
 
-        stringBuilder.append(MessageConfig.RANK_GAME_WEIGHT_BAR).append("\n");
+        stringBuilder.append(ScoreMessages.RANK_GAME_WEIGHT_BAR).append("\n");
 
         for (GameTypeEnum gameTypeEnum : SCORING_GAMES) {
             String row =
-                    MessageConfig.RANK_GAME_WEIGHT_ROW
-                            .replace("%game%", gameTypeEnum.toString())
-                            .replace("%weight%", String.valueOf(getGameWeight(gameTypeEnum)))
-                            .replace(
+                    MessageTemplate.render(
+                            ScoreMessages.RANK_GAME_WEIGHT_ROW,
+                            Map.of(
+                                    "%game%",
+                                    gameTypeEnum.toString(),
+                                    "%weight%",
+                                    String.valueOf(getGameWeight(gameTypeEnum)),
                                     "%total_point%",
                                     LegacyText.formatPoints(
-                                            gameTotalPoints.getOrDefault(gameTypeEnum, 0D)));
+                                            gameTotalPoints.getOrDefault(gameTypeEnum, 0D))));
 
             stringBuilder.append(row).append("\n");
         }

@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.ConfigurationStateExtension;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.DailyMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.support.MessageConfigurations;
 
@@ -76,7 +76,7 @@ class CoreMessagesTest {
             throws Exception {
         var config = MessageConfigurations.defaults();
         config.loadFromConfiguration(new YamlConfiguration());
-        assertEquals(MessageConfig.DAILY_PREFIX + "hello", CoreMessages.dailyMessage("hello"));
+        assertEquals(DailyMessages.DAILY_PREFIX + "hello", CoreMessages.dailyMessage("hello"));
         var document = new YamlConfiguration();
         document.set("daily.prefix", "prefix %message%");
         document.set("daily.prefixed", "%message% / %prefix%");

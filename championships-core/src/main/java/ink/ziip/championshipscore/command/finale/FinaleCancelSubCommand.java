@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.command.finale;
 
 import ink.ziip.championshipscore.api.finale.FinaleGameDefinition;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.EventMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -37,12 +38,12 @@ final class FinaleCancelSubCommand extends BaseSubCommand {
         if (plugin.getScheduleManager().stopFinale(definition.gameType()))
             CoreMessages.sendAdminSuccess(
                     sender,
-                    MessageConfig.FINALE_CANCELLED.replace(
+                    EventMessages.FINALE_CANCELLED.replace(
                             "%game%", definition.gameType().toString()));
         else
             CoreMessages.sendAdminInfo(
                     sender,
-                    MessageConfig.FINALE_NOT_RUNNING.replace(
+                    EventMessages.FINALE_NOT_RUNNING.replace(
                             "%game%", definition.gameType().toString()));
         return true;
     }

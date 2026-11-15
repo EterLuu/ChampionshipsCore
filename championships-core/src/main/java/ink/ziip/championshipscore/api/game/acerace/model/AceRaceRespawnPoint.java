@@ -10,6 +10,15 @@ import org.jetbrains.annotations.NotNull;
 public record AceRaceRespawnPoint(@NotNull Location location) {
     private static final double CAPTURE_RADIUS_SQUARED = 16.0D;
 
+    public AceRaceRespawnPoint {
+        location = location.clone();
+    }
+
+    @Override
+    public @NotNull Location location() {
+        return location.clone();
+    }
+
     boolean reached(@NotNull Location from, @NotNull Location to) {
         return crossingProgress(from, to) >= 0.0D;
     }

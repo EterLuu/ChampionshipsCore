@@ -5,7 +5,7 @@ import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.game.parkourtag.runtime.ParkourTagArea;
 import ink.ziip.championshipscore.api.game.parkourtag.runtime.ParkourTagMatch;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.ScoreMessages;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
 import org.bukkit.Location;
@@ -39,12 +39,12 @@ public class ParkourTagPlaceholder extends BaseGamePlaceholder<ParkourTagArea> {
                     resolveArea(params, rival ? "area_rival_" : "area_team_", offlinePlayer);
             Player matchPlayer = offlinePlayer.getPlayer();
             if (parkourTagArea == null || matchPlayer == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             ParkourTagMatch match = parkourTagArea.matchOf(matchPlayer);
             ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(matchPlayer);
             if (match == null || team == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             ChampionshipTeam result;
             if (rival) {
@@ -56,7 +56,7 @@ public class ParkourTagPlaceholder extends BaseGamePlaceholder<ParkourTagArea> {
                 result = team;
             }
             if (result == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             return result.getColoredName();
         }
@@ -64,16 +64,16 @@ public class ParkourTagPlaceholder extends BaseGamePlaceholder<ParkourTagArea> {
         /* Player required placeholders */
 
         Player player = offlinePlayer.getPlayer();
-        if (player == null) return MessageConfig.PLACEHOLDER_NONE;
+        if (player == null) return ScoreMessages.PLACEHOLDER_NONE;
         Location location = player.getLocation();
 
         if (params.startsWith("area_chaser_")) {
             ParkourTagArea parkourTagArea = resolveArea(params, "area_chaser_", offlinePlayer);
             if (parkourTagArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
-            if (championshipTeam == null) return MessageConfig.PLACEHOLDER_NONE;
+            if (championshipTeam == null) return ScoreMessages.PLACEHOLDER_NONE;
 
             return CoreMessages.formatPlayerName(player);
         }
@@ -81,7 +81,7 @@ public class ParkourTagPlaceholder extends BaseGamePlaceholder<ParkourTagArea> {
         if (params.startsWith("area_escapees_")) {
             ParkourTagArea parkourTagArea = resolveArea(params, "area_escapees_", offlinePlayer);
             if (parkourTagArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
 
             return String.valueOf(parkourTagArea.getAreaEscapeesNums(location));
@@ -91,7 +91,7 @@ public class ParkourTagPlaceholder extends BaseGamePlaceholder<ParkourTagArea> {
             ParkourTagArea parkourTagArea =
                     resolveArea(params, "area_survived_players_", offlinePlayer);
             if (parkourTagArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
 
             return String.valueOf(parkourTagArea.getAreaSurvivedEscapeesNums(location));
@@ -100,14 +100,14 @@ public class ParkourTagPlaceholder extends BaseGamePlaceholder<ParkourTagArea> {
         if (params.startsWith("player_role_")) {
             ParkourTagArea parkourTagArea = resolveArea(params, "player_role_", offlinePlayer);
             if (parkourTagArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             if (parkourTagArea.notAreaPlayer(player))
-                return MessageConfig.PLACEHOLDER_PARKOUR_TAG_SPECTATOR;
+                return ScoreMessages.PLACEHOLDER_PARKOUR_TAG_SPECTATOR;
 
             if (parkourTagArea.isChaser(player))
-                return MessageConfig.PLACEHOLDER_PARKOUR_TAG_CHASER;
-            else return MessageConfig.PLACEHOLDER_PARKOUR_TAG_ESCAPEE;
+                return ScoreMessages.PLACEHOLDER_PARKOUR_TAG_CHASER;
+            else return ScoreMessages.PLACEHOLDER_PARKOUR_TAG_ESCAPEE;
         }
 
         // Placeholder is unknown by the Expansion

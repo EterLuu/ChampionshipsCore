@@ -8,8 +8,12 @@ import ink.ziip.championshipscore.protocol.PlayerSnapshot;
 import ink.ziip.championshipscore.protocol.TeamSnapshot;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 class WorkerChampionshipPlaceholderValuesTest {
     @Test
@@ -62,89 +66,55 @@ class WorkerChampionshipPlaceholderValuesTest {
     private static final PlayerSnapshot PLAYER =
             new PlayerSnapshot(PLAYER_ID, "Player", ParticipantRole.PLAYER, 3, true, 321.5D);
 
-    private static String resolve(String params) {
-        return WorkerChampionshipPlaceholderValues.resolve(PLAYER, TEAM, PRESENTATION, params);
+    private static final PlayerSnapshot SPECTATOR =
+            new PlayerSnapshot(PLAYER_ID, "Viewer", ParticipantRole.SPECTATOR, null, false, 0D);
+
+    static Stream<Arguments> placeholders() {
+        return Stream.of(
+                // Championship player: Core identity, rounded points and team tab prefix.
+                Arguments.of(PLAYER, TEAM, false, "player_team_name_no_color", "金队"),
+                Arguments.of(PLAYER, TEAM, false, "player_team_name", "§x§f§f§f§5§6§6金队"),
+                Arguments.of(PLAYER, TEAM, false, "player_team_color_code", "&#fff566"),
+                Arguments.of(PLAYER, TEAM, false, "player_team_color", "YELLOW"),
+                Arguments.of(PLAYER, TEAM, false, "player_points", "322"),
+                Arguments.of(PLAYER, TEAM, false, "player_team_points", "1235"),
+                Arguments.of(PLAYER, TEAM, false, "tab_name_color", "§x§f§f§f§5§6§6"),
+                Arguments.of(
+                        PLAYER,
+                        TEAM,
+                        false,
+                        "tab_footer_status",
+                        "§f队伍: §x§f§f§f§5§6§6金队 §f| 积分: 1235"),
+                Arguments.of(PLAYER, TEAM, false, "tab_prefix", "§8[§x§f§f§f§5§6§6金队§8]§r "),
+                Arguments.of(PLAYER, TEAM, false, "player_rank", null),
+                // Championship spectator: Core fallback text and zero points.
+                Arguments.of(SPECTATOR, null, false, "player_team_name", "旁观"),
+                Arguments.of(SPECTATOR, null, false, "player_team_color", "无"),
+                Arguments.of(SPECTATOR, null, false, "player_team_points", "0"),
+                Arguments.of(SPECTATOR, null, false, "tab_name_color", "§f"),
+                // DAILY player: temporary color team without championship points.
+                Arguments.of(PLAYER, TEAM, true, "player_team_name", "§x§f§f§f§5§6§6金队"),
+                Arguments.of(PLAYER, TEAM, true, "player_team_color", "YELLOW"),
+                Arguments.of(PLAYER, TEAM, true, "player_team_points", "0"),
+                Arguments.of(PLAYER, TEAM, true, "tab_prefix", "§8[§x§f§f§f§5§6§6宾果时速§8]§r "),
+                Arguments.of(PLAYER, TEAM, true, "tab_footer_status", "§f队伍: §x§f§f§f§5§6§6金队"),
+                Arguments.of(PLAYER, TEAM, true, "tab_name_color", "§x§f§f§f§5§6§6"),
+                // DAILY spectator: the same game identity as Core.
+                Arguments.of(SPECTATOR, null, true, "tab_prefix", "§8[§6宾果时速§8]§r "),
+                Arguments.of(SPECTATOR, null, true, "tab_footer_status", "§f当前游戏: §b宾果时速"));
     }
 
-    @Test
-    void championshipPlaceholdersKeepCoreIdentityPointsAndTabPrefix() {
-        Map<String, String> expected =
-                Map.of(
-                        "player_team_name_no_color", "金队",
-                        "player_team_name", "§x§f§f§f§5§6§6金队",
-                        "player_team_color_code", "&#fff566",
-                        "player_team_color", "YELLOW",
-                        "player_points", "322",
-                        "player_team_points", "1235",
-                        "tab_name_color", "§x§f§f§f§5§6§6",
-                        "tab_footer_status", "§f队伍: §x§f§f§f§5§6§6金队 §f| 积分: 1235",
-                        "tab_prefix", "§8[§x§f§f§f§5§6§6金队§8]§r ");
-        expected.forEach((key, value) -> assertEquals(value, resolve(key), key));
-        assertNull(resolve("player_rank"));
-    }
-
-    @Test
-    void spectatorUsesCoreFallbackTextAndZeroPoints() {
-        PlayerSnapshot spectator =
-                new PlayerSnapshot(PLAYER_ID, "Viewer", ParticipantRole.SPECTATOR, null, false, 0D);
-
+    @ParameterizedTest(name = "{0} daily={2} {3}")
+    @MethodSource("placeholders")
+    void resolvesCoreIdentityPointsAndTabTextForEveryRoleAndMode(
+            PlayerSnapshot player,
+            TeamSnapshot team,
+            boolean daily,
+            String params,
+            String expected) {
         assertEquals(
-                "旁观",
+                expected,
                 WorkerChampionshipPlaceholderValues.resolve(
-                        spectator, null, PRESENTATION, "player_team_name"));
-        assertEquals(
-                "无",
-                WorkerChampionshipPlaceholderValues.resolve(
-                        spectator, null, PRESENTATION, "player_team_color"));
-        assertEquals(
-                "0",
-                WorkerChampionshipPlaceholderValues.resolve(
-                        spectator, null, PRESENTATION, "player_team_points"));
-        assertEquals(
-                "§f",
-                WorkerChampionshipPlaceholderValues.resolve(
-                        spectator, null, PRESENTATION, "tab_name_color"));
-    }
-
-    @Test
-    void dailyShowsItsTemporaryColorTeamWithoutChampionshipPoints() {
-        assertEquals(
-                "§x§f§f§f§5§6§6金队",
-                WorkerChampionshipPlaceholderValues.resolve(
-                        PLAYER, TEAM, PRESENTATION, "player_team_name", true));
-        assertEquals(
-                "YELLOW",
-                WorkerChampionshipPlaceholderValues.resolve(
-                        PLAYER, TEAM, PRESENTATION, "player_team_color", true));
-        assertEquals(
-                "0",
-                WorkerChampionshipPlaceholderValues.resolve(
-                        PLAYER, TEAM, PRESENTATION, "player_team_points", true));
-        assertEquals(
-                "§8[§x§f§f§f§5§6§6宾果时速§8]§r ",
-                WorkerChampionshipPlaceholderValues.resolve(
-                        PLAYER, TEAM, PRESENTATION, "tab_prefix", true));
-        assertEquals(
-                "§f队伍: §x§f§f§f§5§6§6金队",
-                WorkerChampionshipPlaceholderValues.resolve(
-                        PLAYER, TEAM, PRESENTATION, "tab_footer_status", true));
-        assertEquals(
-                "§x§f§f§f§5§6§6",
-                WorkerChampionshipPlaceholderValues.resolve(
-                        PLAYER, TEAM, PRESENTATION, "tab_name_color", true));
-    }
-
-    @Test
-    void dailySpectatorUsesTheSameGameIdentityAsCore() {
-        PlayerSnapshot spectator =
-                new PlayerSnapshot(PLAYER_ID, "Viewer", ParticipantRole.SPECTATOR, null, false, 0D);
-        assertEquals(
-                "§8[§6宾果时速§8]§r ",
-                WorkerChampionshipPlaceholderValues.resolve(
-                        spectator, null, PRESENTATION, "tab_prefix", true));
-        assertEquals(
-                "§f当前游戏: §b宾果时速",
-                WorkerChampionshipPlaceholderValues.resolve(
-                        spectator, null, PRESENTATION, "tab_footer_status", true));
+                        player, team, PRESENTATION, params, daily));
     }
 }

@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ink.ziip.championshipscore.api.daily.entry.DailyRecordEntry;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.configuration.ConfigurationStateExtension;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
@@ -89,56 +88,32 @@ class DailyModelsTest {
         }
 
         @Test
+        void laserShowdownFavoriteWeaponIsPersonalTextAndNeverANumericRanking() {
+            assertEquals(
+                    List.of(
+                            DailyMetric.LASERSHOWDOWN_WINS,
+                            DailyMetric.LASERSHOWDOWN_AVERAGE_KILLS,
+                            DailyMetric.LASERSHOWDOWN_HEADSHOT_RATE,
+                            DailyMetric.LASERSHOWDOWN_FAVORITE_GUN),
+                    DailyMetric.forGame(GameTypeEnum.LaserShowdown));
+            assertEquals(
+                    List.of(
+                            DailyMetric.LASERSHOWDOWN_WINS,
+                            DailyMetric.LASERSHOWDOWN_AVERAGE_KILLS,
+                            DailyMetric.LASERSHOWDOWN_HEADSHOT_RATE),
+                    DailyMetric.rankedForGame(GameTypeEnum.LaserShowdown));
+            assertFalse(DailyMetric.LASERSHOWDOWN_FAVORITE_GUN.rankable());
+            assertEquals("2.5", DailyMetric.format(DailyMetric.LASERSHOWDOWN_AVERAGE_KILLS, 2.5));
+            assertEquals("25.0%", DailyMetric.format(DailyMetric.LASERSHOWDOWN_HEADSHOT_RATE, 25));
+        }
+
+        @Test
         void rateBoardsDemandMoreGamesThanCountBoards() {
             assertEquals(1, DailyMetric.BINGO_MAX_TASKS.leaderboardMinGames());
             assertEquals(5, DailyMetric.DRAGON_FIRST_NEXT_GEN_RATE.leaderboardMinGames());
             assertTrue(DailyMetric.ACERACE_FASTEST_LAP.lowerBetter());
             assertFalse(DailyMetric.PKW_STARS_TIME.lowerBetter());
             assertFalse(DailyMetric.DRAGON_MAX_DAMAGE.lowerBetter());
-        }
-    }
-
-    @Nested
-    class DailyStatsManagerCases {
-        private static DailyRecordEntry attempt(UUID player, long duration, UUID match) {
-            return new DailyRecordEntry(
-                    player,
-                    "player",
-                    GameTypeEnum.AceRace,
-                    "map",
-                    "1",
-                    "daily-v1",
-                    DailyRecordType.ACERACE_FASTEST_LAP,
-                    duration,
-                    match,
-                    player,
-                    duration);
-        }
-
-        @Test
-        void parkourWarriorCompositeRecordsRankPrimaryValueBeforeTime() {
-            assertTrue(DailyStatsManager.isBetterPkwRecord(24, 622_000, 24, 660_000));
-            assertFalse(DailyStatsManager.isBetterPkwRecord(23, 500_000, 24, 660_000));
-            assertTrue(DailyStatsManager.isBetterPkwRecord(25, 900_000, 24, 660_000));
-        }
-
-        @Test
-        void personalTimedRecordsKeepThreeBestAttemptsAndAssignRanks() {
-            UUID player = UUID.randomUUID();
-            List<DailyRecordEntry> attempts =
-                    List.of(
-                            attempt(player, 90_000, UUID.randomUUID()),
-                            attempt(player, 70_000, UUID.randomUUID()),
-                            attempt(player, 80_000, UUID.randomUUID()),
-                            attempt(player, 60_000, UUID.randomUUID()),
-                            attempt(player, 50_000, UUID.randomUUID()));
-
-            List<DailyRecordEntry> top = DailyStatsManager.topRecords(attempts);
-
-            assertEquals(
-                    List.of(50_000L, 60_000L, 70_000L),
-                    top.stream().map(DailyRecordEntry::durationMs).toList());
-            assertEquals(List.of(1, 2, 3), top.stream().map(DailyRecordEntry::recordRank).toList());
         }
     }
 

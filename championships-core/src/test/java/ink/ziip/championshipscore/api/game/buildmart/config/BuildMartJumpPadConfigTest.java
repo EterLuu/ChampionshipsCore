@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.buildmart.config;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.configuration.config.BaseConfigurationFile;
@@ -16,7 +18,7 @@ import java.util.Map;
 
 class BuildMartJumpPadConfigTest {
     @Test
-    void currentJumpPadCoordinatesLoadAndSaveUnderTheConfiguredName() throws Exception {
+    void jumpPadCoordinatesLoadSaveAndAnExplicitlyEmptyListClearsOldSelections() throws Exception {
         YamlConfiguration yaml = new YamlConfiguration();
         yaml.set("world-name", "buildmart_area");
         yaml.set(
@@ -48,23 +50,15 @@ class BuildMartJumpPadConfigTest {
                                                 : null);
         assertTrue(config.isInPlayableArea(new Location(world, 189, 170, 193)));
         assertTrue(config.isInPlayableArea(new Location(world, 183, 180, 193)));
-    }
-
-    @Test
-    void explicitlyEmptyNewJumpPadListDoesNotRestoreOldSelections() throws Exception {
-        YamlConfiguration yaml = new YamlConfiguration();
+        // An explicitly emptied list must not keep the previously loaded selections.
         yaml.set("jump-pads", List.of());
-        BuildMartConfig config = config(yaml);
         config.loadCustomFileOptions();
         assertTrue(config.getJumpPads().isEmpty());
     }
 
     private static BuildMartConfig config(YamlConfiguration yaml) throws Exception {
-        var field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-        field.setAccessible(true);
-        BuildMartConfig config =
-                (BuildMartConfig)
-                        ((sun.misc.Unsafe) field.get(null)).allocateInstance(BuildMartConfig.class);
+
+        BuildMartConfig config = allocate(BuildMartConfig.class);
         var configuration = BaseConfigurationFile.class.getDeclaredField("configuration");
         configuration.setAccessible(true);
         configuration.set(config, yaml);

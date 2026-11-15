@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.command.team;
 
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.AdminMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -45,7 +46,7 @@ public class TeamTeleportationSubCommand extends BaseSubCommand {
         ChampionshipTeam team = plugin.getTeamManager().getTeam(args[0]);
         if (team == null) {
             CoreMessages.sendAdminError(
-                    sender, MessageConfig.ADMIN_TEAM_MISSING.replace("%team%", args[0]));
+                    sender, AdminMessages.ADMIN_TEAM_MISSING.replace("%team%", args[0]));
             return true;
         }
         for (Player teamPlayer : team.getOnlinePlayers()) {

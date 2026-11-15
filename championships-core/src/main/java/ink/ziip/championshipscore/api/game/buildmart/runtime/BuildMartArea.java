@@ -24,6 +24,7 @@ import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.game.spatial.TeleportPositions;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.configuration.config.message.BuildMartMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 import ink.ziip.championshipscore.util.Enchants;
@@ -287,9 +288,9 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         resetPlayerHealthFoodEffectLevelInventory();
 
         announceGamePreparation(
-                MessageConfig.BUILD_MART_START_PREPARATION,
-                MessageConfig.BUILD_MART_START_PREPARATION_TITLE,
-                MessageConfig.BUILD_MART_START_PREPARATION_SUBTITLE);
+                BuildMartMessages.BUILD_MART_START_PREPARATION,
+                BuildMartMessages.BUILD_MART_START_PREPARATION_TITLE,
+                BuildMartMessages.BUILD_MART_START_PREPARATION_SUBTITLE);
 
         startGameProgress();
     }
@@ -336,9 +337,9 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         // Ten seconds so every team can look around its base and the reference builds while frozen.
         startFinalCountdown(
                 10,
-                MessageConfig.BUILD_MART_START_PREPARATION_TITLE,
-                MessageConfig.BUILD_MART_GAME_START_TITLE,
-                MessageConfig.BUILD_MART_GAME_START_SUBTITLE,
+                BuildMartMessages.BUILD_MART_START_PREPARATION_TITLE,
+                BuildMartMessages.BUILD_MART_GAME_START_TITLE,
+                BuildMartMessages.BUILD_MART_GAME_START_SUBTITLE,
                 this::beginGameProgress);
     }
 
@@ -594,13 +595,13 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
     private String bossBarTitle() {
         String golden =
                 currentGolden == null
-                        ? MessageConfig.BUILD_MART_BOSSBAR_GOLDEN_NONE
-                        : MessageConfig.BUILD_MART_BOSSBAR_GOLDEN_ACTIVE
+                        ? BuildMartMessages.BUILD_MART_BOSSBAR_GOLDEN_NONE
+                        : BuildMartMessages.BUILD_MART_BOSSBAR_GOLDEN_ACTIVE
                                 .replace("%blueprint%", currentGolden.getDisplayName())
                                 .replace(
                                         "%seconds%",
                                         CoreMessages.bossBarTime(goldenSecondsRemaining()));
-        return MessageConfig.BUILD_MART_BOSSBAR_TITLE
+        return BuildMartMessages.BUILD_MART_BOSSBAR_TITLE
                 .replace("%timer%", CoreMessages.bossBarTime(timer))
                 .replace("%golden%", golden);
     }
@@ -664,7 +665,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
             goldenConfirmation.remove(player.getUniqueId());
             playerManager
                     .getPlayer(player.getUniqueId())
-                    .sendMessage(MessageConfig.BUILD_MART_SUBMIT_LOCKED);
+                    .sendMessage(BuildMartMessages.BUILD_MART_SUBMIT_LOCKED);
             return;
         }
         if (slotId.equals("G")) {
@@ -678,7 +679,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
                     System.nanoTime() / 1_000_000)) {
                 playerManager
                         .getPlayer(player.getUniqueId())
-                        .sendMessage(MessageConfig.BUILD_MART_GOLDEN_SUBMIT_CONFIRM);
+                        .sendMessage(BuildMartMessages.BUILD_MART_GOLDEN_SUBMIT_CONFIRM);
                 return;
             }
         }
@@ -732,7 +733,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
                 ReferenceBuilder.paste(blueprint, slot.getReferenceAnchor());
                 refreshMaterialDisplay(team, slot);
                 team.sendMessageToAll(
-                        MessageConfig.BUILD_MART_BLUEPRINT_AUTO_REFRESHED
+                        BuildMartMessages.BUILD_MART_BLUEPRINT_AUTO_REFRESHED
                                 .replace("%blueprint%", blueprint.getDisplayName())
                                 .replace("%stars%", String.valueOf(blueprint.getStars())));
             }
@@ -761,7 +762,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
                         ReferenceBuilder.paste(next, slot.getReferenceAnchor());
                     refreshMaterialDisplay(team, slot);
                     team.sendMessageToAll(
-                            MessageConfig.BUILD_MART_BLUEPRINT_AUTO_REFRESHED
+                            BuildMartMessages.BUILD_MART_BLUEPRINT_AUTO_REFRESHED
                                     .replace("%blueprint%", next.getDisplayName())
                                     .replace("%stars%", String.valueOf(next.getStars())));
                 },
@@ -841,7 +842,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         if (timer <= 10) {
             playerManager
                     .getPlayer(player.getUniqueId())
-                    .sendMessage(MessageConfig.BUILD_MART_SUBMIT_LOCKED);
+                    .sendMessage(BuildMartMessages.BUILD_MART_SUBMIT_LOCKED);
             return;
         }
 
@@ -882,20 +883,20 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
             playerManager
                     .getPlayer(player.getUniqueId())
                     .sendMessage(
-                            MessageConfig.BUILD_MART_GOLDEN_SUBMIT_FAILED.replace(
+                            BuildMartMessages.BUILD_MART_GOLDEN_SUBMIT_FAILED.replace(
                                     "%blueprint%", blueprint.getDisplayName()));
         } else {
             playerManager
                     .getPlayer(player.getUniqueId())
                     .sendMessage(
-                            MessageConfig.BUILD_MART_SUBMIT_INCOMPLETE
+                            BuildMartMessages.BUILD_MART_SUBMIT_INCOMPLETE
                                     .replace("%blueprint%", blueprint.getDisplayName())
                                     .replace("%matched%", String.valueOf(matched))
                                     .replace("%total%", String.valueOf(blueprint.blockCount())));
             playerManager
                     .getPlayer(player.getUniqueId())
                     .sendMessage(
-                            MessageConfig.BUILD_MART_SUBMIT_DIFFERENCES
+                            BuildMartMessages.BUILD_MART_SUBMIT_DIFFERENCES
                                     .replace("%missing%", String.valueOf(comparison.missing()))
                                     .replace(
                                             "%material%",
@@ -922,7 +923,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         scheduleAutoRefresh(team, slot);
 
         String completion =
-                MessageConfig.BUILD_MART_BUILD_COMPLETED
+                BuildMartMessages.BUILD_MART_BUILD_COMPLETED
                         .replace("%team%", team.getColoredName())
                         .replace("%blueprint%", blueprint.getDisplayName())
                         .replace("%stars%", String.valueOf(blueprint.getStars()))
@@ -965,8 +966,8 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
             ReferenceBuilder.paste(next, display);
         }
         if (announce) {
-            sendMessageToAllGamePlayers(MessageConfig.BUILD_MART_GOLDEN_REFRESHED);
-            sendActionBarToAllGamePlayers(MessageConfig.BUILD_MART_GOLDEN_REFRESHED);
+            sendMessageToAllGamePlayers(BuildMartMessages.BUILD_MART_GOLDEN_REFRESHED);
+            sendActionBarToAllGamePlayers(BuildMartMessages.BUILD_MART_GOLDEN_REFRESHED);
             playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_BELL, 1F, 1F);
         }
     }
@@ -992,8 +993,8 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
             ReferenceBuilder.clear(currentGolden, display);
         }
         if (anyUnfinished) {
-            sendMessageToAllGamePlayers(MessageConfig.BUILD_MART_GOLDEN_EXPIRED);
-            sendActionBarToAllGamePlayers(MessageConfig.BUILD_MART_GOLDEN_EXPIRED);
+            sendMessageToAllGamePlayers(BuildMartMessages.BUILD_MART_GOLDEN_EXPIRED);
+            sendActionBarToAllGamePlayers(BuildMartMessages.BUILD_MART_GOLDEN_EXPIRED);
         }
         currentGolden = null;
     }
@@ -1012,7 +1013,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         slot.clear();
 
         String completion =
-                MessageConfig.BUILD_MART_GOLDEN_BUILD_COMPLETED
+                BuildMartMessages.BUILD_MART_GOLDEN_BUILD_COMPLETED
                         .replace("%team%", team.getColoredName())
                         .replace("%blueprint%", blueprint.getDisplayName())
                         .replace("%points%", String.valueOf(points));
@@ -1154,13 +1155,13 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
 
         awardAndAnnounce(
                 BuildMartScorer.rankByEntrepreneur(teamStates.values()),
-                MessageConfig.BUILD_MART_AWARD_ENTREPRENEUR);
+                BuildMartMessages.BUILD_MART_AWARD_ENTREPRENEUR);
         awardAndAnnounce(
                 BuildMartScorer.rankByChef(teamStates.values()),
-                MessageConfig.BUILD_MART_AWARD_CHEF);
+                BuildMartMessages.BUILD_MART_AWARD_CHEF);
         awardAndAnnounce(
                 BuildMartScorer.rankByQuality(teamStates.values()),
-                MessageConfig.BUILD_MART_AWARD_QUALITY);
+                BuildMartMessages.BUILD_MART_AWARD_QUALITY);
     }
 
     /** Awards a fraction of a build's points for an unfinished slot, scaled by completion. */
@@ -1256,8 +1257,8 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         cleanInventoryForAllGamePlayers();
 
         announceGameEnd(
-                MessageConfig.BUILD_MART_GAME_END_TITLE,
-                MessageConfig.BUILD_MART_GAME_END_SUBTITLE);
+                BuildMartMessages.BUILD_MART_GAME_END_TITLE,
+                BuildMartMessages.BUILD_MART_GAME_END_SUBTITLE);
 
         setGameStageEnum(GameStageEnum.END);
 

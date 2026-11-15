@@ -1,5 +1,10 @@
 package ink.ziip.championshipscore.api.game.laserbox.runtime;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+import static ink.ziip.championshipscore.support.TestObjects.field;
+import static ink.ziip.championshipscore.support.TestObjects.proxy;
+import static ink.ziip.championshipscore.support.TestObjects.set;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
@@ -15,7 +20,7 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.api.team.TeamManager;
 import ink.ziip.championshipscore.api.visibility.PlayerVisibilityManager;
 import ink.ziip.championshipscore.configuration.ConfigurationStateExtension;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.GameMessages;
 
 import org.bukkit.*;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -26,8 +31,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Proxy;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -57,8 +60,14 @@ class LaserBoxEventStartTest {
                         assertTrue(area.isEventRun());
                         assertTrue(
                                 (boolean)
-                                        field(area.getClass(), "introductionEnabledForNextStart")
-                                                .get(area));
+                                        field(
+                                                        field(area.getClass(), "preparation")
+                                                                .get(area)
+                                                                .getClass(),
+                                                        "introductionEnabled")
+                                                .get(
+                                                        field(area.getClass(), "preparation")
+                                                                .get(area)));
                         assertSame(
                                 fixture.pairs.get(i).getTeamOne(), area.getRightChampionshipTeam());
                         assertSame(
@@ -221,7 +230,7 @@ class LaserBoxEventStartTest {
                     new ConcurrentHashMap<>(Map.of("laserbox", new ArrayList<>(copies))));
             set(manager, "laserBoxManager", maps);
             set(manager, "areaManagers", Map.of(GameTypeEnum.LaserBox, maps));
-            MessageConfig.GAME_LASER_BOX = "LaserBox";
+            GameMessages.GAME_LASER_BOX = "LaserBox";
             var pairs =
                     List.of(
                             new TwoVTwoVector(new TestTeam(1), new TestTeam(2)),
@@ -240,32 +249,5 @@ class LaserBoxEventStartTest {
         TestTeam(int id) {
             super(id, "team-" + id, "red", "#FFFFFF", Set.of(new UUID(id, 1)), null);
         }
-    }
-
-    private static <T> T proxy(Class<T> type, InvocationHandler handler) {
-        return type.cast(
-                Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[] {type}, handler));
-    }
-
-    private static Field field(Class<?> type, String name) throws Exception {
-        for (; type != null; type = type.getSuperclass()) {
-            try {
-                var field = type.getDeclaredField(name);
-                field.setAccessible(true);
-                return field;
-            } catch (NoSuchFieldException ignored) {
-            }
-        }
-        throw new NoSuchFieldException(name);
-    }
-
-    private static void set(Object target, String name, Object value) throws Exception {
-        field(target.getClass(), name).set(target, value);
-    }
-
-    private static <T> T allocate(Class<T> type) throws Exception {
-        return type.cast(
-                ((sun.misc.Unsafe) field(sun.misc.Unsafe.class, "theUnsafe").get(null))
-                        .allocateInstance(type));
     }
 }

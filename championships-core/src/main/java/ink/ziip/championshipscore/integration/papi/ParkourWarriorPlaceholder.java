@@ -4,7 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.game.parkourwarrior.model.PKWCheckPointTypeEnum;
 import ink.ziip.championshipscore.api.game.parkourwarrior.runtime.ParkourWarriorTeamArea;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.ScoreMessages;
 
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -34,7 +34,7 @@ public class ParkourWarriorPlaceholder extends BaseGamePlaceholder<ParkourWarrio
             ParkourWarriorTeamArea parkourWarriorTeamArea =
                     resolveArea(params, "area_name_", offlinePlayer);
             if (parkourWarriorTeamArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             return parkourWarriorTeamArea.getGameConfig().getAreaName();
         }
@@ -42,13 +42,13 @@ public class ParkourWarriorPlaceholder extends BaseGamePlaceholder<ParkourWarrio
         /* Player required placeholders */
 
         Player player = offlinePlayer.getPlayer();
-        if (player == null) return MessageConfig.PLACEHOLDER_NONE;
+        if (player == null) return ScoreMessages.PLACEHOLDER_NONE;
 
         if (params.startsWith("player_main_checkpoints_")) {
             ParkourWarriorTeamArea parkourWarriorTeamArea =
                     resolveArea(params, "player_main_checkpoints_", offlinePlayer);
             if (parkourWarriorTeamArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             return String.valueOf(
                     parkourWarriorTeamArea.getPlayerSubCheckpoints(
@@ -58,7 +58,7 @@ public class ParkourWarriorPlaceholder extends BaseGamePlaceholder<ParkourWarrio
             ParkourWarriorTeamArea parkourWarriorTeamArea =
                     resolveArea(params, "player_3rd_checkpoints_", offlinePlayer);
             if (parkourWarriorTeamArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             return String.valueOf(
                     parkourWarriorTeamArea.getPlayerSubCheckpoints(
@@ -68,7 +68,7 @@ public class ParkourWarriorPlaceholder extends BaseGamePlaceholder<ParkourWarrio
             ParkourWarriorTeamArea parkourWarriorTeamArea =
                     resolveArea(params, "player_4th_checkpoints_", offlinePlayer);
             if (parkourWarriorTeamArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             return String.valueOf(
                     parkourWarriorTeamArea.getPlayerSubCheckpoints(
@@ -78,7 +78,7 @@ public class ParkourWarriorPlaceholder extends BaseGamePlaceholder<ParkourWarrio
             ParkourWarriorTeamArea parkourWarriorTeamArea =
                     resolveArea(params, "player_5th_checkpoints_", offlinePlayer);
             if (parkourWarriorTeamArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             return String.valueOf(
                     parkourWarriorTeamArea.getPlayerSubCheckpoints(
@@ -88,7 +88,7 @@ public class ParkourWarriorPlaceholder extends BaseGamePlaceholder<ParkourWarrio
             ParkourWarriorTeamArea parkourWarriorTeamArea =
                     resolveArea(params, "player_total_main_checkpoints_", offlinePlayer);
             if (parkourWarriorTeamArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             return String.valueOf(
                     parkourWarriorTeamArea.getPlayerCheckpoints(
@@ -103,7 +103,7 @@ public class ParkourWarriorPlaceholder extends BaseGamePlaceholder<ParkourWarrio
             ParkourWarriorTeamArea parkourWarriorTeamArea =
                     resolveAreaByName(areaName, offlinePlayer);
             if (parkourWarriorTeamArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             return String.valueOf(
                     parkourWarriorTeamArea.getPlayerCheckpoints(

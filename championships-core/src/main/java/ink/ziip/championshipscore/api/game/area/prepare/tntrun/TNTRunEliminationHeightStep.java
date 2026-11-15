@@ -8,7 +8,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.gui.AnvilInputGui;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.StepMenuGui;
 import ink.ziip.championshipscore.api.game.tntrun.config.TNTRunConfig;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -74,7 +74,7 @@ final class TNTRunEliminationHeightStep extends PrepareStep {
                         if (Double.isFinite(Double.parseDouble(text))) return null;
                     } catch (NumberFormatException ignored) {
                     }
-                    return MessageConfig.MAP_EDITOR_TNT_ELIMINATION_HEIGHT_INVALID;
+                    return MapEditorMessages.MAP_EDITOR_TNT_ELIMINATION_HEIGHT_INVALID;
                 },
                 text -> {
                     if (manager.getSession(player) != session || !session.getTarget().canSaveMap())
@@ -83,7 +83,7 @@ final class TNTRunEliminationHeightStep extends PrepareStep {
                     session.markDirty();
                     CoreMessages.sendAdminSuccess(
                             player,
-                            MessageConfig.MAP_EDITOR_TNT_ELIMINATION_HEIGHT_SET.replace(
+                            MapEditorMessages.MAP_EDITOR_TNT_ELIMINATION_HEIGHT_SET.replace(
                                     "%height%", String.valueOf(config.getEliminationY())));
                     back.run();
                 },

@@ -6,7 +6,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.step.WeSelectionStep;
 import ink.ziip.championshipscore.api.game.decarnival.config.DragonEggCarnivalConfig;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -48,7 +48,7 @@ public final class DragonEggCarnivalPrepareFlow extends SnapshotMapPrepareFlow {
                             cfg(t).setAreaPos2(v[1]);
                         },
                         CoreMessages.formatAdminSuccess(
-                                MessageConfig.MAP_EDITOR_STEP_SITE_BOUNDARY_SET)));
+                                MapEditorMessages.MAP_EDITOR_STEP_SITE_BOUNDARY_SET)));
         steps.add(
                 location(
                         "spectator_spawn",
@@ -56,7 +56,7 @@ public final class DragonEggCarnivalPrepareFlow extends SnapshotMapPrepareFlow {
                         Material.ENDER_EYE,
                         t -> cfg(t).getSpectatorSpawnPoint() != null,
                         (t, l) -> cfg(t).setSpectatorSpawnPoint(l),
-                        MessageConfig.MAP_EDITOR_STEP_SPECTATOR_SPAWN_POINT_SET));
+                        MapEditorMessages.MAP_EDITOR_STEP_SPECTATOR_SPAWN_POINT_SET));
         return steps;
     }
 
@@ -66,17 +66,17 @@ public final class DragonEggCarnivalPrepareFlow extends SnapshotMapPrepareFlow {
         List<String> errors = new ArrayList<>(super.validate(session));
         World world = Bukkit.getWorld(session.getTarget().worldName());
         if (world != null && world.getEnvironment() != World.Environment.THE_END)
-            errors.add(MessageConfig.MAP_EDITOR_DEC_WORLD_ENVIRONMENT);
+            errors.add(MapEditorMessages.MAP_EDITOR_DEC_WORLD_ENVIRONMENT);
         DragonEggCarnivalConfig config = cfg(session.getTarget());
         if (config.getAreaPos1() != null
                 && config.getAreaPos2() != null
                 && !coversRequiredFightRegion(config.getAreaPos1(), config.getAreaPos2()))
-            errors.add(MessageConfig.MAP_EDITOR_DEC_FIGHT_REGION);
+            errors.add(MapEditorMessages.MAP_EDITOR_DEC_FIGHT_REGION);
         Location spectator = config.getSpectatorSpawnPoint();
         if (spectator != null
                 && spectator.getWorld() != null
                 && !spectator.getWorld().getName().equals(session.getTarget().worldName()))
-            errors.add(MessageConfig.MAP_EDITOR_DEC_SPECTATOR_WORLD);
+            errors.add(MapEditorMessages.MAP_EDITOR_DEC_SPECTATOR_WORLD);
         return errors;
     }
 

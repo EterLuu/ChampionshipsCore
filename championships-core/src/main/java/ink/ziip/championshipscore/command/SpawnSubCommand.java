@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.command;
 
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.configuration.config.message.AdminMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
@@ -35,18 +36,18 @@ public class SpawnSubCommand extends BaseSubCommand {
             return true;
         }
         if (!(sender instanceof Player player)) {
-            CoreMessages.sendAdminError(sender, MessageConfig.COMMAND_PLAYER_ONLY);
+            CoreMessages.sendAdminError(sender, AdminMessages.COMMAND_PLAYER_ONLY);
             return true;
         }
         if (plugin.getGameManager().getBasePlayerArea(player.getUniqueId()) != null
                 || plugin.getGameManager().getPlayerSpectatorStatus(player.getUniqueId()) != null) {
             player.sendMessage(
-                    LegacyText.translateColorCodes(MessageConfig.SPAWN_IN_GAME_OR_SPECTATING));
+                    LegacyText.translateColorCodes(AdminMessages.SPAWN_IN_GAME_OR_SPECTATING));
             return true;
         }
         Location lobby = CCConfig.LOBBY_LOCATION;
         if (lobby == null || lobby.getWorld() == null) {
-            CoreMessages.sendAdminError(sender, MessageConfig.SPAWN_MISSING);
+            CoreMessages.sendAdminError(sender, AdminMessages.SPAWN_MISSING);
             return true;
         }
         player.teleport(lobby);

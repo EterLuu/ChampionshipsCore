@@ -4,7 +4,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 class StartAllocationTest {
@@ -28,9 +30,9 @@ class StartAllocationTest {
                 List.of(
                         List.of(UUID.randomUUID(), UUID.randomUUID()),
                         List.of(UUID.randomUUID(), UUID.randomUUID()));
-        var allocation = StartAllocation.spread(teams, List.of(3));
-        assertEquals(4, allocation.size());
-        assertTrue(allocation.values().stream().allMatch(index -> index == 3));
+        Map<UUID, Integer> expected = new HashMap<>();
+        teams.forEach(team -> team.forEach(id -> expected.put(id, 3)));
+        assertEquals(expected, Map.copyOf(StartAllocation.spread(teams, List.of(3))));
     }
 
     @Test

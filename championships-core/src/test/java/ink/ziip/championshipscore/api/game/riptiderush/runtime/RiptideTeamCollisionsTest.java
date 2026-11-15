@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.riptiderush.runtime;
 
+import static ink.ziip.championshipscore.support.TestObjects.proxy;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.bukkit.entity.Player;
@@ -7,7 +9,6 @@ import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -170,10 +171,5 @@ class RiptideTeamCollisionsTest {
                                                                 + method.getName());
                                     });
         }
-    }
-
-    private static <T> T proxy(Class<T> type, java.lang.reflect.InvocationHandler handler) {
-        return type.cast(
-                Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[] {type}, handler));
     }
 }

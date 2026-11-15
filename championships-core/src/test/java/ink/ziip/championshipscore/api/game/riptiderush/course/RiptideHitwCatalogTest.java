@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.sk89q.jnbt.CompoundTag;
 import com.sk89q.jnbt.NBTInputStream;
 
-import ink.ziip.championshipscore.api.game.area.prepare.gui.RiptideEditorModel;
 import ink.ziip.championshipscore.api.game.riptiderush.config.RiptideRushConfig;
 import ink.ziip.championshipscore.api.game.riptiderush.support.RiptideTestFixtures;
 
@@ -41,16 +40,16 @@ class RiptideHitwCatalogTest {
     }
 
     @Test
-    void allThirteenTabsAndAllDifficultyGroupsAreBundledAndEditable() throws Exception {
+    void allThirteenTabsAndAllDifficultyGroupsAreBundled() throws Exception {
         var templates = RiptideHitwCatalog.templates();
-        assertEquals(354, templates.size());
+        assertEquals(364, templates.size());
         Map<String, RiptideLevelTemplate> byId =
                 templates.stream()
                         .collect(
                                 java.util.stream.Collectors.toMap(
                                         RiptideLevelTemplate::id,
                                         java.util.function.Function.identity()));
-        assertEquals(354, byId.size());
+        assertEquals(364, byId.size());
         for (String map :
                 List.of(
                         "beach",
@@ -89,11 +88,59 @@ class RiptideHitwCatalogTest {
                     assertEquals(t, RiptideLevelTemplate.parse(t.serialize()));
                 }
         }
-        var c = RiptideTestFixtures.config();
-        c.setTemplates(templates);
-        var copy = RiptideEditorModel.duplicate(c, RiptideLevelType.PASS, templates.getLast().id());
-        assertEquals(templates.getLast().blueprint(), copy.blueprint());
-        assertNotEquals(templates.getLast().id(), copy.id());
+    }
+
+    @Test
+    void authoredWallsOfferAllDifficultyBandsAndRemainUsableFromEitherSide() throws Exception {
+        var authored =
+                RiptideHitwCatalog.templates().stream()
+                        .filter(t -> t.id().startsWith("riptide_"))
+                        .toList();
+        assertEquals(10, authored.size());
+        assertEquals(
+                Set.of(1, 2, 3),
+                authored.stream()
+                        .map(RiptideLevelTemplate::difficulty)
+                        .collect(java.util.stream.Collectors.toSet()));
+        var originalBuildings =
+                RiptideHitwCatalog.templates().stream()
+                        .filter(t -> !t.id().startsWith("riptide_"))
+                        .map(RiptideLevelTemplate::blueprint)
+                        .toList();
+        assertEquals(10, authored.stream().map(RiptideLevelTemplate::blueprint).distinct().count());
+        assertTrue(authored.stream().noneMatch(t -> originalBuildings.contains(t.blueprint())));
+        var config = RiptideTestFixtures.config();
+        config.setTemplates(authored);
+        var geometry = config.resolveGeometry();
+        for (int seed = 0; seed < 8; seed++) {
+            var uses = new HashMap<String, Integer>();
+            var walls =
+                    RiptideWallGroups.selectSideWalls(
+                            config, geometry, 450, uses, new Random(seed));
+            assertFalse(walls.isEmpty(), "Authored walls must support a full side sequence");
+            for (int i = 0; i < walls.size(); i++) {
+                var wall = walls.get(i);
+                assertEquals(1, uses.get(wall.template().usageKey()));
+                var entrances = RiptideWallGroups.sidePassages(wall);
+                assertFalse(entrances.isEmpty());
+                if (i > 0) {
+                    var exits = RiptideWallGroups.sidePassages(walls.get(i - 1));
+                    assertTrue(
+                            exits.stream()
+                                    .noneMatch(
+                                            p ->
+                                                    entrances.stream()
+                                                            .anyMatch(
+                                                                    q ->
+                                                                            Math.abs(
+                                                                                            p
+                                                                                                            .lateral()
+                                                                                                    - q
+                                                                                                            .lateral())
+                                                                                    < .75)));
+                }
+            }
+        }
     }
 
     @Test
@@ -249,7 +296,8 @@ class RiptideHitwCatalogTest {
         assertEquals(
                 RiptideTestFixtures.config().getLatestVersion(),
                 defaults.getInt("dont-edit-this.version"));
-        assertEquals(4, defaults.getInt("course.hitw-catalog-version"));
+        // Operator marker documented in docs/02-games/07-riptide-hitw-catalog.md.
+        assertEquals(5, defaults.getInt("course.hitw-catalog-version"));
         var rows =
                 defaults.getMapList("course.pool").stream()
                         .map(RiptideLevelTemplate::parse)

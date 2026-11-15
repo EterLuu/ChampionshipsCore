@@ -8,6 +8,7 @@ import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.schedule.FormalEventMapResolver;
 import ink.ziip.championshipscore.api.schedule.FormalPairingScheduler;
+import ink.ziip.championshipscore.api.schedule.FormalSchedule;
 import ink.ziip.championshipscore.api.schedule.model.TwoVTwoVector;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
@@ -24,7 +25,7 @@ import org.bukkit.scheduler.BukkitTask;
 import java.util.*;
 
 /** BattleBox-style round robin: all pairings finish and settle before the next round starts. */
-public final class LaserBoxScheduleManager extends BaseManager {
+public final class LaserBoxScheduleManager extends BaseManager implements FormalSchedule {
     private long scheduleGeneration;
     private static final GameTypeEnum GAME = GameTypeEnum.LaserBox;
     private final BukkitScheduler scheduler;
@@ -59,6 +60,11 @@ public final class LaserBoxScheduleManager extends BaseManager {
     @Override
     public void unload() {
         if (enabled) endSchedule();
+    }
+
+    @Override
+    public String startFailureReason() {
+        return getLastStartFailureReason();
     }
 
     public boolean startGame() {

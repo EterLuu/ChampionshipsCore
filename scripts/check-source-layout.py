@@ -6,6 +6,13 @@ import re
 import sys
 
 
+TEST_ANNOTATION = re.compile(
+    r"^\s*@(?:org\.junit\.jupiter\.(?:api|params)\.)?"
+    r"(?:Test|ParameterizedTest|RepeatedTest|TestFactory|TestTemplate)\b",
+    re.MULTILINE,
+)
+
+
 def check(root: Path) -> tuple[int, list[str]]:
     errors = []
     count = 0
@@ -35,10 +42,19 @@ def check(root: Path) -> tuple[int, list[str]]:
                     or file.relative_to(source) != Path(*match[1].split(".")) / file.name
                 ):
                     errors.append(f"{relative}: package must match its source directory")
-                if kind == "main" and re.search(
-                    r"import (?:org\.junit|org\.mockito)|@(?:Test|ParameterizedTest)\b", text
+                if kind == "main" and (
+                    re.search(r"import (?:static )?(?:org\.junit|org\.mockito)\b", text)
+                    or TEST_ANNOTATION.search(text)
                 ):
                     errors.append(f"{relative}: test code belongs in src/test/java")
+                if (
+                    kind == "test"
+                    and TEST_ANNOTATION.search(text)
+                    and not re.fullmatch(r"(?:Test.+|.+Tests?|.+TestCase)\.java", file.name)
+                ):
+                    errors.append(
+                        f"{relative}: test name must match Surefire discovery (*Test.java)"
+                    )
                 if kind != "main" or not file.is_relative_to(core):
                     continue
                 owned = file.relative_to(core)

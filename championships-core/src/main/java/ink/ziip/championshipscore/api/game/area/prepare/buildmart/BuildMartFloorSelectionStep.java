@@ -5,7 +5,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -55,19 +55,20 @@ final class BuildMartFloorSelectionStep extends PrepareStep {
         try {
             selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, true);
         } catch (Exception e) {
-            return CoreMessages.formatAdminError(MessageConfig.MAP_EDITOR_BUILD_FLOOR_SELECT_FIRST);
+            return CoreMessages.formatAdminError(
+                    MapEditorMessages.MAP_EDITOR_BUILD_FLOOR_SELECT_FIRST);
         }
         Vector min = Vector.getMinimum(selection[0], selection[1]);
         Vector max = Vector.getMaximum(selection[0], selection[1]);
         if (max.getBlockX() - min.getBlockX() != 6
                 || max.getBlockY() != min.getBlockY()
                 || max.getBlockZ() - min.getBlockZ() != 6) {
-            return CoreMessages.formatAdminError(MessageConfig.MAP_EDITOR_BUILD_FLOOR_INVALID);
+            return CoreMessages.formatAdminError(MapEditorMessages.MAP_EDITOR_BUILD_FLOOR_INVALID);
         }
         setter.accept(
                 session.getTarget(),
                 new Location(player.getWorld(), min.getBlockX(), min.getBlockY(), min.getBlockZ()));
         session.markDirty();
-        return CoreMessages.formatAdminSuccess(MessageConfig.MAP_EDITOR_BUILD_FLOOR_RECORDED);
+        return CoreMessages.formatAdminSuccess(MapEditorMessages.MAP_EDITOR_BUILD_FLOOR_RECORDED);
     }
 }

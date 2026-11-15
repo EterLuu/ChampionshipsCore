@@ -7,6 +7,12 @@ api:
   poll-seconds: 10
   connect-timeout-seconds: 3
   request-timeout-seconds: 5
+backend-routing:
+  # Bungee server names whose DNS may change when a backend container is recreated.
+  # Example: [cc, bingo]. Applied before connections at full proxy startup; restart after edits.
+  # Hostnames stay unresolved in ServerInfo, so Netty resolves them on each new connection
+  # subject to the JVM DNS cache policy. Empty preserves Bungee's normal configuration.
+  resolve-on-connect: []
 offline-cache:
   # 已成功同步的准入状态、UUID、封禁和维护状态会持久化，cc-web 暂时不可用时继续使用。
   enabled: true

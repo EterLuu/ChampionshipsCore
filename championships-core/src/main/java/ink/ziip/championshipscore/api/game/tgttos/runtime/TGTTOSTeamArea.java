@@ -7,7 +7,7 @@ import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.game.tgttos.config.TGTTOSConfig;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.TGTTOSMessages;
 import ink.ziip.championshipscore.configuration.location.LocationConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -122,9 +122,9 @@ public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
         resetPlayerHealthFoodEffectLevelInventory();
 
         announceGamePreparation(
-                MessageConfig.TGTTOS_START_PREPARATION,
-                MessageConfig.TGTTOS_START_PREPARATION_TITLE,
-                MessageConfig.TGTTOS_START_PREPARATION_SUBTITLE);
+                TGTTOSMessages.TGTTOS_START_PREPARATION,
+                TGTTOSMessages.TGTTOS_START_PREPARATION_TITLE,
+                TGTTOSMessages.TGTTOS_START_PREPARATION_SUBTITLE);
 
         startGameProgress();
     }
@@ -152,9 +152,9 @@ public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
         }
 
         startFinalCountdown(
-                MessageConfig.TGTTOS_GAME_START_SOON_TITLE,
-                MessageConfig.TGTTOS_GAME_START_TITLE,
-                MessageConfig.TGTTOS_GAME_START_SUBTITLE,
+                TGTTOSMessages.TGTTOS_GAME_START_SOON_TITLE,
+                TGTTOSMessages.TGTTOS_GAME_START_TITLE,
+                TGTTOSMessages.TGTTOS_GAME_START_SUBTITLE,
                 this::beginGameProgress);
     }
 
@@ -167,7 +167,7 @@ public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
                         seconds -> {
                             timer = seconds;
                             updateGameTimerBossBar(
-                                    MessageConfig.TGTTOS_ACTION_BAR_COUNT_DOWN.replace(
+                                    TGTTOSMessages.TGTTOS_ACTION_BAR_COUNT_DOWN.replace(
                                             "%time%", CoreMessages.bossBarTime(timer)),
                                     timer,
                                     getGameConfig().getTimer());
@@ -190,7 +190,7 @@ public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
         cleanInventoryForAllGamePlayers();
 
         announceGameEnd(
-                MessageConfig.TGTTOS_GAME_END_TITLE, MessageConfig.TGTTOS_GAME_END_SUBTITLE);
+                TGTTOSMessages.TGTTOS_GAME_END_TITLE, TGTTOSMessages.TGTTOS_GAME_END_SUBTITLE);
 
         setGameStageEnum(GameStageEnum.END);
 
@@ -227,7 +227,7 @@ public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
             addTeamArrivedPlayer(championshipTeam);
 
             sendMessageToAllGamePlayers(
-                    MessageConfig.TGTTOS_ARRIVED_AT_POINT.replace(
+                    TGTTOSMessages.TGTTOS_ARRIVED_AT_POINT.replace(
                             "%player%", CoreMessages.formatPlayerName(player)));
         }
     }
@@ -240,7 +240,7 @@ public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
             if (arrivedTeamNumbers < 4) {
                 addPlayerPointsToAllTeamMembers(championshipTeam, 24 - 6 * arrivedTeamNumbers);
                 sendMessageToAllGamePlayers(
-                        MessageConfig.TGTTOS_TEAM_ARRIVED_AT_POINT.replace(
+                        TGTTOSMessages.TGTTOS_TEAM_ARRIVED_AT_POINT.replace(
                                 "%team%", championshipTeam.getColoredName()));
             }
             arrivedTeamNumbers++;
@@ -268,7 +268,7 @@ public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
                                 () ->
                                         resetElytraPlayerToStart(
                                                 player,
-                                                MessageConfig.TGTTOS_RETURN_REASON_ACCIDENT),
+                                                TGTTOSMessages.TGTTOS_RETURN_REASON_ACCIDENT),
                                 1L);
                     },
                     1L);
@@ -303,7 +303,7 @@ public class TGTTOSTeamArea extends BaseMultiTeamGameInstance {
                         getGameConfig().getPlayerSpawnPitch());
         if (spawn != null) player.teleport(spawn);
         CoreMessages.sendActionBar(
-                player, MessageConfig.TGTTOS_RETURN_TO_START.replace("%reason%", reason));
+                player, TGTTOSMessages.TGTTOS_RETURN_TO_START.replace("%reason%", reason));
     }
 
     /**

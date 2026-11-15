@@ -4,7 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.SkyWarsMessages;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
 import lombok.Getter;
@@ -75,7 +75,7 @@ public class SkyWarsHandler extends BaseListener {
                 if (player.getHealth() <= event.getDamage()
                         && !skyWarsArea.getDeathPlayer().contains(player.getUniqueId())) {
                     skyWarsArea.addDeathPlayer(player);
-                    String message = MessageConfig.SKY_WARS_KILL_PLAYER_BY_CREEPER;
+                    String message = SkyWarsMessages.SKY_WARS_KILL_PLAYER_BY_CREEPER;
                     ChampionshipTeam playerTeam = plugin.getTeamManager().getTeamByPlayer(player);
                     ChampionshipTeam assailantTeam =
                             plugin.getTeamManager().getTeamByPlayer(spawner);
@@ -197,7 +197,7 @@ public class SkyWarsHandler extends BaseListener {
         }
 
         event.setCancelled(true);
-        CoreMessages.sendActionBar(player, MessageConfig.SKYWARS_WRONG_TEAM_GHAST);
+        CoreMessages.sendActionBar(player, SkyWarsMessages.SKYWARS_WRONG_TEAM_GHAST);
     }
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
@@ -336,7 +336,7 @@ public class SkyWarsHandler extends BaseListener {
                             return;
                         }
 
-                        String message = MessageConfig.SKY_WARS_KILL_PLAYER_BY_VOID;
+                        String message = SkyWarsMessages.SKY_WARS_KILL_PLAYER_BY_VOID;
 
                         message =
                                 message.replace("%player%", CoreMessages.formatPlayerName(player))
@@ -350,7 +350,7 @@ public class SkyWarsHandler extends BaseListener {
                         skyWarsArea.addDeathPlayer(player);
                     } else {
 
-                        String message = MessageConfig.SKY_WARS_PLAYER_DEATH_BY_VOID;
+                        String message = SkyWarsMessages.SKY_WARS_PLAYER_DEATH_BY_VOID;
 
                         message =
                                 message.replace("%player%", CoreMessages.formatPlayerName(player));
@@ -400,7 +400,7 @@ public class SkyWarsHandler extends BaseListener {
 
             if (skyWarsArea.getGameStageEnum() == GameStageEnum.PROGRESS) {
                 skyWarsArea.sendMessageToAllGamePlayers(
-                        MessageConfig.SKY_WARS_PLAYER_CREATE_PORTAL.replace(
+                        SkyWarsMessages.SKY_WARS_PLAYER_CREATE_PORTAL.replace(
                                 "%player%", CoreMessages.formatPlayerName(player)));
             }
         }

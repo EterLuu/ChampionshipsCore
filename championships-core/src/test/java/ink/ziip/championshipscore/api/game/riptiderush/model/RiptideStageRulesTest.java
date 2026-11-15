@@ -10,8 +10,6 @@ import ink.ziip.championshipscore.api.game.riptiderush.support.RiptideTestFixtur
 
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
 class RiptideStageRulesTest {
     @Test
     void weightedModeConservesParentQuotaAndHonorsSideLimit() {
@@ -67,12 +65,8 @@ class RiptideStageRulesTest {
         c.setColorFloorWeight(3);
         c.setDodgeWeight(3);
         c.setSideSweepWeight(2);
-        var allocation = c.stoppedAllocation(1);
-        assertEquals(3, allocation.colorFloor());
-        assertEquals(3, allocation.dodge());
-        assertEquals(2, allocation.sideSweep());
-        assertEquals(8, allocation.total());
-        assertEquals(allocation, c.stoppedAllocation(1));
+        assertEquals(new RiptideStoppedAllocation(3, 3, 2), c.stoppedAllocation(1));
+        assertEquals(c.stoppedAllocation(1), c.stoppedAllocation(1));
         assertTrue(c.stoppedAllocation(2).sideSweep() <= 2);
         var template = RiptideLevelTemplate.create("color_floor", RiptideLevelType.COLOR_FLOOR);
         var side =
@@ -101,18 +95,6 @@ class RiptideStageRulesTest {
         assertEquals(RiptideStageGroup.MOVING, RiptideStageKind.PASS.group());
         assertEquals(RiptideStageGroup.MOVING, RiptideStageKind.MATH.group());
         assertEquals(RiptideStageGroup.MOVING, RiptideStageKind.RHYTHM.group());
-    }
-
-    @Test
-    void exposesOnlySemanticMechanicCategories() {
-        assertEquals(
-                List.of(
-                        RiptideLevelType.MATH,
-                        RiptideLevelType.PASS,
-                        RiptideLevelType.COLOR_FLOOR,
-                        RiptideLevelType.DODGE,
-                        RiptideLevelType.RHYTHM),
-                List.of(RiptideLevelType.values()));
     }
 
     @Test

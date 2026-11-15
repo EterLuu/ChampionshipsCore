@@ -4,20 +4,23 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.daily.DailyRecordType;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
 import ink.ziip.championshipscore.api.game.acerace.config.AceRaceConfig;
-import ink.ziip.championshipscore.api.game.acerace.geometry.AceRaceRespawnBindings;
+import ink.ziip.championshipscore.api.game.acerace.config.AceRaceCourseLoader;
+import ink.ziip.championshipscore.api.game.acerace.editor.AceRaceEditorPreview;
 import ink.ziip.championshipscore.api.game.acerace.mechanics.AceRaceEquipment;
+import ink.ziip.championshipscore.api.game.acerace.mechanics.AceRaceLaunchPads;
+import ink.ziip.championshipscore.api.game.acerace.model.AceRaceCourse;
 import ink.ziip.championshipscore.api.game.acerace.model.AceRaceLine;
 import ink.ziip.championshipscore.api.game.acerace.model.AceRaceProgress;
 import ink.ziip.championshipscore.api.game.acerace.model.AceRaceProgress.PlacementRange;
 import ink.ziip.championshipscore.api.game.acerace.model.AceRaceProgressPoint;
-import ink.ziip.championshipscore.api.game.acerace.model.AceRaceRespawnPoint;
+import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameInstance;
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.AceRaceMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
-import ink.ziip.championshipscore.configuration.location.LocationConfig;
+import ink.ziip.championshipscore.configuration.config.message.ScoreMessages;
 import ink.ziip.championshipscore.platform.bukkit.scoreboard.NativeTeamService;
 import ink.ziip.championshipscore.platform.bukkit.text.ComponentTemplates;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
@@ -34,16 +37,12 @@ import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.entity.EnderCrystal;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
@@ -55,7 +54,6 @@ import org.bukkit.event.player.PlayerRiptideEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
@@ -67,10 +65,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -78,53 +74,6 @@ import java.util.UUID;
 
 /** A lap race with ordered progress gates and course-bound proximity respawn points. */
 public class AceRaceArea extends BaseMultiTeamGameInstance {
-    private static final long LAUNCH_PAD_DELAY_TICKS = 1L;
-
-    /**
-     * Vanilla multiplies a player's horizontal motion by {@code slipperiness * 0.91} at the end of
-     * a tick spent on the ground and by {@code 0.91} while airborne, and it picks the branch from
-     * the ground state the tick <em>started</em> with. A pad impulse is only a velocity packet, so
-     * a racer who leaves the wool before the packet lands keeps 0.91 instead of 0.546 and flies
-     * about 1.667x as far. These constants model the intended grounded curve so the server can
-     * measure and undo that difference.
-     */
-    private static final double LAUNCH_PAD_SLIPPERINESS = 0.6D;
-
-    private static final double AIR_DRAG = 0.91D;
-    private static final double LAUNCH_GROUND_DRAG = LAUNCH_PAD_SLIPPERINESS * AIR_DRAG;
-
-    /**
-     * A standing player has no upward motion; reject a jump that is already being processed at fire
-     * time.
-     */
-    private static final double LAUNCH_READY_MAX_VERTICAL_VELOCITY = 0.05D;
-
-    /**
-     * Highest per-tick airborne gain a sprinting racer can legitimately add while holding forward.
-     */
-    private static final double SPRINT_AIR_ACCELERATION = 0.026D;
-
-    private static final int LAUNCH_ENFORCEMENT_TICKS = 20;
-    private static final int LAUNCH_DEBT_REPAY_TICKS = 6;
-
-    /**
-     * Share of the pad impulse a single tick of travel must show before the flight budget starts.
-     * Keep it clear of the fastest legitimate ground speed, which the red station's Speed IX pushes
-     * well above a normal sprint, yet far below the impulse's own first tick.
-     */
-    private static final double LAUNCH_DETECTION_FRACTION = 0.5D;
-
-    /**
-     * How long to wait for the impulse to show up in the racer's movement before dropping the
-     * budget.
-     */
-    private static final int LAUNCH_IMPULSE_WAIT_TICKS = 40;
-
-    private static final int LAUNCH_ENFORCEMENT_EXPIRED = Integer.MAX_VALUE;
-
-    /** Absorbs movement-packet jitter so an honest flight never trips the correction. */
-    private static final double LAUNCH_DISTANCE_TOLERANCE = 0.5D;
-
     private static final int JUMP_BOOST_DURATION_TICKS = 14;
     private static final int SPEED_BOOST_DURATION_TICKS = 80;
     private static final int RED_SPEED_DURATION_TICKS = 6;
@@ -137,8 +86,6 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
 
     private static final int DEPTH_STRIDER_LEVEL = 3;
     private static final int DOLPHINS_GRACE_DEPTH_STRIDER_LEVEL = 1;
-    private static final double MIN_LAUNCH_VERTICAL_MULTIPLIER = 0.9D;
-    private static final double MAX_LAUNCH_VERTICAL_MULTIPLIER = 1.2D;
     private static final double RIPTIDE_EXTRA_MULTIPLIER = 0.01D;
     private static final int SPEED_STATION_RADIUS = 2;
     private static final int WATER_SPEED_STATION_RADIUS = 4;
@@ -149,23 +96,13 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     private static final long RACER_VISIBILITY_HIDDEN_AFTER_START_TICKS = 60L * 20L;
     private static final double RACER_VISIBILITY_DISTANCE_SQUARED = 8D * 8D;
     private static final long RACER_VISIBILITY_UPDATE_TICKS = 1L;
-    private static final long LAUNCH_ENFORCEMENT_UPDATE_TICKS = 1L;
-    private static final long MAP_EDIT_PREVIEW_UPDATE_TICKS = 10L;
     private static final String COLLISION_TEAM_PREFIX = "cc_ar_";
     private static final String TIMER_BOSS_BAR_PREFIX = "acerace-game-timer:";
 
-    @Getter private final List<AceRaceProgressPoint> progressPoints = new ArrayList<>();
-    private final List<AceRaceRespawnPoint> respawnPoints = new ArrayList<>();
+    private AceRaceCourse course = AceRaceCourse.EMPTY;
 
-    /** Zero-based progress point for each respawn marker, or -1 for the start segment. */
-    private final List<Integer> respawnProgressPointBindings = new ArrayList<>();
-
-    /** Raw configuration index for each loaded marker (invalid serialized rows are skipped). */
-    private final List<Integer> respawnPointConfigIndexes = new ArrayList<>();
-
-    private final List<EnderCrystal> mapEditPreviewCrystals = new ArrayList<>();
-    private final NamespacedKey mapEditPreviewMarkerKey;
-    private final NamespacedKey mapEditPreviewAreaKey;
+    private final AceRaceEditorPreview mapEditPreview;
+    private final AceRaceLaunchPads launchPads;
     private final AceRaceProgress raceProgress = new AceRaceProgress();
     private final Map<UUID, Long> lapStartedNanos = new HashMap<>();
 
@@ -182,8 +119,6 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     private final Set<UUID> startLineArmed = new HashSet<>();
 
     private final Map<UUID, TrackFeatureContact> featureContacts = new HashMap<>();
-    private final Map<UUID, BukkitTask> pendingLaunchPadTasks = new HashMap<>();
-    private final Map<UUID, LaunchEnforcement> enforcedLaunches = new HashMap<>();
     private final Set<RacerPair> visibleRacerPairs = new HashSet<>();
     private final String visibilityOwner = "game:acerace:" + UUID.randomUUID();
     private final Set<RacerView> riptideHiddenViews = new HashSet<>();
@@ -194,10 +129,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     @Getter private int timer;
     private BukkitTask progressTask;
     private BukkitTask racerVisibilityTask;
-    private BukkitTask launchEnforcementTask;
     private BukkitTask racerVisibilityUnlockTask;
-    private BukkitTask mapEditPreviewTask;
-    private UUID mapEditPreviewViewer;
     private boolean racerVisibilityUnlocked;
 
     public AceRaceArea(ChampionshipsCore plugin, AceRaceConfig config) {
@@ -212,8 +144,17 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         super(plugin, GameTypeEnum.AceRace, new AceRaceHandler(plugin), config);
         if (initializeConfig) getGameConfig().initializeConfiguration(plugin.getFolder());
         this.copyIndex = copyIndex;
-        this.mapEditPreviewMarkerKey = new NamespacedKey(plugin, "acerace_preview_respawn");
-        this.mapEditPreviewAreaKey = new NamespacedKey(plugin, "acerace_preview_area");
+        this.launchPads =
+                new AceRaceLaunchPads(
+                        plugin,
+                        player ->
+                                !isDisposed()
+                                        && getGameStageEnum() == GameStageEnum.PROGRESS
+                                        && player.getWorld() == Bukkit.getWorld(getWorldName())
+                                        && isGameplayParticipant(player)
+                                        && !raceProgress.isFinished(player.getUniqueId()),
+                        featureContacts::remove);
+        this.mapEditPreview = new AceRaceEditorPreview(plugin, this, this::previewCourse);
         getGameHandler().setAceRaceArea(this);
         getGameHandler().register();
         loadCoursePoints();
@@ -226,106 +167,18 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     }
 
     public void loadCoursePoints() {
-        progressPoints.clear();
-        ConfigurationSection root = getGameConfig().getProgressPoints();
-        if (root != null) {
-            for (String key : root.getKeys(false)) {
-                ConfigurationSection section = root.getConfigurationSection(key);
-                if (section == null) continue;
-                Vector pos1 = section.getVector("pos1");
-                Vector pos2 = section.getVector("pos2");
-                if (pos1 == null || pos2 == null) {
-                    logGame(
-                            java.util.logging.Level.WARNING,
-                            MessageConfig.codeText("ace-race-area.load-course-points-1"),
-                            MessageConfig.codeText("ace-race-area.load-course-points-2", key));
-                    continue;
-                }
-                progressPoints.add(
-                        new AceRaceProgressPoint(
-                                section.getInt("order", progressPoints.size() + 1),
-                                pos1,
-                                pos2,
-                                section.getInt("fall-y", getWorldFallHeight()),
-                                AceRaceEquipment.fromConfig(section.getString("equipment"))));
-            }
-            progressPoints.sort(Comparator.comparingInt(AceRaceProgressPoint::order));
-        }
-
-        respawnPoints.clear();
-        respawnPointConfigIndexes.clear();
-        List<String> configuredRespawnPoints = getGameConfig().ensureRespawnPoints();
-        for (int configIndex = 0; configIndex < configuredRespawnPoints.size(); configIndex++) {
-            String serialized = configuredRespawnPoints.get(configIndex);
-            try {
-                Location location = LocationConfig.readLocation(serialized);
-                if (location.getWorld() == null
-                        || !getWorldName().equals(location.getWorld().getName())) {
-                    logGame(
-                            java.util.logging.Level.WARNING,
-                            MessageConfig.codeText("ace-race-area.load-course-points-3"),
-                            MessageConfig.codeText(
-                                    "ace-race-area.load-course-points-5", serialized));
-                    continue;
-                }
-                respawnPoints.add(new AceRaceRespawnPoint(location));
-                respawnPointConfigIndexes.add(configIndex);
-            } catch (Exception exception) {
-                logGame(
-                        java.util.logging.Level.WARNING,
-                        MessageConfig.codeText("ace-race-area.load-course-points-3"),
-                        MessageConfig.codeText("ace-race-area.load-course-points-4", serialized));
-            }
-        }
-        rebuildRespawnProgressPointBindings();
-        if (mapEditPreviewViewer != null) refreshMapEditPreviewEntities();
+        course =
+                AceRaceCourseLoader.load(
+                        getGameConfig(),
+                        getWorldName(),
+                        plugin.getServer(),
+                        (action, detail) ->
+                                logGame(java.util.logging.Level.WARNING, action, detail));
+        mapEditPreview.refresh();
     }
 
-    /**
-     * Binds each marker from its position relative to the ordered gate geometry. The route corridor
-     * keeps bends and large launch jumps in the correct segment without depending on marker list
-     * order.
-     */
-    private void rebuildRespawnProgressPointBindings() {
-        respawnProgressPointBindings.clear();
-        if (respawnPoints.isEmpty()) return;
-
-        World world = respawnPoints.getFirst().destination().getWorld();
-        AceRaceLine finishLine = getFinishLine();
-        Location startApproach = getGameConfig().getStartSpawnPoint();
-        Location finishApproach =
-                world == null || finishLine == null ? null : finishLine.center(world);
-        respawnProgressPointBindings.addAll(
-                AceRaceRespawnBindings.bindRespawnPoints(
-                        progressPoints, respawnPoints, startApproach, finishApproach));
-
-        for (int index = 0; index < respawnProgressPointBindings.size(); index++) {
-            int configIndex =
-                    index < respawnPointConfigIndexes.size()
-                            ? respawnPointConfigIndexes.get(index)
-                            : -1;
-            Integer configured =
-                    getGameConfig()
-                            .getRespawnProgressPointBinding(configIndex, progressPoints.size());
-            if (configured != null) respawnProgressPointBindings.set(index, configured);
-        }
-
-        Set<Integer> boundProgressPoints = new HashSet<>(respawnProgressPointBindings);
-        for (int index = 0; index < progressPoints.size(); index++) {
-            if (!boundProgressPoints.contains(index)) {
-                logGame(
-                        java.util.logging.Level.WARNING,
-                        MessageConfig.codeText("ace-race-area.load-course-points-3"),
-                        MessageConfig.codeText(
-                                "ace-race-area.rebuild-respawn-progress-point-bindings-1",
-                                (index + 1)));
-            }
-        }
-    }
-
-    private int getWorldFallHeight() {
-        World world = Bukkit.getWorld(getWorldName());
-        return world == null ? -64 : world.getMinHeight();
+    public List<AceRaceProgressPoint> getProgressPoints() {
+        return course.progressPoints();
     }
 
     private AceRaceLine getStartLine() {
@@ -342,25 +195,12 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
                 : null;
     }
 
-    public int getRespawnPointBinding(int index) {
-        int loadedIndex = getRespawnPointIndexForConfig(index);
-        return loadedIndex >= 0 && loadedIndex < respawnProgressPointBindings.size()
-                ? respawnProgressPointBindings.get(loadedIndex)
-                : -1;
-    }
-
-    public int getRespawnPointCount() {
-        return respawnPoints.size();
+    public int getRespawnPointBinding(int configIndex) {
+        return course.bindingForConfig(configIndex);
     }
 
     public int getRespawnPointIndexForConfig(int configIndex) {
-        return respawnPointConfigIndexes.indexOf(configIndex);
-    }
-
-    public int getRespawnPointConfigIndex(int loadedIndex) {
-        return loadedIndex >= 0 && loadedIndex < respawnPointConfigIndexes.size()
-                ? respawnPointConfigIndexes.get(loadedIndex)
-                : -1;
+        return course.loadedIndexForConfig(configIndex);
     }
 
     public boolean setRespawnPointBinding(int index, int binding) {
@@ -369,151 +209,44 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
                 || index < 0
                 || index >= getGameConfig().ensureRespawnPoints().size()
                 || binding < -1
-                || binding >= progressPoints.size()) return false;
+                || binding >= course.progressPoints().size()) return false;
         getGameConfig().setRespawnProgressPointBinding(index, binding);
         loadCoursePoints();
         return true;
     }
 
-    /** Toggles the editor-only course preview for the current prepare session. */
     public boolean toggleMapEditPreview(@NotNull Player viewer) {
-        if (mapEditPreviewViewer != null && mapEditPreviewViewer.equals(viewer.getUniqueId())) {
-            disableMapEditPreview();
-            return false;
-        }
-        disableMapEditPreview();
-        mapEditPreviewViewer = viewer.getUniqueId();
-        refreshMapEditPreviewEntities();
-        mapEditPreviewTask =
-                scheduler.runTaskTimer(
-                        plugin,
-                        () -> {
-                            Player player = Bukkit.getPlayer(mapEditPreviewViewer);
-                            var session =
-                                    player == null
-                                            ? null
-                                            : plugin.getPrepareSessionManager().getSession(player);
-                            String areaName = getGameConfig().getAreaName();
-                            if (player == null
-                                    || session == null
-                                    || session.getGameType() != GameTypeEnum.AceRace
-                                    || areaName == null
-                                    || !areaName.equals(session.getAreaName())) {
-                                disableMapEditPreview();
-                                return;
-                            }
-                            spawnMapEditPreviewParticles(player);
-                        },
-                        MAP_EDIT_PREVIEW_UPDATE_TICKS,
-                        MAP_EDIT_PREVIEW_UPDATE_TICKS);
-        return true;
+        return mapEditPreview.toggle(viewer);
     }
 
-    public boolean isMapEditPreviewEnabled() {
-        return mapEditPreviewViewer != null;
+    public boolean isMapEditPreviewEnabled(PrepareSession session) {
+        return mapEditPreview.enabled(session);
     }
 
-    public void disableMapEditPreview() {
-        if (mapEditPreviewTask != null) {
-            mapEditPreviewTask.cancel();
-            mapEditPreviewTask = null;
-        }
-        for (EnderCrystal crystal : mapEditPreviewCrystals) {
-            if (crystal != null && !crystal.isDead()) crystal.remove();
-        }
-        mapEditPreviewCrystals.clear();
-        mapEditPreviewViewer = null;
+    public void disableMapEditPreview(PrepareSession session) {
+        mapEditPreview.stopSession(session);
     }
 
-    /** Returns the configured marker index represented by an editor preview crystal, or -1. */
     public int mapEditPreviewRespawnIndex(@NotNull Entity entity) {
-        if (mapEditPreviewCrystals.stream()
-                .noneMatch(crystal -> crystal.getUniqueId().equals(entity.getUniqueId())))
-            return -1;
-        String area =
-                entity.getPersistentDataContainer()
-                        .get(mapEditPreviewAreaKey, PersistentDataType.STRING);
-        if (!java.util.Objects.equals(getGameConfig().getAreaName(), area)) return -1;
-        Integer index =
-                entity.getPersistentDataContainer()
-                        .get(mapEditPreviewMarkerKey, PersistentDataType.INTEGER);
-        return index == null || index < 0 || index >= respawnPoints.size()
-                ? -1
-                : getRespawnPointConfigIndex(index);
+        return mapEditPreview.markerIndex(entity);
     }
 
-    private void refreshMapEditPreviewEntities() {
-        for (EnderCrystal crystal : mapEditPreviewCrystals) {
-            if (crystal != null && !crystal.isDead()) crystal.remove();
-        }
-        mapEditPreviewCrystals.clear();
-        if (mapEditPreviewViewer == null) return;
-        World world = Bukkit.getWorld(getWorldName());
-        if (world == null) return;
-        String areaName = getGameConfig().getAreaName();
-        for (int index = 0; index < respawnPoints.size(); index++) {
-            int markerIndex = index;
-            Location location = respawnPoints.get(index).destination().clone();
-            EnderCrystal crystal =
-                    world.spawn(
-                            location,
-                            EnderCrystal.class,
-                            spawned -> {
-                                spawned.setShowingBottom(false);
-                                spawned.setInvulnerable(true);
-                                spawned.setPersistent(false);
-                                int binding =
-                                        markerIndex < respawnProgressPointBindings.size()
-                                                ? respawnProgressPointBindings.get(markerIndex)
-                                                : -1;
-                                String markerName =
-                                        binding < 0
-                                                ? GuiConfig.text(
-                                                        "map-editor.menus.step-list.games.ace-race.items.map-preview.states.marker-start.title")
-                                                : GuiConfig.text(
-                                                                "map-editor.menus.step-list.games.ace-race.items.map-preview.states.marker-bound.title")
-                                                        .replace(
-                                                                "%order%",
-                                                                String.valueOf(binding + 1));
-                                spawned.customName(
-                                        net.kyori.adventure.text.Component.text(markerName));
-                                spawned.setCustomNameVisible(true);
-                                spawned.getPersistentDataContainer()
-                                        .set(
-                                                mapEditPreviewAreaKey,
-                                                PersistentDataType.STRING,
-                                                areaName);
-                                spawned.getPersistentDataContainer()
-                                        .set(
-                                                mapEditPreviewMarkerKey,
-                                                PersistentDataType.INTEGER,
-                                                markerIndex);
-                            });
-            mapEditPreviewCrystals.add(crystal);
-        }
+    public int mapEditPreviewRespawnIndex(Player viewer, Entity entity) {
+        return mapEditPreview.markerIndex(viewer, entity);
     }
 
-    private void spawnMapEditPreviewParticles(@NotNull Player viewer) {
-        World world = Bukkit.getWorld(getWorldName());
-        if (world == null || viewer.getWorld() != world) return;
-        for (AceRaceProgressPoint progressPoint : progressPoints) {
-            Vector first = progressPoint.pos1();
-            Vector second = progressPoint.pos2();
-            double dx = second.getX() - first.getX();
-            double dy = second.getY() - first.getY();
-            double dz = second.getZ() - first.getZ();
-            int samples = Math.max(1, (int) Math.ceil(Math.sqrt(dx * dx + dy * dy + dz * dz) / 2D));
-            for (int sample = 0; sample <= samples; sample++) {
-                double ratio = sample / (double) samples;
-                Location particle =
-                        new Location(
-                                world,
-                                first.getX() + dx * ratio + 0.5D,
-                                first.getY() + dy * ratio + 0.15D,
-                                first.getZ() + dz * ratio + 0.5D);
-                viewer.spawnParticle(Particle.END_ROD, particle, 1, 0D, 0D, 0D, 0D);
-            }
+    private AceRaceEditorPreview.Course previewCourse() {
+        var markers = new ArrayList<AceRaceEditorPreview.Marker>();
+        for (AceRaceCourse.RespawnMarker marker : course.respawns()) {
+            markers.add(
+                    new AceRaceEditorPreview.Marker(
+                            marker.point().destination(), marker.configIndex(), marker.binding()));
         }
+        return new AceRaceEditorPreview.Course(
+                Bukkit.getWorld(getWorldName()),
+                getGameConfig().getAreaName(),
+                markers,
+                course.progressPoints());
     }
 
     @Override
@@ -523,17 +256,17 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
             locations.add(getGameConfig().getStartSpawnPoint());
         if (getGameConfig().getSpectatorSpawnPoint() != null)
             locations.add(getGameConfig().getSpectatorSpawnPoint());
-        for (AceRaceRespawnPoint respawnPoint : respawnPoints)
-            locations.add(respawnPoint.destination());
+        for (AceRaceCourse.RespawnMarker marker : course.respawns())
+            locations.add(marker.point().destination());
         return locations;
     }
 
     @Override
     public void resetArea() {
+        mapEditPreview.stop();
         stopRacerVisibilityUpdates();
         restoreAllRacerVisibility();
-        cancelAllPendingLaunchPads();
-        stopLaunchEnforcement();
+        launchPads.stop();
         raceProgress.reset();
         lapStartedNanos.clear();
         lapDurationsMillis.clear();
@@ -549,8 +282,9 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
 
     @Override
     public void startGamePreparation() {
-        if (progressPoints.isEmpty()
-                || respawnPoints.isEmpty()
+        mapEditPreview.stop();
+        if (course.progressPoints().isEmpty()
+                || course.respawns().isEmpty()
                 || getGameConfig().getStartSpawnPoint() == null
                 || !getGameConfig().hasStartLine()
                 || !getGameConfig().hasFinishLine()) {
@@ -572,9 +306,9 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
         resetPlayerHealthFoodEffectLevelInventory();
         announceGamePreparation(
-                MessageConfig.ACE_RACE_START_PREPARATION,
-                MessageConfig.ACE_RACE_START_PREPARATION_TITLE,
-                MessageConfig.ACE_RACE_START_PREPARATION_SUBTITLE);
+                AceRaceMessages.ACE_RACE_START_PREPARATION,
+                AceRaceMessages.ACE_RACE_START_PREPARATION_TITLE,
+                AceRaceMessages.ACE_RACE_START_PREPARATION_SUBTITLE);
         startGameProgress();
     }
 
@@ -592,14 +326,14 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         }
         startFinalCountdown(
                 GameTypeEnum.AceRace.toString(),
-                MessageConfig.ACE_RACE_GAME_START_TITLE,
-                MessageConfig.ACE_RACE_GAME_START_SUBTITLE,
+                AceRaceMessages.ACE_RACE_GAME_START_TITLE,
+                AceRaceMessages.ACE_RACE_GAME_START_SUBTITLE,
                 this::beginGameProgress);
     }
 
     private void beginGameProgress() {
         scheduleRacerVisibilityUnlock();
-        startLaunchEnforcement();
+        launchPads.start();
         giveTeamArmor();
         for (UUID uuid : gamePlayers) {
             Player player = Bukkit.getPlayer(uuid);
@@ -647,7 +381,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
                             ignored -> Bukkit.createBossBar("", BarColor.YELLOW, BarStyle.SOLID));
             bossBar.setTitle(
                     LegacyText.translateColorCodes(
-                            MessageConfig.ACE_RACE_ACTION_BAR_COUNT_DOWN
+                            AceRaceMessages.ACE_RACE_ACTION_BAR_COUNT_DOWN
                                     .replace("%time%", CoreMessages.bossBarTime(remainingSeconds))
                                     .replace(
                                             "%lap-time%",
@@ -711,8 +445,8 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         UUID uuid = player.getUniqueId();
         if (getGameStageEnum() != GameStageEnum.PROGRESS
                 || raceProgress.isFinished(uuid)
-                || !pendingLaunchPadTasks.containsKey(uuid)) return;
-        cancelPendingLaunchTask(uuid);
+                || !launchPads.hasPending(uuid)) return;
+        launchPads.cancelPending(uuid);
         featureContacts.remove(uuid);
     }
 
@@ -723,15 +457,15 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         // movement event. Consume every consecutive gate intersected by this same trajectory
         // instead
         // of leaving the later gates behind the player's new position forever.
-        while (expected < progressPoints.size()
-                && progressPoints.get(expected).crossed(previous, current)) {
+        while (expected < course.progressPoints().size()
+                && course.progressPoints().get(expected).crossed(previous, current)) {
             advanceProgressPoint(player, expected);
             expected++;
         }
     }
 
     private void advanceProgressPoint(@NotNull Player player, int progressIndex) {
-        AceRaceProgressPoint progressPoint = progressPoints.get(progressIndex);
+        AceRaceProgressPoint progressPoint = course.progressPoints().get(progressIndex);
         activeFallHeights.put(player.getUniqueId(), progressPoint.fallY());
         raceProgress.reachPoint(player.getUniqueId(), progressIndex + 1);
         applyProgressPointEquipment(player, progressPoint.equipment());
@@ -744,37 +478,21 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         UUID uuid = player.getUniqueId();
         Set<Integer> captured =
                 capturedRespawnPoints.computeIfAbsent(uuid, ignored -> new HashSet<>());
-        List<Integer> crossed = new ArrayList<>();
-        for (int index = 0; index < respawnPoints.size(); index++) {
-            if (captured.contains(index)) continue;
-            AceRaceRespawnPoint respawnPoint = respawnPoints.get(index);
-            if (respawnPoint.crossingProgress(previous, current) < 0.0D) continue;
-            crossed.add(index);
-        }
-        // A single high-speed movement can pass several markers. Their configured list order is not
-        // the route order, so consume them in the order in which this trajectory actually reaches
-        // them.
-        crossed.sort(
-                Comparator.comparingDouble(
-                        index -> respawnPoints.get(index).crossingProgress(previous, current)));
-        for (int index : crossed) {
-            AceRaceRespawnPoint respawnPoint = respawnPoints.get(index);
-            int boundProgressPoint =
-                    index < respawnProgressPointBindings.size()
-                            ? respawnProgressPointBindings.get(index)
-                            : -1;
+        for (int index : course.crossedRespawns(previous, current, captured)) {
+            AceRaceCourse.RespawnMarker marker = course.respawns().get(index);
+            int boundProgressPoint = marker.binding();
             int expected = raceProgress.nextPoint(uuid);
             // A marker may repair exactly one missed gate. Later-course markers cannot be used to
             // shortcut several gates, and markers from an older segment cannot move respawn
             // backward.
-            if (boundProgressPoint == expected && expected < progressPoints.size()) {
+            if (boundProgressPoint == expected && expected < course.progressPoints().size()) {
                 advanceProgressPoint(player, expected);
                 expected++;
             }
             if (boundProgressPoint != expected - 1) continue;
 
             captured.add(index);
-            latestRespawnLocations.put(uuid, respawnPoint.destination());
+            latestRespawnLocations.put(uuid, marker.point().destination());
         }
     }
 
@@ -793,7 +511,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
             }
             return;
         }
-        if (raceProgress.nextPoint(uuid) < progressPoints.size()
+        if (raceProgress.nextPoint(uuid) < course.progressPoints().size()
                 || !crossedFinishForward(finishLine, previous, current, startLine)) return;
 
         int lap = raceProgress.completeLap(uuid);
@@ -830,7 +548,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
             resetLapProgress(player, current);
             updateAceRaceTimerBossBars(timer);
             String message =
-                    MessageConfig.ACE_RACE_LAP_COMPLETED
+                    AceRaceMessages.ACE_RACE_LAP_COMPLETED
                             .replace("%player%", CoreMessages.formatPlayerName(player))
                             .replace("%lap%", String.valueOf(lap))
                             .replace("%total%", String.valueOf(getGameConfig().getLaps()));
@@ -847,7 +565,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     private void resetLapProgress(@NotNull Player player, @NotNull Location movementBaseline) {
         UUID uuid = player.getUniqueId();
         raceProgress.reachPoint(uuid, 0);
-        cancelPendingLaunchPad(uuid);
+        launchPads.cancelPlayer(uuid);
         player.removePotionEffect(PotionEffectType.SPEED);
         handleEnvironmentalEffects(player);
         activeFallHeights.put(uuid, getGameConfig().getStartFallY());
@@ -888,14 +606,14 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         Block block = findTrackFeatureBlock(player.getLocation());
         if (block == null) {
             featureContacts.remove(uuid);
-            cancelPendingLaunchTask(uuid);
+            launchPads.cancelPending(uuid);
             return;
         }
         Material material = block.getType();
         TrackFeatureContact featureContact = TrackFeatureContact.from(block);
         if (featureContact.equals(featureContacts.put(player.getUniqueId(), featureContact)))
             return;
-        if (!isLaunchPad(material)) cancelPendingLaunchTask(uuid);
+        if (!AceRaceLaunchPads.isLaunchPad(material)) launchPads.cancelPending(uuid);
 
         switch (material) {
             case YELLOW_GLAZED_TERRACOTTA -> {
@@ -908,7 +626,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
                                 false,
                                 false));
                 player.playSound(player.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 0.6F, 1.5F);
-                CoreMessages.sendActionBar(player, MessageConfig.ACE_RACE_SPEED_BOOST);
+                CoreMessages.sendActionBar(player, AceRaceMessages.ACE_RACE_SPEED_BOOST);
             }
             case LIME_GLAZED_TERRACOTTA -> {
                 player.addPotionEffect(
@@ -920,24 +638,9 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
                                 false,
                                 false));
                 player.playSound(player.getLocation(), Sound.BLOCK_SLIME_BLOCK_FALL, 0.8F, 1.2F);
-                CoreMessages.sendActionBar(player, MessageConfig.ACE_RACE_JUMP_PAD);
+                CoreMessages.sendActionBar(player, AceRaceMessages.ACE_RACE_JUMP_PAD);
             }
-            case RED_WOOL ->
-                    scheduleLaunchPlayer(
-                            player,
-                            material,
-                            launchHorizontalVelocity(material),
-                            launchBaseVerticalVelocity(material),
-                            1.1F,
-                            LAUNCH_PAD_DELAY_TICKS);
-            case ORANGE_WOOL ->
-                    scheduleLaunchPlayer(
-                            player,
-                            material,
-                            launchHorizontalVelocity(material),
-                            launchBaseVerticalVelocity(material),
-                            1.35F,
-                            LAUNCH_PAD_DELAY_TICKS);
+            case RED_WOOL, ORANGE_WOOL -> launchPads.arm(player, material);
             default -> {}
         }
     }
@@ -949,28 +652,6 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
                 || material == Material.ORANGE_WOOL;
     }
 
-    private static boolean isLaunchPad(@NotNull Material material) {
-        return material == Material.RED_WOOL || material == Material.ORANGE_WOOL;
-    }
-
-    static double launchHorizontalVelocity(@NotNull Material material) {
-        return switch (material) {
-            case RED_WOOL -> 2D;
-            case ORANGE_WOOL -> 4D;
-            default ->
-                    throw new IllegalArgumentException("Not an Ace Race launch pad: " + material);
-        };
-    }
-
-    static double launchBaseVerticalVelocity(@NotNull Material material) {
-        return switch (material) {
-            case RED_WOOL -> 0.75D;
-            case ORANGE_WOOL -> 1.5D;
-            default ->
-                    throw new IllegalArgumentException("Not an Ace Race launch pad: " + material);
-        };
-    }
-
     private static @Nullable Block findTrackFeatureBlock(@NotNull Location location) {
         Block playerBlock = location.getBlock();
         Block directlyBelow = playerBlock.getRelative(0, -1, 0);
@@ -978,28 +659,6 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         Block twoBlocksBelow = playerBlock.getRelative(0, -2, 0);
         if (twoBlocksBelow.getType() == Material.YELLOW_GLAZED_TERRACOTTA) return twoBlocksBelow;
         return null;
-    }
-
-    /** A delayed pad impulse is only safe while the player is still grounded on a solid block. */
-    private static boolean isSupported(@NotNull Player player) {
-        if (!player.isOnGround()) return false;
-        Block feet = player.getLocation().getBlock();
-        return feet.getType().isSolid() || feet.getRelative(0, -1, 0).getType().isSolid();
-    }
-
-    static boolean delayedLaunchCanFire(
-            boolean progress,
-            boolean finished,
-            boolean online,
-            boolean supported,
-            boolean onPad,
-            double verticalVelocity) {
-        return progress
-                && !finished
-                && online
-                && supported
-                && onPad
-                && verticalVelocity <= LAUNCH_READY_MAX_VERTICAL_VELOCITY;
     }
 
     private void refreshEnvironmentalEffects() {
@@ -1077,7 +736,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
             // Red terracotta is an intentional speed source. Do not let the launch-flight budget
             // immediately rescale away the first accelerated movement after a pad sends the racer
             // here.
-            enforcedLaunches.remove(player.getUniqueId());
+            launchPads.releaseFlight(player.getUniqueId());
         }
     }
 
@@ -1273,19 +932,19 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         int reached = raceProgress.nextPoint(player.getUniqueId()) - 1;
         applyProgressPointEquipment(
                 player,
-                reached >= 0 && reached < progressPoints.size()
-                        ? progressPoints.get(reached).equipment()
+                reached >= 0 && reached < course.progressPoints().size()
+                        ? course.progressPoints().get(reached).equipment()
                         : AceRaceEquipment.NONE);
     }
 
     private void announceProgressPointEquipment(
             @NotNull Player player, @NotNull AceRaceEquipment equipment) {
         if (equipment == AceRaceEquipment.ELYTRA) {
-            player.sendMessage(MessageConfig.ACE_RACE_RECEIVED_ELYTRA);
+            player.sendMessage(AceRaceMessages.ACE_RACE_RECEIVED_ELYTRA);
         } else if (equipment == AceRaceEquipment.TRIDENT) {
-            player.sendMessage(MessageConfig.ACE_RACE_RECEIVED_TRIDENT);
+            player.sendMessage(AceRaceMessages.ACE_RACE_RECEIVED_TRIDENT);
         } else if (equipment == AceRaceEquipment.DOLPHINS_GRACE) {
-            player.sendMessage(MessageConfig.ACE_RACE_RECEIVED_DOLPHINS_GRACE);
+            player.sendMessage(AceRaceMessages.ACE_RACE_RECEIVED_DOLPHINS_GRACE);
         }
     }
 
@@ -1341,307 +1000,11 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         return false;
     }
 
-    private void launchPlayer(
-            @NotNull Player player,
-            double horizontalVelocity,
-            double verticalVelocity,
-            float pitch) {
-        Vector direction = player.getLocation().getDirection();
-        // Pitch still adjusts lift, but looking at the floor must retain a useful launch and
-        // looking
-        // straight up must not double the pad height.
-        double aimedVerticalVelocity =
-                calculateAimedVerticalVelocity(verticalVelocity, direction.getY());
-        direction.setY(0D);
-        if (direction.lengthSquared() < 0.0001D) {
-            double yawRadians = Math.toRadians(player.getLocation().getYaw());
-            direction = new Vector(-Math.sin(yawRadians), 0D, Math.cos(yawRadians));
-        } else direction.normalize();
-        // setVelocity replaces the old motion with this fixed launch vector; existing momentum is
-        // not
-        // carried into the pad's horizontal or vertical impulse.
-        player.setVelocity(
-                new Vector(
-                        direction.getX() * horizontalVelocity,
-                        aimedVerticalVelocity,
-                        direction.getZ() * horizontalVelocity));
-        player.setFallDistance(0F);
-        // The client, not the server, decides which drag branch this impulse lands in, so hold the
-        // flight
-        // to the grounded curve for the next few ticks instead of trusting the packet to be applied
-        // fairly.
-        enforcedLaunches.put(
-                player.getUniqueId(),
-                new LaunchEnforcement(horizontalVelocity, player.getLocation().clone()));
-        player.playSound(player.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 0.8F, pitch);
-        CoreMessages.sendActionBar(player, MessageConfig.ACE_RACE_LAUNCH_PAD);
-    }
-
-    static double calculateAimedVerticalVelocity(double verticalVelocity, double directionY) {
-        double aimedVelocity = verticalVelocity * (1D + directionY);
-        return Math.max(
-                verticalVelocity * MIN_LAUNCH_VERTICAL_MULTIPLIER,
-                Math.min(verticalVelocity * MAX_LAUNCH_VERTICAL_MULTIPLIER, aimedVelocity));
-    }
-
-    /**
-     * Horizontal speed the intended flight carries during the given tick, where tick zero is the
-     * launch itself. The launch tick still travels the raw impulse and only afterwards pays the
-     * pad's grounded drag; every later tick pays air drag and may add the sprint air acceleration a
-     * racer can reach by holding forward, which keeps this an upper bound on honest movement rather
-     * than an exact replay.
-     */
-    static double launchEnvelopeSpeed(double horizontalVelocity, int ticksSinceLaunch) {
-        double speed = horizontalVelocity;
-        for (int tick = 1; tick <= ticksSinceLaunch; tick++) {
-            speed = speed * (tick == 1 ? LAUNCH_GROUND_DRAG : AIR_DRAG) + SPRINT_AIR_ACCELERATION;
-        }
-        return speed;
-    }
-
-    /** Total horizontal distance the intended flight covers through the given tick, inclusive. */
-    static double launchEnvelopeDistance(double horizontalVelocity, int ticksSinceLaunch) {
-        double speed = horizontalVelocity;
-        double distance = speed;
-        for (int tick = 1; tick <= ticksSinceLaunch; tick++) {
-            speed = speed * (tick == 1 ? LAUNCH_GROUND_DRAG : AIR_DRAG) + SPRINT_AIR_ACCELERATION;
-            distance += speed;
-        }
-        return distance;
-    }
-
-    /**
-     * Target speed for a racer already ahead of the envelope. The excess distance is repaid over
-     * the next few ticks rather than merely capped, so the head start won during the round trip
-     * before the first correction packet lands is given back instead of kept.
-     */
-    static double enforcedLaunchSpeed(double envelopeSpeed, double debt) {
-        if (debt <= 0D) return envelopeSpeed;
-        return Math.max(0D, envelopeSpeed - debt / LAUNCH_DEBT_REPAY_TICKS);
-    }
-
-    private void startLaunchEnforcement() {
-        stopLaunchEnforcement();
-        launchEnforcementTask =
-                scheduler.runTaskTimer(
-                        plugin,
-                        this::enforceLaunchTrajectories,
-                        LAUNCH_ENFORCEMENT_UPDATE_TICKS,
-                        LAUNCH_ENFORCEMENT_UPDATE_TICKS);
-    }
-
-    private void stopLaunchEnforcement() {
-        if (launchEnforcementTask != null) launchEnforcementTask.cancel();
-        launchEnforcementTask = null;
-        enforcedLaunches.clear();
-    }
-
-    /**
-     * Compares the distance each launched racer actually covered against the intended flight and
-     * slows the ones running ahead of it. Honest flights stay under the envelope and are never
-     * touched, so no extra velocity packet reaches them.
-     */
-    private void enforceLaunchTrajectories() {
-        if (enforcedLaunches.isEmpty()) return;
-        if (getGameStageEnum() != GameStageEnum.PROGRESS) {
-            enforcedLaunches.clear();
-            return;
-        }
-        Iterator<Map.Entry<UUID, LaunchEnforcement>> entries =
-                enforcedLaunches.entrySet().iterator();
-        while (entries.hasNext()) {
-            Map.Entry<UUID, LaunchEnforcement> entry = entries.next();
-            Player player = Bukkit.getPlayer(entry.getKey());
-            LaunchEnforcement launch = entry.getValue();
-            // Riptide and elytra are sanctioned ways to outrun the pad's own curve; never fight
-            // them.
-            if (player == null
-                    || !player.isOnline()
-                    || raceProgress.isFinished(entry.getKey())
-                    || isManagedSpectator(player)
-                    || player.isRiptiding()
-                    || player.isGliding()) {
-                entries.remove();
-                continue;
-            }
-            if (launch.advance(player) >= LAUNCH_ENFORCEMENT_TICKS) entries.remove();
-        }
-    }
-
-    /**
-     * Per-launch flight budget: measured horizontal travel checked against the intended grounded
-     * curve.
-     */
-    private static final class LaunchEnforcement {
-        private final double horizontalVelocity;
-        private Location lastSample;
-        private double travelled;
-        private int ticksSinceLaunch;
-        private int ticksWaitingForImpulse;
-        private boolean impulseObserved;
-
-        private LaunchEnforcement(double horizontalVelocity, @NotNull Location launchLocation) {
-            this.horizontalVelocity = horizontalVelocity;
-            this.lastSample = launchLocation;
-        }
-
-        /**
-         * Samples one tick of travel, corrects an over-budget racer, and reports how far through
-         * the enforcement window this launch is. {@link AceRaceArea#LAUNCH_ENFORCEMENT_EXPIRED}
-         * ends it.
-         */
-        private int advance(@NotNull Player player) {
-            Location current = player.getLocation();
-            double stepX = 0D;
-            double stepZ = 0D;
-            if (current.getWorld() == lastSample.getWorld()) {
-                stepX = current.getX() - lastSample.getX();
-                stepZ = current.getZ() - lastSample.getZ();
-            }
-            lastSample = current;
-            double step = Math.sqrt(stepX * stepX + stepZ * stepZ);
-
-            // The impulse only takes effect once the packet reaches the client, so anchor the
-            // budget to the
-            // tick the racer visibly accelerates rather than to the tick the server sent it.
-            // Counting from
-            // the send would let a high-ping racer bank a large distance credit during the round
-            // trip and
-            // then spend it on the very head start this is meant to remove.
-            if (!impulseObserved) {
-                if (step < horizontalVelocity * LAUNCH_DETECTION_FRACTION) {
-                    return ++ticksWaitingForImpulse >= LAUNCH_IMPULSE_WAIT_TICKS
-                            ? LAUNCH_ENFORCEMENT_EXPIRED
-                            : 0;
-                }
-                impulseObserved = true;
-                travelled = step;
-                return 0;
-            }
-
-            // This budget describes a flight and stops the moment one ends. On the ground a racer
-            // may
-            // legitimately hold jump and bunny hop, and each hop adds the vanilla 0.2 sprint
-            // impulse, far
-            // more than the air control the flight curve allows. Policing that would cancel the
-            // landing
-            // jump instead of the exploit. Arming already proved the racer is in flight, since it
-            // takes a
-            // single tick of travel worth half the impulse, so the first footing found ends the
-            // budget.
-            if (AceRaceArea.isSupported(player)) return LAUNCH_ENFORCEMENT_EXPIRED;
-
-            travelled += step;
-            ticksSinceLaunch++;
-            double debt =
-                    travelled
-                            - launchEnvelopeDistance(horizontalVelocity, ticksSinceLaunch)
-                            - LAUNCH_DISTANCE_TOLERANCE;
-            if (debt > 0D) {
-                double target =
-                        enforcedLaunchSpeed(
-                                launchEnvelopeSpeed(horizontalVelocity, ticksSinceLaunch), debt);
-                applyHorizontalSpeed(player, stepX, stepZ, step, target);
-            }
-            return ticksSinceLaunch;
-        }
-
-        /**
-         * Rescales horizontal motion to {@code target}, keeping the racer's own heading and
-         * vertical motion. The horizontal direction comes from the measured step because a player
-         * entity's server-side delta movement is not a faithful record of client-driven motion. The
-         * vertical component must remain the server's velocity: a position delta is a displacement,
-         * not a velocity, and feeding it back here lets an airborne jump input re-inject upward
-         * motion every correction tick.
-         */
-        private void applyHorizontalSpeed(
-                @NotNull Player player, double stepX, double stepZ, double step, double target) {
-            if (step <= target || step < 0.0001D) return;
-            player.setVelocity(
-                    rescaleHorizontalVelocity(player.getVelocity(), stepX, stepZ, step, target));
-        }
-    }
-
-    static @NotNull Vector rescaleHorizontalVelocity(
-            @NotNull Vector currentVelocity,
-            double stepX,
-            double stepZ,
-            double step,
-            double target) {
-        if (step <= target || step < 0.0001D) return currentVelocity;
-        double scale = target / step;
-        return new Vector(stepX * scale, currentVelocity.getY(), stepZ * scale);
-    }
-
-    private void scheduleLaunchPlayer(
-            @NotNull Player player,
-            @NotNull Material padMaterial,
-            double horizontalVelocity,
-            double verticalVelocity,
-            float pitch,
-            long delayTicks) {
-        UUID uuid = player.getUniqueId();
-        // A new pad contact may occur while the previous launch is still airborne. Cancel only the
-        // un-fired arm; the old trajectory budget must survive until this launch actually replaces
-        // it.
-        cancelPendingLaunchTask(uuid);
-        // The delay preserves the pad's original feel. The callback below is deliberately gated by
-        // the
-        // same-pad + grounded check so leaving the wool can only cancel the launch, never arm it in
-        // mid-air.
-        if (delayTicks <= 0L) {
-            launchPlayer(player, horizontalVelocity, verticalVelocity, pitch);
-            return;
-        }
-        BukkitTask task =
-                scheduler.runTaskLater(
-                        plugin,
-                        () -> {
-                            pendingLaunchPadTasks.remove(uuid);
-                            boolean progress = getGameStageEnum() == GameStageEnum.PROGRESS;
-                            boolean finished = raceProgress.isFinished(uuid);
-                            boolean online = player.isOnline();
-                            Block pad = findTrackFeatureBlock(player.getLocation());
-                            boolean onPad = pad != null && pad.getType() == padMaterial;
-                            if (!delayedLaunchCanFire(
-                                    progress,
-                                    finished,
-                                    online,
-                                    isSupported(player),
-                                    onPad,
-                                    player.getVelocity().getY())) {
-                                // Do not leave the contact armed: landing back on the same wool
-                                // must be a fresh contact.
-                                featureContacts.remove(uuid);
-                                return;
-                            }
-                            launchPlayer(player, horizontalVelocity, verticalVelocity, pitch);
-                        },
-                        delayTicks);
-        pendingLaunchPadTasks.put(uuid, task);
-    }
-
-    private void cancelPendingLaunchTask(@NotNull UUID uuid) {
-        BukkitTask task = pendingLaunchPadTasks.remove(uuid);
-        if (task != null) task.cancel();
-    }
-
-    private void cancelPendingLaunchPad(@NotNull UUID uuid) {
-        cancelPendingLaunchTask(uuid);
-        enforcedLaunches.remove(uuid);
-    }
-
-    private void cancelAllPendingLaunchPads() {
-        for (BukkitTask task : pendingLaunchPadTasks.values()) task.cancel();
-        pendingLaunchPadTasks.clear();
-        enforcedLaunches.clear();
-    }
-
     private record TrackFeatureContact(
             @NotNull UUID worldId, @NotNull Material material, int x, int y, int z) {
         private static @NotNull TrackFeatureContact from(@NotNull Block block) {
             Material material = block.getType();
-            if (isLaunchPad(material)) {
+            if (AceRaceLaunchPads.isLaunchPad(material)) {
                 // Adjacent wool blocks form one pad. Keep it active until the player leaves the pad
                 // so crossing a block boundary during takeoff cannot launch the player twice.
                 return new TrackFeatureContact(block.getWorld().getUID(), material, 0, 0, 0);
@@ -1654,7 +1017,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     private void finishPlayer(@NotNull Player player) {
         UUID uuid = player.getUniqueId();
         if (raceProgress.isFinished(uuid)) return;
-        cancelPendingLaunchPad(uuid);
+        launchPads.cancelPlayer(uuid);
         int place = raceProgress.finish(uuid);
         int points =
                 Math.max(
@@ -1664,7 +1027,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
                         + getGameConfig().getPlacementBonus(place);
         addPlayerPoints(uuid, points);
         sendMessageToAllGamePlayers(
-                MessageConfig.ACE_RACE_FINISHED
+                AceRaceMessages.ACE_RACE_FINISHED
                         .replace("%player%", CoreMessages.formatPlayerName(player))
                         .replace("%place%", String.valueOf(place)));
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1F, 1.4F);
@@ -1701,7 +1064,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         if (!isGameplayParticipant(player)) return;
         if (getGameStageEnum() != GameStageEnum.PROGRESS
                 || raceProgress.isFinished(player.getUniqueId())) return;
-        cancelPendingLaunchPad(player.getUniqueId());
+        launchPads.cancelPlayer(player.getUniqueId());
         Location destination =
                 latestRespawnLocations.getOrDefault(
                         player.getUniqueId(), getGameConfig().getStartSpawnPoint());
@@ -1709,7 +1072,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         player.teleport(destination);
         player.setFallDistance(0F);
         lastMoveLocations.put(player.getUniqueId(), destination.clone());
-        CoreMessages.sendActionBar(player, MessageConfig.ACE_RACE_RETURNED_TO_RESPAWN_POINT);
+        CoreMessages.sendActionBar(player, AceRaceMessages.ACE_RACE_RETURNED_TO_RESPAWN_POINT);
     }
 
     public int getPlayerPosition(@NotNull UUID uuid) {
@@ -1728,7 +1091,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     }
 
     private @NotNull PlacementRange getPlayerPlacementRange(@NotNull UUID uuid) {
-        return raceProgress.placement(uuid, gamePlayers, progressPoints.size());
+        return raceProgress.placement(uuid, gamePlayers, course.progressPoints().size());
     }
 
     public List<UUID> getFinishedPlayers() {
@@ -1743,9 +1106,9 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
 
     /** Returns a completed lap duration in the same mm:ss format used by the live clocks. */
     public @NotNull String getLapDurationDisplay(@NotNull UUID uuid, int lap) {
-        if (lap < 1) return MessageConfig.PLACEHOLDER_NONE;
+        if (lap < 1) return ScoreMessages.PLACEHOLDER_NONE;
         List<Long> durations = lapDurationsMillis.get(uuid);
-        if (durations == null || lap > durations.size()) return MessageConfig.PLACEHOLDER_NONE;
+        if (durations == null || lap > durations.size()) return ScoreMessages.PLACEHOLDER_NONE;
         return DurationText.minutesSeconds(durations.get(lap - 1) / 1_000L);
     }
 
@@ -1771,13 +1134,13 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
         if (getGameStageEnum() == GameStageEnum.WAITING || getGameStageEnum() == GameStageEnum.END)
             return;
         if (progressTask != null) progressTask.cancel();
-        cancelAllPendingLaunchPads();
-        stopLaunchEnforcement();
+        launchPads.stop();
         stopRacerVisibilityUpdates();
         restoreAllRacerVisibility();
         cleanInventoryForAllGamePlayers();
         announceGameEnd(
-                MessageConfig.ACE_RACE_GAME_END_TITLE, MessageConfig.ACE_RACE_GAME_END_SUBTITLE);
+                AceRaceMessages.ACE_RACE_GAME_END_TITLE,
+                AceRaceMessages.ACE_RACE_GAME_END_SUBTITLE);
         setGameStageEnum(GameStageEnum.END);
         beginPostGameSettlement();
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
@@ -1792,6 +1155,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     public void handlePlayerDeath(@NotNull PlayerDeathEvent event) {
         Player player = event.getEntity();
         if (notAreaPlayer(player)) return;
+        launchPads.cancelPlayer(player.getUniqueId());
         event.setKeepInventory(true);
         event.getDrops().clear();
         scheduleParticipantRespawn(
@@ -1810,7 +1174,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     @Override
     public void handlePlayerQuit(@NotNull PlayerQuitEvent event) {
         Player player = event.getPlayer();
-        cancelPendingLaunchPad(player.getUniqueId());
+        launchPads.cancelPlayer(player.getUniqueId());
         if (!notAreaPlayer(player)) {
             visibleRacerPairs.removeIf(pair -> pair.contains(player.getUniqueId()));
             releaseRacerVisibility(player);
@@ -2052,7 +1416,7 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
     public void handleRiptideStart(@NotNull Player player) {
         if (getGameStageEnum() != GameStageEnum.PROGRESS || !isGameplayParticipant(player)) return;
         // A riptide is a sanctioned way to exceed the pad's own flight curve.
-        enforcedLaunches.remove(player.getUniqueId());
+        launchPads.releaseFlight(player.getUniqueId());
         riptideViewerGraceTicks.put(player.getUniqueId(), 3);
         for (UUID uuid : gamePlayers) {
             if (uuid.equals(player.getUniqueId()) || raceProgress.isFinished(uuid)) continue;
@@ -2253,7 +1617,8 @@ public class AceRaceArea extends BaseMultiTeamGameInstance {
 
     @Override
     public void dispose() {
-        disableMapEditPreview();
+        mapEditPreview.close();
+        launchPads.close();
         stopRacerVisibilityUpdates();
         restoreAllRacerVisibility();
         super.dispose();

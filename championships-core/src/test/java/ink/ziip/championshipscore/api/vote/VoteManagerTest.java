@@ -1,5 +1,8 @@
 package ink.ziip.championshipscore.api.vote;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+import static ink.ziip.championshipscore.support.TestObjects.set;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
@@ -88,24 +91,5 @@ class VoteManagerTest {
         public int getGameOrder(GameTypeEnum game) {
             return game == played ? 1 : -1;
         }
-    }
-
-    private static <T> T allocate(Class<T> type) throws Exception {
-        var field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-        field.setAccessible(true);
-        return type.cast(((sun.misc.Unsafe) field.get(null)).allocateInstance(type));
-    }
-
-    private static void set(Object target, String name, Object value) throws Exception {
-        for (Class<?> type = target.getClass(); type != null; type = type.getSuperclass()) {
-            try {
-                var field = type.getDeclaredField(name);
-                field.setAccessible(true);
-                field.set(target, value);
-                return;
-            } catch (NoSuchFieldException ignored) {
-            }
-        }
-        throw new NoSuchFieldException(name);
     }
 }

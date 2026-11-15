@@ -11,6 +11,7 @@ import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptideDodgeEnt
 import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptideDodgeRun;
 import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptideRaftBlocks;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.RiptideRushMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 
 import net.kyori.adventure.text.Component;
@@ -172,9 +173,10 @@ final class RiptideIntroductionRun implements AutoCloseable {
                 shields.clear();
                 speedShieldNoticeUntil = tick + 40;
                 area.sendTitleToAllGamePlayers(
-                        MessageConfig.RIPTIDE_RUSH_SPEED_BOOST_TITLE,
-                        MessageConfig.RIPTIDE_RUSH_SPEED_BOOST_SUBTITLE);
-                area.sendActionBarToAllGamePlayers(MessageConfig.RIPTIDE_RUSH_SPEED_SHIELD_BREAK);
+                        RiptideRushMessages.RIPTIDE_RUSH_SPEED_BOOST_TITLE,
+                        RiptideRushMessages.RIPTIDE_RUSH_SPEED_BOOST_SUBTITLE);
+                area.sendActionBarToAllGamePlayers(
+                        RiptideRushMessages.RIPTIDE_RUSH_SPEED_SHIELD_BREAK);
                 area.playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_PLING, 1F, 1.4F);
             }
         }
@@ -302,7 +304,8 @@ final class RiptideIntroductionRun implements AutoCloseable {
         if (shield) {
             shieldNoticeUntil.put(uuid, tick + 40);
             player.playSound(player.getLocation(), Sound.ENTITY_ITEM_BREAK, 1F, 1F);
-            player.sendActionBar(LegacyText.component(MessageConfig.RIPTIDE_RUSH_SHIELD_BROKEN));
+            player.sendActionBar(
+                    LegacyText.component(RiptideRushMessages.RIPTIDE_RUSH_SHIELD_BROKEN));
         }
         teleport(player, respawn());
     }
@@ -392,19 +395,22 @@ final class RiptideIntroductionRun implements AutoCloseable {
             }
         } else if (colors == null) {
             if (speedShieldNoticeUntil > tick)
-                area.sendActionBarToAllGamePlayers(MessageConfig.RIPTIDE_RUSH_SPEED_SHIELD_BREAK);
+                area.sendActionBarToAllGamePlayers(
+                        RiptideRushMessages.RIPTIDE_RUSH_SPEED_SHIELD_BREAK);
             else
                 for (Player player : players)
                     if (shieldNoticeUntil.getOrDefault(player.getUniqueId(), 0) > tick)
                         player.sendActionBar(
-                                LegacyText.component(MessageConfig.RIPTIDE_RUSH_SHIELD_BROKEN));
+                                LegacyText.component(
+                                        RiptideRushMessages.RIPTIDE_RUSH_SHIELD_BROKEN));
         }
         if (dodge != null)
             area.sendActionBarToAllGamePlayers(
                     RiptidePresentation.dodgeActionbar(
                             RiptideDodgeRun.DURATION_TICKS - dodge.tickNumber()));
         if (departure.active())
-            area.sendActionBarToAllGamePlayers(MessageConfig.RIPTIDE_RUSH_DEPARTURE_ACTIONBAR);
+            area.sendActionBarToAllGamePlayers(
+                    RiptideRushMessages.RIPTIDE_RUSH_DEPARTURE_ACTIONBAR);
     }
 
     private void stopDodge() {

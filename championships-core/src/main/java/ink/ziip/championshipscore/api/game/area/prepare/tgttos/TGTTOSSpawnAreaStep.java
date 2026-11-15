@@ -4,7 +4,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
 import ink.ziip.championshipscore.api.game.tgttos.config.TGTTOSConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
 import net.kyori.adventure.text.Component;
@@ -59,10 +59,10 @@ public final class TGTTOSSpawnAreaStep extends PrepareStep {
             selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, true);
         } catch (Exception exception) {
             return CoreMessages.formatAdminError(
-                    MessageConfig.MAP_EDITOR_STEP_SELECT_TWO_WORLDEDIT_ENDPOINTS);
+                    MapEditorMessages.MAP_EDITOR_STEP_SELECT_TWO_WORLDEDIT_ENDPOINTS);
         }
         if (selection[0].getBlockY() != selection[1].getBlockY()) {
-            return CoreMessages.formatAdminError(MessageConfig.MAP_EDITOR_TGT_SPAWN_AREA_FLAT);
+            return CoreMessages.formatAdminError(MapEditorMessages.MAP_EDITOR_TGT_SPAWN_AREA_FLAT);
         }
 
         TGTTOSConfig config = (TGTTOSConfig) session.getTarget().config();
@@ -78,7 +78,7 @@ public final class TGTTOSSpawnAreaStep extends PrepareStep {
         session.markDirty();
         return CoreMessages.formatAdminSuccess(
                 spawnType == SpawnType.CHICKEN
-                        ? MessageConfig.MAP_EDITOR_TGT_CHICKEN_SPAWN_SET
-                        : MessageConfig.MAP_EDITOR_TGT_PLAYER_SPAWN_SET);
+                        ? MapEditorMessages.MAP_EDITOR_TGT_CHICKEN_SPAWN_SET
+                        : MapEditorMessages.MAP_EDITOR_TGT_PLAYER_SPAWN_SET);
     }
 }

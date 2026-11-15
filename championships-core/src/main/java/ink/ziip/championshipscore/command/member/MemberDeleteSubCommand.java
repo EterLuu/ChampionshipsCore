@@ -2,7 +2,9 @@ package ink.ziip.championshipscore.command.member;
 
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.AdminMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.TeamMessages;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
 import org.bukkit.command.Command;
@@ -35,10 +37,10 @@ public class MemberDeleteSubCommand extends BaseSubCommand {
             ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeam(args[0]);
             if (championshipTeam == null) {
                 String message =
-                        MessageConfig.MEMBER_DELETED_FAILED
+                        TeamMessages.MEMBER_DELETED_FAILED
                                 .replace("%team%", args[0])
                                 .replace("%player%", CoreMessages.formatPlayerName(args[1]))
-                                .replace("%reason%", MessageConfig.REASON_TEAM_DOES_NOT_EXIST);
+                                .replace("%reason%", AdminMessages.REASON_TEAM_DOES_NOT_EXIST);
                 sender.sendMessage(message);
                 return true;
             }
@@ -48,7 +50,7 @@ public class MemberDeleteSubCommand extends BaseSubCommand {
                             deleted -> {
                                 String message =
                                         deleted
-                                                ? MessageConfig.MEMBER_SUCCESSFULLY_DELETED
+                                                ? TeamMessages.MEMBER_SUCCESSFULLY_DELETED
                                                         .replace(
                                                                 "%team%",
                                                                 championshipTeam.getColoredName())
@@ -56,7 +58,7 @@ public class MemberDeleteSubCommand extends BaseSubCommand {
                                                                 "%player%",
                                                                 CoreMessages.formatPlayerNameOnly(
                                                                         args[1]))
-                                                : MessageConfig.MEMBER_DELETED_FAILED
+                                                : TeamMessages.MEMBER_DELETED_FAILED
                                                         .replace("%team%", args[0])
                                                         .replace(
                                                                 "%player%",
@@ -64,7 +66,7 @@ public class MemberDeleteSubCommand extends BaseSubCommand {
                                                                         args[1]))
                                                         .replace(
                                                                 "%reason%",
-                                                                MessageConfig
+                                                                AdminMessages
                                                                         .REASON_MEMBER_DOES_NOT_EXIST);
                                 sender.sendMessage(message);
                             });

@@ -13,6 +13,7 @@ import ink.ziip.championshipscore.api.game.spatial.TeleportPositions;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.ParkourTagMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -220,9 +221,9 @@ public class ParkourTagArea extends BasePairedGameInstance {
         resetPlayerHealthFoodEffectLevelInventory();
 
         announceGamePreparation(
-                MessageConfig.PARKOUR_TAG_START_PREPARATION,
-                MessageConfig.PARKOUR_TAG_START_PREPARATION_TITLE,
-                MessageConfig.PARKOUR_TAG_START_PREPARATION_SUBTITLE);
+                ParkourTagMessages.PARKOUR_TAG_START_PREPARATION,
+                ParkourTagMessages.PARKOUR_TAG_START_PREPARATION_TITLE,
+                ParkourTagMessages.PARKOUR_TAG_START_PREPARATION_SUBTITLE);
         if (match != null) {
             for (Player player : match.getRight().getOnlinePlayers()) remindChaserSelection(player);
             for (Player player : match.getLeft().getOnlinePlayers()) remindChaserSelection(player);
@@ -267,9 +268,9 @@ public class ParkourTagArea extends BasePairedGameInstance {
         }
 
         startFinalCountdown(
-                MessageConfig.PARKOUR_TAG_GAME_START_SOON_TITLE,
-                MessageConfig.PARKOUR_TAG_GAME_START_TITLE,
-                MessageConfig.PARKOUR_TAG_GAME_START_SUBTITLE,
+                ParkourTagMessages.PARKOUR_TAG_GAME_START_SOON_TITLE,
+                ParkourTagMessages.PARKOUR_TAG_GAME_START_TITLE,
+                ParkourTagMessages.PARKOUR_TAG_GAME_START_SUBTITLE,
                 this::beginGameProgress);
     }
 
@@ -289,8 +290,10 @@ public class ParkourTagArea extends BasePairedGameInstance {
                             updateGameTimerBossBar(
                                     MessageConfig.codeText(
                                             "parkour-tag-area.begin-game-progress-1",
-                                            MessageConfig.PARKOUR_TAG_ACTION_BAR_COUNT_DOWN.replace(
-                                                    "%time%", CoreMessages.bossBarTime(timer)),
+                                            ParkourTagMessages.PARKOUR_TAG_ACTION_BAR_COUNT_DOWN
+                                                    .replace(
+                                                            "%time%",
+                                                            CoreMessages.bossBarTime(timer)),
                                             chasers),
                                     timer,
                                     getGameConfig().getTimer());
@@ -407,8 +410,8 @@ public class ParkourTagArea extends BasePairedGameInstance {
         cleanInventoryForAllGamePlayers();
 
         announceGameEnd(
-                MessageConfig.PARKOUR_TAG_GAME_END_TITLE,
-                MessageConfig.PARKOUR_TAG_GAME_END_SUBTITLE);
+                ParkourTagMessages.PARKOUR_TAG_GAME_END_TITLE,
+                ParkourTagMessages.PARKOUR_TAG_GAME_END_SUBTITLE);
 
         setGameStageEnum(GameStageEnum.END);
 
@@ -478,7 +481,7 @@ public class ParkourTagArea extends BasePairedGameInstance {
         }
 
         String message =
-                MessageConfig.PARKOUR_TAG_SHOW_POINTS
+                ParkourTagMessages.PARKOUR_TAG_SHOW_POINTS
                         .replace("%team%", right.getColoredName())
                         .replace("%team_points%", LegacyText.formatPoints(getTeamPoints(right)))
                         .replace("%rival%", left.getColoredName())
@@ -507,7 +510,7 @@ public class ParkourTagArea extends BasePairedGameInstance {
         ItemMeta featherMeta = feather.getItemMeta();
         if (featherMeta != null) {
             featherMeta.displayName(
-                    LegacyText.component(MessageConfig.PARKOUR_TAG_KITS_FEATHER)
+                    LegacyText.component(ParkourTagMessages.PARKOUR_TAG_KITS_FEATHER)
                             .decoration(TextDecoration.ITALIC, false));
             feather.setItemMeta(featherMeta);
         }
@@ -521,7 +524,7 @@ public class ParkourTagArea extends BasePairedGameInstance {
         ItemMeta enderEyeMeta = enderEye.getItemMeta();
         if (enderEyeMeta != null) {
             enderEyeMeta.displayName(
-                    LegacyText.component(MessageConfig.PARKOUR_TAG_KITS_ENDER_EYE)
+                    LegacyText.component(ParkourTagMessages.PARKOUR_TAG_KITS_ENDER_EYE)
                             .decoration(TextDecoration.ITALIC, false));
             enderEye.setItemMeta(enderEyeMeta);
         }
@@ -732,7 +735,8 @@ public class ParkourTagArea extends BasePairedGameInstance {
         ParkourTagManager manager = plugin.getGameManager().getParkourTagManager();
         if (!manager.canBeChaser(uuid)) {
             player.sendMessage(
-                    LegacyText.translateColorCodes(MessageConfig.PARKOUR_TAG_BECOME_CHASER_FAILED));
+                    LegacyText.translateColorCodes(
+                            ParkourTagMessages.PARKOUR_TAG_BECOME_CHASER_FAILED));
             return;
         }
         ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(uuid);
@@ -755,10 +759,10 @@ public class ParkourTagArea extends BasePairedGameInstance {
                                 .getChaserTimes(player.getUniqueId());
         String message =
                 remaining <= 0
-                        ? MessageConfig.PARKOUR_TAG_BECOME_CHASER_FAILED
+                        ? ParkourTagMessages.PARKOUR_TAG_BECOME_CHASER_FAILED
                         : remaining == 1
-                                ? MessageConfig.PARKOUR_TAG_CHASER_SELECTION_LAST
-                                : MessageConfig.PARKOUR_TAG_CHASER_SELECTION_REMAINING.replace(
+                                ? ParkourTagMessages.PARKOUR_TAG_CHASER_SELECTION_LAST
+                                : ParkourTagMessages.PARKOUR_TAG_CHASER_SELECTION_REMAINING.replace(
                                         "%times%", String.valueOf(remaining));
         player.sendMessage(LegacyText.translateColorCodes(message));
     }
@@ -774,8 +778,8 @@ public class ParkourTagArea extends BasePairedGameInstance {
                                 - 1);
         String message =
                 remaining == 0
-                        ? MessageConfig.PARKOUR_TAG_BECOME_CHASER_LAST
-                        : MessageConfig.PARKOUR_TAG_BECOME_CHASER;
+                        ? ParkourTagMessages.PARKOUR_TAG_BECOME_CHASER_LAST
+                        : ParkourTagMessages.PARKOUR_TAG_BECOME_CHASER;
         return message.replace("%player%", playerName)
                 .replace("%times%", String.valueOf(remaining));
     }
@@ -789,7 +793,7 @@ public class ParkourTagArea extends BasePairedGameInstance {
         ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
         if (team == null) return;
         if (!plugin.getGameManager().getParkourTagManager().canUseEnderEye(team)) {
-            player.sendMessage(MessageConfig.PARKOUR_TAG_KITS_USE_ENDER_EYE_FAILED);
+            player.sendMessage(ParkourTagMessages.PARKOUR_TAG_KITS_USE_ENDER_EYE_FAILED);
             return;
         }
 
@@ -797,13 +801,13 @@ public class ParkourTagArea extends BasePairedGameInstance {
         if (team.equals(match.getRight())) {
             chaser = match.getLeftAreaChaserPlayer();
             for (Player escapee : match.getLeftAreaEscapees()) {
-                escapee.sendMessage(MessageConfig.PARKOUR_TAG_KITS_USE_ENDER_EYE);
+                escapee.sendMessage(ParkourTagMessages.PARKOUR_TAG_KITS_USE_ENDER_EYE);
                 escapee.setCooldown(Material.ENDER_EYE, 200);
             }
         } else if (team.equals(match.getLeft())) {
             chaser = match.getRightAreaChaserPlayer();
             for (Player escapee : match.getRightAreaEscapees()) {
-                escapee.sendMessage(MessageConfig.PARKOUR_TAG_KITS_USE_ENDER_EYE);
+                escapee.sendMessage(ParkourTagMessages.PARKOUR_TAG_KITS_USE_ENDER_EYE);
                 escapee.setCooldown(Material.ENDER_EYE, 200);
             }
         }
@@ -836,7 +840,7 @@ public class ParkourTagArea extends BasePairedGameInstance {
             addPlayerPoints(assailant.getUniqueId(), 6);
 
             String message =
-                    MessageConfig.PARKOUR_TAG_CATCH_PLAYER
+                    ParkourTagMessages.PARKOUR_TAG_CATCH_PLAYER
                             .replace("%player%", CoreMessages.formatPlayerName(victim))
                             .replace("%chaser%", CoreMessages.formatPlayerName(assailant));
             sendMessageToChaserArea(match, assailant.getUniqueId(), message);
@@ -859,7 +863,7 @@ public class ParkourTagArea extends BasePairedGameInstance {
     private void updateAndAnnounce(ParkourTagMatch match) {
         for (ChampionshipTeam caught : match.updateTeamSurviveTimes(elapsed())) {
             String message =
-                    MessageConfig.PARKOUR_TAG_WHOLE_TEAM_WAS_KILLED.replace(
+                    ParkourTagMessages.PARKOUR_TAG_WHOLE_TEAM_WAS_KILLED.replace(
                             "%team%", caught.getColoredName());
             // A team's escapees play in the OPPOSITE cage, so announce there.
             if (caught.equals(match.getRight())) sendMessageToLeftArea(match, message);
@@ -960,7 +964,7 @@ public class ParkourTagArea extends BasePairedGameInstance {
         if (getGameStageEnum() != GameStageEnum.PROGRESS) return;
         if (!isChaser(player)) {
             sendMessageToAllGamePlayers(
-                    MessageConfig.PARKOUR_TAG_PLAYER_LEAVE.replace(
+                    ParkourTagMessages.PARKOUR_TAG_PLAYER_LEAVE.replace(
                             "%player%", CoreMessages.formatPlayerName(player)));
             handleEscapeeQuit(player);
         }

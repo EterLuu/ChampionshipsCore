@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.spectate;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
@@ -124,12 +126,6 @@ class SpectatorDestinationTest {
                                     case "isDead" -> false;
                                     default -> null;
                                 });
-    }
-
-    private static <T> T allocate(Class<T> type) throws Exception {
-        var field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-        field.setAccessible(true);
-        return type.cast(((sun.misc.Unsafe) field.get(null)).allocateInstance(type));
     }
 
     private static void set(Class<?> type, Object target, String name, Object value)

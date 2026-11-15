@@ -2,10 +2,12 @@ package ink.ziip.championshipscore.api.game.area.prepare.buildmart;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.ConfigurationStateExtension;
+import ink.ziip.championshipscore.configuration.config.message.BuildMartMessages;
 
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
@@ -13,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+@ExtendWith(ConfigurationStateExtension.class)
 class BuildMartBlueprintWorkshopTest {
     @TempDir Path directory;
 
@@ -39,7 +42,7 @@ class BuildMartBlueprintWorkshopTest {
 
     @Test
     void concurrentEditAndNameCollisionCannotOverwriteAnotherSubmission() throws Exception {
-        MessageConfig.BUILD_MART_EDITOR_CONFLICT = "conflict";
+        BuildMartMessages.BUILD_MART_EDITOR_CONFLICT = "conflict";
         Path file = directory.resolve("new.yml");
         BuildMartBlueprintWorkshop.save(file, null, "新建筑", 1, List.of("new"), () -> false);
         byte[] first = Files.readAllBytes(file);
@@ -60,7 +63,7 @@ class BuildMartBlueprintWorkshopTest {
 
     @Test
     void cancelledSessionDoesNotWriteAndCleansAnyPendingTemporaryFile() throws Exception {
-        MessageConfig.BUILD_MART_EDITOR_CANCELLED = "cancelled";
+        BuildMartMessages.BUILD_MART_EDITOR_CANCELLED = "cancelled";
         Path file = directory.resolve("cancelled.yml");
         assertThrows(
                 IOException.class,

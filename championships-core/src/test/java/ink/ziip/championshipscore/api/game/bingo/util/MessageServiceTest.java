@@ -17,6 +17,26 @@ class MessageServiceTest {
     @TempDir Path directory;
 
     @Test
+    void bothLocalesProvideAllFrozenTimedRemixAnnouncements() throws Exception {
+        for (String locale : java.util.List.of("zh_CN", "en_US")) {
+            var service = ink.ziip.championshipscore.support.BingoMessages.open(directory, locale);
+            try {
+                for (String key :
+                        java.util.List.of(
+                                "remix.blind-revealed",
+                                "remix.finale-locked",
+                                "remix.variation-refreshed")) {
+                    org.junit.jupiter.api.Assertions.assertTrue(
+                            service.has(key), locale + ":" + key);
+                    org.junit.jupiter.api.Assertions.assertNotEquals(key, service.tr(key));
+                }
+            } finally {
+                service.close();
+            }
+        }
+    }
+
+    @Test
     void formatsColoursInsertedByArgumentsAsWellAsTheTemplate() {
         String message = MessageService.format("&e获胜者：{0}", "&#123abcAlice");
         assertEquals("获胜者：Alice", LegacyText.plainText(message));

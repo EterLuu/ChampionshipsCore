@@ -8,7 +8,7 @@ import java.lang.reflect.Proxy;
 public final class TestObjects {
     private TestObjects() {}
 
-    public static Field field(Class<?> type, String name) throws ReflectiveOperationException {
+    public static Field field(Class<?> type, String name) throws NoSuchFieldException {
         for (Class<?> current = type; current != null; current = current.getSuperclass()) {
             try {
                 Field field = current.getDeclaredField(name);

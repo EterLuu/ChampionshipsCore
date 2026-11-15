@@ -4,7 +4,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
 import net.kyori.adventure.text.Component;
@@ -47,7 +47,7 @@ public class SelectedBlockStep extends PrepareStep {
             selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, true);
         } catch (Exception e) {
             return CoreMessages.formatAdminError(
-                    MessageConfig.MAP_EDITOR_STEP_SELECT_ONE_BLOCK_FIRST);
+                    MapEditorMessages.MAP_EDITOR_STEP_SELECT_ONE_BLOCK_FIRST);
         }
         Vector min = Vector.getMinimum(selection[0], selection[1]);
         Vector max = Vector.getMaximum(selection[0], selection[1]);
@@ -55,12 +55,12 @@ public class SelectedBlockStep extends PrepareStep {
                 || min.getBlockY() != max.getBlockY()
                 || min.getBlockZ() != max.getBlockZ())
             return CoreMessages.formatAdminError(
-                    MessageConfig.MAP_EDITOR_STEP_SELECTION_MUST_BE_ONE_BLOCK);
+                    MapEditorMessages.MAP_EDITOR_STEP_SELECTION_MUST_BE_ONE_BLOCK);
         setter.accept(
                 session.getTarget(),
                 new Location(player.getWorld(), min.getBlockX(), min.getBlockY(), min.getBlockZ()));
         session.markDirty();
         return CoreMessages.formatAdminSuccess(
-                MessageConfig.MAP_EDITOR_STEP_SELECTED_BLOCK_RECORDED);
+                MapEditorMessages.MAP_EDITOR_STEP_SELECTED_BLOCK_RECORDED);
     }
 }

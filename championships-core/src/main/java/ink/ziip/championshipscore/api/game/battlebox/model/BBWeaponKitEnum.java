@@ -1,6 +1,6 @@
 package ink.ziip.championshipscore.api.game.battlebox.model;
 
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.BattleBoxMessages;
 
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -16,10 +16,10 @@ public enum BBWeaponKitEnum {
 
     @Override
     public String toString() {
-        if (this == ARMOR) return MessageConfig.BATTLE_BOX_KITS_ARMOR;
-        if (this == SPEED) return MessageConfig.BATTLE_BOX_KITS_SPEED;
-        if (this == HEAL) return MessageConfig.BATTLE_BOX_KITS_HEAL;
-        if (this == PULL) return MessageConfig.BATTLE_BOX_KITS_PULL;
+        if (this == ARMOR) return BattleBoxMessages.BATTLE_BOX_KITS_ARMOR;
+        if (this == SPEED) return BattleBoxMessages.BATTLE_BOX_KITS_SPEED;
+        if (this == HEAL) return BattleBoxMessages.BATTLE_BOX_KITS_HEAL;
+        if (this == PULL) return BattleBoxMessages.BATTLE_BOX_KITS_PULL;
         return "Unknown";
     }
 }

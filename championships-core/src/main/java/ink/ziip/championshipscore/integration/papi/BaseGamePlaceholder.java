@@ -3,7 +3,7 @@ package ink.ziip.championshipscore.integration.papi;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.ScoreMessages;
 
 import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.Nullable;
@@ -66,12 +66,12 @@ public abstract class BaseGamePlaceholder<T extends BaseGameInstance> extends Ba
         if (params.startsWith("area_status_")) {
             T area = resolveArea(params, "area_status_", offlinePlayer);
             return area == null
-                    ? MessageConfig.PLACEHOLDER_NONE
+                    ? ScoreMessages.PLACEHOLDER_NONE
                     : area.getGameStageEnum().toString();
         }
         if (params.startsWith("area_timer_")) {
             T area = resolveArea(params, "area_timer_", offlinePlayer);
-            return area == null ? MessageConfig.PLACEHOLDER_NONE : areaTimer(area);
+            return area == null ? ScoreMessages.PLACEHOLDER_NONE : areaTimer(area);
         }
         return onGameRequest(offlinePlayer, params);
     }

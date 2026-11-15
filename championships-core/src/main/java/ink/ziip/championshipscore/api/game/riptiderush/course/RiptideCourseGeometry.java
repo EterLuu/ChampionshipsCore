@@ -84,6 +84,12 @@ public final class RiptideCourseGeometry {
         return (int) Math.round((index + 1D) * totalSteps / (levelCount + 1D));
     }
 
+    /** Preserve the map anchor and direction while resolving a round's chosen finish. */
+    public RiptideCourseGeometry withLength(int steps) {
+        if (steps < 16 || steps > 4096) throw new IllegalArgumentException("invalid course length");
+        return new RiptideCourseGeometry(start, stepX, stepZ, steps, floorY, halfWidth, halfLength);
+    }
+
     public @NotNull Location centerAt(int forwardStep) {
         return new Location(
                 start.getWorld(),

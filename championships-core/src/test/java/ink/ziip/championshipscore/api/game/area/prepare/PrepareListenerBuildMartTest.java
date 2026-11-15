@@ -1,5 +1,9 @@
 package ink.ziip.championshipscore.api.game.area.prepare;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+import static ink.ziip.championshipscore.support.TestObjects.proxy;
+import static ink.ziip.championshipscore.support.TestObjects.set;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.api.game.area.prepare.buildmart.BuildMartBlueprintWorkshop;
@@ -18,7 +22,6 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Proxy;
 import java.util.List;
 
 class PrepareListenerBuildMartTest {
@@ -143,22 +146,5 @@ class PrepareListenerBuildMartTest {
                 Block.class,
                 (p, m, a) ->
                         m.getName().equals("getLocation") ? new Location(WORLD, x, y, z) : null);
-    }
-
-    private static <T> T proxy(Class<T> type, java.lang.reflect.InvocationHandler handler) {
-        return type.cast(
-                Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[] {type}, handler));
-    }
-
-    private static <T> T allocate(Class<T> type) throws Exception {
-        var field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-        field.setAccessible(true);
-        return type.cast(((sun.misc.Unsafe) field.get(null)).allocateInstance(type));
-    }
-
-    private static void set(Object object, String field, Object value) throws Exception {
-        var f = object.getClass().getDeclaredField(field);
-        f.setAccessible(true);
-        f.set(object, value);
     }
 }

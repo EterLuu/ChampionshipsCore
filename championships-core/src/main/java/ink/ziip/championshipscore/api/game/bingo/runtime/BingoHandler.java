@@ -463,7 +463,13 @@ public class BingoHandler extends BaseListener {
         if (stage != GameStageEnum.PREPARATION && stage != GameStageEnum.PROGRESS) return;
         // Vanilla respawns a bedless player at the main-world spawn (the lobby); redirect into the
         // bingo world so a death mid-round doesn't drop the player out of the running game.
-        Location respawn = bingoArea.getRespawnLocation();
+        Location respawn =
+                ink.ziip.championshipscore.platform.bukkit.bingo.BingoRespawnLocations
+                        .eventDestination(
+                                event,
+                                bingoArea.isGameplayParticipant(player),
+                                ink.ziip.championshipscore.util.world.WorldManager::isBingoWorld,
+                                bingoArea::getRespawnLocation);
         if (respawn != null && respawn.getWorld() != null) {
             event.setRespawnLocation(respawn);
         }

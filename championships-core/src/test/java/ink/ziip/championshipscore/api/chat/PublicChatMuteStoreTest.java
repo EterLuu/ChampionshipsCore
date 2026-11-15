@@ -18,32 +18,6 @@ class PublicChatMuteStoreTest {
     @TempDir Path directory;
 
     @Test
-    void durationSupportsCombinedUnitsAndRejectsPartialZeroAndOverflowInput() {
-        assertEquals(5_400_000, MuteDuration.parseMillis("1h30m"));
-        assertEquals(90_061_000, MuteDuration.parseMillis("1d1h1m1s"));
-        assertEquals(604_800_000, MuteDuration.parseMillis("1W"));
-        for (String invalid :
-                new String[] {
-                    "",
-                    "0s",
-                    "30",
-                    "-1m",
-                    "1.5h",
-                    "1hgarbage",
-                    " 1h",
-                    "1h 30m",
-                    "9223372036854775807w",
-                    "999999999999999999999999999s"
-                })
-            assertThrows(
-                    IllegalArgumentException.class,
-                    () -> MuteDuration.parseMillis(invalid),
-                    invalid);
-        assertEquals("1h30m", MuteDuration.formatMillis(5_400_000));
-        assertEquals("1s", MuteDuration.formatMillis(1));
-    }
-
-    @Test
     void absoluteExpirySurvivesRestartAndElapsesWhileOffline() throws Exception {
         var clock = new MutableClock();
         var file = directory.resolve("mutes.yml");

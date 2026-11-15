@@ -59,6 +59,8 @@ public class GameManagerHandler extends BaseListener {
         UUID uuid = player.getUniqueId();
         if (plugin.getGameManager().getSpectatorManager().isSpectatorLike(uuid)) return;
         if (plugin.getGameManager().isWaitingForNextRound(uuid)) {
+            BaseGameInstance held = plugin.getGameManager().getNextRoundHoldArea(uuid);
+            long generation = held == null ? -1L : held.captureGameGeneration();
             event.setKeepInventory(true);
             event.getDrops().clear();
             event.setDroppedExp(0);
@@ -67,13 +69,46 @@ public class GameManagerHandler extends BaseListener {
                     .runTask(
                             plugin,
                             () -> {
+                                if (!plugin.isLoaded()
+                                        || held == null
+                                        || held.isDisposed()
+                                        || held.captureGameGeneration() != generation
+                                        || plugin.getServer().getPlayer(uuid) != player
+                                        || plugin.getGameManager().getNextRoundHoldArea(uuid)
+                                                != held) return;
                                 player.spigot().respawn();
-                                plugin.getGameManager().restoreNextRoundHold(player);
+                                if (held.captureGameGeneration() == generation
+                                        && plugin.getGameManager().getNextRoundHoldArea(uuid)
+                                                == held)
+                                    plugin.getGameManager().restoreNextRoundHold(player);
                             });
             return;
         }
         BaseGameInstance baseArea = plugin.getGameManager().getBasePlayerArea(uuid);
         if (baseArea != null) {
+            if (baseArea.isPostGamePending()) {
+                event.setKeepInventory(true);
+                event.getDrops().clear();
+                event.setDroppedExp(0);
+                long generation = baseArea.captureGameGeneration();
+                BaseGameInstance finished = baseArea;
+                plugin.getServer()
+                        .getScheduler()
+                        .runTask(
+                                plugin,
+                                () -> {
+                                    if (!plugin.isLoaded()
+                                            || finished.isDisposed()
+                                            || plugin.getServer().getPlayer(uuid) != player
+                                            || finished.captureGameGeneration() != generation
+                                            || !finished.isPostGamePending()
+                                            || plugin.getGameManager().getBasePlayerArea(uuid)
+                                                    != finished) return;
+                                    player.spigot().respawn();
+                                    finished.restorePostGameParticipant(player);
+                                });
+                return;
+            }
             if (baseArea.isSharedPreGameRecoveryPhase()) {
                 event.setKeepInventory(true);
                 event.setKeepLevel(true);
@@ -142,13 +177,7 @@ public class GameManagerHandler extends BaseListener {
         if (baseArea != null) {
             plugin.getGameManager().getSpectatorManager().beforeParticipantJoin(player, baseArea);
             if (baseArea.restoreSharedPreGameParticipant(player)) return;
-            if (baseArea.getGameStageEnum()
-                            == ink.ziip.championshipscore.api.game.model.GameStageEnum.END
-                    && baseArea.isPostGamePending()) {
-                // A reconnect during the result window must not revive game inventory or mode.
-                baseArea.sanitizeParticipantForLobby(player, true);
-                return;
-            }
+            if (baseArea.restorePostGameParticipant(player)) return;
             baseArea.handlePlayerJoin(event);
             return;
         }
@@ -221,6 +250,21 @@ public class GameManagerHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onLobbyFall(PlayerMoveEvent event) {
         if (!positionChanged(event)) return;
+        Player moving = event.getPlayer();
+        if (!(event instanceof PlayerTeleportEvent)
+                && plugin.getGameManager().isWaitingForNextRound(moving.getUniqueId())
+                && !plugin.getGameManager()
+                        .getSpectatorManager()
+                        .isSpectatorLike(moving.getUniqueId())) {
+            // A terrain reset may remove the block beneath a waiting player. Keep the round-end
+            // position until the next arena adopts them, without returning them to the lobby.
+            org.bukkit.Location waiting = event.getFrom().clone();
+            waiting.setYaw(event.getTo().getYaw());
+            waiting.setPitch(event.getTo().getPitch());
+            event.setTo(waiting);
+            moving.setFallDistance(0F);
+            return;
+        }
         BaseGameInstance routedArea = routedArea(event);
         if (routedArea != null) {
             routedArea.routePlayerMoveLow(event);
@@ -289,7 +333,9 @@ public class GameManagerHandler extends BaseListener {
         if (baseArea != null) baseArea.handlePlayerQuit(event);
         baseArea = plugin.getGameManager().getPlayerSpectatorStatus(uuid);
         if (baseArea != null) {
-            if (!baseArea.keepSpectatorAcrossReconnect()) {
+            if (!baseArea.keepSpectatorAcrossReconnect()
+                    && !baseArea.isPostGamePending()
+                    && !plugin.getGameManager().isHeldSpectator(uuid, baseArea)) {
                 plugin.getGameManager().leaveSpectating(player);
             }
             // else: keep tracking so handleSpectatorJoin restores the spectator on reconnect; the

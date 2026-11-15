@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.sulfursoccer.runtime;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
@@ -61,12 +63,8 @@ class SulfurSoccerHandlerTest {
 
         @BeforeEach
         void setup() throws Exception {
-            var field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-            field.setAccessible(true);
-            area =
-                    (SulfurSoccerArea)
-                            ((sun.misc.Unsafe) field.get(null))
-                                    .allocateInstance(SulfurSoccerArea.class);
+
+            area = allocate(SulfurSoccerArea.class);
             set(area, "rightChampionshipTeam", new Team(1, right.getUniqueId()));
             set(area, "leftChampionshipTeam", new Team(2, left.getUniqueId()));
             set(area, "gameStageEnum", GameStageEnum.COUNTDOWN);
@@ -441,12 +439,8 @@ class SulfurSoccerHandlerTest {
 
         @BeforeEach
         void setup() throws Exception {
-            var field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-            field.setAccessible(true);
-            var plugin =
-                    (ChampionshipsCore)
-                            ((sun.misc.Unsafe) field.get(null))
-                                    .allocateInstance(ChampionshipsCore.class);
+
+            var plugin = allocate(ChampionshipsCore.class);
             config = new SulfurSoccerConfig(plugin, "soccer");
             config.setRightTeamColorBlocks(List.of("-24:88:-8"));
             config.setLeftTeamColorBlocks(List.of("24:88:8"));

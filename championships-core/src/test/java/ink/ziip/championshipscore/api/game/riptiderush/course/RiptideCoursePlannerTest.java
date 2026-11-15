@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptideColorFloorRun;
 import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptideMathRun;
 import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptideQuestion;
+import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptideSideSweep;
 import ink.ziip.championshipscore.api.game.riptiderush.support.RiptideTestFixtures;
 
 import org.junit.jupiter.api.Nested;
@@ -136,12 +137,14 @@ class RiptideCoursePlannerTest {
         }
 
         @Test
-        void sampledCoursesRespectCountsBandsTransitionsAndTimeBudget() throws Exception {
+        void sampledCoursesRespectCountsBandsTransitionsGroupsUseCapsAndTimeBudget()
+                throws Exception {
             var c = config();
             var g = c.resolveGeometry();
             var sequences = new HashSet<List<String>>();
             Set<String> shapes = new HashSet<>();
             Set<String> operations = new HashSet<>();
+            int groups = 0, sweeps = 0;
             for (long seed = 0; seed < 8; seed++) {
                 var plan = RiptideCoursePlanner.plan(c, seed);
                 assertEquals(
@@ -201,6 +204,40 @@ class RiptideCoursePlannerTest {
                                 previous.template().designKey(previous.variant()),
                                 level.template().designKey(level.variant()));
                 }
+                // Physical use caps count side walls too; groups trial as one shared boundary.
+                var uses = new HashMap<String, Integer>();
+                for (var level : plan.levels()) {
+                    if (level.isSideSweep()) {
+                        sweeps++;
+                        assertEquals(
+                                RiptideSideSweep.wallCount(g.stoppedStep(level.step()), 500),
+                                level.sideWalls().size());
+                        for (var wall : level.sideWalls())
+                            uses.merge(wall.template().id(), 1, Integer::sum);
+                        assertEquals(List.of(level), plan.trialLevels(level));
+                    } else uses.merge(level.template().id(), 1, Integer::sum);
+                    if (level.wallGroup() > 0) {
+                        var selected = plan.trialLevels(level);
+                        assertTrue(selected.size() >= 2);
+                        assertTrue(
+                                selected.stream()
+                                        .allMatch(w -> w.wallGroup() == level.wallGroup()));
+                        if (level.rhythm().equals("FINAL_TRIPLE")) assertEquals(3, selected.size());
+                        else {
+                            groups++;
+                            assertEquals(
+                                    selected.size(),
+                                    selected.stream()
+                                            .map(w -> w.template().designKey(w.variant()))
+                                            .distinct()
+                                            .count());
+                        }
+                    }
+                }
+                for (var template : c.resolvePool())
+                    assertTrue(
+                            uses.getOrDefault(template.id(), 0) <= template.maxUses(),
+                            "seed=" + seed + " template=" + template.id());
                 assertEquals(
                         RiptideCoursePlanner.estimateTicks(c, g, plan.levels()),
                         plan.estimatedTicks());
@@ -208,6 +245,8 @@ class RiptideCoursePlannerTest {
                 sequences.add(
                         plan.levels().stream().map(l -> l.type() + ":" + l.variant()).toList());
             }
+            assertTrue(groups > 0);
+            assertTrue(sweeps > 0);
             assertEquals(8, sequences.size());
             assertTrue(shapes.contains("CUSTOM"));
             assertEquals(new HashSet<>(RiptideQuestion.variants()), operations);
@@ -489,6 +528,122 @@ class RiptideCoursePlannerTest {
             assertEquals(Set.of(1, 2, 3), side);
             assertEquals(Set.of(false, true), frontMirrors);
             assertEquals(Set.of(false, true), sideMirrors);
+        }
+    }
+
+    @Nested
+    class AdaptiveLayoutCases {
+        @Test
+        void expandsWithinReserveWithoutDroppingQuotasAndReplaysTheSamePlan() throws Exception {
+            var c = config();
+            c.setAdaptiveLayout(true);
+            c.setMinimumCourseLength(400);
+            c.setMaximumCourseLength(650);
+            var originalFinish = c.getFinishPoint().clone();
+            for (long seed : List.of(1L, 42L, -17L)) {
+                var plan = RiptideCoursePlanner.plan(c, seed);
+                var g = c.resolveGeometry(plan);
+                assertTrue(plan.totalSteps() > 400 && plan.totalSteps() <= 650);
+                assertEquals(
+                        32,
+                        plan.levels().stream()
+                                .map(RiptideCoursePlan.Level::number)
+                                .distinct()
+                                .count());
+                assertTrue(plan.estimatedTicks() < (c.getTimer() - c.getTimeReserveSeconds()) * 20);
+                assertEquals(
+                        plan.estimatedTicks(),
+                        RiptideCoursePlanner.estimateTicks(c, g, plan.levels()));
+                assertTrue(
+                        RiptideCoursePlanner.minimumTransitionSeconds(c, plan)
+                                >= c.getTransitionSeconds());
+                assertEquals(originalFinish, c.getFinishPoint());
+                assertTrue(RiptideWallGroups.uniqueWalls(plan.levels()));
+                for (int index = 1; index < plan.levels().size(); index++)
+                    assertTrue(
+                            RiptideCoursePlanner.safeTransition(
+                                    c, g, plan.levels().get(index - 1), plan.levels().get(index)));
+                for (var level : plan.levels()) {
+                    assertTrue(g.occupiedStart(level) > g.halfLength());
+                    assertTrue(g.occupiedEnd(level) < g.totalSteps() - g.halfLength());
+                    if (level.type() == RiptideLevelType.PASS && !level.isSideSweep())
+                        assertTrue(
+                                RiptideDifficulty.allowsPass(
+                                        level.template().difficulty(),
+                                        level.step(),
+                                        g.totalSteps()));
+                }
+                if (seed == 1) assertEquals(plan, RiptideCoursePlanner.plan(c, seed));
+            }
+        }
+
+        @Test
+        void defaultStoppedAndRhythmQuotasFitTheAdaptiveTimeBudget() throws Exception {
+            var c = config();
+            var start = c.getStartPoint();
+            var finish = c.getFinishPoint();
+            c.loadFromConfiguration(RiptideTestFixtures.defaults());
+            c.setStartPoint(start);
+            c.setFinishPoint(finish);
+            c.setAdaptiveLayout(true);
+            for (long seed : List.of(1L, -17L, 5L)) {
+                var plan = RiptideCoursePlanner.plan(c, seed);
+                assertEquals(
+                        30,
+                        plan.levels().stream()
+                                .map(RiptideCoursePlan.Level::number)
+                                .distinct()
+                                .count());
+                assertEquals(
+                        8,
+                        plan.levels().stream().filter(RiptideCoursePlan.Level::stopsRaft).count());
+                assertTrue(plan.totalSteps() >= 500 && plan.totalSteps() <= 650);
+                assertTrue(plan.estimatedTicks() < 6400);
+                assertTrue(RiptideCoursePlanner.minimumTransitionSeconds(c, plan) >= 1.5);
+            }
+        }
+
+        @Test
+        void insufficientReserveAndTimeRejectInsteadOfReducingTheRequestedCourse()
+                throws Exception {
+            var c = config();
+            c.setAdaptiveLayout(true);
+            c.setMinimumCourseLength(400);
+            c.setMaximumCourseLength(450);
+            assertThrows(IllegalArgumentException.class, () -> RiptideCoursePlanner.plan(c, 1));
+            c.setMinimumCourseLength(500);
+            c.setMaximumCourseLength(500);
+            c.setTimer(30);
+            assertThrows(IllegalArgumentException.class, () -> RiptideCoursePlanner.plan(c, 1));
+            assertEquals(20, c.getPassCount());
+            assertEquals(8, c.getMathCount());
+            assertEquals(4, c.getStoppedCount());
+        }
+
+        @Test
+        void actualLengthAndReservedBoundsFollowAllFourDirections() throws Exception {
+            for (int[] axis : new int[][] {{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
+                var world = new RiptideTestFixtures.TestWorld();
+                var c = RiptideTestFixtures.config(world, axis);
+                c.setAdaptiveLayout(true);
+                var plan =
+                        new RiptideCoursePlan(1, RiptideCoursePlanner.VERSION, 0, List.of(), 575);
+                var g = c.resolveGeometry(plan);
+                assertEquals(
+                        c.getStartPoint().clone().add(axis[0] * 575, 0, axis[1] * 575),
+                        g.centerAt(575));
+                assertEquals(650, c.resolveGenerationGeometry().totalSteps());
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () ->
+                                c.resolveGeometry(
+                                        new RiptideCoursePlan(
+                                                1,
+                                                RiptideCoursePlanner.VERSION,
+                                                0,
+                                                List.of(),
+                                                651)));
+            }
         }
     }
 }

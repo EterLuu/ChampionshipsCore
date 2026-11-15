@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.database.map.MapRecordRenameMigration;
 import ink.ziip.championshipscore.database.map.MapRecordRenameTransaction;
@@ -39,7 +40,8 @@ public final class MapRenameService {
         if (!Bukkit.isPrimaryThread())
             throw new IllegalStateException("Map rename must begin on the main thread");
         if (!renameRunning.compareAndSet(false, true)) {
-            CoreMessages.sendAdminError(sender, MessageConfig.MAP_EDITOR_RENAME_ALREADY_RUNNING);
+            CoreMessages.sendAdminError(
+                    sender, MapEditorMessages.MAP_EDITOR_RENAME_ALREADY_RUNNING);
             return;
         }
 
@@ -69,7 +71,7 @@ public final class MapRenameService {
             renameRunning.set(false);
             CoreMessages.sendAdminError(
                     sender,
-                    MessageConfig.MAP_EDITOR_RENAME_TARGET_CONFIG_EXISTS.replace(
+                    MapEditorMessages.MAP_EDITOR_RENAME_TARGET_CONFIG_EXISTS.replace(
                             "%file%", String.valueOf(newPath.getFileName())));
             return;
         }
@@ -88,12 +90,13 @@ public final class MapRenameService {
                 buildMartWorldPlan == null ? oldWorldName : buildMartWorldPlan.newWorldName();
         if (!manager.detachAreaForRename(oldName)) {
             renameRunning.set(false);
-            CoreMessages.sendAdminError(sender, MessageConfig.MAP_EDITOR_RENAME_DETACH_FAILED);
+            CoreMessages.sendAdminError(sender, MapEditorMessages.MAP_EDITOR_RENAME_DETACH_FAILED);
             return;
         }
 
         CoreMessages.sendAdminInfo(
-                sender, MessageConfig.MAP_EDITOR_RENAME_DETACH_WAITING.replace("%map%", oldName));
+                sender,
+                MapEditorMessages.MAP_EDITOR_RENAME_DETACH_WAITING.replace("%map%", oldName));
         RenameContext context =
                 new RenameContext(
                         sender,
@@ -117,24 +120,24 @@ public final class MapRenameService {
 
     private String validate(
             BaseGameInstanceManager<?> manager, GameTypeEnum game, String oldName, String newName) {
-        if (manager == null) return MessageConfig.MAP_EDITOR_RENAME_NO_MANAGER;
-        if (oldName == null) return MessageConfig.MAP_EDITOR_RENAME_SOURCE_MISSING;
+        if (manager == null) return MapEditorMessages.MAP_EDITOR_RENAME_NO_MANAGER;
+        if (oldName == null) return MapEditorMessages.MAP_EDITOR_RENAME_SOURCE_MISSING;
         if (manager.getMapConfig(oldName) == null)
-            return MessageConfig.MAP_EDITOR_RENAME_SOURCE_NOT_LOADED;
+            return MapEditorMessages.MAP_EDITOR_RENAME_SOURCE_NOT_LOADED;
         if (newName.isBlank() || newName.length() > 32 || newName.matches(".*[\\\\/:*?\"<>|].*"))
-            return MessageConfig.MAP_EDITOR_RENAME_INVALID_NAME;
+            return MapEditorMessages.MAP_EDITOR_RENAME_INVALID_NAME;
         if (newName.equals(".") || newName.equals(".."))
-            return MessageConfig.MAP_EDITOR_RENAME_INVALID_RELATIVE;
-        if (oldName.equalsIgnoreCase(newName)) return MessageConfig.MAP_EDITOR_RENAME_SAME_NAME;
+            return MapEditorMessages.MAP_EDITOR_RENAME_INVALID_RELATIVE;
+        if (oldName.equalsIgnoreCase(newName)) return MapEditorMessages.MAP_EDITOR_RENAME_SAME_NAME;
         if (manager.getAreaNameList().stream().anyMatch(name -> name.equalsIgnoreCase(newName)))
-            return MessageConfig.MAP_EDITOR_RENAME_TARGET_EXISTS.replace("%map%", newName);
+            return MapEditorMessages.MAP_EDITOR_RENAME_TARGET_EXISTS.replace("%map%", newName);
         if (plugin.getPrepareSessionManager().hasActiveSessions())
-            return MessageConfig.MAP_EDITOR_RENAME_PREPARE_ACTIVE;
+            return MapEditorMessages.MAP_EDITOR_RENAME_PREPARE_ACTIVE;
         if (plugin.getScheduleManager().isFormalEventRunning(game))
-            return MessageConfig.MAP_EDITOR_RENAME_EVENT_RUNNING;
+            return MapEditorMessages.MAP_EDITOR_RENAME_EVENT_RUNNING;
         if (!plugin.getGameManager().getSpectatableMapInstances(game, oldName).isEmpty()
                 || !manager.canRenameArea(oldName))
-            return MessageConfig.MAP_EDITOR_RENAME_AREA_RUNNING;
+            return MapEditorMessages.MAP_EDITOR_RENAME_AREA_RUNNING;
         return null;
     }
 
@@ -159,7 +162,7 @@ public final class MapRenameService {
                     .renamePendingAreaRecords(
                             context.game(), context.oldDisplayName(), context.newName())) {
                 throw new IllegalStateException(
-                        MessageConfig.MAP_EDITOR_RENAME_PENDING_SYNC_FAILED);
+                        MapEditorMessages.MAP_EDITOR_RENAME_PENDING_SYNC_FAILED);
             }
             pendingRenamed = true;
             if (context.movesDedicatedBuildMartWorld()) {
@@ -210,7 +213,7 @@ public final class MapRenameService {
                                                     context.newName(), context.newWorldName()));
             if (!loaded)
                 throw new IllegalStateException(
-                        MessageConfig.MAP_EDITOR_RENAME_NEW_AREA_LOAD_FAILED);
+                        MapEditorMessages.MAP_EDITOR_RENAME_NEW_AREA_LOAD_FAILED);
             transaction.commit();
             plugin.getDailyStatsManager()
                     .renameMap(context.game(), context.oldName(), context.newName());
@@ -218,7 +221,7 @@ public final class MapRenameService {
             finish(
                     context.sender(),
                     true,
-                    MessageConfig.MAP_EDITOR_RENAME_COMPLETED
+                    MapEditorMessages.MAP_EDITOR_RENAME_COMPLETED
                             .replace("%old%", context.oldName())
                             .replace("%new%", context.newName())
                             .replace("%count%", String.valueOf(counts.total())));
@@ -251,7 +254,7 @@ public final class MapRenameService {
                                     context.oldName(),
                                     context.newName()),
                             exception);
-            finish(context.sender(), false, MessageConfig.MAP_EDITOR_RENAME_FAILED_RESTORED);
+            finish(context.sender(), false, MapEditorMessages.MAP_EDITOR_RENAME_FAILED_RESTORED);
         } finally {
             if (transaction != null) {
                 try {

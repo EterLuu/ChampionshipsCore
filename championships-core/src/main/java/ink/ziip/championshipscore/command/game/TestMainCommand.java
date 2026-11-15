@@ -9,6 +9,7 @@ import ink.ziip.championshipscore.api.test.TestSessionManager;
 import ink.ziip.championshipscore.api.test.TestSessionMode;
 import ink.ziip.championshipscore.api.test.TestSessionPlan;
 import ink.ziip.championshipscore.command.BaseMainCommand;
+import ink.ziip.championshipscore.configuration.config.message.AdminMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
@@ -376,7 +377,7 @@ public final class TestMainCommand extends BaseMainCommand {
     private void sendUsage(CommandSender sender) {
         sender.sendMessage(
                 LegacyText.translateColorCodes(
-                        MessageConfig.COMMAND_USAGE
+                        AdminMessages.COMMAND_USAGE
                                 .replace("%usage%", MessageConfig.codeText("test-session.usage"))
                                 .replace(
                                         "%description%",

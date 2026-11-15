@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.command.map;
 import ink.ziip.championshipscore.api.game.area.rename.MapRenameService;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -40,15 +41,16 @@ public final class MapRenameSubCommand extends BaseSubCommand {
         if (game == null) {
             CoreMessages.sendAdminError(
                     sender,
-                    MessageConfig.MAP_EDITOR_COMMAND_UNKNOWN_GAME.replace(
+                    MapEditorMessages.MAP_EDITOR_COMMAND_UNKNOWN_GAME.replace(
                             "%games%", String.join(", ", allGameNames())));
             return true;
         }
         if (!plugin.getGameManager().isGameManagerLoaded(game)) {
-            CoreMessages.sendAdminInfo(sender, MessageConfig.MAP_EDITOR_COMMAND_LOADING_FOR_RENAME);
+            CoreMessages.sendAdminInfo(
+                    sender, MapEditorMessages.MAP_EDITOR_COMMAND_LOADING_FOR_RENAME);
             if (!plugin.getGameManager().loadGameForEditing(game)) {
                 CoreMessages.sendAdminError(
-                        sender, MessageConfig.MAP_EDITOR_COMMAND_MANAGER_LOAD_FAILED);
+                        sender, MapEditorMessages.MAP_EDITOR_COMMAND_MANAGER_LOAD_FAILED);
                 return true;
             }
             plugin.getServer()

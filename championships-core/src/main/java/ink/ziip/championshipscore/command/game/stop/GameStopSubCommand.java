@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.manager.GameManager;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.GameMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
@@ -44,7 +45,7 @@ public final class GameStopSubCommand extends BaseSubCommand {
         GameTypeEnum game = GameTypeEnum.fromCommand(args[0]);
         if (game == null) {
             CoreMessages.sendAdminError(
-                    sender, MessageConfig.GAME_STOP_UNKNOWN_GAME.replace("%game%", args[0]));
+                    sender, GameMessages.GAME_STOP_UNKNOWN_GAME.replace("%game%", args[0]));
             return true;
         }
 
@@ -68,13 +69,13 @@ public final class GameStopSubCommand extends BaseSubCommand {
                             .orElse(MessageConfig.codeText("game-stop-sub-command.on-command-1"));
             CoreMessages.sendAdminError(
                     sender,
-                    MessageConfig.GAME_STOP_INSTANCE_MISSING
+                    GameMessages.GAME_STOP_INSTANCE_MISSING
                             .replace("%token%", args[2])
                             .replace("%available%", available));
             return true;
         }
         if (tokenMatches.size() > 1) {
-            CoreMessages.sendAdminError(sender, MessageConfig.GAME_STOP_INSTANCE_AMBIGUOUS);
+            CoreMessages.sendAdminError(sender, GameMessages.GAME_STOP_INSTANCE_AMBIGUOUS);
             return true;
         }
         BaseGameInstance target = tokenMatches.getFirst();
@@ -111,14 +112,14 @@ public final class GameStopSubCommand extends BaseSubCommand {
         Runnable response =
                 () -> {
                     String target =
-                            MessageConfig.GAME_STOP_INSTANCE
+                            GameMessages.GAME_STOP_INSTANCE
                                     .replace("%game%", game.commandName())
                                     .replace("%area%", area)
                                     .replace("%token%", token);
                     if (failure != null || result == null) {
                         CoreMessages.sendAdminError(
                                 sender,
-                                MessageConfig.GAME_STOP_EXCEPTION.replace("%instance%", target));
+                                GameMessages.GAME_STOP_EXCEPTION.replace("%instance%", target));
                         if (failure != null)
                             plugin.getLogger()
                                     .warning("game stop failed | " + failure.getMessage());
@@ -128,27 +129,27 @@ public final class GameStopSubCommand extends BaseSubCommand {
                         case SETTLEMENT_STARTED ->
                                 CoreMessages.sendAdminSuccess(
                                         sender,
-                                        MessageConfig.GAME_STOP_SETTLED.replace(
+                                        GameMessages.GAME_STOP_SETTLED.replace(
                                                 "%instance%", target));
                         case PRE_START_ABORTED ->
                                 CoreMessages.sendAdminSuccess(
                                         sender,
-                                        MessageConfig.GAME_STOP_ABORTED.replace(
+                                        GameMessages.GAME_STOP_ABORTED.replace(
                                                 "%instance%", target));
                         case NOT_ACTIVE ->
                                 CoreMessages.sendAdminInfo(
                                         sender,
-                                        MessageConfig.GAME_STOP_NOT_ACTIVE.replace(
+                                        GameMessages.GAME_STOP_NOT_ACTIVE.replace(
                                                 "%instance%", target));
                         case NOT_REGISTERED ->
                                 CoreMessages.sendAdminError(
                                         sender,
-                                        MessageConfig.GAME_STOP_REPLACED.replace(
+                                        GameMessages.GAME_STOP_REPLACED.replace(
                                                 "%instance%", target));
                         case FAILED ->
                                 CoreMessages.sendAdminError(
                                         sender,
-                                        MessageConfig.GAME_STOP_FAILED.replace(
+                                        GameMessages.GAME_STOP_FAILED.replace(
                                                 "%instance%", target));
                     }
                 };

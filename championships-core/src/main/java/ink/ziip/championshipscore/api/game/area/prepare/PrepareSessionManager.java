@@ -8,6 +8,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.gui.ListStepGui;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.StepMenuGui;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
@@ -176,11 +177,13 @@ public class PrepareSessionManager extends BaseManager {
             @NotNull Player player, @NotNull GameTypeEnum gameType, @NotNull String name) {
         BaseGameInstanceManager<?> mgr = plugin.getGameManager().getAreaManager(gameType);
         if (mgr == null) {
-            CoreMessages.sendAdminError(player, MessageConfig.MAP_EDITOR_SESSION_GAME_UNAVAILABLE);
+            CoreMessages.sendAdminError(
+                    player, MapEditorMessages.MAP_EDITOR_SESSION_GAME_UNAVAILABLE);
             return;
         }
         if (!mgr.addArea(name, "")) {
-            CoreMessages.sendAdminError(player, MessageConfig.MAP_EDITOR_SESSION_CREATE_CONFLICT);
+            CoreMessages.sendAdminError(
+                    player, MapEditorMessages.MAP_EDITOR_SESSION_CREATE_CONFLICT);
             return;
         }
         var target = mgr.getSetupTarget(gameType, name);
@@ -197,15 +200,15 @@ public class PrepareSessionManager extends BaseManager {
         BaseGameInstanceManager<?> mgr = plugin.getGameManager().getAreaManager(gameType);
         if (mgr == null || mapLocks.containsKey(lockKey(gameType, name))) {
             CoreMessages.sendAdminError(
-                    player, MessageConfig.MAP_EDITOR_SESSION_DELETE_UNAVAILABLE);
+                    player, MapEditorMessages.MAP_EDITOR_SESSION_DELETE_UNAVAILABLE);
             return false;
         }
         if (!mgr.deleteArea(name)) {
-            CoreMessages.sendAdminError(player, MessageConfig.MAP_EDITOR_SESSION_DELETE_FAILED);
+            CoreMessages.sendAdminError(player, MapEditorMessages.MAP_EDITOR_SESSION_DELETE_FAILED);
             return false;
         }
         CoreMessages.sendAdminSuccess(
-                player, MessageConfig.MAP_EDITOR_SESSION_DELETED.replace("%map%", name));
+                player, MapEditorMessages.MAP_EDITOR_SESSION_DELETED.replace("%map%", name));
         return true;
     }
 
@@ -213,7 +216,8 @@ public class PrepareSessionManager extends BaseManager {
             @NotNull Player player, @NotNull GameTypeEnum gameType, @NotNull String areaName) {
         PrepareFlowDefinition flow = flows.get(gameType);
         if (flow == null) {
-            CoreMessages.sendAdminError(player, MessageConfig.MAP_EDITOR_SESSION_UNSUPPORTED_GAME);
+            CoreMessages.sendAdminError(
+                    player, MapEditorMessages.MAP_EDITOR_SESSION_UNSUPPORTED_GAME);
             return;
         }
         BaseGameInstanceManager<?> mgr = plugin.getGameManager().getAreaManager(gameType);
@@ -221,7 +225,7 @@ public class PrepareSessionManager extends BaseManager {
         if (target == null) {
             CoreMessages.sendAdminError(
                     player,
-                    MessageConfig.MAP_EDITOR_SESSION_MAP_MISSING.replace("%map%", areaName));
+                    MapEditorMessages.MAP_EDITOR_SESSION_MAP_MISSING.replace("%map%", areaName));
             return;
         }
         if (sessions.containsKey(player.getUniqueId())) exitSession(player);
@@ -231,7 +235,7 @@ public class PrepareSessionManager extends BaseManager {
             Player editor = Bukkit.getPlayer(owner);
             CoreMessages.sendAdminError(
                     player,
-                    MessageConfig.MAP_EDITOR_SESSION_LOCKED_BY_EDITOR.replace(
+                    MapEditorMessages.MAP_EDITOR_SESSION_LOCKED_BY_EDITOR.replace(
                             "%editor%", editor == null ? String.valueOf(owner) : editor.getName()));
             return;
         }
@@ -246,10 +250,10 @@ public class PrepareSessionManager extends BaseManager {
         teleportToEditorLocation(player, session);
         CoreMessages.sendAdminSuccess(
                 player,
-                MessageConfig.MAP_EDITOR_SESSION_ENTERED
+                MapEditorMessages.MAP_EDITOR_SESSION_ENTERED
                         .replace("%game%", gameType.name())
                         .replace("%map%", areaName));
-        CoreMessages.sendAdminInfo(player, MessageConfig.MAP_EDITOR_SESSION_USAGE_HINT);
+        CoreMessages.sendAdminInfo(player, MapEditorMessages.MAP_EDITOR_SESSION_USAGE_HINT);
         refreshSidebar(player);
     }
 
@@ -264,7 +268,7 @@ public class PrepareSessionManager extends BaseManager {
         restoreSnapshot(player);
         snapshots.remove(player.getUniqueId());
         deleteSnapshotFile(player.getUniqueId());
-        CoreMessages.sendAdminSuccess(player, MessageConfig.MAP_EDITOR_SESSION_EXITED);
+        CoreMessages.sendAdminSuccess(player, MapEditorMessages.MAP_EDITOR_SESSION_EXITED);
         refreshSidebar(player);
     }
 
@@ -295,7 +299,7 @@ public class PrepareSessionManager extends BaseManager {
                 && !session.getFlow().isInCorrectWorld(player, session.getTarget())) {
             CoreMessages.sendAdminError(
                     player,
-                    MessageConfig.MAP_EDITOR_SESSION_GO_TO_WORLD.replace(
+                    MapEditorMessages.MAP_EDITOR_SESSION_GO_TO_WORLD.replace(
                             "%world%", session.getTarget().worldName()));
             return;
         }
@@ -368,11 +372,11 @@ public class PrepareSessionManager extends BaseManager {
                 if (!validate(player, session, true)) return;
                 if (!session.getTarget().canSaveMap()) {
                     CoreMessages.sendAdminError(
-                            player, MessageConfig.MAP_EDITOR_SESSION_PUBLISH_INSTANCE_RUNNING);
+                            player, MapEditorMessages.MAP_EDITOR_SESSION_PUBLISH_INSTANCE_RUNNING);
                     return;
                 }
                 CoreMessages.sendAdminInfo(
-                        player, MessageConfig.MAP_EDITOR_SESSION_PUBLISH_STARTED);
+                        player, MapEditorMessages.MAP_EDITOR_SESSION_PUBLISH_STARTED);
                 UUID playerId = player.getUniqueId();
                 session.getFlow()
                         .publish(session)
@@ -399,17 +403,17 @@ public class PrepareSessionManager extends BaseManager {
         if (!session.getFlow().isInCorrectWorld(player, session.getTarget())) {
             CoreMessages.sendAdminError(
                     player,
-                    MessageConfig.MAP_EDITOR_SESSION_GO_TO_WORLD.replace(
+                    MapEditorMessages.MAP_EDITOR_SESSION_GO_TO_WORLD.replace(
                             "%world%", session.getTarget().worldName()));
             return;
         }
         if (!session.getTarget().canSaveMap()) {
             CoreMessages.sendAdminError(
-                    player, MessageConfig.MAP_EDITOR_SESSION_SAVE_INSTANCE_RUNNING);
+                    player, MapEditorMessages.MAP_EDITOR_SESSION_SAVE_INSTANCE_RUNNING);
             return;
         }
         session.markDirty();
-        CoreMessages.sendAdminInfo(player, MessageConfig.MAP_EDITOR_SESSION_SAVE_STARTED);
+        CoreMessages.sendAdminInfo(player, MapEditorMessages.MAP_EDITOR_SESSION_SAVE_STARTED);
         UUID playerId = player.getUniqueId();
         session.getFlow()
                 .saveDraft(session)
@@ -431,7 +435,7 @@ public class PrepareSessionManager extends BaseManager {
         Player player = Bukkit.getPlayer(playerId);
         if (player == null || sessions.get(playerId) != session) return;
         if (!saved) {
-            CoreMessages.sendAdminError(player, MessageConfig.MAP_EDITOR_SESSION_SAVE_FAILED);
+            CoreMessages.sendAdminError(player, MapEditorMessages.MAP_EDITOR_SESSION_SAVE_FAILED);
             PrepareModeInventory.refresh(player, session);
             return;
         }
@@ -444,7 +448,7 @@ public class PrepareSessionManager extends BaseManager {
         player.setAllowFlight(true);
         player.setFlying(true);
         PrepareModeInventory.refresh(player, session);
-        CoreMessages.sendAdminSuccess(player, MessageConfig.MAP_EDITOR_SESSION_SAVED);
+        CoreMessages.sendAdminSuccess(player, MapEditorMessages.MAP_EDITOR_SESSION_SAVED);
         refreshSidebar(player);
     }
 
@@ -454,7 +458,8 @@ public class PrepareSessionManager extends BaseManager {
         Player player = Bukkit.getPlayer(playerId);
         if (player == null || sessions.get(playerId) != session) return;
         if (!published) {
-            CoreMessages.sendAdminError(player, MessageConfig.MAP_EDITOR_SESSION_PUBLISH_FAILED);
+            CoreMessages.sendAdminError(
+                    player, MapEditorMessages.MAP_EDITOR_SESSION_PUBLISH_FAILED);
             PrepareModeInventory.refresh(player, session);
             return;
         }
@@ -466,7 +471,7 @@ public class PrepareSessionManager extends BaseManager {
         PrepareModeInventory.refresh(player, session);
         CoreMessages.sendAdminSuccess(
                 player,
-                MessageConfig.MAP_EDITOR_SESSION_PUBLISHED.replace(
+                MapEditorMessages.MAP_EDITOR_SESSION_PUBLISHED.replace(
                         "%revision%",
                         String.valueOf(session.getTarget().config().getPrepareRevision())));
         refreshSidebar(player);
@@ -501,18 +506,18 @@ public class PrepareSessionManager extends BaseManager {
             CoreMessages.sendAdminSuccess(
                     player,
                     forPublish
-                            ? MessageConfig.MAP_EDITOR_SESSION_VALIDATION_PASSED_PUBLISH
-                            : MessageConfig.MAP_EDITOR_SESSION_VALIDATION_PASSED);
+                            ? MapEditorMessages.MAP_EDITOR_SESSION_VALIDATION_PASSED_PUBLISH
+                            : MapEditorMessages.MAP_EDITOR_SESSION_VALIDATION_PASSED);
             return true;
         }
         CoreMessages.sendAdminError(
                 player,
-                MessageConfig.MAP_EDITOR_SESSION_VALIDATION_FAILED.replace(
+                MapEditorMessages.MAP_EDITOR_SESSION_VALIDATION_FAILED.replace(
                         "%count%", String.valueOf(errors.size())));
         for (String error : errors)
             player.sendMessage(
                     LegacyText.translateColorCodes(
-                            MessageConfig.MAP_EDITOR_SESSION_VALIDATION_ERROR.replace(
+                            MapEditorMessages.MAP_EDITOR_SESSION_VALIDATION_ERROR.replace(
                                     "%error%", error)));
         return false;
     }
@@ -522,14 +527,15 @@ public class PrepareSessionManager extends BaseManager {
             @NotNull Player player, @NotNull PrepareSession session) {
         String worldName = session.getFlow().worldName(session.getTarget());
         if (worldName.isBlank()) {
-            CoreMessages.sendAdminInfo(player, MessageConfig.MAP_EDITOR_SESSION_WORLD_NOT_BOUND);
+            CoreMessages.sendAdminInfo(
+                    player, MapEditorMessages.MAP_EDITOR_SESSION_WORLD_NOT_BOUND);
             return false;
         }
         org.bukkit.World world = Bukkit.getWorld(worldName);
         if (world == null) {
             CoreMessages.sendAdminError(
                     player,
-                    MessageConfig.MAP_EDITOR_SESSION_WORLD_NOT_LOADED.replace(
+                    MapEditorMessages.MAP_EDITOR_SESSION_WORLD_NOT_LOADED.replace(
                             "%world%", worldName));
             return false;
         }
@@ -537,11 +543,13 @@ public class PrepareSessionManager extends BaseManager {
         Location destination = session.getFlow().copyZeroLocation(session.getTarget());
         if (destination != null && destination.getWorld() == null) destination.setWorld(world);
         if (destination == null || destination.getWorld() == null) {
-            CoreMessages.sendAdminError(player, MessageConfig.MAP_EDITOR_SESSION_LOCATION_MISSING);
+            CoreMessages.sendAdminError(
+                    player, MapEditorMessages.MAP_EDITOR_SESSION_LOCATION_MISSING);
             return false;
         }
         if (!player.teleport(destination)) {
-            CoreMessages.sendAdminError(player, MessageConfig.MAP_EDITOR_SESSION_TELEPORT_FAILED);
+            CoreMessages.sendAdminError(
+                    player, MapEditorMessages.MAP_EDITOR_SESSION_TELEPORT_FAILED);
             return false;
         }
         player.setGameMode(org.bukkit.GameMode.CREATIVE);
@@ -550,7 +558,7 @@ public class PrepareSessionManager extends BaseManager {
 
         CoreMessages.sendAdminSuccess(
                 player,
-                MessageConfig.MAP_EDITOR_SESSION_TELEPORTED.replace(
+                MapEditorMessages.MAP_EDITOR_SESSION_TELEPORTED.replace(
                         "%location%", session.getFlow().editorLocationName(session.getTarget())));
         return true;
     }
@@ -606,7 +614,7 @@ public class PrepareSessionManager extends BaseManager {
         restorePlayerState(player, snap);
         deleteSnapshotFile(player.getUniqueId());
         snapshots.remove(player.getUniqueId());
-        CoreMessages.sendAdminInfo(player, MessageConfig.MAP_EDITOR_SESSION_SNAPSHOT_RESTORED);
+        CoreMessages.sendAdminInfo(player, MapEditorMessages.MAP_EDITOR_SESSION_SNAPSHOT_RESTORED);
     }
 
     private void saveSnapshotFile(@NotNull UUID id, @NotNull Snapshot snap) {

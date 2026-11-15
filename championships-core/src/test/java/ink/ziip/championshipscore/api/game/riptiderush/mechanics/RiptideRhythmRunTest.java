@@ -280,6 +280,51 @@ class RiptideRhythmRunTest {
     @Nested
     class RiptideRhythmGateCases {
         @Test
+        void newPatternsAreDistinctEvenAfterMirroringOrShiftingTheBeat() {
+            var additions =
+                    Set.of(
+                            "TWIN_ORBIT",
+                            "CENTER_RELEASE",
+                            "EDGE_RELAY",
+                            "THREE_LANES",
+                            "SPLIT_HOLD",
+                            "TRAVEL_PAUSE",
+                            "NARROW_WIDE",
+                            "CHECKER_PULSE",
+                            "SIDE_LOCK",
+                            "CENTER_ECHO");
+            var variants = RiptideLevelTemplate.variants(RiptideLevelType.RHYTHM);
+            assertTrue(variants.containsAll(additions));
+            for (var variant : additions) {
+                var expected = rhythmFrames(variant, false, 0);
+                assertTrue(expected.stream().anyMatch(mask -> mask != 0), variant);
+                for (var other : variants) {
+                    if (other.equals("AUTO") || other.equals(variant)) continue;
+                    for (boolean mirror : List.of(false, true))
+                        for (int shift = 0; shift < 64; shift++)
+                            assertNotEquals(
+                                    expected,
+                                    rhythmFrames(other, mirror, shift),
+                                    variant + " duplicates " + other);
+                }
+            }
+        }
+
+        private List<Integer> rhythmFrames(String variant, boolean mirror, int shift) {
+            var frames = new ArrayList<Integer>();
+            for (int tick = 0; tick < 64; tick++) {
+                int mask = 0;
+                for (int lateral = -3; lateral <= 3; lateral++)
+                    for (int y = 1; y <= 3; y++)
+                        if (RiptideRhythmGate.opening(
+                                variant, mirror, tick + shift, 5.5, lateral, y))
+                            mask |= 1 << ((lateral + 3) * 3 + y - 1);
+                frames.add(mask);
+            }
+            return frames;
+        }
+
+        @Test
         void allPatternsRepeatAndOfferFullBodyPassageAtEverySpeed() {
             for (double speed : List.of(2.2, 2.95, 3.7, 4.45, 5.2, 5.5)) {
                 int cycle = RiptideRhythmGate.cycleTicks(speed);
@@ -303,6 +348,12 @@ class RiptideRhythmRunTest {
                                     open,
                                     RiptideRhythmGate.opening(
                                             variant, true, tick, speed, -lateral, 1));
+                            for (int y : List.of(2, 3))
+                                assertEquals(
+                                        open,
+                                        RiptideRhythmGate.opening(
+                                                variant, false, tick, speed, lateral, y),
+                                        variant);
                             if (open) mask |= 1 << (lateral + 3);
                         }
                         if (mask != previous) {

@@ -18,7 +18,7 @@ import java.util.Random;
 
 /** Bounded, deterministic planning. No world mutation or player state is consulted. */
 public final class RiptideCoursePlanner {
-    public static final int VERSION = 29;
+    public static final int VERSION = 30;
 
     private RiptideCoursePlanner() {}
 
@@ -70,19 +70,39 @@ public final class RiptideCoursePlanner {
     }
 
     public static RiptideCoursePlan plan(RiptideRushConfig config, long seed) {
-        var geometry = config.resolveGeometry();
+        var geometry = config.resolveGenerationGeometry();
         var stoppedAllocation = config.stoppedAllocation(seed);
         List<RiptideLevelTemplate> pool = validateInputs(config, geometry, stoppedAllocation);
         int count =
                 Arrays.stream(RiptideLevelType.values())
                         .mapToInt(type -> quota(config, type, stoppedAllocation))
                         .sum();
-        return plan(config, seed, geometry, stoppedAllocation, pool, count);
+        int minimum =
+                config.isAdaptiveLayout() ? config.getMinimumCourseLength() : geometry.totalSteps();
+        // At most seven complete searches, including the exact reserved endpoint.
+        int increment = Math.max(1, (geometry.totalSteps() - minimum + 5) / 6);
+        for (int length = minimum; ; length = Math.min(geometry.totalSteps(), length + increment)) {
+            var candidate = geometry.withLength(length);
+            if (length / (count + 1D)
+                    >= Math.max(config.getMinimumLevelSpacing(), geometry.raftLength() + 5)) {
+                var result = plan(config, seed, candidate, stoppedAllocation, pool, count);
+                if (result != null) return result;
+            }
+            if (length == geometry.totalSteps()) break;
+        }
+        throw new IllegalArgumentException(
+                config.isAdaptiveLayout()
+                        ? MessageConfig.codeText(
+                                "riptide-course-planner.adaptive-no-fit",
+                                minimum,
+                                geometry.totalSteps(),
+                                config.getTimer() - config.getTimeReserveSeconds())
+                        : MessageConfig.codeText("riptide-course-planner.plan-1"));
     }
 
     /** Checks configuration and pool capacity without attempting a course arrangement. */
     public static void validateInputs(RiptideRushConfig config, long seed) {
-        validateInputs(config, config.resolveGeometry(), config.stoppedAllocation(seed));
+        validateInputs(config, config.resolveGenerationGeometry(), config.stoppedAllocation(seed));
     }
 
     private static List<RiptideLevelTemplate> validateInputs(
@@ -168,13 +188,30 @@ public final class RiptideCoursePlanner {
             levels = RiptideFinalStage.arrange(config, geometry, levels, random);
             if (levels == null || !RiptideWallGroups.uniqueWalls(levels)) continue;
             int ticks = estimateTicks(config, geometry, levels);
-            if (ticks >= config.getTimer() * 20L) {
+            int reserve = config.isAdaptiveLayout() ? config.getTimeReserveSeconds() : 0;
+            if (ticks >= (config.getTimer() - reserve) * 20L) {
                 attemptLimit = 640;
                 continue;
             }
-            return new RiptideCoursePlan(seed, VERSION, ticks, levels, geometry.totalSteps());
+            var result = new RiptideCoursePlan(seed, VERSION, ticks, levels, geometry.totalSteps());
+            if (config.isAdaptiveLayout()) {
+                boolean fits =
+                        geometry.occupiedStart(result.levels().getFirst())
+                                        > geometry.halfLength() + 2
+                                && geometry.occupiedEnd(result.levels().getLast())
+                                        < geometry.totalSteps() - geometry.halfLength();
+                for (int i = 1; fits && i < result.levels().size(); i++)
+                    fits =
+                            safeTransition(
+                                    config,
+                                    geometry,
+                                    result.levels().get(i - 1),
+                                    result.levels().get(i));
+                if (!fits) continue;
+            }
+            return result;
         }
-        throw new IllegalArgumentException(MessageConfig.codeText("riptide-course-planner.plan-1"));
+        return null;
     }
 
     public static int quota(RiptideRushConfig config, RiptideLevelType type) {
@@ -399,6 +436,15 @@ public final class RiptideCoursePlanner {
                                 random.nextLong());
                 if (!out.isEmpty() && !RiptideWallGroups.distinctPassages(out.getLast(), level, g))
                     continue;
+                if (!out.isEmpty() && c.isAdaptiveLayout() && step < g.totalSteps() * .8) {
+                    int band = RiptideDifficulty.stage(step, g.totalSteps());
+                    while (!safeTransition(c, g, out.getLast(), level)
+                            && RiptideDifficulty.stage(level.step(), g.totalSteps()) == band) {
+                        level = level.withStep(level.step() + 1);
+                    }
+                    if (RiptideDifficulty.stage(level.step(), g.totalSteps()) != band) continue;
+                    if (variant.equals("DOUBLE") && !safeMathPair(c, g, t, level.step())) continue;
+                }
                 if (!out.isEmpty()
                         && step < g.totalSteps() * .8
                         && !safeTransition(c, g, out.getLast(), level)) continue;
@@ -516,6 +562,13 @@ public final class RiptideCoursePlanner {
             RiptideCoursePlan.Level first,
             RiptideCoursePlan.Level second) {
         int gap = g.occupiedStart(second) - g.occupiedEnd(first);
+        boolean sameGroup = first.wallGroup() != 0 && first.wallGroup() == second.wallGroup();
+        if (c.isAdaptiveLayout()
+                && !sameGroup
+                && first.number() != second.number()
+                && (gap < c.getClearanceBlocks()
+                        || gap / speedAt(c, g, second.step() + second.extent())
+                                < c.getTransitionSeconds())) return false;
         if (!RiptideWallGroups.distinctPassages(first, second, g)) return false;
         if (first.type() == RiptideLevelType.PASS
                 && second.type() == RiptideLevelType.PASS
@@ -572,6 +625,23 @@ public final class RiptideCoursePlanner {
 
     public static double speedAt(RiptideRushConfig c, RiptideCourseGeometry g, int step) {
         return c.speedAtProgress(step / (double) g.totalSteps());
+    }
+
+    public static double minimumTransitionSeconds(RiptideRushConfig c, RiptideCoursePlan plan) {
+        var g = c.resolveGeometry(plan);
+        double minimum = Double.POSITIVE_INFINITY;
+        for (int i = 1; i < plan.levels().size(); i++) {
+            var first = plan.levels().get(i - 1);
+            var second = plan.levels().get(i);
+            if (first.number() == second.number()
+                    || first.wallGroup() != 0 && first.wallGroup() == second.wallGroup()) continue;
+            minimum =
+                    Math.min(
+                            minimum,
+                            (g.occupiedStart(second) - g.occupiedEnd(first))
+                                    / speedAt(c, g, second.step() + second.extent()));
+        }
+        return Double.isFinite(minimum) ? minimum : 0;
     }
 
     /**

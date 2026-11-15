@@ -24,6 +24,8 @@ import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.game.spatial.ReplicatedSpatialLayout;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.config.message.GameMessages;
+import ink.ziip.championshipscore.configuration.config.message.LaserBoxMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.platform.bukkit.scoreboard.TeamColors;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
@@ -522,15 +524,15 @@ public final class LaserBoxArea extends BasePairedGameInstance {
                         if (firstRoundGunSelectionWindow) openGunMenu(player);
                     }
                     announceGamePreparation(
-                            MessageConfig.LASER_BOX_START_PREPARATION,
-                            MessageConfig.LASER_BOX_START_PREPARATION_TITLE,
-                            MessageConfig.LASER_BOX_START_PREPARATION_SUBTITLE);
+                            LaserBoxMessages.LASER_BOX_START_PREPARATION,
+                            LaserBoxMessages.LASER_BOX_START_PREPARATION_TITLE,
+                            LaserBoxMessages.LASER_BOX_START_PREPARATION_SUBTITLE);
                     if (firstRoundGunSelectionWindow)
                         startFinalCountdown(
                                 15,
-                                MessageConfig.GAME_LASER_BOX,
-                                MessageConfig.LASER_BOX_GAME_START_TITLE,
-                                MessageConfig.LASER_BOX_GAME_START_SUBTITLE,
+                                GameMessages.GAME_LASER_BOX,
+                                LaserBoxMessages.LASER_BOX_GAME_START_TITLE,
+                                LaserBoxMessages.LASER_BOX_GAME_START_SUBTITLE,
                                 false,
                                 false,
                                 this::finishGunSelectionCountdown);
@@ -547,9 +549,9 @@ public final class LaserBoxArea extends BasePairedGameInstance {
 
     private void startFormalGameCountdown() {
         startFinalCountdown(
-                MessageConfig.GAME_LASER_BOX,
-                MessageConfig.LASER_BOX_GAME_START_TITLE,
-                MessageConfig.LASER_BOX_GAME_START_SUBTITLE,
+                GameMessages.GAME_LASER_BOX,
+                LaserBoxMessages.LASER_BOX_GAME_START_TITLE,
+                LaserBoxMessages.LASER_BOX_GAME_START_SUBTITLE,
                 this::begin);
     }
 
@@ -1026,7 +1028,7 @@ public final class LaserBoxArea extends BasePairedGameInstance {
                                 ? LaserEquipmentItems.name("strike")
                                 : owner == null
                                         ? MessageConfig.codeText("laser-box-area.hit-1")
-                                        : MessageConfig.LASER_BOX_SPECIAL_ATTACK_NAME
+                                        : LaserBoxMessages.LASER_BOX_SPECIAL_ATTACK_NAME
                         : LaserGunItems.gunName(weapon);
         String attackerName =
                 owner == null
@@ -1331,7 +1333,7 @@ public final class LaserBoxArea extends BasePairedGameInstance {
 
     private void updateHud() {
         String title =
-                MessageConfig.LASER_BOX_BOSS_BAR
+                LaserBoxMessages.LASER_BOX_BOSS_BAR
                         .replace("%right_team%", rightChampionshipTeam.getColoredName())
                         .replace("%left_team%", leftChampionshipTeam.getColoredName())
                         .replace("%right%", Integer.toString(getRightProgress()))
@@ -1372,13 +1374,13 @@ public final class LaserBoxArea extends BasePairedGameInstance {
             addPlayerPointsToDatabase();
             sendMessageToAllGamePlayers(
                     winner == null
-                            ? MessageConfig.LASER_BOX_DRAW
-                            : MessageConfig.LASER_BOX_WINNER.replace(
+                            ? LaserBoxMessages.LASER_BOX_DRAW
+                            : LaserBoxMessages.LASER_BOX_WINNER.replace(
                                     "%team%", winner.getColoredName()));
         }
         announceGameEnd(
-                MessageConfig.LASER_BOX_END_TITLE,
-                MessageConfig.LASER_BOX_END_SUBTITLE
+                LaserBoxMessages.LASER_BOX_END_TITLE,
+                LaserBoxMessages.LASER_BOX_END_SUBTITLE
                         .replace("%right%", Integer.toString(getRightProgress()))
                         .replace("%left%", Integer.toString(getLeftProgress())));
         setGameStageEnum(GameStageEnum.END);

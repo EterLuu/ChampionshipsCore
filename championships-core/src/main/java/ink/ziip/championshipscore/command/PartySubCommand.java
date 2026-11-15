@@ -2,6 +2,8 @@ package ink.ziip.championshipscore.command;
 
 import ink.ziip.championshipscore.api.daily.DailyParty;
 import ink.ziip.championshipscore.api.daily.DailyPartyManager;
+import ink.ziip.championshipscore.configuration.config.message.AdminMessages;
+import ink.ziip.championshipscore.configuration.config.message.DailyMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
@@ -33,7 +35,7 @@ public final class PartySubCommand extends BaseSubCommand {
             @NotNull String label,
             @NotNull String[] args) {
         if (!(sender instanceof Player player)) {
-            CoreMessages.sendAdminError(sender, MessageConfig.COMMAND_PLAYER_ONLY);
+            CoreMessages.sendAdminError(sender, AdminMessages.COMMAND_PLAYER_ONLY);
             return true;
         }
         if (args.length < 1) {
@@ -50,36 +52,36 @@ public final class PartySubCommand extends BaseSubCommand {
                 }
                 Player target = Bukkit.getPlayerExact(args[1]);
                 if (target == null || !parties.invite(uuid, target.getUniqueId())) {
-                    message(sender, MessageConfig.DAILY_PARTY_INVITE_FAILED);
+                    message(sender, DailyMessages.DAILY_PARTY_INVITE_FAILED);
                     return true;
                 }
                 message(
                         sender,
-                        MessageConfig.DAILY_PARTY_INVITE_SENT.replace(
+                        DailyMessages.DAILY_PARTY_INVITE_SENT.replace(
                                 "%target%", target.getName()));
                 message(
                         target,
-                        MessageConfig.DAILY_PARTY_INVITE_RECEIVED.replace(
+                        DailyMessages.DAILY_PARTY_INVITE_RECEIVED.replace(
                                 "%player%", player.getName()));
             }
             case "accept" -> {
                 DailyParty party = parties.accept(uuid);
-                if (party == null) message(sender, MessageConfig.DAILY_PARTY_NO_INVITE);
+                if (party == null) message(sender, DailyMessages.DAILY_PARTY_NO_INVITE);
                 else
                     broadcast(
                             party.members(),
-                            MessageConfig.DAILY_PARTY_MEMBER_JOINED_BROADCAST.replace(
+                            DailyMessages.DAILY_PARTY_MEMBER_JOINED_BROADCAST.replace(
                                     "%player%", player.getName()));
             }
             case "leave" -> {
                 DailyParty party = parties.getParty(uuid);
                 if (party == null || !parties.leave(uuid))
-                    message(sender, MessageConfig.DAILY_PARTY_NOT_MEMBER_OR_PLAYING);
+                    message(sender, DailyMessages.DAILY_PARTY_NOT_MEMBER_OR_PLAYING);
                 else {
-                    message(sender, MessageConfig.DAILY_PARTY_LEFT_COMMAND);
+                    message(sender, DailyMessages.DAILY_PARTY_LEFT_COMMAND);
                     broadcast(
                             party.members(),
-                            MessageConfig.DAILY_PARTY_MEMBER_LEFT_BROADCAST.replace(
+                            DailyMessages.DAILY_PARTY_MEMBER_LEFT_BROADCAST.replace(
                                     "%player%", player.getName()));
                 }
             }
@@ -87,13 +89,13 @@ public final class PartySubCommand extends BaseSubCommand {
                 DailyParty party = parties.getParty(uuid);
                 Set<UUID> members = party == null ? Set.of() : party.members();
                 if (!parties.disband(uuid))
-                    message(sender, MessageConfig.DAILY_PARTY_DISBAND_DENIED);
-                else broadcast(members, MessageConfig.DAILY_PARTY_DISBANDED_COMMAND);
+                    message(sender, DailyMessages.DAILY_PARTY_DISBAND_DENIED);
+                else broadcast(members, DailyMessages.DAILY_PARTY_DISBANDED_COMMAND);
             }
             case "info" -> {
                 DailyParty party = parties.getParty(uuid);
                 if (party == null) {
-                    message(sender, MessageConfig.DAILY_PARTY_NONE);
+                    message(sender, DailyMessages.DAILY_PARTY_NONE);
                     return true;
                 }
                 String names =
@@ -109,7 +111,7 @@ public final class PartySubCommand extends BaseSubCommand {
                 String leader = Bukkit.getOfflinePlayer(party.leader()).getName();
                 message(
                         sender,
-                        MessageConfig.DAILY_PARTY_INFO
+                        DailyMessages.DAILY_PARTY_INFO
                                 .replace(
                                         "%leader%",
                                         leader == null ? party.leader().toString() : leader)

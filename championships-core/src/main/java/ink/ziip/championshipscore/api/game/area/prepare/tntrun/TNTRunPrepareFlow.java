@@ -13,7 +13,7 @@ import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.api.game.tntrun.config.TNTRunConfig;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -111,7 +111,8 @@ public class TNTRunPrepareFlow extends PrepareFlowDefinition {
                         Material.ELYTRA,
                         t -> cfg(t).getCopySpawn() != null,
                         (t, loc) -> cfg(t).setCopySpawn(loc),
-                        CoreMessages.formatAdminSuccess(MessageConfig.MAP_EDITOR_TNT_SPAWN_SET)),
+                        CoreMessages.formatAdminSuccess(
+                                MapEditorMessages.MAP_EDITOR_TNT_SPAWN_SET)),
                 new StandAndRunStep(
                         "spectator_spawn",
                         LegacyText.component(
@@ -125,7 +126,7 @@ public class TNTRunPrepareFlow extends PrepareFlowDefinition {
                         t -> cfg(t).getSpectatorSpawnPoint() != null,
                         (t, loc) -> cfg(t).setSpectatorSpawnPoint(loc),
                         CoreMessages.formatAdminSuccess(
-                                MessageConfig.MAP_EDITOR_STEP_SPECTATOR_SPAWN_POINT_SET)));
+                                MapEditorMessages.MAP_EDITOR_STEP_SPECTATOR_SPAWN_POINT_SET)));
     }
 
     private static TNTRunConfig cfg(SetupTarget target) {

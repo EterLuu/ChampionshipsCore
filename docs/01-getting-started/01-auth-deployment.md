@@ -43,6 +43,10 @@ AuthBridge 的 `access.admission-owner`：
 
 AuthProxy 使用 `offline-cache.enabled` 和 `offline-cache.max-stale-hours` 控制已同步档案的故障回退。未知玩家仍被拒绝；鉴权错误和非法响应不会触发离线回退。
 
+当 Core/Worker 使用会在重建时改变 IP 的 Docker 容器名时，在 AuthProxy 配置中设置 `backend-routing.resolve-on-connect: [cc, bingo]`（列表使用 Bungee `servers` 中的实际名称）。AuthProxy 在代理完整启动、接收玩家前保留这些后端的主机名，让 Netty 在新连接时解析地址，避免 Bungee 长期保存启动时的 IP。解析仍遵循 JVM DNS 缓存策略；短暂 DNS 缓存过期后可重新尝试连接。默认空列表沿用 Bungee 行为，静态地址无需开启。
+
+该配置保留后端名称、端口、MOTD 和访问限制，不改变身份校验及转服协议。修改列表或后端地址后须完整重启代理，不支持在线替换已有玩家所属的 ServerInfo；不要用代理配置热重载发布这些修改。部署只需更新 AuthProxy 与该配置，Core 和 Worker 不需要同步升级协议。
+
 ## 身份一致性检查
 
 1. 根据登录链路设置 Core `identity.mode`：独立离线服为 `OFFLINE`，档案登录链路为 `PROFILE_UUID`。

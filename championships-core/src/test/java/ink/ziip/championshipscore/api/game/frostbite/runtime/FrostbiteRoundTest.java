@@ -2,8 +2,12 @@ package ink.ziip.championshipscore.api.game.frostbite.runtime;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 class FrostbiteRoundTest {
@@ -30,7 +34,7 @@ class FrostbiteRoundTest {
         }
     }
 
-    private List<List<UUID>> teams(int count) {
+    private static List<List<UUID>> teams(int count) {
         return java.util.stream.IntStream.range(0, count)
                 .mapToObj(
                         t ->
@@ -280,5 +284,156 @@ class FrostbiteRoundTest {
         g.selfFreeze(a, 0, 100);
         assertTrue(g.freeze(a, b, 1, 100));
         assertNull(g.instantKill(a, b, 2));
+    }
+
+    @Nested
+    class RankingRewards {
+        private static final List<Integer> RANK_POINTS =
+                List.of(60, 55, 50, 45, 40, 35, 30, 25, 20, 15, 10);
+
+        private void kills(
+                FrostbiteRound round, List<List<UUID>> teams, int team, int member, int count) {
+            UUID killer = teams.get(team).get(member);
+            UUID victim = teams.get((team + 1) % teams.size()).get(member);
+            for (int kill = 0; kill < count; kill++)
+                assertEquals(killer, round.instantKill(killer, victim, kill));
+        }
+
+        /** Every rostered member, including those without kills, receives their team's reward. */
+        private void assertRewards(
+                Map<UUID, Integer> rewards, List<List<UUID>> teams, int... perTeam) {
+            Map<UUID, Integer> expected = new HashMap<>();
+            for (int team = 0; team < perTeam.length; team++)
+                for (UUID member : teams.get(team)) expected.put(member, perTeam[team]);
+            assertEquals(expected, rewards);
+        }
+
+        @Test
+        void ranksByAllFourMembersKillsAndAwardsEveryMember() {
+            var teams = teams(4);
+            var round = new FrostbiteRound(teams, 0);
+            for (int member = 0; member < 4; member++) kills(round, teams, 0, member, 1);
+            kills(round, teams, 1, 0, 3);
+            kills(round, teams, 2, 0, 2);
+            kills(round, teams, 3, 0, 1);
+
+            assertRewards(round.rankingRewards(RANK_POINTS), teams, 60, 55, 50, 45);
+        }
+
+        @Test
+        void paysSixtyThroughTenAndNothingFromTwelfthPlace() {
+            var teams = teams(16);
+            var round = new FrostbiteRound(teams, 0);
+            for (int team = 0; team < 16; team++) kills(round, teams, team, 0, team);
+
+            assertRewards(
+                    round.rankingRewards(RANK_POINTS),
+                    teams,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    10,
+                    15,
+                    20,
+                    25,
+                    30,
+                    35,
+                    40,
+                    45,
+                    50,
+                    55,
+                    60);
+        }
+
+        @Test
+        void equalTeamKillsShareRewardsAndNextTeamSkipsTheOccupiedPlaces() {
+            var teams = teams(4);
+            var round = new FrostbiteRound(teams, 0);
+            kills(round, teams, 0, 0, 2);
+            kills(round, teams, 1, 0, 2);
+            kills(round, teams, 2, 0, 1);
+
+            assertRewards(round.rankingRewards(RANK_POINTS), teams, 60, 60, 50, 45);
+        }
+
+        @Test
+        void teamsTiedForEleventhBothReceiveTenAndLowerTeamsReceiveNothing() {
+            var teams = teams(16);
+            var round = new FrostbiteRound(teams, 0);
+            for (int team = 0; team < 16; team++)
+                kills(round, teams, team, 0, team == 11 ? 6 : 16 - team);
+
+            assertRewards(
+                    round.rankingRewards(RANK_POINTS),
+                    teams,
+                    60,
+                    55,
+                    50,
+                    45,
+                    40,
+                    35,
+                    30,
+                    25,
+                    20,
+                    15,
+                    10,
+                    10,
+                    0,
+                    0,
+                    0,
+                    0);
+        }
+
+        @Test
+        void freezingWithoutAKillDoesNotImproveTeamRank() {
+            var teams = teams(4);
+            var round = new FrostbiteRound(teams, 0);
+            kills(round, teams, 1, 0, 1);
+            assertTrue(round.freeze(teams.get(0).get(1), teams.get(2).get(1), 0, 100));
+            assertTrue(round.freeze(teams.get(0).get(2), teams.get(3).get(2), 0, 100));
+
+            assertEquals(0, round.kills(teams.get(0).get(1)));
+            assertRewards(round.rankingRewards(RANK_POINTS), teams, 55, 60, 55, 55);
+        }
+
+        @Test
+        void departingPlayersKeepTheirKillsAndRewardsAndNextRoundStartsItsOwnRanking() {
+            var teams = teams(4);
+            var round = new FrostbiteRound(teams, 0);
+            kills(round, teams, 0, 0, 2);
+            kills(round, teams, 1, 0, 1);
+            UUID departed = teams.get(0).get(0);
+            assertNull(round.leave(departed));
+            assertFalse(round.active(departed));
+
+            assertRewards(round.rankingRewards(RANK_POINTS), teams, 60, 55, 50, 50);
+            var nextRound = new FrostbiteRound(teams, 1);
+            assertTrue(nextRound.kills().isEmpty());
+            assertRewards(nextRound.rankingRewards(RANK_POINTS), teams, 60, 60, 60, 60);
+        }
+
+        @Test
+        void bundledConfigurationUsesSixPointsPerKillAndTheStandardRankTable() throws Exception {
+            var resource = getClass().getClassLoader().getResourceAsStream("frostbite/area.yml");
+            assertNotNull(resource);
+            YamlConfiguration configuration;
+            try (var reader = new InputStreamReader(resource, StandardCharsets.UTF_8)) {
+                configuration = YamlConfiguration.loadConfiguration(reader);
+            }
+            assertEquals(6, configuration.getInt("points-per-kill"));
+            assertEquals(RANK_POINTS, configuration.getIntegerList("rank-points-per-player"));
+        }
+
+        @Test
+        void honorsTheConfiguredRewardTableWithoutExtendingItsLastReward() {
+            var teams = teams(3);
+            var round = new FrostbiteRound(teams, 0);
+            kills(round, teams, 0, 0, 2);
+            kills(round, teams, 1, 0, 1);
+
+            assertRewards(round.rankingRewards(List.of(12, 4)), teams, 12, 4, 0);
+        }
     }
 }

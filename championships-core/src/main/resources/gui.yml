@@ -860,6 +860,56 @@ map-editor:
               lore: ["前三拍保持开放，最后一拍突然收回", "点击选择"]
               material: "BELL"
               states: { selected: { title: "后拍回收（当前）", glint: true } }
+            option-twin-orbit:
+              title: "双星公转"
+              lore: ["双侧单格 → 内侧双单格 → 中央单格 → 内侧双单格", "点击选择"]
+              material: "ENDER_PEARL"
+              states: { selected: { title: "双星公转（当前）", glint: true } }
+            option-center-release:
+              title: "中心放流"
+              lore: ["中央三格 → 中右五格 → 全开 → 中左五格", "点击选择"]
+              material: "HEART_OF_THE_SEA"
+              states: { selected: { title: "中心放流（当前）", glint: true } }
+            option-edge-relay:
+              title: "岸线接力"
+              lore: ["左岸两格 → 左中两格 → 右中两格 → 右岸两格", "点击选择"]
+              material: "PRISMARINE_SHARD"
+              states: { selected: { title: "岸线接力（当前）", glint: true } }
+            option-three-lanes:
+              title: "三径轮转"
+              lore: ["左岸两格 → 中央单格 → 右岸两格 → 中央三格", "点击选择"]
+              material: "QUARTZ"
+              states: { selected: { title: "三径轮转（当前）", glint: true } }
+            option-split-hold:
+              title: "双岸延音"
+              lore: ["双岸保持两拍 → 中央三格 → 全开", "点击选择"]
+              material: "PRISMARINE_BRICKS"
+              states: { selected: { title: "双岸延音（当前）", glint: true } }
+            option-travel-pause:
+              title: "行进休止"
+              lore: ["左三格 → 中央三格 → 关闭 → 右三格", "点击选择"]
+              material: "CLOCK"
+              states: { selected: { title: "行进休止（当前）", glint: true } }
+            option-narrow-wide:
+              title: "窄宽应答"
+              lore: ["左内单格 → 左三格 → 右内单格 → 右三格", "点击选择"]
+              material: "IRON_BARS"
+              states: { selected: { title: "窄宽应答（当前）", glint: true } }
+            option-checker-pulse:
+              title: "间列脉冲"
+              lore: ["偶数列 → 奇数列 → 中央三格 → 全开", "点击选择"]
+              material: "CHISELED_QUARTZ_BLOCK"
+              states: { selected: { title: "间列脉冲（当前）", glint: true } }
+            option-side-lock:
+              title: "侧门切分"
+              lore: ["左三格 → 关闭 → 右三格 → 中央三格", "点击选择"]
+              material: "IRON_DOOR"
+              states: { selected: { title: "侧门切分（当前）", glint: true } }
+            option-center-echo:
+              title: "中庭回声"
+              lore: ["中央三格 → 左岸两格 → 中央三格 → 右岸两格", "点击选择"]
+              material: "ECHO_SHARD"
+              states: { selected: { title: "中庭回声（当前）", glint: true } }
             option-quick-turn:
               title: "急转弯拍"
               lore: ["左右急转后回到中线，适合连续换边", "点击选择"]
@@ -867,7 +917,7 @@ map-editor:
               states: { selected: { title: "急转弯拍（当前）", glint: true } }
             new-rhythm:
               title: "新增节奏机关"
-              lore: ["创建节拍闸门，可切换二十六种节奏变体"]
+              lore: ["创建节拍闸门，可翻页选择节奏变体"]
               material: "IRON_TRAPDOOR"
             new-dodge:
               title: "新增躲避变体"
@@ -1062,7 +1112,7 @@ map-editor:
               material: "BOOK"
             duration:
               title: "&#ededed预计全程：%value% 秒"
-              lore: ["&#a0a0a0已包含全部踩色停船时间"]
+              lore: ["&#a0a0a0赛道长度：%length% 格", "&#a0a0a0独立关卡：%levels% • 展开挑战：%challenges%", "&#a0a0a0关卡间最短航行：%transition% 秒", "&#a0a0a0已包含全部停船与出发等待时间"]
               material: "CLOCK"
             invalid:
               title: "&#ededed当前配置无法编排"

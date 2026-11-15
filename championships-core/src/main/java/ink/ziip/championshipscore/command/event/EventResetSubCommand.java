@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.command.event;
 
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.EventMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -31,7 +32,7 @@ public final class EventResetSubCommand extends BaseSubCommand {
             return true;
         }
         plugin.getScheduleManager().resetRound();
-        CoreMessages.sendAdminSuccess(sender, MessageConfig.EVENT_RESET_DONE);
+        CoreMessages.sendAdminSuccess(sender, EventMessages.EVENT_RESET_DONE);
         return true;
     }
 

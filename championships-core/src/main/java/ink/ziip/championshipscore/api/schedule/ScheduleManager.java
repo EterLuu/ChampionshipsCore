@@ -9,40 +9,31 @@ import ink.ziip.championshipscore.api.game.dodgebolt.runtime.DodgeboltArea;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.model.GameRunMode;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
-import ink.ziip.championshipscore.api.schedule.acerace.AceRaceScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.acerace.AceRaceScheduleManager;
 import ink.ziip.championshipscore.api.schedule.battlebox.BattleBoxScheduleManager;
-import ink.ziip.championshipscore.api.schedule.bingo.BingoScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.bingo.BingoScheduleManager;
-import ink.ziip.championshipscore.api.schedule.buildmart.BuildMartScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.buildmart.BuildMartScheduleManager;
-import ink.ziip.championshipscore.api.schedule.frostbite.*;
-import ink.ziip.championshipscore.api.schedule.frostbite.FrostbiteScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.frostbite.FrostbiteScheduleManager;
 import ink.ziip.championshipscore.api.schedule.hotycodydusky.HotyCodyDuskyScheduleManager;
 import ink.ziip.championshipscore.api.schedule.laserbox.LaserBoxScheduleManager;
-import ink.ziip.championshipscore.api.schedule.lasershowdown.LaserShowdownScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.lasershowdown.LaserShowdownScheduleManager;
 import ink.ziip.championshipscore.api.schedule.model.TwoVTwoVector;
 import ink.ziip.championshipscore.api.schedule.parkourtag.ParkourTagScheduleManager;
-import ink.ziip.championshipscore.api.schedule.parkourwarrior.ParkourWarriorScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.parkourwarrior.ParkourWarriorScheduleManager;
-import ink.ziip.championshipscore.api.schedule.riptiderush.RiptideRushScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.riptiderush.RiptideRushScheduleManager;
-import ink.ziip.championshipscore.api.schedule.skywars.SkyWarsScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.skywars.SkyWarsScheduleManager;
-import ink.ziip.championshipscore.api.schedule.tgttos.TGTTOSScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.tgttos.TGTTOSScheduleManager;
-import ink.ziip.championshipscore.api.schedule.tntrun.TNTRunScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.tntrun.TNTRunScheduleManager;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.config.message.EventMessages;
+import ink.ziip.championshipscore.configuration.config.message.GameMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.config.message.ScheduleMessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.SulfurSoccerMessages;
 import ink.ziip.championshipscore.logging.LogText;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
-
-import lombok.Getter;
+import ink.ziip.championshipscore.shared.presentation.MessageTemplate;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
@@ -86,7 +77,7 @@ public class ScheduleManager extends BaseManager {
             startSelections = new java.util.EnumMap<>(GameTypeEnum.class);
 
     public java.util.List<ChampionshipTeam> participatingTeams(GameTypeEnum game) {
-        var selected = startSelections == null ? null : startSelections.get(game);
+        var selected = startSelections.get(game);
         return selected == null
                 ? java.util.List.copyOf(plugin.getTeamManager().getTeamList())
                 : selected.teams();
@@ -94,24 +85,26 @@ public class ScheduleManager extends BaseManager {
 
     public ink.ziip.championshipscore.api.game.start.ArenaSelection selectedArenas(
             GameTypeEnum game) {
-        var selected = startSelections == null ? null : startSelections.get(game);
+        var selected = startSelections.get(game);
         return selected == null
                 ? ink.ziip.championshipscore.api.game.start.ArenaSelection.all()
                 : selected.arenas();
     }
 
     public @Nullable String selectedMap(GameTypeEnum game) {
-        var selected = startSelections == null ? null : startSelections.get(game);
+        var selected = startSelections.get(game);
         return selected == null ? null : selected.map();
     }
 
     public void clearStartSelection(GameTypeEnum game) {
-        if (startSelections != null) startSelections.remove(game);
+        startSelections.remove(game);
     }
 
     /** Releases every schedule-owned hold after its listeners and clocks have stopped. */
     public void releaseSchedule(GameTypeEnum game) {
         cancelRoundSettlement(game);
+        if (game == GameTypeEnum.Bingo && plugin.getRemoteBingoManager() != null)
+            plugin.getRemoteBingoManager().releaseFinishedEventMatches();
         clearStartSelection(game);
         clearRoundPreparationCountdown();
         plugin.getGameManager().releaseEventSpectatorsForGame(game);
@@ -186,20 +179,7 @@ public class ScheduleManager extends BaseManager {
     }
 
     private final BukkitScheduler scheduler;
-    @Getter private LaserShowdownScheduleManager laserShowdownScheduleManager;
-    @Getter private SkyWarsScheduleManager skyWarsScheduleManager;
-    @Getter private TNTRunScheduleManager tntRunScheduleManager;
-    @Getter private TGTTOSScheduleManager tgttosScheduleManager;
-    @Getter private BattleBoxScheduleManager battleBoxScheduleManager;
-    @Getter private ParkourTagScheduleManager parkourTagScheduleManager;
-    @Getter private ParkourWarriorScheduleManager parkourWarriorScheduleManager;
-    @Getter private HotyCodyDuskyScheduleManager hotyCodyDuskyScheduleManager;
-    @Getter private BingoScheduleManager bingoScheduleManager;
-    @Getter private AceRaceScheduleManager aceRaceScheduleManager;
-    @Getter private BuildMartScheduleManager buildMartScheduleManager;
-    @Getter private RiptideRushScheduleManager riptideRushScheduleManager;
-    @Getter private FrostbiteScheduleManager frostbiteScheduleManager;
-    @Getter private LaserBoxScheduleManager laserBoxScheduleManager;
+    private Map<GameTypeEnum, FormalSchedule> schedules = Map.of();
     private BukkitTask dodgeboltTransitionTask;
     private BukkitTask dragonEggCarnivalTransitionTask;
     private BukkitTask sulfurSoccerTransitionTask;
@@ -216,47 +196,66 @@ public class ScheduleManager extends BaseManager {
         scheduler = championshipsCore.getServer().getScheduler();
     }
 
+    public LaserShowdownScheduleManager getLaserShowdownScheduleManager() {
+        return (LaserShowdownScheduleManager) schedules.get(GameTypeEnum.LaserShowdown);
+    }
+
+    public SkyWarsScheduleManager getSkyWarsScheduleManager() {
+        return (SkyWarsScheduleManager) schedules.get(GameTypeEnum.SkyWars);
+    }
+
+    public TNTRunScheduleManager getTntRunScheduleManager() {
+        return (TNTRunScheduleManager) schedules.get(GameTypeEnum.TNTRun);
+    }
+
+    public TGTTOSScheduleManager getTgttosScheduleManager() {
+        return (TGTTOSScheduleManager) schedules.get(GameTypeEnum.TGTTOS);
+    }
+
+    public BattleBoxScheduleManager getBattleBoxScheduleManager() {
+        return (BattleBoxScheduleManager) schedules.get(GameTypeEnum.BattleBox);
+    }
+
+    public ParkourTagScheduleManager getParkourTagScheduleManager() {
+        return (ParkourTagScheduleManager) schedules.get(GameTypeEnum.ParkourTag);
+    }
+
+    public ParkourWarriorScheduleManager getParkourWarriorScheduleManager() {
+        return (ParkourWarriorScheduleManager) schedules.get(GameTypeEnum.ParkourWarrior);
+    }
+
+    public HotyCodyDuskyScheduleManager getHotyCodyDuskyScheduleManager() {
+        return (HotyCodyDuskyScheduleManager) schedules.get(GameTypeEnum.HotyCodyDusky);
+    }
+
+    public BingoScheduleManager getBingoScheduleManager() {
+        return (BingoScheduleManager) schedules.get(GameTypeEnum.Bingo);
+    }
+
+    public AceRaceScheduleManager getAceRaceScheduleManager() {
+        return (AceRaceScheduleManager) schedules.get(GameTypeEnum.AceRace);
+    }
+
+    public BuildMartScheduleManager getBuildMartScheduleManager() {
+        return (BuildMartScheduleManager) schedules.get(GameTypeEnum.BuildMart);
+    }
+
+    public RiptideRushScheduleManager getRiptideRushScheduleManager() {
+        return (RiptideRushScheduleManager) schedules.get(GameTypeEnum.RiptideRush);
+    }
+
+    public FrostbiteScheduleManager getFrostbiteScheduleManager() {
+        return (FrostbiteScheduleManager) schedules.get(GameTypeEnum.FrostbiteFrenzy);
+    }
+
+    public LaserBoxScheduleManager getLaserBoxScheduleManager() {
+        return (LaserBoxScheduleManager) schedules.get(GameTypeEnum.LaserBox);
+    }
+
     @Override
     public void load() {
-        laserShowdownScheduleManager =
-                new LaserShowdownScheduleManager(plugin, new LaserShowdownScheduleHandler(plugin));
-        skyWarsScheduleManager =
-                new SkyWarsScheduleManager(plugin, new SkyWarsScheduleHandler(plugin));
-        tntRunScheduleManager =
-                new TNTRunScheduleManager(plugin, new TNTRunScheduleHandler(plugin));
-        tgttosScheduleManager =
-                new TGTTOSScheduleManager(plugin, new TGTTOSScheduleHandler(plugin));
-        battleBoxScheduleManager = new BattleBoxScheduleManager(plugin);
-        parkourTagScheduleManager = new ParkourTagScheduleManager(plugin);
-        parkourWarriorScheduleManager =
-                new ParkourWarriorScheduleManager(
-                        plugin, new ParkourWarriorScheduleHandler(plugin));
-        hotyCodyDuskyScheduleManager = new HotyCodyDuskyScheduleManager(plugin);
-        bingoScheduleManager = new BingoScheduleManager(plugin, new BingoScheduleHandler(plugin));
-        aceRaceScheduleManager =
-                new AceRaceScheduleManager(plugin, new AceRaceScheduleHandler(plugin));
-        buildMartScheduleManager =
-                new BuildMartScheduleManager(plugin, new BuildMartScheduleHandler(plugin));
-        riptideRushScheduleManager =
-                new RiptideRushScheduleManager(plugin, new RiptideRushScheduleHandler(plugin));
-        frostbiteScheduleManager =
-                new FrostbiteScheduleManager(plugin, new FrostbiteScheduleHandler(plugin));
-        laserBoxScheduleManager = new LaserBoxScheduleManager(plugin);
-
-        laserShowdownScheduleManager.load();
-        skyWarsScheduleManager.load();
-        tntRunScheduleManager.load();
-        tgttosScheduleManager.load();
-        battleBoxScheduleManager.load();
-        parkourTagScheduleManager.load();
-        parkourWarriorScheduleManager.load();
-        hotyCodyDuskyScheduleManager.load();
-        bingoScheduleManager.load();
-        aceRaceScheduleManager.load();
-        buildMartScheduleManager.load();
-        riptideRushScheduleManager.load();
-        frostbiteScheduleManager.load();
-        laserBoxScheduleManager.load();
+        schedules = FormalScheduleRegistry.create(plugin);
+        schedules.values().forEach(FormalSchedule::load);
     }
 
     @Override
@@ -273,20 +272,8 @@ public class ScheduleManager extends BaseManager {
         startSelections.clear();
         finaleRequestGeneration++;
         clearRoundPreparationCountdown();
-        laserShowdownScheduleManager.unload();
-        skyWarsScheduleManager.unload();
-        tntRunScheduleManager.unload();
-        tgttosScheduleManager.unload();
-        battleBoxScheduleManager.unload();
-        parkourTagScheduleManager.unload();
-        parkourWarriorScheduleManager.unload();
-        hotyCodyDuskyScheduleManager.unload();
-        bingoScheduleManager.unload();
-        aceRaceScheduleManager.unload();
-        buildMartScheduleManager.unload();
-        riptideRushScheduleManager.unload();
-        frostbiteScheduleManager.unload();
-        laserBoxScheduleManager.unload();
+        schedules.values().forEach(FormalSchedule::unload);
+        schedules = Map.of();
     }
 
     public void addRound(GameTypeEnum gameTypeEnum) {
@@ -301,27 +288,8 @@ public class ScheduleManager extends BaseManager {
      * @return whether this game has an implementation for the formal-event command surface.
      */
     public boolean supportsFormalEvent(@NotNull GameTypeEnum gameTypeEnum) {
-        return switch (gameTypeEnum) {
-            case LaserShowdown,
-                    SkyWars,
-                    TNTRun,
-                    TGTTOS,
-                    ParkourWarrior,
-                    BattleBox,
-                    ParkourTag,
-                    HotyCodyDusky,
-                    Bingo,
-                    DragonEggCarnival,
-                    Dodgebolt,
-                    AceRace,
-                    BuildMart,
-                    RiptideRush,
-                    FrostbiteFrenzy,
-                    LaserBox,
-                    SulfurSoccer ->
-                    true;
-            default -> false;
-        };
+        return FormalScheduleRegistry.supportedGames().contains(gameTypeEnum)
+                || FinaleGameRegistry.isRegistered(gameTypeEnum);
     }
 
     /**
@@ -338,42 +306,15 @@ public class ScheduleManager extends BaseManager {
             stopFormalEvent(gameTypeEnum);
             return EventAction.STOPPED;
         }
-        if (gameTypeEnum == GameTypeEnum.Bingo) {
-            String bingoMap = FormalEventMapResolver.map(plugin, GameTypeEnum.Bingo, 1);
-            if (bingoMap == null
-                    || !plugin.getGameManager().canStartBingo(bingoMap, true, GameRunMode.EVENT)) {
-                return EventAction.UNAVAILABLE;
-            }
-        }
-        switch (gameTypeEnum) {
-            case LaserShowdown -> laserShowdownScheduleManager.startGame();
-            case SkyWars -> skyWarsScheduleManager.startGame();
-            case TNTRun -> tntRunScheduleManager.startGame();
-            case TGTTOS -> tgttosScheduleManager.startGame();
-            case ParkourWarrior -> parkourWarriorScheduleManager.startGame();
-            case BattleBox -> battleBoxScheduleManager.startBattleBox();
-            case ParkourTag -> parkourTagScheduleManager.startParkourTag();
-            case HotyCodyDusky -> hotyCodyDuskyScheduleManager.startHotyCodyDusky();
-            case Bingo -> bingoScheduleManager.startGame();
-            case AceRace -> aceRaceScheduleManager.startGame();
-            case BuildMart -> buildMartScheduleManager.startGame();
-            case RiptideRush -> riptideRushScheduleManager.startGame();
-            case FrostbiteFrenzy -> frostbiteScheduleManager.startGame();
-            case LaserBox -> {
-                if (!laserBoxScheduleManager.startGame()) return EventAction.UNAVAILABLE;
-            }
-            default -> {
-                return EventAction.UNSUPPORTED;
-            }
-        }
-        return EventAction.STARTED;
+        FormalSchedule schedule = schedules.get(gameTypeEnum);
+        if (schedule == null) return EventAction.UNSUPPORTED;
+        return schedule.startGame() ? EventAction.STARTED : EventAction.UNAVAILABLE;
     }
 
     /** Returns the concrete preflight rejection when a game exposes one. */
     public @Nullable String getFormalEventStartFailure(GameTypeEnum game) {
-        return game == GameTypeEnum.LaserBox && laserBoxScheduleManager != null
-                ? laserBoxScheduleManager.getLastStartFailureReason()
-                : null;
+        FormalSchedule schedule = schedules.get(game);
+        return schedule == null ? null : schedule.startFailureReason();
     }
 
     /** Stops the formal schedule and force-ends any actively running game instance. */
@@ -404,26 +345,8 @@ public class ScheduleManager extends BaseManager {
 
     public boolean isFormalEventRunning(@NotNull GameTypeEnum gameTypeEnum) {
         if (FinaleGameRegistry.isRegistered(gameTypeEnum)) return isFinaleRunning(gameTypeEnum);
-        return switch (gameTypeEnum) {
-            case LaserShowdown -> laserShowdownScheduleManager.isEnabled();
-            case SkyWars -> skyWarsScheduleManager.isEnabled();
-            case TNTRun -> tntRunScheduleManager.isEnabled();
-            case TGTTOS -> tgttosScheduleManager.isEnabled();
-            case ParkourWarrior -> parkourWarriorScheduleManager.isEnabled();
-            case BattleBox -> battleBoxScheduleManager.isEnabled();
-            case ParkourTag -> parkourTagScheduleManager.isEnabled();
-            case HotyCodyDusky -> hotyCodyDuskyScheduleManager.isEnabled();
-            case Bingo -> bingoScheduleManager.isEnabled();
-            case AceRace -> aceRaceScheduleManager.isEnabled();
-            case BuildMart -> buildMartScheduleManager.isEnabled();
-            case RiptideRush -> riptideRushScheduleManager.isEnabled();
-            case FrostbiteFrenzy -> frostbiteScheduleManager.isEnabled();
-            case LaserBox -> laserBoxScheduleManager.isEnabled();
-            case DragonEggCarnival -> dragonEggCarnivalTransitionTask != null;
-            case SulfurSoccer -> sulfurSoccerTransitionTask != null;
-            case Dodgebolt -> dodgeboltTransitionTask != null;
-            default -> false;
-        };
+        FormalSchedule schedule = schedules.get(gameTypeEnum);
+        return schedule != null && schedule.isEnabled();
     }
 
     public boolean hasRunningFormalEvent() {
@@ -471,19 +394,8 @@ public class ScheduleManager extends BaseManager {
 
     /** Whether a completed instance belongs to a formal schedule that will assign another round. */
     public boolean hasNextRound(@NotNull GameTypeEnum gameTypeEnum) {
-        return switch (gameTypeEnum) {
-            case LaserShowdown -> laserShowdownScheduleManager.hasNextRound();
-            case TNTRun -> tntRunScheduleManager.hasNextRound();
-            case TGTTOS -> tgttosScheduleManager.hasNextRound();
-            case BattleBox -> battleBoxScheduleManager.hasNextRound();
-            case ParkourTag -> parkourTagScheduleManager.hasNextRound();
-            case HotyCodyDusky -> hotyCodyDuskyScheduleManager.hasNextRound();
-            case BuildMart -> buildMartScheduleManager.hasNextRound();
-            case RiptideRush -> riptideRushScheduleManager.hasNextRound();
-            case FrostbiteFrenzy -> frostbiteScheduleManager.hasNextRound();
-            case LaserBox -> laserBoxScheduleManager.hasNextRound();
-            default -> false;
-        };
+        FormalSchedule schedule = schedules.get(gameTypeEnum);
+        return schedule != null && schedule.hasNextRound();
     }
 
     /**
@@ -571,8 +483,8 @@ public class ScheduleManager extends BaseManager {
 
         CoreMessages.playSoundToAllPlayers(Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1F);
         CoreMessages.sendTitleToAllPlayers(
-                MessageConfig.GAME_ROUND_END_TITLE.replace("%game%", gameType.toString()),
-                MessageConfig.GAME_ROUND_END_SUBTITLE,
+                GameMessages.GAME_ROUND_END_TITLE.replace("%game%", gameType.toString()),
+                GameMessages.GAME_ROUND_END_SUBTITLE,
                 60);
         plugin.getRankManager().broadcastFinalRankings(gameType, () -> {});
     }
@@ -587,10 +499,15 @@ public class ScheduleManager extends BaseManager {
         String secondsValue = CoreMessages.bossBarTime(seconds);
         String title =
                 LegacyText.translateColorCodes(
-                        MessageConfig.GAME_ROUND_PREPARATION_ACTION_BAR
-                                .replace("%game%", gameType.toString())
-                                .replace("%round%", roundValue)
-                                .replace("%time%", secondsValue));
+                        MessageTemplate.render(
+                                GameMessages.GAME_ROUND_PREPARATION_ACTION_BAR,
+                                Map.of(
+                                        "%game%",
+                                        gameType.toString(),
+                                        "%round%",
+                                        roundValue,
+                                        "%time%",
+                                        secondsValue)));
         if (roundPreparationBar == null)
             roundPreparationBar = Bukkit.createBossBar(title, BarColor.YELLOW, BarStyle.SOLID);
         roundPreparationBar.setTitle(title);
@@ -616,53 +533,9 @@ public class ScheduleManager extends BaseManager {
      */
     public void endGameSchedule(GameTypeEnum gameTypeEnum) {
         cancelRoundSettlement(gameTypeEnum);
+        FormalSchedule schedule = schedules.get(gameTypeEnum);
+        if (schedule != null && schedule.isEnabled()) schedule.endSchedule();
         switch (gameTypeEnum) {
-            case LaserShowdown -> {
-                if (laserShowdownScheduleManager.isEnabled())
-                    laserShowdownScheduleManager.endSchedule();
-            }
-            case SkyWars -> {
-                if (skyWarsScheduleManager.isEnabled()) skyWarsScheduleManager.endSchedule();
-            }
-            case TNTRun -> {
-                if (tntRunScheduleManager.isEnabled()) tntRunScheduleManager.endSchedule();
-            }
-            case TGTTOS -> {
-                if (tgttosScheduleManager.isEnabled()) tgttosScheduleManager.endSchedule();
-            }
-            case ParkourWarrior -> {
-                if (parkourWarriorScheduleManager.isEnabled())
-                    parkourWarriorScheduleManager.endSchedule();
-            }
-            case BattleBox -> {
-                if (battleBoxScheduleManager.isEnabled()) battleBoxScheduleManager.endSchedule();
-            }
-            case ParkourTag -> {
-                if (parkourTagScheduleManager.isEnabled()) parkourTagScheduleManager.endSchedule();
-            }
-            case HotyCodyDusky -> {
-                if (hotyCodyDuskyScheduleManager.isEnabled())
-                    hotyCodyDuskyScheduleManager.endSchedule();
-            }
-            case Bingo -> {
-                if (bingoScheduleManager.isEnabled()) bingoScheduleManager.endSchedule();
-            }
-            case AceRace -> {
-                if (aceRaceScheduleManager.isEnabled()) aceRaceScheduleManager.endSchedule();
-            }
-            case BuildMart -> {
-                if (buildMartScheduleManager.isEnabled()) buildMartScheduleManager.endSchedule();
-            }
-            case RiptideRush -> {
-                if (riptideRushScheduleManager.isEnabled())
-                    riptideRushScheduleManager.endSchedule();
-            }
-            case FrostbiteFrenzy -> {
-                if (frostbiteScheduleManager.isEnabled()) frostbiteScheduleManager.endSchedule();
-            }
-            case LaserBox -> {
-                if (laserBoxScheduleManager.isEnabled()) laserBoxScheduleManager.endSchedule();
-            }
             case Dodgebolt -> {
                 if (dodgeboltTransitionTask != null) dodgeboltTransitionTask.cancel();
                 dodgeboltTransitionTask = null;
@@ -715,30 +588,30 @@ public class ScheduleManager extends BaseManager {
         FinaleGameDefinition definition = FinaleGameRegistry.definition(gameType);
         if (definition == null) {
             CoreMessages.sendAdminError(
-                    requester, MessageConfig.SCHEDULE_FINALE_GAME_NOT_REGISTERED);
+                    requester, EventMessages.SCHEDULE_FINALE_GAME_NOT_REGISTERED);
             return;
         }
         if (!plugin.getGameManager().isGameEnabled(gameType)) {
             CoreMessages.sendAdminError(
                     requester,
-                    MessageConfig.SCHEDULE_FINALE_GAME_DISABLED.replace("%game%", gameType.name()));
+                    EventMessages.SCHEDULE_FINALE_GAME_DISABLED.replace("%game%", gameType.name()));
             return;
         }
         if (forcePartialRoster && !definition.supportsPartialRoster()) {
             CoreMessages.sendAdminError(
-                    requester, MessageConfig.SCHEDULE_FINALE_PARTIAL_ROSTER_UNSUPPORTED);
+                    requester, EventMessages.SCHEDULE_FINALE_PARTIAL_ROSTER_UNSUPPORTED);
             return;
         }
         if (isFinaleRunning(gameType)) {
             stopFinale(gameType);
             CoreMessages.sendAdminInfo(
                     requester,
-                    MessageConfig.SCHEDULE_FINALE_EMERGENCY_STOPPED.replace(
+                    EventMessages.SCHEDULE_FINALE_EMERGENCY_STOPPED.replace(
                             "%game%", gameType.name()));
             return;
         }
         if (isAnyFinaleRunning()) {
-            CoreMessages.sendAdminError(requester, MessageConfig.SCHEDULE_FINALE_OTHER_RUNNING);
+            CoreMessages.sendAdminError(requester, EventMessages.SCHEDULE_FINALE_OTHER_RUNNING);
             return;
         }
 
@@ -766,9 +639,9 @@ public class ScheduleManager extends BaseManager {
                                             .canStart(gameType, area)) {
                                 CoreMessages.sendAdminError(
                                         requester,
-                                        MessageConfig.SCHEDULE_FINALE_MAP_UNAVAILABLE
-                                                .replace("%game%", gameType.name())
-                                                .replace("%map%", area));
+                                        MessageTemplate.render(
+                                                EventMessages.SCHEDULE_FINALE_MAP_UNAVAILABLE,
+                                                Map.of("%game%", gameType.name(), "%map%", area)));
                                 return;
                             }
 
@@ -788,7 +661,7 @@ public class ScheduleManager extends BaseManager {
                                     if (Double.compare(rightPoints, leftPoints) == 0) {
                                         CoreMessages.sendAdminInfo(
                                                 requester,
-                                                MessageConfig.SCHEDULE_FINALE_DODGEBOLT_TIE_SEED);
+                                                EventMessages.SCHEDULE_FINALE_DODGEBOLT_TIE_SEED);
                                     }
                                     startDodgeboltTransition(
                                             area,
@@ -816,7 +689,7 @@ public class ScheduleManager extends BaseManager {
                                 default ->
                                         CoreMessages.sendAdminError(
                                                 requester,
-                                                MessageConfig
+                                                EventMessages
                                                         .SCHEDULE_FINALE_START_NOT_IMPLEMENTED);
                             }
                         });
@@ -873,21 +746,21 @@ public class ScheduleManager extends BaseManager {
         if (right == null || left == null) {
             if (leaderboard.size() < 2) {
                 CoreMessages.sendAdminError(
-                        requester, MessageConfig.SCHEDULE_FINALE_AUTO_FINALISTS_UNAVAILABLE);
+                        requester, EventMessages.SCHEDULE_FINALE_AUTO_FINALISTS_UNAVAILABLE);
                 return null;
             }
             if (leaderboard.size() > 2
                     && Double.compare(leaderboard.get(1).getValue(), leaderboard.get(2).getValue())
                             == 0) {
                 CoreMessages.sendAdminError(
-                        requester, MessageConfig.SCHEDULE_FINALE_TIE_BREAK_REQUIRED);
+                        requester, EventMessages.SCHEDULE_FINALE_TIE_BREAK_REQUIRED);
                 return null;
             }
             right = leaderboard.get(0).getKey();
             left = leaderboard.get(1).getKey();
         }
         if (right.equals(left)) {
-            CoreMessages.sendAdminError(requester, MessageConfig.SCHEDULE_FINALE_TEAMS_MUST_DIFFER);
+            CoreMessages.sendAdminError(requester, EventMessages.SCHEDULE_FINALE_TEAMS_MUST_DIFFER);
             return null;
         }
         return new Finalists(right, left);
@@ -902,10 +775,15 @@ public class ScheduleManager extends BaseManager {
         final int[] remaining = {10};
         CoreMessages.sendAdminSuccess(
                 requester,
-                MessageConfig.SCHEDULE_FINALE_DRAGON_EGG_SCHEDULED
-                        .replace("%right%", right.getColoredName())
-                        .replace("%left%", left.getColoredName())
-                        .replace("%map%", area));
+                MessageTemplate.render(
+                        EventMessages.SCHEDULE_FINALE_DRAGON_EGG_SCHEDULED,
+                        Map.of(
+                                "%right%",
+                                right.getColoredName(),
+                                "%left%",
+                                left.getColoredName(),
+                                "%map%",
+                                area)));
         dragonEggCarnivalTransitionTask =
                 scheduler.runTaskTimer(
                         plugin,
@@ -938,7 +816,7 @@ public class ScheduleManager extends BaseManager {
                                 } else {
                                     CoreMessages.sendAdminError(
                                             requester,
-                                            MessageConfig.SCHEDULE_FINALE_DRAGON_EGG_START_FAILED);
+                                            EventMessages.SCHEDULE_FINALE_DRAGON_EGG_START_FAILED);
                                 }
                                 return;
                             }
@@ -960,16 +838,21 @@ public class ScheduleManager extends BaseManager {
         CoreMessages.sendAdminSuccess(
                 requester,
                 (forcePartialRoster
-                                ? MessageConfig.SCHEDULE_FINALE_DODGEBOLT_SCHEDULED_FORCED
-                                : MessageConfig.SCHEDULE_FINALE_DODGEBOLT_SCHEDULED)
+                                ? EventMessages.SCHEDULE_FINALE_DODGEBOLT_SCHEDULED_FORCED
+                                : EventMessages.SCHEDULE_FINALE_DODGEBOLT_SCHEDULED)
                         .replace("%right%", right.getColoredName())
                         .replace("%left%", left.getColoredName())
                         .replace("%map%", area));
         CoreMessages.sendMessageToAllPlayers(
-                MessageConfig.SCHEDULE_FINALE_DODGEBOLT_ANNOUNCEMENT
-                        .replace("%right%", right.getColoredName())
-                        .replace("%left%", left.getColoredName())
-                        .replace("%first%", higherSeed.getColoredName()));
+                MessageTemplate.render(
+                        EventMessages.SCHEDULE_FINALE_DODGEBOLT_ANNOUNCEMENT,
+                        Map.of(
+                                "%right%",
+                                right.getColoredName(),
+                                "%left%",
+                                left.getColoredName(),
+                                "%first%",
+                                higherSeed.getColoredName())));
         dodgeboltTransitionTask =
                 scheduler.runTaskTimer(
                         plugin,
@@ -992,9 +875,9 @@ public class ScheduleManager extends BaseManager {
                                     CoreMessages.sendAdminError(
                                             requester,
                                             forcePartialRoster
-                                                    ? MessageConfig
+                                                    ? EventMessages
                                                             .SCHEDULE_FINALE_DODGEBOLT_FORCED_START_FAILED
-                                                    : MessageConfig
+                                                    : EventMessages
                                                             .SCHEDULE_FINALE_DODGEBOLT_START_FAILED);
                                 }
                                 return;
@@ -1014,14 +897,21 @@ public class ScheduleManager extends BaseManager {
         final int[] remaining = {10};
         CoreMessages.sendAdminSuccess(
                 requester,
-                MessageConfig.SULFUR_SOCCER_SCHEDULED
-                        .replace("%right%", right.getColoredName())
-                        .replace("%left%", left.getColoredName())
-                        .replace("%map%", area));
+                MessageTemplate.render(
+                        SulfurSoccerMessages.SULFUR_SOCCER_SCHEDULED,
+                        Map.of(
+                                "%right%",
+                                right.getColoredName(),
+                                "%left%",
+                                left.getColoredName(),
+                                "%map%",
+                                area)));
         CoreMessages.sendMessageToAllPlayers(
-                MessageConfig.SULFUR_SOCCER_FINALISTS
-                        .replace("%right%", right.getColoredName())
-                        .replace("%left%", left.getColoredName()));
+                MessageTemplate.render(
+                        SulfurSoccerMessages.SULFUR_SOCCER_FINALISTS,
+                        Map.of(
+                                "%right%",
+                                right.getColoredName(), "%left%", left.getColoredName())));
         sulfurSoccerTransitionTask =
                 scheduler.runTaskTimer(
                         plugin,
@@ -1043,7 +933,8 @@ public class ScheduleManager extends BaseManager {
                                 } else {
                                     clearRoundPreparationCountdown();
                                     CoreMessages.sendAdminError(
-                                            requester, MessageConfig.SULFUR_SOCCER_START_FAILED);
+                                            requester,
+                                            SulfurSoccerMessages.SULFUR_SOCCER_START_FAILED);
                                 }
                                 return;
                             }

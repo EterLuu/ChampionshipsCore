@@ -1,5 +1,10 @@
 package ink.ziip.championshipscore.api.game.area.prepare;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+import static ink.ziip.championshipscore.support.TestObjects.field;
+import static ink.ziip.championshipscore.support.TestObjects.proxy;
+import static ink.ziip.championshipscore.support.TestObjects.set;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
@@ -9,7 +14,7 @@ import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.api.game.spatial.ReplicatedSpatialLayout;
 import ink.ziip.championshipscore.configuration.ConfigurationStateExtension;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.integration.worldedit.WorldEditManager;
 
 import org.bukkit.Bukkit;
@@ -28,9 +33,6 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Proxy;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -125,13 +127,13 @@ class LaserBoxPrepareFlowTest {
                                     case "canSaveMap" -> canSave;
                                     default -> throw new AssertionError(m.getName());
                                 });
-        MessageConfig.MAP_EDITOR_STEP_SCHEMATIC_SAVED = "saved %file%";
-        MessageConfig.MAP_EDITOR_STEP_SCHEMATIC_SAVE_FAILED = "failed %detail%";
-        MessageConfig.MAP_EDITOR_STEP_ARENA_TOTAL_SET = "total %count%, copies %copies%";
-        MessageConfig.MAP_EDITOR_STEP_ARENA_TEMPLATE_MISSING = "missing template";
-        MessageConfig.MAP_EDITOR_STEP_ARENA_INSTANCE_RUNNING = "instance running";
-        MessageConfig.MAP_EDITOR_STEP_ARENA_COUNT_POSITIVE = "positive count required";
-        MessageConfig.MAP_EDITOR_STEP_ARENA_GENERATE_FAILED = "failed %detail%";
+        MapEditorMessages.MAP_EDITOR_STEP_SCHEMATIC_SAVED = "saved %file%";
+        MapEditorMessages.MAP_EDITOR_STEP_SCHEMATIC_SAVE_FAILED = "failed %detail%";
+        MapEditorMessages.MAP_EDITOR_STEP_ARENA_TOTAL_SET = "total %count%, copies %copies%";
+        MapEditorMessages.MAP_EDITOR_STEP_ARENA_TEMPLATE_MISSING = "missing template";
+        MapEditorMessages.MAP_EDITOR_STEP_ARENA_INSTANCE_RUNNING = "instance running";
+        MapEditorMessages.MAP_EDITOR_STEP_ARENA_COUNT_POSITIVE = "positive count required";
+        MapEditorMessages.MAP_EDITOR_STEP_ARENA_GENERATE_FAILED = "failed %detail%";
         session =
                 new PrepareSession(
                         plugin, GameTypeEnum.LaserBox, "map-a", target, new LaserBoxPrepareFlow());
@@ -277,32 +279,5 @@ class LaserBoxPrepareFlowTest {
         public void clearCuboid(World world, Vector origin, Vector dimensions) {
             cleared.add(new Cleared(origin.clone(), dimensions.clone()));
         }
-    }
-
-    private static <T> T proxy(Class<T> type, InvocationHandler handler) {
-        return type.cast(
-                Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[] {type}, handler));
-    }
-
-    private static <T> T allocate(Class<T> type) throws Exception {
-        return type.cast(
-                ((sun.misc.Unsafe) field(sun.misc.Unsafe.class, "theUnsafe").get(null))
-                        .allocateInstance(type));
-    }
-
-    private static void set(Object target, String name, Object value) throws Exception {
-        field(target.getClass(), name).set(target, value);
-    }
-
-    private static Field field(Class<?> type, String name) throws NoSuchFieldException {
-        for (Class<?> current = type; current != null; current = current.getSuperclass()) {
-            try {
-                Field field = current.getDeclaredField(name);
-                field.setAccessible(true);
-                return field;
-            } catch (NoSuchFieldException ignored) {
-            }
-        }
-        throw new NoSuchFieldException(name);
     }
 }

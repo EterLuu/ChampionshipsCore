@@ -1,6 +1,6 @@
 package ink.ziip.championshipscore.api.game.riptiderush.runtime;
 
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.RiptideRushMessages;
 
 import java.util.List;
 import java.util.Random;
@@ -12,21 +12,21 @@ final class RiptideEliminationMessages {
     static String choose(String reason, Random random) {
         String configured = configured(reason);
         List<String> variants = lines(configured);
-        if (variants.isEmpty()) return MessageConfig.RIPTIDE_RUSH_ELIMINATED;
+        if (variants.isEmpty()) return RiptideRushMessages.RIPTIDE_RUSH_ELIMINATED;
         return variants.get(random.nextInt(variants.size()));
     }
 
     private static String configured(String reason) {
-        if (reason.equals(MessageConfig.RIPTIDE_RUSH_REASON_FELL)
-                || reason.equals(MessageConfig.RIPTIDE_RUSH_REASON_LEFT_BEHIND))
-            return MessageConfig.RIPTIDE_RUSH_ELIMINATED_FALL;
-        if (reason.equals(MessageConfig.RIPTIDE_RUSH_REASON_WRONG_FLOOR))
-            return MessageConfig.RIPTIDE_RUSH_ELIMINATED_FLOOR;
-        if (reason.equals(MessageConfig.RIPTIDE_RUSH_REASON_WRONG_ANSWER)
-                || reason.equals(MessageConfig.RIPTIDE_RUSH_REASON_MISSED_GATE))
-            return MessageConfig.RIPTIDE_RUSH_ELIMINATED_MATH;
-        if (reason.equals(MessageConfig.RIPTIDE_RUSH_REASON_DISCONNECTED))
-            return MessageConfig.RIPTIDE_RUSH_ELIMINATED_DISCONNECTED;
+        if (reason.equals(RiptideRushMessages.RIPTIDE_RUSH_REASON_FELL)
+                || reason.equals(RiptideRushMessages.RIPTIDE_RUSH_REASON_LEFT_BEHIND))
+            return RiptideRushMessages.RIPTIDE_RUSH_ELIMINATED_FALL;
+        if (reason.equals(RiptideRushMessages.RIPTIDE_RUSH_REASON_WRONG_FLOOR))
+            return RiptideRushMessages.RIPTIDE_RUSH_ELIMINATED_FLOOR;
+        if (reason.equals(RiptideRushMessages.RIPTIDE_RUSH_REASON_WRONG_ANSWER)
+                || reason.equals(RiptideRushMessages.RIPTIDE_RUSH_REASON_MISSED_GATE))
+            return RiptideRushMessages.RIPTIDE_RUSH_ELIMINATED_MATH;
+        if (reason.equals(RiptideRushMessages.RIPTIDE_RUSH_REASON_DISCONNECTED))
+            return RiptideRushMessages.RIPTIDE_RUSH_ELIMINATED_DISCONNECTED;
         return null;
     }
 

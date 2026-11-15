@@ -25,7 +25,7 @@ import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.game.start.ArenaSelection;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.LaserShowdownMessages;
 import ink.ziip.championshipscore.platform.bukkit.scoreboard.TeamColors;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -247,9 +247,9 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
         assignSpawnLocations();
 
         announceGamePreparation(
-                MessageConfig.LASER_SHOWDOWN_START_PREPARATION,
-                MessageConfig.LASER_SHOWDOWN_START_PREPARATION_TITLE,
-                MessageConfig.LASER_SHOWDOWN_START_PREPARATION_SUBTITLE);
+                LaserShowdownMessages.LASER_SHOWDOWN_START_PREPARATION,
+                LaserShowdownMessages.LASER_SHOWDOWN_START_PREPARATION_TITLE,
+                LaserShowdownMessages.LASER_SHOWDOWN_START_PREPARATION_SUBTITLE);
 
         firstRoundGunSelectionWindow = selectedGuns.isEmpty();
         startGameProgress();
@@ -300,9 +300,9 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
 
         startFinalCountdown(
                 firstRoundGunSelectionWindow ? 15 : 5,
-                MessageConfig.LASER_SHOWDOWN_GAME_START_SOON_TITLE,
-                MessageConfig.LASER_SHOWDOWN_GAME_START_TITLE,
-                MessageConfig.LASER_SHOWDOWN_GAME_START_SUBTITLE,
+                LaserShowdownMessages.LASER_SHOWDOWN_GAME_START_SOON_TITLE,
+                LaserShowdownMessages.LASER_SHOWDOWN_GAME_START_TITLE,
+                LaserShowdownMessages.LASER_SHOWDOWN_GAME_START_SUBTITLE,
                 this::beginGameProgress);
     }
 
@@ -328,8 +328,8 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
                         seconds -> {
                             timer = seconds;
                             updateGameTimerBossBar(
-                                    MessageConfig.LASER_SHOWDOWN_ACTION_BAR_COUNT_DOWN.replace(
-                                            "%time%", CoreMessages.bossBarTime(timer)),
+                                    LaserShowdownMessages.LASER_SHOWDOWN_ACTION_BAR_COUNT_DOWN
+                                            .replace("%time%", CoreMessages.bossBarTime(timer)),
                                     timer,
                                     duration);
                             calculateCurrentRank();
@@ -366,8 +366,8 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
         if (isSettlementAllowed()) calculatePoints();
 
         announceGameEnd(
-                MessageConfig.LASER_SHOWDOWN_GAME_END_TITLE,
-                MessageConfig.LASER_SHOWDOWN_GAME_END_SUBTITLE);
+                LaserShowdownMessages.LASER_SHOWDOWN_GAME_END_TITLE,
+                LaserShowdownMessages.LASER_SHOWDOWN_GAME_END_SUBTITLE);
 
         setGameStageEnum(GameStageEnum.END);
 
@@ -418,7 +418,7 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
                     plugin.getTeamManager().getTeamByPlayer(player);
             if (playerChampionshipTeam != null) {
                 String message =
-                        MessageConfig.LASER_SHOWDOWN_PLAYER_DEATH.replace(
+                        LaserShowdownMessages.LASER_SHOWDOWN_PLAYER_DEATH.replace(
                                 "%player%", CoreMessages.formatPlayerName(player));
                 sendMessageToAllGamePlayers(message);
             }
@@ -474,7 +474,7 @@ public class LaserShowdownTeamArea extends BaseMultiTeamGameInstance {
 
         if (playerChampionshipTeam != null) {
             String message =
-                    MessageConfig.LASER_SHOWDOWN_PLAYER_LEAVE.replace(
+                    LaserShowdownMessages.LASER_SHOWDOWN_PLAYER_LEAVE.replace(
                             "%player%", CoreMessages.formatPlayerName(player));
 
             sendMessageToAllGamePlayers(message);

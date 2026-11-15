@@ -10,7 +10,7 @@ import ink.ziip.championshipscore.api.game.buildmart.config.BuildMartConfig;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -112,7 +112,7 @@ public class BuildMartPrepareFlow extends PrepareFlowDefinition {
                         t -> cfg(t).getHubPortalPoint() != null,
                         (t, l) -> cfg(t).setHubPortalPoint(l),
                         CoreMessages.formatAdminSuccess(
-                                MessageConfig.MAP_EDITOR_BUILD_PORTAL_SET)));
+                                MapEditorMessages.MAP_EDITOR_BUILD_PORTAL_SET)));
         steps.add(
                 new BuildMartFloorSelectionStep(
                         "golden_display",
@@ -157,7 +157,7 @@ public class BuildMartPrepareFlow extends PrepareFlowDefinition {
                 predicate,
                 setter,
                 CoreMessages.formatAdminSuccess(
-                        MessageConfig.MAP_EDITOR_STEP_SET.replace("%name%", name)));
+                        MapEditorMessages.MAP_EDITOR_STEP_SET.replace("%name%", name)));
     }
 
     private static PrepareStep point(
@@ -175,7 +175,7 @@ public class BuildMartPrepareFlow extends PrepareFlowDefinition {
                 predicate,
                 setter,
                 CoreMessages.formatAdminSuccess(
-                        MessageConfig.MAP_EDITOR_STEP_SET.replace("%name%", name)));
+                        MapEditorMessages.MAP_EDITOR_STEP_SET.replace("%name%", name)));
     }
 
     private static PrepareStep basePoint(String key, boolean selectedBlock) {
@@ -216,7 +216,7 @@ public class BuildMartPrepareFlow extends PrepareFlowDefinition {
                 t -> cfg(t).hasBaseLocation(key),
                 (t, l) -> cfg(t).setBaseLocation(key, l),
                 CoreMessages.formatAdminSuccess(
-                        MessageConfig.MAP_EDITOR_STEP_SET.replace("%name%", display)));
+                        MapEditorMessages.MAP_EDITOR_STEP_SET.replace("%name%", display)));
     }
 
     private static BuildMartConfig cfg(SetupTarget target) {

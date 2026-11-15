@@ -29,18 +29,4 @@ class WebLeaderboardSnapshotTest {
         assertTrue(WebLeaderboardSnapshot.canPublish(GameTypeEnum.Bingo));
         assertFalse(WebLeaderboardSnapshot.canPublish(GameTypeEnum.AceRace));
     }
-
-    @Test
-    void favoriteWeaponIsPersonalTextAndNeverANumericRanking() {
-        assertEquals(
-                List.of(
-                        DailyMetric.LASERSHOWDOWN_WINS,
-                        DailyMetric.LASERSHOWDOWN_AVERAGE_KILLS,
-                        DailyMetric.LASERSHOWDOWN_HEADSHOT_RATE),
-                DailyMetric.rankedForGame(GameTypeEnum.LaserShowdown));
-        assertEquals(4, DailyMetric.forGame(GameTypeEnum.LaserShowdown).size());
-        assertFalse(DailyMetric.LASERSHOWDOWN_FAVORITE_GUN.rankable());
-        assertEquals("2.5", DailyMetric.format(DailyMetric.LASERSHOWDOWN_AVERAGE_KILLS, 2.5));
-        assertEquals("25.0%", DailyMetric.format(DailyMetric.LASERSHOWDOWN_HEADSHOT_RATE, 25));
-    }
 }

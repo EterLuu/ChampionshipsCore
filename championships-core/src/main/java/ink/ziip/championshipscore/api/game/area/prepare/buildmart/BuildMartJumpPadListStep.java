@@ -7,7 +7,7 @@ import ink.ziip.championshipscore.api.game.buildmart.config.BuildMartConfig;
 import ink.ziip.championshipscore.api.game.buildmart.config.BuildMartConfig.JumpPadZone;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -56,14 +56,14 @@ public final class BuildMartJumpPadListStep extends PrepareStep {
         JumpPadZone zone = selection(session, player);
         if (zone == null)
             return CoreMessages.formatAdminError(
-                    MessageConfig.MAP_EDITOR_BUILD_JUMP_PAD_SELECT_FIRST);
+                    MapEditorMessages.MAP_EDITOR_BUILD_JUMP_PAD_SELECT_FIRST);
         BuildMartConfig config = cfg(session.getTarget());
         List<JumpPadZone> zones = new ArrayList<>(config.getJumpPads());
         zones.add(zone);
         config.setJumpPads(zones);
         session.markDirty();
         return CoreMessages.formatAdminSuccess(
-                MessageConfig.MAP_EDITOR_BUILD_JUMP_PAD_ADDED.replace(
+                MapEditorMessages.MAP_EDITOR_BUILD_JUMP_PAD_ADDED.replace(
                         "%count%", String.valueOf(zones.size())));
     }
 
@@ -71,7 +71,7 @@ public final class BuildMartJumpPadListStep extends PrepareStep {
     public String listClear(@NotNull PrepareSession session, @NotNull Player player) {
         cfg(session.getTarget()).setJumpPads(List.of());
         session.markDirty();
-        return CoreMessages.formatAdminSuccess(MessageConfig.MAP_EDITOR_BUILD_JUMP_PAD_CLEARED);
+        return CoreMessages.formatAdminSuccess(MapEditorMessages.MAP_EDITOR_BUILD_JUMP_PAD_CLEARED);
     }
 
     @Override
@@ -116,14 +116,14 @@ public final class BuildMartJumpPadListStep extends PrepareStep {
         JumpPadZone zone = selection(session, player);
         if (zone == null)
             return CoreMessages.formatAdminError(
-                    MessageConfig.MAP_EDITOR_BUILD_JUMP_PAD_SELECT_FIRST);
+                    MapEditorMessages.MAP_EDITOR_BUILD_JUMP_PAD_SELECT_FIRST);
         List<JumpPadZone> zones = new ArrayList<>(cfg(session.getTarget()).getJumpPads());
         if (index < 0 || index >= zones.size()) return null;
         zones.set(index, zone);
         cfg(session.getTarget()).setJumpPads(zones);
         session.markDirty();
         return CoreMessages.formatAdminSuccess(
-                MessageConfig.MAP_EDITOR_BUILD_JUMP_PAD_UPDATED.replace(
+                MapEditorMessages.MAP_EDITOR_BUILD_JUMP_PAD_UPDATED.replace(
                         "%index%", String.valueOf(index + 1)));
     }
 
@@ -133,14 +133,14 @@ public final class BuildMartJumpPadListStep extends PrepareStep {
         List<JumpPadZone> zones = new ArrayList<>(cfg(session.getTarget()).getJumpPads());
         if (index < 0 || index >= zones.size() || newOrder < 1 || newOrder > zones.size())
             return CoreMessages.formatAdminError(
-                    MessageConfig.MAP_EDITOR_STEP_SERIAL_NUMBER_BETWEEN.replace(
+                    MapEditorMessages.MAP_EDITOR_STEP_SERIAL_NUMBER_BETWEEN.replace(
                             "%max%", String.valueOf(zones.size())));
         JumpPadZone moved = zones.remove(index);
         zones.add(newOrder - 1, moved);
         cfg(session.getTarget()).setJumpPads(zones);
         session.markDirty();
         return CoreMessages.formatAdminSuccess(
-                MessageConfig.MAP_EDITOR_BUILD_JUMP_PAD_ADJUSTED.replace(
+                MapEditorMessages.MAP_EDITOR_BUILD_JUMP_PAD_ADJUSTED.replace(
                         "%order%", String.valueOf(newOrder)));
     }
 
@@ -152,7 +152,7 @@ public final class BuildMartJumpPadListStep extends PrepareStep {
         cfg(session.getTarget()).setJumpPads(zones);
         session.markDirty();
         return CoreMessages.formatAdminSuccess(
-                MessageConfig.MAP_EDITOR_BUILD_JUMP_PAD_ADJUSTED.replace(
+                MapEditorMessages.MAP_EDITOR_BUILD_JUMP_PAD_ADJUSTED.replace(
                         "%order%", String.valueOf(index + 1)));
     }
 

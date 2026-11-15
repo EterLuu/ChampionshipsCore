@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.command.BaseMainCommand;
 import ink.ziip.championshipscore.command.game.start.GameStartMainCommand;
 import ink.ziip.championshipscore.command.game.stop.GameStopSubCommand;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.ServerMessages;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -32,7 +33,7 @@ public class GameMainCommand extends BaseMainCommand {
         // be reached. Preserve the old root-level access boundary for ordinary players.
         if (!sender.hasPermission(ADMIN_PERMISSION)
                 && !sender.hasPermission(TEST_AUTOMATION_PERMISSION)) {
-            sender.sendMessage(MessageConfig.NO_PERMISSION);
+            sender.sendMessage(ServerMessages.NO_PERMISSION);
             return true;
         }
         if (args.length == 0) {
@@ -49,8 +50,7 @@ public class GameMainCommand extends BaseMainCommand {
             @NotNull String label,
             @NotNull String[] args) {
         if (!sender.hasPermission(ADMIN_PERMISSION)
-                && !sender.hasPermission(TEST_AUTOMATION_PERMISSION))
-            return List.of();
+                && !sender.hasPermission(TEST_AUTOMATION_PERMISSION)) return List.of();
         return super.onTabComplete(sender, command, label, args);
     }
 }

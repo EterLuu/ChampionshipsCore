@@ -8,7 +8,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.gui.CountdownBlockDisapp
 import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
 import ink.ziip.championshipscore.api.game.instance.CountdownBlockDisappearance;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -113,19 +113,19 @@ public final class CountdownBlockDisappearanceStep extends PrepareStep {
     public String captureSelection(@NotNull PrepareSession session, @NotNull Player player) {
         if (!session.getFlow().isInCorrectWorld(player, session.getTarget()))
             return CoreMessages.formatAdminError(
-                    MessageConfig.MAP_EDITOR_STEP_GO_TO_MAP_WORLD_FIRST.replace(
+                    MapEditorMessages.MAP_EDITOR_STEP_GO_TO_MAP_WORLD_FIRST.replace(
                             "%world%", session.getTarget().worldName()));
         Vector[] selection;
         try {
             selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, true);
         } catch (Exception exception) {
             return CoreMessages.formatAdminError(
-                    MessageConfig.MAP_EDITOR_STEP_SELECT_TWO_WORLDEDIT_ENDPOINTS);
+                    MapEditorMessages.MAP_EDITOR_STEP_SELECT_TWO_WORLDEDIT_ENDPOINTS);
         }
         long volume = volume(selection[0], selection[1]);
         if (volume <= 0 || volume > CountdownBlockDisappearance.MAX_SELECTION_VOLUME) {
             return CoreMessages.formatAdminError(
-                    MessageConfig.MAP_EDITOR_STEP_COUNTDOWN_BLOCKS_VOLUME_BETWEEN.replace(
+                    MapEditorMessages.MAP_EDITOR_STEP_COUNTDOWN_BLOCKS_VOLUME_BETWEEN.replace(
                             "%max%",
                             String.valueOf(CountdownBlockDisappearance.MAX_SELECTION_VOLUME)));
         }
@@ -134,7 +134,7 @@ public final class CountdownBlockDisappearanceStep extends PrepareStep {
                 .setCountdownBlockDisappearanceBounds(selection[0], selection[1]);
         session.markDirty();
         return CoreMessages.formatAdminSuccess(
-                MessageConfig.MAP_EDITOR_STEP_COUNTDOWN_BLOCKS_SET.replace(
+                MapEditorMessages.MAP_EDITOR_STEP_COUNTDOWN_BLOCKS_SET.replace(
                         "%volume%", String.valueOf(volume)));
     }
 
@@ -142,7 +142,7 @@ public final class CountdownBlockDisappearanceStep extends PrepareStep {
         session.getTarget().config().setCountdownBlockDisappearanceMode(mode.value());
         session.markDirty();
         return CoreMessages.formatAdminSuccess(
-                MessageConfig.MAP_EDITOR_STEP_COUNTDOWN_BLOCKS_MODE_SET.replace(
+                MapEditorMessages.MAP_EDITOR_STEP_COUNTDOWN_BLOCKS_MODE_SET.replace(
                         "%mode%", mode.displayName()));
     }
 
@@ -150,7 +150,7 @@ public final class CountdownBlockDisappearanceStep extends PrepareStep {
         session.getTarget().config().clearCountdownBlockDisappearanceBounds();
         session.markDirty();
         return CoreMessages.formatAdminSuccess(
-                MessageConfig.MAP_EDITOR_STEP_COUNTDOWN_BLOCKS_CLOSED);
+                MapEditorMessages.MAP_EDITOR_STEP_COUNTDOWN_BLOCKS_CLOSED);
     }
 
     private static long volume(Vector first, Vector second) {

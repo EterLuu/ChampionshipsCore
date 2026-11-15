@@ -61,7 +61,8 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
             MatchManifest manifest,
             RemoteBingoInstance instance,
             CompletableFuture<Boolean> result,
-            AtomicBoolean cancelled) {}
+            AtomicBoolean cancelled,
+            Map<String, String> preparationAttributes) {}
 
     public RemoteBingoManager(ChampionshipsCore plugin) {
         super(plugin);
@@ -222,7 +223,33 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
             return CompletableFuture.completedFuture(false);
         }
         CompletableFuture<Boolean> result = new CompletableFuture<>();
-        PendingStart pending = new PendingStart(manifest, instance, result, new AtomicBoolean());
+        Map<String, String> preparationAttributes = new java.util.LinkedHashMap<>();
+        if (manifest.runMode().formalEvent()) {
+            preparationAttributes.put("coreSettlement", "true");
+            if (!request.showIntroduction())
+                matches.values().stream()
+                        .filter(
+                                previous ->
+                                        previous.manifest().runMode().formalEvent()
+                                                && previous.state() == MatchState.FINISHED)
+                        .findFirst()
+                        .ifPresent(
+                                previous -> {
+                                    preparationAttributes.put(
+                                            "previousMatchId",
+                                            previous.manifest().matchId().toString());
+                                    preparationAttributes.put(
+                                            "previousEpoch",
+                                            Long.toString(previous.manifest().epoch()));
+                                });
+        }
+        PendingStart pending =
+                new PendingStart(
+                        manifest,
+                        instance,
+                        result,
+                        new AtomicBoolean(),
+                        Map.copyOf(preparationAttributes));
         pendingStarts.put(matchId, pending);
         if (manifest.runMode().test()) testMatchIds.add(manifest.matchId());
         CompletableFuture.runAsync(
@@ -290,7 +317,11 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
             updateState(match);
             MatchCommand prepare =
                     MatchMessages.command(
-                            manifest.matchId(), manifest.epoch(), MatchCommandType.PREPARE);
+                            manifest.matchId(),
+                            manifest.epoch(),
+                            MatchCommandType.PREPARE,
+                            pending.preparationAttributes(),
+                            java.time.Clock.systemUTC());
             transport
                     .publishManifest(manifest)
                     .thenCompose(ignored -> transport.publishCommand(prepare))
@@ -549,6 +580,17 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
             }
             processedTestEvents.put(event.messageId(), event.matchId());
             if (event.type() == ink.ziip.championshipscore.protocol.MatchEventType.READY) {
+                if (match.manifest().runMode().formalEvent())
+                    matches.entrySet()
+                            .removeIf(
+                                    entry ->
+                                            entry.getValue() != match
+                                                    && entry.getValue()
+                                                            .manifest()
+                                                            .runMode()
+                                                            .formalEvent()
+                                                    && entry.getValue().state()
+                                                            == MatchState.FINISHED);
                 scheduler.runGlobalLater(
                         () -> timeout(match, MatchState.ROUTING, "arrival-timeout"),
                         CCConfig.BINGO_ARRIVAL_TIMEOUT_SECONDS * 20L);
@@ -595,8 +637,8 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
                 matches.remove(event.matchId(), match);
                 scheduler.runGlobal(
                         () -> plugin.getGameManager().abortRemoteBingo(match.instance()));
-            } else if (event.type()
-                    == ink.ziip.championshipscore.protocol.MatchEventType.FINISHED) {
+            } else if (event.type() == ink.ziip.championshipscore.protocol.MatchEventType.FINISHED
+                    && !match.manifest().runMode().formalEvent()) {
                 matches.remove(event.matchId(), match);
             }
             return true;
@@ -606,7 +648,21 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
     }
 
     private void timeout(RemoteBingoMatch match, MatchState expected, String reason) {
-        if (match.state() == expected) failMatch(match, reason, null);
+        if (match.state() != expected) return;
+        if (expected == MatchState.ROUTING)
+            plugin.getLogger()
+                    .warning(
+                            "Remote Bingo worker reported READY but required players did not"
+                                    + " arrive; match="
+                                    + match.manifest().matchId()
+                                    + " worker="
+                                    + configuredWorkerId
+                                    + " proxyTarget="
+                                    + CCConfig.BINGO_WORKER_SERVER
+                                    + " pendingPlayers="
+                                    + match.pendingArrivalPlayers()
+                                    + "; check proxy routing, backend DNS and admission logs");
+        failMatch(match, reason, null);
     }
 
     private void checkWorkerHeartbeats() {
@@ -768,9 +824,38 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
                         });
     }
 
+    public void releaseEventMatch(RemoteBingoInstance instance) {
+        RemoteBingoMatch match = matches.get(instance.matchId());
+        if (match == null
+                || !match.manifest().runMode().formalEvent()
+                || match.state() != MatchState.FINISHED
+                || transport == null) return;
+        transport
+                .publishCommand(match.abortCommand("event-completed"))
+                .whenComplete(
+                        (ignored, failure) -> {
+                            if (failure == null) matches.remove(instance.matchId(), match);
+                            else
+                                plugin.getLogger()
+                                        .log(
+                                                Level.SEVERE,
+                                                "Unable to release settled Bingo event",
+                                                failure);
+                        });
+    }
+
+    public void releaseFinishedEventMatches() {
+        for (RemoteBingoMatch match : Set.copyOf(matches.values()))
+            releaseEventMatch(match.instance());
+    }
+
     public void routeReconnect(Player player, RemoteBingoInstance instance) {
         RemoteBingoMatch match = matches.get(instance.matchId());
-        if (match == null || match.state().terminal() || router == null) {
+        if (match == null
+                || (match.state().terminal()
+                        && !(match.manifest().runMode().formalEvent()
+                                && match.state() == MatchState.FINISHED))
+                || router == null) {
             instance.sanitizeParticipantForLobby(player, false);
             return;
         }

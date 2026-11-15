@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.daily;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -34,26 +35,31 @@ class DailyStatsMenuTest {
     }
 
     @Test
-    void overviewDisplaysTheCompletedGameCount() {
-        assertEquals(
-                List.of("完整场次：17", "", "按游戏分类，点击卡片查看分图明细"), plain(DailyStatsMenu.summaryLore(17)));
-    }
-
-    @Test
-    void gameCardsAndDetailSummaryResolveCountsWithoutRenderingTheWholeList() {
-        assertEquals(List.of("参与场次：8", "", "3张地图可查看分图明细"), plain(gameLore(8, 3)));
-    }
-
-    @Test
-    void mapCardsDisplayTheirOwnCompletedGameCount() {
-        assertEquals(List.of("参与场次：4", "", "按地图独立记录"), plain(mapLore(4)));
-    }
-
-    @Test
-    void playersWithoutRecordsSeeZeroCounts() {
-        assertEquals("完整场次：0", plain(DailyStatsMenu.summaryLore(0)).getFirst());
-        assertEquals(List.of("参与场次：0", "", "0张地图可查看分图明细"), plain(gameLore(0, 0)));
-        assertEquals("参与场次：0", plain(mapLore(0)).getFirst());
+    void defaultOverviewGameAndMapLoreDisplayTheirCompletedCountsIncludingZero() {
+        String overviewHint = "按游戏分类，点击卡片查看分图明细";
+        assertAll(
+                () ->
+                        assertEquals(
+                                List.of("完整场次：17", "", overviewHint),
+                                plain(DailyStatsMenu.summaryLore(17)),
+                                "overview 17"),
+                () ->
+                        assertEquals(
+                                List.of("完整场次：0", "", overviewHint),
+                                plain(DailyStatsMenu.summaryLore(0)),
+                                "overview 0"),
+                () ->
+                        assertEquals(
+                                List.of("参与场次：8", "", "3张地图可查看分图明细"),
+                                plain(gameLore(8, 3)),
+                                "game 8/3"),
+                () ->
+                        assertEquals(
+                                List.of("参与场次：0", "", "0张地图可查看分图明细"),
+                                plain(gameLore(0, 0)),
+                                "game 0/0"),
+                () -> assertEquals(List.of("参与场次：4", "", "按地图独立记录"), plain(mapLore(4)), "map 4"),
+                () -> assertEquals(List.of("参与场次：0", "", "按地图独立记录"), plain(mapLore(0)), "map 0"));
     }
 
     @Test

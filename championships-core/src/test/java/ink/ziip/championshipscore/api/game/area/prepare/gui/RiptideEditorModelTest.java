@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.game.area.prepare.gui;
 
 import static ink.ziip.championshipscore.api.game.area.prepare.gui.RiptideEditorPage.Screen.*;
 import static ink.ziip.championshipscore.api.game.riptiderush.course.RiptideLevelType.*;
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -13,8 +14,6 @@ import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideCoursePlann
 import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideLevelTemplate;
 
 import org.junit.jupiter.api.Test;
-
-import sun.misc.Unsafe;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,11 +44,8 @@ class RiptideEditorModelTest {
     }
 
     private static RiptideRushConfig config() throws Exception {
-        var field = Unsafe.class.getDeclaredField("theUnsafe");
-        field.setAccessible(true);
-        var plugin =
-                (ChampionshipsCore)
-                        ((Unsafe) field.get(null)).allocateInstance(ChampionshipsCore.class);
+
+        var plugin = allocate(ChampionshipsCore.class);
         var c = new RiptideRushConfig(plugin, "editor-test");
         c.setTemplates(
                 List.of(
@@ -200,6 +196,12 @@ class RiptideEditorModelTest {
         assertEquals(before, RiptideEditorModel.snapshot(c));
         RiptideEditorModel.update(c, PASS, "pass", "weight", 43);
         assertNotEquals(before, RiptideEditorModel.snapshot(c));
+        before = RiptideEditorModel.snapshot(c);
+        c.setAdaptiveLayout(true);
+        assertNotEquals(before, RiptideEditorModel.snapshot(c), "adaptive layout");
+        before = RiptideEditorModel.snapshot(c);
+        c.setMaximumCourseLength(700);
+        assertNotEquals(before, RiptideEditorModel.snapshot(c), "maximum course length");
     }
 
     @Test

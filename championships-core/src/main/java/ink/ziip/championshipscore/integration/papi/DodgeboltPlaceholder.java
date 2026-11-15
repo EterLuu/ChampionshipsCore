@@ -5,7 +5,7 @@ import ink.ziip.championshipscore.api.game.dodgebolt.model.DodgeboltSide;
 import ink.ziip.championshipscore.api.game.dodgebolt.runtime.DodgeboltArea;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.ScoreMessages;
 
 import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
@@ -30,13 +30,13 @@ public class DodgeboltPlaceholder extends BaseGamePlaceholder<DodgeboltArea> {
         if (params.startsWith("area_round_")) {
             DodgeboltArea area = resolveArea(params, "area_round_", offlinePlayer);
             return area == null
-                    ? MessageConfig.PLACEHOLDER_NONE
+                    ? ScoreMessages.PLACEHOLDER_NONE
                     : String.valueOf(area.getRoundNumber());
         }
         if (params.startsWith("area_shots_")) {
             DodgeboltArea area = resolveArea(params, "area_shots_", offlinePlayer);
             return area == null
-                    ? MessageConfig.PLACEHOLDER_NONE
+                    ? ScoreMessages.PLACEHOLDER_NONE
                     : String.valueOf(area.getShotsThisRound());
         }
         for (DodgeboltSide side : DodgeboltSide.values()) {
@@ -45,12 +45,12 @@ public class DodgeboltPlaceholder extends BaseGamePlaceholder<DodgeboltArea> {
             if (params.startsWith(teamPrefix)) {
                 DodgeboltArea area = resolveArea(params, teamPrefix, offlinePlayer);
                 ChampionshipTeam team = area == null ? null : teamOf(area, side);
-                return team == null ? MessageConfig.PLACEHOLDER_NONE : team.getColoredName();
+                return team == null ? ScoreMessages.PLACEHOLDER_NONE : team.getColoredName();
             }
             String winsPrefix = "area_" + sideName + "_wins_";
             if (params.startsWith(winsPrefix)) {
                 DodgeboltArea area = resolveArea(params, winsPrefix, offlinePlayer);
-                if (area == null) return MessageConfig.PLACEHOLDER_NONE;
+                if (area == null) return ScoreMessages.PLACEHOLDER_NONE;
                 return String.valueOf(
                         side == DodgeboltSide.RIGHT ? area.getRightWins() : area.getLeftWins());
             }
@@ -58,7 +58,7 @@ public class DodgeboltPlaceholder extends BaseGamePlaceholder<DodgeboltArea> {
             if (params.startsWith(alivePrefix)) {
                 DodgeboltArea area = resolveArea(params, alivePrefix, offlinePlayer);
                 return area == null
-                        ? MessageConfig.PLACEHOLDER_NONE
+                        ? ScoreMessages.PLACEHOLDER_NONE
                         : String.valueOf(area.getAliveCount(side));
             }
         }

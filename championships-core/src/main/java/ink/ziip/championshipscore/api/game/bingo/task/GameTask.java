@@ -92,19 +92,6 @@ public final class GameTask {
         return c == null ? -1L : c.completedAt();
     }
 
-    /**
-     * 0-based claim rank for a team that has completed this task (0 = first team to claim it).
-     * Returns -1 if this team has not completed this task.
-     */
-    public int claimRank(@NotNull String teamId) {
-        int rank = 0;
-        for (Map.Entry<String, Completion> entry : completions.entrySet()) {
-            if (entry.getKey().equals(teamId)) return rank;
-            rank++;
-        }
-        return -1;
-    }
-
     /** All completions for this task in claim order (immutable snapshot). */
     public List<Completion> allCompletions() {
         return List.copyOf(completions.values());

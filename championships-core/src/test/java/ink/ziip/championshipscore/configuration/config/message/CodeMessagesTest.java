@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.configuration.config.message;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
@@ -40,12 +42,8 @@ class CodeMessagesTest {
     private static final String KEY = "core-messages.format-admin-info-1";
 
     private static MessageConfig config() throws Exception {
-        var unsafeField = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-        unsafeField.setAccessible(true);
-        var plugin =
-                (ChampionshipsCore)
-                        ((sun.misc.Unsafe) unsafeField.get(null))
-                                .allocateInstance(ChampionshipsCore.class);
+
+        var plugin = allocate(ChampionshipsCore.class);
         return new MessageConfig(plugin);
     }
 

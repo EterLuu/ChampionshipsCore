@@ -9,18 +9,11 @@ import java.util.Random;
 
 /** Immutable per-round authority for both physical blocks and all mechanic positions/content. */
 public record RiptideCoursePlan(
-        long seed, int algorithmVersion, int estimatedTicks, List<Level> levels) {
-    public RiptideCoursePlan(
-            long seed,
-            int algorithmVersion,
-            int estimatedTicks,
-            List<Level> levels,
-            int totalSteps) {
-        this(seed, algorithmVersion, estimatedTicks, expand(levels, totalSteps));
-    }
-
+        long seed, int algorithmVersion, int estimatedTicks, List<Level> levels, int totalSteps) {
     public RiptideCoursePlan {
-        levels = expand(levels, 1);
+        if (totalSteps < 16 || totalSteps > 4096)
+            throw new IllegalArgumentException("invalid course length");
+        levels = expand(levels, totalSteps);
     }
 
     private static List<Level> expand(List<Level> levels, int totalSteps) {
@@ -155,6 +148,22 @@ public record RiptideCoursePlan(
             List<SideWall> sideWalls) {
         public Level {
             sideWalls = List.copyOf(sideWalls);
+        }
+
+        public Level withStep(int step) {
+            return new Level(
+                    number,
+                    step,
+                    template,
+                    variant,
+                    opening,
+                    mirrored,
+                    contentSeed,
+                    wallGroup,
+                    beat,
+                    rhythm,
+                    sweep,
+                    sideWalls);
         }
 
         public Level(

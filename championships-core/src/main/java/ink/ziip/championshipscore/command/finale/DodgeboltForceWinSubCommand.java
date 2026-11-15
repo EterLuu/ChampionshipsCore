@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.command.finale;
 import ink.ziip.championshipscore.api.game.dodgebolt.runtime.DodgeboltArea;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.EventMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -35,11 +36,11 @@ final class DodgeboltForceWinSubCommand extends BaseSubCommand {
         DodgeboltArea area = plugin.getGameManager().getDodgeboltManager().getArea(args[0]);
         ChampionshipTeam team = plugin.getTeamManager().getTeam(args[1]);
         if (area == null || team == null || !area.forceChampion(team))
-            CoreMessages.sendAdminError(sender, MessageConfig.FINALE_DODGEBOLT_FORCE_WIN_INVALID);
+            CoreMessages.sendAdminError(sender, EventMessages.FINALE_DODGEBOLT_FORCE_WIN_INVALID);
         else
             CoreMessages.sendAdminSuccess(
                     sender,
-                    MessageConfig.FINALE_DODGEBOLT_FORCE_WIN_SET.replace(
+                    EventMessages.FINALE_DODGEBOLT_FORCE_WIN_SET.replace(
                             "%team%", team.getColoredName()));
         return true;
     }

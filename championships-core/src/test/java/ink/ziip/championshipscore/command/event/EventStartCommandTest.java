@@ -1,5 +1,9 @@
 package ink.ziip.championshipscore.command.event;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+import static ink.ziip.championshipscore.support.TestObjects.field;
+import static ink.ziip.championshipscore.support.TestObjects.set;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
@@ -11,7 +15,8 @@ import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.schedule.ScheduleManager;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.ConfigurationStateExtension;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.EventMessages;
+import ink.ziip.championshipscore.configuration.config.message.GameMessages;
 
 import org.bukkit.command.CommandSender;
 import org.junit.jupiter.api.*;
@@ -20,7 +25,6 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.Proxy;
 import java.nio.file.Path;
 import java.util.*;
@@ -51,7 +55,12 @@ class EventStartCommandTest {
                         GameTypeEnum.LaserBox,
                         GameTypeEnum.SulfurSoccer));
         set(plugin, "gameManager", manager);
-        schedule = allocate(TestSchedule.class);
+        set(
+                plugin,
+                "server",
+                ink.ziip.championshipscore.support.TestObjects.proxy(
+                        org.bukkit.Server.class, (p, m, a) -> null));
+        schedule = new TestSchedule(plugin);
         set(plugin, "scheduleManager", schedule);
         messages = new ArrayList<>();
         sender =
@@ -66,10 +75,10 @@ class EventStartCommandTest {
                                     }
                                     throw new AssertionError(m.getName());
                                 });
-        MessageConfig.EVENT_START_STARTED = "started %game%";
-        MessageConfig.EVENT_START_GAME_NOT_IN_EVENT = "%game% not in %event%";
-        MessageConfig.EVENT_START_NO_EVENT = "no event";
-        MessageConfig.EVENT_START_ARCHIVED = "archived";
+        EventMessages.EVENT_START_STARTED = "started %game%";
+        EventMessages.EVENT_START_GAME_NOT_IN_EVENT = "%game% not in %event%";
+        EventMessages.EVENT_START_NO_EVENT = "no event";
+        EventMessages.EVENT_START_ARCHIVED = "archived";
     }
 
     @AfterEach
@@ -163,8 +172,8 @@ class EventStartCommandTest {
 
     @Test
     void laserBoxFailureShowsTheGameAndActualReasonInsteadOfBingo() {
-        MessageConfig.GAME_LASER_BOX = "激光方盒";
-        MessageConfig.EVENT_START_UNAVAILABLE = "%game%无法启动：%detail%。";
+        GameMessages.GAME_LASER_BOX = "激光方盒";
+        EventMessages.EVENT_START_UNAVAILABLE = "%game%无法启动：%detail%。";
         schedule.action = ScheduleManager.EventAction.UNAVAILABLE;
         schedule.failure = "需要8个空闲场地副本，当前只有1个";
         new EventStartSubCommand().onCommand(sender, null, "cc", new String[] {"laserbox"});
@@ -195,8 +204,8 @@ class EventStartCommandTest {
         EventAction action;
         String failure;
 
-        private TestSchedule() {
-            super(null);
+        private TestSchedule(ChampionshipsCore plugin) {
+            super(plugin);
         }
 
         @Override
@@ -236,27 +245,5 @@ class EventStartCommandTest {
             stoppedFinale = game;
             return true;
         }
-    }
-
-    private static Field field(Class<?> type, String name) throws Exception {
-        for (; type != null; type = type.getSuperclass()) {
-            try {
-                var field = type.getDeclaredField(name);
-                field.setAccessible(true);
-                return field;
-            } catch (NoSuchFieldException ignored) {
-            }
-        }
-        throw new NoSuchFieldException(name);
-    }
-
-    private static void set(Object target, String name, Object value) throws Exception {
-        field(target.getClass(), name).set(target, value);
-    }
-
-    private static <T> T allocate(Class<T> type) throws Exception {
-        return type.cast(
-                ((sun.misc.Unsafe) field(sun.misc.Unsafe.class, "theUnsafe").get(null))
-                        .allocateInstance(type));
     }
 }

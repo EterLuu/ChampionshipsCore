@@ -15,11 +15,12 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -32,10 +33,12 @@ import java.util.UUID;
  * single lightweight coordinator instead of performing Bukkit work while holding this monitor.
  */
 public final class BingoScoringEngine {
-    private final MatchManifest manifest;
+    private final UUID matchId;
+    private final long epoch;
+    private final int cellCount;
     private final BingoScoringRules rules;
     private final Map<Integer, TeamSnapshot> teams;
-    private final Map<UUID, PlayerSnapshot> players;
+    private final Map<UUID, Integer> participants;
     private final List<Set<Integer>> taskClaims;
     private final Map<Integer, BitSet> completedByTeam = new HashMap<>();
     private final Map<Integer, Integer> awardedLines = new HashMap<>();
@@ -46,23 +49,59 @@ public final class BingoScoringEngine {
     private long lastSeq;
 
     public BingoScoringEngine(MatchManifest manifest) {
-        this.manifest = java.util.Objects.requireNonNull(manifest, "manifest");
-        this.rules = manifest.scoring();
-        this.teams = manifest.teamsById();
-        this.players = new HashMap<>();
-        for (PlayerSnapshot participant : manifest.participants()) {
-            players.put(participant.uuid(), participant);
+        this(
+                manifest.matchId(),
+                manifest.epoch(),
+                manifest.scoring(),
+                manifest.teams(),
+                participantTeams(manifest.participants()));
+    }
+
+    /** Scoring inputs shared by local rounds and remote replay; no world or transport is needed. */
+    public BingoScoringEngine(
+            UUID matchId,
+            long epoch,
+            BingoScoringRules rules,
+            List<TeamSnapshot> teams,
+            Map<UUID, Integer> participants) {
+        this.matchId = Objects.requireNonNull(matchId, "matchId");
+        if (epoch < 1) throw new IllegalArgumentException("epoch must be positive");
+        this.epoch = epoch;
+        this.rules = Objects.requireNonNull(rules, "rules");
+        this.cellCount = Math.multiplyExact(rules.cardWidth(), rules.cardWidth());
+        var byId = new HashMap<Integer, TeamSnapshot>();
+        var members = new HashMap<UUID, Integer>();
+        for (TeamSnapshot team : teams) {
+            if (byId.putIfAbsent(team.id(), team) != null)
+                throw new IllegalArgumentException("Duplicate scoring team: " + team.id());
+            for (UUID member : team.members())
+                if (members.putIfAbsent(member, team.id()) != null)
+                    throw new IllegalArgumentException(
+                            "Member belongs to multiple scoring teams: " + member);
         }
-        this.taskClaims = new ArrayList<>(manifest.tasks().size());
-        for (int ignored = 0; ignored < manifest.tasks().size(); ignored++) {
-            taskClaims.add(new HashSet<>());
-        }
-        for (TeamSnapshot team : manifest.teams()) {
-            completedByTeam.put(team.id(), new BitSet(manifest.tasks().size()));
+        this.teams = Map.copyOf(byId);
+        this.participants = Map.copyOf(participants);
+        this.participants.forEach(
+                (player, team) -> {
+                    if (!team.equals(members.get(player)))
+                        throw new IllegalArgumentException(
+                                "Scoring participant is not in the frozen team: " + player);
+                });
+        this.taskClaims = new ArrayList<>(cellCount);
+        for (int ignored = 0; ignored < cellCount; ignored++) taskClaims.add(new LinkedHashSet<>());
+        for (TeamSnapshot team : teams) {
+            completedByTeam.put(team.id(), new BitSet(cellCount));
             awardedLines.put(team.id(), 0);
             teamScores.put(team.id(), 0);
             lastCompletionTicks.put(team.id(), Long.MAX_VALUE);
         }
+    }
+
+    private static Map<UUID, Integer> participantTeams(List<PlayerSnapshot> players) {
+        var result = new HashMap<UUID, Integer>();
+        for (PlayerSnapshot player : players)
+            if (player.role() == ParticipantRole.PLAYER) result.put(player.uuid(), player.teamId());
+        return result;
     }
 
     public synchronized ScoringDecision apply(CompletionObservation observation) {
@@ -96,27 +135,14 @@ public final class BingoScoringEngine {
         if (observation.cellIndex() >= taskClaims.size())
             return rejected(observation, "unknown-cell");
 
-        PlayerSnapshot player = players.get(observation.playerId());
-        if (player == null
-                || player.role() != ParticipantRole.PLAYER
-                || !Integer.valueOf(team.id()).equals(player.teamId())) {
+        if (!Integer.valueOf(team.id()).equals(participants.get(observation.playerId()))) {
             return rejected(observation, "player-not-in-team");
         }
 
+        String rejection = rejectionReason(team.id(), observation.cellIndex());
+        if (rejection != null) return rejected(observation, rejection);
         BitSet completed = completedByTeam.get(team.id());
-        if (completed.get(observation.cellIndex())) {
-            return rejected(observation, "already-completed-by-team");
-        }
-
         Set<Integer> claims = taskClaims.get(observation.cellIndex());
-        if (rules.variant().mode().locksCells() && !claims.isEmpty()) {
-            return rejected(observation, "cell-locked-by-other-team");
-        }
-        if (rules.variant().remix() == ink.ziip.championshipscore.protocol.BingoRemix.CHAIN
-                && !completed.isEmpty()
-                && !adjacentToCompleted(completed, observation.cellIndex())) {
-            return rejected(observation, "chain-cell-not-reachable");
-        }
         int claimRank = claims.size();
         claims.add(team.id());
         completed.set(observation.cellIndex());
@@ -192,6 +218,63 @@ public final class BingoScoringEngine {
                 awards);
     }
 
+    public synchronized boolean canAttempt(int teamId, int cellIndex) {
+        return rejectionReason(teamId, cellIndex) == null;
+    }
+
+    private String rejectionReason(int teamId, int cellIndex) {
+        BitSet completed = completedByTeam.get(teamId);
+        if (completed == null) return "unknown-team";
+        if (cellIndex < 0 || cellIndex >= cellCount) return "unknown-cell";
+        if (completed.get(cellIndex)) return "already-completed-by-team";
+        if (rules.variant().mode().locksCells() && !taskClaims.get(cellIndex).isEmpty())
+            return "cell-locked-by-other-team";
+        if (rules.variant().remix() == BingoRemix.CHAIN
+                && !completed.isEmpty()
+                && !adjacentToCompleted(completed, cellIndex)) return "chain-cell-not-reachable";
+        return null;
+    }
+
+    public synchronized int score(int teamId) {
+        return teamScores.getOrDefault(teamId, 0);
+    }
+
+    public synchronized boolean hasCompleted(int teamId, int cellIndex) {
+        BitSet cells = completedByTeam.get(teamId);
+        return cells != null && cellIndex >= 0 && cellIndex < cellCount && cells.get(cellIndex);
+    }
+
+    public synchronized int completedCount(int teamId) {
+        BitSet cells = completedByTeam.get(teamId);
+        return cells == null ? 0 : cells.cardinality();
+    }
+
+    public synchronized int[] completedIndices(int teamId) {
+        BitSet cells = completedByTeam.get(teamId);
+        return cells == null ? new int[0] : cells.stream().toArray();
+    }
+
+    public synchronized int completedLines(int teamId) {
+        BitSet cells = completedByTeam.get(teamId);
+        return cells == null ? 0 : countCompletedLines(cells);
+    }
+
+    public synchronized long lastCompletionTick(int teamId) {
+        return lastCompletionTicks.getOrDefault(teamId, Long.MAX_VALUE);
+    }
+
+    /** Counts first accepted claims, including equal-time observations in sequence order. */
+    public synchronized int firstClaimCount(int teamId) {
+        return (int)
+                taskClaims.stream()
+                        .filter(claims -> !claims.isEmpty() && claims.iterator().next() == teamId)
+                        .count();
+    }
+
+    public synchronized boolean boardFullyClaimed() {
+        return taskClaims.stream().allMatch(claims -> !claims.isEmpty());
+    }
+
     private boolean adjacentToCompleted(BitSet completed, int cellIndex) {
         int width = rules.cardWidth();
         int x = cellIndex % width;
@@ -205,11 +288,10 @@ public final class BingoScoringEngine {
     public synchronized boolean hasWon(int teamId) {
         BitSet completed = completedByTeam.get(teamId);
         if (completed == null) return false;
-        if (rules.variant().remix() == BingoRemix.COOP)
-            return completed.cardinality() == manifest.tasks().size();
+        if (rules.variant().remix() == BingoRemix.COOP) return completed.cardinality() == cellCount;
         BingoMode mode = rules.variant().mode();
         if (mode.linesWin()) return countCompletedLines(completed) >= rules.variant().winLines();
-        return mode.fullCardWins() && completed.cardinality() == manifest.tasks().size();
+        return mode.fullCardWins() && completed.cardinality() == cellCount;
     }
 
     private ScoringDecision rejected(CompletionObservation observation, String reason) {
@@ -228,8 +310,7 @@ public final class BingoScoringEngine {
 
     private void validateIdentity(CompletionObservation observation) {
         java.util.Objects.requireNonNull(observation, "observation");
-        if (!manifest.matchId().equals(observation.matchId())
-                || manifest.epoch() != observation.epoch()) {
+        if (!matchId.equals(observation.matchId()) || epoch != observation.epoch()) {
             throw new IllegalArgumentException(
                     "Observation belongs to a different match or fencing epoch");
         }
@@ -264,7 +345,7 @@ public final class BingoScoringEngine {
         completedByTeam.forEach((teamId, cells) -> completedCells.put(teamId, cells.cardinality()));
         Map<Integer, Integer> orderedScores = new TreeMap<>(teamScores);
         Map<Integer, Long> orderedTimes = new TreeMap<>(lastCompletionTicks);
-        boolean fullyClaimed = taskClaims.stream().allMatch(claims -> !claims.isEmpty());
+        boolean fullyClaimed = boardFullyClaimed();
         return new BingoResult(
                 lastSeq,
                 fullyClaimed,
@@ -281,9 +362,9 @@ public final class BingoScoringEngine {
             Map<Integer, Integer> completedCells,
             Map<Integer, Long> completionTicks) {
         String canonical =
-                manifest.matchId()
+                matchId
                         + "\n"
-                        + manifest.epoch()
+                        + epoch
                         + "\n"
                         + seq
                         + "\n"

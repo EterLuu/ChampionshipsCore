@@ -56,7 +56,9 @@ class LanguageResourcesTest {
                                 "schedule-message.yml")
                         .entrySet()) {
             var declared = new HashSet<String>();
-            for (var field : entry.getKey().getFields()) {
+            for (var field :
+                    ink.ziip.championshipscore.configuration.ConfigurationFields.of(
+                            entry.getKey())) {
                 var option = field.getAnnotation(ConfigOption.class);
                 if (option != null) declared.add(option.path());
             }

@@ -1,12 +1,15 @@
 package ink.ziip.championshipscore.api.game.riptiderush.runtime;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+import static ink.ziip.championshipscore.support.TestObjects.set;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptideMathRun;
 import ink.ziip.championshipscore.api.game.riptiderush.support.RiptideTestFixtures;
 import ink.ziip.championshipscore.configuration.ConfigurationStateExtension;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.RiptideRushMessages;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -45,12 +48,8 @@ class RiptidePlayerStateTest {
     class RiptideSpectatorMovementCases {
         @Test
         void eliminatedPlayerCanFlyFarOutsideRaftWithoutTeleportOrCancellation() throws Exception {
-            var field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-            field.setAccessible(true);
-            var area =
-                    (RiptideRushArea)
-                            ((sun.misc.Unsafe) field.get(null))
-                                    .allocateInstance(RiptideRushArea.class);
+
+            var area = allocate(RiptideRushArea.class);
             UUID id = UUID.randomUUID();
             set(area, "gamePlayers", List.of(id));
             set(area, "eliminatedPlayers", Set.of(id));
@@ -77,12 +76,8 @@ class RiptidePlayerStateTest {
 
         @Test
         void frequentAcceptedMovementDoesNotRunFallChecksOrConsumeGrace() throws Exception {
-            var field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-            field.setAccessible(true);
-            var area =
-                    (RiptideRushArea)
-                            ((sun.misc.Unsafe) field.get(null))
-                                    .allocateInstance(RiptideRushArea.class);
+
+            var area = allocate(RiptideRushArea.class);
             var g = RiptideTestFixtures.config().resolveGeometry();
             UUID id = UUID.randomUUID();
             var plugin =
@@ -146,19 +141,6 @@ class RiptidePlayerStateTest {
                 serverField.set(null, previousServer);
             }
         }
-
-        private static void set(Object target, String name, Object value) throws Exception {
-            for (Class<?> type = target.getClass(); type != null; type = type.getSuperclass()) {
-                try {
-                    var field = type.getDeclaredField(name);
-                    field.setAccessible(true);
-                    field.set(target, value);
-                    return;
-                } catch (NoSuchFieldException ignored) {
-                }
-            }
-            throw new NoSuchFieldException(name);
-        }
     }
 
     @ExtendWith(ConfigurationStateExtension.class)
@@ -166,57 +148,62 @@ class RiptidePlayerStateTest {
     class RiptideEliminationMessagesCases {
         @BeforeEach
         void resetMessages() {
-            MessageConfig.RIPTIDE_RUSH_REASON_FELL = null;
-            MessageConfig.RIPTIDE_RUSH_REASON_LEFT_BEHIND = null;
-            MessageConfig.RIPTIDE_RUSH_REASON_WRONG_FLOOR = null;
-            MessageConfig.RIPTIDE_RUSH_REASON_WRONG_ANSWER = null;
-            MessageConfig.RIPTIDE_RUSH_REASON_MISSED_GATE = null;
-            MessageConfig.RIPTIDE_RUSH_REASON_DISCONNECTED = null;
-            MessageConfig.RIPTIDE_RUSH_ELIMINATED = null;
-            MessageConfig.RIPTIDE_RUSH_ELIMINATED_FALL = null;
-            MessageConfig.RIPTIDE_RUSH_ELIMINATED_FLOOR = null;
-            MessageConfig.RIPTIDE_RUSH_ELIMINATED_MATH = null;
-            MessageConfig.RIPTIDE_RUSH_ELIMINATED_DISCONNECTED = null;
+            RiptideRushMessages.RIPTIDE_RUSH_REASON_FELL = null;
+            RiptideRushMessages.RIPTIDE_RUSH_REASON_LEFT_BEHIND = null;
+            RiptideRushMessages.RIPTIDE_RUSH_REASON_WRONG_FLOOR = null;
+            RiptideRushMessages.RIPTIDE_RUSH_REASON_WRONG_ANSWER = null;
+            RiptideRushMessages.RIPTIDE_RUSH_REASON_MISSED_GATE = null;
+            RiptideRushMessages.RIPTIDE_RUSH_REASON_DISCONNECTED = null;
+            RiptideRushMessages.RIPTIDE_RUSH_ELIMINATED = null;
+            RiptideRushMessages.RIPTIDE_RUSH_ELIMINATED_FALL = null;
+            RiptideRushMessages.RIPTIDE_RUSH_ELIMINATED_FLOOR = null;
+            RiptideRushMessages.RIPTIDE_RUSH_ELIMINATED_MATH = null;
+            RiptideRushMessages.RIPTIDE_RUSH_ELIMINATED_DISCONNECTED = null;
         }
 
         @Test
         void eachEliminationCauseChoosesOnlyFromItsConfiguredVariants() {
-            MessageConfig.RIPTIDE_RUSH_REASON_FELL = "fell";
-            MessageConfig.RIPTIDE_RUSH_REASON_LEFT_BEHIND = "left";
-            MessageConfig.RIPTIDE_RUSH_REASON_WRONG_FLOOR = "floor";
-            MessageConfig.RIPTIDE_RUSH_REASON_WRONG_ANSWER = "answer";
-            MessageConfig.RIPTIDE_RUSH_REASON_MISSED_GATE = "gate";
-            MessageConfig.RIPTIDE_RUSH_REASON_DISCONNECTED = "disconnected";
-            MessageConfig.RIPTIDE_RUSH_ELIMINATED = "fallback";
-            MessageConfig.RIPTIDE_RUSH_ELIMINATED_FALL = "fall-a\n\nfall-b";
-            MessageConfig.RIPTIDE_RUSH_ELIMINATED_FLOOR = "floor-a\nfloor-b";
-            MessageConfig.RIPTIDE_RUSH_ELIMINATED_MATH = "math-a\nmath-b";
-            MessageConfig.RIPTIDE_RUSH_ELIMINATED_DISCONNECTED = "disconnect-a\ndisconnect-b";
+            RiptideRushMessages.RIPTIDE_RUSH_REASON_FELL = "fell";
+            RiptideRushMessages.RIPTIDE_RUSH_REASON_LEFT_BEHIND = "left";
+            RiptideRushMessages.RIPTIDE_RUSH_REASON_WRONG_FLOOR = "floor";
+            RiptideRushMessages.RIPTIDE_RUSH_REASON_WRONG_ANSWER = "answer";
+            RiptideRushMessages.RIPTIDE_RUSH_REASON_MISSED_GATE = "gate";
+            RiptideRushMessages.RIPTIDE_RUSH_REASON_DISCONNECTED = "disconnected";
+            RiptideRushMessages.RIPTIDE_RUSH_ELIMINATED = "fallback";
+            RiptideRushMessages.RIPTIDE_RUSH_ELIMINATED_FALL = "fall-a\n\nfall-b";
+            RiptideRushMessages.RIPTIDE_RUSH_ELIMINATED_FLOOR = "floor-a\nfloor-b";
+            RiptideRushMessages.RIPTIDE_RUSH_ELIMINATED_MATH = "math-a\nmath-b";
+            RiptideRushMessages.RIPTIDE_RUSH_ELIMINATED_DISCONNECTED = "disconnect-a\ndisconnect-b";
 
-            assertVariants(MessageConfig.RIPTIDE_RUSH_REASON_FELL, Set.of("fall-a", "fall-b"));
             assertVariants(
-                    MessageConfig.RIPTIDE_RUSH_REASON_LEFT_BEHIND, Set.of("fall-a", "fall-b"));
+                    RiptideRushMessages.RIPTIDE_RUSH_REASON_FELL, Set.of("fall-a", "fall-b"));
             assertVariants(
-                    MessageConfig.RIPTIDE_RUSH_REASON_WRONG_FLOOR, Set.of("floor-a", "floor-b"));
+                    RiptideRushMessages.RIPTIDE_RUSH_REASON_LEFT_BEHIND,
+                    Set.of("fall-a", "fall-b"));
             assertVariants(
-                    MessageConfig.RIPTIDE_RUSH_REASON_WRONG_ANSWER, Set.of("math-a", "math-b"));
+                    RiptideRushMessages.RIPTIDE_RUSH_REASON_WRONG_FLOOR,
+                    Set.of("floor-a", "floor-b"));
             assertVariants(
-                    MessageConfig.RIPTIDE_RUSH_REASON_MISSED_GATE, Set.of("math-a", "math-b"));
+                    RiptideRushMessages.RIPTIDE_RUSH_REASON_WRONG_ANSWER,
+                    Set.of("math-a", "math-b"));
             assertVariants(
-                    MessageConfig.RIPTIDE_RUSH_REASON_DISCONNECTED,
+                    RiptideRushMessages.RIPTIDE_RUSH_REASON_MISSED_GATE,
+                    Set.of("math-a", "math-b"));
+            assertVariants(
+                    RiptideRushMessages.RIPTIDE_RUSH_REASON_DISCONNECTED,
                     Set.of("disconnect-a", "disconnect-b"));
         }
 
         @Test
         void missingOrBlankCategoriesFallBackToTheGenericAnnouncement() {
-            MessageConfig.RIPTIDE_RUSH_REASON_FELL = "fell";
-            MessageConfig.RIPTIDE_RUSH_ELIMINATED = "fallback";
-            MessageConfig.RIPTIDE_RUSH_ELIMINATED_FALL = " \n ";
+            RiptideRushMessages.RIPTIDE_RUSH_REASON_FELL = "fell";
+            RiptideRushMessages.RIPTIDE_RUSH_ELIMINATED = "fallback";
+            RiptideRushMessages.RIPTIDE_RUSH_ELIMINATED_FALL = " \n ";
 
             assertEquals(
                     "fallback",
                     RiptideEliminationMessages.choose(
-                            MessageConfig.RIPTIDE_RUSH_REASON_FELL, new Random(1)));
+                            RiptideRushMessages.RIPTIDE_RUSH_REASON_FELL, new Random(1)));
         }
 
         private static void assertVariants(String reason, Set<String> expected) {

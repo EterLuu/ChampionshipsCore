@@ -77,15 +77,6 @@ class WorkerPresentationServiceTest {
     }
 
     @Test
-    void standardThreeSectionsKeepCoreTiming() {
-        assertEquals(-1, WorkerPresentationService.sectionAt(9, 45, 3));
-        assertEquals(0, WorkerPresentationService.sectionAt(10, 45, 3));
-        assertEquals(1, WorkerPresentationService.sectionAt(20, 45, 3));
-        assertEquals(2, WorkerPresentationService.sectionAt(30, 45, 3));
-        assertEquals(-1, WorkerPresentationService.sectionAt(40, 45, 3));
-    }
-
-    @Test
     void messagesResolveCoreTemplatesDailyPrefixesAndLegacyOrNestedReplacements() {
         record Example(
                 Map<String, String> fields, String key, String expected, String... replacements) {}

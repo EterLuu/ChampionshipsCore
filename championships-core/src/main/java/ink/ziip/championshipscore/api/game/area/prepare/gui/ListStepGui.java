@@ -13,7 +13,7 @@ import ink.ziip.championshipscore.api.gui.MenuLayout;
 import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.GuiText;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -161,7 +161,7 @@ public final class ListStepGui {
             if (!session.getFlow().isInCorrectWorld(player, session.getTarget())) {
                 CoreMessages.sendAdminError(
                         player,
-                        MessageConfig.MAP_EDITOR_STEP_GO_TO_MAP_WORLD_FIRST.replace(
+                        MapEditorMessages.MAP_EDITOR_STEP_GO_TO_MAP_WORLD_FIRST.replace(
                                 "%world%", session.getTarget().worldName()));
                 return;
             }
@@ -369,7 +369,7 @@ public final class ListStepGui {
             if (!session.getFlow().isInCorrectWorld(player, session.getTarget())) {
                 CoreMessages.sendAdminError(
                         player,
-                        MessageConfig.MAP_EDITOR_STEP_GO_TO_MAP_WORLD_FIRST.replace(
+                        MapEditorMessages.MAP_EDITOR_STEP_GO_TO_MAP_WORLD_FIRST.replace(
                                 "%world%", session.getTarget().worldName()));
                 return;
             }

@@ -1,5 +1,8 @@
 package ink.ziip.championshipscore.api.game.arena;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+import static ink.ziip.championshipscore.support.TestObjects.proxy;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
@@ -91,12 +94,8 @@ class ArenaChunkPreloaderTest {
         serverField.setAccessible(true);
         Object previous = serverField.get(null);
         try {
-            var unsafeField = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-            unsafeField.setAccessible(true);
-            var plugin =
-                    (ChampionshipsCore)
-                            ((sun.misc.Unsafe) unsafeField.get(null))
-                                    .allocateInstance(ChampionshipsCore.class);
+
+            var plugin = allocate(ChampionshipsCore.class);
             var loaded = ChampionshipsCore.class.getDeclaredField("loaded");
             loaded.setAccessible(true);
             loaded.set(plugin, true);
@@ -155,10 +154,5 @@ class ArenaChunkPreloaderTest {
         } finally {
             serverField.set(null, previous);
         }
-    }
-
-    private static <T> T proxy(Class<T> type, InvocationHandler handler) {
-        return type.cast(
-                Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[] {type}, handler));
     }
 }

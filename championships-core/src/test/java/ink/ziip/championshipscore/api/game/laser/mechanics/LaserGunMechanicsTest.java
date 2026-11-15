@@ -10,29 +10,16 @@ import org.bukkit.util.Vector;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Proxy;
-import java.util.ArrayList;
 import java.util.List;
 
 class LaserGunMechanicsTest {
     @Test
     void smgRetainsFractionalTickRemaindersWhileRecoveringFromLateInput() {
-        Double deadline = null;
-        List<Integer> fired = new ArrayList<>();
-        for (int tick = 0; tick <= 10; tick++) {
-            int now = tick;
-            if (deadline == null || deadline - now <= 1.0E-9D) {
-                fired.add(tick);
-                deadline = LaserGunMechanics.nextShot(now, deadline, LaserGun.SMG);
-            }
-        }
-        assertEquals(List.of(0, 2, 3, 4, 6, 7, 8, 10), fired);
+        // Tick-by-tick firing through LaserWeaponState is covered by LaserWeaponStateTest.
+        assertEquals(4.0D / 3.0D, LaserGunMechanics.nextShot(0, null, LaserGun.SMG), 1.0E-9D);
+        assertEquals(
+                8.0D / 3.0D, LaserGunMechanics.nextShot(2, 4.0D / 3.0D, LaserGun.SMG), 1.0E-9D);
         assertEquals(101.333333333D, LaserGunMechanics.nextShot(100, 10.0D, LaserGun.SMG), 1.0E-9D);
-    }
-
-    @Test
-    void sniperUsesSlownessOneWhileHeldAndSlownessThreeWhileAiming() {
-        assertEquals(0, LaserGunMechanics.slownessAmplifier(LaserGun.SNIPER, false));
-        assertEquals(2, LaserGunMechanics.slownessAmplifier(LaserGun.SNIPER, true));
     }
 
     @Test
@@ -109,7 +96,7 @@ class LaserGunMechanicsTest {
     }
 
     @Test
-    void onlySmgAndMachineAreAutomaticAndSniperHasNoSpeedBoost() {
+    void onlySmgAndMachineAreAutomaticAndMovementEffectsFollowTheHeldWeapon() {
         assertTrue(LaserGunMechanics.automatic(LaserGun.SMG));
         assertTrue(LaserGunMechanics.automatic(LaserGun.MACHINE));
         assertFalse(LaserGunMechanics.automatic(LaserGun.RIFLE));
@@ -123,6 +110,9 @@ class LaserGunMechanicsTest {
         assertEquals(0, LaserGunMechanics.speedAmplifier(null, false));
         assertEquals(-1, LaserGunMechanics.speedAmplifier(LaserGun.RIFLE, false));
         assertEquals(0, LaserGunMechanics.speedAmplifier(LaserGun.SHOTGUN, false));
+        // Sniper: Slowness I while held, Slowness III while aiming.
+        assertEquals(0, LaserGunMechanics.slownessAmplifier(LaserGun.SNIPER, false));
+        assertEquals(2, LaserGunMechanics.slownessAmplifier(LaserGun.SNIPER, true));
         assertEquals(0, LaserGunMechanics.slownessAmplifier(LaserGun.MACHINE, false));
         assertEquals(0, LaserGunMechanics.slownessAmplifier(LaserGun.MACHINE, true));
         for (LaserGun gun : List.of(LaserGun.RIFLE, LaserGun.SHOTGUN, LaserGun.SMG)) {

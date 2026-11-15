@@ -3,7 +3,7 @@ package ink.ziip.championshipscore.integration.papi;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.rank.RankManager;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.ScoreMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -35,11 +35,11 @@ public class LeaderboardPlaceholder extends BasePlaceholder {
 
                 Map.Entry<UUID, Double> playerEntry =
                         rankManager.getPlayerLeaderboard().get(num - 1);
-                return MessageConfig.RANK_PLAYER_BOARD_ENTRY
+                return ScoreMessages.RANK_PLAYER_BOARD_ENTRY
                         .replace("%player%", CoreMessages.formatPlayerName(playerEntry.getKey()))
                         .replace("%player_point%", LegacyText.formatPoints(playerEntry.getValue()));
             } catch (Exception ignored) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
         }
         if (params.startsWith("team_")) {
@@ -48,11 +48,11 @@ public class LeaderboardPlaceholder extends BasePlaceholder {
 
                 Map.Entry<ChampionshipTeam, Double> teamEntry =
                         rankManager.getTeamLeaderboard().get(num - 1);
-                return MessageConfig.RANK_TEAM_BOARD_ENTRY
+                return ScoreMessages.RANK_TEAM_BOARD_ENTRY
                         .replace("%team%", teamEntry.getKey().getColoredName())
                         .replace("%team_point%", LegacyText.formatPoints(teamEntry.getValue()));
             } catch (Exception ignored) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
         }
 

@@ -9,6 +9,7 @@ import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideCourseGeome
 import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideCoursePlan;
 import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideCoursePlanner;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.RiptideRushMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 
 import org.bukkit.Material;
@@ -109,7 +110,8 @@ public final class RiptidePassRun implements AutoCloseable {
                                 config.getMaximumOperand())
                         : null;
         if (question != null ? frame.localTick() % 10 == 0 : tick == 0) {
-            String warning = LegacyText.translateColorCodes(MessageConfig.RIPTIDE_RUSH_SWEEP_TITLE);
+            String warning =
+                    LegacyText.translateColorCodes(RiptideRushMessages.RIPTIDE_RUSH_SWEEP_TITLE);
             String title = warning, subtitle = "";
             if (question != null) {
                 var display = RiptideQuestionDisplay.of(question, active.number());

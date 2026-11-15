@@ -7,7 +7,7 @@ import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.rank.RankManager;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.MainCommand;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.DailyMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -53,9 +53,9 @@ public class VoteManager extends BaseManager {
 
         timer = VOTE_DURATION_SECONDS;
 
-        CoreMessages.sendMessageToAllPlayers(MessageConfig.VOTE_START_VOTE);
+        CoreMessages.sendMessageToAllPlayers(DailyMessages.VOTE_START_VOTE);
         CoreMessages.sendTitleToAllPlayers(
-                MessageConfig.VOTE_START_VOTE_TITLE, MessageConfig.VOTE_START_VOTE_SUBTITLE);
+                DailyMessages.VOTE_START_VOTE_TITLE, DailyMessages.VOTE_START_VOTE_SUBTITLE);
         CoreMessages.playSoundToAllPlayers(Sound.BLOCK_NOTE_BLOCK_PLING, 0.8F, 1.2F);
 
         updateVoteBars();
@@ -96,10 +96,10 @@ public class VoteManager extends BaseManager {
             String selectedGame =
                     Optional.ofNullable(getPlayerVote(uuid))
                             .map(GameTypeEnum::toString)
-                            .orElse(MessageConfig.VOTE_NOT_VOTED);
+                            .orElse(DailyMessages.VOTE_NOT_VOTED);
             voteBar.setTitle(
                     LegacyText.translateColorCodes(
-                            MessageConfig.VOTE_BOSS_BAR
+                            DailyMessages.VOTE_BOSS_BAR
                                     .replace("%time%", time)
                                     .replace("%votes%", String.valueOf(totalVotes))
                                     .replace("%players%", String.valueOf(eligibleVoters))
@@ -155,13 +155,13 @@ public class VoteManager extends BaseManager {
 
         StringBuilder stringBuilder = new StringBuilder();
 
-        stringBuilder.append(MessageConfig.VOTE_END_VOTE).append("\n");
+        stringBuilder.append(DailyMessages.VOTE_END_VOTE).append("\n");
 
         int i = 1;
         for (Map.Entry<GameTypeEnum, Integer> entry : list) {
             if (i > 3) break;
             String row =
-                    MessageConfig.VOTE_VOTE_BOARD_ROW
+                    DailyMessages.VOTE_VOTE_BOARD_ROW
                             .replace("%game_rank%", String.valueOf(i))
                             .replace("%game%", entry.getKey().toString())
                             .replace("%game_votes%", String.valueOf(entry.getValue()));
@@ -171,9 +171,9 @@ public class VoteManager extends BaseManager {
         }
 
         if (list.isEmpty()) {
-            stringBuilder.append(MessageConfig.VOTE_NO_VALID_VOTES);
+            stringBuilder.append(DailyMessages.VOTE_NO_VALID_VOTES);
             CoreMessages.sendTitleToAllPlayers(
-                    MessageConfig.VOTE_END_VOTE_TITLE, MessageConfig.VOTE_NO_VALID_VOTES, 40);
+                    DailyMessages.VOTE_END_VOTE_TITLE, DailyMessages.VOTE_NO_VALID_VOTES, 40);
         } else {
             int highestVotes = list.getFirst().getValue();
             List<Map.Entry<GameTypeEnum, Integer>> tied =
@@ -183,13 +183,13 @@ public class VoteManager extends BaseManager {
             if (tied.size() > 1) {
                 stringBuilder
                         .append(
-                                MessageConfig.VOTE_TIED_WINNER.replace(
+                                DailyMessages.VOTE_TIED_WINNER.replace(
                                         "%game%", winner.getKey().toString()))
                         .append("\n");
             }
             CoreMessages.sendTitleToAllPlayers(
-                    MessageConfig.VOTE_END_VOTE_TITLE,
-                    MessageConfig.VOTE_END_VOTE_SUBTITLE
+                    DailyMessages.VOTE_END_VOTE_TITLE,
+                    DailyMessages.VOTE_END_VOTE_SUBTITLE
                             .replace("%game%", winner.getKey().toString())
                             .replace("%votes%", String.valueOf(winner.getValue())),
                     60);
@@ -223,51 +223,51 @@ public class VoteManager extends BaseManager {
     public void vote(Player player, GameTypeEnum gameTypeEnum) {
         if (player.hasPermission(MainCommand.ADMIN_PERMISSION)) {
             playerVotes.remove(player.getUniqueId());
-            player.sendMessage(MessageConfig.VOTE_VOTE_FAILED_ADMIN);
+            player.sendMessage(DailyMessages.VOTE_VOTE_FAILED_ADMIN);
             return;
         }
         if (!vote) {
-            player.sendMessage(MessageConfig.VOTE_VOTE_FAILED_NOT_TIME);
+            player.sendMessage(DailyMessages.VOTE_VOTE_FAILED_NOT_TIME);
             return;
         }
 
         ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeamByPlayer(player);
         if (championshipTeam == null) {
-            player.sendMessage(MessageConfig.VOTE_VOTE_FAILED_NOT_PLAYER);
+            player.sendMessage(DailyMessages.VOTE_VOTE_FAILED_NOT_PLAYER);
             return;
         }
 
         if (gameTypeEnum == null
                 || FinaleGameRegistry.isRegistered(gameTypeEnum)
                 || !plugin.getGameManager().isGameEnabled(gameTypeEnum)) {
-            player.sendMessage(MessageConfig.VOTE_VOTE_FAILED_NOT_GAME);
+            player.sendMessage(DailyMessages.VOTE_VOTE_FAILED_NOT_GAME);
             return;
         }
 
         if (rankManager.getGameOrder(gameTypeEnum) != -1) {
-            player.sendMessage(MessageConfig.VOTE_VOTE_FAILED_ALREADY_PLAYED);
+            player.sendMessage(DailyMessages.VOTE_VOTE_FAILED_ALREADY_PLAYED);
             return;
         }
 
         if (!hasPublishedArea(gameTypeEnum)) {
-            player.sendMessage(MessageConfig.VOTE_VOTE_FAILED_UNPUBLISHED);
+            player.sendMessage(DailyMessages.VOTE_VOTE_FAILED_UNPUBLISHED);
             return;
         }
 
         playerVotes.put(player.getUniqueId(), gameTypeEnum);
         CoreMessages.sendActionBar(
-                player, MessageConfig.VOTE_PLAYER_VOTE.replace("%game%", gameTypeEnum.toString()));
+                player, DailyMessages.VOTE_PLAYER_VOTE.replace("%game%", gameTypeEnum.toString()));
         updateVoteBars();
     }
 
     public void openVoteMenu(Player player) {
         if (!vote) {
-            player.sendMessage(MessageConfig.VOTE_VOTE_FAILED_NOT_TIME);
+            player.sendMessage(DailyMessages.VOTE_VOTE_FAILED_NOT_TIME);
             return;
         }
         boolean adminPreview = player.hasPermission(MainCommand.ADMIN_PERMISSION);
         if (!adminPreview && plugin.getTeamManager().getTeamByPlayer(player) == null) {
-            player.sendMessage(MessageConfig.VOTE_VOTE_FAILED_NOT_PLAYER);
+            player.sendMessage(DailyMessages.VOTE_VOTE_FAILED_NOT_PLAYER);
             return;
         }
         voteMenu.open(player, adminPreview);
@@ -307,8 +307,8 @@ public class VoteManager extends BaseManager {
 
     String unavailableReason(GameTypeEnum gameType) {
         return rankManager.getGameOrder(gameType) != -1
-                ? MessageConfig.VOTE_UNAVAILABLE_PLAYED
-                : MessageConfig.VOTE_UNAVAILABLE_UNPUBLISHED;
+                ? DailyMessages.VOTE_UNAVAILABLE_PLAYED
+                : DailyMessages.VOTE_UNAVAILABLE_UNPUBLISHED;
     }
 
     private boolean hasPublishedArea(GameTypeEnum gameTypeEnum) {

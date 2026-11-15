@@ -1,5 +1,8 @@
 package ink.ziip.championshipscore.api.game.lasershowdown.runtime;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+import static ink.ziip.championshipscore.support.TestObjects.set;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.api.game.model.GameRunMode;
@@ -7,7 +10,6 @@ import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Field;
 import java.util.*;
 
 class LaserShowdownSettlementTest {
@@ -93,26 +95,5 @@ class LaserShowdownSettlementTest {
         public Set<UUID> getMembers() {
             return Set.of(member);
         }
-    }
-
-    private static Field field(Class<?> type, String name) throws Exception {
-        for (; type != null; type = type.getSuperclass())
-            try {
-                Field f = type.getDeclaredField(name);
-                f.setAccessible(true);
-                return f;
-            } catch (NoSuchFieldException ignored) {
-            }
-        throw new NoSuchFieldException(name);
-    }
-
-    private static void set(Object o, String n, Object v) throws Exception {
-        field(o.getClass(), n).set(o, v);
-    }
-
-    private static <T> T allocate(Class<T> t) throws Exception {
-        return t.cast(
-                ((sun.misc.Unsafe) field(sun.misc.Unsafe.class, "theUnsafe").get(null))
-                        .allocateInstance(t));
     }
 }

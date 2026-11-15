@@ -24,7 +24,6 @@ import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,17 +45,7 @@ public abstract class BaseConfigurationFile {
 
     /** Annotated fields of this configuration, including inherited map options. */
     protected final List<Field> getConfigFields() {
-        List<Field> fields = new ArrayList<>();
-        for (Class<?> type = getClass();
-                type != BaseConfigurationFile.class;
-                type = type.getSuperclass()) {
-            for (Field field : type.getDeclaredFields()) {
-                if (field.getAnnotation(ConfigOption.class) == null) continue;
-                field.setAccessible(true);
-                fields.add(field);
-            }
-        }
-        return fields;
+        return ink.ziip.championshipscore.configuration.ConfigurationFields.of(getClass());
     }
 
     /** Loads the bundled template and the configuration stored below the plugin folder. */

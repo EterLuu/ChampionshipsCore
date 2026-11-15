@@ -48,6 +48,8 @@ public final class ChampionshipsAuthProxyPlugin extends Plugin implements Listen
     public void onEnable() {
         try {
             Configuration config = loadConfiguration();
+            ProxyBackendRouting.configure(
+                    getProxy(), config.getStringList("backend-routing.resolve-on-connect"));
             identities =
                     new ProxyIdentityClient(
                             config.getString("api.base-url"),

@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.hotycodydusky.config;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
@@ -14,12 +16,8 @@ import java.util.Map;
 class HotyCodyDuskyConfigTest {
     @Test
     void existingSquareOriginsAndTheirDistinctHeightBoundsRemainOneMap() throws Exception {
-        var unsafeField = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-        unsafeField.setAccessible(true);
-        var plugin =
-                (ChampionshipsCore)
-                        ((sun.misc.Unsafe) unsafeField.get(null))
-                                .allocateInstance(ChampionshipsCore.class);
+
+        var plugin = allocate(ChampionshipsCore.class);
         var config = new HotyCodyDuskyConfig(plugin, "area");
         var yaml = new YamlConfiguration();
         var layout = yaml.createSection("copy-layout");
@@ -48,12 +46,8 @@ class HotyCodyDuskyConfigTest {
 
     @Test
     void incompleteCopyDefinitionsRemainDrafts() throws Exception {
-        var unsafeField = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-        unsafeField.setAccessible(true);
-        var plugin =
-                (ChampionshipsCore)
-                        ((sun.misc.Unsafe) unsafeField.get(null))
-                                .allocateInstance(ChampionshipsCore.class);
+
+        var plugin = allocate(ChampionshipsCore.class);
         var config = new HotyCodyDuskyConfig(plugin, "area");
         assertFalse(config.isPrepareReady());
         assertNull(config.getPlayerSpawnPoint());

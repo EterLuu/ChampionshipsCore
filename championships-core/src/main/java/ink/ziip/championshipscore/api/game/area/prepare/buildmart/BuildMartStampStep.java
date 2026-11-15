@@ -6,7 +6,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
 import ink.ziip.championshipscore.api.game.arena.ArenaPreparer;
 import ink.ziip.championshipscore.api.game.buildmart.config.BuildMartConfig;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -46,22 +46,24 @@ final class BuildMartStampStep extends PrepareStep {
     public String stamp(@NotNull PrepareSession session, @NotNull Player player, int count) {
         if (count < 1)
             return CoreMessages.formatAdminError(
-                    MessageConfig.MAP_EDITOR_BUILD_BASE_COUNT_POSITIVE);
+                    MapEditorMessages.MAP_EDITOR_BUILD_BASE_COUNT_POSITIVE);
         if (!base.isFile())
             return CoreMessages.formatAdminError(
-                    MessageConfig.MAP_EDITOR_BUILD_BASE_TEMPLATE_MISSING);
+                    MapEditorMessages.MAP_EDITOR_BUILD_BASE_TEMPLATE_MISSING);
         World world = Bukkit.getWorld(session.getTarget().worldName());
         if (world == null)
-            return CoreMessages.formatAdminError(MessageConfig.MAP_EDITOR_BUILD_WORLD_NOT_LOADED);
+            return CoreMessages.formatAdminError(
+                    MapEditorMessages.MAP_EDITOR_BUILD_WORLD_NOT_LOADED);
         if (!session.getTarget().canSaveMap())
-            return CoreMessages.formatAdminError(MessageConfig.MAP_EDITOR_BUILD_INSTANCE_RUNNING);
+            return CoreMessages.formatAdminError(
+                    MapEditorMessages.MAP_EDITOR_BUILD_INSTANCE_RUNNING);
         BuildMartConfig config = (BuildMartConfig) session.getTarget().config();
         if (config.getHubPos1() == null || config.getHubPos2() == null)
-            return CoreMessages.formatAdminError(MessageConfig.MAP_EDITOR_BUILD_HUB_MISSING);
+            return CoreMessages.formatAdminError(MapEditorMessages.MAP_EDITOR_BUILD_HUB_MISSING);
         Vector baseOrigin = config.getBaseSourceOrigin();
         if (baseOrigin == null)
             return CoreMessages.formatAdminError(
-                    MessageConfig.MAP_EDITOR_BUILD_BASE_ORIGIN_MISSING);
+                    MapEditorMessages.MAP_EDITOR_BUILD_BASE_ORIGIN_MISSING);
         try {
             Vector baseSize =
                     session.getPlugin().getWorldEditManager().getSchematicDimensions(base);
@@ -80,7 +82,7 @@ final class BuildMartStampStep extends PrepareStep {
             ArenaPreparer.stampAdditionalCopies(session.getPlugin(), world, base, grid, count + 1);
         } catch (Exception e) {
             return CoreMessages.formatAdminError(
-                    MessageConfig.MAP_EDITOR_BUILD_GENERATE_FAILED.replace(
+                    MapEditorMessages.MAP_EDITOR_BUILD_GENERATE_FAILED.replace(
                             "%error%", e.getMessage()));
         }
         config.setBaseCount(count);
@@ -89,7 +91,7 @@ final class BuildMartStampStep extends PrepareStep {
         session.setStamped(true);
         player.teleport(config.getBaseGrid().origin(0).toLocation(world));
         return CoreMessages.formatAdminSuccess(
-                MessageConfig.MAP_EDITOR_BUILD_BASE_GENERATED.replace(
+                MapEditorMessages.MAP_EDITOR_BUILD_BASE_GENERATED.replace(
                         "%count%", String.valueOf(count)));
     }
 }

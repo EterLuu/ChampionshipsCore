@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.TGTTOSMessages;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
 import lombok.Getter;
@@ -209,7 +210,7 @@ public class TGTTOSHandler extends BaseListener {
                     return;
                 }
 
-                CoreMessages.sendActionBar(player, MessageConfig.TGTTOS_FALL_INTO_VOID);
+                CoreMessages.sendActionBar(player, TGTTOSMessages.TGTTOS_FALL_INTO_VOID);
             }
             tgttosTeamArea.teleportPlayerToSpawnPoint(player);
             return;

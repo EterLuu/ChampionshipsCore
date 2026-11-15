@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.api.finale.FinaleGameRegistry;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.schedule.ScheduleManager;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.EventMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -37,20 +38,20 @@ public final class EventStartSubCommand extends BaseSubCommand {
         if (game == null
                 || !plugin.getGameManager().isGameEnabled(game)
                 || !EventCommandSupport.canSchedule(game)) {
-            CoreMessages.sendAdminError(sender, MessageConfig.EVENT_START_GAME_INVALID);
+            CoreMessages.sendAdminError(sender, EventMessages.EVENT_START_GAME_INVALID);
             return true;
         }
         EventStateStore.ActiveEvent active = new EventStateStore(plugin).load();
         // Imports are optional for every game; imported events keep their configured restrictions.
         if (active != null) {
             if (active.archived()) {
-                CoreMessages.sendAdminError(sender, MessageConfig.EVENT_START_ARCHIVED);
+                CoreMessages.sendAdminError(sender, EventMessages.EVENT_START_ARCHIVED);
                 return true;
             }
             if (!active.allows(game)) {
                 CoreMessages.sendAdminError(
                         sender,
-                        MessageConfig.EVENT_START_GAME_NOT_IN_EVENT
+                        EventMessages.EVENT_START_GAME_NOT_IN_EVENT
                                 .replace("%event%", active.title())
                                 .replace("%game%", game.name()));
                 return true;
@@ -86,16 +87,16 @@ public final class EventStartSubCommand extends BaseSubCommand {
         }
         if (action == ScheduleManager.EventAction.STARTED) {
             CoreMessages.sendAdminSuccess(
-                    sender, MessageConfig.EVENT_START_STARTED.replace("%game%", game.name()));
+                    sender, EventMessages.EVENT_START_STARTED.replace("%game%", game.name()));
         } else if (action == ScheduleManager.EventAction.STOPPED) {
             CoreMessages.sendAdminInfo(
                     sender,
-                    MessageConfig.EVENT_START_EMERGENCY_STOPPED.replace("%game%", game.name()));
+                    EventMessages.EVENT_START_EMERGENCY_STOPPED.replace("%game%", game.name()));
         } else if (action == ScheduleManager.EventAction.UNAVAILABLE) {
             String reason = plugin.getScheduleManager().getFormalEventStartFailure(game);
             CoreMessages.sendAdminError(
                     sender,
-                    MessageConfig.EVENT_START_UNAVAILABLE
+                    EventMessages.EVENT_START_UNAVAILABLE
                             .replace("%game%", game.toString())
                             .replace(
                                     "%detail%",
@@ -104,7 +105,7 @@ public final class EventStartSubCommand extends BaseSubCommand {
                                                     "event-start-sub-command.on-command-1")
                                             : reason));
         } else {
-            CoreMessages.sendAdminError(sender, MessageConfig.EVENT_START_NO_SCHEDULE);
+            CoreMessages.sendAdminError(sender, EventMessages.EVENT_START_NO_SCHEDULE);
         }
         return true;
     }

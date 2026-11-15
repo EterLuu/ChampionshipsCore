@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.api.event.ChampionshipResultsExporter;
 import ink.ziip.championshipscore.api.event.EventStateStore;
 import ink.ziip.championshipscore.api.rank.ChampionshipArchiveSnapshot;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.EventMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -33,18 +34,18 @@ public final class EventExportSubCommand extends BaseSubCommand {
         String champion = args.length == 0 ? null : String.join(" ", args);
         EventStateStore.ActiveEvent active = new EventStateStore(plugin).load();
         if (active == null) {
-            CoreMessages.sendAdminError(sender, MessageConfig.EVENT_EXPORT_NO_EVENT);
+            CoreMessages.sendAdminError(sender, EventMessages.EVENT_EXPORT_NO_EVENT);
             return true;
         }
         if (plugin.getScheduleManager().hasRunningFormalEvent()) {
-            CoreMessages.sendAdminError(sender, MessageConfig.EVENT_EXPORT_STILL_RUNNING);
+            CoreMessages.sendAdminError(sender, EventMessages.EVENT_EXPORT_STILL_RUNNING);
             return true;
         }
         if (plugin.getRankManager().getRound() < 1) {
-            CoreMessages.sendAdminError(sender, MessageConfig.EVENT_EXPORT_NO_POINTS);
+            CoreMessages.sendAdminError(sender, EventMessages.EVENT_EXPORT_NO_POINTS);
             return true;
         }
-        CoreMessages.sendAdminInfo(sender, MessageConfig.EVENT_EXPORT_SUMMARIZING);
+        CoreMessages.sendAdminInfo(sender, EventMessages.EVENT_EXPORT_SUMMARIZING);
         plugin.getRankManager()
                 .createChampionshipArchiveSnapshot()
                 .whenComplete(
@@ -89,7 +90,7 @@ public final class EventExportSubCommand extends BaseSubCommand {
                             () ->
                                     CoreMessages.sendAdminSuccess(
                                             sender,
-                                            MessageConfig.EVENT_EXPORT_COMPLETED
+                                            EventMessages.EVENT_EXPORT_COMPLETED
                                                     .replace("%event%", active.title())
                                                     .replace(
                                                             "%teams%",
@@ -108,14 +109,14 @@ public final class EventExportSubCommand extends BaseSubCommand {
 
     private void error(CommandSender sender, String message) {
         String detail =
-                message == null || message.isBlank() ? MessageConfig.EVENT_UNKNOWN_ERROR : message;
+                message == null || message.isBlank() ? EventMessages.EVENT_UNKNOWN_ERROR : message;
         Bukkit.getScheduler()
                 .runTask(
                         plugin,
                         () ->
                                 CoreMessages.sendAdminError(
                                         sender,
-                                        MessageConfig.EVENT_EXPORT_FAILED.replace(
+                                        EventMessages.EVENT_EXPORT_FAILED.replace(
                                                 "%detail%", detail)));
     }
 

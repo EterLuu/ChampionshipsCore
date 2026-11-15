@@ -1,7 +1,9 @@
 package ink.ziip.championshipscore.command.team;
 
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.AdminMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.TeamMessages;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -37,7 +39,7 @@ public class TeamDeleteSubCommand extends BaseSubCommand {
                                     == ink.ziip.championshipscore.api.team.TeamManager
                                             .TeamDeletionResult.DELETED) {
                                 sender.sendMessage(
-                                        MessageConfig.TEAM_SUCCESSFULLY_DELETED.replace(
+                                        TeamMessages.TEAM_SUCCESSFULLY_DELETED.replace(
                                                 "%team%", args[0]));
                                 return;
                             }
@@ -53,9 +55,9 @@ public class TeamDeleteSubCommand extends BaseSubCommand {
                                                                     .FAILED
                                                     ? MessageConfig.codeText(
                                                             "team-delete-sub-command.on-command-1")
-                                                    : MessageConfig.REASON_TEAM_DOES_NOT_EXIST;
+                                                    : AdminMessages.REASON_TEAM_DOES_NOT_EXIST;
                             sender.sendMessage(
-                                    MessageConfig.TEAM_DELETED_FAILED
+                                    TeamMessages.TEAM_DELETED_FAILED
                                             .replace("%team%", args[0])
                                             .replace("%reason%", reason));
                         });

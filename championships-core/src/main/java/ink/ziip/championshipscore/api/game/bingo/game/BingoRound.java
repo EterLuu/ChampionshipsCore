@@ -23,14 +23,18 @@ import ink.ziip.championshipscore.api.game.bingo.task.TaskDisplayMode;
 import ink.ziip.championshipscore.api.game.bingo.task.TaskGenerator;
 import ink.ziip.championshipscore.api.game.bingo.util.BingoTeamAdapter;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.bingo.engine.BingoScoringEngine;
+import ink.ziip.championshipscore.bingo.engine.PlayerAward;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoEventObjectiveEvaluator;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoEventObjectiveRule;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoRidingTravel;
 import ink.ziip.championshipscore.platform.bukkit.gui.BingoTaskItems;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
-import ink.ziip.championshipscore.protocol.BingoMode;
 import ink.ziip.championshipscore.protocol.BingoRemix;
+import ink.ziip.championshipscore.protocol.BingoScoringRules;
 import ink.ziip.championshipscore.protocol.BingoVariantRules;
+import ink.ziip.championshipscore.protocol.CompletionObservation;
+import ink.ziip.championshipscore.protocol.TeamSnapshot;
 
 import net.kyori.adventure.text.Component;
 
@@ -46,11 +50,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 
 /**
  * One active bingo round: a generated task layout shared by every team, each tracked on the shared
- * {@link BingoCard} via per-team completion state on each {@link GameTask}. Holds points scoring
- * and per-player statistic baselines.
+ * {@link BingoCard} via per-team completion records on each {@link GameTask}. The shared scoring
+ * engine owns accepted claims, totals and win detection; card records project those decisions for
+ * rendering. Participant membership and individual awards are frozen for the round.
  *
  * <p>Variant rules control cell locking, chain adjacency, cooperative claims and differential
  * layouts. Win/timeout resolution belongs to the arena coordinator.
@@ -59,7 +65,6 @@ public final class BingoRound {
     private final CardSize size;
     private final BingoVariantRules variant;
     private final boolean locksTasks;
-    private final boolean chain;
     private final Map<ChampionshipTeam, int[]> parallaxPermutations;
     private final CardDisplayInfo displayInfo;
     private final List<GameTask> layout;
@@ -67,9 +72,11 @@ public final class BingoRound {
     private final Map<ChampionshipTeam, BingoCard> differentialTeamCards;
     private final Map<UUID, BingoCard> differentialPlayerCards;
     private final Map<UUID, ChampionshipTeam> playerTeams = new HashMap<>();
-    private final Map<Integer, java.util.LinkedHashMap<String, Long>> differentialClaims =
-            new HashMap<>();
-    private int lastDifferentialClaimRank;
+    private final UUID scoringId = UUID.randomUUID();
+    private final Map<ChampionshipTeam, Integer> scoringTeamIds = new HashMap<>();
+    private final BingoScoringEngine scoring;
+    private long completionSequence;
+    private final Function<TaskGenerator.GeneratorSettings, List<GameTask>> taskGenerator;
     private final List<ChampionshipTeam> teams;
     private final Set<TaskData.TaskType> includedTypes;
     private final Set<String> extraExcludedTags;
@@ -95,17 +102,17 @@ public final class BingoRound {
      */
     private RoundOutcome outcome;
 
-    /** Points scoring state. */
-    private final int[] itemPoints;
-
-    private final int lineBonus;
-    private final int lineBonusMajorCount;
-    private final int lineBonusMinor;
-    private final Map<ChampionshipTeam, Integer> scores = new HashMap<>();
-    private final Map<ChampionshipTeam, Integer> awardedLines = new HashMap<>();
-
-    /** One committed completion and its individual scoring deltas. */
-    public record CompletionResult(GameTask task, int cellDelta, int lineDelta) {}
+    /** One accepted completion with frozen individual awards from the shared scoring engine. */
+    public record CompletionResult(
+            GameTask task,
+            ChampionshipTeam team,
+            int cellDelta,
+            int lineDelta,
+            List<PlayerAward> awards) {
+        public CompletionResult {
+            awards = List.copyOf(awards);
+        }
+    }
 
     /**
      * @param itemPoints points per claim rank (index 0 = first team to claim a cell), never null.
@@ -147,17 +154,41 @@ public final class BingoRound {
             int lineBonusMajorCount,
             int lineBonusMinor,
             BingoVariantRules variant) {
+        this(
+                size,
+                seed,
+                includedTypes,
+                extraExcludedTags,
+                extraTagCaps,
+                teams,
+                itemPoints,
+                lineBonus,
+                lineBonusMajorCount,
+                lineBonusMinor,
+                variant,
+                TaskGenerator::generateCardTasks);
+    }
+
+    BingoRound(
+            CardSize size,
+            long seed,
+            Set<TaskData.TaskType> includedTypes,
+            Set<String> extraExcludedTags,
+            Map<String, Integer> extraTagCaps,
+            List<ChampionshipTeam> teams,
+            int[] itemPoints,
+            int lineBonus,
+            int lineBonusMajorCount,
+            int lineBonusMinor,
+            BingoVariantRules variant,
+            Function<TaskGenerator.GeneratorSettings, List<GameTask>> taskGenerator) {
+        this.taskGenerator = java.util.Objects.requireNonNull(taskGenerator);
         this.size = size;
         this.variant = variant == null ? BingoVariantRules.FIXED_POINTS : variant;
         this.locksTasks = this.variant.mode().locksCells();
-        this.chain = this.variant.remix() == BingoRemix.CHAIN;
         this.includedTypes = Set.copyOf(includedTypes);
         this.extraExcludedTags = Set.copyOf(extraExcludedTags);
         this.extraTagCaps = Map.copyOf(extraTagCaps);
-        this.itemPoints = itemPoints;
-        this.lineBonus = lineBonus;
-        this.lineBonusMajorCount = lineBonusMajorCount;
-        this.lineBonusMinor = lineBonusMinor;
         this.displayInfo =
                 new CardDisplayInfo(
                         size,
@@ -168,7 +199,7 @@ public final class BingoRound {
         this.layout =
                 this.variant.remix() == BingoRemix.SPEEDRUN
                         ? speedrunLayout()
-                        : TaskGenerator.generateCardTasks(
+                        : taskGenerator.apply(
                                 new TaskGenerator.GeneratorSettings(
                                         seed,
                                         includedTypes,
@@ -187,13 +218,41 @@ public final class BingoRound {
                                                 .map(ItemTask::new)
                                                 .map(TaskData.class::cast)
                                                 .toList()));
-        List<ChampionshipTeam> playable = new ArrayList<>();
-        for (ChampionshipTeam team : teams) {
-            playable.add(team);
-            scores.put(team, 0);
-            awardedLines.put(team, 0);
+        if (layout.size() != size.fullCardSize)
+            throw new IllegalArgumentException("Generated layout does not match the card size");
+        this.teams = List.copyOf(teams);
+        var snapshots = new ArrayList<TeamSnapshot>();
+        var participants = new HashMap<UUID, Integer>();
+        for (int id = 0; id < this.teams.size(); id++) {
+            ChampionshipTeam team = this.teams.get(id);
+            if (scoringTeamIds.putIfAbsent(team, id) != null)
+                throw new IllegalArgumentException("Duplicate round team: " + team.getName());
+            // Local DAILY team ids may be negative; scoring uses this round's stable ordinal.
+            snapshots.add(
+                    new TeamSnapshot(
+                            id,
+                            team.getName(),
+                            team.getColorName(),
+                            BingoTeamAdapter.color(team).asHexString(),
+                            List.copyOf(team.getMembers())));
+            for (UUID member : team.getMembers())
+                if (participants.putIfAbsent(member, id) != null)
+                    throw new IllegalArgumentException(
+                            "Player belongs to multiple round teams: " + member);
         }
-        this.teams = List.copyOf(playable);
+        scoring =
+                new BingoScoringEngine(
+                        scoringId,
+                        1,
+                        new BingoScoringRules(
+                                size.size,
+                                java.util.Arrays.stream(itemPoints).boxed().toList(),
+                                lineBonus,
+                                lineBonusMajorCount,
+                                lineBonusMinor,
+                                this.variant),
+                        snapshots,
+                        participants);
         this.card = copyLayout();
         if (this.variant.remix() == BingoRemix.DIFFERENTIAL) {
             this.differentialTeamCards = new HashMap<>();
@@ -229,7 +288,7 @@ public final class BingoRound {
 
     private BingoCard generatedCard(long generatedSeed) {
         List<GameTask> tasks =
-                TaskGenerator.generateCardTasks(
+                taskGenerator.apply(
                         new TaskGenerator.GeneratorSettings(
                                 generatedSeed,
                                 includedTypes,
@@ -390,12 +449,12 @@ public final class BingoRound {
     }
 
     public int countCompletedLines(ChampionshipTeam team) {
-        return cardOf(team).countCompletedLines(BingoTeamAdapter.id(team));
+        return scoring.completedLines(scoringTeamId(team));
     }
 
     /** Grid indices of cells the team has completed on the shared card. */
     public int[] completedIndices(ChampionshipTeam team) {
-        return cardOf(team).completedIndices(BingoTeamAdapter.id(team));
+        return scoring.completedIndices(scoringTeamId(team));
     }
 
     public void setOutcome(RoundOutcome outcome) {
@@ -407,18 +466,13 @@ public final class BingoRound {
     }
 
     public int completedCount(ChampionshipTeam team) {
-        return cardOf(team).getCompleteCount(BingoTeamAdapter.id(team));
+        return scoring.completedCount(scoringTeamId(team));
     }
 
     /** Cells this team claimed before every other team: own completion time strictly earliest. */
     public int countFirstCompletions(ChampionshipTeam team) {
         String teamId = BingoTeamAdapter.id(team);
-        if (isDifferential()) {
-            int first = 0;
-            for (var claims : differentialClaims.values())
-                if (!claims.isEmpty() && claims.keySet().iterator().next().equals(teamId)) first++;
-            return first;
-        }
+        if (isDifferential()) return scoring.firstClaimCount(scoringTeamId(team));
         List<String> rivals =
                 teams.stream().map(BingoTeamAdapter::id).filter(id -> !id.equals(teamId)).toList();
         int first = 0;
@@ -459,19 +513,7 @@ public final class BingoRound {
 
     /** True once every cell on the board has been claimed by at least one team. */
     public boolean boardFullyClaimed() {
-        if (isDifferential()) {
-            for (int index = 0; index < size.fullCardSize; index++) {
-                int cell = index;
-                if (teams.stream()
-                        .noneMatch(team -> cardOf(team).getTasks().get(cell).isCompleted()))
-                    return false;
-            }
-            return true;
-        }
-        for (GameTask task : card.getTasks()) {
-            if (!task.isCompleted()) return false;
-        }
-        return true;
+        return scoring.boardFullyClaimed();
     }
 
     /**
@@ -480,17 +522,12 @@ public final class BingoRound {
      * Long#MAX_VALUE}.
      */
     public long lastCompletionTime(ChampionshipTeam team) {
-        String teamId = BingoTeamAdapter.id(team);
-        long last = -1L;
-        for (GameTask task : cardOf(team).getTasks()) {
-            if (task.isCompletedByTeam(teamId)) last = Math.max(last, task.completedAt(teamId));
-        }
-        return last < 0 ? Long.MAX_VALUE : last;
+        return scoring.lastCompletionTick(scoringTeamId(team));
     }
 
     /** Current score for the team. */
     public int score(ChampionshipTeam team) {
-        return scores.getOrDefault(team, 0);
+        return scoring.score(scoringTeamId(team));
     }
 
     /** Teams ranked by score descending, ties broken by earliest last-completion time. */
@@ -498,7 +535,7 @@ public final class BingoRound {
         List<ChampionshipTeam> sorted = new ArrayList<>(teams);
         sorted.sort(
                 (a, b) -> {
-                    int diff = scores.getOrDefault(b, 0) - scores.getOrDefault(a, 0);
+                    int diff = Integer.compare(score(b), score(a));
                     if (diff != 0) return diff;
                     return Long.compare(lastCompletionTime(a), lastCompletionTime(b));
                 });
@@ -510,32 +547,13 @@ public final class BingoRound {
      */
     public ChampionshipTeam resolveTopScore() {
         for (ChampionshipTeam team : rankedTeams()) {
-            if (scores.getOrDefault(team, 0) > 0) return team;
+            if (score(team) > 0) return team;
         }
         return null;
     }
 
-    /** Credits the team total and snapshots this completion before another task can change it. */
-    private CompletionResult awardPoints(ChampionshipTeam team, GameTask content, int index) {
-        if (!variant.mode().usesPoints() || variant.remix() == BingoRemix.COOP) {
-            scores.put(team, completedCount(team));
-            return new CompletionResult(content, 0, 0);
-        }
-        GameTask state = cardOf(team).getTasks().get(index);
-        int rank =
-                isDifferential()
-                        ? lastDifferentialClaimRank
-                        : state.claimRank(BingoTeamAdapter.id(team));
-        int cellDelta = rank < 0 ? 0 : itemPoints[Math.min(rank, itemPoints.length - 1)];
-        int lineDelta = 0;
-        int totalLines = countCompletedLines(team);
-        int prevLines = awardedLines.getOrDefault(team, 0);
-        for (int i = prevLines; i < totalLines; i++)
-            lineDelta += i < lineBonusMajorCount ? lineBonus : lineBonusMinor;
-        if (totalLines > prevLines) awardedLines.put(team, totalLines);
-        scores.merge(
-                team, cellDelta + lineDelta * Math.max(1, team.getMembers().size()), Integer::sum);
-        return new CompletionResult(content, cellDelta, lineDelta);
+    private int scoringTeamId(ChampionshipTeam team) {
+        return scoringTeamIds.getOrDefault(team, -1);
     }
 
     // ── round-start setup ────────────────────────────────────────────────────────────────────
@@ -658,7 +676,6 @@ public final class BingoRound {
             org.bukkit.Material itemType,
             int heldAmount,
             long gameTime) {
-        String teamId = BingoTeamAdapter.id(team);
         List<GameTask> tasks = contentCardOf(player.getUniqueId(), team).getTasks();
         for (int index = 0; index < tasks.size(); index++) {
             GameTask task = tasks.get(index);
@@ -680,9 +697,8 @@ public final class BingoRound {
                 continue;
             }
             if (match && heldAmount >= need) {
-                if (completeTask(task, index, player, team, gameTime)) {
-                    return Optional.of(awardPoints(team, task, index));
-                }
+                var completion = completeTask(task, index, player, team, gameTime);
+                if (completion.isPresent()) return completion;
             }
         }
         return Optional.empty();
@@ -700,7 +716,6 @@ public final class BingoRound {
             String effect,
             int heldAmount,
             long gameTime) {
-        String teamId = BingoTeamAdapter.id(team);
         List<GameTask> tasks = contentCardOf(player.getUniqueId(), team).getTasks();
         for (int index = 0; index < tasks.size(); index++) {
             GameTask task = tasks.get(index);
@@ -709,9 +724,8 @@ public final class BingoRound {
             if (pt.form().material == material
                     && pt.effect().equals(effect)
                     && heldAmount >= pt.count()) {
-                if (completeTask(task, index, player, team, gameTime)) {
-                    return Optional.of(awardPoints(team, task, index));
-                }
+                var completion = completeTask(task, index, player, team, gameTime);
+                if (completion.isPresent()) return completion;
             }
         }
         return Optional.empty();
@@ -719,7 +733,6 @@ public final class BingoRound {
 
     public Optional<CompletionResult> tryCompleteAdvancement(
             Player player, ChampionshipTeam team, Advancement advancement, long gameTime) {
-        String teamId = BingoTeamAdapter.id(team);
         List<GameTask> tasks = contentCardOf(player.getUniqueId(), team).getTasks();
         for (int index = 0; index < tasks.size(); index++) {
             GameTask task = tasks.get(index);
@@ -727,9 +740,8 @@ public final class BingoRound {
                 continue;
             AdvancementTask data = (AdvancementTask) task.data;
             if (data.advancement() != null && data.advancement().key().equals(advancement.key())) {
-                if (completeTask(task, index, player, team, gameTime)) {
-                    return Optional.of(awardPoints(team, task, index));
-                }
+                var completion = completeTask(task, index, player, team, gameTime);
+                if (completion.isPresent()) return completion;
             }
         }
         return Optional.empty();
@@ -738,7 +750,6 @@ public final class BingoRound {
     /** Completes a count-one event task from a discrete Bukkit event. */
     public Optional<CompletionResult> tryCompleteEventSignal(
             Player player, ChampionshipTeam team, String trigger, String param, long gameTime) {
-        String teamId = BingoTeamAdapter.id(team);
         List<GameTask> tasks = contentCardOf(player.getUniqueId(), team).getTasks();
         for (int index = 0; index < tasks.size(); index++) {
             GameTask task = tasks.get(index);
@@ -746,9 +757,8 @@ public final class BingoRound {
             if (event.count() != 1) continue;
             if (!event.trigger().equalsIgnoreCase(trigger)
                     || !event.param().equalsIgnoreCase(param)) continue;
-            if (completeTask(task, index, player, team, gameTime)) {
-                return Optional.of(awardPoints(team, task, index));
-            }
+            var completion = completeTask(task, index, player, team, gameTime);
+            if (completion.isPresent()) return completion;
         }
         return Optional.empty();
     }
@@ -767,9 +777,8 @@ public final class BingoRound {
             StatisticHandle h = data.statistic();
             int delta = statisticDelta(player, h);
             int target = statisticTarget(data);
-            if (delta >= target && completeTask(task, index, player, team, gameTime)) {
-                completed.add(awardPoints(team, task, index));
-            }
+            if (delta >= target)
+                completeTask(task, index, player, team, gameTime).ifPresent(completed::add);
         }
         return completed;
     }
@@ -789,45 +798,36 @@ public final class BingoRound {
             GameTask task = tasks.get(index);
             if (!canAttempt(team, index, task) || !(task.data instanceof EventTask event)) continue;
             if (!EventTrigger.isPollable(event.trigger()) || !pollableMet(player, event)) continue;
-            if (completeTask(task, index, player, team, gameTime)) {
-                completed.add(awardPoints(team, task, index));
-            }
+            completeTask(task, index, player, team, gameTime).ifPresent(completed::add);
         }
         return completed;
     }
 
     private boolean canAttempt(ChampionshipTeam team, int index, GameTask task) {
-        String teamId = BingoTeamAdapter.id(team);
+        if (!scoring.canAttempt(scoringTeamId(team), index)) return false;
         GameTask state = cardOf(team).getTasks().get(index);
-        if (state.isCompletedByTeam(teamId) || state.isLocked() || task.isLocked()) return false;
-        if (locksTasks && (state.isCompleted() || (!isDifferential() && task.isCompleted())))
-            return false;
-        if (!chain) return true;
-        List<GameTask> stateTasks = cardOf(team).getTasks();
-        boolean any =
-                stateTasks.stream().anyMatch(candidate -> candidate.isCompletedByTeam(teamId));
-        if (!any) return true;
-        int width = size.size;
-        int x = index % width;
-        int y = index / width;
-        return (x > 0 && stateTasks.get(index - 1).isCompletedByTeam(teamId))
-                || (x + 1 < width && stateTasks.get(index + 1).isCompletedByTeam(teamId))
-                || (y > 0 && stateTasks.get(index - width).isCompletedByTeam(teamId))
-                || (y + 1 < width && stateTasks.get(index + width).isCompletedByTeam(teamId));
+        return !state.isLocked() && !task.isLocked();
     }
 
-    private boolean completeTask(
+    private Optional<CompletionResult> completeTask(
             GameTask task, int index, Player player, ChampionshipTeam team, long gameTime) {
         GameTask.Completion completion = completion(player, team, gameTime);
         GameTask state = cardOf(team).getTasks().get(index);
-        if (!state.complete(completion, false)) return false;
-        if (isDifferential()) {
-            java.util.LinkedHashMap<String, Long> claims =
-                    differentialClaims.computeIfAbsent(
-                            index, ignored -> new java.util.LinkedHashMap<>());
-            lastDifferentialClaimRank = claims.size();
-            claims.putIfAbsent(BingoTeamAdapter.id(team), gameTime);
-        }
+        if (!canAttempt(team, index, task)) return Optional.empty();
+        var decision =
+                scoring.apply(
+                        new CompletionObservation(
+                                scoringId,
+                                1,
+                                ++completionSequence,
+                                scoringTeamId(team),
+                                player.getUniqueId(),
+                                index,
+                                gameTime));
+        if (!decision.accepted()) return Optional.empty();
+        if (!state.complete(completion, false))
+            throw new IllegalStateException(
+                    "Accepted Bingo completion could not be projected to the card");
         if (task != state) task.complete(completion, false);
         if (isDifferential()) {
             for (Map.Entry<UUID, BingoCard> entry : differentialPlayerCards.entrySet()) {
@@ -857,10 +857,15 @@ public final class BingoRound {
                                 BingoTeamAdapter.id(collaborator),
                                 gameTime),
                         false);
-                scores.put(collaborator, completedCount(collaborator));
             }
         }
-        return true;
+        return Optional.of(
+                new CompletionResult(
+                        task,
+                        team,
+                        decision.cellPoints(),
+                        decision.linePointsPerMember(),
+                        decision.awards()));
     }
 
     private void syncTeamStateToPlayer(UUID playerId, ChampionshipTeam team) {
@@ -877,11 +882,7 @@ public final class BingoRound {
     }
 
     public boolean hasWon(ChampionshipTeam team) {
-        if (variant.remix() == BingoRemix.COOP)
-            return completedCount(team) == card.getTasks().size();
-        BingoMode mode = variant.mode();
-        if (mode.linesWin()) return countCompletedLines(team) >= variant.winLines();
-        return mode.fullCardWins() && completedCount(team) == card.getTasks().size();
+        return scoring.hasWon(scoringTeamId(team));
     }
 
     public boolean revealRandomHiddenTask() {
@@ -912,7 +913,7 @@ public final class BingoRound {
 
     public void refreshUncompletedTasks() {
         List<GameTask> replacements =
-                TaskGenerator.generateCardTasks(
+                taskGenerator.apply(
                         new TaskGenerator.GeneratorSettings(
                                 0L,
                                 includedTypes,

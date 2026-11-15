@@ -1,5 +1,8 @@
 package ink.ziip.championshipscore.api.game.buildmart.runtime;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+import static ink.ziip.championshipscore.support.TestObjects.proxy;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
@@ -18,7 +21,6 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Proxy;
 import java.util.List;
 
 class BuildMartHandlerProtectionTest {
@@ -38,9 +40,8 @@ class BuildMartHandlerProtectionTest {
 
     @BeforeEach
     void setup() throws Exception {
-        var field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-        field.setAccessible(true);
-        area = (TestArea) ((sun.misc.Unsafe) field.get(null)).allocateInstance(TestArea.class);
+
+        area = allocate(TestArea.class);
         area.stage = GameStageEnum.PROGRESS;
         handler =
                 new BuildMartHandler(null) {
@@ -318,10 +319,6 @@ class BuildMartHandlerProtectionTest {
     }
 
     @SuppressWarnings("unchecked")
-    private static <T> T proxy(Class<T> type, java.lang.reflect.InvocationHandler handler) {
-        return (T) Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[] {type}, handler);
-    }
-
     private static final class TestTeam extends ChampionshipTeam {
         TestTeam() {
             super(1, "test", "red", "", null);

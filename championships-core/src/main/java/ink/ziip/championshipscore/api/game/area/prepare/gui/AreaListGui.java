@@ -8,7 +8,7 @@ import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.api.gui.MenuLayout;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 import ink.ziip.championshipscore.shared.presentation.MessageTemplate;
 
@@ -171,7 +171,7 @@ public final class AreaListGui {
                         CoreMessages.styled(
                                 "area-list-gui.delete-confirmation",
                                 MessageTemplate.render(
-                                        MessageConfig.MAP_EDITOR_AREA_DELETE_CONFIRMATION,
+                                        MapEditorMessages.MAP_EDITOR_AREA_DELETE_CONFIRMATION,
                                         Map.of(
                                                 "%map%",
                                                 entry.name(),

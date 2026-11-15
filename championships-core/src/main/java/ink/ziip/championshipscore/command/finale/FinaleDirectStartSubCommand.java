@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.command.finale;
 import ink.ziip.championshipscore.api.finale.FinaleGameDefinition;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.EventMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -44,7 +45,7 @@ final class FinaleDirectStartSubCommand extends BaseSubCommand {
         ChampionshipTeam right = plugin.getTeamManager().getTeam(args[1]);
         ChampionshipTeam left = plugin.getTeamManager().getTeam(args[2]);
         if (right == null || left == null || right.equals(left)) {
-            CoreMessages.sendAdminError(sender, MessageConfig.FINALE_DIRECT_START_INVALID);
+            CoreMessages.sendAdminError(sender, EventMessages.FINALE_DIRECT_START_INVALID);
             return true;
         }
 
@@ -52,7 +53,7 @@ final class FinaleDirectStartSubCommand extends BaseSubCommand {
         if (definition.gameType()
                 == ink.ziip.championshipscore.api.game.model.GameTypeEnum.Dodgebolt) {
             if (plugin.getGameManager().getDodgeboltManager().getArea(args[0]) == null) {
-                CoreMessages.sendAdminError(sender, MessageConfig.FINALE_DIRECT_START_INVALID);
+                CoreMessages.sendAdminError(sender, EventMessages.FINALE_DIRECT_START_INVALID);
                 return true;
             }
             ChampionshipTeam higher =
@@ -73,15 +74,15 @@ final class FinaleDirectStartSubCommand extends BaseSubCommand {
             CoreMessages.sendAdminSuccess(
                     sender,
                     (force
-                                    ? MessageConfig.FINALE_DIRECT_START_STARTED_FORCED
-                                    : MessageConfig.FINALE_DIRECT_START_STARTED)
+                                    ? EventMessages.FINALE_DIRECT_START_STARTED_FORCED
+                                    : EventMessages.FINALE_DIRECT_START_STARTED)
                             .replace("%game%", definition.gameType().toString()));
         } else {
             CoreMessages.sendAdminError(
                     sender,
                     force
-                            ? MessageConfig.FINALE_DIRECT_START_FORCED_FAILED
-                            : MessageConfig.FINALE_DIRECT_START_FAILED);
+                            ? EventMessages.FINALE_DIRECT_START_FORCED_FAILED
+                            : EventMessages.FINALE_DIRECT_START_FAILED);
         }
         return true;
     }

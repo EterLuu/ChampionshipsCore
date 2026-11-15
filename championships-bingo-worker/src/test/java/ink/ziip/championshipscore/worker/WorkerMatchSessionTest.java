@@ -1,16 +1,36 @@
 package ink.ziip.championshipscore.worker;
 
+import static ink.ziip.championshipscore.worker.support.TestObjects.allocate;
+import static ink.ziip.championshipscore.worker.support.TestObjects.field;
+import static ink.ziip.championshipscore.worker.support.TestObjects.proxy;
+import static ink.ziip.championshipscore.worker.support.TestObjects.set;
+
 import static org.junit.jupiter.api.Assertions.*;
 
+import ink.ziip.championshipscore.bingo.engine.BingoScoringEngine;
+import ink.ziip.championshipscore.platform.bukkit.scheduler.PlatformScheduler;
 import ink.ziip.championshipscore.protocol.*;
+import ink.ziip.championshipscore.protocol.transport.DeliveryReceipt;
+
+import io.papermc.paper.threadedregions.scheduler.EntityScheduler;
+import io.papermc.paper.threadedregions.scheduler.GlobalRegionScheduler;
 
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
+import org.bukkit.Server;
+import org.bukkit.plugin.Plugin;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import java.lang.reflect.Field;
+import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.*;
+import java.util.stream.Stream;
 
 class WorkerMatchSessionTest {
     @Test
@@ -45,21 +65,45 @@ class WorkerMatchSessionTest {
                         "%prefix%%speed%", values));
     }
 
-    @Test
-    void partialSpectatorControlsFailBeforeWorldAndPlayerSetup() {
+    static Stream<Arguments> malformedFrozenPresentation() {
+        var stone = Map.of("material", "STONE");
+        return Stream.of(
+                Arguments.of(
+                        Map.of("gui.spectator-controls.speed.title", "broken"),
+                        stone,
+                        "gui.spectator-controls.version"),
+                Arguments.of(
+                        Map.of("presentation.player.prefix", "broken"),
+                        stone,
+                        "presentation.player.version"),
+                Arguments.of(
+                        Map.of(),
+                        Map.of(
+                                "material",
+                                "STONE",
+                                "display.text-version",
+                                "1",
+                                "display.name",
+                                "{",
+                                "display.lore-size",
+                                "0"),
+                        "frozen Bingo task text"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("malformedFrozenPresentation")
+    void malformedFrozenPresentationFailsBeforeWorldPlayerOrInventorySetup(
+            Map<String, String> messages, Map<String, String> taskAttributes, String expected) {
         var manifest =
                 presentationManifest(
-                        MatchRunMode.DAILY,
-                        Map.of("gui.spectator-controls.speed.title", "broken"),
-                        List.of(),
-                        List.of());
+                        MatchRunMode.DAILY, messages, List.of(), List.of(), taskAttributes);
         var error =
                 assertThrows(
                         IllegalArgumentException.class,
                         () ->
                                 new WorkerMatchSession(
                                         null, null, manifest, null, null, null, null, null));
-        assertTrue(error.getMessage().contains("gui.spectator-controls.version"));
+        assertTrue(error.getMessage().contains(expected), error.getMessage());
     }
 
     @Test
@@ -120,49 +164,6 @@ class WorkerMatchSessionTest {
         set(registry, "latestDaily", true);
         assertEquals(format, registry.playerPresentation(viewer).format());
         assertEquals("Viewers", registry.playerPresentation(viewer).label());
-    }
-
-    @Test
-    void preparationRejectsPartialPlayerTextBeforeWorldOrInventoryWork() {
-        var manifest =
-                presentationManifest(
-                        MatchRunMode.DAILY,
-                        Map.of("presentation.player.prefix", "broken"),
-                        List.of(),
-                        List.of());
-        var error =
-                assertThrows(
-                        IllegalArgumentException.class,
-                        () ->
-                                new WorkerMatchSession(
-                                        null, null, manifest, null, null, null, null, null));
-        assertTrue(error.getMessage().contains("presentation.player.version"));
-    }
-
-    @Test
-    void preparationRejectsCorruptFrozenTaskTextBeforeWorldOrInventoryWork() {
-        var manifest =
-                presentationManifest(
-                        MatchRunMode.DAILY,
-                        Map.of(),
-                        List.of(),
-                        List.of(),
-                        Map.of(
-                                "material",
-                                "STONE",
-                                "display.text-version",
-                                "1",
-                                "display.name",
-                                "{",
-                                "display.lore-size",
-                                "0"));
-        var error =
-                assertThrows(
-                        IllegalArgumentException.class,
-                        () ->
-                                new WorkerMatchSession(
-                                        null, null, manifest, null, null, null, null, null));
-        assertTrue(error.getMessage().contains("frozen Bingo task text"));
     }
 
     private static MatchManifest presentationManifest(
@@ -284,25 +285,519 @@ class WorkerMatchSessionTest {
         }
     }
 
-    private static <T> T allocate(Class<T> type) throws Exception {
-        return type.cast(
-                ((sun.misc.Unsafe) field(sun.misc.Unsafe.class, "theUnsafe").get(null))
-                        .allocateInstance(type));
+    @Test
+    void formalSettlementRetainsRosterAndProtectionUntilExplicitRelease() throws Exception {
+        UUID player = UUID.randomUUID(), viewer = UUID.randomUUID();
+        var roster =
+                List.of(
+                        new PlayerSnapshot(player, "Player", ParticipantRole.PLAYER, 1),
+                        new PlayerSnapshot(viewer, "Viewer", ParticipantRole.SPECTATOR, null));
+        for (MatchRunMode mode : MatchRunMode.values()) {
+            var session = finishedSession(waitingManifest(mode, roster));
+            session.awaitCoreSettlement(true);
+            assertEquals(mode.formalEvent(), session.awaitingEventSettlement());
+            assertEquals(mode.formalEvent(), session.owns(player));
+            assertEquals(mode.formalEvent(), session.isProtectedParticipant(player));
+            assertEquals(mode.formalEvent(), session.isEventWaitingPlayer(player));
+            assertEquals(mode.formalEvent(), session.isSpectator(viewer));
+            assertFalse(session.isRunningPlayer(player));
+            assertFalse(session.isPlaying(player));
+            assertFalse(session.isEventWaitingPlayer(viewer));
+            set(session, "released", true);
+            assertFalse(session.owns(player));
+            assertFalse(session.isSpectator(viewer));
+            assertFalse(session.awaitingEventSettlement());
+        }
     }
 
-    private static void set(Object target, String name, Object value) throws Exception {
-        field(target.getClass(), name).set(target, value);
+    @Test
+    void eventContinuationRequiresExactPreviousMatchEpochAndPlayingRoster() throws Exception {
+        var player = new PlayerSnapshot(UUID.randomUUID(), "Player", ParticipantRole.PLAYER, 1);
+        var manifest = waitingManifest(MatchRunMode.EVENT, List.of(player));
+        var session = finishedSession(manifest);
+        session.awaitCoreSettlement(true);
+        var next = waitingManifest(MatchRunMode.EVENT, List.of(player));
+        var attributes = new HashMap<String, String>();
+        attributes.put("coreSettlement", "true");
+        attributes.put("previousMatchId", manifest.matchId().toString());
+        attributes.put("previousEpoch", Long.toString(manifest.epoch()));
+        var command =
+                MatchMessages.command(
+                        next.matchId(),
+                        next.epoch(),
+                        MatchCommandType.PREPARE,
+                        attributes,
+                        java.time.Clock.systemUTC());
+        assertTrue(session.canContinueEvent(next, command));
+        assertFalse(
+                session.canContinueEvent(
+                        waitingManifest(MatchRunMode.GAME, List.of(player)), command));
+        assertFalse(
+                session.canContinueEvent(waitingManifest(MatchRunMode.EVENT, List.of()), command));
+        attributes.put("previousEpoch", Long.toString(manifest.epoch() + 1));
+        assertFalse(
+                session.canContinueEvent(
+                        next,
+                        MatchMessages.command(
+                                next.matchId(),
+                                next.epoch(),
+                                MatchCommandType.PREPARE,
+                                attributes,
+                                java.time.Clock.systemUTC())));
+        set(session, "released", true);
+        assertFalse(session.canContinueEvent(next, command));
     }
 
-    private static Field field(Class<?> type, String name) throws NoSuchFieldException {
-        for (Class<?> current = type; current != null; current = current.getSuperclass()) {
-            try {
-                Field field = current.getDeclaredField(name);
-                field.setAccessible(true);
-                return field;
-            } catch (NoSuchFieldException ignored) {
+    private static MatchManifest waitingManifest(MatchRunMode mode, List<PlayerSnapshot> roster) {
+        var members =
+                roster.stream()
+                        .filter(p -> p.role() == ParticipantRole.PLAYER)
+                        .map(PlayerSnapshot::uuid)
+                        .toList();
+        var teams =
+                members.isEmpty()
+                        ? List.<TeamSnapshot>of()
+                        : List.of(new TeamSnapshot(1, "Red", "red", "&c", members, 0));
+        return presentationManifest(mode, Map.of(), teams, roster);
+    }
+
+    private static WorkerMatchSession finishedSession(MatchManifest manifest) throws Exception {
+        var session = allocate(WorkerMatchSession.class);
+        var lifecycle = new MatchStateMachine();
+        for (MatchState next :
+                List.of(
+                        MatchState.PREPARING,
+                        MatchState.READY,
+                        MatchState.ROUTING,
+                        MatchState.COUNTDOWN,
+                        MatchState.RUNNING,
+                        MatchState.SETTLING,
+                        MatchState.FINISHED)) lifecycle.transitionTo(next);
+        set(session, "manifest", manifest);
+        set(session, "lifecycle", lifecycle);
+        set(
+                session,
+                "participants",
+                manifest.participants().stream()
+                        .collect(java.util.stream.Collectors.toMap(PlayerSnapshot::uuid, p -> p)));
+        return session;
+    }
+
+    @Nested
+    class TeammateTeleport {
+        @Test
+        void onlyOriginalLivePlayerSnapshotsInTheSameTeamCanTeleport() throws Exception {
+            var source = new PlayerSnapshot(UUID.randomUUID(), "Source", ParticipantRole.PLAYER, 1);
+            var target = new PlayerSnapshot(UUID.randomUUID(), "Target", ParticipantRole.PLAYER, 1);
+            var roster = new HashMap<UUID, PlayerSnapshot>();
+            roster.put(source.uuid(), source);
+            roster.put(target.uuid(), target);
+            var session = allocate(WorkerMatchSession.class);
+            set(session, "participants", roster);
+            set(
+                    session,
+                    "plugin",
+                    proxy(
+                            Plugin.class,
+                            (p, m, a) -> {
+                                assertEquals("isEnabled", m.getName());
+                                return true;
+                            }));
+            var lifecycle = new MatchStateMachine();
+            set(lifecycle, "state", MatchState.RUNNING);
+            set(session, "lifecycle", lifecycle);
+            assertTrue(teammates(session, source, target));
+            for (var replacement :
+                    List.of(
+                            new PlayerSnapshot(
+                                    target.uuid(), "Target", ParticipantRole.SPECTATOR, 1),
+                            new PlayerSnapshot(target.uuid(), "Target", ParticipantRole.PLAYER, 2),
+                            new PlayerSnapshot(
+                                    target.uuid(), "Target", ParticipantRole.PLAYER, 1))) {
+                roster.put(target.uuid(), replacement);
+                assertFalse(teammates(session, source, target));
+                assertEquals(
+                        replacement.role() == ParticipantRole.PLAYER && replacement.teamId() == 1,
+                        teammates(session, source, replacement),
+                        replacement.toString());
+            }
+            roster.remove(target.uuid());
+            assertFalse(teammates(session, source, target));
+            roster.put(target.uuid(), target);
+            roster.put(
+                    source.uuid(),
+                    new PlayerSnapshot(source.uuid(), "Source", ParticipantRole.SPECTATOR, 1));
+            assertFalse(teammates(session, source, target));
+            roster.put(source.uuid(), source);
+            for (var state : MatchState.values())
+                if (state != MatchState.RUNNING) {
+                    set(lifecycle, "state", state);
+                    assertFalse(teammates(session, source, target), state.name());
+                }
+        }
+
+        private static boolean teammates(
+                WorkerMatchSession session, PlayerSnapshot source, PlayerSnapshot target)
+                throws Exception {
+            var method =
+                    WorkerMatchSession.class.getDeclaredMethod(
+                            "currentTeammates", PlayerSnapshot.class, PlayerSnapshot.class);
+            method.setAccessible(true);
+            return (boolean) method.invoke(session, source, target);
+        }
+    }
+
+    @Nested
+    class TaskCompletion {
+        @Test
+        void observationsFromRemovedOrReplacedRolesCannotReachScoringOrCompletionHistory()
+                throws Exception {
+            var original =
+                    new PlayerSnapshot(UUID.randomUUID(), "Original", ParticipantRole.PLAYER, 2);
+            var session = allocate(WorkerMatchSession.class);
+            var lifecycle = new MatchStateMachine();
+            field(MatchStateMachine.class, "state").set(lifecycle, MatchState.RUNNING);
+            set(session, "lifecycle", lifecycle);
+            var roster = new HashMap<UUID, PlayerSnapshot>();
+            set(session, "participants", roster);
+            var accept =
+                    WorkerMatchSession.class.getDeclaredMethod(
+                            "acceptCompletion", PlayerSnapshot.class, int.class);
+            accept.setAccessible(true);
+            // Scoring and history are intentionally absent: stale observations must return first.
+            accept.invoke(session, original, 0);
+            for (var role : ParticipantRole.values()) {
+                roster.put(
+                        original.uuid(),
+                        new PlayerSnapshot(
+                                original.uuid(),
+                                "Original",
+                                role,
+                                role == ParticipantRole.PLAYER ? 2 : null));
+                accept.invoke(session, original, 0);
+            }
+            roster.put(original.uuid(), original);
+            field(MatchStateMachine.class, "state").set(lifecycle, MatchState.FINISHED);
+            accept.invoke(session, original, 0);
+        }
+
+        @Test
+        @SuppressWarnings("unchecked")
+        void acceptedCooperativeCreditKeepsOriginalIdentityTimeAndClaimOrderAfterRosterRemoval()
+                throws Exception {
+            var player =
+                    new PlayerSnapshot(UUID.randomUUID(), "Original", ParticipantRole.PLAYER, 2);
+            var teams = new LinkedHashMap<Integer, TeamSnapshot>();
+            teams.put(1, new TeamSnapshot(1, "First", "red", "#ff0000", List.of(), 0));
+            teams.put(
+                    2, new TeamSnapshot(2, "Second", "blue", "#0000ff", List.of(player.uuid()), 0));
+            var third = new TeamSnapshot(3, "Third", "green", "#00ff00", List.of(), 0);
+            var sourceTeams = List.of(teams.get(1), teams.get(2), third);
+            teams.put(3, third);
+            // Deliberately reverse the lookup map; source order belongs to manifest.teams().
+            var lookup = new LinkedHashMap<Integer, TeamSnapshot>();
+            for (int id : List.of(3, 2, 1)) lookup.put(id, teams.get(id));
+            var tasks =
+                    java.util.stream.IntStream.range(0, 9)
+                            .mapToObj(
+                                    i ->
+                                            new BingoTaskSpec(
+                                                    i,
+                                                    "item-" + i,
+                                                    "item",
+                                                    Map.of("material", "STONE", "count", "1")))
+                            .toList();
+            var scoring =
+                    new BingoScoringRules(
+                            3,
+                            List.of(40, 30),
+                            50,
+                            3,
+                            10,
+                            new BingoVariantRules(
+                                    BingoMode.POINTS, BingoDifficulty.NORMAL, 1, BingoRemix.COOP));
+            var runtime =
+                    new BingoRuntimeRules(
+                            5,
+                            64,
+                            16,
+                            0,
+                            List.of(),
+                            false,
+                            45,
+                            List.of(),
+                            new BingoPresentation(Map.of()));
+            var manifest =
+                    new MatchManifest(
+                            ProtocolVersion.CURRENT,
+                            UUID.randomUUID(),
+                            1,
+                            1,
+                            "worker",
+                            MatchRunMode.GAME,
+                            900,
+                            42,
+                            "hash",
+                            scoring,
+                            runtime,
+                            tasks,
+                            sourceTeams,
+                            List.of(player));
+            var session = allocate(WorkerMatchSession.class);
+            var facts = new HashMap<Integer, List<WorkerTaskCompletion>>();
+            var roster = new HashMap<>(Map.of(player.uuid(), player));
+            set(session, "manifest", manifest);
+            set(session, "teams", lookup);
+            set(session, "participants", roster);
+            set(session, "completionsByCell", facts);
+            var record =
+                    WorkerMatchSession.class.getDeclaredMethod(
+                            "recordTaskCompletion",
+                            PlayerSnapshot.class,
+                            CompletionObservation.class);
+            record.setAccessible(true);
+            record.invoke(
+                    session,
+                    player,
+                    new CompletionObservation(
+                            manifest.matchId(), 1, 1, 2, player.uuid(), 0, 147680));
+            roster.clear();
+            assertEquals(List.of(2, 1, 3), session.completionSnapshot().get(0));
+            var frozen = session.completionSnapshot();
+            assertThrows(UnsupportedOperationException.class, () -> frozen.get(0).clear());
+            for (var completion : facts.get(0)) {
+                assertEquals(player.uuid(), completion.playerId());
+                assertEquals(
+                        "Original <Second>",
+                        PlainTextComponentSerializer.plainText()
+                                .serialize(completion.playerName()));
+                assertEquals(7384, completion.seconds());
+            }
+            facts.get(0).clear();
+            assertEquals(List.of(2, 1, 3), frozen.get(0));
+        }
+
+        @Test
+        void admissionReadsSharedScoringStateAndStillHonorsWorldOwnedLocks() throws Exception {
+            var session = allocate(WorkerMatchSession.class);
+            UUID match = UUID.randomUUID(), player = UUID.randomUUID();
+            var rules =
+                    new BingoScoringRules(
+                            3,
+                            List.of(30),
+                            50,
+                            2,
+                            25,
+                            new BingoVariantRules(
+                                    BingoMode.POINTS, BingoDifficulty.NORMAL, 1, BingoRemix.CHAIN));
+            var engine =
+                    new BingoScoringEngine(
+                            match,
+                            1,
+                            rules,
+                            List.of(new TeamSnapshot(1, "team", "red", "#ff0000", List.of(player))),
+                            Map.of(player, 1));
+            var locks = new HashSet<Integer>();
+            set(session, "scoring", engine);
+            set(session, "lockedCells", locks);
+            var attempt =
+                    WorkerMatchSession.class.getDeclaredMethod("canAttempt", int.class, int.class);
+            attempt.setAccessible(true);
+            assertEquals(true, attempt.invoke(session, 1, 0));
+            engine.apply(new CompletionObservation(match, 1, 1, 1, player, 0, 1));
+            assertEquals(false, attempt.invoke(session, 1, 0));
+            assertEquals(false, attempt.invoke(session, 1, 8));
+            assertEquals(true, attempt.invoke(session, 1, 1));
+            locks.add(1);
+            assertEquals(false, attempt.invoke(session, 1, 1));
+            assertArrayEquals(new int[] {0}, engine.completedIndices(1));
+        }
+    }
+
+    /** Session wiring of {@link WorkerTestRelease} effects: entity cleanup, router and outbox. */
+    @Nested
+    class TestResourceRelease {
+        @TempDir Path directory;
+
+        @Test
+        void disconnectInstructionCannotTargetAnUnknownParticipant() throws Exception {
+            try (var f = new ReleaseFixture(directory)) {
+                var rejected =
+                        f.session.abort("test", Set.of(UUID.randomUUID())).toCompletableFuture();
+                assertThrows(CompletionException.class, rejected::join);
+                assertNull(f.retired);
+                assertEquals(1L, f.published.getCount());
             }
         }
-        throw new NoSuchFieldException(name);
+
+        @Test
+        void retiredEntityTaskCannotReportCleanWhileItsConnectionStillExists() throws Exception {
+            try (var f = new ReleaseFixture(directory)) {
+                var released = f.release();
+                assertFalse(released.isDone());
+                f.retired.run();
+                assertThrows(CompletionException.class, released::join);
+                assertFalse(f.session.testResourcesReleased());
+                assertEquals(1L, f.published.getCount());
+            }
+        }
+
+        @Test
+        void departureAndDurablePublicationBothPrecedeTheReleaseAcknowledgement() throws Exception {
+            try (var f = new ReleaseFixture(directory)) {
+                var released = f.release();
+                f.present = false;
+                f.retired.run();
+                assertFalse(released.isDone());
+                f.retry();
+                assertTrue(f.published.await(3, TimeUnit.SECONDS));
+                assertFalse(released.isDone());
+                assertFalse(f.session.testResourcesReleased());
+                f.receipt.complete(new DeliveryReceipt(f.event.messageId(), "events", "1-0", 1));
+                released.get(3, TimeUnit.SECONDS);
+                assertEquals(MatchEventType.RELEASED, f.event.type());
+                assertTrue(f.session.testResourcesReleased());
+                assertSame(released, f.release());
+            }
+        }
+
+        @Test
+        void cancelReturnRequestIsNotProofThatThePlayerLeftTheBackend() throws Exception {
+            try (var f = new ReleaseFixture(directory)) {
+                var left = f.router.requestAndAwaitDeparture(f.id).toCompletableFuture();
+                f.router.cancel(f.id);
+                f.retry();
+                assertFalse(left.isDone());
+                f.present = false;
+                f.retry();
+                assertDoesNotThrow(left::join);
+            }
+        }
+    }
+
+    private static final class ReleaseFixture implements AutoCloseable {
+        final UUID id = UUID.randomUUID();
+        final CompletableFuture<DeliveryReceipt> receipt = new CompletableFuture<>();
+        final CountDownLatch published = new CountDownLatch(1);
+        MatchEvent event;
+        Runnable retired;
+        boolean present = true;
+        final WorkerMatchSession session = allocate(WorkerMatchSession.class);
+        final WorkerReturnRouter router = allocate(WorkerReturnRouter.class);
+        final DurableEventOutbox outbox;
+
+        ReleaseFixture(Path directory) throws Exception {
+            var entity =
+                    proxy(
+                            EntityScheduler.class,
+                            (p, m, a) -> {
+                                if (m.getName().equals("execute")) {
+                                    retired = (Runnable) a[2];
+                                    return true;
+                                }
+                                throw new AssertionError(m.getName());
+                            });
+            var player =
+                    proxy(
+                            org.bukkit.entity.Player.class,
+                            (p, m, a) ->
+                                    switch (m.getName()) {
+                                        case "getUniqueId" -> id;
+                                        case "getScheduler" -> entity;
+                                        case "isOnline" -> false;
+                                        default -> throw new AssertionError(m.getName());
+                                    });
+            var global =
+                    proxy(
+                            GlobalRegionScheduler.class,
+                            (p, m, a) -> {
+                                if (m.getName().equals("execute")) {
+                                    ((Runnable) a[1]).run();
+                                    return null;
+                                }
+                                throw new AssertionError(m.getName());
+                            });
+            var server =
+                    proxy(
+                            Server.class,
+                            (p, m, a) ->
+                                    switch (m.getName()) {
+                                        case "getPlayer" -> present ? player : null;
+                                        case "getGlobalRegionScheduler" -> global;
+                                        default -> throw new AssertionError(m.getName());
+                                    });
+            var plugin =
+                    proxy(
+                            Plugin.class,
+                            (p, m, a) ->
+                                    switch (m.getName()) {
+                                        case "getServer" -> server;
+                                        case "getLogger" ->
+                                                java.util.logging.Logger.getAnonymousLogger();
+                                        default -> throw new AssertionError(m.getName());
+                                    });
+            set(router, "plugin", plugin);
+            set(router, "pending", ConcurrentHashMap.<UUID>newKeySet());
+            set(router, "departures", new ConcurrentHashMap<UUID, CompletableFuture<Void>>());
+            outbox =
+                    new DurableEventOutbox(
+                            e -> {
+                                event = e;
+                                published.countDown();
+                                return receipt;
+                            },
+                            directory);
+            outbox.initialize();
+            var lifecycle = new MatchStateMachine();
+            lifecycle.transitionTo(MatchState.ABORTED);
+            set(session, "plugin", plugin);
+            set(
+                    session,
+                    "manifest",
+                    presentationManifest(MatchRunMode.TEST, Map.of(), List.of(), List.of()));
+            set(session, "lifecycle", lifecycle);
+            set(
+                    session,
+                    "participants",
+                    Map.of(id, new PlayerSnapshot(id, "testbot", ParticipantRole.SPECTATOR, null)));
+            set(session, "nativeScoreboardTeams", new HashMap<>());
+            set(session, "scheduler", new PlatformScheduler(plugin));
+            set(
+                    session,
+                    "config",
+                    new WorkerConfig(
+                            true,
+                            "worker",
+                            null,
+                            null,
+                            "BungeeCord",
+                            "cc",
+                            "bingo",
+                            "bingo_nether",
+                            "bingo_the_end",
+                            true,
+                            null,
+                            false));
+            set(session, "returnRouter", router);
+            set(session, "events", outbox);
+        }
+
+        @SuppressWarnings("unchecked")
+        CompletableFuture<Void> release() throws Exception {
+            var method = WorkerMatchSession.class.getDeclaredMethod("releaseTestResources");
+            method.setAccessible(true);
+            return ((CompletionStage<Void>) method.invoke(session)).toCompletableFuture();
+        }
+
+        void retry() throws Exception {
+            var m = WorkerReturnRouter.class.getDeclaredMethod("retryPending");
+            m.setAccessible(true);
+            m.invoke(router);
+        }
+
+        @Override
+        public void close() {
+            outbox.close();
+        }
     }
 }

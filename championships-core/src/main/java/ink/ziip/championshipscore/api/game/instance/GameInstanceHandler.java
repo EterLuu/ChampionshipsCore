@@ -39,8 +39,10 @@ public class GameInstanceHandler extends BaseListener {
 
     private boolean isProtectedParticipant(Player player) {
         return baseArea.isSpectator(player)
+                || (baseArea.isPostGamePending() && !baseArea.notAreaPlayer(player))
                 || isIntroductionParticipant(player)
-                || isCountdownParticipant(player);
+                || isCountdownParticipant(player)
+                || plugin.getGameManager().getNextRoundHoldArea(player.getUniqueId()) == baseArea;
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -118,6 +120,11 @@ public class GameInstanceHandler extends BaseListener {
     @Override
     public void handleRoutedPlayerMoveLow(PlayerMoveEvent event) {
         Player player = event.getPlayer();
+        if (baseArea.isPostGamePending() && !baseArea.notAreaPlayer(player)) {
+            if (event.getTo() != null && event.getTo().getY() < player.getWorld().getMinHeight())
+                player.teleport(baseArea.getSpectatorSpawnLocation());
+            return;
+        }
         if (plugin.getGameManager().getSpectatorManager().isSpectatorLike(player.getUniqueId())) {
             if (event.getTo() != null && event.getTo().getY() < -64D)
                 player.teleport(baseArea.getSpectatorSpawnLocation());

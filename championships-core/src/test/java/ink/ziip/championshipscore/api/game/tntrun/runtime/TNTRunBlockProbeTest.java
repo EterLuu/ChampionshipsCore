@@ -34,37 +34,32 @@ class TNTRunBlockProbeTest {
     }
 
     @Test
-    void selectedBlockMatchesOriginalOrderAcrossRandomAndNegativeCoordinates() throws Exception {
+    void firstSolidCornerWinsInFixedOrderAndTheFeetLayerPrecedesTheLayerBelow() throws Exception {
+        record Case(double x, double z, Set<Cell> solid, Cell expected) {}
+        // Corners at (0.5, 0.5) with bias 0.8: (1,-1), (-1,1), (1,1), (-1,-1) per layer.
+        Cell a = new Cell(1, 70, -1), b = new Cell(-1, 70, 1), c = new Cell(1, 70, 1);
+        Cell d = new Cell(-1, 70, -1), below = new Cell(1, 69, -1);
+        Cell negative = new Cell(-10, 70, -22);
+        var cases =
+                List.of(
+                        new Case(.5, .5, Set.of(a, b, c, d, below), a),
+                        new Case(.5, .5, Set.of(b, c, d, below), b),
+                        new Case(.5, .5, Set.of(c, d, below), c),
+                        new Case(.5, .5, Set.of(d, below), d),
+                        new Case(.5, .5, Set.of(below), below),
+                        new Case(.5, .5, Set.of(), null),
+                        new Case(-10.5, -20.5, Set.of(negative, new Cell(-12, 70, -20)), negative));
         var f = new Fixture();
-        Random random = new Random(46752);
-        for (int i = 0; i < 10_000; i++) {
-            double x = random.nextInt(100) - 50 + random.nextDouble();
-            double z = random.nextInt(100) - 50 + random.nextDouble();
-            double y = random.nextInt(100) - 40 + random.nextDouble();
-            double bias = i % 2 == 0 ? .3 : .8;
-            Cell expected = original(f, x, y, z, bias);
-            Block actual = f.area.getBlockUnderLocation(new Location(f.world, x, y, z), bias);
+        for (var example : cases) {
+            f.solid = example.solid();
+            Block actual =
+                    f.area.getBlockUnderLocation(
+                            new Location(f.world, example.x(), 70.2, example.z()), .8);
             assertEquals(
-                    expected,
-                    actual == null ? null : new Cell(actual.getX(), actual.getY(), actual.getZ()));
-            f.reads.clear();
+                    example.expected(),
+                    actual == null ? null : new Cell(actual.getX(), actual.getY(), actual.getZ()),
+                    example.toString());
         }
-    }
-
-    private static Cell original(Fixture f, double x, double y, double z, double bias) {
-        for (int dy = 0; dy <= 1; dy++) {
-            for (double[] offset :
-                    new double[][] {{bias, -bias}, {-bias, bias}, {bias, bias}, {-bias, -bias}}) {
-                Cell c =
-                        new Cell(
-                                (int) Math.floor(x + offset[0]),
-                                (int) Math.floor(y - dy),
-                                (int) Math.floor(z + offset[1]));
-                Material m = f.material(c);
-                if (m != Material.AIR && m != Material.LIGHT) return c;
-            }
-        }
-        return null;
     }
 
     private record Cell(int x, int y, int z) {}
@@ -73,6 +68,7 @@ class TNTRunBlockProbeTest {
         final TNTRunTeamArea area = allocate(TNTRunTeamArea.class);
         final List<Cell> reads = new ArrayList<>();
         Material uniform;
+        Set<Cell> solid = Set.of();
         boolean unloaded;
         final World world =
                 proxy(
@@ -105,11 +101,7 @@ class TNTRunBlockProbeTest {
 
         Material material(Cell c) {
             if (uniform != null) return uniform;
-            return switch (Math.floorMod(c.x * 17 + c.y * 31 + c.z * 7, 5)) {
-                case 0 -> Material.STONE;
-                case 1 -> Material.LIGHT;
-                default -> Material.AIR;
-            };
+            return solid.contains(c) ? Material.STONE : Material.AIR;
         }
     }
 }

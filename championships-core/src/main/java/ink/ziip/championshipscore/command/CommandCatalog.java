@@ -1,6 +1,8 @@
 package ink.ziip.championshipscore.command;
 
+import ink.ziip.championshipscore.configuration.config.message.AdminMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.ServerMessages;
 
 import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
@@ -113,13 +115,13 @@ public final class CommandCatalog {
         boolean admin = sender.hasPermission(MainCommand.ADMIN_PERMISSION);
         boolean player = admin || sender.hasPermission(MainCommand.PLAYER_PERMISSION);
         if (!player && !admin) {
-            sender.sendMessage(MessageConfig.NO_PERMISSION);
+            sender.sendMessage(ServerMessages.NO_PERMISSION);
             return;
         }
 
-        StringBuilder message = new StringBuilder(MessageConfig.COMMAND_CATALOG_HEADER);
-        if (player) appendSection(message, MessageConfig.COMMAND_CATALOG_PLAYER, PLAYER_COMMANDS);
-        if (admin) appendSection(message, MessageConfig.COMMAND_CATALOG_ADMIN, ADMIN_COMMANDS);
+        StringBuilder message = new StringBuilder(AdminMessages.COMMAND_CATALOG_HEADER);
+        if (player) appendSection(message, AdminMessages.COMMAND_CATALOG_PLAYER, PLAYER_COMMANDS);
+        if (admin) appendSection(message, AdminMessages.COMMAND_CATALOG_ADMIN, ADMIN_COMMANDS);
         sender.sendMessage(message.toString());
     }
 
@@ -129,7 +131,7 @@ public final class CommandCatalog {
         for (Entry entry : entries) {
             message.append("\n")
                     .append(
-                            MessageConfig.COMMAND_CATALOG_ROW
+                            AdminMessages.COMMAND_CATALOG_ROW
                                     .replace("%usage%", entry.usage())
                                     .replace("%description%", entry.description()));
         }

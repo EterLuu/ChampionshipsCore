@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.command.finale;
 
 import ink.ziip.championshipscore.api.game.dodgebolt.runtime.DodgeboltArea;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.EventMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -33,7 +34,7 @@ final class DodgeboltControlSubCommand extends BaseSubCommand {
         }
         DodgeboltArea area = plugin.getGameManager().getDodgeboltManager().getArea(args[0]);
         if (area == null) {
-            CoreMessages.sendAdminError(sender, MessageConfig.FINALE_DODGEBOLT_AREA_MISSING);
+            CoreMessages.sendAdminError(sender, EventMessages.FINALE_DODGEBOLT_AREA_MISSING);
             return true;
         }
         boolean success =
@@ -47,11 +48,11 @@ final class DodgeboltControlSubCommand extends BaseSubCommand {
         if (success)
             CoreMessages.sendAdminSuccess(
                     sender,
-                    MessageConfig.FINALE_DODGEBOLT_CONTROL_EXECUTED.replace(
+                    EventMessages.FINALE_DODGEBOLT_CONTROL_EXECUTED.replace(
                             "%command%", commandName));
         else
             CoreMessages.sendAdminError(
-                    sender, MessageConfig.FINALE_DODGEBOLT_CONTROL_STATE_DENIED);
+                    sender, EventMessages.FINALE_DODGEBOLT_CONTROL_STATE_DENIED);
         return true;
     }
 

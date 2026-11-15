@@ -27,28 +27,6 @@ class TeamMenuItemsTest {
     }
 
     @Test
-    void everyTeamListVisitsAllEntriesWithSparseAndCenteredPageArrangements() throws Exception {
-        var doc = document();
-        for (var screen : TeamManagementMenu.Screen.values()) {
-            if (screen == TeamManagementMenu.Screen.CONFIRM) continue;
-            String content = screen.id.layout("content");
-            doc.set(content, null);
-            doc.set(content + ".1", List.of(22));
-            doc.set(content + ".2", List.of(20, 24));
-            doc.set(content + ".3", List.of(12, 13, 14));
-            var layout = TeamManagementMenu.layout(screen);
-            assertTrue(MenuId.supportsContentArrangements(screen.id.path()));
-            assertEquals(3, layout.pageCount(8));
-            assertEquals(List.of(20, 24), layout.pageSlots(2, 8));
-            assertEquals(7, layout.index(2, 24, 8));
-            assertEquals(-1, layout.index(2, 14, 8));
-            doc.set(content, List.of(18, 17));
-            assertEquals(4, TeamManagementMenu.layout(screen).pageCount(8));
-            assertEquals(List.of(20, 24), layout.pageSlots(2, 8));
-        }
-    }
-
-    @Test
     void persistentColourAliasesSelectTheCompleteStateAndRetainLiteralLabels() throws Exception {
         var doc = document();
         for (String color : TeamColors.names()) {

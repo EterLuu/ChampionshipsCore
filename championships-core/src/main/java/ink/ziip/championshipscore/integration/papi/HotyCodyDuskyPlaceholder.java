@@ -3,7 +3,7 @@ package ink.ziip.championshipscore.integration.papi;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.hotycodydusky.runtime.HotyCodyDuskyTeamArea;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.ScoreMessages;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
 import org.bukkit.OfflinePlayer;
@@ -33,7 +33,7 @@ public class HotyCodyDuskyPlaceholder extends BaseGamePlaceholder<HotyCodyDuskyT
             HotyCodyDuskyTeamArea hotyCodyDuskyTeamArea =
                     resolveArea(params, "area_survived_players_", offlinePlayer);
             if (hotyCodyDuskyTeamArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             return String.valueOf(hotyCodyDuskyTeamArea.getSurvivedPlayerNums());
         }
@@ -41,7 +41,7 @@ public class HotyCodyDuskyPlaceholder extends BaseGamePlaceholder<HotyCodyDuskyT
             HotyCodyDuskyTeamArea hotyCodyDuskyTeamArea =
                     resolveArea(params, "area_survived_teams_", offlinePlayer);
             if (hotyCodyDuskyTeamArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             return String.valueOf(hotyCodyDuskyTeamArea.getSurvivedTeamNums());
         }
@@ -49,7 +49,7 @@ public class HotyCodyDuskyPlaceholder extends BaseGamePlaceholder<HotyCodyDuskyT
             HotyCodyDuskyTeamArea hotyCodyDuskyTeamArea =
                     resolveArea(params, "area_cody_holder_", offlinePlayer);
             if (hotyCodyDuskyTeamArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             var holder =
                     offlinePlayer == null

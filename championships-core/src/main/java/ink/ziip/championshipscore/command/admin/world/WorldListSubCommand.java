@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.command.admin.world;
 
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.AdminMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
@@ -41,18 +42,18 @@ public class WorldListSubCommand extends BaseSubCommand {
         loaded.sort((left, right) -> left.getName().compareToIgnoreCase(right.getName()));
         CoreMessages.sendAdminInfo(
                 sender,
-                MessageConfig.ADMIN_WORLD_LIST_LOADED.replace(
+                AdminMessages.ADMIN_WORLD_LIST_LOADED.replace(
                         "%count%", String.valueOf(loaded.size())));
         Set<String> loadedNames = new HashSet<>();
         for (World world : loaded) {
             loadedNames.add(world.getName());
             String main =
                     plugin.getWorldManager().isMainWorld(world)
-                            ? MessageConfig.ADMIN_WORLD_MAIN_SUFFIX
+                            ? AdminMessages.ADMIN_WORLD_MAIN_SUFFIX
                             : "";
             sender.sendMessage(
                     LegacyText.translateColorCodes(
-                            MessageConfig.ADMIN_WORLD_ROW
+                            AdminMessages.ADMIN_WORLD_ROW
                                     .replace("%world%", world.getName())
                                     .replace("%main%", main)
                                     .replace(
@@ -65,17 +66,17 @@ public class WorldListSubCommand extends BaseSubCommand {
         unloaded.removeIf(loadedNames::contains);
         CoreMessages.sendAdminInfo(
                 sender,
-                MessageConfig.ADMIN_WORLD_LIST_UNLOADED.replace(
+                AdminMessages.ADMIN_WORLD_LIST_UNLOADED.replace(
                         "%count%", String.valueOf(unloaded.size())));
         if (unloaded.isEmpty())
-            sender.sendMessage(LegacyText.translateColorCodes(MessageConfig.ADMIN_WORLD_NONE));
+            sender.sendMessage(LegacyText.translateColorCodes(AdminMessages.ADMIN_WORLD_NONE));
         else
             sender.sendMessage(
                     LegacyText.translateColorCodes(
-                            MessageConfig.ADMIN_WORLD_UNLOADED_NAMES.replace(
+                            AdminMessages.ADMIN_WORLD_UNLOADED_NAMES.replace(
                                     "%worlds%",
                                     String.join(
-                                            MessageConfig.ADMIN_WORLD_LIST_SEPARATOR, unloaded))));
+                                            AdminMessages.ADMIN_WORLD_LIST_SEPARATOR, unloaded))));
         return true;
     }
 

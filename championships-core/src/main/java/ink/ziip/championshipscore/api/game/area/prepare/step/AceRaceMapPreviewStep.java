@@ -6,7 +6,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 
 import org.bukkit.Material;
@@ -37,7 +37,7 @@ public final class AceRaceMapPreviewStep extends PrepareStep {
     @Override
     public String stateText(PrepareSession session) {
         AceRaceArea area = area(session);
-        return area != null && area.isMapEditPreviewEnabled()
+        return area != null && area.isMapEditPreviewEnabled(session)
                 ? GuiConfig.text(
                         "map-editor.menus.step-list.games.ace-race.items.map-preview.states.enabled.title")
                 : GuiConfig.text(
@@ -47,11 +47,11 @@ public final class AceRaceMapPreviewStep extends PrepareStep {
     @Override
     public String capture(@NotNull PrepareSession session, @NotNull Player player) {
         AceRaceArea area = area(session);
-        if (area == null) return MessageConfig.MAP_EDITOR_ACE_PREVIEW_AREA_MISSING;
+        if (area == null) return MapEditorMessages.MAP_EDITOR_ACE_PREVIEW_AREA_MISSING;
         boolean enabled = area.toggleMapEditPreview(player);
         return enabled
-                ? MessageConfig.MAP_EDITOR_ACE_PREVIEW_ENABLED
-                : MessageConfig.MAP_EDITOR_ACE_PREVIEW_DISABLED;
+                ? MapEditorMessages.MAP_EDITOR_ACE_PREVIEW_ENABLED
+                : MapEditorMessages.MAP_EDITOR_ACE_PREVIEW_DISABLED;
     }
 
     private static AceRaceArea area(PrepareSession session) {

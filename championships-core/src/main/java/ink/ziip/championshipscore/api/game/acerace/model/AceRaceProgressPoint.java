@@ -22,6 +22,16 @@ public record AceRaceProgressPoint(
         pos2 = expanded[1];
     }
 
+    @Override
+    public @NotNull Vector pos1() {
+        return pos1.clone();
+    }
+
+    @Override
+    public @NotNull Vector pos2() {
+        return pos2.clone();
+    }
+
     public boolean crossed(@NotNull Location from, @NotNull Location to) {
         return new AceRaceLine(pos1, pos2).crossedAtOrAbove(from, to, BELOW_GATE_TOLERANCE_BLOCKS);
     }

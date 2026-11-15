@@ -28,6 +28,7 @@ public final class CountdownBlockDisappearance {
     private final BaseGameInstance instance;
     private final List<BlockState> snapshots = new ArrayList<>();
     private BukkitTask task;
+    private long generation;
 
     CountdownBlockDisappearance(
             @NotNull ChampionshipsCore plugin, @NotNull BaseGameInstance instance) {
@@ -129,11 +130,21 @@ public final class CountdownBlockDisappearance {
                     default -> maxY;
                 };
         final int doorLayerCount = doorDistance(doorAxisMax, doorAxisMin, doorAxisMax) + 1;
+        long request = generation;
+        long gameGeneration = instance.captureGameGeneration();
         task =
                 Bukkit.getScheduler()
                         .runTaskTimer(
                                 plugin,
                                 () -> {
+                                    if (request != generation) return;
+                                    if (gameGeneration != instance.captureGameGeneration()
+                                            || instance.isDisposed()
+                                            || !plugin.isLoaded()
+                                            || !plugin.isEnabled()) {
+                                        cancelTask();
+                                        return;
+                                    }
                                     if (elapsed[0] >= duration) {
                                         cancelTask();
                                         return;
@@ -199,6 +210,7 @@ public final class CountdownBlockDisappearance {
     }
 
     private void cancelTask() {
+        generation++;
         if (task != null) {
             task.cancel();
             task = null;

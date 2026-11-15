@@ -4,7 +4,8 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.ChampionshipPermissions;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.AdminMessages;
+import ink.ziip.championshipscore.configuration.config.message.ServerMessages;
 
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -72,7 +73,7 @@ public class MainCommand implements TabExecutor, TabCompleter {
             return true;
         }
         if (!canUse(sender, subCommand)) {
-            sender.sendMessage(MessageConfig.NO_PERMISSION);
+            sender.sendMessage(ServerMessages.NO_PERMISSION);
             return true;
         }
 
@@ -109,7 +110,7 @@ public class MainCommand implements TabExecutor, TabCompleter {
      * @param permissionFilter true to hide entries the sender cannot execute
      */
     protected void sendHelp(@NotNull CommandSender sender, boolean permissionFilter) {
-        StringBuilder stringBuilder = new StringBuilder(MessageConfig.COMMAND_HELP_HEADER);
+        StringBuilder stringBuilder = new StringBuilder(AdminMessages.COMMAND_HELP_HEADER);
 
         List<String> names = new ArrayList<>(subCommandMap.keySet());
         Collections.sort(names);
@@ -125,8 +126,8 @@ public class MainCommand implements TabExecutor, TabCompleter {
 
     protected String helpRow(@NotNull BaseMainCommand subCommand) {
         String detail =
-                subCommand.isLeaf() ? subCommand.getUsage() : MessageConfig.COMMAND_HELP_MORE;
-        return MessageConfig.COMMAND_HELP_ROW
+                subCommand.isLeaf() ? subCommand.getUsage() : AdminMessages.COMMAND_HELP_MORE;
+        return AdminMessages.COMMAND_HELP_ROW
                 .replace("%command%", subCommand.getCommandName())
                 .replace(
                         "%description%",

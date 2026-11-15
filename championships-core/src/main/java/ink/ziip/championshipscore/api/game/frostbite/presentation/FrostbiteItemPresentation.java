@@ -1,6 +1,7 @@
 package ink.ziip.championshipscore.api.game.frostbite.presentation;
 
 import ink.ziip.championshipscore.api.game.frostbite.model.FrostbiteItem;
+import ink.ziip.championshipscore.configuration.config.message.FrostbiteMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.shared.presentation.MessageTemplate;
@@ -25,7 +26,7 @@ public final class FrostbiteItemPresentation {
                                     MessageConfig.codeText(
                                             "frostbite-item.display-name", itemTitle(type))));
                     meta.lore(
-                            MessageConfig.FROSTBITE_ITEM_LORE.stream()
+                            FrostbiteMessages.FROSTBITE_ITEM_LORE.stream()
                                     .map(
                                             line ->
                                                     LegacyText.component(
@@ -54,21 +55,21 @@ public final class FrostbiteItemPresentation {
     private static String itemTitle(FrostbiteItem type) {
         String value =
                 switch (type) {
-                    case AVALANCHE -> MessageConfig.FROSTBITE_ITEM_AVALANCHE_TITLE;
-                    case AXE -> MessageConfig.FROSTBITE_ITEM_AXE_TITLE;
-                    case BLAZE -> MessageConfig.FROSTBITE_ITEM_BLAZE_TITLE;
-                    case BOW -> MessageConfig.FROSTBITE_ITEM_BOW_TITLE;
-                    case BEACON -> MessageConfig.FROSTBITE_ITEM_BEACON_TITLE;
-                    case EXPLOSION -> MessageConfig.FROSTBITE_ITEM_EXPLOSION_TITLE;
-                    case GLOW -> MessageConfig.FROSTBITE_ITEM_GLOW_TITLE;
-                    case HOT_ROD -> MessageConfig.FROSTBITE_ITEM_HOT_ROD_TITLE;
-                    case ICICLE -> MessageConfig.FROSTBITE_ITEM_ICICLE_TITLE;
-                    case INVIS -> MessageConfig.FROSTBITE_ITEM_INVIS_TITLE;
-                    case MYSTERY -> MessageConfig.FROSTBITE_ITEM_MYSTERY_TITLE;
-                    case PHOENIX -> MessageConfig.FROSTBITE_ITEM_PHOENIX_TITLE;
-                    case SPEED -> MessageConfig.FROSTBITE_ITEM_SPEED_TITLE;
-                    case FROST_TRAP -> MessageConfig.FROSTBITE_ITEM_FROST_TRAP_TITLE;
-                    case WHOABALL -> MessageConfig.FROSTBITE_ITEM_WHOABALL_TITLE;
+                    case AVALANCHE -> FrostbiteMessages.FROSTBITE_ITEM_AVALANCHE_TITLE;
+                    case AXE -> FrostbiteMessages.FROSTBITE_ITEM_AXE_TITLE;
+                    case BLAZE -> FrostbiteMessages.FROSTBITE_ITEM_BLAZE_TITLE;
+                    case BOW -> FrostbiteMessages.FROSTBITE_ITEM_BOW_TITLE;
+                    case BEACON -> FrostbiteMessages.FROSTBITE_ITEM_BEACON_TITLE;
+                    case EXPLOSION -> FrostbiteMessages.FROSTBITE_ITEM_EXPLOSION_TITLE;
+                    case GLOW -> FrostbiteMessages.FROSTBITE_ITEM_GLOW_TITLE;
+                    case HOT_ROD -> FrostbiteMessages.FROSTBITE_ITEM_HOT_ROD_TITLE;
+                    case ICICLE -> FrostbiteMessages.FROSTBITE_ITEM_ICICLE_TITLE;
+                    case INVIS -> FrostbiteMessages.FROSTBITE_ITEM_INVIS_TITLE;
+                    case MYSTERY -> FrostbiteMessages.FROSTBITE_ITEM_MYSTERY_TITLE;
+                    case PHOENIX -> FrostbiteMessages.FROSTBITE_ITEM_PHOENIX_TITLE;
+                    case SPEED -> FrostbiteMessages.FROSTBITE_ITEM_SPEED_TITLE;
+                    case FROST_TRAP -> FrostbiteMessages.FROSTBITE_ITEM_FROST_TRAP_TITLE;
+                    case WHOABALL -> FrostbiteMessages.FROSTBITE_ITEM_WHOABALL_TITLE;
                 };
         return value == null ? type.title() : value;
     }
@@ -76,21 +77,21 @@ public final class FrostbiteItemPresentation {
     private static String itemDescription(FrostbiteItem type) {
         String value =
                 switch (type) {
-                    case AVALANCHE -> MessageConfig.FROSTBITE_ITEM_AVALANCHE_DESCRIPTION;
-                    case AXE -> MessageConfig.FROSTBITE_ITEM_AXE_DESCRIPTION;
-                    case BLAZE -> MessageConfig.FROSTBITE_ITEM_BLAZE_DESCRIPTION;
-                    case BOW -> MessageConfig.FROSTBITE_ITEM_BOW_DESCRIPTION;
-                    case BEACON -> MessageConfig.FROSTBITE_ITEM_BEACON_DESCRIPTION;
-                    case EXPLOSION -> MessageConfig.FROSTBITE_ITEM_EXPLOSION_DESCRIPTION;
-                    case GLOW -> MessageConfig.FROSTBITE_ITEM_GLOW_DESCRIPTION;
-                    case HOT_ROD -> MessageConfig.FROSTBITE_ITEM_HOT_ROD_DESCRIPTION;
-                    case ICICLE -> MessageConfig.FROSTBITE_ITEM_ICICLE_DESCRIPTION;
-                    case INVIS -> MessageConfig.FROSTBITE_ITEM_INVIS_DESCRIPTION;
-                    case MYSTERY -> MessageConfig.FROSTBITE_ITEM_MYSTERY_DESCRIPTION;
-                    case PHOENIX -> MessageConfig.FROSTBITE_ITEM_PHOENIX_DESCRIPTION;
-                    case SPEED -> MessageConfig.FROSTBITE_ITEM_SPEED_DESCRIPTION;
-                    case FROST_TRAP -> MessageConfig.FROSTBITE_ITEM_FROST_TRAP_DESCRIPTION;
-                    case WHOABALL -> MessageConfig.FROSTBITE_ITEM_WHOABALL_DESCRIPTION;
+                    case AVALANCHE -> FrostbiteMessages.FROSTBITE_ITEM_AVALANCHE_DESCRIPTION;
+                    case AXE -> FrostbiteMessages.FROSTBITE_ITEM_AXE_DESCRIPTION;
+                    case BLAZE -> FrostbiteMessages.FROSTBITE_ITEM_BLAZE_DESCRIPTION;
+                    case BOW -> FrostbiteMessages.FROSTBITE_ITEM_BOW_DESCRIPTION;
+                    case BEACON -> FrostbiteMessages.FROSTBITE_ITEM_BEACON_DESCRIPTION;
+                    case EXPLOSION -> FrostbiteMessages.FROSTBITE_ITEM_EXPLOSION_DESCRIPTION;
+                    case GLOW -> FrostbiteMessages.FROSTBITE_ITEM_GLOW_DESCRIPTION;
+                    case HOT_ROD -> FrostbiteMessages.FROSTBITE_ITEM_HOT_ROD_DESCRIPTION;
+                    case ICICLE -> FrostbiteMessages.FROSTBITE_ITEM_ICICLE_DESCRIPTION;
+                    case INVIS -> FrostbiteMessages.FROSTBITE_ITEM_INVIS_DESCRIPTION;
+                    case MYSTERY -> FrostbiteMessages.FROSTBITE_ITEM_MYSTERY_DESCRIPTION;
+                    case PHOENIX -> FrostbiteMessages.FROSTBITE_ITEM_PHOENIX_DESCRIPTION;
+                    case SPEED -> FrostbiteMessages.FROSTBITE_ITEM_SPEED_DESCRIPTION;
+                    case FROST_TRAP -> FrostbiteMessages.FROSTBITE_ITEM_FROST_TRAP_DESCRIPTION;
+                    case WHOABALL -> FrostbiteMessages.FROSTBITE_ITEM_WHOABALL_DESCRIPTION;
                 };
         return value == null ? type.description() : value;
     }

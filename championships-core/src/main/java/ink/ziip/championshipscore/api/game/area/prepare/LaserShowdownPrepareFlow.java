@@ -9,7 +9,7 @@ import ink.ziip.championshipscore.api.game.lasershowdown.config.LaserShowdownCon
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -67,7 +67,7 @@ public final class LaserShowdownPrepareFlow extends PrepareFlowDefinition {
                         t -> cfg(t).getSpectatorSpawnPoint() != null,
                         (t, l) -> cfg(t).setSpectatorSpawnPoint(l),
                         CoreMessages.formatAdminSuccess(
-                                MessageConfig.MAP_EDITOR_STEP_SPECTATOR_SPAWN_POINT_SET)));
+                                MapEditorMessages.MAP_EDITOR_STEP_SPECTATOR_SPAWN_POINT_SET)));
         String lane = "area1";
         steps.add(
                 new ListStep(

@@ -11,7 +11,7 @@ import ink.ziip.championshipscore.api.game.model.ServerMode;
 import ink.ziip.championshipscore.api.team.TeamManager;
 import ink.ziip.championshipscore.api.test.*;
 import ink.ziip.championshipscore.configuration.ConfigurationStateExtension;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.DailyMessages;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Server;
@@ -55,9 +55,9 @@ class DailyTestOwnershipTest {
     void preparingTestMemberCannotEnterQueueEvenBeforeBingoVoteOrRulesResolution()
             throws Exception {
         try (var f = new Fixture()) {
-            MessageConfig.DAILY_ALREADY_PLAYING = "busy";
-            MessageConfig.DAILY_PREFIX = "";
-            MessageConfig.DAILY_PREFIXED = "%message%";
+            DailyMessages.DAILY_ALREADY_PLAYING = "busy";
+            DailyMessages.DAILY_PREFIX = "";
+            DailyMessages.DAILY_PREFIXED = "%message%";
             // Adapters/vote are deliberately absent: no DAILY side effect may precede rejection.
             assertFalse(f.daily.selectGame(f.bot, GameTypeEnum.Bingo));
             assertFalse(f.daily.selectGame(f.bot, GameTypeEnum.TNTRun));

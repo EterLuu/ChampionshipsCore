@@ -12,7 +12,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.step.WeSelectionStep;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -65,7 +65,7 @@ public final class AceRacePrepareFlow extends PrepareFlowDefinition {
                             cfg(t).setAreaPos2(value[1]);
                         },
                         CoreMessages.formatAdminSuccess(
-                                MessageConfig.MAP_EDITOR_STEP_TRACK_BOUNDARY_SET)),
+                                MapEditorMessages.MAP_EDITOR_STEP_TRACK_BOUNDARY_SET)),
                 new StandAndRunStep(
                         "spectator_spawn",
                         LegacyText.component(
@@ -79,7 +79,7 @@ public final class AceRacePrepareFlow extends PrepareFlowDefinition {
                         t -> cfg(t).getSpectatorSpawnPoint() != null,
                         (t, value) -> cfg(t).setSpectatorSpawnPoint(value),
                         CoreMessages.formatAdminSuccess(
-                                MessageConfig.MAP_EDITOR_STEP_SPECTATOR_SPAWN_POINT_SET)),
+                                MapEditorMessages.MAP_EDITOR_STEP_SPECTATOR_SPAWN_POINT_SET)),
                 new AceRaceLineStep(true),
                 new AceRaceLineStep(false),
                 new AceRaceProgressPointListStep(),
@@ -94,7 +94,7 @@ public final class AceRacePrepareFlow extends PrepareFlowDefinition {
                         .getGameManager()
                         .getAceRaceManager()
                         .getArea(session.getAreaName());
-        if (area != null) area.disableMapEditPreview();
+        if (area != null) area.disableMapEditPreview(session);
     }
 
     private static AceRaceConfig cfg(SetupTarget target) {

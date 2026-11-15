@@ -1,8 +1,11 @@
 package ink.ziip.championshipscore.redis;
 
+import static ink.ziip.championshipscore.support.TestObjects.set;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.database.sync.DatabaseSyncDomain;
+import ink.ziip.championshipscore.support.TestObjects;
 
 import org.junit.jupiter.api.Test;
 
@@ -56,15 +59,7 @@ class RedisManagerLifecycleTest {
         manager.unload();
     }
 
-    private static Object field(Object target, String name) throws Exception {
-        var field = target.getClass().getDeclaredField(name);
-        field.setAccessible(true);
-        return field.get(target);
-    }
-
-    private static void set(Object target, String name, Object value) throws Exception {
-        var field = target.getClass().getDeclaredField(name);
-        field.setAccessible(true);
-        field.set(target, value);
+    private static Object field(RedisManager manager, String name) throws Exception {
+        return TestObjects.field(RedisManager.class, name).get(manager);
     }
 }

@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.area.prepare.tntrun;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
@@ -16,12 +18,8 @@ import java.lang.reflect.Proxy;
 class TNTRunPrepareFlowTest {
     @Test
     void editorRequiresAnExplicitHeightWithoutASeparateBoundarySelection() throws Exception {
-        var field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-        field.setAccessible(true);
-        ChampionshipsCore plugin =
-                (ChampionshipsCore)
-                        ((sun.misc.Unsafe) field.get(null))
-                                .allocateInstance(ChampionshipsCore.class);
+
+        ChampionshipsCore plugin = allocate(ChampionshipsCore.class);
         TNTRunConfig config = new TNTRunConfig(plugin, "test");
         SetupTarget target =
                 (SetupTarget)

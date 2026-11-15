@@ -51,6 +51,9 @@ class BingoScoringEngineTest {
         assertEquals(220, line.teamScore());
         assertEquals(220, engine.result().teamScores().get(1));
         assertEquals(50, engine.result().teamScores().get(2));
+        assertEquals(
+                "4dc94c3ff47acba8fe9df3b978ede5775c22b8477f1554c9ca1361b5507c596c",
+                engine.result().resultHash());
     }
 
     @Test
@@ -150,6 +153,41 @@ class BingoScoringEngineTest {
         coop.apply(observation(1, 1, RED_ONE, 0, 1));
         assertEquals(1, coop.result().completedCells().get(1));
         assertEquals(1, coop.result().completedCells().get(2));
+    }
+
+    @Test
+    void onlyFrozenParticipantsCanScoreAndRosterInputsAreValidated() {
+        MatchManifest manifest = manifest();
+        var engine =
+                new BingoScoringEngine(
+                        MATCH_ID,
+                        1,
+                        manifest.scoring(),
+                        manifest.teams(),
+                        Map.of(RED_ONE, 1, BLUE_ONE, 2));
+        assertFalse(engine.apply(observation(1, 1, RED_TWO, 0, 1)).accepted());
+        assertFalse(engine.apply(observation(2, 2, RED_ONE, 0, 2)).accepted());
+        assertEquals(0, engine.score(1));
+        assertEquals(0, engine.completedCount(2));
+        assertTrue(engine.apply(observation(3, 1, RED_ONE, 0, 3)).accepted());
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        new BingoScoringEngine(
+                                MATCH_ID,
+                                1,
+                                manifest.scoring(),
+                                manifest.teams(),
+                                Map.of(RED_ONE, 2)));
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        new BingoScoringEngine(
+                                MATCH_ID,
+                                1,
+                                manifest.scoring(),
+                                List.of(manifest.teams().getFirst(), manifest.teams().getFirst()),
+                                Map.of()));
     }
 
     private static CompletionObservation observation(

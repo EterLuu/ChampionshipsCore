@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.command.admin;
 
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.configuration.config.message.AdminMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -35,18 +36,18 @@ public class AdminSetMaxPlayerSubCommand extends BaseSubCommand {
         try {
             maxPlayers = Integer.parseInt(args[0]);
         } catch (NumberFormatException exception) {
-            CoreMessages.sendAdminError(sender, MessageConfig.ADMIN_MAX_PLAYERS_POSITIVE_INTEGER);
+            CoreMessages.sendAdminError(sender, AdminMessages.ADMIN_MAX_PLAYERS_POSITIVE_INTEGER);
             return true;
         }
         if (maxPlayers < 1) {
-            CoreMessages.sendAdminError(sender, MessageConfig.ADMIN_MAX_PLAYERS_GREATER_THAN_ZERO);
+            CoreMessages.sendAdminError(sender, AdminMessages.ADMIN_MAX_PLAYERS_GREATER_THAN_ZERO);
             return true;
         }
         CCConfig.MAX_PLAYERS = maxPlayers;
         plugin.getConfigurationManager().getCCConfig().saveOptions();
         CoreMessages.sendAdminSuccess(
                 sender,
-                MessageConfig.ADMIN_MAX_PLAYERS_SET.replace("%count%", String.valueOf(maxPlayers)));
+                AdminMessages.ADMIN_MAX_PLAYERS_SET.replace("%count%", String.valueOf(maxPlayers)));
 
         return true;
     }

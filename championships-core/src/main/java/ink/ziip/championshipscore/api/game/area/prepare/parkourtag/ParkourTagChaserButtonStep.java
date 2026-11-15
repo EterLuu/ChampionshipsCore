@@ -5,7 +5,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
 import ink.ziip.championshipscore.api.game.parkourtag.config.ParkourTagConfig;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
 import net.kyori.adventure.text.Component;
@@ -68,37 +68,37 @@ final class ParkourTagChaserButtonStep extends PrepareStep {
     public String capture(@NotNull PrepareSession session, @NotNull Player player) {
         Block source = player.getTargetBlockExact(TARGET_DISTANCE);
         if (source == null || !isWallButton(source)) {
-            return CoreMessages.formatAdminError(MessageConfig.MAP_EDITOR_TAG_CHASER_AIM);
+            return CoreMessages.formatAdminError(MapEditorMessages.MAP_EDITOR_TAG_CHASER_AIM);
         }
 
         ParkourTagConfig config = (ParkourTagConfig) session.getTarget().config();
         Location sourceLocation = source.getLocation();
         List<Block> buttons = resolveCopies(config, sourceLocation);
         if (buttons.size() != Math.max(1, config.getCopyCount())) {
-            return CoreMessages.formatAdminError(MessageConfig.MAP_EDITOR_TAG_WORLD_NOT_LOADED);
+            return CoreMessages.formatAdminError(MapEditorMessages.MAP_EDITOR_TAG_WORLD_NOT_LOADED);
         }
         for (int index = 0; index < buttons.size(); index++) {
             Block button = buttons.get(index);
             if (index > 0 && !canReplaceWithButton(button)) {
                 return CoreMessages.formatAdminError(
-                        MessageConfig.MAP_EDITOR_TAG_INVALID_POSITION.replace(
+                        MapEditorMessages.MAP_EDITOR_TAG_INVALID_POSITION.replace(
                                 "%index%", String.valueOf(index)));
             }
             BlockFace facing = ((Switch) source.getBlockData()).getFacing();
             if (!button.getRelative(facing.getOppositeFace()).getType().isSolid()) {
                 return CoreMessages.formatAdminError(
-                        MessageConfig.MAP_EDITOR_TAG_MISSING_WALL.replace(
+                        MapEditorMessages.MAP_EDITOR_TAG_MISSING_WALL.replace(
                                 "%index%", String.valueOf(index)));
             }
             Block label = button.getRelative(BlockFace.DOWN);
             if (!label.getType().isAir() && label.getType() != Material.BIRCH_WALL_SIGN) {
                 return CoreMessages.formatAdminError(
-                        MessageConfig.MAP_EDITOR_TAG_MISSING_SPACE.replace(
+                        MapEditorMessages.MAP_EDITOR_TAG_MISSING_SPACE.replace(
                                 "%index%", String.valueOf(index)));
             }
             if (!label.getRelative(facing.getOppositeFace()).getType().isSolid()) {
                 return CoreMessages.formatAdminError(
-                        MessageConfig.MAP_EDITOR_TAG_MISSING_SIGN_WALL.replace(
+                        MapEditorMessages.MAP_EDITOR_TAG_MISSING_SIGN_WALL.replace(
                                 "%index%", String.valueOf(index)));
             }
         }
@@ -111,7 +111,7 @@ final class ParkourTagChaserButtonStep extends PrepareStep {
         setter.accept(session.getTarget(), sourceLocation);
         session.markDirty();
         return CoreMessages.formatAdminSuccess(
-                MessageConfig.MAP_EDITOR_TAG_CHASER_BUTTONS_SET.replace(
+                MapEditorMessages.MAP_EDITOR_TAG_CHASER_BUTTONS_SET.replace(
                         "%count%", String.valueOf(buttons.size())));
     }
 
@@ -168,12 +168,12 @@ final class ParkourTagChaserButtonStep extends PrepareStep {
                 1,
                 CoreMessages.styled(
                         "parkour-tag-chaser-button-step.sign-click",
-                        MessageConfig.MAP_EDITOR_TAG_SIGN_CLICK));
+                        MapEditorMessages.MAP_EDITOR_TAG_SIGN_CLICK));
         front.line(
                 2,
                 CoreMessages.styled(
                         "parkour-tag-chaser-button-step.sign-become",
-                        MessageConfig.MAP_EDITOR_TAG_SIGN_BECOME));
+                        MapEditorMessages.MAP_EDITOR_TAG_SIGN_BECOME));
         front.line(3, Component.empty());
         front.setColor(DyeColor.PURPLE);
         front.setGlowingText(true);

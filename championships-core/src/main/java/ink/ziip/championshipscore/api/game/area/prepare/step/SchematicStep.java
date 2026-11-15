@@ -4,7 +4,7 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareSession;
 import ink.ziip.championshipscore.api.game.area.prepare.PrepareStep;
 import ink.ziip.championshipscore.api.game.area.prepare.StepCaptureType;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
 import net.kyori.adventure.text.Component;
@@ -61,12 +61,13 @@ public class SchematicStep extends PrepareStep {
             String detail = e.getMessage();
             if (detail == null || detail.isBlank()) detail = e.getClass().getSimpleName();
             return CoreMessages.formatAdminError(
-                    MessageConfig.MAP_EDITOR_STEP_SCHEMATIC_SAVE_FAILED.replace(
+                    MapEditorMessages.MAP_EDITOR_STEP_SCHEMATIC_SAVE_FAILED.replace(
                             "%detail%", detail));
         }
         session.markDirty();
         return CoreMessages.formatAdminSuccess(
-                MessageConfig.MAP_EDITOR_STEP_SCHEMATIC_SAVED.replace("%file%", file.getName()));
+                MapEditorMessages.MAP_EDITOR_STEP_SCHEMATIC_SAVED.replace(
+                        "%file%", file.getName()));
     }
 
     /**

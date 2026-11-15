@@ -15,7 +15,7 @@ import ink.ziip.championshipscore.api.game.parkourtag.geometry.ParkourTagLayout;
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -141,7 +141,7 @@ public class ParkourTagPrepareFlow extends PrepareFlowDefinition {
                             cfg(a).setAreaPos2(sel[1]);
                         },
                         CoreMessages.formatAdminSuccess(
-                                MessageConfig.MAP_EDITOR_STEP_GENERAL_SITE_BOUNDARY_SET)));
+                                MapEditorMessages.MAP_EDITOR_STEP_GENERAL_SITE_BOUNDARY_SET)));
 
         steps.add(
                 new StandAndRunStep(
@@ -157,7 +157,7 @@ public class ParkourTagPrepareFlow extends PrepareFlowDefinition {
                         a -> cfg(a).getSpectatorSpawnPoint() != null,
                         (a, loc) -> cfg(a).setSpectatorSpawnPoint(loc),
                         CoreMessages.formatAdminSuccess(
-                                MessageConfig.MAP_EDITOR_STEP_SPECTATOR_SPAWN_POINT_SET)));
+                                MapEditorMessages.MAP_EDITOR_STEP_SPECTATOR_SPAWN_POINT_SET)));
 
         steps.add(
                 new StandAndRunStep(
@@ -173,7 +173,7 @@ public class ParkourTagPrepareFlow extends PrepareFlowDefinition {
                         a -> cfg(a).getRightPrepareSpot() != null,
                         (a, loc) -> cfg(a).setRightPrepareSpot(loc),
                         CoreMessages.formatAdminSuccess(
-                                MessageConfig.MAP_EDITOR_TAG_PREPARE_A_SET)));
+                                MapEditorMessages.MAP_EDITOR_TAG_PREPARE_A_SET)));
 
         steps.add(
                 new StandAndRunStep(
@@ -189,7 +189,7 @@ public class ParkourTagPrepareFlow extends PrepareFlowDefinition {
                         a -> cfg(a).getLeftPrepareSpot() != null,
                         (a, loc) -> cfg(a).setLeftPrepareSpot(loc),
                         CoreMessages.formatAdminSuccess(
-                                MessageConfig.MAP_EDITOR_TAG_PREPARE_B_SET)));
+                                MapEditorMessages.MAP_EDITOR_TAG_PREPARE_B_SET)));
 
         steps.add(
                 new ParkourTagChaserButtonStep(
@@ -236,7 +236,7 @@ public class ParkourTagPrepareFlow extends PrepareFlowDefinition {
                             cfg(a).setRightAreaAreaPos2(sel[1]);
                         },
                         CoreMessages.formatAdminSuccess(
-                                MessageConfig.MAP_EDITOR_TAG_TRACK_1_BOUNDARY_SET)));
+                                MapEditorMessages.MAP_EDITOR_TAG_TRACK_1_BOUNDARY_SET)));
 
         steps.add(
                 new StandAndRunStep(
@@ -252,7 +252,7 @@ public class ParkourTagPrepareFlow extends PrepareFlowDefinition {
                         a -> cfg(a).getRightAreaChaserSpawnPoint() != null,
                         (a, loc) -> cfg(a).setRightAreaChaserSpawnPoint(loc),
                         CoreMessages.formatAdminSuccess(
-                                MessageConfig.MAP_EDITOR_TAG_TRACK_1_CHASER_SET)));
+                                MapEditorMessages.MAP_EDITOR_TAG_TRACK_1_CHASER_SET)));
 
         steps.add(
                 escapeeStep(
@@ -287,7 +287,7 @@ public class ParkourTagPrepareFlow extends PrepareFlowDefinition {
                             cfg(a).setLeftAreaAreaPos2(sel[1]);
                         },
                         CoreMessages.formatAdminSuccess(
-                                MessageConfig.MAP_EDITOR_TAG_TRACK_2_BOUNDARY_SET)));
+                                MapEditorMessages.MAP_EDITOR_TAG_TRACK_2_BOUNDARY_SET)));
 
         steps.add(
                 new StandAndRunStep(
@@ -303,7 +303,7 @@ public class ParkourTagPrepareFlow extends PrepareFlowDefinition {
                         a -> cfg(a).getLeftAreaChaserSpawnPoint() != null,
                         (a, loc) -> cfg(a).setLeftAreaChaserSpawnPoint(loc),
                         CoreMessages.formatAdminSuccess(
-                                MessageConfig.MAP_EDITOR_TAG_TRACK_2_CHASER_SET)));
+                                MapEditorMessages.MAP_EDITOR_TAG_TRACK_2_CHASER_SET)));
 
         steps.add(
                 escapeeStep(

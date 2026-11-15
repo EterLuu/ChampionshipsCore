@@ -70,13 +70,16 @@ public final class RiptideCourseGenerator {
             BooleanSupplier valid) {
         if (!Bukkit.isPrimaryThread())
             throw new IllegalStateException("generation must start on the server thread");
-        var geometry = config.resolveGeometry();
+        var geometry = config.resolveGeometry(plan);
+        var reserved = config.resolveGenerationGeometry();
         World world = config.getStartPoint().getWorld();
         if (world == null || isGenerating(world))
             return CompletableFuture.failedFuture(
                     new IllegalStateException(
                             MessageConfig.codeText("riptide-course-generator.schedule-1")));
         var future = new CompletableFuture<Boolean>();
+        var platform = config.resolveFinishPlatform();
+        var platformSession = platform == null ? null : platform.open(geometry);
         try {
             int side = geometry.halfWidth() + Math.max(2, config.getObstacleMargin());
             int height = Math.max(5, config.getClearHeight());
@@ -86,10 +89,12 @@ public final class RiptideCourseGenerator {
                         int forward = -geometry.halfLength() - 2;
                         int levelIndex;
                         boolean raftBuilt;
+                        boolean finishBuilt;
 
                         void finish(Throwable failure, boolean built) {
                             cancel();
                             BUILDING.remove(world.getUID());
+                            if (platformSession != null) platformSession.close();
                             if (failure == null) future.complete(built);
                             else future.completeExceptionally(failure);
                         }
@@ -102,7 +107,15 @@ public final class RiptideCourseGenerator {
                                     finish(null, false);
                                     return;
                                 }
-                                int last = geometry.totalSteps() + geometry.halfLength() + 2;
+                                if (platformSession != null && platformSession.restoring()) {
+                                    long deadline = System.nanoTime() + 2_000_000L;
+                                    do {
+                                        platformSession.restoreNext();
+                                    } while (platformSession.restoring()
+                                            && System.nanoTime() < deadline);
+                                    return;
+                                }
+                                int last = reserved.totalSteps() + reserved.halfLength() + 2;
                                 if (forward <= last) {
                                     long deadline = System.nanoTime() + 2_000_000L;
                                     int writes = 0;
@@ -127,7 +140,18 @@ public final class RiptideCourseGenerator {
                                     if (level.template().blueprint() != null) break;
                                 }
                                 if (levelIndex == plan.levels().size()) {
-                                    buildFinishMarker(world, geometry);
+                                    if (!finishBuilt) {
+                                        buildFinishMarker(world, geometry);
+                                        finishBuilt = true;
+                                    }
+                                    if (platformSession != null && platformSession.placing()) {
+                                        long deadline = System.nanoTime() + 2_000_000L;
+                                        do {
+                                            platformSession.placeNext();
+                                        } while (platformSession.placing()
+                                                && System.nanoTime() < deadline);
+                                        if (platformSession.placing()) return;
+                                    }
                                     finish(null, true);
                                 }
                             } catch (RuntimeException failure) {
@@ -141,10 +165,12 @@ public final class RiptideCourseGenerator {
                     () -> {
                         job.cancel();
                         BUILDING.remove(world.getUID());
+                        if (platformSession != null) platformSession.close();
                         future.complete(false);
                     });
         } catch (RuntimeException failure) {
             BUILDING.remove(world.getUID());
+            if (platformSession != null) platformSession.close();
             future.completeExceptionally(failure);
         }
         return future;
@@ -153,13 +179,18 @@ public final class RiptideCourseGenerator {
     public static void generate(@NotNull RiptideRushConfig config, RiptideCoursePlan plan) {
         if (!Bukkit.isPrimaryThread())
             throw new IllegalStateException("course generation must run on the server thread");
-        RiptideCourseGeometry geometry = config.resolveGeometry();
+        RiptideCourseGeometry geometry = config.resolveGeometry(plan);
         World world = config.getStartPoint().getWorld();
         if (world == null) throw new IllegalArgumentException("course world is not loaded");
         Material raft = requiredBlock(config.getRaftMaterial(), "raft material");
         Material obstacle = requiredBlock(config.getObstacleMaterial(), "obstacle material");
-        clearOwnedCorridor(world, geometry, config);
-        build(world, geometry, plan, raft, obstacle);
+        var platform = config.resolveFinishPlatform();
+        try (var session = platform == null ? null : platform.open(geometry)) {
+            if (session != null) while (session.restoring()) session.restoreNext();
+            clearOwnedCorridor(world, config.resolveGenerationGeometry(), config);
+            build(world, geometry, plan, raft, obstacle);
+            if (session != null) session.place();
+        }
     }
 
     static void build(

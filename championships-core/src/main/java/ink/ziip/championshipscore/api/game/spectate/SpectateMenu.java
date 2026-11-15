@@ -15,8 +15,9 @@ import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.api.gui.MenuInventory;
 import ink.ziip.championshipscore.api.gui.MenuLayout;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.config.message.GameMessages;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.configuration.location.LocationConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
@@ -156,10 +157,10 @@ public final class SpectateMenu implements Listener {
         }
         if (slot == holder.layout.control("leave")) {
             if (manager.leaveSpectating(player)) {
-                player.sendMessage(MessageConfig.SPECTATOR_LEAVING_AREA);
+                player.sendMessage(GameMessages.SPECTATOR_LEAVING_AREA);
                 holder.close(player);
             } else {
-                player.sendMessage(MessageConfig.SPECTATOR_CANT_LEAVING_AREA);
+                player.sendMessage(GameMessages.SPECTATOR_CANT_LEAVING_AREA);
             }
             return;
         }
@@ -183,14 +184,14 @@ public final class SpectateMenu implements Listener {
             return;
         }
         if (!manager.selectSpectatorArea(player, target)) {
-            CoreMessages.sendAdminError(player, MessageConfig.SPECTATOR_UNAVAILABLE);
+            CoreMessages.sendAdminError(player, MapEditorMessages.SPECTATOR_UNAVAILABLE);
             refresh(holder);
             return;
         }
 
         player.sendMessage(
                 MessageTemplate.render(
-                        MessageConfig.SPECTATOR_JOIN_AREA,
+                        GameMessages.SPECTATOR_JOIN_AREA,
                         Map.of(
                                 "%game%",
                                 target.getGameTypeEnum().toString(),
@@ -253,13 +254,13 @@ public final class SpectateMenu implements Listener {
             return;
         }
         if (!manager.selectSpectatorArea(player, holder.area, destination.location())) {
-            CoreMessages.sendAdminError(player, MessageConfig.SPECTATOR_UNAVAILABLE);
+            CoreMessages.sendAdminError(player, MapEditorMessages.SPECTATOR_UNAVAILABLE);
             open(player);
             return;
         }
         player.sendMessage(
                 MessageTemplate.render(
-                        MessageConfig.SPECTATOR_JOIN_AREA,
+                        GameMessages.SPECTATOR_JOIN_AREA,
                         Map.of(
                                 "%game%",
                                 holder.area.getGameTypeEnum().toString(),
@@ -404,13 +405,13 @@ public final class SpectateMenu implements Listener {
             return;
         }
         if (!manager.selectSpectatorArea(player, holder.area, destination.location())) {
-            CoreMessages.sendAdminError(player, MessageConfig.SPECTATOR_UNAVAILABLE);
+            CoreMessages.sendAdminError(player, MapEditorMessages.SPECTATOR_UNAVAILABLE);
             open(player);
             return;
         }
         player.sendMessage(
                 MessageTemplate.render(
-                        MessageConfig.SPECTATOR_JOIN_AREA,
+                        GameMessages.SPECTATOR_JOIN_AREA,
                         Map.of(
                                 "%game%",
                                 holder.area.getGameTypeEnum().toString(),

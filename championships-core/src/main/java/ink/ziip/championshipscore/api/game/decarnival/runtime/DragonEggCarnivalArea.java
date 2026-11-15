@@ -8,6 +8,7 @@ import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.game.spatial.TeleportPositions;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.config.message.DragonEggCarnivalMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 import ink.ziip.championshipscore.util.Enchants;
@@ -186,9 +187,9 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
         teleportTeamsToPlatforms();
 
         announceGamePreparation(
-                MessageConfig.DRAGON_EGG_CARNIVAL_START_PREPARATION,
-                MessageConfig.DRAGON_EGG_CARNIVAL_START_PREPARATION_TITLE,
-                MessageConfig.DRAGON_EGG_CARNIVAL_START_PREPARATION_SUBTITLE);
+                DragonEggCarnivalMessages.DRAGON_EGG_CARNIVAL_START_PREPARATION,
+                DragonEggCarnivalMessages.DRAGON_EGG_CARNIVAL_START_PREPARATION_TITLE,
+                DragonEggCarnivalMessages.DRAGON_EGG_CARNIVAL_START_PREPARATION_SUBTITLE);
         startGameProgress();
     }
 
@@ -240,9 +241,9 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
 
     private void startFightCountdown() {
         startFinalCountdown(
-                MessageConfig.DRAGON_EGG_CARNIVAL_GAME_START_SOON_TITLE,
-                MessageConfig.DRAGON_EGG_CARNIVAL_GAME_START_TITLE,
-                MessageConfig.DRAGON_EGG_CARNIVAL_GAME_START_SUBTITLE,
+                DragonEggCarnivalMessages.DRAGON_EGG_CARNIVAL_GAME_START_SOON_TITLE,
+                DragonEggCarnivalMessages.DRAGON_EGG_CARNIVAL_GAME_START_TITLE,
+                DragonEggCarnivalMessages.DRAGON_EGG_CARNIVAL_GAME_START_SUBTITLE,
                 this::beginGameProgress);
     }
 
@@ -262,7 +263,7 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
 
     private void updateFightBossBar() {
         updateGameTimerBossBar(
-                MessageConfig.DRAGON_EGG_CARNIVAL_ACTION_BAR_COUNT_DOWN.replace(
+                DragonEggCarnivalMessages.DRAGON_EGG_CARNIVAL_ACTION_BAR_COUNT_DOWN.replace(
                         "%time%", CoreMessages.bossBarTime(timer)),
                 1D);
     }
@@ -387,7 +388,7 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
 
         updateTeamProgress(team, completed.size());
         sendMessageToAllGamePlayers(
-                MessageConfig.DRAGON_EGG_CARNIVAL_ADVANCEMENT
+                DragonEggCarnivalMessages.DRAGON_EGG_CARNIVAL_ADVANCEMENT
                         .replace("%team%", team.getColoredName())
                         .replace("%advancement%", advancementDisplayName(advancementKey))
                         .replace("%count%", String.valueOf(completed.size())));
@@ -417,7 +418,7 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
         for (Player member : team.getOnlinePlayers()) syncCrystalRewards(member, team);
 
         sendMessageToAllGamePlayers(
-                MessageConfig.DRAGON_EGG_CARNIVAL_CRYSTAL_REWARD
+                DragonEggCarnivalMessages.DRAGON_EGG_CARNIVAL_CRYSTAL_REWARD
                         .replace("%team%", team.getColoredName())
                         .replace("%enchantment%", reward.displayName)
                         .replace("%level%", String.valueOf(level)));
@@ -447,7 +448,7 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
 
         applyDragonPressure(opponent);
         sendMessageToAllGamePlayers(
-                MessageConfig.DRAGON_EGG_CARNIVAL_DRAGON_PRESSURE
+                DragonEggCarnivalMessages.DRAGON_EGG_CARNIVAL_DRAGON_PRESSURE
                         .replace("%team%", team.getColoredName())
                         .replace("%rival%", opponent.getColoredName()));
     }
@@ -522,7 +523,7 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
                 .enterParticipantSpectator(player, this, getCentralCooldownLocation());
         CoreMessages.sendActionBar(
                 player,
-                MessageConfig.DRAGON_EGG_CARNIVAL_RESPAWN_COUNTDOWN.replace(
+                DragonEggCarnivalMessages.DRAGON_EGG_CARNIVAL_RESPAWN_COUNTDOWN.replace(
                         "%time%", String.valueOf(delaySeconds)));
     }
 
@@ -565,7 +566,7 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
         player.setGameMode(GameMode.SURVIVAL);
         player.setFallDistance(0F);
         applyRespawnBuffs(player);
-        CoreMessages.sendActionBar(player, MessageConfig.DRAGON_EGG_CARNIVAL_RESPAWNED);
+        CoreMessages.sendActionBar(player, DragonEggCarnivalMessages.DRAGON_EGG_CARNIVAL_RESPAWNED);
     }
 
     private void applyRespawnBuffs(@NotNull Player player) {
@@ -589,14 +590,14 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
         if (killer != null && !killer.equals(player)) {
             message =
                     voidDeath
-                            ? MessageConfig.DRAGON_EGG_CARNIVAL_KILL_PLAYER_BY_VOID
-                            : MessageConfig.DRAGON_EGG_CARNIVAL_KILL_PLAYER;
+                            ? DragonEggCarnivalMessages.DRAGON_EGG_CARNIVAL_KILL_PLAYER_BY_VOID
+                            : DragonEggCarnivalMessages.DRAGON_EGG_CARNIVAL_KILL_PLAYER;
             message = message.replace("%killer%", CoreMessages.formatPlayerName(killer));
         } else {
             message =
                     voidDeath
-                            ? MessageConfig.DRAGON_EGG_CARNIVAL_PLAYER_DEATH_BY_VOID
-                            : MessageConfig.DRAGON_EGG_CARNIVAL_PLAYER_DEATH;
+                            ? DragonEggCarnivalMessages.DRAGON_EGG_CARNIVAL_PLAYER_DEATH_BY_VOID
+                            : DragonEggCarnivalMessages.DRAGON_EGG_CARNIVAL_PLAYER_DEATH;
         }
         sendMessageToAllGamePlayers(
                 message.replace("%player%", CoreMessages.formatPlayerName(player)));
@@ -607,7 +608,7 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
         Player player = event.getPlayer();
         if (notAreaPlayer(player) || getGameStageEnum() != GameStageEnum.PROGRESS) return;
         sendMessageToAllGamePlayers(
-                MessageConfig.DRAGON_EGG_CARNIVAL_PLAYER_LEAVE.replace(
+                DragonEggCarnivalMessages.DRAGON_EGG_CARNIVAL_PLAYER_LEAVE.replace(
                         "%player%", CoreMessages.formatPlayerName(player)));
     }
 
@@ -958,8 +959,8 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
         removeFinalTagFromTeam(rightChampionshipTeam);
         removeFinalTagFromTeam(leftChampionshipTeam);
         announceGameEnd(
-                MessageConfig.DRAGON_EGG_CARNIVAL_GAME_END_TITLE,
-                MessageConfig.DRAGON_EGG_CARNIVAL_GAME_END_SUBTITLE);
+                DragonEggCarnivalMessages.DRAGON_EGG_CARNIVAL_GAME_END_TITLE,
+                DragonEggCarnivalMessages.DRAGON_EGG_CARNIVAL_GAME_END_SUBTITLE);
         setGameStageEnum(GameStageEnum.END);
         beginPostGameSettlement();
         changeGameModelForAllGamePlayers(GameMode.ADVENTURE);
@@ -967,7 +968,7 @@ public class DragonEggCarnivalArea extends BasePairedGameInstance {
 
         if (isSettlementAllowed() && winningTeam != null) {
             CoreMessages.sendMessageToAllPlayers(
-                    MessageConfig.DRAGON_EGG_CARNIVAL_WIN.replace(
+                    DragonEggCarnivalMessages.DRAGON_EGG_CARNIVAL_WIN.replace(
                             "%team%", winningTeam.getColoredName()));
         }
         publishGameEndEvent(

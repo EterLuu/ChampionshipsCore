@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.command.finale;
 
 import ink.ziip.championshipscore.api.game.dodgebolt.runtime.DodgeboltArea;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.EventMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -37,11 +38,11 @@ final class DodgeboltEliminateSubCommand extends BaseSubCommand {
         DodgeboltArea area = plugin.getGameManager().getDodgeboltManager().getArea(args[0]);
         Player player = Bukkit.getPlayerExact(args[1]);
         if (area == null || player == null || !area.eliminate(player, false))
-            CoreMessages.sendAdminError(sender, MessageConfig.FINALE_DODGEBOLT_ELIMINATION_INVALID);
+            CoreMessages.sendAdminError(sender, EventMessages.FINALE_DODGEBOLT_ELIMINATION_INVALID);
         else
             CoreMessages.sendAdminSuccess(
                     sender,
-                    MessageConfig.FINALE_DODGEBOLT_ELIMINATED.replace(
+                    EventMessages.FINALE_DODGEBOLT_ELIMINATED.replace(
                             "%player%", player.getName()));
         return true;
     }

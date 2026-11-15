@@ -3,7 +3,7 @@ package ink.ziip.championshipscore.integration.papi;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.game.tgttos.runtime.TGTTOSTeamArea;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.ScoreMessages;
 
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -32,7 +32,7 @@ public class TGTTOSPlaceholder extends BaseGamePlaceholder<TGTTOSTeamArea> {
         if (params.startsWith("area_name_")) {
             TGTTOSTeamArea tgttosTeamArea = resolveArea(params, "area_name_", offlinePlayer);
             if (tgttosTeamArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             return tgttosTeamArea.getGameConfig().getAreaName();
         }
@@ -40,7 +40,7 @@ public class TGTTOSPlaceholder extends BaseGamePlaceholder<TGTTOSTeamArea> {
             TGTTOSTeamArea tgttosTeamArea =
                     resolveArea(params, "area_player_arrived_", offlinePlayer);
             if (tgttosTeamArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
 
             return String.valueOf(tgttosTeamArea.getArrivedPlayerNums());
@@ -49,13 +49,13 @@ public class TGTTOSPlaceholder extends BaseGamePlaceholder<TGTTOSTeamArea> {
         /* Player required placeholders */
 
         Player player = offlinePlayer.getPlayer();
-        if (player == null) return MessageConfig.PLACEHOLDER_NONE;
+        if (player == null) return ScoreMessages.PLACEHOLDER_NONE;
 
         if (params.startsWith("player_team_not_arrived_")) {
             TGTTOSTeamArea tgttosTeamArea =
                     resolveArea(params, "player_team_not_arrived_", offlinePlayer);
             if (tgttosTeamArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             return String.valueOf(tgttosTeamArea.getPlayerTeamNotArrived(player));
         }

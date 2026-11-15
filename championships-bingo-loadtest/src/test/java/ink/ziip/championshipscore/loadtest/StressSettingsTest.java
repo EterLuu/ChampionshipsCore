@@ -5,6 +5,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.util.stream.Stream;
 
 class StressSettingsTest {
     @Test
@@ -34,45 +39,40 @@ class StressSettingsTest {
         assertEquals(7.0, settings.stationaryDispersalSpeedBlocksPerSecond());
     }
 
-    @Test
-    void rejectsMismatchedStageMetadata() throws Exception {
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("invalidStages")
+    void rejectsInvalidStageConfiguration(String reason, String yaml) throws Exception {
         YamlConfiguration config = new YamlConfiguration();
-        config.loadFromString(
-                """
-                stage-walkers: [8, 64]
-                stage-duration-seconds: [60, 60]
-                stage-modes: [flight]
-                """);
+        config.loadFromString(yaml);
 
-        assertThrows(IllegalArgumentException.class, () -> StressSettings.load(config));
+        assertThrows(IllegalArgumentException.class, () -> StressSettings.load(config), reason);
     }
 
-    @Test
-    void rejectsLegacyTopLevelSpeedAndMissingPerStageValues() throws Exception {
-        YamlConfiguration config = new YamlConfiguration();
-        config.loadFromString(
-                """
-                stage-walkers: [8]
-                stage-duration-seconds: [60]
-                stage-modes: [flight]
-                speed-blocks-per-second: 32.0
-                """);
-
-        assertThrows(IllegalArgumentException.class, () -> StressSettings.load(config));
-    }
-
-    @Test
-    void rejectsOddMixedWalkerCount() throws Exception {
-        YamlConfiguration config = new YamlConfiguration();
-        config.loadFromString(
-                """
-                stage-walkers: [7]
-                stage-duration-seconds: [60]
-                stage-modes: [mixed]
-                stage-speed-blocks-per-second: [32.0]
-                stage-target-world-entities: [4000]
-                """);
-
-        assertThrows(IllegalArgumentException.class, () -> StressSettings.load(config));
+    static Stream<Arguments> invalidStages() {
+        return Stream.of(
+                Arguments.of(
+                        "mismatched stage metadata",
+                        """
+                        stage-walkers: [8, 64]
+                        stage-duration-seconds: [60, 60]
+                        stage-modes: [flight]
+                        """),
+                Arguments.of(
+                        "legacy top-level speed without per-stage values",
+                        """
+                        stage-walkers: [8]
+                        stage-duration-seconds: [60]
+                        stage-modes: [flight]
+                        speed-blocks-per-second: 32.0
+                        """),
+                Arguments.of(
+                        "odd mixed walker count",
+                        """
+                        stage-walkers: [7]
+                        stage-duration-seconds: [60]
+                        stage-modes: [mixed]
+                        stage-speed-blocks-per-second: [32.0]
+                        stage-target-world-entities: [4000]
+                        """));
     }
 }

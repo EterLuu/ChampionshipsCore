@@ -17,7 +17,9 @@ public class CCSelection {
     private World world;
 
     public boolean isInside(Location location) {
-        return location.getX() >= Math.min(pos1.getX(), pos2.getX())
+        return world != null
+                && world.equals(location.getWorld())
+                && location.getX() >= Math.min(pos1.getX(), pos2.getX())
                 && location.getX() <= Math.max(pos1.getX(), pos2.getX())
                 && location.getY() >= Math.min(pos1.getY(), pos2.getY())
                 && location.getY() <= Math.max(pos1.getY(), pos2.getY())

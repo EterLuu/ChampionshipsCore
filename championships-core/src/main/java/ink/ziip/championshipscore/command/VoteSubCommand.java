@@ -1,6 +1,8 @@
 package ink.ziip.championshipscore.command;
 
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
+import ink.ziip.championshipscore.configuration.config.message.AdminMessages;
+import ink.ziip.championshipscore.configuration.config.message.DailyMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -29,7 +31,7 @@ public class VoteSubCommand extends BaseSubCommand {
             @NotNull String label,
             @NotNull String[] args) {
         if (!(sender instanceof Player player)) {
-            CoreMessages.sendAdminError(sender, MessageConfig.COMMAND_PLAYER_ONLY);
+            CoreMessages.sendAdminError(sender, AdminMessages.COMMAND_PLAYER_ONLY);
             return true;
         }
         if (args.length > 1) {
@@ -49,12 +51,12 @@ public class VoteSubCommand extends BaseSubCommand {
                 }
             }
             if (gameTypeEnum == null) {
-                sender.sendMessage(MessageConfig.VOTE_VOTE_FAILED_NOT_GAME);
+                sender.sendMessage(DailyMessages.VOTE_VOTE_FAILED_NOT_GAME);
                 return true;
             }
 
             if (player.hasPermission(MainCommand.ADMIN_PERMISSION)) {
-                player.sendMessage(MessageConfig.VOTE_VOTE_FAILED_ADMIN);
+                player.sendMessage(DailyMessages.VOTE_VOTE_FAILED_ADMIN);
                 return true;
             }
             plugin.getVoteManager().vote(player, gameTypeEnum);

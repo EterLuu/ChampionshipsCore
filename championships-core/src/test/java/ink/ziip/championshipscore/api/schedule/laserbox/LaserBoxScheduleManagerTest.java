@@ -1,5 +1,8 @@
 package ink.ziip.championshipscore.api.schedule.laserbox;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+import static ink.ziip.championshipscore.support.TestObjects.set;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
@@ -50,17 +53,17 @@ class LaserBoxScheduleManagerTest {
         for (int currentRound : List.of(1, 2)) {
             var plugin = allocate(ChampionshipsCore.class);
             var schedule = allocate(TestSchedule.class);
-            set(ChampionshipsCore.class, plugin, "scheduleManager", schedule);
+            set(plugin, "scheduleManager", schedule);
             var manager = allocate(LaserBoxScheduleManager.class);
-            set(ink.ziip.championshipscore.api.BaseManager.class, manager, "plugin", plugin);
-            set(LaserBoxScheduleManager.class, manager, "enabled", true);
-            set(LaserBoxScheduleManager.class, manager, "subRound", currentRound);
-            set(LaserBoxScheduleManager.class, manager, "rounds", List.of(List.of(), List.of()));
+            set(manager, "plugin", plugin);
+            set(manager, "enabled", true);
+            set(manager, "subRound", currentRound);
+            set(manager, "rounds", List.of(List.of(), List.of()));
             var first = allocate(LaserBoxArea.class);
             var second = allocate(LaserBoxArea.class);
             Set<LaserBoxArea> active = Collections.newSetFromMap(new IdentityHashMap<>());
             active.addAll(List.of(first, second));
-            set(LaserBoxScheduleManager.class, manager, "activeRoundInstances", active);
+            set(manager, "activeRoundInstances", active);
 
             manager.onInstanceComplete(first);
             manager.onInstanceComplete(first);
@@ -93,18 +96,5 @@ class LaserBoxScheduleManagerTest {
         TestTeam(int id) {
             super(id, "team-" + id, "red", "#FFFFFF", null);
         }
-    }
-
-    private static <T> T allocate(Class<T> type) throws Exception {
-        var field = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-        field.setAccessible(true);
-        return type.cast(((sun.misc.Unsafe) field.get(null)).allocateInstance(type));
-    }
-
-    private static void set(Class<?> type, Object target, String name, Object value)
-            throws Exception {
-        var field = type.getDeclaredField(name);
-        field.setAccessible(true);
-        field.set(target, value);
     }
 }

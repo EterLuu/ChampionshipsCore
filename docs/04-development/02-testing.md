@@ -2,6 +2,17 @@
 
 测试按模块职责维护，以行为覆盖和故障边界为主。源码布局与格式要求见 [开发指南](01-development.md)。
 
+## 验证层次
+
+| 层次 | 入口 | 能证明的范围 |
+| --- | --- | --- |
+| 静态检查 | `scripts/check-source-layout.py`、`scripts/check-docs.py`、`scripts/check-spectator-contract.py --strict` | 目录、引用和源码接入约束，不执行游戏 |
+| Java 回归 | 根目录 Maven `test` | 生产入口的算法、配置、接入和隔离生命周期；Bukkit 替身不等于原生服 |
+| Harness 回归 | `championships-test-harness` 内 `npm test` | 客户端处理模拟输入、构造动作和判定报告；不连接 Minecraft 服 |
+| 原生验收 | Harness 连接隔离测试服 | 真实协议、线程、地图机制、身份和跨服生命周期，按对应验证矩阵执行 |
+
+`championships-bingo-loadtest` 是可运行的压测插件，Core `api/test/` 和 Worker 的测试会话释放也是运行功能。不能因为名称含 test 就把它们当作废弃 JUnit 工程删除。压测、协议客户端和单元测试各有职责，不相互代替。
+
 ## 归属
 
 | 模块 | 重点 |
@@ -9,13 +20,17 @@
 | common | 协议编解码、不可变快照、状态机与确定性 ID |
 | bingo-engine | 计分、排名、重放和结果哈希 |
 | platform-bukkit | 共享状态、文本、调度和任务机制 |
-| redis | 发布、消费、故障与消费组隔离 |
+| redis | 消息字段编解码与 namespace/消费组配置；实际发布和故障恢复另做 Redis 集成验收 |
 | Worker | manifest 接入、观察、停止、outbox 和世界生命周期 |
 | Core | 游戏、地图、DAILY、赛程、持久化与管理入口 |
 | auth-bridge / auth-proxy | 签名、账号事件、准入、身份解析、维护与故障回退 |
 | bingo-loadtest | 压力配置、逻辑加载者、指标与资源清理 |
 
-JUnit 与夹具仅放各模块 `src/test/java`，与被测类同包。共享夹具使用测试 support 包，不从另一测试类借方法，不进入生产 JAR。
+JUnit 与夹具仅放各模块 `src/test/java`，与被测类同包。测试类使用 `*Test.java`，由父 POM 固定版本的 Surefire 发现；目录检查会拒绝无法被默认规则发现的测试文件。共享夹具使用测试 support 包，不从另一测试类借方法，不进入生产 JAR。
+
+Core 和 Worker 的对象分配、继承字段查找、字段设置和接口代理分别复用各自测试 support 包的 `TestObjects`。只有绕过 Bukkit 启动构造器确有必要时才使用 `allocate`，所需状态由用例显式建立；可以正常构造的模型直接调用构造器。游戏专属夹具继续留在该游戏的测试 support 包，不新建跨模块测试框架或生产依赖来共享几行工具。
+
+Harness 的测试与模拟场景放在 `src/__tests__/`，共享模拟输入放在其 `support/` 子目录。`npm run test:scenarios` 按游戏分别报告客户端场景，输入和计分包均为夹具构造，不作为真实游戏积分或服务器协议兼容证据。
 
 测试按被测生产类归属。消息格式、跨服序列化、命令解析、排名窗口和占位符使用各自的测试类；同一功能下的多个小模型可用明确命名的 `@Nested` 分组。需要配置或注册表替身的夹具只作用于依赖它们的分组，不能让纯模型测试一起修改全局状态。
 
@@ -47,7 +62,7 @@ npm test
 ## 隔离和断言
 
 - 异步测试等待真正发生的输出，不将“已落盘”当作“已发布”。超时明确失败，资源可靠关闭。
-- 替换静态配置后恢复原值，每个用例重新建立自身输入。
+- 替换静态配置后恢复原值，每个用例重新建立自身输入。Core 使用 `ConfigurationStateExtension` 同时保护测试方法、嵌套分组和整个测试类：方法结束恢复到 `BeforeAll` 的基线，分组/类结束恢复进入前的配置。它恢复字段引用；测试应替换配置集合，不能原地修改捕获的集合。Bukkit 注册表、连接和其他全局对象仍由各自夹具用 `finally` 或 `AfterEach` 恢复。
 - 源码接线检查可防止资源引用脱节，但不证明真实 Paper/Folia 的网络或线程正确性。
 
 ## 运行
@@ -56,7 +71,23 @@ npm test
 
 ```bash
 mvn -B -ntp -pl championships-core,championships-bingo-worker -am test
-python3 scripts/check-source-layout.py
 ```
 
-涉及认证或 LoadTest 时选择相应模块，或运行 `mvn -B clean package` 验证全部模块。检查失败/错误/跳过和覆盖范围，不把用例数下降本身当作优化依据。耗时比较需控制环境并重复采样。
+只定位一项回归时指定测试类，并允许 reactor 上游没有同名测试：
+
+```bash
+mvn -B -ntp -pl championships-core -am test \
+  -Dtest=GameStartServiceTest -Dsurefire.failIfNoSpecifiedTests=false
+```
+
+全面整理、移动测试或修改公共夹具后运行全部模块的干净测试与静态检查：
+
+```bash
+mvn -B -ntp clean test
+scripts/format-java.sh --check
+python3 scripts/check-source-layout.py
+python3 scripts/check-docs.py
+python3 scripts/check-spectator-contract.py --strict
+```
+
+该入口包含认证和 LoadTest 模块；Harness 另按上文运行 `npm test`。需要交付生产代码时才执行 `mvn -B -ntp clean package` 并按开发指南部署。检查失败/错误/跳过和覆盖范围，不把用例数下降本身当作优化依据。耗时比较需控制环境并重复采样。

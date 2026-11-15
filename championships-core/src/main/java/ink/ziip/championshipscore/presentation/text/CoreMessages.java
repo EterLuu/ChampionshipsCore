@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.presentation.text;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.config.message.DailyMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.ComponentTemplates;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
@@ -42,10 +43,10 @@ public final class CoreMessages {
     public static String dailyMessage(String message) {
         // Existing DAILY templates may put the prefix token inside the selected message.
         // Keep that explicit compatibility expansion separate from wrapper interpolation.
-        String prefixedMessage = message.replace("%prefix%", MessageConfig.DAILY_PREFIX);
+        String prefixedMessage = message.replace("%prefix%", DailyMessages.DAILY_PREFIX);
         return MessageTemplate.render(
-                MessageConfig.DAILY_PREFIXED,
-                Map.of("%message%", prefixedMessage, "%prefix%", MessageConfig.DAILY_PREFIX));
+                DailyMessages.DAILY_PREFIXED,
+                Map.of("%message%", prefixedMessage, "%prefix%", DailyMessages.DAILY_PREFIX));
     }
 
     /**

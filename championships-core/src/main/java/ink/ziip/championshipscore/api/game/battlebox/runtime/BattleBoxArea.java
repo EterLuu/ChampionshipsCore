@@ -12,6 +12,7 @@ import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.game.spatial.ReplicatedSpatialLayout;
 import ink.ziip.championshipscore.api.game.spatial.TeleportPositions;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
+import ink.ziip.championshipscore.configuration.config.message.BattleBoxMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
@@ -195,9 +196,9 @@ public class BattleBoxArea extends BasePairedGameInstance {
         resetPlayerHealthFoodEffectLevelInventory();
 
         announceGamePreparation(
-                MessageConfig.BATTLE_BOX_START_PREPARATION,
-                MessageConfig.BATTLE_BOX_START_PREPARATION_TITLE,
-                MessageConfig.BATTLE_BOX_START_PREPARATION_SUBTITLE);
+                BattleBoxMessages.BATTLE_BOX_START_PREPARATION,
+                BattleBoxMessages.BATTLE_BOX_START_PREPARATION_TITLE,
+                BattleBoxMessages.BATTLE_BOX_START_PREPARATION_SUBTITLE);
 
         startGameProgress();
     }
@@ -217,9 +218,9 @@ public class BattleBoxArea extends BasePairedGameInstance {
         giveItemToAllGamePlayers();
 
         startFinalCountdown(
-                MessageConfig.BATTLE_BOX_GAME_START_SOON_TITLE,
-                MessageConfig.BATTLE_BOX_GAME_START_TITLE,
-                MessageConfig.BATTLE_BOX_GAME_START_SUBTITLE,
+                BattleBoxMessages.BATTLE_BOX_GAME_START_SOON_TITLE,
+                BattleBoxMessages.BATTLE_BOX_GAME_START_TITLE,
+                BattleBoxMessages.BATTLE_BOX_GAME_START_SUBTITLE,
                 this::beginGameProgress);
     }
 
@@ -238,7 +239,7 @@ public class BattleBoxArea extends BasePairedGameInstance {
                         seconds -> {
                             timer = seconds;
                             updateGameTimerBossBar(
-                                    MessageConfig.BATTLE_BOX_ACTION_BAR_COUNT_DOWN.replace(
+                                    BattleBoxMessages.BATTLE_BOX_ACTION_BAR_COUNT_DOWN.replace(
                                             "%time%", CoreMessages.bossBarTime(timer)),
                                     timer,
                                     getGameConfig().getTimer());
@@ -275,7 +276,7 @@ public class BattleBoxArea extends BasePairedGameInstance {
                         .getSpectatorManager()
                         .enterParticipantSpectator(player, this, match.getSpectatorSpawn());
             }
-            team.sendMessageToAll(MessageConfig.BATTLE_BOX_GAME_END);
+            team.sendMessageToAll(BattleBoxMessages.BATTLE_BOX_GAME_END);
         }
     }
 
@@ -291,8 +292,8 @@ public class BattleBoxArea extends BasePairedGameInstance {
         addPlayerPointsToDatabase();
 
         announceGameEnd(
-                MessageConfig.BATTLE_BOX_GAME_END_TITLE,
-                MessageConfig.BATTLE_BOX_GAME_END_SUBTITLE);
+                BattleBoxMessages.BATTLE_BOX_GAME_END_TITLE,
+                BattleBoxMessages.BATTLE_BOX_GAME_END_SUBTITLE);
 
         setGameStageEnum(GameStageEnum.END);
 
@@ -324,24 +325,24 @@ public class BattleBoxArea extends BasePairedGameInstance {
         if (rightWool > leftWool) {
             matchWinner = right;
             for (UUID uuid : right.getMembers()) addPlayerPoints(uuid, 40);
-            message = MessageConfig.BATTLE_BOX_WIN.replace("%team%", right.getColoredName());
+            message = BattleBoxMessages.BATTLE_BOX_WIN.replace("%team%", right.getColoredName());
         } else if (leftWool > rightWool) {
             matchWinner = left;
             for (UUID uuid : left.getMembers()) addPlayerPoints(uuid, 40);
-            message = MessageConfig.BATTLE_BOX_WIN.replace("%team%", left.getColoredName());
+            message = BattleBoxMessages.BATTLE_BOX_WIN.replace("%team%", left.getColoredName());
         } else {
             matchWinner = null;
             for (UUID uuid : right.getMembers()) addPlayerPoints(uuid, 15);
             for (UUID uuid : left.getMembers()) addPlayerPoints(uuid, 15);
-            message = MessageConfig.BATTLE_BOX_DRAW;
+            message = BattleBoxMessages.BATTLE_BOX_DRAW;
         }
 
         messageMatch(match, message);
-        right.sendTitleToAll(MessageConfig.BATTLE_BOX_GAME_END_TITLE, message);
-        left.sendTitleToAll(MessageConfig.BATTLE_BOX_GAME_END_TITLE, message);
+        right.sendTitleToAll(BattleBoxMessages.BATTLE_BOX_GAME_END_TITLE, message);
+        left.sendTitleToAll(BattleBoxMessages.BATTLE_BOX_GAME_END_TITLE, message);
 
         String points =
-                MessageConfig.BATTLE_BOX_SHOW_POINTS
+                BattleBoxMessages.BATTLE_BOX_SHOW_POINTS
                         .replace("%team%", right.getColoredName())
                         .replace("%team_points%", LegacyText.formatPoints(getTeamPoints(right)))
                         .replace("%rival%", left.getColoredName())
@@ -376,7 +377,7 @@ public class BattleBoxArea extends BasePairedGameInstance {
                     event.deathMessage(null);
                     killer.playSound(killer, Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1, 1F);
                     sendMessageToAllGamePlayers(
-                            MessageConfig.BATTLE_BOX_KILL_PLAYER
+                            BattleBoxMessages.BATTLE_BOX_KILL_PLAYER
                                     .replace("%player%", CoreMessages.formatPlayerName(player))
                                     .replace("%killer%", CoreMessages.formatPlayerName(killer)));
                 }
@@ -403,7 +404,7 @@ public class BattleBoxArea extends BasePairedGameInstance {
         ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(player);
         if (team != null) {
             sendMessageToAllGamePlayers(
-                    MessageConfig.BATTLE_BOX_PLAYER_LEAVE.replace(
+                    BattleBoxMessages.BATTLE_BOX_PLAYER_LEAVE.replace(
                             "%player%", CoreMessages.formatPlayerName(player)));
         }
     }

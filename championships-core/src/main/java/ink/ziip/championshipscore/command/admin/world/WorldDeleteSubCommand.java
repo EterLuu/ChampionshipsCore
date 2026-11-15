@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.AdminMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 import ink.ziip.championshipscore.util.world.WorldManager;
@@ -57,7 +58,7 @@ public class WorldDeleteSubCommand extends BaseSubCommand {
         File worldFolder = worldManager.getWorldFolder(worldName);
         if (world == null && !worldFolder.isDirectory()) {
             CoreMessages.sendAdminError(
-                    sender, MessageConfig.ADMIN_WORLD_MISSING.replace("%world%", worldName));
+                    sender, AdminMessages.ADMIN_WORLD_MISSING.replace("%world%", worldName));
             return true;
         }
         if ((world != null && worldManager.isMainWorld(world))
@@ -65,11 +66,11 @@ public class WorldDeleteSubCommand extends BaseSubCommand {
                         worldManager.getMainWorld() == null
                                 ? ""
                                 : worldManager.getMainWorld().getName())) {
-            CoreMessages.sendAdminError(sender, MessageConfig.ADMIN_WORLD_MAIN_PROTECTED_DELETE);
+            CoreMessages.sendAdminError(sender, AdminMessages.ADMIN_WORLD_MAIN_PROTECTED_DELETE);
             return true;
         }
         if (WorldManager.isBingoWorldName(worldName)) {
-            CoreMessages.sendAdminError(sender, MessageConfig.ADMIN_WORLD_BINGO_PROTECTED_DELETE);
+            CoreMessages.sendAdminError(sender, AdminMessages.ADMIN_WORLD_BINGO_PROTECTED_DELETE);
             return true;
         }
 
@@ -77,7 +78,7 @@ public class WorldDeleteSubCommand extends BaseSubCommand {
         if (mapOwner != null) {
             CoreMessages.sendAdminError(
                     sender,
-                    MessageConfig.ADMIN_WORLD_MAP_OWNER_PROTECTED
+                    AdminMessages.ADMIN_WORLD_MAP_OWNER_PROTECTED
                             .replace("%world%", worldName)
                             .replace("%map%", mapOwner));
             return true;
@@ -97,11 +98,11 @@ public class WorldDeleteSubCommand extends BaseSubCommand {
                                 worldName, System.currentTimeMillis() + CONFIRM_WINDOW_MILLIS));
                 CoreMessages.sendAdminError(
                         player,
-                        MessageConfig.ADMIN_WORLD_DELETE_CONFIRM
+                        AdminMessages.ADMIN_WORLD_DELETE_CONFIRM
                                 .replace("%world%", worldName)
                                 .replace(
                                         "%command%",
-                                        MessageConfig.ADMIN_WORLD_DELETE_COMMAND.replace(
+                                        AdminMessages.ADMIN_WORLD_DELETE_COMMAND.replace(
                                                 "%world%", worldName)));
                 return true;
             }
@@ -114,24 +115,24 @@ public class WorldDeleteSubCommand extends BaseSubCommand {
         int movedPlayers = world == null ? 0 : world.getPlayerCount();
         if (world != null && !worldManager.unloadWorld(worldName, false)) {
             CoreMessages.sendAdminError(
-                    sender, MessageConfig.ADMIN_WORLD_UNLOAD_FAILED.replace("%world%", worldName));
+                    sender, AdminMessages.ADMIN_WORLD_UNLOAD_FAILED.replace("%world%", worldName));
             return true;
         }
         if (!worldManager.deleteWorldFiles(worldFolder)) {
             CoreMessages.sendAdminError(
-                    sender, MessageConfig.ADMIN_WORLD_DELETE_FAILED.replace("%world%", worldName));
+                    sender, AdminMessages.ADMIN_WORLD_DELETE_FAILED.replace("%world%", worldName));
             return true;
         }
 
         CoreMessages.sendAdminSuccess(
                 sender,
-                MessageConfig.ADMIN_WORLD_DELETED
+                AdminMessages.ADMIN_WORLD_DELETED
                         .replace("%world%", worldName)
                         .replace(
                                 "%moved%",
                                 movedPlayers == 0
                                         ? ""
-                                        : MessageConfig.ADMIN_WORLD_MOVED_PLAYERS.replace(
+                                        : AdminMessages.ADMIN_WORLD_MOVED_PLAYERS.replace(
                                                 "%count%", String.valueOf(movedPlayers))));
         return true;
     }

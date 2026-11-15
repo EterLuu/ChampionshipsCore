@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.laser.model.LaserGun;
 import ink.ziip.championshipscore.configuration.ConfigurationStateExtension;
+import ink.ziip.championshipscore.configuration.config.message.LaserBoxMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 
@@ -58,9 +59,9 @@ class LaserGunItemsTest {
 
     @Test
     void combatHudDoesNotInterpretTokensInsideConfiguredWeaponNames() {
-        MessageConfig.LASER_BOX_GUN_RIFLE_NAME = "Rifle %ammo% $\\";
-        MessageConfig.LASER_BOX_AMMO = "%gun% [%ammo%/%magazine%]";
-        MessageConfig.LASER_BOX_RELOAD = "%gun% [%seconds%]";
+        LaserBoxMessages.LASER_BOX_GUN_RIFLE_NAME = "Rifle %ammo% $\\";
+        LaserBoxMessages.LASER_BOX_AMMO = "%gun% [%ammo%/%magazine%]";
+        LaserBoxMessages.LASER_BOX_RELOAD = "%gun% [%seconds%]";
         List<String> sent = new ArrayList<>();
         Player player =
                 proxy(

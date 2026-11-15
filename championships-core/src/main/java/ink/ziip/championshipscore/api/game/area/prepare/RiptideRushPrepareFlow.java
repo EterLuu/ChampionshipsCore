@@ -73,7 +73,7 @@ public final class RiptideRushPrepareFlow extends SnapshotMapPrepareFlow {
         RiptideRushConfig config = cfg(session.getTarget());
         RiptideCourseGeometry geometry;
         try {
-            geometry = config.resolveGeometry();
+            geometry = config.resolveGenerationGeometry();
         } catch (RuntimeException exception) {
             errors.add(
                     MessageConfig.codeText(

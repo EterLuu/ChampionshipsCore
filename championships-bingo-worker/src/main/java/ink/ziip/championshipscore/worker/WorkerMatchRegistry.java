@@ -121,6 +121,16 @@ final class WorkerMatchRegistry {
     }
 
     private CompletionStage<Boolean> dispatch(MatchCommand command) {
+        if (command.type() == ink.ziip.championshipscore.protocol.MatchCommandType.ABORT
+                && handoffManifest != null
+                && (command.matchId().equals(handoffManifest.matchId())
+                                && command.epoch() == handoffManifest.epoch()
+                        || active != null
+                                && command.matchId().equals(active.matchId())
+                                && command.epoch() == active.epoch())) {
+            handoffCancelled = true;
+            return roundHandoff;
+        }
         return switch (command.type()) {
             case PREPARE -> prepare(command);
             case START_COMMIT -> withActive(command, WorkerMatchSession::startCommit);
@@ -165,7 +175,13 @@ final class WorkerMatchRegistry {
         };
     }
 
+    private CompletionStage<Boolean> roundHandoff;
+    private MatchManifest handoffManifest;
+    private boolean handoffCancelled;
+
     private synchronized CompletionStage<Boolean> prepare(MatchCommand command) {
+        if (roundHandoff != null && !roundHandoff.toCompletableFuture().isDone())
+            return CompletableFuture.completedFuture(false);
         MatchManifest manifest = manifests.get(command.matchId());
         if (manifest == null || manifest.epoch() != command.epoch()) {
             return CompletableFuture.completedFuture(false);
@@ -178,7 +194,41 @@ final class WorkerMatchRegistry {
             if (!active.state().terminal()) return CompletableFuture.completedFuture(false);
             if (active.testRun() && !active.testResourcesReleased())
                 return CompletableFuture.completedFuture(false);
+            if (active.awaitingEventSettlement()) {
+                if (!active.canContinueEvent(manifest, command))
+                    return CompletableFuture.completedFuture(false);
+                WorkerMatchSession previous = active;
+                handoffManifest = manifest;
+                handoffCancelled = false;
+                roundHandoff =
+                        previous.retireForNextRound()
+                                .thenCompose(
+                                        ignored ->
+                                                scheduler.supplyGlobal(
+                                                        () -> {
+                                                            synchronized (this) {
+                                                                handoffManifest = null;
+                                                                if (active != previous
+                                                                        || handoffCancelled) {
+                                                                    previous
+                                                                            .releaseCancelledHandoff();
+                                                                    return CompletableFuture
+                                                                            .completedFuture(true);
+                                                                }
+                                                                return activate(
+                                                                        manifest, command, true);
+                                                            }
+                                                        }))
+                                .thenCompose(stage -> stage);
+                return roundHandoff;
+            }
+            active.closeTestRelease();
         }
+        return activate(manifest, command, false);
+    }
+
+    private CompletionStage<Boolean> activate(
+            MatchManifest manifest, MatchCommand command, boolean continuation) {
         progressChecks.clear();
         active =
                 new WorkerMatchSession(
@@ -191,7 +241,8 @@ final class WorkerMatchRegistry {
                         nativeTeams,
                         worldReset == null ? () -> {} : worldReset::request);
         active.testReleaseJournal(testReleases);
-        if (worldSlotConsumed && !config.allowWorldReuseWithoutReset()) {
+        active.awaitCoreSettlement("true".equals(command.attributes().get("coreSettlement")));
+        if (worldSlotConsumed && !continuation && !config.allowWorldReuseWithoutReset()) {
             return active.rejectPreparation("world-slot-requires-reset");
         }
         worldSlotConsumed = true;
@@ -482,12 +533,12 @@ final class WorkerMatchRegistry {
         if (session != null) session.recordRidingMovement(player, statistic, centimeters, source);
     }
 
-    Location respawnLocation(Player player) {
+    Location respawnLocation(org.bukkit.event.player.PlayerRespawnEvent event) {
         WorkerMatchSession session;
         synchronized (this) {
             session = active;
         }
-        return session == null ? null : session.respawnLocation(player.getUniqueId());
+        return session == null ? null : session.respawnLocation(event);
     }
 
     void recoverRespawn(Player player, boolean death) {
@@ -609,6 +660,10 @@ final class WorkerMatchRegistry {
         return isSpectator(playerId) || active != null && active.isProtectedParticipant(playerId);
     }
 
+    synchronized boolean isEventWaitingPlayer(UUID playerId) {
+        return active != null && active.isEventWaitingPlayer(playerId);
+    }
+
     synchronized boolean isFinalCountdownPlayer(UUID playerId) {
         return active != null && active.isFinalCountdownPlayer(playerId);
     }
@@ -674,11 +729,30 @@ final class WorkerMatchRegistry {
 
     CompletionStage<Boolean> shutdown() {
         progressChecks.close();
+        if (handoffManifest != null) {
+            handoffCancelled = true;
+            return roundHandoff;
+        }
         WorkerMatchSession session;
         synchronized (this) {
             session = active;
         }
-        if (session != null && !session.state().terminal()) return session.abort("worker-shutdown");
+        if (session != null) {
+            try {
+                if (!session.state().terminal() || session.awaitingEventSettlement())
+                    return session.abort("worker-shutdown");
+            } finally {
+                session.closeTestRelease();
+            }
+        }
         return CompletableFuture.completedFuture(true);
+    }
+
+    void closeTestRelease() {
+        WorkerMatchSession session;
+        synchronized (this) {
+            session = active;
+        }
+        if (session != null) session.closeTestRelease();
     }
 }

@@ -4,14 +4,22 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.gui.AnvilInputMenu;
+import ink.ziip.championshipscore.api.gui.MenuId;
+import ink.ziip.championshipscore.api.gui.MenuLayout;
+import ink.ziip.championshipscore.configuration.ConfigurationStateExtension;
+import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.support.MenuTestClient;
 import ink.ziip.championshipscore.support.TestObjects;
 
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.server.PluginDisableEvent;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -158,5 +166,89 @@ class TeamManagementMenuTest {
             assertEquals(List.of("current"), results);
             menu.onDisable(new PluginDisableEvent(core));
         }
+    }
+
+    @Nested
+    @ExtendWith(ConfigurationStateExtension.class)
+    class Layout {
+        @Test
+        void allTeamSelectorsHonorConfiguredCapacityOrderAndMovedNavigation() throws Exception {
+            var defaults =
+                    YamlConfiguration.loadConfiguration(
+                            Path.of("src/main/resources/gui.yml").toFile());
+            for (var screen : TeamManagementMenu.Screen.values()) {
+                if (screen == TeamManagementMenu.Screen.CONFIRM) continue;
+                var config = new YamlConfiguration();
+                config.setDefaults(defaults);
+                config.set(screen.id.layout("content"), List.of(7, 2, 5));
+                config.set(screen.id.layout("border"), List.of());
+                config.set(screen.id.item("next") + ".slot", 8);
+                activate(config);
+                var layout = TeamManagementMenu.layout(screen);
+                assertEquals(List.of(7, 2, 5), layout.content(), screen.name());
+                assertEquals(List.of(), layout.border());
+                assertEquals(8, layout.control("next"));
+                assertEquals(14, layout.pageCount(40), screen.name());
+                var visited = new ArrayList<Integer>();
+                for (int page = 0; page < layout.pageCount(40); page++)
+                    for (int slot : layout.content()) {
+                        int index = layout.index(page, slot);
+                        if (index < 40) visited.add(index);
+                    }
+                assertEquals(MenuLayout.range(0, 40), visited, screen.name());
+                config.set(screen.id.layout("content"), List.of(12));
+                config.set(screen.id.item("next") + ".slot", 9);
+                assertEquals(List.of(7, 2, 5), layout.content());
+                assertEquals(8, layout.control("next"));
+            }
+        }
+
+        @Test
+        void defaultColorAndTargetTeamLayoutsRetainAllChoicesAndReserveControls() throws Exception {
+            activate(
+                    YamlConfiguration.loadConfiguration(
+                            Path.of("src/main/resources/gui.yml").toFile()));
+            var colors = TeamManagementMenu.layout(TeamManagementMenu.Screen.COLOR);
+            assertEquals(1, colors.pageCount(16));
+            assertEquals(
+                    List.of(10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29),
+                    colors.content().subList(0, 16));
+            assertFalse(colors.content().contains(colors.control("back")));
+            var teams = TeamManagementMenu.layout(TeamManagementMenu.Screen.TARGET_TEAM);
+            assertEquals(3, teams.pageCount(73));
+            assertEquals(50, teams.control("next"));
+            var confirm = TeamManagementMenu.layout(TeamManagementMenu.Screen.CONFIRM);
+            assertEquals(11, confirm.control("confirm"));
+            assertEquals(15, confirm.control("cancel"));
+        }
+
+        @Test
+        void everyTeamListVisitsAllEntriesWithSparseAndCenteredPageArrangements() throws Exception {
+            var doc =
+                    YamlConfiguration.loadConfiguration(
+                            Path.of("src/main/resources/gui.yml").toFile());
+            activate(doc);
+            for (var screen : TeamManagementMenu.Screen.values()) {
+                if (screen == TeamManagementMenu.Screen.CONFIRM) continue;
+                String content = screen.id.layout("content");
+                doc.set(content, null);
+                doc.set(content + ".1", List.of(22));
+                doc.set(content + ".2", List.of(20, 24));
+                doc.set(content + ".3", List.of(12, 13, 14));
+                var layout = TeamManagementMenu.layout(screen);
+                assertTrue(MenuId.supportsContentArrangements(screen.id.path()));
+                assertEquals(3, layout.pageCount(8));
+                assertEquals(List.of(20, 24), layout.pageSlots(2, 8));
+                assertEquals(7, layout.index(2, 24, 8));
+                assertEquals(-1, layout.index(2, 14, 8));
+                doc.set(content, List.of(18, 17));
+                assertEquals(4, TeamManagementMenu.layout(screen).pageCount(8));
+                assertEquals(List.of(20, 24), layout.pageSlots(2, 8));
+            }
+        }
+    }
+
+    private static void activate(YamlConfiguration document) throws Exception {
+        TestObjects.field(GuiConfig.class, "active").set(null, document);
     }
 }

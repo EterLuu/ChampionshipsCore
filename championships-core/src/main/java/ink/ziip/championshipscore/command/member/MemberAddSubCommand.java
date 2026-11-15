@@ -3,7 +3,9 @@ package ink.ziip.championshipscore.command.member;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.api.team.TeamManager;
 import ink.ziip.championshipscore.command.BaseSubCommand;
+import ink.ziip.championshipscore.configuration.config.message.AdminMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.TeamMessages;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
 import org.bukkit.command.Command;
@@ -37,10 +39,10 @@ public class MemberAddSubCommand extends BaseSubCommand {
             ChampionshipTeam championshipTeam = plugin.getTeamManager().getTeam(args[0]);
             if (championshipTeam == null) {
                 String message =
-                        MessageConfig.MEMBER_ADDED_FAILED
+                        TeamMessages.MEMBER_ADDED_FAILED
                                 .replace("%team%", args[0])
                                 .replace("%player%", CoreMessages.formatPlayerName(args[1]))
-                                .replace("%reason%", MessageConfig.REASON_TEAM_DOES_NOT_EXIST);
+                                .replace("%reason%", AdminMessages.REASON_TEAM_DOES_NOT_EXIST);
                 sender.sendMessage(message);
                 return true;
             }
@@ -50,7 +52,7 @@ public class MemberAddSubCommand extends BaseSubCommand {
                             result -> {
                                 String message =
                                         result == TeamManager.MemberAddResult.ADDED
-                                                ? MessageConfig.MEMBER_SUCCESSFULLY_ADDED
+                                                ? TeamMessages.MEMBER_SUCCESSFULLY_ADDED
                                                         .replace(
                                                                 "%team%",
                                                                 championshipTeam.getColoredName())
@@ -58,7 +60,7 @@ public class MemberAddSubCommand extends BaseSubCommand {
                                                                 "%player%",
                                                                 CoreMessages.formatPlayerNameOnly(
                                                                         args[1]))
-                                                : MessageConfig.MEMBER_ADDED_FAILED
+                                                : TeamMessages.MEMBER_ADDED_FAILED
                                                         .replace("%team%", args[0])
                                                         .replace(
                                                                 "%player%",
@@ -73,15 +75,15 @@ public class MemberAddSubCommand extends BaseSubCommand {
 
     private static String reason(TeamManager.MemberAddResult result) {
         return switch (result) {
-            case INVALID_PLAYER_NAME -> MessageConfig.REASON_INVALID_PLAYER_NAME;
-            case TEAM_NOT_FOUND -> MessageConfig.REASON_TEAM_DOES_NOT_EXIST;
-            case TEAM_FULL -> MessageConfig.REASON_TEAM_FULL;
-            case OPERATION_IN_PROGRESS -> MessageConfig.REASON_OPERATION_IN_PROGRESS;
-            case PLAYER_NOT_FOUND -> MessageConfig.REASON_PLAYER_NOT_REGISTERED;
-            case PROFILE_SERVICE_UNAVAILABLE -> MessageConfig.REASON_PROFILE_SERVICE_UNAVAILABLE;
-            case IDENTITY_CONFLICT -> MessageConfig.REASON_IDENTITY_CONFLICT;
-            case ALREADY_MEMBER -> MessageConfig.REASON_MEMBER_ALREADY_EXIST;
-            case DATABASE_ERROR -> MessageConfig.REASON_DATABASE_ERROR;
+            case INVALID_PLAYER_NAME -> AdminMessages.REASON_INVALID_PLAYER_NAME;
+            case TEAM_NOT_FOUND -> AdminMessages.REASON_TEAM_DOES_NOT_EXIST;
+            case TEAM_FULL -> AdminMessages.REASON_TEAM_FULL;
+            case OPERATION_IN_PROGRESS -> AdminMessages.REASON_OPERATION_IN_PROGRESS;
+            case PLAYER_NOT_FOUND -> AdminMessages.REASON_PLAYER_NOT_REGISTERED;
+            case PROFILE_SERVICE_UNAVAILABLE -> AdminMessages.REASON_PROFILE_SERVICE_UNAVAILABLE;
+            case IDENTITY_CONFLICT -> AdminMessages.REASON_IDENTITY_CONFLICT;
+            case ALREADY_MEMBER -> AdminMessages.REASON_MEMBER_ALREADY_EXIST;
+            case DATABASE_ERROR -> AdminMessages.REASON_DATABASE_ERROR;
             case ADDED -> "";
         };
     }

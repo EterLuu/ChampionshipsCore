@@ -8,7 +8,7 @@ import ink.ziip.championshipscore.api.game.parkourwarrior.runtime.ParkourWarrior
 import ink.ziip.championshipscore.api.game.setup.SetupTarget;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
 import ink.ziip.championshipscore.configuration.config.message.GuiText;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.configuration.location.LocationConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
@@ -71,7 +71,7 @@ public final class CheckpointListStep extends PrepareStep {
             selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, false);
         } catch (Exception e) {
             return CoreMessages.formatAdminError(
-                    MessageConfig.MAP_EDITOR_STEP_CHECKPOINT_SELECT_FIRST);
+                    MapEditorMessages.MAP_EDITOR_STEP_CHECKPOINT_SELECT_FIRST);
         }
         ConfigurationSection root = cfg(session.getTarget()).ensureCheckpoints();
         int order = orderedKeys(root).size() + 1;
@@ -88,7 +88,7 @@ public final class CheckpointListStep extends PrepareStep {
         session.markDirty();
         reload(session);
         return CoreMessages.formatAdminSuccess(
-                MessageConfig.MAP_EDITOR_STEP_CHECKPOINT_ADDED_CURRENT.replace(
+                MapEditorMessages.MAP_EDITOR_STEP_CHECKPOINT_ADDED_CURRENT.replace(
                         "%count%", String.valueOf(root.getKeys(false).size())));
     }
 
@@ -138,7 +138,8 @@ public final class CheckpointListStep extends PrepareStep {
         try {
             selection = session.getPlugin().getWorldEditManager().getPlayerSelection(player, false);
         } catch (Exception e) {
-            return CoreMessages.formatAdminError(MessageConfig.MAP_EDITOR_STEP_CHECKPOINT_RESELECT);
+            return CoreMessages.formatAdminError(
+                    MapEditorMessages.MAP_EDITOR_STEP_CHECKPOINT_RESELECT);
         }
         ConfigurationSection root = cfg(session.getTarget()).ensureCheckpoints();
         List<String> keys = orderedKeys(root);
@@ -150,7 +151,7 @@ public final class CheckpointListStep extends PrepareStep {
         session.markDirty();
         reload(session);
         return CoreMessages.formatAdminSuccess(
-                MessageConfig.MAP_EDITOR_STEP_CHECKPOINT_UPDATED.replace(
+                MapEditorMessages.MAP_EDITOR_STEP_CHECKPOINT_UPDATED.replace(
                         "%order%", String.valueOf(index + 1)));
     }
 
@@ -161,7 +162,7 @@ public final class CheckpointListStep extends PrepareStep {
         List<String> keys = orderedKeys(root);
         if (index < 0 || index >= keys.size() || newOrder < 1 || newOrder > keys.size())
             return CoreMessages.formatAdminError(
-                    MessageConfig.MAP_EDITOR_STEP_SERIAL_NUMBER_BETWEEN.replace(
+                    MapEditorMessages.MAP_EDITOR_STEP_SERIAL_NUMBER_BETWEEN.replace(
                             "%max%", String.valueOf(keys.size())));
         String moved = keys.remove(index);
         keys.add(newOrder - 1, moved);
@@ -169,7 +170,7 @@ public final class CheckpointListStep extends PrepareStep {
         session.markDirty();
         reload(session);
         return CoreMessages.formatAdminSuccess(
-                MessageConfig.MAP_EDITOR_STEP_CHECKPOINT_ADJUSTED_TO.replace(
+                MapEditorMessages.MAP_EDITOR_STEP_CHECKPOINT_ADJUSTED_TO.replace(
                         "%order%", String.valueOf(newOrder)));
     }
 
@@ -184,7 +185,7 @@ public final class CheckpointListStep extends PrepareStep {
         session.markDirty();
         reload(session);
         return CoreMessages.formatAdminSuccess(
-                MessageConfig.MAP_EDITOR_STEP_CHECKPOINT_DELETED.replace(
+                MapEditorMessages.MAP_EDITOR_STEP_CHECKPOINT_DELETED.replace(
                         "%order%", String.valueOf(index + 1)));
     }
 

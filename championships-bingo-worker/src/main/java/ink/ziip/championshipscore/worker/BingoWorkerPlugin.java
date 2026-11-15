@@ -224,7 +224,10 @@ public final class BingoWorkerPlugin extends JavaPlugin {
         // the global/region threads and abort mutates worlds and players. The Core
         // heartbeat fence treats this worker as unavailable; accepted events have
         // already been persisted by the durable outbox.
-        if (registry != null) registry.cancelPendingRespawns();
+        if (registry != null) {
+            registry.cancelPendingRespawns();
+            registry.closeTestRelease();
+        }
         org.bukkit.plugin.Plugin packetPlugin =
                 getServer().getPluginManager().getPlugin("packetevents");
         if (packetPlugin != null && packetPlugin.isEnabled()) {

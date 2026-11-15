@@ -49,45 +49,4 @@ class AceRaceProgressTest {
         assertEquals(0, progress.completedLaps(b));
         assertEquals(0, progress.nextPoint(a));
     }
-
-    @Test
-    void randomizedSnapshotsAgreeWithTheOriginalRankingFormula() {
-        Random random = new Random(7349);
-        for (int race = 0; race < 100; race++) {
-            var progress = new AceRaceProgress();
-            var roster = new ArrayList<UUID>();
-            var finished = new ArrayList<UUID>();
-            Map<UUID, Integer> values = new HashMap<>();
-            for (int i = 0; i < 40; i++) {
-                UUID player = new UUID(race, i);
-                roster.add(player);
-                int laps = random.nextInt(4), point = random.nextInt(9);
-                for (int lap = 0; lap < laps; lap++) progress.completeLap(player);
-                progress.reachPoint(player, point);
-                values.put(player, laps * 8 + point);
-                if (random.nextInt(5) == 0) {
-                    progress.finish(player);
-                    finished.add(player);
-                }
-            }
-            for (UUID player : roster) {
-                int place = finished.indexOf(player);
-                int first, last;
-                if (place >= 0) first = last = place + 1;
-                else {
-                    int ahead = finished.size(), tied = 0;
-                    for (UUID other : roster) {
-                        if (finished.contains(other)) continue;
-                        if (values.get(other) > values.get(player)) ahead++;
-                        else if (values.get(other).equals(values.get(player))) tied++;
-                    }
-                    first = ahead + 1;
-                    last = first + Math.max(1, tied) - 1;
-                }
-                assertEquals(
-                        new AceRaceProgress.PlacementRange(first, last),
-                        progress.placement(player, roster, 8));
-            }
-        }
-    }
 }

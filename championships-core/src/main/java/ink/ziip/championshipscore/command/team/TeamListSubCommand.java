@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.command.team;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.TeamMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.shared.presentation.MessageTemplate;
 
@@ -43,7 +44,7 @@ public class TeamListSubCommand extends BaseSubCommand {
         teams.sort(Comparator.comparing(ChampionshipTeam::getName, String.CASE_INSENSITIVE_ORDER));
 
         if (teams.isEmpty()) {
-            sender.sendMessage(LegacyText.translateColorCodes(MessageConfig.TEAM_NO_TEAMS));
+            sender.sendMessage(LegacyText.translateColorCodes(TeamMessages.TEAM_NO_TEAMS));
             return true;
         }
 

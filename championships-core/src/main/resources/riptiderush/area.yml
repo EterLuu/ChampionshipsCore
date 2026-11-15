@@ -8,7 +8,20 @@ start-point: null
 finish-point: null
 # Runtime uses course.pool and a per-round immutable plan.
 course:
-  hitw-catalog-version: 4
+  # Paired Sponge v3 snapshots. Building is relative to the actual finish; background to the start.
+  # Empty preserves maps without a movable finish building. Both snapshots are required together.
+  finish-platform:
+    building: ""
+    background: ""
+  # Enable only after reserving the entire maximum-length corridor in the published map.
+  layout:
+    adaptive: false
+    minimum-length: 500
+    maximum-length: 650
+    transition-seconds: 1.5
+    clearance-blocks: 6
+    time-reserve-seconds: 10
+  hitw-catalog-version: 5
   wall-groups: true
   counts:
     pass: 12
@@ -65,6 +78,26 @@ course:
     - {id: rhythm_double_window, name: 双窗交替, type: RHYTHM, variant: DOUBLE_WINDOW, enabled: true, weight: 10, max-uses: 64, difficulty: 1}
     - {id: rhythm_backbeat, name: 后拍回收, type: RHYTHM, variant: BACKBEAT, enabled: true, weight: 10, max-uses: 64, difficulty: 1}
     - {id: rhythm_quick_turn, name: 急转弯拍, type: RHYTHM, variant: QUICK_TURN, enabled: true, weight: 10, max-uses: 64, difficulty: 1}
+    - {"id": "rhythm_twin_orbit", "name": "双星公转", "type": "RHYTHM", "variant": "TWIN_ORBIT", "enabled": true, "weight": 10, "max-uses": 64, "difficulty": 1}
+    - {"id": "rhythm_center_release", "name": "中心放流", "type": "RHYTHM", "variant": "CENTER_RELEASE", "enabled": true, "weight": 10, "max-uses": 64, "difficulty": 1}
+    - {"id": "rhythm_edge_relay", "name": "岸线接力", "type": "RHYTHM", "variant": "EDGE_RELAY", "enabled": true, "weight": 10, "max-uses": 64, "difficulty": 1}
+    - {"id": "rhythm_three_lanes", "name": "三径轮转", "type": "RHYTHM", "variant": "THREE_LANES", "enabled": true, "weight": 10, "max-uses": 64, "difficulty": 1}
+    - {"id": "rhythm_split_hold", "name": "双岸延音", "type": "RHYTHM", "variant": "SPLIT_HOLD", "enabled": true, "weight": 10, "max-uses": 64, "difficulty": 1}
+    - {"id": "rhythm_travel_pause", "name": "行进休止", "type": "RHYTHM", "variant": "TRAVEL_PAUSE", "enabled": true, "weight": 10, "max-uses": 64, "difficulty": 1}
+    - {"id": "rhythm_narrow_wide", "name": "窄宽应答", "type": "RHYTHM", "variant": "NARROW_WIDE", "enabled": true, "weight": 10, "max-uses": 64, "difficulty": 1}
+    - {"id": "rhythm_checker_pulse", "name": "间列脉冲", "type": "RHYTHM", "variant": "CHECKER_PULSE", "enabled": true, "weight": 10, "max-uses": 64, "difficulty": 1}
+    - {"id": "rhythm_side_lock", "name": "侧门切分", "type": "RHYTHM", "variant": "SIDE_LOCK", "enabled": true, "weight": 10, "max-uses": 64, "difficulty": 1}
+    - {"id": "rhythm_center_echo", "name": "中庭回声", "type": "RHYTHM", "variant": "CENTER_ECHO", "enabled": true, "weight": 10, "max-uses": 64, "difficulty": 1}
+    - {"id": "riptide_tidal_arch", "name": "潮汐拱廊", "type": "PASS", "variant": "CUSTOM", "enabled": true, "weight": 10, "difficulty": 1, "building": {"schematic": "H4sIAAAAAAACA+2UQUsDMRCFXzftlm4pgj/CkxfBk7AIouBBUBD0UKSk2dndYHYTkpHWn+5p3VixHsSTeCj9Li885gXeHCYDMkzuVU2NZK0Exg/kg7YtACEwvZQsv5zD8wSjR11wjYME6TXpqmaM+ucNtVV0p0hvyzIQx3jXdW+9DqJmSC+MVc8hw/hOGmImgVmjW1JelnwmtUfM4GjrBfbaOSoWwfkXRYuVtcVcrnXI10/xX4HTb8ObmWDkcs6vjvKlZbbN8UoyeWOrioq8lCZQjCYCJ79E2bqfc/16MIwrAYaE/2PQs5UdZF9wFwp+si/4d0ww+7ibVy1r1tSfzw3vc4lcHLgFAAA=", "extent": 0, "width": 15, "height": 5, "floor": []}}
+    - {"id": "riptide_twin_harbor", "name": "双港分流", "type": "PASS", "variant": "CUSTOM", "enabled": true, "weight": 10, "difficulty": 1, "building": {"schematic": "H4sIAAAAAAACA+2UT0vDQBDF32bblKYUwQ/hyUvBkxAEUfAgKAh6KFK2m0mymGTD7kjrR/cUs9Z/B/EkHlofLLM85jfw5jAJkGB8o0uqFRstMbol541tAEiJyZli9eHsn0QY3pmMS+xFiC/IFCVj2H8vqSmCO0F8leeeOOBd1z33VYSaID6trH7wCUbXqiJmkpjWpiHtVM7HyjgEBgefnmdn2payhW/do6bFytpsrtbGp+v7MFfi6EvzpsdXajnnp5bSpWW29eFKMbnKFgVlaa4qTwGNJGY/oGzb77l+PRiElQADwt9JiPcnsJXagYBC7EDAt5T/AX9LY0xf7+Z5w4YN9edzoxeRtmHfuAUAAA==", "extent": 0, "width": 15, "height": 5, "floor": []}}
+    - {"id": "riptide_offset_steps", "name": "错阶航道", "type": "PASS", "variant": "CUSTOM", "enabled": true, "weight": 10, "difficulty": 1, "building": {"schematic": "H4sIAAAAAAACA+2UQUvDQBCFX7JtSlOK4I/w5KXgSQiCKHgQFAQ9FCnbZJIsJtmwO9L60z3F3RSrB/EkPQQ/WGZ5zBt4c5gYiDF9SEuqJatUYPJIxirdABACsyvJcq8cX4QYP6mMSxyFiG5IFSVj7L631BRenSG6y3NL7O1d1727GvgaI7qsdPpiY0zuZUXMJDCvVUOpkTmfS2XgPTj50iwb1baUrWxrXlNabbTOlnKrbLJ99nMFzr4173psJddLfmspWWtmXZ9uJJOpdFFQluSysuStocDiFyvr9mefWw9GfiXAiHA4giAIw6AHg6QP5t6QAwox8ICf/Af8O6aY93fzumHFitz53PEBkmUIfbgFAAA=", "extent": 0, "width": 15, "height": 5, "floor": []}}
+    - {"id": "riptide_split_levels", "name": "高低岔口", "type": "PASS", "variant": "CUSTOM", "enabled": true, "weight": 10, "difficulty": 1, "building": {"schematic": "H4sIAAAAAAACA+VUwUrDQBB9ybYpTSmCH+HJi+BJCIIoeBAUBD0UKdtkkixussvuSOune4pZA9aDeFSID4a3POYtvGGYFEgxv89raiSrXGD2QM4r0wIQAotLyfJTOTyPMX1UBdc4iJFck6pqxrR/3lBbBXWB5LYsPXGwd1331nMUOEVyoU3+7FPM7qQmZhJYNqql3MmSz6RyCB4c7TXPTllLxdpb95LTemtMsZI75bPdU/hX4PRL89Djtdys+NVStjHMpjneSianTVVRkZVSewrWWODkBysb+72vHw8mYSTAhPB7iKIoVABGiSHgwGMNGP2DgONe0T8IOMfy425etaxYUX8+B7wDGIJTOLgFAAA=", "extent": 0, "width": 15, "height": 5, "floor": []}}
+    - {"id": "riptide_low_bridge", "name": "低桥伏行", "type": "PASS", "variant": "CUSTOM", "enabled": true, "weight": 10, "difficulty": 2, "building": {"schematic": "H4sIAAAAAAACA+2UQUsDMRCFXzftlm4pgj/CkxfBk7AIouBBUBD0UKSk2dndYHYTkpHWn+5p3VixHkQ8eSj9Li885gXeHCYDMkzuVU2NZK0Exg/kg7YtACEwvZQsv5zD8wSjR11wjYME6TXpqmaM+ucNtVV0p0hvyzIQx3jXdW+9DqJmSC+MVc8hw/hOGmImgVmjW1JelnwmtUfM4GjrBfbaOSoWwfkXRYuVtcVcrnXI10/xX4HTb8ObmWDkcs6vjvKlZbbN8UoyeWOrioq8lCZQjCYCJ79E2bqfc/16MIwrAYaE/2PQs5UdJDYTQux2wU/2BfcF/8wEs4+7edWyZk39+dzwDu0BgAm4BQAA", "extent": 0, "width": 15, "height": 5, "floor": []}}
+    - {"id": "riptide_harbor_notch", "name": "半阶舷窗", "type": "PASS", "variant": "CUSTOM", "enabled": true, "weight": 10, "difficulty": 2, "building": {"schematic": "H4sIAAAAAAACA+2UQUvDQBCFX3bblKYUwR/hyYvgSQiCKHgQFAQ9FCnbZJIsJtlld6T1p3uKWQOtBxFPHkq/ywyPeQNvDpMACaaPWUWNYp1JTJ7IeW1aAFJidq1YbZXjS4Hxs865wpFAfEu6rBjjvr2jtgzqDPF9UXjiYO+67qOvUagJ4qvaZK8+weRB1cRMEvNGt5Q5VfCF0g7Bg5Od5tlpaylfeuveMlqujckXaqN9unkJeyXOvw0PM75WqwW/W0pXhtk0p2vF5GpTlpSnhao9BauQOPvFysb+7OvPg1E4CTAi/B9RJEQ0gL0k5NrzgFsOAQ8B/8wU86+/edOyZk39+xz4BLJr1dS4BQAA", "extent": 0, "width": 15, "height": 5, "floor": []}}
+    - {"id": "riptide_jump_fork", "name": "双礁跃门", "type": "PASS", "variant": "CUSTOM", "enabled": true, "weight": 10, "difficulty": 2, "building": {"schematic": "H4sIAAAAAAACA+2UQUsDMRCFXzftlm4pgj/CkxfBk7AIouBBUBD0UKSk2dndYHYTkpHWn+5p3Vi0HsSjYvFBmPCYL/CGMBmQYXKramokayUwviMftG0BCIHpuWT54eyfJhjd64Jr7CVIL0lXNWPUX6+oraI7RXpdloE44l3XvfR1EGuG9MxY9RgyjG+kIWYSmDW6JeVlySdSe0QGB1svsNfOUbEIzj8pWqysLeZyrUO+fojvChx/at70BCOXc352lC8ts20OV5LJG1tVVOSlNIEimggcfYOydV9z/XgwjCMBhoSf02Ar7KRisPfzH/CPBtz5L/oLASeYve3Ni5Y1a+rX50avB+ylPLgFAAA=", "extent": 0, "width": 15, "height": 5, "floor": []}}
+    - {"id": "riptide_duck_or_jump", "name": "俯跃双选", "type": "PASS", "variant": "CUSTOM", "enabled": true, "weight": 10, "difficulty": 2, "building": {"schematic": "H4sIAAAAAAACA+2UQUvDQBCF32bblKYUwR/hyUvBkxAEUfAgKAh6KFK2m0mymGTD7kjrT/cUs1aqB/EkPVQ/WGZ5zBt4c5gESDC+0yXVio2WGN2T88Y2AKTE5EKx2iqHZxGGDybjEgcR4isyRckY9t9raoqgThDf5LknDvau6177KkJNEJ9XVj/5BKNbVREzSUxr05B2KudTZRyCB0efmmdn2payhW/ds6bFytpsrtbGp+vHMFfi5EvzpsdXajnnl5bSpWW29fFKMbnKFgVlaa4qT8EaScx+sLJtv/f168EgrAQYEHaHECK8APaSPpj8yLi3AcUfCCj+A/4uY0zf7+Zlw4YN9edzwxsbHELauAUAAA==", "extent": 0, "width": 15, "height": 5, "floor": []}}
+    - {"id": "riptide_needle_step", "name": "窄阶潜口", "type": "PASS", "variant": "CUSTOM", "enabled": true, "weight": 10, "difficulty": 3, "building": {"schematic": "H4sIAAAAAAACA+2UQUvDQBCFX7JtSlOK4I/w5EXwJARBFDwICoIeipTtZpIsbrJhd6T1p3uK2QasBxG8eCj9DjvLY97Am8OkQIrpo6qolqyVwOSJnNe2ASAEZteS5ZdyfBlj/KxzrnAUI7klXVaMcf+9o6YM6gzJfVF44mDvuu6jr1GoKZIrY9WrTzF5kIaYSWBe64aUkwVfSO0QPDjZaZ6dblvKl751b4qWa2vzhdxon21ewlyB82/NQ483crXg95aylWW29elaMjljy5LyrJDGU7DGAme/WNm2P/v69WAUVgKMCP9HtCUOD/aSISD2PWB0CHgI+CemmG/v5k3DmjX153PgE0qSKbC4BQAA", "extent": 0, "width": 15, "height": 5, "floor": []}}
+    - {"id": "riptide_low_keyhole", "name": "偏心锁眼", "type": "PASS", "variant": "CUSTOM", "enabled": true, "weight": 10, "difficulty": 3, "building": {"schematic": "H4sIAAAAAAACA+1UwUrDQBB9ybYpTSmCH+HJS6EnIQii4EFQEPRQpGyTSbK4yYbdkdZP9xR3W7AeRPDiofQd5g2PeQNvDpMCKcaPeU2NZJULjJ7IOmVaAEJgci1ZfimnlzGGz6rgGicxkltSVc0Y+vaO2iqoEyT3ZemIg73v+w/PUeAUyZU2+atLMXqQmphJYNqolnIrS76QyiJ4cLbXHFvVdVQsXWffclqujSkWcqNctnkJewXm34Z3M07L1YLfO8pWhtk052vJZLWpKiqyUmpHwRoLzH6xsul+9vnzYBBOAgwI/4fIY1s8HSRCMnHoAaNjwGPAP2KM6fZv3rSsWJF/nzt8AkDbK/C4BQAA", "extent": 0, "width": 15, "height": 5, "floor": []}}
     - {"id": "math_double", "name": "连续两道解题门", "type": "MATH", "variant": "DOUBLE", "enabled": true, "weight": 10, "max-uses": 64, "difficulty": 1}
     - {"id": "color_floor_ore", "name": "矿石", "type": "COLOR_FLOOR", "variant": "ORE", "enabled": true, "weight": 10, "max-uses": 64, "difficulty": 1}
     - {"id": "color_floor_log", "name": "原木", "type": "COLOR_FLOOR", "variant": "LOG", "enabled": true, "weight": 10, "max-uses": 64, "difficulty": 1}

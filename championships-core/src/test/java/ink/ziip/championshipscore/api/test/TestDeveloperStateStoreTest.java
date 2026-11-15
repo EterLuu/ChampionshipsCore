@@ -8,8 +8,12 @@ import org.bukkit.entity.Player;
 import org.junit.jupiter.api.Test;
 
 import java.io.DataOutputStream;
+import java.lang.reflect.RecordComponent;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 class TestDeveloperStateStoreTest {
@@ -57,35 +61,8 @@ class TestDeveloperStateStoreTest {
         assertEquals(0.12F, snapshot.flySpeed());
         assertEquals(0.27F, snapshot.walkSpeed());
         assertEquals(1, store.uuids().size());
-        TestDeveloperStateStore.Snapshot reloaded =
-                new TestDeveloperStateStore(directory).get(uuid);
-        assertEquals(snapshot.uuid(), reloaded.uuid());
-        assertEquals(snapshot.world(), reloaded.world());
-        assertArrayEquals(snapshot.inventory(), reloaded.inventory());
-        assertArrayEquals(snapshot.armor(), reloaded.armor());
-        assertArrayEquals(snapshot.cursor(), reloaded.cursor());
-        assertArrayEquals(snapshot.offHand(), reloaded.offHand());
-        assertArrayEquals(snapshot.enderChest(), reloaded.enderChest());
-        assertEquals(snapshot.x(), reloaded.x());
-        assertEquals(snapshot.y(), reloaded.y());
-        assertEquals(snapshot.z(), reloaded.z());
-        assertEquals(snapshot.yaw(), reloaded.yaw());
-        assertEquals(snapshot.pitch(), reloaded.pitch());
-        assertEquals(snapshot.gameMode(), reloaded.gameMode());
-        assertEquals(snapshot.level(), reloaded.level());
-        assertEquals(snapshot.totalExperience(), reloaded.totalExperience());
-        assertEquals(snapshot.experience(), reloaded.experience());
-        assertEquals(snapshot.health(), reloaded.health());
-        assertEquals(snapshot.food(), reloaded.food());
-        assertEquals(snapshot.saturation(), reloaded.saturation());
-        assertEquals(snapshot.exhaustion(), reloaded.exhaustion());
-        assertEquals(snapshot.fireTicks(), reloaded.fireTicks());
-        assertEquals(snapshot.fallDistance(), reloaded.fallDistance());
-        assertEquals(snapshot.allowFlight(), reloaded.allowFlight());
-        assertEquals(snapshot.flying(), reloaded.flying());
-        assertEquals(snapshot.flySpeed(), reloaded.flySpeed());
-        assertEquals(snapshot.walkSpeed(), reloaded.walkSpeed());
-        assertEquals(snapshot.effects(), reloaded.effects());
+        assertEquals(
+                components(snapshot), components(new TestDeveloperStateStore(directory).get(uuid)));
     }
 
     @Test
@@ -144,6 +121,17 @@ class TestDeveloperStateStoreTest {
         TestDeveloperStateStore store = new TestDeveloperStateStore(directory);
         assertThrows(IllegalStateException.class, () -> store.get(uuid));
         assertTrue(Files.exists(file));
+    }
+
+    /** Record equality compares arrays by reference, so compare every component by content. */
+    private static List<Object> components(TestDeveloperStateStore.Snapshot snapshot)
+            throws ReflectiveOperationException {
+        var values = new ArrayList<Object>();
+        for (RecordComponent component : snapshot.getClass().getRecordComponents()) {
+            Object value = component.getAccessor().invoke(snapshot);
+            values.add(value instanceof Object[] array ? Arrays.deepToString(array) : value);
+        }
+        return values;
     }
 
     private static void writeUuid(DataOutputStream output, UUID uuid) throws Exception {

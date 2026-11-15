@@ -27,7 +27,9 @@ import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptideRaftBloc
 import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptideRhythmRun;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.configuration.config.message.GameMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.RiptideRushMessages;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
 import lombok.Getter;
@@ -331,9 +333,9 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
                                 && plugin.isLoaded()
                                 && phase.getAsBoolean();
         try {
-            geometry = getGameConfig().resolveGeometry();
             coursePlan =
                     RiptideCoursePlanner.plan(getGameConfig(), getGameConfig().nextCourseSeed());
+            geometry = getGameConfig().resolveGeometry(coursePlan);
             resolveGeneratedLevels();
             logGame(
                     Level.INFO,
@@ -344,6 +346,8 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
                             + coursePlan.algorithmVersion()
                             + " ticks="
                             + coursePlan.estimatedTicks()
+                            + " length="
+                            + coursePlan.totalSteps()
                             + " mathMin="
                             + getGameConfig().getMinimumOperand()
                             + " mathMax="
@@ -351,9 +355,12 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
                             + " plan="
                             + new com.google.gson.Gson().toJson(coursePlan.logLevels()));
             List<Location> chunks = new ArrayList<>();
-            for (int step = -geometry.halfLength(); step <= geometry.totalSteps(); step += 16)
+            var reserved = getGameConfig().resolveGenerationGeometry();
+            for (int step = -geometry.halfLength(); step <= reserved.totalSteps(); step += 16)
                 chunks.add(geometry.centerAt(step));
-            chunks.add(geometry.centerAt(geometry.totalSteps() + geometry.halfLength()));
+            chunks.add(geometry.centerAt(reserved.totalSteps() + geometry.halfLength()));
+            var finishPlatform = getGameConfig().resolveFinishPlatform();
+            if (finishPlatform != null) chunks.addAll(finishPlatform.preloadLocations(geometry));
             ArenaChunkPreloader.preload(plugin, chunks, 1, courseTickets, current)
                     .whenComplete(
                             (unused, preloadFailure) -> {
@@ -417,13 +424,13 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
                                     "riptide-rush-area.finish-formal-preparation-1"));
         assignAndTeleportSpawns();
         announceGamePreparation(
-                MessageConfig.RIPTIDE_RUSH_START_PREPARATION,
-                MessageConfig.RIPTIDE_RUSH_START_PREPARATION_TITLE,
-                MessageConfig.RIPTIDE_RUSH_START_PREPARATION_SUBTITLE);
+                RiptideRushMessages.RIPTIDE_RUSH_START_PREPARATION,
+                RiptideRushMessages.RIPTIDE_RUSH_START_PREPARATION_TITLE,
+                RiptideRushMessages.RIPTIDE_RUSH_START_PREPARATION_SUBTITLE);
         startFinalCountdown(
-                MessageConfig.GAME_RIPTIDE_RUSH,
-                MessageConfig.RIPTIDE_RUSH_GAME_START_TITLE,
-                MessageConfig.RIPTIDE_RUSH_GAME_START_SUBTITLE,
+                GameMessages.GAME_RIPTIDE_RUSH,
+                RiptideRushMessages.RIPTIDE_RUSH_GAME_START_TITLE,
+                RiptideRushMessages.RIPTIDE_RUSH_GAME_START_SUBTITLE,
                 this::beginGameProgress);
     }
 
@@ -472,12 +479,13 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
             Player player = Bukkit.getPlayer(uuid);
             if (player == null) {
                 eliminateBatch(
-                        List.of(uuid), MessageConfig.RIPTIDE_RUSH_REASON_DISCONNECTED, false);
+                        List.of(uuid), RiptideRushMessages.RIPTIDE_RUSH_REASON_DISCONNECTED, false);
                 continue;
             }
             Location current = player.getLocation();
             if (fallenFromRaft(player, current))
-                eliminateBatch(List.of(uuid), MessageConfig.RIPTIDE_RUSH_REASON_LEFT_BEHIND, true);
+                eliminateBatch(
+                        List.of(uuid), RiptideRushMessages.RIPTIDE_RUSH_REASON_LEFT_BEHIND, true);
         }
     }
 
@@ -540,10 +548,11 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
                 else {
                     var player = Bukkit.getPlayer(answer.player());
                     if (player != null)
-                        CoreMessages.sendActionBar(player, MessageConfig.RIPTIDE_RUSH_MATH_CORRECT);
+                        CoreMessages.sendActionBar(
+                                player, RiptideRushMessages.RIPTIDE_RUSH_MATH_CORRECT);
                 }
             }
-            eliminateBatch(wrong, MessageConfig.RIPTIDE_RUSH_REASON_WRONG_ANSWER, true);
+            eliminateBatch(wrong, RiptideRushMessages.RIPTIDE_RUSH_REASON_WRONG_ANSWER, true);
             if (getGameStageEnum() != GameStageEnum.PROGRESS) return;
             if (!passRun.active()) departure.begin();
         } else if (colorFloorTicksRemaining > 0) {
@@ -584,7 +593,7 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
             Player player = Bukkit.getPlayer(uuid);
             if (player == null) {
                 eliminateBatch(
-                        List.of(uuid), MessageConfig.RIPTIDE_RUSH_REASON_DISCONNECTED, false);
+                        List.of(uuid), RiptideRushMessages.RIPTIDE_RUSH_REASON_DISCONNECTED, false);
             } else {
                 if (completedSteps / (double) geometry.totalSteps() >= 0.80D)
                     player.addPotionEffect(
@@ -607,19 +616,19 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
                 && !departure.active()
                 && !waitingToDepart) refreshMathTitle();
         if (colorFloorRun == null && speedShieldNoticeUntil > presentationTicks)
-            sendActionBarToAllGamePlayers(MessageConfig.RIPTIDE_RUSH_SPEED_SHIELD_BREAK);
+            sendActionBarToAllGamePlayers(RiptideRushMessages.RIPTIDE_RUSH_SPEED_SHIELD_BREAK);
         if (colorFloorRun == null && speedShieldNoticeUntil <= presentationTicks)
             shieldNoticeUntil.forEach(
                     (uuid, until) -> {
                         Player player = Bukkit.getPlayer(uuid);
                         if (until > presentationTicks && player != null)
                             CoreMessages.sendActionBar(
-                                    player, MessageConfig.RIPTIDE_RUSH_SHIELD_BROKEN);
+                                    player, RiptideRushMessages.RIPTIDE_RUSH_SHIELD_BROKEN);
                     });
         if (dodgeTicksRemaining > 0) refreshDodgePresentation();
         if (departure.active() || waitingToDepart)
             sendActionBarToAllGamePlayers(
-                    departure.active() ? MessageConfig.RIPTIDE_RUSH_DEPARTURE_ACTIONBAR : "");
+                    departure.active() ? RiptideRushMessages.RIPTIDE_RUSH_DEPARTURE_ACTIONBAR : "");
         if (!departure.active()
                 && !waitingToDepart
                 && completedSteps >= geometry.totalSteps()
@@ -652,24 +661,26 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
                         player.playSound(player.getLocation(), Sound.ENTITY_ITEM_BREAK, 1F, 1F);
                     }
                 }
-                sendActionBarToAllGamePlayers(MessageConfig.RIPTIDE_RUSH_SPEED_SHIELD_BREAK);
-            } else sendActionBarToAllGamePlayers(MessageConfig.RIPTIDE_RUSH_SPEED_BOOST_SUBTITLE);
+                sendActionBarToAllGamePlayers(RiptideRushMessages.RIPTIDE_RUSH_SPEED_SHIELD_BREAK);
+            } else
+                sendActionBarToAllGamePlayers(
+                        RiptideRushMessages.RIPTIDE_RUSH_SPEED_BOOST_SUBTITLE);
         }
         boolean showingQuestion = !mathTitles.isEmpty() || colorFloorRun != null;
         if (!boostAnnounced && progress >= 0.20D) {
             boostAnnounced = true;
             if (!showingQuestion)
                 sendTitleToAllGamePlayers(
-                        MessageConfig.RIPTIDE_RUSH_SPEED_BOOST_TITLE,
-                        MessageConfig.RIPTIDE_RUSH_SPEED_BOOST_SUBTITLE);
+                        RiptideRushMessages.RIPTIDE_RUSH_SPEED_BOOST_TITLE,
+                        RiptideRushMessages.RIPTIDE_RUSH_SPEED_BOOST_SUBTITLE);
             playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_PLING, 1F, 1.4F);
         }
         if (!finalSprintAnnounced && progress >= 0.80D) {
             finalSprintAnnounced = true;
             if (!showingQuestion)
                 sendTitleToAllGamePlayers(
-                        MessageConfig.RIPTIDE_RUSH_FINAL_SPRINT_TITLE,
-                        MessageConfig.RIPTIDE_RUSH_FINAL_SPRINT_SUBTITLE);
+                        RiptideRushMessages.RIPTIDE_RUSH_FINAL_SPRINT_TITLE,
+                        RiptideRushMessages.RIPTIDE_RUSH_FINAL_SPRINT_SUBTITLE);
             playSoundToAllGamePlayers(Sound.ENTITY_PLAYER_LEVELUP, 1F, 1.2F);
         }
     }
@@ -722,7 +733,8 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
                                 + answer.result());
                 switch (answer.result()) {
                     case CORRECT -> {
-                        CoreMessages.sendActionBar(player, MessageConfig.RIPTIDE_RUSH_MATH_CORRECT);
+                        CoreMessages.sendActionBar(
+                                player, RiptideRushMessages.RIPTIDE_RUSH_MATH_CORRECT);
                         player.playSound(
                                 player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BELL, 0.8F, 1.6F);
                     }
@@ -731,8 +743,8 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
                 }
             }
         }
-        eliminateBatch(wrong, MessageConfig.RIPTIDE_RUSH_REASON_WRONG_ANSWER, true);
-        eliminateBatch(outside, MessageConfig.RIPTIDE_RUSH_REASON_MISSED_GATE, true);
+        eliminateBatch(wrong, RiptideRushMessages.RIPTIDE_RUSH_REASON_WRONG_ANSWER, true);
+        eliminateBatch(outside, RiptideRushMessages.RIPTIDE_RUSH_REASON_MISSED_GATE, true);
     }
 
     private boolean beginReachedColorFloor() {
@@ -838,7 +850,7 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
                                 + (correct ? "CORRECT" : "WRONG"));
                 if (!correct) wrong.add(uuid);
             }
-            eliminateBatch(wrong, MessageConfig.RIPTIDE_RUSH_REASON_WRONG_FLOOR, true);
+            eliminateBatch(wrong, RiptideRushMessages.RIPTIDE_RUSH_REASON_WRONG_FLOOR, true);
             if (getGameStageEnum() != GameStageEnum.PROGRESS) return;
             if (colorFloorRun.advance()) showColorFloorRound();
             else {
@@ -903,7 +915,8 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
             }
         }
         if (!hit.isEmpty())
-            eliminateBatch(new ArrayList<>(hit), MessageConfig.RIPTIDE_RUSH_REASON_DODGE, true);
+            eliminateBatch(
+                    new ArrayList<>(hit), RiptideRushMessages.RIPTIDE_RUSH_REASON_DODGE, true);
         if (getGameStageEnum() != GameStageEnum.PROGRESS) return;
         dodgeTicksRemaining = RiptideDodgeRun.DURATION_TICKS - dodgeRun.tickNumber();
         if (dodgeRun.complete()) {
@@ -995,7 +1008,7 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
     private void refreshGameBar() {
         if (geometry == null || getGameStageEnum() != GameStageEnum.PROGRESS) return;
         String title =
-                MessageConfig.RIPTIDE_RUSH_BOSS_BAR
+                RiptideRushMessages.RIPTIDE_RUSH_BOSS_BAR
                         .replace("%alive%", String.valueOf(getSurvivedPlayerNums()))
                         .replace("%total%", String.valueOf(gamePlayers.size()))
                         .replace("%time%", CoreMessages.bossBarTime(timer))
@@ -1092,7 +1105,7 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
     private void announceShieldBroken(Player player) {
         shieldNoticeUntil.put(player.getUniqueId(), presentationTicks + 40);
         player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_ITEM_BREAK, 1F, 1F);
-        CoreMessages.sendActionBar(player, MessageConfig.RIPTIDE_RUSH_SHIELD_BROKEN);
+        CoreMessages.sendActionBar(player, RiptideRushMessages.RIPTIDE_RUSH_SHIELD_BROKEN);
     }
 
     private synchronized void eliminateBatch(
@@ -1106,21 +1119,22 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
                                 uuid ->
                                         !Objects.equals(
                                                         reason,
-                                                        MessageConfig
+                                                        RiptideRushMessages
                                                                 .RIPTIDE_RUSH_REASON_WRONG_FLOOR)
                                                 || !protectedFloorPlayers.protects(uuid))
                         .distinct()
                         .toList();
         if (geometry != null
                 && completedSteps / (double) geometry.totalSteps() < 0.40D
-                && !Objects.equals(reason, MessageConfig.RIPTIDE_RUSH_REASON_DISCONNECTED)
-                && !Objects.equals(reason, MessageConfig.RIPTIDE_RUSH_REASON_FELL)) {
+                && !Objects.equals(reason, RiptideRushMessages.RIPTIDE_RUSH_REASON_DISCONNECTED)
+                && !Objects.equals(reason, RiptideRushMessages.RIPTIDE_RUSH_REASON_FELL)) {
             List<UUID> rescued = new ArrayList<>();
             for (UUID uuid : eligible) {
                 Player player = Bukkit.getPlayer(uuid);
                 if (player != null && player.isOnline() && raftShields.remove(uuid)) {
                     boolean fallen =
-                            Objects.equals(reason, MessageConfig.RIPTIDE_RUSH_REASON_LEFT_BEHIND);
+                            Objects.equals(
+                                    reason, RiptideRushMessages.RIPTIDE_RUSH_REASON_LEFT_BEHIND);
                     if (fallen
                             && !player.teleport(
                                     geometry.centerAt(completedSteps).add(0D, 1D, 0D))) {
@@ -1128,7 +1142,7 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
                         continue;
                     }
                     rescued.add(uuid);
-                    if (Objects.equals(reason, MessageConfig.RIPTIDE_RUSH_REASON_WRONG_FLOOR))
+                    if (Objects.equals(reason, RiptideRushMessages.RIPTIDE_RUSH_REASON_WRONG_FLOOR))
                         protectedFloorPlayers.grant(uuid);
                     if (fallen) {
                         player.setFallDistance(0F);
@@ -1202,8 +1216,8 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
         if (isSettlementAllowed()) calculatePoints();
         setGameStageEnum(GameStageEnum.END);
         announceGameEnd(
-                MessageConfig.RIPTIDE_RUSH_GAME_END_TITLE,
-                MessageConfig.RIPTIDE_RUSH_GAME_END_SUBTITLE);
+                RiptideRushMessages.RIPTIDE_RUSH_GAME_END_TITLE,
+                RiptideRushMessages.RIPTIDE_RUSH_GAME_END_SUBTITLE);
         beginPostGameSettlement();
         if (!isFormalEventRun()
                 || !plugin.getScheduleManager().hasNextRound(GameTypeEnum.RiptideRush)) {
@@ -1219,7 +1233,7 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
         Collection<UUID> winners = roundLedger.winners();
         for (UUID winner : winners) {
             sendMessageToAllGamePlayers(
-                    MessageConfig.RIPTIDE_RUSH_WINNER.replace(
+                    RiptideRushMessages.RIPTIDE_RUSH_WINNER.replace(
                             "%player%",
                             Objects.toString(
                                     playerManager.getPlayerName(winner),
@@ -1411,7 +1425,9 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
         event.getDrops().clear();
         if (stage == GameStageEnum.PROGRESS)
             eliminateBatch(
-                    List.of(player.getUniqueId()), MessageConfig.RIPTIDE_RUSH_REASON_FELL, true);
+                    List.of(player.getUniqueId()),
+                    RiptideRushMessages.RIPTIDE_RUSH_REASON_FELL,
+                    true);
         long epoch = generationEpoch;
         scheduleParticipantRespawn(
                 player,
@@ -1442,7 +1458,7 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
         if (getGameStageEnum() == GameStageEnum.PROGRESS && !notAreaPlayer(event.getPlayer()))
             eliminateBatch(
                     List.of(event.getPlayer().getUniqueId()),
-                    MessageConfig.RIPTIDE_RUSH_REASON_DISCONNECTED,
+                    RiptideRushMessages.RIPTIDE_RUSH_REASON_DISCONNECTED,
                     true);
     }
 
@@ -1457,7 +1473,7 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
                     && !eliminatedPlayers.contains(player.getUniqueId()))
                 eliminateBatch(
                         List.of(player.getUniqueId()),
-                        MessageConfig.RIPTIDE_RUSH_REASON_DISCONNECTED,
+                        RiptideRushMessages.RIPTIDE_RUSH_REASON_DISCONNECTED,
                         false);
             plugin.getGameManager()
                     .getSpectatorManager()

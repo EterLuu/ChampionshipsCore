@@ -378,7 +378,27 @@ public final class RiptideCourseEditorGui {
                 h.inventory.setItem(slot, placement(h.plan.levels().get(index)));
                 h.placementTargets.put(slot, index);
             }
-            value(h, "duration", String.format(Locale.ROOT, "%.2f", h.plan.estimatedTicks() / 20D));
+            button(
+                    h,
+                    "duration",
+                    null,
+                    Map.of(
+                            "value",
+                                    String.format(
+                                            Locale.ROOT, "%.2f", h.plan.estimatedTicks() / 20D),
+                            "length", h.plan.totalSteps(),
+                            "levels",
+                                    h.plan.levels().stream()
+                                            .map(RiptideCoursePlan.Level::number)
+                                            .distinct()
+                                            .count(),
+                            "challenges", h.plan.levels().size(),
+                            "transition",
+                                    String.format(
+                                            Locale.ROOT,
+                                            "%.2f",
+                                            RiptideCoursePlanner.minimumTransitionSeconds(
+                                                    c, h.plan))));
             pages(h, h.plan.levels().size());
         } catch (IllegalArgumentException error) {
             h.inventory.setItem(
@@ -902,7 +922,11 @@ public final class RiptideCourseEditorGui {
         var level = new RiptideCoursePlan.Level(1, step, t, variant, 1, false, c.getPreviewSeed());
         var plan =
                 new RiptideCoursePlan(
-                        c.getPreviewSeed(), RiptideCoursePlanner.VERSION, 0, List.of(level));
+                        c.getPreviewSeed(),
+                        RiptideCoursePlanner.VERSION,
+                        0,
+                        List.of(level),
+                        c.resolveGeometry().totalSteps());
         player.closeInventory();
         CoreMessages.sendAdminInfo(player, text("opening-building"));
         RiptideCourseGenerator.generateAsync(
@@ -1036,7 +1060,7 @@ public final class RiptideCourseEditorGui {
                                         trialLevel,
                                         () -> later(manager, player, h, true));
                             } else {
-                                var g = config(h.session).resolveGeometry();
+                                var g = config(h.session).resolveGeometry(builtPlan);
                                 player.teleport(
                                         g.centerAt(
                                                         level == null
@@ -1052,7 +1076,11 @@ public final class RiptideCourseEditorGui {
 
     static RiptideCoursePlan trialPlan(RiptideCoursePlan plan, RiptideCoursePlan.Level level) {
         return new RiptideCoursePlan(
-                plan.seed(), plan.algorithmVersion(), 0, plan.trialLevels(level));
+                plan.seed(),
+                plan.algorithmVersion(),
+                0,
+                plan.trialLevels(level),
+                plan.totalSteps());
     }
 
     private static int paginate(Holder h, int count) {

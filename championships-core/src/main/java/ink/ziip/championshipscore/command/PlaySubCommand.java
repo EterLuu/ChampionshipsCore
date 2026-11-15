@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.command;
 
+import ink.ziip.championshipscore.configuration.config.message.AdminMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
@@ -27,7 +28,7 @@ public final class PlaySubCommand extends BaseSubCommand {
             @NotNull String label,
             @NotNull String[] args) {
         if (!(sender instanceof Player player)) {
-            CoreMessages.sendAdminError(sender, MessageConfig.COMMAND_PLAYER_ONLY);
+            CoreMessages.sendAdminError(sender, AdminMessages.COMMAND_PLAYER_ONLY);
             return true;
         }
         if (args.length == 0) {
@@ -41,7 +42,7 @@ public final class PlaySubCommand extends BaseSubCommand {
                                 .translateColorCodes(
                                         CoreMessages.dailyMessage(
                                                 ink.ziip.championshipscore.configuration.config
-                                                        .message.MessageConfig.DAILY_NOT_IN_PLAY)));
+                                                        .message.DailyMessages.DAILY_NOT_IN_PLAY)));
             return true;
         }
         if (args.length == 1 && args[0].equalsIgnoreCase("leaderboard")) {

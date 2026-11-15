@@ -14,7 +14,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.List;
 
 @ExtendWith(ConfigurationStateExtension.class)
@@ -48,16 +47,20 @@ class RiptideCourseEditorGuiTest {
                             RiptideLevelTemplate.variants(type).stream()
                                     .filter(v -> !v.equals("AUTO"))
                                     .count();
-            int[] slots = choiceSlots(count);
-            assertEquals(count, slots.length);
-            assertEquals(count, Arrays.stream(slots).distinct().count());
-            assertTrue(
-                    Arrays.stream(slots)
-                            .allMatch(
-                                    slot ->
-                                            count > 18
-                                                    ? slot < 26
-                                                    : slot >= (count > 9 ? 0 : 9) && slot < 18));
+            var page =
+                    RiptideEditorPage.category(type)
+                            .child(RiptideEditorPage.Screen.CHOICE, "example", "variant");
+            var layout = RiptideEditorLayout.load(page, count);
+            var visited = new java.util.ArrayList<Integer>();
+            for (int index = 0; index < layout.pageCount(count); index++) {
+                var slots = layout.pageSlots(index, count);
+                assertEquals(slots.size(), slots.stream().distinct().count());
+                for (int slot : slots) {
+                    assertFalse(layout.controls().containsValue(slot));
+                    visited.add(layout.index(index, slot, count));
+                }
+            }
+            assertEquals(java.util.stream.IntStream.range(0, count).boxed().toList(), visited);
         }
         assertArrayEquals(new int[] {12, 13, 14}, choiceSlots(3));
         assertArrayEquals(new int[] {1, 2, 3, 4, 5, 6, 11, 12, 13, 14, 15}, choiceSlots(11));
@@ -130,7 +133,7 @@ class RiptideCourseEditorGuiTest {
         var second =
                 new RiptideCoursePlan.Level(
                         1, 112, template, "SUBTRACT", 0, false, 2, -7, 2, "MATH_DOUBLE", 0);
-        var course = new RiptideCoursePlan(99, 1, 0, java.util.List.of(first, second));
+        var course = new RiptideCoursePlan(99, 1, 0, java.util.List.of(first, second), 500);
         var trial = RiptideCourseEditorGui.trialPlan(course, first);
         assertEquals(java.util.List.of(first, second), trial.levels());
     }

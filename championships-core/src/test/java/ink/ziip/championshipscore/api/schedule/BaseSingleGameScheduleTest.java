@@ -1,5 +1,10 @@
 package ink.ziip.championshipscore.api.schedule;
 
+import static ink.ziip.championshipscore.support.TestObjects.allocate;
+import static ink.ziip.championshipscore.support.TestObjects.field;
+import static ink.ziip.championshipscore.support.TestObjects.proxy;
+import static ink.ziip.championshipscore.support.TestObjects.set;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
@@ -297,30 +302,5 @@ class BaseSingleGameScheduleTest {
         public int getTotalRounds() {
             return 1;
         }
-    }
-
-    private static <T> T proxy(Class<T> t, InvocationHandler h) {
-        return t.cast(Proxy.newProxyInstance(t.getClassLoader(), new Class<?>[] {t}, h));
-    }
-
-    private static Field field(Class<?> t, String n) throws Exception {
-        for (; t != null; t = t.getSuperclass())
-            try {
-                var f = t.getDeclaredField(n);
-                f.setAccessible(true);
-                return f;
-            } catch (NoSuchFieldException ignored) {
-            }
-        throw new NoSuchFieldException(n);
-    }
-
-    private static void set(Object o, String n, Object v) throws Exception {
-        field(o.getClass(), n).set(o, v);
-    }
-
-    private static <T> T allocate(Class<T> t) throws Exception {
-        return t.cast(
-                ((sun.misc.Unsafe) field(sun.misc.Unsafe.class, "theUnsafe").get(null))
-                        .allocateInstance(t));
     }
 }

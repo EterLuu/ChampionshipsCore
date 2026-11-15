@@ -4,6 +4,7 @@ import ink.ziip.championshipscore.api.rank.RankManager;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.command.BaseMainCommand;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.ScoreMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 
 import org.bukkit.command.Command;
@@ -41,14 +42,14 @@ public class RankMainCommand extends BaseMainCommand {
                 double teamPoints = rankManager.getPlayerTeamPoints(player);
                 int teamRank = rankManager.getPlayerTeamRank(player);
                 String message =
-                        MessageConfig.RANK_RANK_INFO
+                        ScoreMessages.RANK_RANK_INFO
                                 .replace("%player_point%", LegacyText.formatPoints(playerPoints))
                                 .replace("%player_rank%", String.valueOf(playerRank))
                                 .replace("%team_point%", LegacyText.formatPoints(teamPoints))
                                 .replace("%team_rank%", String.valueOf(teamRank));
                 sender.sendMessage(message);
             } else {
-                sender.sendMessage(MessageConfig.RANK_NOT_PLAYER);
+                sender.sendMessage(ScoreMessages.RANK_NOT_PLAYER);
             }
             return true;
         }

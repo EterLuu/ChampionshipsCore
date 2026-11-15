@@ -1,6 +1,6 @@
 package ink.ziip.championshipscore.command;
 
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.AdminMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 
 import lombok.Getter;
@@ -39,7 +39,7 @@ public abstract class BaseSubCommand extends BaseMainCommand {
         if (usage == null || usage.isEmpty()) return;
         sender.sendMessage(
                 LegacyText.translateColorCodes(
-                        MessageConfig.COMMAND_USAGE
+                        AdminMessages.COMMAND_USAGE
                                 .replace("%usage%", usage)
                                 .replace("%description%", description == null ? "" : description)));
     }

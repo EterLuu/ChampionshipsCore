@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.game.laser.presentation;
 import ink.ziip.championshipscore.api.game.laser.mechanics.LaserGunMechanics;
 import ink.ziip.championshipscore.api.game.laser.model.LaserGun;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
+import ink.ziip.championshipscore.configuration.config.message.LaserBoxMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.shared.presentation.MessageTemplate;
@@ -66,7 +67,7 @@ public final class LaserGunItems {
                 "controls", MessageConfig.codeText(controls),
                 "magazine-summary",
                         MessageTemplate.render(
-                                text(MessageConfig.LASER_BOX_GUN_MAGAZINE),
+                                text(LaserBoxMessages.LASER_BOX_GUN_MAGAZINE),
                                 Map.of(
                                         "%magazine%",
                                         Integer.toString(gun.magazine()),
@@ -74,30 +75,30 @@ public final class LaserGunItems {
                                         formatSeconds(gun.reloadTicks()))),
                 "fire-rate-summary",
                         MessageTemplate.render(
-                                text(MessageConfig.LASER_BOX_GUN_FIRE_RATE),
+                                text(LaserBoxMessages.LASER_BOX_GUN_FIRE_RATE),
                                 Map.of("%rate%", formatRate(gun.shotsPerSecond()))),
-                "selected-label", text(MessageConfig.LASER_BOX_GUN_SELECTED));
+                "selected-label", text(LaserBoxMessages.LASER_BOX_GUN_SELECTED));
     }
 
     public static String gunName(LaserGun gun) {
         return text(
                 switch (gun) {
-                    case SNIPER -> MessageConfig.LASER_BOX_GUN_SNIPER_NAME;
-                    case RIFLE -> MessageConfig.LASER_BOX_GUN_RIFLE_NAME;
-                    case SMG -> MessageConfig.LASER_BOX_GUN_SMG_NAME;
-                    case MACHINE -> MessageConfig.LASER_BOX_GUN_MACHINE_NAME;
-                    case SHOTGUN -> MessageConfig.LASER_BOX_GUN_SHOTGUN_NAME;
+                    case SNIPER -> LaserBoxMessages.LASER_BOX_GUN_SNIPER_NAME;
+                    case RIFLE -> LaserBoxMessages.LASER_BOX_GUN_RIFLE_NAME;
+                    case SMG -> LaserBoxMessages.LASER_BOX_GUN_SMG_NAME;
+                    case MACHINE -> LaserBoxMessages.LASER_BOX_GUN_MACHINE_NAME;
+                    case SHOTGUN -> LaserBoxMessages.LASER_BOX_GUN_SHOTGUN_NAME;
                 });
     }
 
     private static String gunDescription(LaserGun gun) {
         return text(
                 switch (gun) {
-                    case SNIPER -> MessageConfig.LASER_BOX_GUN_SNIPER_DESCRIPTION;
-                    case RIFLE -> MessageConfig.LASER_BOX_GUN_RIFLE_DESCRIPTION;
-                    case SMG -> MessageConfig.LASER_BOX_GUN_SMG_DESCRIPTION;
-                    case MACHINE -> MessageConfig.LASER_BOX_GUN_MACHINE_DESCRIPTION;
-                    case SHOTGUN -> MessageConfig.LASER_BOX_GUN_SHOTGUN_DESCRIPTION;
+                    case SNIPER -> LaserBoxMessages.LASER_BOX_GUN_SNIPER_DESCRIPTION;
+                    case RIFLE -> LaserBoxMessages.LASER_BOX_GUN_RIFLE_DESCRIPTION;
+                    case SMG -> LaserBoxMessages.LASER_BOX_GUN_SMG_DESCRIPTION;
+                    case MACHINE -> LaserBoxMessages.LASER_BOX_GUN_MACHINE_DESCRIPTION;
+                    case SHOTGUN -> LaserBoxMessages.LASER_BOX_GUN_SHOTGUN_DESCRIPTION;
                 });
     }
 
@@ -138,8 +139,8 @@ public final class LaserGunItems {
                 gun == null
                         ? ""
                         : reloadTicks > 0
-                                ? text(MessageConfig.LASER_BOX_RELOAD)
-                                : text(MessageConfig.LASER_BOX_AMMO);
+                                ? text(LaserBoxMessages.LASER_BOX_RELOAD)
+                                : text(LaserBoxMessages.LASER_BOX_AMMO);
         if (gun != null)
             text =
                     MessageTemplate.render(
@@ -178,7 +179,7 @@ public final class LaserGunItems {
                         meta,
                         "laser.equipment.ammo",
                         null,
-                        Map.of("name", text(MessageConfig.LASER_BOX_AMMO_ITEM)));
+                        Map.of("name", text(LaserBoxMessages.LASER_BOX_AMMO_ITEM)));
                 meta.getPersistentDataContainer().set(itemKey, PersistentDataType.STRING, "ammo");
                 stack.setItemMeta(meta);
             }

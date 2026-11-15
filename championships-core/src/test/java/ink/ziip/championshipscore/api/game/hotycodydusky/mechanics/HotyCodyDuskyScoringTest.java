@@ -32,6 +32,5 @@ class HotyCodyDuskyScoringTest {
         assertEquals(
                 Map.of(a, 25, b, 20, c, 20, d, 15),
                 HotyCodyDuskyScoring.rankingBonuses(deaths, List.of(), 50));
-        assertEquals(4, deaths.size());
     }
 }

@@ -9,7 +9,7 @@ import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.gui.AnvilInputMenu;
 import ink.ziip.championshipscore.api.gui.MenuId;
 import ink.ziip.championshipscore.configuration.config.message.GuiConfig;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
 
 import org.bukkit.entity.Player;
@@ -52,10 +52,10 @@ public final class AnvilInputGui {
                 text -> {
                     try {
                         return Integer.parseInt(text) < 1
-                                ? MessageConfig.MAP_EDITOR_INPUT_NUMBER_TOO_SMALL
+                                ? MapEditorMessages.MAP_EDITOR_INPUT_NUMBER_TOO_SMALL
                                 : null;
                     } catch (NumberFormatException ignored) {
-                        return MessageConfig.MAP_EDITOR_INPUT_INVALID_NUMBER;
+                        return MapEditorMessages.MAP_EDITOR_INPUT_INVALID_NUMBER;
                     }
                 },
                 text -> submit.accept(Integer.parseInt(text)),
@@ -83,7 +83,7 @@ public final class AnvilInputGui {
                         Integer.parseInt(text);
                         return null;
                     } catch (NumberFormatException ignored) {
-                        return MessageConfig.MAP_EDITOR_INPUT_INVALID_INTEGER;
+                        return MapEditorMessages.MAP_EDITOR_INPUT_INVALID_INTEGER;
                     }
                 },
                 text -> submit.accept(text.isBlank() ? defaultValue : Integer.parseInt(text)),
@@ -163,17 +163,18 @@ public final class AnvilInputGui {
             @NotNull GameTypeEnum gameType,
             @Nullable String name) {
         if (name == null || name.isBlank())
-            return CoreMessages.formatAdminError(MessageConfig.MAP_EDITOR_INPUT_NAME_EMPTY);
+            return CoreMessages.formatAdminError(MapEditorMessages.MAP_EDITOR_INPUT_NAME_EMPTY);
         String trimmed = name.trim();
         if (trimmed.length() > 32)
-            return CoreMessages.formatAdminError(MessageConfig.MAP_EDITOR_INPUT_NAME_TOO_LONG);
+            return CoreMessages.formatAdminError(MapEditorMessages.MAP_EDITOR_INPUT_NAME_TOO_LONG);
         if (trimmed.matches(".*[\\\\/:*?\"<>|].*"))
-            return CoreMessages.formatAdminError(MessageConfig.MAP_EDITOR_INPUT_NAME_INVALID);
+            return CoreMessages.formatAdminError(MapEditorMessages.MAP_EDITOR_INPUT_NAME_INVALID);
         BaseGameInstanceManager<?> mgr =
                 manager.getPlugin().getGameManager().getAreaManager(gameType);
         if (mgr != null && mgr.getArea(trimmed) != null)
             return CoreMessages.formatAdminError(
-                    MessageConfig.MAP_EDITOR_INPUT_NAME_ALREADY_EXISTS.replace("%name%", trimmed));
+                    MapEditorMessages.MAP_EDITOR_INPUT_NAME_ALREADY_EXISTS.replace(
+                            "%name%", trimmed));
         return null;
     }
 }

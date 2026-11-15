@@ -94,6 +94,17 @@ public final class RemoteBingoInstance extends BaseMultiTeamGameInstance {
     }
 
     @Override
+    protected void restoreArenaWaitingLocation(Player player) {
+        plugin.getRemoteBingoManager().routeReconnect(player, this);
+    }
+
+    @Override
+    protected void onPostGameSettlement(boolean nextEventRound) {
+        if (!nextEventRound && isFormalEventRun())
+            plugin.getRemoteBingoManager().releaseEventMatch(this);
+    }
+
+    @Override
     public void resetArea() {
         timer = getGameConfig().getTimer();
     }

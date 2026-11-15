@@ -17,6 +17,6 @@ case "${1:-}" in
 esac
 
 cd "$CC_FORMAT_ROOT"
-rg --files -0 -g '*.java' -g '!**/target/**' championships-* \
-    | python3 -c 'import sys; sys.stdout.buffer.write(b"\0".join(p for p in sys.stdin.buffer.read().split(b"\0") if b"/src/main/java/" in p or b"/src/test/java/" in p) + b"\0")' \
+git ls-files -z --cached --others --exclude-standard -- 'championships-*/src/main/java/*.java' 'championships-*/src/test/java/*.java' \
+    | python3 -c 'import os, sys; sys.stdout.buffer.write(b"\0".join(p for p in sys.stdin.buffer.read().split(b"\0") if p and os.path.isfile(p) and (b"/src/main/java/" in p or b"/src/test/java/" in p)) + b"\0")' \
     | xargs -0 -r -n 100 java -jar "$CC_FORMAT_JAR" --aosp "${CC_FORMAT_ACTION[@]}"

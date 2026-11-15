@@ -4,14 +4,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class DodgeboltShrinkQueueTest {
-    @Test
-    void eliminationShrinkMatchesMccSequence() {
-        assertEquals(2, DodgeboltShrinkQueue.layersForElimination(1));
-        assertEquals(2, DodgeboltShrinkQueue.layersForElimination(2));
-        assertEquals(1, DodgeboltShrinkQueue.layersForElimination(3));
-        assertEquals(1, DodgeboltShrinkQueue.layersForElimination(4));
+    @ParameterizedTest(name = "elimination {0} shrinks {1} layers")
+    @CsvSource({"1, 2", "2, 2", "3, 1", "4, 1"})
+    void eliminationShrinkMatchesMccSequence(int elimination, int layers) {
+        assertEquals(layers, DodgeboltShrinkQueue.layersForElimination(elimination));
     }
 
     @Test

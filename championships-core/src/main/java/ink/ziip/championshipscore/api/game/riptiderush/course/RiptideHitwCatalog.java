@@ -92,7 +92,7 @@ public final class RiptideHitwCatalog {
                                 row.get("difficulty").getAsInt(),
                                 blueprint));
             }
-            if (result.size() != 354
+            if (result.size() != 364
                     || result.stream().map(RiptideLevelTemplate::id).distinct().count()
                             != result.size())
                 throw new IllegalStateException("Incomplete HITW wall catalogue");

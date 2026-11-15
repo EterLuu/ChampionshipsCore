@@ -1,5 +1,7 @@
 package ink.ziip.championshipscore.api.game.laser.presentation;
 
+import static ink.ziip.championshipscore.support.TestObjects.proxy;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.papermc.paper.threadedregions.scheduler.EntityScheduler;
@@ -10,6 +12,9 @@ import org.bukkit.Server;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.lang.reflect.*;
 import java.util.*;
@@ -17,103 +22,68 @@ import java.util.function.Consumer;
 
 class LaserKillFeedbackTest {
     @Test
-    void singleKillsUseTheExpectedNotesAndRejectOutOfRangeCounts() {
-        assertEquals(
-                List.of(10, 12, 13, 15),
-                List.of(
-                        (int) LaserKillFeedback.noteForKills(1).getId(),
-                        (int) LaserKillFeedback.noteForKills(2).getId(),
-                        (int) LaserKillFeedback.noteForKills(3).getId(),
-                        (int) LaserKillFeedback.noteForKills(4).getId()));
+    void noteForKillsRejectsCountsOutsideOneToFour() {
         assertThrows(IllegalArgumentException.class, () -> LaserKillFeedback.noteForKills(0));
         assertThrows(IllegalArgumentException.class, () -> LaserKillFeedback.noteForKills(5));
     }
 
-    @Test
-    void aceMelodyIsEEEThenG() {
-        assertEquals(
-                List.of(10, 10, 10, 13),
-                LaserKillFeedback.aceMelody().stream().map(note -> (int) note.getId()).toList());
-    }
-
-    @Test
-    void fifthAndEveryLaterKillPlayExactlyFourSeparatedNotes() throws Exception {
-        for (int kills : List.of(5, 6, 10, 40)) {
-            try (Playback fixture = new Playback()) {
-                fixture.play(kills);
-                assertEquals(List.of(new Played(0, 10)), fixture.played);
-                assertEquals(List.of(3L, 6L, 9L), fixture.delayed.keySet().stream().toList());
-                fixture.finish();
-                assertEquals(
-                        List.of(
-                                new Played(0, 10), new Played(3, 10),
-                                new Played(6, 10), new Played(9, 13)),
-                        fixture.played);
-            }
+    @ParameterizedTest
+    @CsvSource({"1,10", "2,12", "3,13", "4,15"})
+    void firstFourKillsPlayOneImmediateNoteWithoutDelayedTasks(int kills, int note)
+            throws Exception {
+        try (Playback fixture = new Playback()) {
+            fixture.play(kills);
+            assertEquals(List.of(new Played(0, note)), fixture.played);
+            assertTrue(fixture.delayed.isEmpty());
         }
     }
 
-    @Test
-    void firstFourKillsAreSingleNotesWithoutDelayedTasks() throws Exception {
-        for (int kills = 1; kills <= 4; kills++) {
-            try (Playback fixture = new Playback()) {
-                fixture.play(kills);
-                assertEquals(1, fixture.played.size());
-                assertEquals(
-                        LaserKillFeedback.noteForKills(kills).getId(),
-                        fixture.played.getFirst().note());
-                assertTrue(fixture.delayed.isEmpty());
-            }
+    @ParameterizedTest
+    @ValueSource(ints = {5, 6, 10, 40})
+    void fifthAndEveryLaterKillPlayTheSeparatedAceMelody(int kills) throws Exception {
+        try (Playback fixture = new Playback()) {
+            fixture.play(kills);
+            assertEquals(List.of(new Played(0, 10)), fixture.played);
+            assertEquals(List.of(3L, 6L, 9L), fixture.delayed.keySet().stream().toList());
+            fixture.finish();
+            assertEquals(
+                    List.of(
+                            new Played(0, 10), new Played(3, 10),
+                            new Played(6, 10), new Played(9, 13)),
+                    fixture.played);
         }
     }
 
-    @Test
-    void changedRoundStopsRemainingNotes() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {"round", "offline", "reconnect", "disabled"})
+    void invalidationDuringPlaybackStopsRemainingNotes(String invalidation) throws Exception {
         try (Playback fixture = new Playback()) {
             fixture.play(5);
-            fixture.currentRound = false;
-            fixture.finish();
-            assertEquals(1, fixture.played.size());
-        }
-    }
-
-    @Test
-    void disconnectOrSameUuidNewConnectionCannotReceiveOldNotes() throws Exception {
-        for (boolean reconnect : List.of(false, true)) {
-            try (Playback fixture = new Playback()) {
-                fixture.play(5);
-                if (reconnect) fixture.connected = proxy(Player.class, (p, m, a) -> null);
-                else fixture.online = false;
-                fixture.finish();
-                assertEquals(1, fixture.played.size());
+            // "reconnect" is a new connection with the same UUID; it must not hear old notes.
+            switch (invalidation) {
+                case "round" -> fixture.currentRound = false;
+                case "offline" -> fixture.online = false;
+                case "reconnect" -> fixture.connected = proxy(Player.class, (p, m, a) -> null);
+                case "disabled" -> fixture.enabled = false;
             }
+            fixture.finish();
+            assertEquals(List.of(new Played(0, 10)), fixture.played);
         }
     }
 
-    @Test
-    void disabledPluginStopsRemainingNotes() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {"round", "offline", "connection", "disabled", "zero"})
+    void invalidPlaybackDoesNotEmitEvenTheFirstNote(String invalid) throws Exception {
         try (Playback fixture = new Playback()) {
-            fixture.play(5);
-            fixture.enabled = false;
-            fixture.finish();
-            assertEquals(1, fixture.played.size());
-        }
-    }
-
-    @Test
-    void invalidPlaybackDoesNotEmitEvenTheFirstNote() throws Exception {
-        for (String invalid : List.of("round", "offline", "connection", "disabled", "zero")) {
-            try (Playback fixture = new Playback()) {
-                switch (invalid) {
-                    case "round" -> fixture.currentRound = false;
-                    case "offline" -> fixture.online = false;
-                    case "connection" -> fixture.connected = null;
-                    case "disabled" -> fixture.enabled = false;
-                }
-                fixture.play(invalid.equals("zero") ? 0 : 5);
-                assertTrue(fixture.played.isEmpty(), invalid);
-                assertTrue(fixture.delayed.isEmpty(), invalid);
+            switch (invalid) {
+                case "round" -> fixture.currentRound = false;
+                case "offline" -> fixture.online = false;
+                case "connection" -> fixture.connected = null;
+                case "disabled" -> fixture.enabled = false;
             }
+            fixture.play(invalid.equals("zero") ? 0 : 5);
+            assertTrue(fixture.played.isEmpty());
+            assertTrue(fixture.delayed.isEmpty());
         }
     }
 
@@ -199,10 +169,5 @@ class LaserKillFeedbackTest {
         public void close() throws Exception {
             serverField.set(null, previousServer);
         }
-    }
-
-    private static <T> T proxy(Class<T> type, InvocationHandler handler) {
-        return type.cast(
-                Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[] {type}, handler));
     }
 }

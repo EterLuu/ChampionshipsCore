@@ -3,7 +3,7 @@ package ink.ziip.championshipscore.listener;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.api.chat.MuteDuration;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.AdminMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 
 import io.papermc.paper.event.player.AsyncChatEvent;
@@ -24,8 +24,8 @@ public final class PublicChatMuteListener extends BaseListener {
         event.setCancelled(true);
         String notice =
                 (mute.permanent()
-                                ? MessageConfig.CHAT_MUTED_PERMANENT
-                                : MessageConfig.CHAT_MUTED_TEMPORARY)
+                                ? AdminMessages.CHAT_MUTED_PERMANENT
+                                : AdminMessages.CHAT_MUTED_TEMPORARY)
                         .replace("%reason%", mute.reason())
                         .replace(
                                 "%remaining%",

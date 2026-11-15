@@ -6,7 +6,7 @@ import ink.ziip.championshipscore.api.game.battlebox.runtime.BattleBoxArea;
 import ink.ziip.championshipscore.api.game.battlebox.runtime.BattleBoxMatch;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
+import ink.ziip.championshipscore.configuration.config.message.ScoreMessages;
 
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -38,16 +38,16 @@ public class BattleBoxPlaceholder extends BaseGamePlaceholder<BattleBoxArea> {
                     resolveArea(params, rival ? "area_rival_" : "area_team_", offlinePlayer);
             Player matchPlayer = offlinePlayer.getPlayer();
             if (battleBoxArea == null || matchPlayer == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             BattleBoxMatch match = battleBoxArea.matchOf(matchPlayer);
             ChampionshipTeam team = plugin.getTeamManager().getTeamByPlayer(matchPlayer);
             if (match == null || team == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             ChampionshipTeam result = rival ? match.rivalOf(team) : team;
             if (result == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             return result.getColoredName();
         }
@@ -55,15 +55,15 @@ public class BattleBoxPlaceholder extends BaseGamePlaceholder<BattleBoxArea> {
         /* Player required placeholders */
 
         Player player = offlinePlayer.getPlayer();
-        if (player == null) return MessageConfig.PLACEHOLDER_NONE;
+        if (player == null) return ScoreMessages.PLACEHOLDER_NONE;
 
         if (params.startsWith("player_kits_")) {
             BattleBoxArea battleBoxArea = resolveArea(params, "player_kits_", offlinePlayer);
             if (battleBoxArea == null) {
-                return MessageConfig.PLACEHOLDER_NONE;
+                return ScoreMessages.PLACEHOLDER_NONE;
             }
             BBWeaponKitEnum kits = battleBoxArea.getPlayerCurrentWeaponKit(player);
-            if (kits == null) return MessageConfig.PLACEHOLDER_NONE;
+            if (kits == null) return ScoreMessages.PLACEHOLDER_NONE;
             return kits.toString();
         }
 
