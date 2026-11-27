@@ -38,7 +38,7 @@
         <packetevents.version>2.14.0</packetevents.version>
         <placeholderapi.version>2.12.3</placeholderapi.version>
         <lombok.version>1.18.48</lombok.version>
-        <fawe.version>2.16.1</fawe.version>
+        <fawe.version>2.16.3</fawe.version>
     </properties>
 
     <build>
