@@ -93,7 +93,7 @@
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
-            <version>2.13.2</version>
+            <version>2.15.0</version>
             <scope>provided</scope>
         </dependency>
         <!-- SharedSidebar is part of the common Bukkit platform and must remain usable in the
