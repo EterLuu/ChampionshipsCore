@@ -18,7 +18,7 @@ jobs:
         options: --health-cmd "redis-cli ping" --health-interval 2s --health-timeout 2s --health-retries 15
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Set up JDK 25
       uses: actions/setup-java@v4
