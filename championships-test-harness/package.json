@@ -12,7 +12,7 @@
     "lease": "node src/lease-token.js"
   },
   "dependencies": {
-    "@wp2508/minecraft-protocol": "1.69.5",
+    "@wp2508/minecraft-protocol": "1.69.9",
     "@wp2508/prismarine-chunk": "1.41.6",
     "@wp2508/prismarine-physics": "1.12.4",
     "minecraft-data": "npm:@wp2508/minecraft-data@3.111.7",
