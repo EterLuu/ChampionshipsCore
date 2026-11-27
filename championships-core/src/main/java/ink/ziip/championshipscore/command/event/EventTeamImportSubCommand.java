@@ -40,9 +40,8 @@ public final class EventTeamImportSubCommand extends BaseSubCommand {
                 .runTaskAsynchronously(
                         plugin,
                         () -> {
-                            try {
-                                EventTeamImport imported =
-                                        EventCommandSupport.webClient().fetchTeamImport(args[0]);
+                            try (var client = EventCommandSupport.webClient()) {
+                                EventTeamImport imported = client.fetchTeamImport(args[0]);
                                 List<TeamImportEntry> teams =
                                         EventCommandSupport.validateImport(imported);
                                 plugin.getTeamManager()

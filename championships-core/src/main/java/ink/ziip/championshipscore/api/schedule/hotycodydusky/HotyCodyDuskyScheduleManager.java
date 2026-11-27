@@ -111,10 +111,11 @@ public class HotyCodyDuskyScheduleManager extends BaseManager implements FormalS
     }
 
     private boolean arrangeHotyCodyDuskyRounds(boolean showIntroduction) {
-        String map =
-                ink.ziip.championshipscore.api.schedule.FormalEventMapResolver.map(
-                        plugin, GameTypeEnum.HotyCodyDusky, 1);
-        if (map == null) return false;
+        var maps =
+                ink.ziip.championshipscore.api.schedule.FormalEventMapResolver.maps(
+                        plugin, GameTypeEnum.HotyCodyDusky);
+        if (maps.isEmpty()) return false;
+        String map = maps.get((subRound - 1) % maps.size());
         boolean started =
                 plugin.getGameManager()
                         .joinSingleTeamAreaForAllTeams(

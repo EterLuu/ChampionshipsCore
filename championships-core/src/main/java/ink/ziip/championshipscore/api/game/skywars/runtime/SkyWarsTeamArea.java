@@ -1245,7 +1245,12 @@ public class SkyWarsTeamArea extends BaseMultiTeamGameInstance {
             baseBlocks.add(
                     new BaseBlock(BukkitAdapter.asBlockState(new ItemStack(Material.GLASS))));
             editSession.replaceBlocks(region, baseBlocks, BlockTypes.AIR);
-        } catch (Exception ignored) {
+        } catch (Exception failure) {
+            plugin.getLogger()
+                    .log(
+                            java.util.logging.Level.WARNING,
+                            "Unable to clear SkyWars cage for " + player.getUniqueId(),
+                            failure);
         }
     }
 

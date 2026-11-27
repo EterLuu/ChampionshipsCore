@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.game.start;
 
 import ink.ziip.championshipscore.api.game.frostbite.runtime.FrostbiteArea;
 import ink.ziip.championshipscore.api.game.hotycodydusky.runtime.HotyCodyDuskyTeamArea;
+import ink.ziip.championshipscore.api.game.iamnotarobot.runtime.RobotArea;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.lasershowdown.runtime.LaserShowdownTeamArea;
 import ink.ziip.championshipscore.api.game.tntrun.runtime.TNTRunTeamArea;
@@ -17,6 +18,7 @@ public final class SubArenaSupport {
             return tnt.getGameConfig().getPlayerSpawnPoints().size();
         if (instance instanceof LaserShowdownTeamArea lasershowdown)
             return lasershowdown.getArenaCount();
+        if (instance instanceof RobotArea robot) return robot.getGameConfig().getLanes();
         if (instance instanceof FrostbiteArea) return 4;
         if (instance instanceof HotyCodyDuskyTeamArea hoty) return hoty.getGameConfig().getCopies();
         return 1;

@@ -20,7 +20,8 @@
 | common | 协议编解码、不可变快照、状态机与确定性 ID |
 | bingo-engine | 计分、排名、重放和结果哈希 |
 | platform-bukkit | 共享状态、文本、调度和任务机制 |
-| redis | 消息字段编解码与 namespace/消费组配置；实际发布和故障恢复另做 Redis 集成验收 |
+| redis | 消息编解码、消费组起点、重投次数和死信。传入 `-Dtest.redis.uri=redis://127.0.0.1:6379` 可在独立 Redis 测试实例运行集成用例，CI 已启用 |
+| Core 身份并发 | 在已初始化的隔离 MariaDB 数据库上设置 `-Dtest.mariadb.uri=jdbc:mariadb://…`、`CC_TEST_DB_USER`、`CC_TEST_DB_PASSWORD` | 同时提交不同身份及同一身份的首次登录，检查去重和重复登录的幂等性 |
 | Worker | manifest 接入、观察、停止、outbox 和世界生命周期 |
 | Core | 游戏、地图、DAILY、赛程、持久化与管理入口 |
 | auth-bridge / auth-proxy | 签名、账号事件、准入、身份解析、维护与故障回退 |

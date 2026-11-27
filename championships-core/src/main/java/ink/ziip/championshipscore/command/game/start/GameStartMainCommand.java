@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.api.game.start.GameStartArguments;
 import ink.ziip.championshipscore.api.game.start.GameStartRules;
 import ink.ziip.championshipscore.api.game.start.GameStartService;
 import ink.ziip.championshipscore.api.game.start.SubArenaSupport;
+import ink.ziip.championshipscore.api.schedule.FormalEventMapResolver;
 import ink.ziip.championshipscore.command.BaseSubCommand;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.presentation.text.CoreMessages;
@@ -84,6 +85,10 @@ public final class GameStartMainCommand extends BaseSubCommand {
             @NotNull Command command,
             @NotNull String label,
             @NotNull String[] args) {
+        return completeArguments(args, false);
+    }
+
+    public List<String> completeArguments(String[] args, boolean formal) {
         if (args.length < 1) return List.of();
         if (args.length == 1)
             return complete(
@@ -97,7 +102,11 @@ public final class GameStartMainCommand extends BaseSubCommand {
         var manager = plugin.getGameManager().getAreaManager(game);
         if (manager == null) return List.of();
         if (args.length == 2) {
-            List<String> maps = new ArrayList<>(manager.getAreaNameList());
+            List<String> maps =
+                    new ArrayList<>(
+                            formal
+                                    ? FormalEventMapResolver.selectableMaps(plugin, game)
+                                    : manager.getAreaNameList());
             maps.add("auto");
             return complete(maps, args[1]);
         }

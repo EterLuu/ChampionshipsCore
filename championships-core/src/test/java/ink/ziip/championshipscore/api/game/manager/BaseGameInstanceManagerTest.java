@@ -17,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.IntFunction;
 
 class BaseGameInstanceManagerTest {
     @TempDir Path directory;
@@ -45,7 +46,8 @@ class BaseGameInstanceManagerTest {
         var config = new ParkourTagConfig(plugin, "first");
         var first = area(config);
         var second = area(config);
-        var unrelated = area(new ParkourTagConfig(plugin, "other"));
+        // Ownership follows the registration even if two definitions share a config object.
+        var unrelated = area(config);
         manager.register("first", List.of(first, second));
         manager.register("other", List.of(unrelated));
         assertTrue(manager.detachAreaForRename("first"));
@@ -113,6 +115,63 @@ class BaseGameInstanceManagerTest {
         var replacement = area(config);
         manager.register("map", List.of(replacement));
         assertEquals(List.of(replacement), manager.getMapInstances("map"));
+    }
+
+    @Test
+    void failedPoolGrowthDisposesOnlyCopiesCreatedByThatAttempt() throws Exception {
+        var plugin = plugin();
+        var manager = new Manager(plugin);
+        var config = new ParkourTagConfig(plugin, "map");
+        var partial = area(config);
+        var failure = new IllegalStateException("copy construction failed");
+        IntFunction<Area> factory =
+                index -> {
+                    if (index == 2) throw failure;
+                    return partial;
+                };
+        var first = area(config);
+        assertSame(
+                failure,
+                assertThrows(
+                        IllegalStateException.class,
+                        () ->
+                                manager.createMapInstances(
+                                        "map",
+                                        3,
+                                        index -> index == 0 ? first : factory.apply(index))));
+        assertEquals(1, first.disposals);
+        assertEquals(1, partial.disposals);
+        assertNull(manager.getArea("map"));
+
+        var original = area(config);
+        manager.register("map", List.of(original));
+        assertSame(
+                failure,
+                assertThrows(
+                        IllegalStateException.class,
+                        () -> manager.resizeMapInstances("map", 3, factory)));
+        assertEquals(2, partial.disposals);
+        assertEquals(0, original.disposals);
+        assertEquals(List.of(original), manager.getMapInstances("map"));
+    }
+
+    @Test
+    void aRetiringActiveCopyStillPreventsEditingUntilItCanBeDisposed() throws Exception {
+        var plugin = plugin();
+        var manager = new Manager(plugin);
+        var config = new ParkourTagConfig(plugin, "map");
+        var first = area(config);
+        var active = area(config);
+        manager.register("map", List.of(first, active));
+        active.stage = GameStageEnum.PROGRESS;
+        assertEquals(List.of(first), manager.resizeMapInstances("map", 1, index -> fail()));
+        assertFalse(manager.canEditMap("map"));
+        assertFalse(manager.canRenameArea("map"));
+        assertEquals(0, active.disposals);
+        active.stage = GameStageEnum.WAITING;
+        assertEquals(List.of(first), manager.resizeMapInstances("map", 1, index -> fail()));
+        assertTrue(manager.canEditMap("map"));
+        assertEquals(1, active.disposals);
     }
 
     private ChampionshipsCore plugin() throws Exception {

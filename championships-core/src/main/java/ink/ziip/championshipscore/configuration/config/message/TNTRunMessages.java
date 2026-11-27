@@ -41,4 +41,13 @@ public final class TNTRunMessages {
 
     @ConfigOption(path = "tntrun.tnt-rain-count-down")
     public static String TNT_RUN_TNT_RAIN_COUNT_DOWN;
+
+    @ConfigOption(path = "tntrun.elytra-removal-warning")
+    public static String TNT_RUN_ELYTRA_REMOVAL_WARNING;
+
+    @ConfigOption(path = "tntrun.elytra-removal-count-down")
+    public static String TNT_RUN_ELYTRA_REMOVAL_COUNT_DOWN;
+
+    @ConfigOption(path = "tntrun.elytra-removed")
+    public static String TNT_RUN_ELYTRA_REMOVED;
 }

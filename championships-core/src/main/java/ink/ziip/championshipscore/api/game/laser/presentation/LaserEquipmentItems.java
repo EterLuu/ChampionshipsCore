@@ -1,9 +1,11 @@
 package ink.ziip.championshipscore.api.game.laser.presentation;
 
+import ink.ziip.championshipscore.api.game.arena.GamePickup;
 import ink.ziip.championshipscore.configuration.config.message.ConfiguredGui;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.JoinConfiguration;
 
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -25,7 +27,19 @@ public final class LaserEquipmentItems {
     public static ItemStack box(String type, NamespacedKey marker) {
         if (!BOX_TYPES.contains(type))
             throw new IllegalArgumentException("Unknown LaserBox equipment: " + type);
-        return create("laserbox", type, marker, false);
+        ItemStack item = create("laserbox", type, marker, false);
+        item.editMeta(
+                meta -> {
+                    var lore = meta.lore();
+                    if (meta.hasDisplayName() && lore != null && !lore.isEmpty())
+                        meta.displayName(
+                                GamePickup.heldName(
+                                        meta.displayName(),
+                                        Component.join(
+                                                JoinConfiguration.separator(Component.space()),
+                                                lore)));
+                });
+        return item;
     }
 
     public static ItemStack showdownSelector(NamespacedKey marker) {

@@ -10,7 +10,6 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.*;
 
 public final class CCLogManager implements AutoCloseable {
@@ -61,8 +60,11 @@ public final class CCLogManager implements AutoCloseable {
     private static final class AsyncHandler extends Handler {
         private final Path current, archives;
         private final Logger console;
-        private final BlockingQueue<Item> queue = new LinkedBlockingQueue<>();
-        private final AtomicBoolean accepting = new AtomicBoolean(true);
+        private final BlockingQueue<Item> queue = new ArrayBlockingQueue<>(8192);
+        private volatile boolean accepting = true;
+        private final java.util.concurrent.atomic.AtomicLong dropped =
+                new java.util.concurrent.atomic.AtomicLong();
+        private final SimpleFormatter messages = new SimpleFormatter();
         private final Thread thread;
         private BufferedWriter writer;
         private long bytes;
@@ -88,26 +90,36 @@ public final class CCLogManager implements AutoCloseable {
         }
 
         void publish(LogRecord record, boolean showInConsole) {
-            if (record == null || !isLoggable(record) || !accepting.get()) return;
-            queue.offer(
-                    new Entry(
-                            record.getInstant(),
-                            record.getLevel(),
-                            Thread.currentThread().getName(),
-                            Objects.toString(record.getMessage(), ""),
-                            record.getThrown()));
+            if (record == null || !isLoggable(record)) return;
+            String message = messages.formatMessage(record);
+            synchronized (queue) {
+                if (accepting
+                        && !queue.offer(
+                                new Entry(
+                                        record.getInstant(),
+                                        record.getLevel(),
+                                        Thread.currentThread().getName(),
+                                        message,
+                                        record.getThrown()))) dropped.incrementAndGet();
+            }
             if (showInConsole)
                 console.log(
-                        record.getLevel(),
-                        "[ChampionshipsCore] " + record.getMessage(),
-                        record.getThrown());
+                        record.getLevel(), "[ChampionshipsCore] " + message, record.getThrown());
+        }
+
+        private void reportDropped() {
+            long count = dropped.getAndSet(0);
+            if (count > 0)
+                console.warning(
+                        "[ChampionshipsCore] File log queue full, dropped " + count + " records");
         }
 
         @Override
         public void flush() {
-            if (!accepting.get()) return;
             CountDownLatch latch = new CountDownLatch(1);
-            queue.offer(new Barrier(latch));
+            synchronized (queue) {
+                if (!accepting || !queue.offer(new Barrier(latch))) return;
+            }
             try {
                 latch.await(5, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
@@ -117,8 +129,10 @@ public final class CCLogManager implements AutoCloseable {
 
         @Override
         public void close() {
-            if (!accepting.compareAndSet(true, false)) return;
-            queue.offer(Stop.INSTANCE);
+            synchronized (queue) {
+                accepting = false;
+                queue.offer(Stop.INSTANCE);
+            }
             try {
                 thread.join(10_000);
             } catch (InterruptedException e) {
@@ -134,6 +148,7 @@ public final class CCLogManager implements AutoCloseable {
                 long lastFlush = System.nanoTime();
                 while (!stop) {
                     Item item = queue.poll(1, TimeUnit.SECONDS);
+                    if (item == null && !accepting) break;
                     if (item instanceof Entry entry) write(entry);
                     else if (item instanceof Barrier barrier) {
                         writer.flush();
@@ -144,6 +159,7 @@ public final class CCLogManager implements AutoCloseable {
                     long now = System.nanoTime();
                     if (!stop && (item == null || now - lastFlush >= TimeUnit.SECONDS.toNanos(1))) {
                         writer.flush();
+                        reportDropped();
                         lastFlush = now;
                     }
                 }
@@ -158,6 +174,13 @@ public final class CCLogManager implements AutoCloseable {
             } catch (Exception e) {
                 console.log(Level.SEVERE, "[ChampionshipsCore] asynchronous log write failed", e);
             } finally {
+                synchronized (queue) {
+                    accepting = false;
+                    Item pending;
+                    while ((pending = queue.poll()) != null)
+                        if (pending instanceof Barrier barrier) barrier.latch.countDown();
+                }
+                reportDropped();
                 try {
                     if (writer != null) writer.close();
                 } catch (IOException ignored) {

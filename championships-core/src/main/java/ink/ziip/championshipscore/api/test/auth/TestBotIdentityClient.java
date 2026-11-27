@@ -5,12 +5,13 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 
+import ink.ziip.championshipscore.auth.SignedRequests;
+
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -19,16 +20,12 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-
 /** Calls the cc-web TEST_HARNESS API without accepting UUIDs from the Bot client. */
-public final class TestBotIdentityClient {
+public final class TestBotIdentityClient implements AutoCloseable {
     private static final String PATH = "/api/internal/test/bots/leases";
     private final URI baseUri;
-    private final String keyId;
-    private final byte[] secret;
     private final HttpClient client;
+    private final SignedRequests requests;
     private final Duration timeout;
     private final Gson gson = new Gson();
 
@@ -41,22 +38,8 @@ public final class TestBotIdentityClient {
             Duration requestTimeout) {
         if (baseUrl == null || baseUrl.isBlank())
             throw new IllegalArgumentException("Bot identity API URL is blank");
-        this.baseUri =
-                URI.create(
-                        baseUrl.endsWith("/")
-                                ? baseUrl.substring(0, baseUrl.length() - 1)
-                                : baseUrl);
-        if (!"http".equalsIgnoreCase(baseUri.getScheme())
-                && !"https".equalsIgnoreCase(baseUri.getScheme()))
-            throw new IllegalArgumentException("Bot identity API URL must use HTTP or HTTPS");
-        if ("http".equalsIgnoreCase(baseUri.getScheme())
-                && !allowInsecurePrivateHttp
-                && !isLoopback(baseUri.getHost()))
-            throw new IllegalArgumentException("Non-loopback HTTP requires explicit opt-in");
-        this.keyId = keyId;
-        this.secret = secret.getBytes(StandardCharsets.UTF_8);
-        if (this.secret.length < 32)
-            throw new IllegalArgumentException("Bot identity HMAC secret is too short");
+        this.baseUri = SignedRequests.baseUri(baseUrl, allowInsecurePrivateHttp);
+        this.requests = new SignedRequests(keyId, secret);
         this.client = HttpClient.newBuilder().connectTimeout(connectTimeout).build();
         this.timeout = requestTimeout;
     }
@@ -75,19 +58,7 @@ public final class TestBotIdentityClient {
         payload.put("ttlSeconds", ttlSeconds);
         payload.put("usernames", usernames);
         String body = gson.toJson(payload);
-        String timestamp = Long.toString(System.currentTimeMillis());
-        String requestId = UUID.randomUUID().toString();
-        HttpRequest request =
-                HttpRequest.newBuilder(baseUri.resolve(PATH))
-                        .timeout(timeout)
-                        .header("Content-Type", "application/json")
-                        .header("Accept", "application/json")
-                        .header("X-CC-Key-Id", keyId)
-                        .header("X-CC-Timestamp", timestamp)
-                        .header("X-CC-Request-Id", requestId)
-                        .header("X-CC-Signature", sign("POST", PATH, timestamp, requestId, body))
-                        .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
-                        .build();
+        HttpRequest request = requests.post(baseUri.resolve(PATH), timeout, body);
         HttpResponse<String> response =
                 client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         if (response.statusCode() < 200 || response.statusCode() >= 300)
@@ -130,33 +101,10 @@ public final class TestBotIdentityClient {
         return List.copyOf(result);
     }
 
-    private String sign(String method, String path, String timestamp, String requestId, String body)
-            throws Exception {
-        byte[] bodyHash =
-                MessageDigest.getInstance("SHA-256").digest(body.getBytes(StandardCharsets.UTF_8));
-        Mac mac = Mac.getInstance("HmacSHA256");
-        mac.init(new SecretKeySpec(secret, "HmacSHA256"));
-        return java.util.HexFormat.of()
-                .formatHex(
-                        mac.doFinal(
-                                (method
-                                                + "\n"
-                                                + path
-                                                + "\n"
-                                                + timestamp
-                                                + "\n"
-                                                + requestId
-                                                + "\n"
-                                                + java.util.HexFormat.of().formatHex(bodyHash))
-                                        .getBytes(StandardCharsets.UTF_8)));
-    }
-
-    private static boolean isLoopback(String host) {
-        return "localhost".equalsIgnoreCase(host)
-                || "127.0.0.1".equals(host)
-                || "::1".equals(host)
-                || "[::1]".equals(host);
-    }
-
     public record Lease(String username, String token) {}
+
+    @Override
+    public void close() {
+        client.shutdownNow();
+    }
 }

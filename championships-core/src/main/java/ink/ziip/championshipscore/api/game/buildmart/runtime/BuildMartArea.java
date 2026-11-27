@@ -111,6 +111,8 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
     /** Parsed base geometry cached by seat, so the move handler doesn't re-derive it per step. */
     private final Map<Integer, BuildMartBase> baseCache = new HashMap<>();
 
+    private final Map<UUID, Location> playerSpawns = new HashMap<>();
+
     private final BuildMartMaterialDisplays materialDisplays = new BuildMartMaterialDisplays();
     private MapView equipmentMap;
 
@@ -197,6 +199,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         normalSequenceCursors.clear();
         seatByTeam.clear();
         baseCache.clear();
+        playerSpawns.clear();
         currentGolden = null;
         goldenConfirmation.clear();
         goldenBlueprintScheduler = null;
@@ -347,11 +350,21 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
     private void assignTeamSeats() {
         seatByTeam.clear();
         baseCache.clear();
+        playerSpawns.clear();
         int seat = 0;
         for (ChampionshipTeam team : gameTeams) {
             seatByTeam.put(team, seat);
             BuildMartBase base = getGameConfig().getSeatBase(seat);
             if (base != null) baseCache.put(seat, base);
+            int assignedSeat = seat;
+            playerSpawns.putAll(
+                    TeleportPositions.getTeamSpawnLocations(
+                            teamBaseSpawn(team),
+                            gamePlayers.stream().filter(team::isTeamMember).toList(),
+                            location ->
+                                    base != null
+                                            ? getGameConfig().isInBase(location, assignedSeat)
+                                            : getGameConfig().isInHub(location)));
             seat++;
         }
     }
@@ -1192,24 +1205,24 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
         }
     }
 
-    /** Teleports each participating team to its seat's configured portal landing point. */
+    /** Teleports participants to their reserved positions on their team's base platform. */
     private void teleportTeamsToBases() {
-        Location hub = getGameConfig().getHubPortalPoint();
-        for (ChampionshipTeam team : gameTeams) {
-            Integer seat = seatByTeam.get(team);
-            BuildMartBase base = seat == null ? null : baseCache.get(seat);
-            Location target =
-                    base != null && base.getPortalPoint() != null ? base.getPortalPoint() : hub;
-            if (target == null) target = getSpectatorSpawnLocation();
-            int playerIndex = 0;
-            for (Player player : team.getOnlinePlayers()) {
-                if (gamePlayers.contains(player.getUniqueId())) {
-                    player.teleport(
-                            TeleportPositions.getCollisionSafeTeleportLocation(
-                                    target, playerIndex++));
-                }
-            }
+        for (UUID uuid : gamePlayers) {
+            Player player = Bukkit.getPlayer(uuid);
+            Location target = playerBaseSpawn(uuid);
+            if (player != null && target != null) player.teleport(target);
         }
+    }
+
+    @Override
+    public void dispose() {
+        playerSpawns.clear();
+        super.dispose();
+    }
+
+    Location playerBaseSpawn(UUID player) {
+        Location location = playerSpawns.get(player);
+        return location == null ? null : location.clone();
     }
 
     private Location teamBaseSpawn(ChampionshipTeam team) {
@@ -1311,7 +1324,7 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
                     Location target =
                             getGameStageEnum() == GameStageEnum.PREPARATION
                                             || getGameStageEnum() == GameStageEnum.COUNTDOWN
-                                    ? teamBaseSpawn(plugin.getTeamManager().getTeamByPlayer(player))
+                                    ? playerBaseSpawn(player.getUniqueId())
                                     : getGameConfig().getHubPortalPoint();
                     if (target != null) player.teleport(target);
                 },
@@ -1332,13 +1345,14 @@ public class BuildMartArea extends BaseMultiTeamGameInstance {
             Location target =
                     isIntroductionPhase()
                             ? getPreparationTeleportLocation(getSpectatorSpawnLocation())
-                            : teamBaseSpawn(plugin.getTeamManager().getTeamByPlayer(player));
-            player.teleport(target);
+                            : playerBaseSpawn(player.getUniqueId());
+            if (target != null) player.teleport(target);
             player.setGameMode(GameMode.ADVENTURE);
             return;
         }
         if (stage == GameStageEnum.COUNTDOWN || stage == GameStageEnum.PROGRESS) {
-            Location target = teamBaseSpawn(plugin.getTeamManager().getTeamByPlayer(player));
+            Location target = playerBaseSpawn(player.getUniqueId());
+            if (target == null) return;
             player.teleport(target);
             player.setGameMode(GameMode.SURVIVAL);
             player.setAllowFlight(!getGameConfig().isInHub(target));

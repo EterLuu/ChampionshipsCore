@@ -12,6 +12,8 @@ import ink.ziip.championshipscore.api.schedule.buildmart.BuildMartScheduleManage
 import ink.ziip.championshipscore.api.schedule.frostbite.FrostbiteScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.frostbite.FrostbiteScheduleManager;
 import ink.ziip.championshipscore.api.schedule.hotycodydusky.HotyCodyDuskyScheduleManager;
+import ink.ziip.championshipscore.api.schedule.iamnotarobot.RobotScheduleHandler;
+import ink.ziip.championshipscore.api.schedule.iamnotarobot.RobotScheduleManager;
 import ink.ziip.championshipscore.api.schedule.laserbox.LaserBoxScheduleManager;
 import ink.ziip.championshipscore.api.schedule.lasershowdown.LaserShowdownScheduleHandler;
 import ink.ziip.championshipscore.api.schedule.lasershowdown.LaserShowdownScheduleManager;
@@ -82,6 +84,17 @@ final class FormalScheduleRegistry {
                 GameTypeEnum.FrostbiteFrenzy,
                 plugin ->
                         new FrostbiteScheduleManager(plugin, new FrostbiteScheduleHandler(plugin)));
+        factories.put(
+                GameTypeEnum.CraftingFeast,
+                plugin ->
+                        new ink.ziip.championshipscore.api.schedule.craftingfeast
+                                .CraftingFeastScheduleManager(
+                                plugin,
+                                new ink.ziip.championshipscore.api.schedule.craftingfeast
+                                        .CraftingFeastScheduleHandler(plugin)));
+        factories.put(
+                GameTypeEnum.IAmNotARobot,
+                plugin -> new RobotScheduleManager(plugin, new RobotScheduleHandler(plugin)));
         factories.put(GameTypeEnum.LaserBox, plugin -> new LaserBoxScheduleManager(plugin));
         FACTORIES = Map.copyOf(factories);
     }

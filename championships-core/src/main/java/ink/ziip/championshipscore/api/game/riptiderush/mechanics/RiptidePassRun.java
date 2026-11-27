@@ -11,6 +11,7 @@ import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideCoursePlann
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.config.message.RiptideRushMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
+import ink.ziip.championshipscore.util.world.NativePiston;
 
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -85,7 +86,7 @@ public final class RiptidePassRun implements AutoCloseable {
                 active.sideWalls().stream()
                         .map(w -> RiptideMovingWall.compile(geometry, w, obstacle))
                         .toList();
-        RiptideNativePiston.prepare();
+        NativePiston.prepare();
         if (active.sideMath()) {
             answerFloor =
                     new RiptideColorFloorPlatform(geometry, geometry.stoppedStep(active.step()));
@@ -97,7 +98,7 @@ public final class RiptidePassRun implements AutoCloseable {
 
     public List<Answer> tick(Collection<Player> players) {
         if (active == null) return List.of();
-        for (var block : pistons) RiptideNativePiston.settle(block);
+        for (var block : pistons) NativePiston.settle(block);
         var answers = new ArrayList<Answer>();
         var frame = RiptideSideSweep.frame(tick, active.sideWalls(), geometry.halfWidth(), speed);
         render(frame);
@@ -186,8 +187,7 @@ public final class RiptidePassRun implements AutoCloseable {
         var facing =
                 delta == 0
                         ? null
-                        : RiptideNativePiston.facing(
-                                delta * geometry.stepZ(), -delta * geometry.stepX());
+                        : NativePiston.facing(delta * geometry.stepZ(), -delta * geometry.stepX());
         restoreBlocks();
         var adapted = BukkitAdapter.adapt(world);
         try {
@@ -203,7 +203,7 @@ public final class RiptidePassRun implements AutoCloseable {
                 blocks.add(block.getState());
                 if (facing != null) {
                     pistons.add(block);
-                    RiptideNativePiston.move(block, BukkitAdapter.adapt(cell.block()), facing);
+                    NativePiston.move(block, BukkitAdapter.adapt(cell.block()), facing);
                 } else {
                     block.setBlockData(BukkitAdapter.adapt(cell.block()), false);
                 }
@@ -225,7 +225,7 @@ public final class RiptidePassRun implements AutoCloseable {
     private void restoreBlocks() {
         // Remove ticking entities first so they cannot finish by replacing restored scenery with
         // slime.
-        for (var block : pistons) RiptideNativePiston.remove(block);
+        for (var block : pistons) NativePiston.remove(block);
         pistons.clear();
         for (var block : blocks) block.update(true, false);
         blocks.clear();

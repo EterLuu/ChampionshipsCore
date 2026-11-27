@@ -43,3 +43,12 @@ test('an indefinite window requires a control file', async () => {
   await assert.rejects(waitForWindow(Infinity, null, f.timers, f.exists), /indefinite window requires a stop file/);
   assert.deepEqual(f.cleared, []);
 });
+
+test('aborting a resident window releases its timers without waiting for a file', async () => {
+  const f = fixture();
+  const controller = new AbortController();
+  const result = waitForWindow(Infinity, '/tmp/finish', f.timers, f.exists, controller.signal);
+  controller.abort(new Error('session failed'));
+  await assert.rejects(result, /session failed/);
+  assert.deepEqual(f.cleared, ['poll']);
+});

@@ -1,17 +1,14 @@
 package ink.ziip.championshipscore.util.glow;
 
-import com.comphenix.protocol.PacketType;
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.ProtocolManager;
-import com.comphenix.protocol.events.ListenerPriority;
-import com.comphenix.protocol.events.PacketAdapter;
-import com.comphenix.protocol.events.PacketContainer;
-import com.comphenix.protocol.events.PacketEvent;
-import com.comphenix.protocol.wrappers.WrappedDataValue;
-import com.comphenix.protocol.wrappers.WrappedDataWatcher;
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.event.*;
+import com.github.retrooper.packetevents.protocol.entity.data.*;
+import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityMetadata;
 
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
+import ink.ziip.championshipscore.platform.bukkit.player.NativeEntityPackets;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
@@ -30,7 +27,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Per-viewer entity glowing built on ProtocolLib. Making an entity glow only for a chosen viewer
+ * Per-viewer entity glowing using PacketEvents. Making an entity glow only for a chosen viewer
  * requires editing the outgoing entity-metadata stream for that viewer alone, which is why this
  * can't be done with the global {@link Entity#setGlowing(boolean)}.
  *
@@ -51,7 +48,6 @@ public class GlowingEntities implements Listener {
     private static final int SHARED_FLAGS_INDEX = 0;
 
     private final @NotNull Plugin plugin;
-    private final ProtocolManager protocolManager;
 
     /** Viewer UUID → the entity ids currently made to glow for that viewer. */
     private final Map<UUID, Set<Integer>> glowing = new ConcurrentHashMap<>();
@@ -59,12 +55,11 @@ public class GlowingEntities implements Listener {
     /** Viewer UUID → entity ids rendered as an invisible glowing outline for that viewer. */
     private final Map<UUID, Set<Integer>> invisibleGlowing = new ConcurrentHashMap<>();
 
-    private PacketAdapter metadataListener;
+    private PacketListenerAbstract metadataListener;
     private boolean enabled;
 
     public GlowingEntities(@NotNull Plugin plugin) {
         this.plugin = plugin;
-        this.protocolManager = ProtocolLibrary.getProtocolManager();
         enable();
     }
 
@@ -75,33 +70,40 @@ public class GlowingEntities implements Listener {
         // OR-ing the glow bit into the flags so the server's own metadata updates keep the glow
         // alive.
         metadataListener =
-                new PacketAdapter(
-                        plugin, ListenerPriority.HIGH, PacketType.Play.Server.ENTITY_METADATA) {
+                new PacketListenerAbstract(PacketListenerPriority.HIGH) {
                     @Override
-                    public void onPacketSending(PacketEvent event) {
-                        PacketContainer packet = event.getPacket();
-                        byte forcedFlags =
-                                forcedFlags(
-                                        event.getPlayer().getUniqueId(),
-                                        packet.getIntegers().read(0));
-                        if (forcedFlags == 0) return;
-                        // Metadata packets may be reused for multiple recipients. Mutating that
-                        // shared packet would
-                        // leak one viewer's invisible/glowing flags to the target player and
-                        // unrelated viewers.
-                        PacketContainer viewerPacket = packet.deepClone();
-                        injectFlags(viewerPacket, forcedFlags);
-                        event.setPacket(viewerPacket);
+                    public void onPacketSend(PacketSendEvent event) {
+                        if (event.getPacketType() != PacketType.Play.Server.ENTITY_METADATA) return;
+                        var packet = new WrapperPlayServerEntityMetadata(event);
+                        byte forced = forcedFlags(event.getUser().getUUID(), packet.getEntityId());
+                        if (forced == 0) return;
+                        var entries =
+                                new java.util.ArrayList<EntityData<?>>(packet.getEntityMetadata());
+                        for (int i = 0; i < entries.size(); i++) {
+                            var entry = entries.get(i);
+                            if (entry.getIndex() == SHARED_FLAGS_INDEX
+                                    && entry.getValue() instanceof Byte flags) {
+                                entries.set(
+                                        i,
+                                        new EntityData<>(
+                                                SHARED_FLAGS_INDEX,
+                                                EntityDataTypes.BYTE,
+                                                (byte) (flags | forced)));
+                                packet.setEntityMetadata(entries);
+                                return;
+                            }
+                        }
                     }
                 };
-        protocolManager.addPacketListener(metadataListener);
+        PacketEvents.getAPI().getEventManager().registerListener(metadataListener);
         Bukkit.getPluginManager().registerEvents(this, plugin);
         enabled = true;
     }
 
     public void disable() {
         if (!enabled) return;
-        if (metadataListener != null) protocolManager.removePacketListener(metadataListener);
+        if (metadataListener != null)
+            PacketEvents.getAPI().getEventManager().unregisterListener(metadataListener);
         HandlerList.unregisterAll(this);
         glowing.clear();
         invisibleGlowing.clear();
@@ -152,17 +154,22 @@ public class GlowingEntities implements Listener {
      * it.
      */
     private void sendFlags(Player receiver, Entity entity) {
-        byte flags =
-                (byte)
-                        (baseFlags(entity)
-                                | forcedFlags(receiver.getUniqueId(), entity.getEntityId()));
-        PacketContainer packet =
-                protocolManager.createPacket(PacketType.Play.Server.ENTITY_METADATA);
-        packet.getIntegers().write(0, entity.getEntityId());
-        WrappedDataValue value = new WrappedDataValue(SHARED_FLAGS_INDEX, byteSerializer(), flags);
-        packet.getDataValueCollectionModifier().write(0, List.of(value));
         try {
-            protocolManager.sendServerPacket(receiver, packet);
+            byte flags =
+                    (byte)
+                            (NativeEntityPackets.sharedFlags(entity)
+                                    | forcedFlags(receiver.getUniqueId(), entity.getEntityId()));
+            PacketEvents.getAPI()
+                    .getPlayerManager()
+                    .sendPacket(
+                            receiver,
+                            new WrapperPlayServerEntityMetadata(
+                                    entity.getEntityId(),
+                                    List.of(
+                                            new EntityData<>(
+                                                    SHARED_FLAGS_INDEX,
+                                                    EntityDataTypes.BYTE,
+                                                    flags))));
         } catch (Exception e) {
             plugin.getLogger()
                     .warning(
@@ -174,21 +181,6 @@ public class GlowingEntities implements Listener {
         }
     }
 
-    /**
-     * OR-ins viewer-specific flags into outgoing metadata while preserving the entity's real flags.
-     */
-    private void injectFlags(PacketContainer packet, byte forcedFlags) {
-        List<WrappedDataValue> values = packet.getDataValueCollectionModifier().read(0);
-        for (WrappedDataValue value : values) {
-            if (value.getIndex() == SHARED_FLAGS_INDEX && value.getValue() instanceof Byte flags) {
-                value.setValue((byte) (flags | forcedFlags));
-                return;
-            }
-        }
-        // Partial metadata updates retain the client's last flags. An invented flags byte here
-        // would erase real invisibility, swimming, sprinting and other unrelated entity state.
-    }
-
     private byte forcedFlags(@NotNull UUID receiver, int entityId) {
         byte flags = 0;
         Set<Integer> glowingIds = glowing.get(receiver);
@@ -196,32 +188,6 @@ public class GlowingEntities implements Listener {
         Set<Integer> outlinedIds = invisibleGlowing.get(receiver);
         if (outlinedIds != null && outlinedIds.contains(entityId))
             flags |= INVISIBLE_FLAG | GLOWING_FLAG;
-        return flags;
-    }
-
-    /**
-     * The serializer for the shared-flags byte. Resolved through the {@link java.lang.reflect.Type}
-     * overload because the {@code Class}-typed ones are deprecated for removal.
-     */
-    private static WrappedDataWatcher.Serializer byteSerializer() {
-        return WrappedDataWatcher.Registry.get((java.lang.reflect.Type) Byte.class);
-    }
-
-    /**
-     * Rebuilds the entity's shared-flags byte from Bukkit state so the immediate packet doesn't
-     * drop them.
-     */
-    private static byte baseFlags(Entity entity) {
-        byte flags = 0;
-        if (entity.getFireTicks() > 0) flags |= 0x01;
-        if (entity instanceof Player player) {
-            if (player.isSneaking()) flags |= 0x02;
-            if (player.isSprinting()) flags |= 0x08;
-            if (player.isSwimming()) flags |= 0x10;
-            if (player.isGliding()) flags |= (byte) 0x80;
-        }
-        if (entity.isInvisible()) flags |= INVISIBLE_FLAG;
-        if (entity.isGlowing()) flags |= GLOWING_FLAG;
         return flags;
     }
 }

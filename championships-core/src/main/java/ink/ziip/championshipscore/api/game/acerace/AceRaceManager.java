@@ -4,14 +4,12 @@ import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.acerace.config.AceRaceConfig;
 import ink.ziip.championshipscore.api.game.acerace.runtime.AceRaceArea;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
-import ink.ziip.championshipscore.configuration.config.CCConfig;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 
 import org.bukkit.GameRules;
 import org.bukkit.World;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 
 public class AceRaceManager extends BaseGameInstanceManager<AceRaceArea> {
 
@@ -48,12 +46,13 @@ public class AceRaceManager extends BaseGameInstanceManager<AceRaceArea> {
     }
 
     private void createInstances(String mapName, AceRaceConfig config) {
-        int count = Math.max(1, CCConfig.DAILY_ACERACE_CONCURRENT_INSTANCES);
-        List<AceRaceArea> instances = new ArrayList<>(count);
-        for (int copyIndex = 0; copyIndex < count; copyIndex++) {
-            instances.add(new AceRaceArea(plugin, config, copyIndex, false));
-        }
-        registerMapInstances(mapName, instances);
+        createMapInstances(
+                mapName,
+                plugin.getConfigurationManager()
+                        .getCCConfig()
+                        .dailyGame(GameTypeEnum.AceRace)
+                        .concurrentInstances(),
+                index -> new AceRaceArea(plugin, config, index, false));
     }
 
     @Override

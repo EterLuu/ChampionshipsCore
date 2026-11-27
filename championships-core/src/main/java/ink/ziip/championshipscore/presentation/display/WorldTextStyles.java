@@ -10,6 +10,12 @@ public final class WorldTextStyles {
     public static final String PATH = "presentation.world-text";
 
     public enum Profile {
+        CRAFTING_FEAST_STATION("crafting-feast-station"),
+        CRAFTING_FEAST_BOARD("crafting-feast-board"),
+        CRAFTING_FEAST_SUPPLY("crafting-feast-supply"),
+        CRAFTING_FEAST_TUTORIAL("crafting-feast-tutorial"),
+        ROBOT_WAREHOUSE_BARREL("robot-warehouse-barrel"),
+        ROBOT_SLIDER_STATUS("robot-slider-status"),
         ACE_RACE_NAME("ace-race-name"),
         BUILD_MART_MATERIALS("build-mart-materials"),
         RIPTIDE_INSTRUCTION("riptide-instruction"),

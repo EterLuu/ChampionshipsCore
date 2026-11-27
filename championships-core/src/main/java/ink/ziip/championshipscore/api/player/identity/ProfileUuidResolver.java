@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 /**
  * Resolves the standard Yggdrasil/Mojang name-profile response without creating a login session.
  */
-public final class ProfileUuidResolver {
+public final class ProfileUuidResolver implements AutoCloseable {
     private static final Pattern PROFILE_ID =
             Pattern.compile("\\\"id\\\"\\s*:\\s*\\\"([0-9a-fA-F-]{32,36})\\\"");
     private static final Pattern PROFILE_NAME =
@@ -168,5 +168,10 @@ public final class ProfileUuidResolver {
                     "Profile API URL must not include a query or fragment");
         }
         return base;
+    }
+
+    @Override
+    public void close() {
+        client.shutdownNow();
     }
 }

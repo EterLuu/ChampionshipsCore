@@ -14,8 +14,8 @@ const TEXT_PACKET_NAMES = new Set([
 
 const DEFAULT_MARKERS = Object.freeze({
   END: [/winner/i, /won the game/i, /finished/i, /complete/i, /results?/i, /结算/, /获胜/, /本场结束/, /比赛结束/, /游戏结束/, /已结束/],
-  PROGRESS: [/^go!?$/i, /playing/i, /in progress/i, /round/i, /回合/, /比赛开始/, /游戏开始/, /开始生存/, /开始建造/, /开始挑战/, /开始探索/, /追击开始/, /开球/],
-  COUNTDOWN: [/countdown/i, /starting in/i, /starts? in/i, /将在.{0,12}(秒|second)/i, /准备\s*[0-9]+(?:秒)?$/, /倒计时/, /倒数/],
+  PROGRESS: [/^go!?$/i, /playing/i, /in progress/i, /\bround\s+\d+\b/i, /回合\s*\d+/, /比赛开始/, /游戏开始/, /开始生存/, /开始建造/, /开始挑战/, /开始探索/, /卡片已发放/, /(?:^|[•\s])开赛$/, /追击开始/, /开球/],
+  COUNTDOWN: [/countdown/i, /starting in/i, /starts? in/i, /将在.{0,12}(秒|second)/i, /准备\s*[0-9]+(?:秒)?$/, /即将开始/, /倒计时/, /倒数/],
   PREPARATION: [/preparation/i, /prepare players/i, /准备阶段/, /(?:开始|进入)准备/, /准备(入场|开战|开始|探索|建造|出发|挑战|开工)/, /确认(路线|赛道|分工|场地)/, /选择装备/, /出生岛就位/],
   VOTING: [/vote/i, /voting/i, /map selection/i, /投票/, /地图选择/],
   WAITING: [/waiting/i, /lobby/i, /queue/i, /join/i, /等待/, /大厅/, /排队/],
@@ -32,10 +32,10 @@ function textOf(value, output = []) {
     return output;
   }
   if (typeof value === 'object') {
-    for (const [key, item] of Object.entries(value)) {
-      if (['signature', 'salt', 'timestamp', 'uuid', 'sender'].includes(key)) continue;
-      textOf(item, output);
-    }
+    if (typeof value.type === 'string' && Object.hasOwn(value, 'value')) return textOf(value.value, output);
+    // Style, hover/click actions and sender metadata are not visible lifecycle announcements.
+    for (const key of ['content', 'windowTitle', 'title', 'text', 'translate', 'with', 'extra'])
+      if (Object.hasOwn(value, key)) textOf(value[key], output);
   }
   return output;
 }
@@ -52,7 +52,7 @@ function roundOfText(text) {
 }
 
 function compileMarkers(markers = {}) {
-  const result = {};
+  const result = { activePlay: markers.activePlay };
   for (const phase of Object.keys(DEFAULT_MARKERS)) {
     const values = markers[phase] || DEFAULT_MARKERS[phase];
     result[phase] = values.map(value => value instanceof RegExp ? value : new RegExp(String(value), 'i'));
@@ -62,6 +62,7 @@ function compileMarkers(markers = {}) {
 
 function phaseForText(text, markers) {
   if (!text) return null;
+  if (markers.activePlay?.test(text)) return PHASES.PROGRESS;
   // Countdown text often contains the word “开始”; classify it before the
   // progress markers so a resident Bot does not start moving early.
   for (const phase of [PHASES.END, PHASES.COUNTDOWN, PHASES.PROGRESS, PHASES.PREPARATION, PHASES.VOTING, PHASES.WAITING]) {
@@ -91,15 +92,16 @@ class PhaseTracker {
   }
 
   observe(packetName, packet) {
-    const text = TEXT_PACKET_NAMES.has(packetName) ? packetText(packet) : '';
+    const text = TEXT_PACKET_NAMES.has(packetName)
+      ? packetText(packet.content ?? packet.text ?? packet.windowTitle ?? packet) : '';
     const round = roundOfText(text);
     if (round != null && round !== this.round) {
       this.round = round;
       this.roundHistory.push(round);
     }
-    const inferred = phaseForText(text, this.markers);
+    const inferred = phaseForText(text, this.markers) || this.phaseForPacket(packetName, packet);
     const accepted = inferred && this.acceptTransition(inferred) ? inferred : null;
-    const phase = accepted || this.phaseForPacket(packetName, packet) || this.phase;
+    const phase = accepted || this.phase;
     this.lastText = text || this.lastText;
     this.lastPacket = packetName;
     if (phase === this.phase) return null;
@@ -131,7 +133,6 @@ class PhaseTracker {
       if (packetName === 'open_window' && /vote|map|投票|地图/i.test(text)) return PHASES.VOTING;
       if (packetName === 'login') return PHASES.WAITING;
     }
-    if (packetName === 'death_combat_event' || packetName === 'respawn') return PHASES.PROGRESS;
     return null;
   }
 }

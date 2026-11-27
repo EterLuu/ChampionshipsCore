@@ -120,6 +120,12 @@ public final class GameMessages {
     @ConfigOption(path = "game.bingo")
     public static String GAME_BINGO;
 
+    @ConfigOption(path = "game.craftingfeast")
+    public static String GAME_CRAFTING_FEAST;
+
+    @ConfigOption(path = "game.iamnotarobot")
+    public static String GAME_ROBOT;
+
     @ConfigOption(path = "game.buildmart", nullable = true)
     public static String GAME_BUILD_MART;
 

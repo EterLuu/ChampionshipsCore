@@ -1,4 +1,4 @@
 name: ChampionshipsAuthProxy
-version: 1.3-SNAPSHOT
+version: '${project.version}'
 main: ink.ziip.championshipscore.authproxy.ChampionshipsAuthProxyPlugin
 author: ziip

@@ -24,9 +24,19 @@ public final class FormalEventMapResolver {
         if (!configured.isEmpty())
             return configured.stream().map(name -> canonicalName(plugin, game, name)).toList();
 
+        return selectableMaps(plugin, game).stream().sorted(String.CASE_INSENSITIVE_ORDER).toList();
+    }
+
+    /** Registered maps that an administrator can explicitly select for this formal event. */
+    public static List<String> selectableMaps(ChampionshipsCore plugin, GameTypeEnum game) {
         BaseGameInstanceManager<?> manager = plugin.getGameManager().getAreaManager(game);
         if (manager == null) return List.of();
-        return manager.getAreaNameList().stream().sorted(String.CASE_INSENSITIVE_ORDER).toList();
+        var registered = manager.getAreaNameList();
+        if (game != GameTypeEnum.HotyCodyDusky) return registered;
+        var pool = plugin.getConfigurationManager().getCCConfig().formalEventMaps(game);
+        return registered.stream()
+                .filter(name -> pool.stream().anyMatch(name::equalsIgnoreCase))
+                .toList();
     }
 
     public static String map(

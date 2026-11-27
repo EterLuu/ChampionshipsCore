@@ -15,7 +15,7 @@ import java.time.Duration;
 import java.util.UUID;
 
 /** Resolves the UUID source explicitly declared by cc-web for a Bridge payload. */
-public final class BridgeUuidResolver {
+public final class BridgeUuidResolver implements AutoCloseable {
     private static final String MOJANG_PROFILE_URL =
             "https://api.mojang.com/users/profiles/minecraft/";
     private static final int MAX_RESPONSE_BYTES = 16 * 1024;
@@ -118,5 +118,10 @@ public final class BridgeUuidResolver {
             input.close();
         } catch (IOException ignored) {
         }
+    }
+
+    @Override
+    public void close() {
+        client.shutdownNow();
     }
 }

@@ -66,6 +66,27 @@ values:
       active: "&a行动中"
       frozen: "&b被冻结"
       heated: "&6保温中"
+  hoty:
+    phase:
+      waiting: "&7等待开始"
+      ended: "&7已结束"
+      scatter: "&b开局散开"
+      immunity: "#c084fc第 {wave} 趟 · 免疫"
+      chase: "#ffd35d第 {wave} 趟 · 追逐"
+      frenzy: "&c&l第 {wave} 趟 · 冲刺"
+      frozen: "#94e9ff第 {wave} 趟 · 冻结"
+      intermission: "#94ed90休整换趟"
+    state:
+      waiting: "&7准备中"
+      ended: "&7已结束"
+      spectator: "&7旁观"
+      eliminated: "&7已出局"
+      scatter: "&b散开就位"
+      intermission: "&a安全休整"
+      holder: "&c&l🐟 持鱼中"
+      holder-frenzy: "&c&l🐟 持鱼·冲刺"
+      runner: "&a安全躲避"
+      runner-protected: "&6护身躲避"
   ranking:
     none: "&7暂无排行"
     bingo-daily-row: "{rank.team-color}{rank.position}. {rank.team} &7({rank.tasks} 项)"
@@ -211,13 +232,15 @@ boards:
       lines:
         - '#ff0808当前游戏：#ff7373烫手鳕鱼'
         - '#dfff2b轮次：#f6ffa8%schedule_round_hotycodydusky%/3'
-        - ''
         - '#1da4ad场地状态：#f6ffa8{game.status}'
-        - '&f鳕鱼人：&c%hotycodydusky_area_cody_holder_[areaName]%'
         - ''
-        - '&f剩余存活队伍：#ff6e26%hotycodydusky_area_survived_teams_[areaName]%'
-        - '&f剩余存活玩家：#ff6e26%hotycodydusky_area_survived_players_[areaName]%'
+        - '&f当前阶段：{hoty.phase}'
+        - '&f我的状态：{hoty.state}'
+        - '&f持鱼招数：{hoty.skill}'
         - ''
+        - '&f剩余存活：#ff6e26{hoty.alive-players}&7人 &8| #ff6e26{hoty.alive-teams}&7队'
+        - '#4287f5持鱼目标 &7({hoty.holder-count})'
+        - '{hoty.holders}'
         - '{style.footer}'
 
     TGTTOS:
@@ -289,6 +312,30 @@ boards:
         - ''
         - '{style.footer}'
 
+    IAmNotARobot:
+      title: '{style.title}'
+      lines:
+        - '&b人机验证'
+        - '&f队伍 {viewer.team}'
+        - '&f状态 {game.status}'
+        - '&f当前关卡 &b{robot.room}'
+        - '&f剩余 &e{robot.timer} 秒'
+        - ''
+        - '{style.footer}'
+    CraftingFeast:
+      title: '{style.title}'
+      lines:
+        - '&6合成盛宴'
+        - '&f状态 {game.status}'
+        - '&f剩余 &e%craftingfeast_area_timer_[areaName]%s'
+        - ''
+        - '&f本队积分 &e%craftingfeast_player_score_[areaName]%'
+        - '&f订单 &a%craftingfeast_player_completed_[areaName]% &7/ 流失 &c%craftingfeast_player_missed_[areaName]%'
+        - '&f外卖送出 &b%craftingfeast_player_delivered_[areaName]%'
+        - '&f口碑 %craftingfeast_player_rating_[areaName]%'
+        - '&f连单 &b%craftingfeast_player_streak_[areaName]%'
+        - ''
+        - '{style.footer}'
     BuildMart:
       title: '{style.title}'
       lines:

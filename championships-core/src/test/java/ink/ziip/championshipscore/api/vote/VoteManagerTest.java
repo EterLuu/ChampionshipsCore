@@ -24,7 +24,9 @@ class VoteManagerTest {
         var fixture = new Fixture();
         var games =
                 List.of(GameTypeEnum.values()).stream().filter(fixture.vote::isBallotGame).toList();
-        assertEquals(14, games.size());
+        assertEquals(16, games.size());
+        assertTrue(games.contains(GameTypeEnum.IAmNotARobot));
+        assertTrue(games.contains(GameTypeEnum.CraftingFeast));
         assertTrue(
                 games.containsAll(
                         List.of(

@@ -7,7 +7,6 @@ import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.model.GameRunMode;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import ink.ziip.championshipscore.configuration.config.CCConfig;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -30,12 +29,7 @@ public final class BingoDailyGameAdapter implements DailyGameAdapter {
 
     @Override
     public @NotNull DailyRules rules() {
-        return new DailyRules(
-                CCConfig.DAILY_BINGO_MIN_PLAYERS,
-                CCConfig.DAILY_BINGO_MAX_PLAYERS,
-                CCConfig.DAILY_BINGO_TEAM_SIZE,
-                CCConfig.DAILY_BINGO_TEAMS,
-                CCConfig.DAILY_BINGO_COUNTDOWN_SECONDS);
+        return plugin.getConfigurationManager().getCCConfig().dailyGame(game()).rules();
     }
 
     @Override

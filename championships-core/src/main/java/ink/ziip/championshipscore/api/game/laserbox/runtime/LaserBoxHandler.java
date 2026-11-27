@@ -141,9 +141,15 @@ public final class LaserBoxHandler extends BaseListener {
     public void pickup(EntityPickupItemEvent event) {
         if (area.owns(event.getItem())) {
             event.setCancelled(true);
-            if (event.getEntity() instanceof Player p) area.pickup(p, event.getItem());
+            if (event.getEntity() instanceof Player p)
+                area.pickup(p, event.getItem(), event.getRemaining());
         } else if (event.getEntity() instanceof Player p && participant(p))
             event.setCancelled(true);
+    }
+
+    @EventHandler
+    public void merge(ItemMergeEvent event) {
+        if (area.owns(event.getEntity()) || area.owns(event.getTarget())) event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)

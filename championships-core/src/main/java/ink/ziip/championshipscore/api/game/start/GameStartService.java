@@ -108,7 +108,10 @@ public final class GameStartService {
                 map =
                         manager.getAreaNameList().stream()
                                 .sorted(String.CASE_INSENSITIVE_ORDER)
-                                .filter(name -> canStartMapOnCore(game, name, runMode))
+                                .filter(
+                                        name ->
+                                                plugin.getPrepareSessionManager()
+                                                        .canStart(game, name, runMode))
                                 .filter(
                                         name ->
                                                 game == GameTypeEnum.Bingo
@@ -135,7 +138,7 @@ public final class GameStartService {
                                                                 "game-start-service.start-manual-3",
                                                                 arguments.map())));
             }
-            if (!canStartMapOnCore(game, map, runMode)) {
+            if (!plugin.getPrepareSessionManager().canStart(game, map, runMode)) {
                 throw new IllegalArgumentException(
                         MessageConfig.codeText("game-start-service.start-manual-5", map));
             }
@@ -250,7 +253,8 @@ public final class GameStartService {
     public void validateMap(
             GameTypeEnum game, String map, List<ChampionshipTeam> teams, ArenaSelection arenas) {
         var manager = plugin.getGameManager().getAreaManager(game);
-        if (manager == null || !canStartMapOnCore(game, map, GameRunMode.EVENT))
+        if (manager == null
+                || !plugin.getPrepareSessionManager().canStart(game, map, GameRunMode.EVENT))
             throw new IllegalArgumentException(
                     MessageConfig.codeText("game-start-service.start-manual-5", map));
         if (game == GameTypeEnum.Bingo) {
@@ -261,19 +265,5 @@ public final class GameStartService {
         } else {
             StartTargets.forGame(game, manager.getMapInstances(map), teams.size(), arenas);
         }
-    }
-
-    /**
-     * Test remote Bingo maps are validated by the Worker manifest instead of a Core world. Preserve
-     * the existing published-preparation requirement for every production start surface.
-     */
-    private boolean canStartMapOnCore(GameTypeEnum game, String map, GameRunMode mode) {
-        if ((mode == GameRunMode.TEST || mode == GameRunMode.TEST_EVENT)
-                && game == GameTypeEnum.Bingo
-                && plugin.getGameManager().getBingoManager() != null
-                && plugin.getGameManager().getBingoManager().remoteExecutionConfigured()) {
-            return true;
-        }
-        return plugin.getPrepareSessionManager().canStart(game, map);
     }
 }

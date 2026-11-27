@@ -19,7 +19,7 @@ from __future__ import annotations
 import os
 import re
 import sys
-from collections import defaultdict
+from pathlib import Path
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOCS = os.path.join(ROOT, "docs")
@@ -133,8 +133,9 @@ def markdown_files():
 def load_text(paths):
     for path in paths:
         try:
-            yield path, open(path, encoding="utf-8", errors="ignore").read()
-        except OSError:
+            with open(path, encoding="utf-8") as source:
+                yield path, source.read()
+        except FileNotFoundError:
             continue
 
 
@@ -162,9 +163,9 @@ def resolve(base_file, target):
     return os.path.normpath(os.path.join(os.path.dirname(base_file), path))
 
 
-def check_links():
+def check_links(documents):
     problems = []
-    for path, text in load_text(markdown_files()):
+    for path, text in documents:
         for match in LINK_RE.finditer(text):
             target = link_target(match.group(1))
             if not target or is_external(target):
@@ -186,9 +187,9 @@ def repo_path_of(span):
     return None
 
 
-def check_paths():
+def check_paths(documents):
     problems = []
-    for path, text in load_text(markdown_files()):
+    for path, text in documents:
         for span in SPAN_RE.findall(text):
             span = span.strip()
             if " " in span or not any(ext in span for ext in FILE_EXTS):
@@ -201,9 +202,9 @@ def check_paths():
     return problems
 
 
-def check_identifiers(java_classes):
+def check_identifiers(documents, java_classes):
     problems = []
-    for path, text in load_text(markdown_files()):
+    for path, text in documents:
         for name in CAMEL_RE.findall(text):
             if name in java_classes or name in EXTERNAL_IDENTIFIERS:
                 continue
@@ -213,9 +214,9 @@ def check_identifiers(java_classes):
     return problems
 
 
-def check_config_keys(blob):
+def check_config_keys(documents, blob):
     problems = []
-    for path, text in load_text(markdown_files()):
+    for path, text in documents:
         for key in SPAN_RE.findall(text):
             key = key.strip()
             if not KEY_RE.match(key):
@@ -232,13 +233,10 @@ def check_config_keys(blob):
 
 
 def parse_game_names(message_yml):
-    pattern = re.compile(
-        r"^  (parkourtag|battlebox|tntrun|lasershowdown|skywars|tgttos|"
-        r"dragoneggcarnival|parkourwarrior|hotycodydusky|bingo|buildmart|dodgebolt|"
-        r"riptiderush|frostbite|laserbox|sulfursoccer|acerace): (.+)$",
-        re.M,
-    )
-    return {m.group(1): m.group(2).strip() for m in pattern.finditer(message_yml)}
+    section = re.search(r"^game:[^\S\n]*\n((?:[ \t].*\n|\n|#.*\n)*)", message_yml, re.MULTILINE)
+    if not section:
+        return {}
+    return dict(re.findall(r"^  ([a-z0-9]+): (.+)$", section[1], re.MULTILINE))
 
 
 def check_game_names():
@@ -248,16 +246,18 @@ def check_game_names():
     )
     if not os.path.exists(games_doc) or not os.path.exists(message_yml):
         return []
-    names = parse_game_names(open(message_yml, encoding="utf-8").read())
+    names = parse_game_names(Path(message_yml).read_text(encoding="utf-8"))
     row = re.compile(r"\| \[(.+?)\]\(#.*?\) \| `(.+?)` \| `(.+?)` \|")
     problems = []
-    for line in open(games_doc, encoding="utf-8"):
+    for line in Path(games_doc).read_text(encoding="utf-8").splitlines():
         match = row.match(line)
         if not match:
             continue
-        display, _token, config = match.groups()
-        expected = names.get(config.lower())
-        if expected is not None and expected != display:
+        display, token, config = match.groups()
+        expected = names.get(config.lower(), names.get(token))
+        if expected is None:
+            problems.append(f"docs/02-games/01-games.md: {config} has no game display name")
+        elif expected.strip("\"'") != display:
             problems.append(
                 f"docs/02-games/01-games.md: {config} display name '{display}' "
                 f"!= message.yml '{expected}'"
@@ -266,6 +266,7 @@ def check_game_names():
 
 
 def main():
+    documents = list(load_text(markdown_files()))
     java_classes = {os.path.basename(p)[:-5] for p in walk_files(lambda n: n.endswith(".java"))}
     blob = "\n".join(
         text
@@ -275,10 +276,10 @@ def main():
     )
 
     problems = []
-    problems += check_links()
-    problems += check_paths()
-    problems += check_identifiers(java_classes)
-    problems += check_config_keys(blob)
+    problems += check_links(documents)
+    problems += check_paths(documents)
+    problems += check_identifiers(documents, java_classes)
+    problems += check_config_keys(documents, blob)
     problems += check_game_names()
 
     if problems:
@@ -286,7 +287,7 @@ def main():
         for problem in problems:
             print("  -", problem)
         return 1
-    print(f"Documentation check passed ({len(markdown_files())} files).")
+    print(f"Documentation check passed ({len(documents)} files).")
     return 0
 
 

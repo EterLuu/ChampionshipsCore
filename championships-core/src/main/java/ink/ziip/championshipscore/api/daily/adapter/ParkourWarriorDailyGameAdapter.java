@@ -8,7 +8,6 @@ import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.game.parkourwarrior.runtime.ParkourWarriorTeamArea;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import ink.ziip.championshipscore.configuration.config.CCConfig;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -35,12 +34,7 @@ public final class ParkourWarriorDailyGameAdapter implements DailyGameAdapter {
 
     @Override
     public @NotNull DailyRules rules() {
-        return new DailyRules(
-                CCConfig.DAILY_PARKOUR_WARRIOR_MIN_PLAYERS,
-                CCConfig.DAILY_PARKOUR_WARRIOR_MAX_PLAYERS,
-                CCConfig.DAILY_PARKOUR_WARRIOR_TEAM_SIZE,
-                CCConfig.DAILY_PARKOUR_WARRIOR_TEAMS,
-                CCConfig.DAILY_PARKOUR_WARRIOR_COUNTDOWN_SECONDS);
+        return plugin.getConfigurationManager().getCCConfig().dailyGame(game()).rules();
     }
 
     @Override

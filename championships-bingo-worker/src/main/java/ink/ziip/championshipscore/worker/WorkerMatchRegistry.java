@@ -47,7 +47,7 @@ final class WorkerMatchRegistry {
     private final Set<NamespacedKey> recipeKeys;
     private final Map<UUID, MatchManifest> manifests = new HashMap<>();
     private final PlayerProgressChecks progressChecks;
-    private WorkerMatchSession active;
+    private volatile WorkerMatchSession active;
     private BingoPresentation latestPresentation;
     private boolean latestDaily;
     private boolean worldSlotConsumed;
@@ -230,7 +230,7 @@ final class WorkerMatchRegistry {
     private CompletionStage<Boolean> activate(
             MatchManifest manifest, MatchCommand command, boolean continuation) {
         progressChecks.clear();
-        active =
+        WorkerMatchSession next =
                 new WorkerMatchSession(
                         plugin,
                         config,
@@ -240,8 +240,9 @@ final class WorkerMatchRegistry {
                         worlds,
                         nativeTeams,
                         worldReset == null ? () -> {} : worldReset::request);
-        active.testReleaseJournal(testReleases);
-        active.awaitCoreSettlement("true".equals(command.attributes().get("coreSettlement")));
+        next.testReleaseJournal(testReleases);
+        next.awaitCoreSettlement("true".equals(command.attributes().get("coreSettlement")));
+        active = next;
         if (worldSlotConsumed && !continuation && !config.allowWorldReuseWithoutReset()) {
             return active.rejectPreparation("world-slot-requires-reset");
         }
@@ -413,9 +414,7 @@ final class WorkerMatchRegistry {
 
     /** Snapshot of the live match session, or {@code null} when none was ever prepared. */
     WorkerMatchSession activeSession() {
-        synchronized (this) {
-            return active;
-        }
+        return active;
     }
 
     /** Finishes the live match with a normal settlement, mirroring core's /cc game stop. */
@@ -566,12 +565,16 @@ final class WorkerMatchRegistry {
         if (session != null) session.cancelRespawnRecovery();
     }
 
-    synchronized boolean isPlaying(UUID playerId) {
-        return active != null && active.isPlaying(playerId);
+    boolean isPlaying(UUID playerId) {
+        var session = active;
+        return session != null && session.isPlaying(playerId);
     }
 
-    synchronized boolean isRunningPlayer(UUID playerId) {
-        return !isSpectator(playerId) && active != null && active.isRunningPlayer(playerId);
+    boolean isRunningPlayer(UUID playerId) {
+        var session = active;
+        return session != null
+                && !isSpectator(session, playerId)
+                && session.isRunningPlayer(playerId);
     }
 
     synchronized String resolveChampionshipPlaceholder(UUID playerId, String params) {
@@ -638,9 +641,13 @@ final class WorkerMatchRegistry {
         return active != null && active.canPickupSpectatorCard(playerId);
     }
 
-    synchronized boolean isSpectator(UUID playerId) {
+    boolean isSpectator(UUID playerId) {
+        return isSpectator(active, playerId);
+    }
+
+    private boolean isSpectator(WorkerMatchSession session, UUID playerId) {
         Player online = plugin.getServer().getPlayer(playerId);
-        return active != null && active.isSpectator(playerId)
+        return session != null && session.isSpectator(playerId)
                 || online != null && online.getGameMode() == org.bukkit.GameMode.SPECTATOR;
     }
 
@@ -656,16 +663,20 @@ final class WorkerMatchRegistry {
         return session != null && session.handleSpectatorControl(player, item, rightClick);
     }
 
-    synchronized boolean isProtectedParticipant(UUID playerId) {
-        return isSpectator(playerId) || active != null && active.isProtectedParticipant(playerId);
+    boolean isProtectedParticipant(UUID playerId) {
+        var session = active;
+        return isSpectator(session, playerId)
+                || session != null && session.isProtectedParticipant(playerId);
     }
 
-    synchronized boolean isEventWaitingPlayer(UUID playerId) {
-        return active != null && active.isEventWaitingPlayer(playerId);
+    boolean isEventWaitingPlayer(UUID playerId) {
+        var session = active;
+        return session != null && session.isEventWaitingPlayer(playerId);
     }
 
-    synchronized boolean isFinalCountdownPlayer(UUID playerId) {
-        return active != null && active.isFinalCountdownPlayer(playerId);
+    boolean isFinalCountdownPlayer(UUID playerId) {
+        var session = active;
+        return session != null && session.isFinalCountdownPlayer(playerId);
     }
 
     void openCard(Player player, Integer selectedTeamId) {

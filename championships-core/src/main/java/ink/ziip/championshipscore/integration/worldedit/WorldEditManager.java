@@ -272,6 +272,41 @@ public class WorldEditManager extends BaseManager {
     }
 
     /**
+     * Captures the cuboid {@code [min, min + dimensions - (1,1,1)]} in {@code world} as a Sponge v3
+     * schematic whose origin is {@code min}, so pasting via {@link #pasteSchematic} reproduces the
+     * source build at any target origin.
+     */
+    public void saveCuboidAsSchematic(
+            @NotNull World world,
+            @NotNull Vector min,
+            @NotNull Vector dimensions,
+            @NotNull File file)
+            throws IOException {
+        BlockVector3 lo = BlockVector3.at(min.getBlockX(), min.getBlockY(), min.getBlockZ());
+        BlockVector3 hi =
+                lo.add(
+                        dimensions.getBlockX() - 1,
+                        dimensions.getBlockY() - 1,
+                        dimensions.getBlockZ() - 1);
+        Region region = new CuboidRegion(lo, hi);
+        BlockArrayClipboard clipboard = new BlockArrayClipboard(region);
+        clipboard.setOrigin(lo);
+        try (EditSession editSession = worldEdit.newEditSession(BukkitAdapter.adapt(world))) {
+            ForwardExtentCopy copy = new ForwardExtentCopy(editSession, region, clipboard, lo);
+            copy.setCopyingEntities(false);
+            Operations.complete(copy);
+        } catch (Exception exception) {
+            throw new IOException("failed to capture cuboid into " + file.getName(), exception);
+        }
+        File parent = file.getParentFile();
+        if (parent != null) parent.mkdirs();
+        try (ClipboardWriter writer =
+                BuiltInClipboardFormat.SPONGE_V3_SCHEMATIC.getWriter(new FileOutputStream(file))) {
+            writer.write(clipboard);
+        }
+    }
+
+    /**
      * Clears an exact minimum-corner/dimensions cuboid before an adaptive layout is stamped again.
      */
     public void clearCuboid(

@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.api.game.bingo.execution;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
 import ink.ziip.championshipscore.api.game.bingo.config.BingoConfig;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.configuration.config.CCConfig;
 import ink.ziip.championshipscore.database.bingo.RemoteBingoStore;
 import ink.ziip.championshipscore.platform.bukkit.proxy.PluginMessagePlayerRouter;
@@ -10,6 +11,7 @@ import ink.ziip.championshipscore.platform.bukkit.scheduler.PlatformScheduler;
 import ink.ziip.championshipscore.protocol.MatchCommand;
 import ink.ziip.championshipscore.protocol.MatchCommandType;
 import ink.ziip.championshipscore.protocol.MatchEvent;
+import ink.ziip.championshipscore.protocol.MatchEventType;
 import ink.ziip.championshipscore.protocol.MatchManifest;
 import ink.ziip.championshipscore.protocol.MatchMessages;
 import ink.ziip.championshipscore.protocol.MatchState;
@@ -172,9 +174,9 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
                                 == ink.ziip.championshipscore.api.game.model.GameRunMode.TEST_EVENT)
                 && !Boolean.TRUE.equals(CCConfig.TEST_ENABLED)) return false;
         if (!ready || !plugin.getGameManager().getBingoManager().isTaskPoolReady()) return false;
-        BingoConfig config =
-                plugin.getGameManager().getBingoManager().getRemoteConfig(request.area());
-        return config != null
+        return plugin.getGameManager().getBingoManager().getRemoteConfig(request.area()) != null
+                && plugin.getPrepareSessionManager()
+                        .canStart(GameTypeEnum.Bingo, request.area(), request.runMode())
                 && pendingStarts.isEmpty()
                 && matches.values().stream()
                         .noneMatch(
@@ -252,7 +254,8 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
                         Map.copyOf(preparationAttributes));
         pendingStarts.put(matchId, pending);
         if (manifest.runMode().test()) testMatchIds.add(manifest.matchId());
-        CompletableFuture.runAsync(
+        plugin.getDatabaseManager()
+                .execute(
                         () -> {
                             try {
                                 store.create(manifest);
@@ -534,7 +537,8 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
         if (match == null || match.manifest().epoch() != event.epoch()) {
             return CompletableFuture.completedFuture(DeliveryDisposition.ACK);
         }
-        return CompletableFuture.supplyAsync(() -> processed(event))
+        return plugin.getDatabaseManager()
+                .query(() -> processed(event))
                 .thenCompose(
                         alreadyProcessed -> {
                             if (alreadyProcessed) return CompletableFuture.completedFuture(true);
@@ -542,8 +546,7 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
                                     .thenCompose(
                                             success ->
                                                     success
-                                                            ? CompletableFuture.supplyAsync(
-                                                                    () -> record(event, match))
+                                                            ? persistAppliedEvent(event, match)
                                                             : CompletableFuture.completedFuture(
                                                                     false));
                         })
@@ -563,6 +566,21 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
         return scheduler.supplyGlobal(() -> match.apply(event)).thenCompose(stage -> stage);
     }
 
+    private CompletionStage<Boolean> persistAppliedEvent(MatchEvent event, RemoteBingoMatch match) {
+        return plugin.getDatabaseManager()
+                .query(() -> record(event, match))
+                .thenApply(
+                        saved -> {
+                            // Completing the release can immediately retire the database queue
+                            // during shutdown.
+                            if (saved
+                                    && match.manifest().runMode().test()
+                                    && event.type() == MatchEventType.RELEASED)
+                                match.confirmResourcesReleased();
+                            return saved;
+                        });
+    }
+
     private boolean processed(MatchEvent event) {
         try {
             return store.processed(event.messageId());
@@ -574,7 +592,7 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
     private boolean record(MatchEvent event, RemoteBingoMatch match) {
         if (testMatchIds.contains(event.matchId())) {
             try {
-                store.recordProcessed(event, match.state());
+                if (!store.recordProcessed(event, match.state())) return true;
             } catch (SQLException failure) {
                 throw new java.util.concurrent.CompletionException(failure);
             }
@@ -620,12 +638,10 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
                         },
                         200L);
             }
-            if (event.type() == ink.ziip.championshipscore.protocol.MatchEventType.RELEASED)
-                match.confirmResourcesReleased();
             return true;
         }
         try {
-            store.recordProcessed(event, match.state());
+            if (!store.recordProcessed(event, match.state())) return true;
             if (event.type() == ink.ziip.championshipscore.protocol.MatchEventType.READY) {
                 scheduler.runGlobalLater(
                         () -> timeout(match, MatchState.ROUTING, "arrival-timeout"),
@@ -755,14 +771,15 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
     }
 
     private CompletionStage<Void> updateStateAsync(UUID matchId, long epoch, MatchState state) {
-        return CompletableFuture.runAsync(
-                () -> {
-                    try {
-                        store.updateState(matchId, epoch, state);
-                    } catch (SQLException failure) {
-                        throw new java.util.concurrent.CompletionException(failure);
-                    }
-                });
+        return plugin.getDatabaseManager()
+                .execute(
+                        () -> {
+                            try {
+                                store.updateState(matchId, epoch, state);
+                            } catch (SQLException failure) {
+                                throw new java.util.concurrent.CompletionException(failure);
+                            }
+                        });
     }
 
     private void discardTestMatch(UUID matchId) {
@@ -771,7 +788,8 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
     }
 
     private CompletionStage<Void> recoverOrphans() {
-        return CompletableFuture.supplyAsync(
+        return plugin.getDatabaseManager()
+                .query(
                         () -> {
                             try {
                                 return store.activeMatches();
@@ -797,28 +815,13 @@ public final class RemoteBingoManager extends BaseManager implements BingoExecut
                                                                 .publishCommand(abort)
                                                                 .thenCompose(
                                                                         receipt ->
-                                                                                CompletableFuture
-                                                                                        .runAsync(
-                                                                                                () -> {
-                                                                                                    try {
-                                                                                                        store
-                                                                                                                .updateState(
-                                                                                                                        orphan
-                                                                                                                                .matchId(),
-                                                                                                                        orphan
-                                                                                                                                .epoch(),
-                                                                                                                        MatchState
-                                                                                                                                .ABORTED);
-                                                                                                    } catch (
-                                                                                                            SQLException
-                                                                                                                    failure) {
-                                                                                                        throw new java
-                                                                                                                .util
-                                                                                                                .concurrent
-                                                                                                                .CompletionException(
-                                                                                                                failure);
-                                                                                                    }
-                                                                                                })));
+                                                                                updateStateAsync(
+                                                                                        orphan
+                                                                                                .matchId(),
+                                                                                        orphan
+                                                                                                .epoch(),
+                                                                                        MatchState
+                                                                                                .ABORTED)));
                             }
                             return chain;
                         });

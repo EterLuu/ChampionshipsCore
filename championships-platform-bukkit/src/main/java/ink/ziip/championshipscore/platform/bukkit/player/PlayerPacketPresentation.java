@@ -4,6 +4,8 @@ import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerAbstract;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
+import com.github.retrooper.packetevents.protocol.entity.data.EntityData;
+import com.github.retrooper.packetevents.protocol.entity.data.EntityDataTypes;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.protocol.player.GameMode;
 import com.github.retrooper.packetevents.wrapper.play.server.*;
@@ -23,7 +25,6 @@ import org.bukkit.plugin.Plugin;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
@@ -40,8 +41,8 @@ public final class PlayerPacketPresentation extends PacketListenerAbstract
     private volatile boolean closed;
     private final Plugin plugin;
     private final PlatformScheduler scheduler;
-    private final Set<UUID> online = ConcurrentHashMap.newKeySet();
-    private final Set<UUID> pendingViewerRefreshes = ConcurrentHashMap.newKeySet();
+    private final Set<UUID> pendingViewerRefreshes =
+            java.util.Collections.synchronizedSet(new java.util.HashSet<>());
     private final java.util.concurrent.atomic.AtomicBoolean viewerRefreshScheduled =
             new java.util.concurrent.atomic.AtomicBoolean();
     private final Set<UUID> spectatorPlayers = ConcurrentHashMap.newKeySet();
@@ -62,11 +63,7 @@ public final class PlayerPacketPresentation extends PacketListenerAbstract
         scheduler = new PlatformScheduler(plugin);
         plugin.getServer()
                 .getOnlinePlayers()
-                .forEach(
-                        player -> {
-                            online.add(player.getUniqueId());
-                            connections.put(player.getUniqueId(), player);
-                        });
+                .forEach(player -> connections.put(player.getUniqueId(), player));
         PacketEvents.getAPI().getEventManager().registerListener(this);
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
         for (Player player : plugin.getServer().getOnlinePlayers())
@@ -113,9 +110,11 @@ public final class PlayerPacketPresentation extends PacketListenerAbstract
                             .map(
                                     entry ->
                                             presentedInfo(
-                                                    entry, online.contains(entry.getProfileId())))
+                                                    entry,
+                                                    connections.containsKey(entry.getProfileId())))
                             .toList());
-            packet.getActions().add(WrapperPlayServerPlayerInfoUpdate.Action.UPDATE_LISTED);
+            // The action mask is shared by all entries. Only change listed status when
+            // the original packet carries it, preserving partial updates for NPC entries.
         } else if (type == PacketType.Play.Server.ENTITY_METADATA) {
             var packet = new WrapperPlayServerEntityMetadata(event);
             UUID targetId = playerEntities.get(packet.getEntityId());
@@ -128,15 +127,10 @@ public final class PlayerPacketPresentation extends PacketListenerAbstract
                                         data -> {
                                             if (data.getIndex() == 0
                                                     && data.getValue() instanceof Byte flags)
-                                                return (com.github.retrooper.packetevents.protocol
-                                                                        .entity.data.EntityData<
-                                                                ?>)
-                                                        new com.github.retrooper.packetevents
-                                                                .protocol.entity.data.EntityData<>(
+                                                return (EntityData<?>)
+                                                        new EntityData<>(
                                                                 0,
-                                                                com.github.retrooper.packetevents
-                                                                        .protocol.entity.data
-                                                                        .EntityDataTypes.BYTE,
+                                                                EntityDataTypes.BYTE,
                                                                 clientFlags(
                                                                         flags,
                                                                         spectatorTarget,
@@ -148,7 +142,9 @@ public final class PlayerPacketPresentation extends PacketListenerAbstract
         } else if (type == PacketType.Play.Server.PLAYER_INFO_REMOVE) {
             var packet = new WrapperPlayServerPlayerInfoRemove(event);
             packet.setProfileIds(
-                    packet.getProfileIds().stream().filter(id -> !online.contains(id)).toList());
+                    packet.getProfileIds().stream()
+                            .filter(id -> !connections.containsKey(id))
+                            .toList());
             if (packet.getProfileIds().isEmpty()) event.setCancelled(true);
         } else if (type == PacketType.Play.Server.CHANGE_GAME_STATE) {
             var packet = new WrapperPlayServerChangeGameState(event);
@@ -167,19 +163,17 @@ public final class PlayerPacketPresentation extends PacketListenerAbstract
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onJoin(PlayerJoinEvent event) {
-        online.add(event.getPlayer().getUniqueId());
         connections.put(event.getPlayer().getUniqueId(), event.getPlayer());
         cacheMode(event.getPlayer(), event.getPlayer().getGameMode());
         // Native join lists honor canSee and omit already-hidden targets. Supply full signed
-        // profiles.
-        refresh(true);
+        // profiles in both directions for this connection.
+        requestViewerRefresh(event.getPlayer().getUniqueId());
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onQuit(PlayerQuitEvent event) {
         UUID id = event.getPlayer().getUniqueId();
         if (!connections.remove(id, event.getPlayer())) return;
-        online.remove(id);
         lastSnapshots.remove(id);
         spectatorPlayers.remove(id);
         Integer oldEntity = entityIds.remove(id);
@@ -191,7 +185,7 @@ public final class PlayerPacketPresentation extends PacketListenerAbstract
                 scheduler.runEntity(
                         viewer,
                         () -> {
-                            if (currentConnection(viewer) && !online.contains(id))
+                            if (currentConnection(viewer) && !connections.containsKey(id))
                                 PacketEvents.getAPI()
                                         .getPlayerManager()
                                         .sendPacket(
@@ -250,8 +244,11 @@ public final class PlayerPacketPresentation extends PacketListenerAbstract
                         viewerRefreshScheduled.set(false);
                         if (closed || !refreshRunning.compareAndSet(false, true)) return;
                         boolean initialize = initializePending.getAndSet(false);
-                        Set<UUID> changedViewers = Set.copyOf(pendingViewerRefreshes);
-                        pendingViewerRefreshes.removeAll(changedViewers);
+                        Set<UUID> changedViewers;
+                        synchronized (pendingViewerRefreshes) {
+                            changedViewers = Set.copyOf(pendingViewerRefreshes);
+                            pendingViewerRefreshes.clear();
+                        }
                         captureAndRefresh(initialize, changedViewers);
                     });
         } catch (RuntimeException failure) {
@@ -287,52 +284,12 @@ public final class PlayerPacketPresentation extends PacketListenerAbstract
     private void captureAndRefresh(boolean initialize, Set<UUID> changedViewers) {
         List<Player> players = List.copyOf(connections.values());
         boolean flags = initialize || !changedViewers.isEmpty();
-        List<CompletableFuture<TabSnapshot>> snapshots =
+        var snapshots =
                 players.stream()
                         .map(
                                 target ->
                                         scheduler.supplyEntity(
-                                                target,
-                                                () -> {
-                                                    if (!currentConnection(target)) return null;
-                                                    int entityId = target.getEntityId();
-                                                    cacheMode(target, target.getGameMode());
-                                                    Object packet =
-                                                            nativeInfo.capture(target, true);
-                                                    Object state = nativeInfo.state(packet);
-                                                    TabSnapshot previous =
-                                                            lastSnapshots.get(target.getUniqueId());
-                                                    boolean changed =
-                                                            needsTabUpdate(
-                                                                    previous == null
-                                                                            ? null
-                                                                            : previous.target(),
-                                                                    target,
-                                                                    previous == null
-                                                                            ? null
-                                                                            : previous.state(),
-                                                                    state);
-                                                    boolean newIdentity =
-                                                            previous == null
-                                                                    || previous.target() != target
-                                                                    || !nativeInfo.sameIdentity(
-                                                                            previous.state(),
-                                                                            state);
-                                                    return new TabSnapshot(
-                                                            target,
-                                                            entityId,
-                                                            initialize || newIdentity
-                                                                    ? packet
-                                                                    : changed
-                                                                            ? nativeInfo.capture(
-                                                                                    target, false)
-                                                                            : null,
-                                                            state,
-                                                            flags
-                                                                    ? nativeInfo.sharedFlags(target)
-                                                                    : null,
-                                                            changed);
-                                                }))
+                                                target, () -> capture(target, initialize, flags)))
                         .toList();
         CompletableFuture.allOf(snapshots.toArray(CompletableFuture[]::new))
                 .thenCompose(
@@ -342,94 +299,52 @@ public final class PlayerPacketPresentation extends PacketListenerAbstract
                                     snapshots.stream()
                                             .map(CompletableFuture::join)
                                             .filter(Objects::nonNull)
-                                            .toList();
-                            var changed =
-                                    captured.stream()
-                                            .filter(snapshot -> initialize || snapshot.changed())
+                                            .filter(s -> currentConnection(s.target()))
                                             .toList();
                             for (TabSnapshot snapshot : captured)
-                                if (currentConnection(snapshot.target()))
-                                    lastSnapshots.put(snapshot.target().getUniqueId(), snapshot);
-                            if (changed.isEmpty() && !flags)
+                                lastSnapshots.put(snapshot.target().getUniqueId(), snapshot);
+                            var changes = captured.stream().filter(TabSnapshot::changed).toList();
+                            if (changes.isEmpty() && !flags)
                                 return CompletableFuture.completedFuture(null);
                             var flagTargets =
                                     captured.stream()
                                             .filter(
-                                                    snapshot ->
+                                                    s ->
                                                             changedViewers.contains(
-                                                                    snapshot.target()
-                                                                            .getUniqueId()))
+                                                                    s.target().getUniqueId()))
                                             .toList();
-                            List<CompletableFuture<Void>> sends = new ArrayList<>();
-                            for (Player viewer : players)
-                                sends.add(
-                                        scheduler.runEntityFuture(
-                                                viewer,
-                                                () -> {
-                                                    if (!currentConnection(viewer)) return;
-                                                    for (TabSnapshot snapshot : changed) {
-                                                        if (currentConnection(snapshot.target())
-                                                                && (initialize
-                                                                        || !viewer.canSee(
-                                                                                snapshot.target())))
-                                                            nativeInfo.send(
-                                                                    viewer, snapshot.packet());
-                                                    }
-                                                    if (!flags) return;
-                                                    // Changed viewers need every entity's real
-                                                    // flags; other viewers only need
-                                                    // changed targets. This handles both directions
-                                                    // without N repeated broadcasts.
-                                                    for (TabSnapshot snapshot :
-                                                            (initialize
-                                                                            || changedViewers
-                                                                                    .contains(
-                                                                                            viewer
-                                                                                                    .getUniqueId())
-                                                                    ? captured
-                                                                    : flagTargets)) {
-                                                        if (!initialize
-                                                                && !changedViewers.contains(
-                                                                        viewer.getUniqueId())
-                                                                && !changedViewers.contains(
-                                                                        snapshot.target()
-                                                                                .getUniqueId()))
-                                                            continue;
-                                                        if (currentConnection(snapshot.target())
-                                                                && snapshot.flags() != null
-                                                                && (viewer == snapshot.target()
-                                                                        || viewer.canSee(
-                                                                                snapshot.target())))
-                                                            PacketEvents.getAPI()
-                                                                    .getPlayerManager()
-                                                                    .sendPacket(
-                                                                            viewer,
-                                                                            new WrapperPlayServerEntityMetadata(
-                                                                                    snapshot
-                                                                                            .entityId(),
-                                                                                    List.of(
-                                                                                            new com
-                                                                                                    .github
-                                                                                                    .retrooper
-                                                                                                    .packetevents
-                                                                                                    .protocol
-                                                                                                    .entity
-                                                                                                    .data
-                                                                                                    .EntityData<>(
-                                                                                                    0,
-                                                                                                    com
-                                                                                                            .github
-                                                                                                            .retrooper
-                                                                                                            .packetevents
-                                                                                                            .protocol
-                                                                                                            .entity
-                                                                                                            .data
-                                                                                                            .EntityDataTypes
-                                                                                                            .BYTE,
-                                                                                                    snapshot
-                                                                                                            .flags()))));
-                                                    }
-                                                }));
+                            var sends =
+                                    captured.stream()
+                                            .map(
+                                                    viewer ->
+                                                            scheduler.runEntityFuture(
+                                                                    viewer.target(),
+                                                                    () -> {
+                                                                        if (!currentConnection(
+                                                                                viewer.target()))
+                                                                            return;
+                                                                        boolean full =
+                                                                                initialize
+                                                                                        || viewer
+                                                                                                .joined();
+                                                                        sendProfiles(
+                                                                                viewer.target(),
+                                                                                full
+                                                                                        ? captured
+                                                                                        : changes,
+                                                                                full);
+                                                                        if (flags)
+                                                                            sendFlags(
+                                                                                    viewer.target(),
+                                                                                    initialize
+                                                                                                    || changedViewers
+                                                                                                            .contains(
+                                                                                                                    viewer.target()
+                                                                                                                            .getUniqueId())
+                                                                                            ? captured
+                                                                                            : flagTargets);
+                                                                    }))
+                                            .toList();
                             return CompletableFuture.allOf(sends.toArray(CompletableFuture[]::new));
                         })
                 .whenComplete(
@@ -451,6 +366,53 @@ public final class PlayerPacketPresentation extends PacketListenerAbstract
                         });
     }
 
+    private TabSnapshot capture(Player target, boolean initialize, boolean flags) {
+        if (!currentConnection(target)) return null;
+        cacheMode(target, target.getGameMode());
+        Object profile = nativeInfo.capture(target, true);
+        Object state = nativeInfo.state(profile);
+        TabSnapshot previous = lastSnapshots.get(target.getUniqueId());
+        boolean joined = previous == null || previous.target() != target;
+        boolean changed =
+                joined || needsTabUpdate(previous.target(), target, previous.state(), state);
+        Object update = null;
+        if (initialize || joined || !nativeInfo.sameIdentity(previous.state(), state))
+            update = profile;
+        else if (changed) update = nativeInfo.capture(target, false);
+        return new TabSnapshot(
+                target,
+                target.getEntityId(),
+                joined,
+                profile,
+                update,
+                state,
+                flags ? NativeEntityPackets.sharedFlags(target) : null,
+                changed);
+    }
+
+    private void sendProfiles(Player viewer, List<TabSnapshot> targets, boolean full) {
+        for (TabSnapshot snapshot : targets) {
+            if (!currentConnection(snapshot.target())) continue;
+            if (full || snapshot.joined() || !viewer.canSee(snapshot.target()))
+                NativeEntityPackets.send(viewer, full ? snapshot.fullPacket() : snapshot.packet());
+        }
+    }
+
+    private void sendFlags(Player viewer, List<TabSnapshot> targets) {
+        for (TabSnapshot snapshot : targets) {
+            if (snapshot.flags() == null
+                    || !currentConnection(snapshot.target())
+                    || (viewer != snapshot.target() && !viewer.canSee(snapshot.target()))) continue;
+            var sharedFlags = new EntityData<>(0, EntityDataTypes.BYTE, snapshot.flags());
+            PacketEvents.getAPI()
+                    .getPlayerManager()
+                    .sendPacket(
+                            viewer,
+                            new WrapperPlayServerEntityMetadata(
+                                    snapshot.entityId(), List.of(sharedFlags)));
+        }
+    }
+
     static boolean needsTabUpdate(
             Object previousConnection, Object connection, Object previousState, Object state) {
         return previousConnection != connection || !Objects.equals(previousState, state);
@@ -459,6 +421,8 @@ public final class PlayerPacketPresentation extends PacketListenerAbstract
     private record TabSnapshot(
             Player target,
             int entityId,
+            boolean joined,
+            Object fullPacket,
             Object packet,
             Object state,
             Byte flags,
@@ -470,7 +434,6 @@ public final class PlayerPacketPresentation extends PacketListenerAbstract
         refreshTask.cancel();
         PacketEvents.getAPI().getEventManager().unregisterListener(this);
         HandlerList.unregisterAll(this);
-        online.clear();
         connections.clear();
         lastSnapshots.clear();
         pendingViewerRefreshes.clear();
@@ -489,11 +452,7 @@ public final class PlayerPacketPresentation extends PacketListenerAbstract
         private final Method profile;
         private final Method chatSession;
         private final Constructor<?> update;
-        private final Class<?> packetType;
-        private final Class<? extends Enum> actionType;
-        private final Object sharedFlagsAccessor;
-        private final Method entityData;
-        private final Method dataGet;
+        private final EnumSet<?> updateActions;
 
         @SuppressWarnings("unchecked")
         private NativePlayerInfo() {
@@ -501,36 +460,13 @@ public final class PlayerPacketPresentation extends PacketListenerAbstract
                 Class<?> info =
                         Class.forName(
                                 "net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket");
-                actionType = (Class<? extends Enum>) Class.forName(info.getName() + "$Action");
+                var actionType = (Class<? extends Enum>) Class.forName(info.getName() + "$Action");
                 initialize = info.getMethod("createPlayerInitializing", Collection.class);
                 entries = info.getMethod("entries");
                 Class<?> entry = Class.forName(info.getName() + "$Entry");
                 profile = entry.getMethod("profile");
                 chatSession = entry.getMethod("chatSession");
                 update = info.getConstructor(EnumSet.class, Collection.class);
-                packetType = Class.forName("net.minecraft.network.protocol.Packet");
-                Class<?> entity = Class.forName("net.minecraft.world.entity.Entity");
-                var field = entity.getDeclaredField("DATA_SHARED_FLAGS_ID");
-                field.setAccessible(true);
-                sharedFlagsAccessor = field.get(null);
-                entityData = entity.getMethod("getEntityData");
-                dataGet =
-                        Class.forName("net.minecraft.network.syncher.SynchedEntityData")
-                                .getMethod(
-                                        "get",
-                                        Class.forName(
-                                                "net.minecraft.network.syncher.EntityDataAccessor"));
-            } catch (ReflectiveOperationException failure) {
-                throw new IllegalStateException(
-                        "Paper player-list packet API unavailable", failure);
-            }
-        }
-
-        @SuppressWarnings({"rawtypes", "unchecked"})
-        private Object capture(Player target, boolean first) {
-            try {
-                Object handle = target.getClass().getMethod("getHandle").invoke(target);
-                if (first) return initialize.invoke(null, List.of(handle));
                 EnumSet actions = EnumSet.noneOf(actionType);
                 for (String name :
                         List.of(
@@ -540,7 +476,19 @@ public final class PlayerPacketPresentation extends PacketListenerAbstract
                                 "UPDATE_DISPLAY_NAME",
                                 "UPDATE_HAT",
                                 "UPDATE_LIST_ORDER")) actions.add(Enum.valueOf(actionType, name));
-                return update.newInstance(actions, List.of(handle));
+                updateActions = actions;
+            } catch (ReflectiveOperationException failure) {
+                throw new IllegalStateException(
+                        "Paper player-list packet API unavailable", failure);
+            }
+        }
+
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        private Object capture(Player target, boolean first) {
+            try {
+                Object handle = NativeEntityPackets.handle(target);
+                if (first) return initialize.invoke(null, List.of(handle));
+                return update.newInstance(updateActions.clone(), List.of(handle));
             } catch (ReflectiveOperationException failure) {
                 throw new IllegalStateException(
                         "Cannot capture authoritative player-list state", failure);
@@ -561,27 +509,6 @@ public final class PlayerPacketPresentation extends PacketListenerAbstract
                         && Objects.equals(chatSession.invoke(first), chatSession.invoke(second));
             } catch (ReflectiveOperationException failure) {
                 throw new IllegalStateException("Cannot compare signed Tab identities", failure);
-            }
-        }
-
-        private byte sharedFlags(Player target) {
-            try {
-                Object handle = target.getClass().getMethod("getHandle").invoke(target);
-                return (Byte) dataGet.invoke(entityData.invoke(handle), sharedFlagsAccessor);
-            } catch (ReflectiveOperationException failure) {
-                throw new IllegalStateException(
-                        "Cannot capture native player presentation flags", failure);
-            }
-        }
-
-        private void send(Player viewer, Object packet) {
-            try {
-                Object handle = viewer.getClass().getMethod("getHandle").invoke(viewer);
-                Object connection = handle.getClass().getField("connection").get(handle);
-                connection.getClass().getMethod("send", packetType).invoke(connection, packet);
-            } catch (ReflectiveOperationException failure) {
-                throw new IllegalStateException(
-                        "Cannot send authoritative player-list state", failure);
             }
         }
     }

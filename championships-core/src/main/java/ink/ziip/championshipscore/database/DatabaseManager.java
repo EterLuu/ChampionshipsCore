@@ -26,7 +26,19 @@ public class DatabaseManager extends BaseManager {
     private String driverClass;
     private volatile HikariDataSource dataSource;
     private volatile boolean shuttingDown;
+    private volatile boolean identityConstraints;
     private final LifecycleTasks bootstrapTasks = new LifecycleTasks("cc-database-bootstrap", 1);
+
+    private final LifecycleTasks queries = new LifecycleTasks("cc-database-queries", 512);
+
+    public <T> java.util.concurrent.CompletableFuture<T> query(
+            java.util.function.Supplier<T> action) {
+        return queries.supply(action);
+    }
+
+    public java.util.concurrent.CompletableFuture<Void> execute(Runnable action) {
+        return queries.submit(action);
+    }
 
     public DatabaseManager(@NotNull ChampionshipsCore championshipsCore) {
         super(championshipsCore);
@@ -62,6 +74,7 @@ public class DatabaseManager extends BaseManager {
     /** Establishes the pool and applies schema migrations without blocking the server thread. */
     public CompletionStage<Void> loadAsync() {
         bootstrapTasks.start();
+        queries.start();
         shuttingDown = false;
         return bootstrapTasks.submit(this::configureAndInitialize);
     }
@@ -89,6 +102,7 @@ public class DatabaseManager extends BaseManager {
     @Override
     public void unload() {
         shuttingDown = true;
+        queries.close();
         bootstrapTasks.close();
         HikariDataSource current = dataSource;
         dataSource = null;
@@ -103,41 +117,35 @@ public class DatabaseManager extends BaseManager {
             candidate.setPoolName(DATA_POOL_NAME);
             candidate.setDriverClassName(driverClass);
 
-            if (CCConfig.DATABASE_TYPE.equals("MARIADB"))
-                candidate.setJdbcUrl(
-                        "jdbc:mariadb://"
-                                + CCConfig.DATABASE_ADDRESS
-                                + ":"
-                                + CCConfig.DATABASE_PORT
-                                + "/"
-                                + CCConfig.DATABASE_NAME
-                                + "?useSSL=false&useUnicode=true&characterEncoding=UTF-8");
-            else
-                candidate.setJdbcUrl(
-                        "jdbc:mysql://"
-                                + CCConfig.DATABASE_ADDRESS
-                                + ":"
-                                + CCConfig.DATABASE_PORT
-                                + "/"
-                                + CCConfig.DATABASE_NAME
-                                + "?useSSL=false&useUnicode=true&characterEncoding=UTF-8");
+            boolean maria = CCConfig.DATABASE_TYPE.equals("MARIADB");
+            candidate.setJdbcUrl(
+                    "jdbc:"
+                            + (maria ? "mariadb" : "mysql")
+                            + "://"
+                            + CCConfig.DATABASE_ADDRESS
+                            + ":"
+                            + CCConfig.DATABASE_PORT
+                            + "/"
+                            + CCConfig.DATABASE_NAME);
             candidate.setUsername(CCConfig.DATABASE_USERNAME);
             candidate.setPassword(CCConfig.DATABASE_PASSWORD);
 
-            candidate.setMaximumPoolSize(12);
-            candidate.setMinimumIdle(12);
+            candidate.setMaximumPoolSize(CCConfig.DATABASE_POOL_SIZE);
             candidate.setMaxLifetime(1800000);
             candidate.setKeepaliveTime(30000);
             candidate.setConnectionTimeout(20000);
-            candidate.setDataSourceProperties(getProperties());
+            candidate.setDataSourceProperties(getProperties(maria));
 
+            boolean indexedIdentities;
             try (Connection connection = candidate.getConnection()) {
                 // Schema upgrades are version-controlled; see DatabaseMigrationController.
                 new DatabaseMigrationController(plugin).migrate(connection);
+                indexedIdentities = DatabaseMigrationController.hasIdentityConstraints(connection);
             }
             token.publish(
                     () -> {
                         HikariDataSource previous = dataSource;
+                        identityConstraints = indexedIdentities;
                         dataSource = candidate;
                         if (previous != null) previous.close();
                     });
@@ -154,13 +162,19 @@ public class DatabaseManager extends BaseManager {
     }
 
     @NotNull
-    private static Properties getProperties() {
+    private static Properties getProperties(boolean maria) {
         Properties properties = new Properties();
 
+        properties.setProperty(
+                "sslMode",
+                maria
+                        ? (CCConfig.DATABASE_TLS ? "verify-full" : "disable")
+                        : (CCConfig.DATABASE_TLS ? "VERIFY_IDENTITY" : "DISABLED"));
+        properties.setProperty("useServerPrepStmts", "true");
+        if (maria) return properties;
         properties.put("cachePrepStmts", "true");
         properties.put("prepStmtCacheSize", "250");
         properties.put("prepStmtCacheSqlLimit", "2048");
-        properties.put("useServerPrepStmts", "true");
         properties.put("useLocalSessionState", "true");
         properties.put("useLocalTransactionState", "true");
 
@@ -170,6 +184,13 @@ public class DatabaseManager extends BaseManager {
         properties.put("elideSetAutoCommits", "true");
         properties.put("maintainTimeStats", "false");
         return properties;
+    }
+
+    public int identityTransactionIsolation() {
+        // Unique keys arbitrate concurrent first inserts. Older schemas still need gap locks.
+        return identityConstraints
+                ? Connection.TRANSACTION_READ_COMMITTED
+                : Connection.TRANSACTION_REPEATABLE_READ;
     }
 
     public Connection getConnection() throws SQLException {

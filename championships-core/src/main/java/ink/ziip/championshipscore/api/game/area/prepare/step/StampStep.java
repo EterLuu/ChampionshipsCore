@@ -21,6 +21,7 @@ import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -191,6 +192,13 @@ public class StampStep extends PrepareStep {
                 true);
     }
 
+    protected void stampCopies(
+            ChampionshipsCore plugin, World world, File file, ArenaGrid grid, int count)
+            throws IOException {
+        if (keepSourceCopy) ArenaPreparer.stampAdditionalCopies(plugin, world, file, grid, count);
+        else ArenaPreparer.stampCopies(plugin, world, file, grid, count);
+    }
+
     @Override
     public boolean isSet(PrepareSession session) {
         return session != null && session.isStamped();
@@ -228,10 +236,7 @@ public class StampStep extends PrepareStep {
             Vector size = session.getPlugin().getWorldEditManager().getSchematicDimensions(file);
             if (preStampCleaner != null) preStampCleaner.accept(session, world);
             resolvedGrid = gridResolver.apply(session.getTarget(), size);
-            if (keepSourceCopy)
-                ArenaPreparer.stampAdditionalCopies(
-                        session.getPlugin(), world, file, resolvedGrid, count);
-            else ArenaPreparer.stampCopies(session.getPlugin(), world, file, resolvedGrid, count);
+            stampCopies(session.getPlugin(), world, file, resolvedGrid, count);
             if (sizeWriter != null) sizeWriter.accept(session.getTarget(), size);
         } catch (Exception e) {
             return CoreMessages.formatAdminError(

@@ -45,11 +45,11 @@ import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 
 @Getter
@@ -68,6 +68,7 @@ public final class ChampionshipsCore extends JavaPlugin {
     private GameManager gameManager;
     private TestSessionManager testSessionManager;
     private PlayerVisibilityManager visibilityManager;
+    private ink.ziip.championshipscore.platform.bukkit.player.ScopedLocatorBar locatorBar;
     private ink.ziip.championshipscore.platform.bukkit.player.PlayerPacketPresentation
             playerPackets;
     private RemoteBingoManager remoteBingoManager;
@@ -90,16 +91,17 @@ public final class ChampionshipsCore extends JavaPlugin {
             Collections.newSetFromMap(new IdentityHashMap<>());
 
     private long bootstrapGeneration;
-    private boolean bootstrapReady;
-    private final List<PlayerNameChangeEvent> pendingNameChanges = new CopyOnWriteArrayList<>();
+    private volatile boolean bootstrapReady;
+    private final List<PlayerNameChangeEvent> pendingNameChanges = new ArrayList<>();
 
     @Override
     public void onEnable() {
         long generation = ++bootstrapGeneration;
         instance = this;
-        loaded = true;
-        bootstrapReady = false;
-        pendingNameChanges.clear();
+        synchronized (pendingNameChanges) {
+            loaded = true;
+            bootstrapReady = false;
+        }
         Bukkit.getPluginManager()
                 .registerEvents(
                         new Listener() {
@@ -123,11 +125,7 @@ public final class ChampionshipsCore extends JavaPlugin {
         logManager = CCLogManager.install(this);
 
         java.util.List<String> missingDependencies =
-                java.util.stream.Stream.of(
-                                "packetevents",
-                                "PlaceholderAPI",
-                                "ProtocolLib",
-                                "FastAsyncWorldEdit")
+                java.util.stream.Stream.of("packetevents", "PlaceholderAPI", "FastAsyncWorldEdit")
                         .filter(name -> Bukkit.getPluginManager().getPlugin(name) == null)
                         .toList();
         if (!missingDependencies.isEmpty()) {
@@ -242,6 +240,17 @@ public final class ChampionshipsCore extends JavaPlugin {
                         this);
         loadManager(gameManager);
         loadManager(visibilityManager);
+        locatorBar =
+                new ink.ziip.championshipscore.platform.bukkit.player.ScopedLocatorBar(
+                        this,
+                        visibilityManager::locatorAudiences,
+                        () ->
+                                gameManager.getHotyCodyDuskyManager().getRuntimeInstances().stream()
+                                        .map(
+                                                ink.ziip.championshipscore.api.game.instance
+                                                                .BaseGameInstance
+                                                        ::getWorldName)
+                                        .collect(java.util.stream.Collectors.toUnmodifiableSet()));
         loadManager(remoteBingoManager);
         loadManager(dailyStatsManager);
         loadManager(dailyManager);
@@ -267,10 +276,13 @@ public final class ChampionshipsCore extends JavaPlugin {
 
         for (org.bukkit.entity.Player player : getServer().getOnlinePlayers())
             gameManager.initializeOnlinePlayer(player);
-        bootstrapReady = true;
         if (testSessionManager != null) testSessionManager.recoverOnlineDeveloperStates();
-        List<PlayerNameChangeEvent> queuedNameChanges = List.copyOf(pendingNameChanges);
-        pendingNameChanges.clear();
+        List<PlayerNameChangeEvent> queuedNameChanges;
+        synchronized (pendingNameChanges) {
+            bootstrapReady = true;
+            queuedNameChanges = List.copyOf(pendingNameChanges);
+            pendingNameChanges.clear();
+        }
         queuedNameChanges.forEach(this::handlePlayerNameChange);
         String readyMessage =
                 LogText.formatModuleLog(
@@ -284,13 +296,21 @@ public final class ChampionshipsCore extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        loaded = false;
-        bootstrapReady = false;
-        pendingNameChanges.clear();
+        List<PlayerNameChangeEvent> abandoned;
+        synchronized (pendingNameChanges) {
+            loaded = false;
+            bootstrapReady = false;
+            abandoned = List.copyOf(pendingNameChanges);
+            pendingNameChanges.clear();
+        }
+        abandoned.forEach(event -> event.completion().complete(false));
         bootstrapGeneration++;
         if (anvilInputMenu != null) anvilInputMenu.close();
         // Plugin shutdown logic
         unloadManager(sidebarManager);
+        unloadManager(scheduleManager);
+        unloadManager(voteManager);
+        unloadManager(placeholderManager);
         unloadManager(webLeaderboardManager);
         unloadManager(dailyManager);
         unloadManager(dailyStatsManager);
@@ -304,9 +324,11 @@ public final class ChampionshipsCore extends JavaPlugin {
         unloadManager(testSessionManager);
         unloadManager(remoteBingoManager);
         unloadManager(redisManager);
+        unloadManager(visibilityManager);
+        if (locatorBar != null) locatorBar.close();
+        locatorBar = null;
         if (playerPackets != null) playerPackets.close();
         playerPackets = null;
-        unloadManager(visibilityManager);
         unloadManager(prepareSessionManager);
         unloadManager(rankManager);
 
@@ -320,10 +342,18 @@ public final class ChampionshipsCore extends JavaPlugin {
         unloadManager(worldManager);
 
         unloadManager(configurationManager);
-        unloadManager(databaseManager);
-        unloadManager(placeholderManager);
-        unloadManager(voteManager);
-        unloadManager(scheduleManager);
+        // Persist the Worker's final RELEASED acknowledgement before retiring its database queue.
+        var database = databaseManager;
+        if (database != null
+                && remoteBingoManager != null
+                && remoteBingoManager.requiresDeferredTransportClose()
+                && startedManagers.remove(database)) {
+            remoteBingoManager
+                    .shutdownCompletion()
+                    .whenComplete((ignored, failure) -> database.unload());
+        } else {
+            unloadManager(database);
+        }
         if (glowingEntities != null) glowingEntities.disable();
 
         if (logManager != null) {
@@ -339,9 +369,15 @@ public final class ChampionshipsCore extends JavaPlugin {
     }
 
     private void handlePlayerNameChange(PlayerNameChangeEvent event) {
-        if (!bootstrapReady || playerManager == null) {
-            pendingNameChanges.add(event);
-            return;
+        synchronized (pendingNameChanges) {
+            if (!loaded) {
+                event.completion().complete(false);
+                return;
+            }
+            if (!bootstrapReady) {
+                pendingNameChanges.add(event);
+                return;
+            }
         }
         playerManager
                 .migrateApprovedName(

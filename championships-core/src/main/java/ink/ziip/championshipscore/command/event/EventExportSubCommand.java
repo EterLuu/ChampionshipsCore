@@ -74,8 +74,8 @@ public final class EventExportSubCommand extends BaseSubCommand {
             if (Boolean.TRUE.equals(
                     ink.ziip.championshipscore.configuration.config.CCConfig
                             .WEB_LEADERBOARD_SYNC_ENABLED)) {
-                try {
-                    EventCommandSupport.webClient().submitResults(exported);
+                try (var client = EventCommandSupport.webClient()) {
+                    client.submitResults(exported);
                 } catch (Exception uploadFailure) {
                     plugin.getLogger()
                             .log(

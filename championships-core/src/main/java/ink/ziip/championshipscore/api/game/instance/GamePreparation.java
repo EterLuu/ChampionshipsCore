@@ -66,7 +66,7 @@ final class GamePreparation {
         if (!available() || instance.getGameStageEnum() != GameStageEnum.PREPARATION) return;
         long request = revision;
         long generation = instance.captureGameGeneration();
-        Run run = new Run(generation, request, BaseGameInstance.INTRODUCTION_DURATION);
+        Run run = new Run(generation, request, instance.getIntroductionDurationSeconds());
         if (!enabled) {
             completeSkippedIntroduction(run, onComplete);
             return;
@@ -119,9 +119,7 @@ final class GamePreparation {
                     interactive
                             ? -1
                             : RuleIntroductionTimeline.sectionAt(
-                                    BaseGameInstance.INTRODUCTION_DURATION - run.remaining,
-                                    BaseGameInstance.INTRODUCTION_DURATION,
-                                    rules.size());
+                                    run.duration - run.remaining, run.duration, rules.size());
             if (section >= 0) instance.broadcastRuleSection(rules.get(section));
             if (!currentIntroduction(run)) return;
             instance.showPreparationCountdown(run.remaining);
@@ -292,6 +290,7 @@ final class GamePreparation {
     private static final class Run {
         final long generation;
         final long revision;
+        final int duration;
         int remaining;
         BukkitTask task;
         boolean stopped;
@@ -299,6 +298,7 @@ final class GamePreparation {
         Run(long generation, long revision, int remaining) {
             this.generation = generation;
             this.revision = revision;
+            this.duration = remaining;
             this.remaining = remaining;
         }
 

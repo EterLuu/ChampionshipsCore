@@ -32,7 +32,7 @@ npm run connect
 
 契约中的 `phaseActions` 固定等待/投票/准备/倒计时/进行/结束各阶段的动作边界；`reconnect` 为矩阵中的每个掉线阶段声明重连后必须保留的身份、队伍、世界、模式、回合或结算状态。实际报告仍需由服务端队伍包、模式包、世界位置、回合状态和积分结果完成断言。
 
-管理员手动测试使用 resident。Bot 会根据服务端当前阶段自动在等待、投票、倒计时和游戏阶段切换动作；管理员仍通过 Core 的正常开赛、旁观和结束命令控制流程。
+管理员手动测试使用 resident，默认按比赛标题和开赛提示选择玩法，也可指定 `CC_TEST_GAME` 固定游戏。Bot 会根据服务端当前阶段自动在等待、投票、倒计时和游戏阶段切换动作；管理员仍通过 Core 的正常开赛、旁观和结束命令控制流程。
 
 ```text
 CC_TEST_MODE=resident \
@@ -63,7 +63,9 @@ npm run connect
 | TGTTOS | `tgttos` / 多队实例 | sprint、跳跃、跑图移动、终点视角 | 完成顺序、终点检测、传送和轮间切图 | COUNTDOWN、PROGRESS（跑图中）、END（终点后） | 完成顺序分、轮间累计、地图切换 | 可执行 profile；原生行为待验收 |
 | DragonEggCarnival | `dragoneggcarnival` / 决赛拓扑 | 移动、跳跃、走近目标交互 | 前二队伍准入、目标拾取/提交、观众恢复 | PREPARATION（准入前）、PROGRESS、END | 目标分、决赛胜负、非准入队伍不能进入 | 可执行 profile；原生行为待验收 |
 | ParkourWarrior | `parkourwarrior` / 分区实例 | sprint、跳跃、检查点方向 | 房间进入、检查点、完成顺序 | PREPARATION（房间分配后）、PROGRESS、END | 检查点和完成顺序分、房间清理 | 可执行 profile；原生行为待验收 |
-| HotyCodyDusky | `hotycodydusky` / 多队实例 | 移动、sprint、跳跃、区域观察 | 区域完成、淘汰、轮间状态 | PREPARATION（区域开始前）、PROGRESS、END | 区域分、队伍累计、重连后当前区域 | 可执行 profile；原生行为待验收 |
+| 人机验证 | `iamnotarobot` / 多队分区 | 第三关按白块选择灰块，换位或走叉车楼梯后用刻刀挖掘 | 工地轮次看板、刻刀、灰块更新 | PROGRESS | 关卡积分 | 隔离 Paper 26.3 已确认车顶挖掘，并用一组随机题验证三轮分别挖除 21、31、44 块后均可通过 |
+| HotyCodyDusky | `hotycodydusky` / 多队分区 | 按身份逃跑、追人与传鱼，识别补给、使用道具与技能、攻击替身 | 持鱼切换、背包两格、替身、淘汰 | PREPARATION、PROGRESS、END | 生存分、队伍累计、重连后持鱼身份 | 已在隔离 Paper 26.3 验证拾取、技能切换、传鱼与原版投掷 |
+| CraftingFeast | `craftingfeast` / 多队分区 | 按顾客名牌寻找正在点餐的顾客，走近后右键接单 | 顾客状态、接单交互 | PREPARATION、PROGRESS、END | 营业分、订单 | 客户端场景已覆盖 |
 | BuildMart | `buildmart` / 多队实例 | 移动观察、就近材料采集/摆放、提交动作 | 材料采集、摆放、提交、独立补货、订单结算 | PREPARATION、PROGRESS、END | 蓝图匹配分、订单完成顺序、补货不重复、第二场清理 | 可执行 profile；原生行为待验收 |
 | Dodgebolt | `dodgebolt` / 决赛固定两队 | 视角、弓右键蓄力/放箭、箭矢交互 | 队伍准入、取箭、射击、回合结束 | PREPARATION（准入后）、PROGRESS（回合中）、END | 每回合胜负、总胜负、箭矢和队伍恢复 | 可执行 profile；原生行为待验收 |
 | AceRace | `acerace` / 多队实例 | sprint、跳跃、跑图、检查点视角 | 检查点、排名、重生、地图恢复 | COUNTDOWN、PROGRESS（检查点间）、END | 检查点/完成排名分、第二场路线恢复 | 可执行 profile；原生行为待验收 |
@@ -76,7 +78,7 @@ npm run connect
 
 CI 读取 Harness JSON 报告和 Core/Test Event 状态，至少要求：
 
-没有运行中的 Minecraft 服时，先执行 `npm run test:scenarios`，它对 17 个 profile 运行阶段、动作、重连、计分包和结束状态的客户端模拟场景；接着在真实地图上执行本矩阵的原生断言。
+没有运行中的 Minecraft 服时，先执行 `npm run test:scenarios`，它对 19 个 profile 运行阶段、动作、重连、计分包和结束状态的客户端模拟场景；接着在真实地图上执行本矩阵的原生断言。
 
 - roster 与预期 Bot 完全一致；所有 Bot 在终点仍已登录、在线、世界就绪；意外断线、死亡或重复 UUID 使测试失败。
 - `phaseTransitions` 包含矩阵要求的阶段；`injectedDisconnects` 等于预期注入次数；重连后的 `playLogins`、传送确认、队伍和身份与断线前一致。

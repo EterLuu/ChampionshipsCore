@@ -1,0 +1,17 @@
+dont-edit-this:
+  version: 20
+name: area
+world-name: ""
+lanes: 8
+timer: 900
+prepare:
+  published: false
+  dirty: true
+  revision: 0
+  world-built: false
+rules:
+  - - '&b&lI am not a ROBOT &7· &f人机验证'
+    - '&f每队四人分走四条独立都市空中赛道，共四段检查点，跌落仅回本段起点；全员抵达终点后开启第一关。'
+    - '&f第二关一人一轨，按提示找到自己的滑轨，与对面搭档互相指挥，右键手柄验证。每题两侧都对齐才一起过题，全员完成三题后开门。'
+    - '&f第三关按白块形状挖掘灰色混凝土。右键大按钮，向右推动滑块到底，完全嵌合。三轮通过后开门。'
+    - '&f全队越过黑白终点线即可完赛。单关速度和全程速度分别排名。'

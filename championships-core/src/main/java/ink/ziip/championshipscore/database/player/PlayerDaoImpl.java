@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 
 public class PlayerDaoImpl implements PlayerDao {
@@ -165,18 +166,9 @@ public class PlayerDaoImpl implements PlayerDao {
                     collectUuids(connection, table, allowed, examinedUuids, unknownUuids);
 
                 Map<String, Integer> removedRowsByTable = new LinkedHashMap<>();
-                for (String table : UUID_TABLES) {
-                    int removedRows = 0;
-                    for (UUID uuid : unknownUuids) {
-                        try (PreparedStatement statement =
-                                connection.prepareStatement(
-                                        "DELETE FROM `" + table + "` WHERE `uuid`=?")) {
-                            statement.setString(1, uuid.toString());
-                            removedRows += statement.executeUpdate();
-                        }
-                    }
-                    removedRowsByTable.put(table, removedRows);
-                }
+                List<UUID> removals = List.copyOf(unknownUuids);
+                for (String table : UUID_TABLES)
+                    removedRowsByTable.put(table, deleteUuids(connection, table, removals));
 
                 connection.commit();
                 return new PlayerUnknownRemovalResult(
@@ -198,6 +190,24 @@ public class PlayerDaoImpl implements PlayerDao {
             logFailure(MessageConfig.codeText("player-dao-impl.remove-unknown-1"), failure);
             throw new IllegalStateException("Core unknown player removal failed", failure);
         }
+    }
+
+    private static int deleteUuids(Connection connection, String table, List<UUID> uuids)
+            throws SQLException {
+        int removed = 0;
+        for (int offset = 0; offset < uuids.size(); offset += 256) {
+            var batch = uuids.subList(offset, Math.min(offset + 256, uuids.size()));
+            String placeholders =
+                    String.join(",", java.util.Collections.nCopies(batch.size(), "?"));
+            try (var delete =
+                    connection.prepareStatement(
+                            "DELETE FROM `" + table + "` WHERE uuid IN (" + placeholders + ")")) {
+                for (int i = 0; i < batch.size(); i++)
+                    delete.setString(i + 1, batch.get(i).toString());
+                removed += delete.executeUpdate();
+            }
+        }
+        return removed;
     }
 
     private static void collectUuids(
@@ -231,20 +241,37 @@ public class PlayerDaoImpl implements PlayerDao {
     @NotNull
     public PlayerIdentityMigrationResult synchronizeIdentity(
             @NotNull String name, @NotNull UUID currentUuid) {
-        try (Connection connection = plugin.getDatabaseManager().getConnection()) {
+        var database = plugin.getDatabaseManager();
+        try (Connection connection = database.getConnection()) {
+            connection.setTransactionIsolation(database.identityTransactionIsolation());
             connection.setAutoCommit(false);
-            try {
-                PlayerIdentityMigrationResult result =
-                        synchronizeIdentity(connection, name, currentUuid);
+            for (int attempt = 1; ; attempt++) {
+                PlayerIdentityMigrationResult result;
+                try {
+                    result = synchronizeIdentity(connection, name, currentUuid);
+                } catch (SQLException | RuntimeException failure) {
+                    try {
+                        connection.rollback();
+                    } catch (SQLException rollbackFailure) {
+                        failure.addSuppressed(rollbackFailure);
+                        throw failure;
+                    }
+                    // InnoDB deadlock or competing unique-key insert. Re-read the entire identity
+                    // after rollback. Never replay an uncertain commit or an unrelated failure.
+                    if (!(failure instanceof SQLException sql)
+                            || (sql.getErrorCode() != 1213 && sql.getErrorCode() != 1062)
+                            || attempt >= 4) throw failure;
+                    try {
+                        Thread.sleep(ThreadLocalRandom.current().nextLong(5, 20L * attempt));
+                    } catch (InterruptedException interrupted) {
+                        Thread.currentThread().interrupt();
+                        failure.addSuppressed(interrupted);
+                        throw failure;
+                    }
+                    continue;
+                }
                 connection.commit();
                 return result;
-            } catch (SQLException | RuntimeException exception) {
-                try {
-                    connection.rollback();
-                } catch (SQLException rollbackFailure) {
-                    exception.addSuppressed(rollbackFailure);
-                }
-                throw exception;
             }
         } catch (SQLException | RuntimeException exception) {
             logFailure(MessageConfig.codeText("player-dao-impl.synchronize-identity-1"), exception);
@@ -271,7 +298,7 @@ public class PlayerDaoImpl implements PlayerDao {
                     connection.commit();
                     return PlayerIdentityMigrationResult.failed(
                             newName,
-                            UUID.randomUUID(),
+                            null,
                             MessageConfig.codeText("player-dao-impl.migrate-name-change-2"));
                 }
                 previousUuids.remove(currentUuid);
@@ -352,10 +379,9 @@ public class PlayerDaoImpl implements PlayerDao {
             }
         } catch (SQLException | RuntimeException exception) {
             logFailure(MessageConfig.codeText("player-dao-impl.migrate-name-change-1"), exception);
-            UUID fallback = replacementUuid != null ? replacementUuid : UUID.randomUUID();
             return PlayerIdentityMigrationResult.failed(
                     newName,
-                    fallback,
+                    replacementUuid,
                     exception.getClass().getSimpleName() + ": " + exception.getMessage());
         }
     }
@@ -685,6 +711,7 @@ public class PlayerDaoImpl implements PlayerDao {
             @NotNull Connection connection, @NotNull String name, @NotNull UUID currentUuid)
             throws SQLException {
         Set<UUID> previousUuids = new LinkedHashSet<>();
+        boolean foundPlayer = false;
         int matchingPlayerRows = 0;
         boolean canonicalPlayerRow = false;
 
@@ -700,6 +727,7 @@ public class PlayerDaoImpl implements PlayerDao {
             statement.setString(2, currentUuid.toString());
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
+                    foundPlayer = true;
                     UUID storedUuid = UUID.fromString(resultSet.getString("uuid"));
                     String storedName = resultSet.getString("username");
                     if (storedName.equalsIgnoreCase(name)) {
@@ -776,7 +804,7 @@ public class PlayerDaoImpl implements PlayerDao {
         }
 
         boolean playerRowsNeedRewrite = matchingPlayerRows != 1 || !canonicalPlayerRow;
-        if (playerRowsNeedRewrite) {
+        if (playerRowsNeedRewrite && foundPlayer) {
             try (PreparedStatement delete =
                     connection.prepareStatement(
                             """
@@ -787,6 +815,8 @@ public class PlayerDaoImpl implements PlayerDao {
                 delete.setString(2, currentUuid.toString());
                 delete.executeUpdate();
             }
+        }
+        if (playerRowsNeedRewrite) {
             try (PreparedStatement insert =
                     connection.prepareStatement(
                             """

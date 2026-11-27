@@ -19,8 +19,9 @@ public class HotyCodyDuskyManager extends BaseGameInstanceManager<HotyCodyDuskyT
         deferMapLoad(
                 () -> {
                     var loadedWorlds = new HashSet<String>();
+                    File directory = new File(plugin.getDataFolder(), "hotycodydusky");
                     loadMapDefinitions(
-                            new File(plugin.getDataFolder(), "hotycodydusky"),
+                            directory,
                             (name, file) -> {
                                 var config = new HotyCodyDuskyConfig(plugin, name);
                                 config.initializeConfiguration(plugin.getFolder());

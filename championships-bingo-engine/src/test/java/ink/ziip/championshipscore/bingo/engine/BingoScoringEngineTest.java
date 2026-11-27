@@ -153,6 +153,37 @@ class BingoScoringEngineTest {
         coop.apply(observation(1, 1, RED_ONE, 0, 1));
         assertEquals(1, coop.result().completedCells().get(1));
         assertEquals(1, coop.result().completedCells().get(2));
+        var line = coop.apply(observation(2, 2, BLUE_ONE, 1, 2));
+        assertEquals(
+                List.of(RED_ONE, BLUE_ONE),
+                line.awards().stream().map(PlayerAward::playerId).toList());
+        assertEquals(1, coop.firstClaimCount(1));
+        assertEquals(1, coop.firstClaimCount(2));
+        assertFalse(coop.boardFullyClaimed());
+        assertEquals(1, coop.completedLines(1));
+        assertEquals(1, coop.completedLines(2));
+        var duplicate = coop.apply(observation(3, 1, RED_ONE, 0, 3));
+        assertFalse(duplicate.accepted());
+        assertEquals(1, duplicate.completedLines());
+    }
+
+    @Test
+    void multipleLinesCanCompleteOnOneCellIncludingSingleCellCards() {
+        for (int width : List.of(1, 3, 5)) {
+            var rules = new BingoScoringRules(width, List.of(1), 2, 2, 1);
+            var engine =
+                    new BingoScoringEngine(
+                            MATCH_ID, 1, rules, manifest().teams(), Map.of(RED_ONE, 1));
+            int center = width * width / 2;
+            long seq = 0;
+            for (int i = 0; i < width * width; i++) {
+                if (i != center) engine.apply(observation(++seq, 1, RED_ONE, i, seq));
+            }
+            assertEquals(2 * width - 2, engine.completedLines(1));
+            var decision = engine.apply(observation(++seq, 1, RED_ONE, center, seq));
+            assertEquals(2 * width + 2, decision.completedLines());
+            assertEquals(decision.completedLines(), engine.completedLines(1));
+        }
     }
 
     @Test

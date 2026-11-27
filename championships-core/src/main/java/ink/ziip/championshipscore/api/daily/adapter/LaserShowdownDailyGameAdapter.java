@@ -8,7 +8,6 @@ import ink.ziip.championshipscore.api.game.model.GameRunMode;
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import ink.ziip.championshipscore.configuration.config.CCConfig;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -32,12 +31,7 @@ public final class LaserShowdownDailyGameAdapter implements DailyGameAdapter {
 
     @Override
     public @NotNull DailyRules rules() {
-        return new DailyRules(
-                Math.max(2, CCConfig.DAILY_LASER_SHOWDOWN_MIN_PLAYERS),
-                Math.max(2, Math.min(16, CCConfig.DAILY_LASER_SHOWDOWN_MAX_PLAYERS)),
-                1,
-                Math.max(2, Math.min(16, CCConfig.DAILY_LASER_SHOWDOWN_TEAMS)),
-                CCConfig.DAILY_LASER_SHOWDOWN_COUNTDOWN_SECONDS);
+        return plugin.getConfigurationManager().getCCConfig().dailyGame(game()).rules();
     }
 
     @Override

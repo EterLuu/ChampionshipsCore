@@ -11,6 +11,7 @@ import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideLevelTempla
 import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideLevelType;
 import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideWallGroups;
 import ink.ziip.championshipscore.api.game.riptiderush.support.RiptideTestFixtures;
+import ink.ziip.championshipscore.util.world.NativePiston;
 
 import org.bukkit.block.BlockState;
 import org.junit.jupiter.api.Test;
@@ -136,7 +137,7 @@ class RiptidePassRunTest {
                         org.bukkit.block.BlockFace.EAST,
                         org.bukkit.block.BlockFace.WEST)) {
             int dx = face.getModX(), dz = face.getModZ();
-            assertEquals(face, RiptideNativePiston.facing(dx, dz));
+            assertEquals(face, NativePiston.facing(dx, dz));
             cells.sort(RiptideMovingWall.leadingFirst(dx, dz));
             for (int i = 0; i < cells.size(); i++) {
                 var target = cells.get(i);

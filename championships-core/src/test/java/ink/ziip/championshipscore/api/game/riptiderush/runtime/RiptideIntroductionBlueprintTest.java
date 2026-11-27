@@ -9,36 +9,36 @@ import java.util.Map;
 
 class RiptideIntroductionBlueprintTest {
     @Test
-    void raftHasTheSameSevenByNineFootprintAsTheFormalDefault() {
+    void seaLeavesTheFullRealBuildingEnvelopeAndMovingDeckClear() {
         var blocks = RiptideIntroductionBlueprint.blocks();
-        assertEquals(63, blocks.values().stream().filter(m -> m == Material.OAK_PLANKS).count());
-        for (int f = -4; f <= 4; f++)
-            for (int x = -3; x <= 3; x++) assertEquals(Material.OAK_PLANKS, at(blocks, f, x, 0));
-    }
-
-    @Test
-    void twoWallsHaveReachableThreeWideThreeHighOpenings() {
-        var blocks = RiptideIntroductionBlueprint.blocks();
-        for (int f : new int[] {24, 52}) {
-            int opening = f == 24 ? -1 : 1;
-            for (int x = opening; x < opening + 3; x++)
-                for (int y = 1; y <= 3; y++) assertEquals(Material.AIR, at(blocks, f, x, y));
-            assertEquals(Material.STRIPPED_SPRUCE_LOG, at(blocks, f, -3, 1));
-            assertEquals(Material.STRIPPED_SPRUCE_LOG, at(blocks, f, 0, 4));
-        }
-    }
-
-    @Test
-    void canalLeavesTheWholeRouteClearForRaftAndStoppedFloorMechanics() {
-        var blocks = RiptideIntroductionBlueprint.blocks();
-        for (int f = 5; f <= 141; f++) {
-            for (int x = -3; x <= 3; x++) {
-                assertEquals(Material.AIR, at(blocks, f, x, 0));
+        for (int f = -4; f <= 144; f++)
+            for (int x = -7; x <= 7; x++) {
                 assertEquals(Material.WATER, at(blocks, f, x, -2));
-                if (f != 24 && f != 52)
-                    for (int y = 1; y <= 3; y++) assertEquals(Material.AIR, at(blocks, f, x, y));
+                assertEquals(
+                        Math.abs(f) <= 4 && Math.abs(x) <= 3 ? Material.OAK_PLANKS : Material.AIR,
+                        at(blocks, f, x, 0));
+                for (int y = 1; y <= 12; y++) assertEquals(Material.AIR, at(blocks, f, x, y));
             }
+        assertEquals(
+                Material.SPRUCE_PLANKS, at(blocks, 145, 0, 0), "pier joins final raft edge at 144");
+    }
+
+    @Test
+    void sceneryFitsMigrationFootprintAndWaterCannotEscape() {
+        var blocks = RiptideIntroductionBlueprint.blocks();
+        for (var cell : blocks.keySet()) {
+            assertTrue(cell.forward() >= RiptideIntroductionBlueprint.MIN_FORWARD);
+            assertTrue(cell.forward() <= RiptideIntroductionBlueprint.MAX_FORWARD);
+            assertTrue(Math.abs(cell.lateral()) <= RiptideIntroductionBlueprint.MAX_LATERAL);
+            assertTrue(cell.height() >= RiptideIntroductionBlueprint.MIN_HEIGHT);
+            assertTrue(cell.height() <= RiptideIntroductionBlueprint.MAX_HEIGHT);
         }
+        for (int f = -16; f <= 154; f++)
+            for (int x : new int[] {-24, 24})
+                assertEquals(Material.SANDSTONE, at(blocks, f, x, -2));
+        for (int x = -24; x <= 24; x++)
+            for (int f : new int[] {-16, 154})
+                assertEquals(Material.SANDSTONE, at(blocks, f, x, -2));
     }
 
     private Material at(

@@ -47,3 +47,17 @@ test('team and scoreboard packets cannot regress an active game to waiting', () 
   assert.equal(tracker.observe('scoreboard_score', { itemName: 'join', scoreName: 'points', value: 1 }), null);
   assert.equal(tracker.phase, PHASES.PROGRESS);
 });
+
+test('styled Worker subtitles expose only their visible countdown and start cues', () => {
+  const tracker = new PhaseTracker();
+  const tag = value => ({ type: 'string', value });
+  const packet = label => ({ text: { type: 'compound', value: {
+    color: tag('#FF6B26'), bold: { type: 'byte', value: 1 },
+    hover_event: { type: 'compound', value: { text: tag('本场结束') } },
+    text: tag(label),
+  } } });
+  assert.equal(tracker.observe('set_title_subtitle', packet('即将开始 宾果飞速')).to, PHASES.COUNTDOWN);
+  assert.equal(tracker.observe('respawn', {}), null);
+  assert.equal(tracker.observe('set_title_subtitle', packet('卡片已发放')).text, '卡片已发放');
+  assert.equal(tracker.phase, PHASES.PROGRESS);
+});

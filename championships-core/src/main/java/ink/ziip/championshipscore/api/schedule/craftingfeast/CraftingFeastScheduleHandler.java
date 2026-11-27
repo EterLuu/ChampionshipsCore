@@ -1,0 +1,29 @@
+package ink.ziip.championshipscore.api.schedule.craftingfeast;
+
+import ink.ziip.championshipscore.ChampionshipsCore;
+import ink.ziip.championshipscore.api.BaseListener;
+import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
+import ink.ziip.championshipscore.api.game.craftingfeast.runtime.CraftingFeastArea;
+
+import lombok.Setter;
+
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+
+@Setter
+public final class CraftingFeastScheduleHandler extends BaseListener {
+    private CraftingFeastScheduleManager scheduleManager;
+
+    public CraftingFeastScheduleHandler(ChampionshipsCore plugin) {
+        super(plugin);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onGameEnd(SingleGameEndEvent event) {
+        if (event.getGameInstance() instanceof CraftingFeastArea area
+                && area.isFormalEventRun()
+                && scheduleManager.isEnabled()) {
+            scheduleManager.nextRound();
+        }
+    }
+}

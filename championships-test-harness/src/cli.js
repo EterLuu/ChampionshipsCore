@@ -41,7 +41,7 @@ const DEFAULTS = Object.freeze({
 });
 
 function help() {
-  console.log(`Championships Core protocol harness\n\nEnvironment:\n  CC_TEST_HOST, CC_TEST_PORT, CC_TEST_VERSION, CC_TEST_VIEW_DISTANCE\n  CC_TEST_COUNT, CC_TEST_START_INDEX, CC_TEST_PREFIX, CC_TEST_INTERVAL_MS, CC_TEST_HOLD_MS\n  CC_TEST_CLIENTS_PER_PROCESS=8\n  CC_TEST_RECONNECT_ATTEMPTS, CC_TEST_RECONNECT_DELAY_MS\n  CC_TEST_MODE=window|resident (default: window)\n  CC_TEST_ACTION=idle|look|walk|game (bingo-walk is a legacy compatibility profile)\n  CC_TEST_VOTE_SLOT=0, CC_TEST_SUBMIT_SLOT=0 (window action slots)\n  CC_TEST_MENU_SLOT=0 (game equipment/weapon menu slot)\n  CC_TEST_ALLOW_WORLD_MUTATION=true (CI/window or Core automatic session only)\n  CC_TEST_GAME=<game-token> (required with CC_TEST_ACTION=game)\n  CC_TEST_IDENTITY_MODE=offline|cc-web\n  CC_TEST_WEB_BASE_URL, CC_TEST_WEB_KEY_ID, CC_TEST_WEB_HMAC_SECRET\n  CC_TEST_BOT_ALLOWED_CIDRS (required for cc-web mode)\n  CC_TEST_WEB_DISABLE_ON_FINISH=true (optional; disables the provisioned slots)\n  CC_TEST_REPORT=/tmp/.../bots.json\n  CC_TEST_STOP_FILE=/tmp/.../finished\n  CC_TEST_CORE_AUTO_SESSION=true
+  console.log(`Championships Core protocol harness\n\nEnvironment:\n  CC_TEST_HOST, CC_TEST_PORT, CC_TEST_VERSION, CC_TEST_VIEW_DISTANCE\n  CC_TEST_COUNT, CC_TEST_START_INDEX, CC_TEST_PREFIX, CC_TEST_INTERVAL_MS, CC_TEST_HOLD_MS\n  CC_TEST_CLIENTS_PER_PROCESS=8\n  CC_TEST_RECONNECT_ATTEMPTS, CC_TEST_RECONNECT_DELAY_MS\n  CC_TEST_MODE=window|resident (default: window)\n  CC_TEST_ACTION=idle|look|walk|game (bingo-walk is a legacy compatibility profile)\n  CC_TEST_VOTE_SLOT=0, CC_TEST_SUBMIT_SLOT=0 (window action slots)\n  CC_TEST_MENU_SLOT=0 (game equipment/weapon menu slot)\n  CC_TEST_ALLOW_WORLD_MUTATION=true (CI/window or Core automatic session only)\n  CC_TEST_GAME=<game-token> (optional override for game detection)\n  CC_TEST_IDENTITY_MODE=offline|cc-web\n  CC_TEST_WEB_BASE_URL, CC_TEST_WEB_KEY_ID, CC_TEST_WEB_HMAC_SECRET\n  CC_TEST_BOT_ALLOWED_CIDRS (required for cc-web mode)\n  CC_TEST_WEB_DISABLE_ON_FINISH=true (optional; disables the provisioned slots)\n  CC_TEST_REPORT=/tmp/.../bots.json\n  CC_TEST_STOP_FILE=/tmp/.../finished\n  CC_TEST_CORE_AUTO_SESSION=true
   CC_TEST_CORE_RCON_HOST, CC_TEST_CORE_RCON_PORT, CC_TEST_CORE_RCON_PASSWORD
   CC_TEST_CORE_SESSION_MODE=single|event
   CC_TEST_CORE_GAME, CC_TEST_CORE_MAP, CC_TEST_CORE_PROFILE
@@ -70,6 +70,7 @@ function numberEnv(name, fallback, minimum) {
 }
 
 function config() {
+  const game = process.env.CC_TEST_GAME || process.env.CC_TEST_CORE_GAME || null;
   return {
     mode: process.env.CC_TEST_MODE || DEFAULTS.mode,
     host: process.env.CC_TEST_HOST || DEFAULTS.host,
@@ -85,8 +86,8 @@ function config() {
     reconnectAttempts: numberEnv('CC_TEST_RECONNECT_ATTEMPTS', DEFAULTS.reconnectAttempts, 0),
     reconnectDelayMs: numberEnv('CC_TEST_RECONNECT_DELAY_MS', DEFAULTS.reconnectDelayMs, 0),
     password: process.env.CC_TEST_PASSWORD || DEFAULTS.password,
-    action: process.env.CC_TEST_ACTION || DEFAULTS.action,
-    game: process.env.CC_TEST_GAME || null,
+    action: process.env.CC_TEST_ACTION || (game || process.env.CC_TEST_MODE === 'resident' ? 'game' : DEFAULTS.action),
+    game,
     voteSlot: numberEnv('CC_TEST_VOTE_SLOT', 0, 0),
     submitSlot: numberEnv('CC_TEST_SUBMIT_SLOT', 0, 0),
     menuSlot: numberEnv('CC_TEST_MENU_SLOT', 0, 0),
@@ -153,9 +154,7 @@ function validateSettings(settings, exists = fs.existsSync) {
     throw new Error(`unsupported mode: ${settings.mode}`);
   if (!['idle', 'look', 'walk', 'game', 'bingo-walk'].includes(settings.action))
     throw new Error(`unsupported action: ${settings.action}`);
-  if (settings.action === 'game' && !settings.game)
-    throw new Error('CC_TEST_ACTION=game requires CC_TEST_GAME');
-  if (settings.action === 'game') {
+  if (settings.action === 'game' && settings.game) {
     try { gameContract(settings.game); }
     catch { throw new Error(`unsupported CC_TEST_GAME: ${settings.game}`); }
   }
@@ -181,8 +180,6 @@ function validateSettings(settings, exists = fs.existsSync) {
     if (settings.mode !== 'resident') throw new Error('Core auto session requires CC_TEST_MODE=resident');
     if (!['idle', 'game'].includes(settings.action))
       throw new Error('Core auto session requires CC_TEST_ACTION=idle or game');
-    if (settings.action === 'game' && !settings.game && !settings.coreGame)
-      throw new Error('Core auto session with game actions requires CC_TEST_GAME or CC_TEST_CORE_GAME');
     if (settings.identityMode !== 'cc-web') throw new Error('Core auto session requires CC_TEST_IDENTITY_MODE=cc-web');
     if (settings.count !== 64 || settings.startIndex !== 0 || settings.prefix !== 'autobot')
       throw new Error('Core auto session requires the default 64-seat autobot00..autobot63 roster');
@@ -238,7 +235,7 @@ function createClient(settings, name, index, result, state, clients) {
   state.attempts += 1;
   result.attempted += 1;
   client.on('connect', () => { result.connected += 1; });
-  attachClient(client, clientSettings, index, result, state);
+  attachClient(client, clientSettings, settings.startIndex + index, result, state);
   client.on('error', error => {
     state.lastError = error.message;
     result.errors.push({ name, message: error.message, attempt: state.attempts });
@@ -257,7 +254,7 @@ function createClient(settings, name, index, result, state, clients) {
   return client;
 }
 
-async function runClients(settings) {
+async function runClients(settings, signal) {
   const eventLoop = monitorEventLoopDelay({ resolution: 20 });
   eventLoop.enable();
   const result = {
@@ -315,7 +312,7 @@ async function runClients(settings) {
       settings.mode === 'resident'
         ? Infinity
         : Math.max(0, settings.count - 1) * settings.intervalMs + settings.holdMs,
-      settings.stopFile);
+      settings.stopFile, globalThis, fs.existsSync, signal);
   } catch (error) {
     result.windowEndReason = 'error';
     result.fatalErrors.push({ message: error.message });
@@ -415,44 +412,56 @@ async function runClients(settings) {
   return result;
 }
 
-async function runBotProcesses(settings) {
+async function runBotProcesses(settings, signal) {
   if (settings.count > settings.clientsPerProcess)
-    return runShards(settings, __filename);
-  return runClients(settings);
+    return runShards(settings, __filename, signal);
+  return runClients(settings, signal);
 }
 
-async function runWithCoreSession(settings) {
-  const control = new CoreTestControl(settings);
-  await control.start();
-  await control.leaseWeb();
-  const bots = runBotProcesses(settings);
-  let terminal = null;
+async function runCoreGame(settings, control, signal) {
+  const poll = { timeoutMs: settings.coreTimeoutMs, intervalMs: settings.coreStatusIntervalMs, signal };
+  await control.waitForReady(poll);
+  if (!settings.coreAutoRun) return;
+  signal.throwIfAborted();
+  await control.run();
+  const terminal = await control.waitForTerminal(poll);
+  signal.throwIfAborted();
+  fs.writeFileSync(settings.stopFile, JSON.stringify({
+    state: terminal.state, at: new Date().toISOString(),
+  }) + '\n', { flag: 'wx' });
+}
+
+async function runWithCoreSession(settings, control = new CoreTestControl(settings), runBots = runBotProcesses, disable = disableBots) {
+  const controller = new AbortController();
+  const pending = [];
+  const failures = [];
+  let started = false;
+  let report;
   try {
-    await control.waitForReady({ timeoutMs: settings.coreTimeoutMs, intervalMs: settings.coreStatusIntervalMs });
-    if (settings.coreAutoRun) {
-      await control.run();
-      terminal = await control.waitForTerminal({
-        timeoutMs: settings.coreTimeoutMs,
-        intervalMs: settings.coreStatusIntervalMs,
-      });
-      if (settings.stopFile) fs.writeFileSync(settings.stopFile, `${JSON.stringify({
-        state: terminal.state,
-        at: new Date().toISOString(),
-      })}\n`, { flag: 'wx' });
-    }
-    return await bots;
+    await control.start();
+    started = true;
+    await control.leaseWeb();
+    pending.push(runBots(settings, controller.signal));
+    pending.push(runCoreGame(settings, control, controller.signal));
+    [report] = await Promise.all(pending);
   } catch (error) {
-    if (settings.stopFile && !fs.existsSync(settings.stopFile)) {
-      try { fs.writeFileSync(settings.stopFile, `${error.message}\n`, { flag: 'wx' }); } catch { /* preserve original error */ }
+    failures.push(error);
+    controller.abort(error);
+    if (pending.length && settings.stopFile) {
+      try { fs.writeFileSync(settings.stopFile, error.message + '\n', { flag: 'wx' }); }
+      catch (writeError) { if (writeError.code !== 'EEXIST') failures.push(writeError); }
     }
-    try { await bots; } catch { /* preserve the first lifecycle failure */ }
-    throw error;
-  } finally {
-    if (settings.coreAutoStop) {
-      try { await control.stop(); } catch (error) { if (!terminal) throw error; }
-    }
-    if (settings.webDisableOnFinish) await disableBots(settings);
+    await Promise.allSettled(pending);
   }
+  if (started && settings.coreAutoStop) {
+    try { await control.stop(); } catch (error) { failures.push(error); }
+  }
+  if (settings.webDisableOnFinish) {
+    try { await disable(settings); } catch (error) { failures.push(error); }
+  }
+  if (failures.length === 1) throw failures[0];
+  if (failures.length) throw new AggregateError(failures, failures.map(error => error.message).join('; '));
+  return report;
 }
 
 async function main() {
@@ -471,21 +480,9 @@ async function main() {
     if (!report.success) process.exitCode = 1;
     return;
   }
-  if (!process.argv.includes('--worker') && settings.count > settings.clientsPerProcess) {
-    let report;
-    try {
-      report = await runShards(settings, __filename);
-      writeReport(settings, report);
-    } finally {
-      if (settings.webDisableOnFinish && settings.identityMode === 'cc-web')
-        await disableBots(settings);
-    }
-    if (!report.success) process.exitCode = 1;
-    return;
-  }
   let result;
   try {
-    result = await runClients(settings);
+    result = process.argv.includes('--worker') ? await runClients(settings) : await runBotProcesses(settings);
     writeReport(settings, result);
   } finally {
     if (settings.webDisableOnFinish && settings.identityMode === 'cc-web')

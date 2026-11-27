@@ -30,13 +30,16 @@ import ink.ziip.championshipscore.api.game.riptiderush.config.RiptideRushConfig;
 import ink.ziip.championshipscore.api.game.riptiderush.runtime.RiptideRushArea;
 import ink.ziip.championshipscore.api.game.tntrun.config.TNTRunConfig;
 import ink.ziip.championshipscore.api.game.tntrun.runtime.TNTRunTeamArea;
+import ink.ziip.championshipscore.api.schedule.FormalEventMapResolver;
 import ink.ziip.championshipscore.api.schedule.ScheduleManager;
 import ink.ziip.championshipscore.api.schedule.model.TwoVTwoVector;
 import ink.ziip.championshipscore.api.team.*;
 import ink.ziip.championshipscore.api.visibility.PlayerVisibilityManager;
 import ink.ziip.championshipscore.configuration.config.message.GameMessages;
+import ink.ziip.championshipscore.configuration.manager.ConfigurationManager;
 
 import org.bukkit.*;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scheduler.BukkitTask;
@@ -106,7 +109,10 @@ class GameStartServiceTest {
         withFixture(
                 game,
                 f -> {
-                    String arena = GameStartRules.internalArenas(game) ? "3" : "1";
+                    String arena =
+                            game == GameTypeEnum.IAmNotARobot
+                                    ? "3,1"
+                                    : GameStartRules.internalArenas(game) ? "3" : "1";
                     var arguments =
                             GameStartArguments.parse(
                                     new String[] {
@@ -129,7 +135,9 @@ class GameStartServiceTest {
                     assertFalse(f.manager.requested.contains(f.teams.get(2)));
                     assertEquals(GameRunMode.GAME, f.manager.mode);
                     if (GameStartRules.internalArenas(game))
-                        assertEquals(List.of(2), f.area.getSelectedArenaIndices(4));
+                        assertEquals(
+                                game == GameTypeEnum.IAmNotARobot ? List.of(2, 0) : List.of(2),
+                                f.area.getSelectedArenaIndices(4));
                 });
     }
 
@@ -181,6 +189,40 @@ class GameStartServiceTest {
                             () -> schedule.startOrStopFormalEvent(invalid));
                     assertNull(schedule.selectedMap(game));
                     assertEquals(1, schedule.dispatches);
+                });
+    }
+
+    @Test
+    void registeredFishMapOutsideTheFormalPoolCanStillStartManually() throws Exception {
+        var game = GameTypeEnum.HotyCodyDusky;
+        withFixture(
+                game,
+                f -> {
+                    var schedule = new RecordingSchedule(f.plugin);
+                    set(f.plugin, "scheduleManager", schedule);
+                    var config =
+                            f.plugin.getConfigurationManager().getCCConfig().getConfiguration();
+                    config.set("formal-events.HotyCodyDusky.maps", List.of("codusk_basin"));
+                    var arguments =
+                            GameStartArguments.parse(
+                                    new String[] {game.commandName(), "Chosen", "#2", "team-1"},
+                                    true);
+                    assertEquals(
+                            List.of("codusk_basin"), FormalEventMapResolver.maps(f.plugin, game));
+                    assertTrue(FormalEventMapResolver.selectableMaps(f.plugin, game).isEmpty());
+                    assertThrows(
+                            IllegalArgumentException.class,
+                            () -> schedule.startOrStopFormalEvent(arguments));
+                    assertEquals(0, schedule.dispatches);
+                    assertNull(schedule.selectedMap(game));
+                    assertTrue(
+                            new GameStartService(f.plugin)
+                                    .startManual(arguments)
+                                    .toCompletableFuture()
+                                    .join()
+                                    .started());
+                    config.set("formal-events.HotyCodyDusky.maps", List.of());
+                    assertTrue(FormalEventMapResolver.maps(f.plugin, game).isEmpty());
                 });
     }
 
@@ -386,13 +428,48 @@ class GameStartServiceTest {
             BaseGameInstance area,
             List<ChampionshipTeam> teams) {}
 
+    @Test
+    void remoteBingoStartReadsPublishedConfigWithoutALocalArea() throws Exception {
+        withFixture(
+                GameTypeEnum.Bingo,
+                f -> {
+                    var remote = allocate(RemoteBingo.class);
+                    var config =
+                            new ink.ziip.championshipscore.api.game.bingo.config.BingoConfig(
+                                    f.plugin, "Chosen");
+                    set(remote, "remoteAreaConfigs", Map.of("Chosen", config));
+                    set(remote, "areas", new ConcurrentHashMap<>());
+                    set(f.manager, "areaManagers", Map.of(GameTypeEnum.Bingo, remote));
+                    var prepare = allocate(PrepareSessionManager.class);
+                    set(prepare, "plugin", f.plugin);
+                    set(prepare, "mapLocks", Map.of());
+                    set(config, "preparePublished", true);
+                    set(config, "prepareDirty", false);
+                    assertTrue(prepare.canStart(GameTypeEnum.Bingo, "Chosen"));
+                    assertFalse(prepare.canStart(GameTypeEnum.Bingo, "missing"));
+                    set(config, "prepareDirty", true);
+                    assertFalse(prepare.canStart(GameTypeEnum.Bingo, "Chosen"));
+                    set(config, "prepareDirty", false);
+                    set(config, "preparePublished", false);
+                    assertFalse(prepare.canStart(GameTypeEnum.Bingo, "Chosen"));
+                    set(config, "preparePublished", true);
+                    set(
+                            prepare,
+                            "mapLocks",
+                            Map.of(GameTypeEnum.Bingo.name() + "\u0000chosen", UUID.randomUUID()));
+                    assertFalse(prepare.canStart(GameTypeEnum.Bingo, "Chosen"));
+                });
+    }
+
     @ParameterizedTest
     @EnumSource(GameRunMode.class)
     void unpublishedRemoteBingoIsAdmittedOnlyForTests(GameRunMode mode) throws Exception {
         withFixture(
                 GameTypeEnum.Bingo,
                 f -> {
-                    set(f.plugin, "prepareSessionManager", allocate(UnreadyPrepare.class));
+                    var prepare = allocate(UnreadyPrepare.class);
+                    set(prepare, "plugin", f.plugin);
+                    set(f.plugin, "prepareSessionManager", prepare);
                     set(f.manager, "bingoManager", allocate(RemoteBingo.class));
                     var arguments =
                             GameStartArguments.parse(
@@ -434,7 +511,9 @@ class GameStartServiceTest {
         withFixture(
                 GameTypeEnum.Bingo,
                 f -> {
-                    set(f.plugin, "prepareSessionManager", allocate(UnreadyPrepare.class));
+                    var prepare = allocate(UnreadyPrepare.class);
+                    set(prepare, "plugin", f.plugin);
+                    set(f.plugin, "prepareSessionManager", prepare);
                     var result =
                             new GameStartService(f.plugin)
                                     .startManual(
@@ -514,7 +593,7 @@ class GameStartServiceTest {
                 set(manager, name, new ConcurrentHashMap<>());
             set(plugin, "gameManager", manager);
             List<ChampionshipTeam> teams =
-                    List.of(new TestTeam(1), new TestTeam(2), new TestTeam(3));
+                    List.of(new TestTeam(1, game), new TestTeam(2, game), new TestTeam(3, game));
             var teamManager = allocate(TeamManager.class);
             set(
                     teamManager,
@@ -533,6 +612,17 @@ class GameStartServiceTest {
             BaseGameInstance area;
             BaseGameConfig config;
             switch (game) {
+                case IAmNotARobot -> {
+                    area =
+                            allocate(
+                                    ink.ziip.championshipscore.api.game.iamnotarobot.runtime
+                                            .RobotArea.class);
+                    var c =
+                            new ink.ziip.championshipscore.api.game.iamnotarobot.config.RobotConfig(
+                                    plugin, "Chosen");
+                    c.setLanes(4);
+                    config = c;
+                }
                 case TNTRun -> {
                     area = allocate(TNTRunTeamArea.class);
                     var c = new TNTRunConfig(plugin, "Chosen");
@@ -540,6 +630,11 @@ class GameStartServiceTest {
                     config = c;
                 }
                 case HotyCodyDusky -> {
+                    var configs = new ConfigurationManager(plugin);
+                    var document = new YamlConfiguration();
+                    document.set("formal-events.HotyCodyDusky.maps", List.of("chosen"));
+                    set(configs.getCCConfig(), "configuration", document);
+                    set(plugin, "configurationManager", configs);
                     area = allocate(HotyCodyDuskyTeamArea.class);
                     var c = new HotyCodyDuskyConfig(plugin, "Chosen");
                     c.setCopies(4);
@@ -575,7 +670,9 @@ class GameStartServiceTest {
             var maps = new Maps(plugin);
             maps.register(area);
             set(manager, "areaManagers", Map.of(game, maps));
-            set(plugin, "prepareSessionManager", allocate(ReadyPrepare.class));
+            var prepare = allocate(ReadyPrepare.class);
+            set(prepare, "plugin", plugin);
+            set(plugin, "prepareSessionManager", prepare);
             action.run(new Fixture(plugin, manager, area, teams));
         } finally {
             sf.set(null, previous);
@@ -717,8 +814,20 @@ class GameStartServiceTest {
     }
 
     private static final class TestTeam extends ChampionshipTeam {
-        TestTeam(int id) {
-            super(id, "team-" + id, "red", "#FFFFFF", Set.of(new UUID(id, 1)), null);
+        TestTeam(int id, GameTypeEnum game) {
+            super(
+                    id,
+                    "team-" + id,
+                    "red",
+                    "#FFFFFF",
+                    game == GameTypeEnum.IAmNotARobot
+                            ? Set.of(
+                                    new UUID(id, 1),
+                                    new UUID(id, 2),
+                                    new UUID(id, 3),
+                                    new UUID(id, 4))
+                            : Set.of(new UUID(id, 1)),
+                    null);
         }
     }
 }

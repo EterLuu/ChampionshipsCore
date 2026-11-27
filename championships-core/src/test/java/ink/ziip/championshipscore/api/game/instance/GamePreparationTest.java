@@ -237,6 +237,28 @@ class GamePreparationTest {
     }
 
     @Test
+    void extendedIntroductionCapturesDurationAndKeepsTheSameLifecycle() throws Exception {
+        try (var f = new Fixture(directory)) {
+            f.area.interactive = true;
+            f.area.duration = 180;
+            AtomicInteger complete = new AtomicInteger();
+            f.introduction(complete::incrementAndGet);
+            var task = f.last();
+            f.area.duration = 90; // Changing the next request must not shorten this lesson.
+            f.ticks(task, 91);
+            assertEquals(0, complete.get());
+            assertTrue(f.area.isIntroductionPhase());
+            assertEquals("180/180", f.area.bars.getFirst());
+            f.ticks(task, 90);
+            assertEquals(1, complete.get());
+            assertEquals(1, f.area.stops);
+            assertTrue(task.cancelled);
+            task.tick.run();
+            assertEquals(1, complete.get());
+        }
+    }
+
+    @Test
     void oldIntroductionCannotStopOrCompleteItsReplacement() throws Exception {
         try (var f = new Fixture(directory)) {
             f.introduction(() -> fail("old completion"));
@@ -571,6 +593,7 @@ class GamePreparationTest {
                 aborts,
                 barClears;
         boolean interactive, blocks;
+        int duration = 90;
         Runnable startHook = () -> {}, stopHook = () -> {}, ruleHook = () -> {};
 
         Area(ChampionshipsCore plugin, Config config) {
@@ -584,6 +607,11 @@ class GamePreparationTest {
         @Override
         public void setGameStageEnum(GameStageEnum stage) {
             gameStageEnum = stage;
+        }
+
+        @Override
+        protected int getIntroductionDurationSeconds() {
+            return duration;
         }
 
         @Override

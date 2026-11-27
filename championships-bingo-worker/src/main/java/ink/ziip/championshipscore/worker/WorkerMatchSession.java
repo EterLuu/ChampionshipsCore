@@ -38,6 +38,7 @@ import ink.ziip.championshipscore.protocol.MatchStateMachine;
 import ink.ziip.championshipscore.protocol.ParticipantRole;
 import ink.ziip.championshipscore.protocol.PlayerSnapshot;
 import ink.ziip.championshipscore.protocol.TeamSnapshot;
+import ink.ziip.championshipscore.protocol.transport.DeliveryReceipt;
 import ink.ziip.championshipscore.shared.presentation.BingoCardPresentation;
 import ink.ziip.championshipscore.shared.presentation.BingoTaskPresentation;
 import ink.ziip.championshipscore.shared.presentation.PlayerListPresentation;
@@ -235,14 +236,14 @@ final class WorkerMatchSession {
         if (manifest.scoring().variant().remix() == BingoRemix.PARALLAX) initParallaxOrders();
     }
 
-    private boolean coreSettlement;
+    private volatile boolean coreSettlement;
     private volatile boolean released;
 
     void awaitCoreSettlement(boolean enabled) {
         coreSettlement = enabled && manifest.runMode().formalEvent();
     }
 
-    synchronized boolean awaitingEventSettlement() {
+    boolean awaitingEventSettlement() {
         return coreSettlement && !released && lifecycle.state() == MatchState.FINISHED;
     }
 
@@ -329,7 +330,7 @@ final class WorkerMatchSession {
         return manifest.epoch();
     }
 
-    synchronized MatchState state() {
+    MatchState state() {
         return lifecycle.state();
     }
 
@@ -350,33 +351,30 @@ final class WorkerMatchSession {
         testReleaseJournal = journal;
     }
 
-    synchronized boolean owns(UUID playerId) {
-        return participants.containsKey(playerId)
-                && (!lifecycle.state().terminal() || awaitingEventSettlement())
-                && !released;
+    WorkerParticipantAccess access(UUID id) {
+        var player = participants.get(id);
+        return new WorkerParticipantAccess(
+                player == null ? null : player.role(),
+                lifecycle.state(),
+                released,
+                coreSettlement,
+                roundPrepared);
     }
 
-    synchronized boolean isPlaying(UUID playerId) {
-        PlayerSnapshot player = participants.get(playerId);
-        return player != null
-                && player.role() == ParticipantRole.PLAYER
-                && (lifecycle.state() == MatchState.ROUTING
-                        || lifecycle.state() == MatchState.COUNTDOWN
-                        || lifecycle.state() == MatchState.RUNNING);
+    boolean owns(UUID id) {
+        return access(id).owned();
     }
 
-    synchronized boolean isRunningPlayer(UUID playerId) {
-        PlayerSnapshot player = participants.get(playerId);
-        return lifecycle.state() == MatchState.RUNNING
-                && player != null
-                && player.role() == ParticipantRole.PLAYER;
+    boolean isPlaying(UUID id) {
+        return access(id).playing();
     }
 
-    synchronized boolean isSpectator(UUID playerId) {
-        return participants.get(playerId) != null
-                && participants.get(playerId).role() == ParticipantRole.SPECTATOR
-                && (!lifecycle.state().terminal() || awaitingEventSettlement())
-                && !released;
+    boolean isRunningPlayer(UUID id) {
+        return access(id).runningPlayer();
+    }
+
+    boolean isSpectator(UUID id) {
+        return access(id).spectator();
     }
 
     String resolveChampionshipPlaceholder(UUID playerId, String params) {
@@ -476,28 +474,16 @@ final class WorkerMatchSession {
         return owns(playerId);
     }
 
-    synchronized boolean isProtectedParticipant(UUID playerId) {
-        PlayerSnapshot player = participants.get(playerId);
-        if (player == null
-                || released
-                || (lifecycle.state().terminal() && !awaitingEventSettlement())) return false;
-        return player.role() == ParticipantRole.SPECTATOR
-                || lifecycle.state() != MatchState.RUNNING;
+    boolean isProtectedParticipant(UUID id) {
+        return access(id).protectedParticipant();
     }
 
-    synchronized boolean isEventWaitingPlayer(UUID playerId) {
-        PlayerSnapshot player = participants.get(playerId);
-        return awaitingEventSettlement()
-                && player != null
-                && player.role() == ParticipantRole.PLAYER;
+    boolean isEventWaitingPlayer(UUID id) {
+        return access(id).waitingPlayer();
     }
 
-    synchronized boolean isFinalCountdownPlayer(UUID playerId) {
-        PlayerSnapshot player = participants.get(playerId);
-        return roundPrepared
-                && lifecycle.state() == MatchState.COUNTDOWN
-                && player != null
-                && player.role() == ParticipantRole.PLAYER;
+    boolean isFinalCountdownPlayer(UUID id) {
+        return access(id).countdownPlayer();
     }
 
     Location respawnLocation(org.bukkit.event.player.PlayerRespawnEvent event) {
@@ -1062,7 +1048,9 @@ final class WorkerMatchSession {
     private void acceptCompletion(PlayerSnapshot player, int cellIndex) {
         CompletionObservation observation;
         ScoringDecision decision;
-        long outgoingEventSeq;
+        MatchEvent event;
+        CompletionStage<DeliveryReceipt> publication;
+        String finishReason = null;
         synchronized (this) {
             if (!isRunningPlayer(player.uuid()) || participants.get(player.uuid()) != player)
                 return;
@@ -1085,21 +1073,31 @@ final class WorkerMatchSession {
             recordTaskCompletion(player, observation);
             hiddenCells.remove(cellIndex);
             settleParallax(player.teamId(), cellIndex);
-            outgoingEventSeq = ++eventSeq;
+            // Enqueue under the same lock that assigns the sequence. Two region threads may
+            // complete cells concurrently, and replay on Core requires contiguous sequences.
+            event = MatchMessages.taskCompleted(observation, ++eventSeq, Clock.systemUTC());
+            publication = events.publishEvent(event);
+            if (winnerTeamId == null) {
+                if (scoring.hasWon(player.teamId())) {
+                    winnerTeamId = player.teamId();
+                    finishReason = "win-condition";
+                } else {
+                    BingoMode mode = manifest.scoring().variant().mode();
+                    if (decision.claimRank() == 0
+                            && (mode == BingoMode.POINTS || mode == BingoMode.DOMINATION)
+                            && scoring.boardFullyClaimed()) finishReason = "board-claimed";
+                }
+            }
         }
-        MatchEvent event =
-                MatchMessages.taskCompleted(observation, outgoingEventSeq, Clock.systemUTC());
-        events.publishEvent(event)
-                .exceptionally(
-                        error -> {
-                            plugin.getLogger()
-                                    .log(
-                                            Level.SEVERE,
-                                            "Unable to publish Bingo completion "
-                                                    + event.messageId(),
-                                            error);
-                            return null;
-                        });
+        publication.exceptionally(
+                error -> {
+                    plugin.getLogger()
+                            .log(
+                                    Level.SEVERE,
+                                    "Unable to publish Bingo completion " + event.messageId(),
+                                    error);
+                    return null;
+                });
         Component completion =
                 message(
                         "bingo.task-completed",
@@ -1126,14 +1124,9 @@ final class WorkerMatchSession {
                     }
                 });
         requestSidebarUpdate();
-        if (scoring.hasWon(player.teamId())) {
-            winnerTeamId = player.teamId();
-            scheduler.runGlobal(() -> finish("win-condition"));
-        } else {
-            BingoMode mode = manifest.scoring().variant().mode();
-            if ((mode == BingoMode.POINTS || mode == BingoMode.DOMINATION)
-                    && scoring.result().boardFullyClaimed())
-                scheduler.runGlobal(() -> finish("board-claimed"));
+        if (finishReason != null) {
+            String reason = finishReason;
+            scheduler.runGlobal(() -> finish(reason));
         }
     }
 
@@ -2218,18 +2211,16 @@ final class WorkerMatchSession {
         return failPreparation(reason);
     }
 
-    private CompletionStage<MatchEvent> emit(MatchEventType type, Map<String, String> attributes) {
-        MatchEvent event;
-        synchronized (this) {
-            event =
-                    MatchMessages.event(
-                            manifest.matchId(),
-                            manifest.epoch(),
-                            ++eventSeq,
-                            type,
-                            attributes,
-                            Clock.systemUTC());
-        }
+    private synchronized CompletionStage<MatchEvent> emit(
+            MatchEventType type, Map<String, String> attributes) {
+        MatchEvent event =
+                MatchMessages.event(
+                        manifest.matchId(),
+                        manifest.epoch(),
+                        ++eventSeq,
+                        type,
+                        attributes,
+                        Clock.systemUTC());
         return events.publishEvent(event).thenApply(ignored -> event);
     }
 

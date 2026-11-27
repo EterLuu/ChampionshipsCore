@@ -96,6 +96,10 @@ public final class SidebarConfiguration {
         ConfigurationSection gamesSection = requiredSection(yaml, "boards.games");
         for (GameTypeEnum gameType : GameTypeEnum.values()) {
             ConfigurationSection gameSection = findSection(gamesSection, gameType.name());
+            if (gameSection == null
+                    && gameType == GameTypeEnum.IAmNotARobot
+                    && !gamesSection.isSet(gameType.name()))
+                gameSection = requiredSection(defaults, "boards.games." + gameType.name());
             if (gameSection == null) {
                 throw new IllegalArgumentException(
                         "missing game sidebar template " + gameType.name());

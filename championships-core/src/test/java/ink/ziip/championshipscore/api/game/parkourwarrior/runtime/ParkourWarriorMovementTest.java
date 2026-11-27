@@ -146,6 +146,7 @@ class ParkourWarriorMovementTest {
     void checkpointsWithSameDisplayNameRemainDistinct() throws Exception {
         try (var f = new Fixture(directory)) {
             var second = f.checkpoint("main", "other", PKWCheckPointTypeEnum.main, 30, 1);
+            assertNotEquals(f.main, second);
             f.checkpoints.add(second);
             f.move(0);
             f.move(30);

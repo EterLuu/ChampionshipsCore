@@ -18,6 +18,7 @@ test('common action helpers serialize on protocol 26.3', () => {
   packets.swing(client, 1);
   packets.useItem(client, 2);
   packets.attack(client, 3);
+  assert.deepEqual(writes.slice(-2).map(p => p.name), ['attack', 'punch']);
   packets.useEntity(client, 3);
   packets.selectHotbar(client, 0);
   packets.dig(client, { x: 1, y: 64, z: 2 }, 3);

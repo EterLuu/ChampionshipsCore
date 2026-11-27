@@ -365,7 +365,7 @@ public final class TestSessionManager extends BaseManager {
                                 Math.max(1, CCConfig.TEST_IDENTITY_REQUEST_TIMEOUT_SECONDS)));
         return java.util.concurrent.CompletableFuture.supplyAsync(
                         () -> {
-                            try {
+                            try (client) {
                                 return client.leases(
                                         CCConfig.TEST_AUTH_SERVER_ID,
                                         session.sessionId(),
@@ -425,7 +425,7 @@ public final class TestSessionManager extends BaseManager {
         }
         CompletableFuture.supplyAsync(
                         () -> {
-                            try {
+                            try (client) {
                                 return client.leases(
                                         CCConfig.TEST_AUTH_SERVER_ID,
                                         session.sessionId(),

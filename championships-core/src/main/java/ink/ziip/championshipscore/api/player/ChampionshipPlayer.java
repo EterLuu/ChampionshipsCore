@@ -1,13 +1,5 @@
 package ink.ziip.championshipscore.api.player;
 
-import com.comphenix.protocol.PacketType;
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.ProtocolManager;
-import com.comphenix.protocol.events.PacketContainer;
-import com.comphenix.protocol.reflect.StructureModifier;
-import com.comphenix.protocol.wrappers.EnumWrappers;
-import com.comphenix.protocol.wrappers.WrappedChatComponent;
-
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
@@ -40,49 +32,27 @@ public class ChampionshipPlayer {
     public void sendActionBar(String content) {
         Player player = getPlayer();
         if (player == null) return;
-        ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
-        WrappedChatComponent wrappedChatComponent =
-                WrappedChatComponent.fromLegacyText(setPlaceholders(content));
-        PacketContainer packetContainer =
-                protocolManager.createPacket(PacketType.Play.Server.SYSTEM_CHAT);
-        StructureModifier<Integer> integers = packetContainer.getIntegers();
-        if (integers.size() == 1) {
-            integers.write(0, (int) EnumWrappers.ChatType.GAME_INFO.getId());
-        } else {
-            packetContainer.getBooleans().write(0, true);
-        }
-        packetContainer.getChatComponents().write(0, wrappedChatComponent);
-        protocolManager.sendServerPacket(player, packetContainer);
+        player.sendActionBar(LegacyText.component(setPlaceholders(content)));
     }
 
     public void setRedScreen() {
         Player player = getPlayer();
-        PacketContainer packet =
-                ProtocolLibrary.getProtocolManager()
-                        .createPacket(PacketType.Play.Server.SET_BORDER_WARNING_DISTANCE);
-
-        if (player == null) return;
-
-        World world = player.getWorld();
-
-        WorldBorder worldBorder = world.getWorldBorder();
-
-        packet.getModifier().writeDefaults();
-        packet.getIntegers().write(0, (int) worldBorder.getSize());
-        ProtocolLibrary.getProtocolManager().sendServerPacket(player, packet);
+        if (player != null)
+            sendWarningDistance(player, (int) player.getWorld().getWorldBorder().getSize());
     }
 
     public void removeRedScreen() {
         Player player = getPlayer();
-        if (player == null) return;
+        if (player != null) sendWarningDistance(player, 0);
+    }
 
-        PacketContainer packet =
-                ProtocolLibrary.getProtocolManager()
-                        .createPacket(PacketType.Play.Server.SET_BORDER_WARNING_DISTANCE);
-
-        packet.getModifier().writeDefaults();
-        packet.getIntegers().write(0, 0);
-        ProtocolLibrary.getProtocolManager().sendServerPacket(player, packet);
+    private void sendWarningDistance(Player player, int distance) {
+        com.github.retrooper.packetevents.PacketEvents.getAPI()
+                .getPlayerManager()
+                .sendPacket(
+                        player,
+                        new com.github.retrooper.packetevents.wrapper.play.server
+                                .WrapperPlayServerWorldBorderWarningReach(distance));
     }
 
     public void sendMessage(String content) {

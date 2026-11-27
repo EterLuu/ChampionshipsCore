@@ -1,0 +1,75 @@
+dont-edit-this:
+  version: 15
+name: area
+world-name: ""
+prepare:
+  published: false
+  dirty: true
+  revision: 0
+  published-at:
+  world-built: false
+countdown-block-disappearance:
+  pos1:
+  pos2:
+  mode: RANDOM
+# 规则介绍阶段在各队自己的餐厅进行新手教学（不计分，开赛前重置餐厅）；false 恢复聊天规则播报。
+tutorial-enabled: true
+timer: 600
+restaurants: 8
+arrival-seconds: 12
+patience-seconds: 75
+maximum-tip: 40
+vip-every: 5
+vip-patience-percent: 70
+vip-bonus-percent: 50
+# 客流从 arrival-start-percent 逐步（每档10%）升到 arrival-peak-percent，最后 arrival-peak-seconds 秒为晚高峰。
+arrival-start-percent: 80
+arrival-peak-percent: 150
+arrival-peak-seconds: 120
+special-chance-percent: 5
+delivery-first-seconds: 45
+delivery-eta-seconds: 75
+delivery-order-seconds: 20
+delivery-max-orders: 4
+delivery-wait-seconds: 30
+delivery-cooldown-seconds: 20
+delivery-bonus-percent: 25
+copy-origin:
+copy-step:
+  ==: Vector
+  x: 64.0
+  y: 0.0
+  z: 0.0
+copy-size:
+spawn:
+entrance:
+aisle:
+order-counter:
+order-board:
+delivery-board:
+delivery-slots: []
+delivery-route: []
+queue: []
+spectator-spawn-point:
+seats: []
+private-seats: []
+resources: {}
+supplies: {}
+workstations: {}
+requests: {}
+special-guests: {}
+vip-guests: {}
+introduction-spawn-point:
+rules:
+  - - "&#696969━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    - "&#fff566&l合成盛宴 &#bababa•&#ededed 游戏介绍"
+    - "&#ededed与队友分工经营餐厅，采集材料、制作物品，完成顾客订单。"
+    - "&#ededed顾客点餐结束后自动入座，手持成品右键已入座的顾客交付。"
+    - "&#ededed外卖按单号放入出餐格，骑手离开前全部备齐才得分。"
+    - "&#696969━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  - - "&#696969━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    - "&#fff566&l合成盛宴 &#bababa•&#ededed 积分规则"
+    - "&#ededed完成订单获得积分；交付越快小费越多，连续完成还有奖励。"
+    - "&#ededed顾客超时离开会中断连单、降低口碑；贵宾耐心更短，分数更高。"
+    - "&#ededed个人得分为队伍总分除以队伍人数。"
+    - "&#696969━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

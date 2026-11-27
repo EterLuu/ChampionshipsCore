@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.game.laser.presentation;
 
 import ink.ziip.championshipscore.api.game.laser.model.LaserGun;
 import ink.ziip.championshipscore.configuration.config.message.LaserBoxMessages;
+import ink.ziip.championshipscore.platform.bukkit.text.ComponentTemplates;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
 import ink.ziip.championshipscore.shared.presentation.MessageTemplate;
 
@@ -47,7 +48,7 @@ public final class LaserCombatMessages {
                                 Map.of("%gun%", LaserGunItems.gunName(gun)))));
     }
 
-    public static Component itemHint(String type) {
+    public static Component itemHint(String type, Component heldName) {
         String message =
                 switch (type) {
                     case "grenade" -> LaserBoxMessages.LASER_BOX_ITEM_GRENADE;
@@ -55,7 +56,7 @@ public final class LaserCombatMessages {
                     case "reveal" -> LaserBoxMessages.LASER_BOX_ITEM_REVEAL;
                     default -> LaserBoxMessages.LASER_BOX_ITEM_SHIELD;
                 };
-        return LegacyText.component(LaserGunItems.text(message))
+        return ComponentTemplates.render(LaserGunItems.text(message), Map.of("%item%", heldName))
                 .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE);
     }
 }

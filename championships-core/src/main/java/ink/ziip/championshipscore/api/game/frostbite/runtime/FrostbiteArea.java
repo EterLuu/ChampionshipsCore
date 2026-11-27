@@ -2,9 +2,9 @@ package ink.ziip.championshipscore.api.game.frostbite.runtime;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.event.SingleGameEndEvent;
+import ink.ziip.championshipscore.api.game.arena.GamePickup;
 import ink.ziip.championshipscore.api.game.frostbite.config.FrostbiteConfig;
 import ink.ziip.championshipscore.api.game.frostbite.mechanics.FrostbiteFrozenEquipment;
-import ink.ziip.championshipscore.api.game.frostbite.mechanics.FrostbiteSupplyHints;
 import ink.ziip.championshipscore.api.game.frostbite.model.FrostbiteItem;
 import ink.ziip.championshipscore.api.game.frostbite.presentation.FrostbiteItemPresentation;
 import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameInstance;
@@ -27,11 +27,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.*;
 import org.bukkit.scheduler.BukkitTask;
-import org.bukkit.util.Transformation;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
-import org.joml.AxisAngle4f;
-import org.joml.Vector3f;
 
 import java.util.*;
 import java.util.logging.Level;
@@ -96,12 +93,13 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
      */
     private ink.ziip.championshipscore.util.glow.TimedPlayerGlow respawnGlow;
 
-    private final FrostbiteSupplyHints supplyHints = new FrostbiteSupplyHints();
+    private final GamePickup.Hints supplyHints = new GamePickup.Hints();
     private final Map<UUID, Boolean> collisionBefore = new HashMap<>();
-    private final List<ItemDisplay> pickupDisplays = new ArrayList<>();
+
+    private record SupplyPoint(Location location, GamePickup display) {}
+
+    private final List<SupplyPoint> pickups = new ArrayList<>();
     private final Map<UUID, Integer> fullPickupHintAt = new HashMap<>();
-    private List<Location> pickups = List.of();
-    private int[] pickupReady = new int[0];
     private final Random random = new Random();
     private final NamespacedKey itemKey;
     private FrostbiteRound round;
@@ -303,6 +301,7 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
     private void tickRound() {
         if (getGameStageEnum() != GameStageEnum.PROGRESS || round == null) return;
         tick++;
+        pickups.forEach(point -> point.display().tick(tick));
         for (UUID id : round.expired(tick)) {
             if (!isGameplayParticipant(id)) continue;
             UUID killer = round.die(id);
@@ -349,24 +348,20 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
                                                             : "")));
                 } else {
                     collect(p);
-                    String hint = supplyHints.current(id, tick);
-                    p.sendActionBar(
-                            LegacyText.component(
-                                    hint != null
-                                            ? hint
-                                            : FrostbiteMessages.FROSTBITE_STATUS_ACTIONBAR
-                                                    .replace(
-                                                            "%kills%",
-                                                            Integer.toString(round.kills(id)))
-                                                    .replace(
-                                                            "%arena%",
-                                                            Integer.toString(arena(id) + 1))
-                                                    .replace(
-                                                            "%heated%",
-                                                            round.heated(id, tick)
-                                                                    ? MessageConfig.codeText(
-                                                                            "frostbite-area.tick-round-1")
-                                                                    : "")));
+                    if (!supplyHints.refresh(p, tick))
+                        p.sendActionBar(
+                                LegacyText.component(
+                                        FrostbiteMessages.FROSTBITE_STATUS_ACTIONBAR
+                                                .replace(
+                                                        "%kills%",
+                                                        Integer.toString(round.kills(id)))
+                                                .replace("%arena%", Integer.toString(arena(id) + 1))
+                                                .replace(
+                                                        "%heated%",
+                                                        round.heated(id, tick)
+                                                                ? MessageConfig.codeText(
+                                                                        "frostbite-area.tick-round-1")
+                                                                : "")));
                 }
             }
         }
@@ -413,13 +408,6 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
                                 1.5,
                                 0);
         }
-        if (tick % 2 == 0) animatePickups();
-        if (tick % 20 == 0)
-            for (int i = 0; i < pickups.size(); i++)
-                if (pickupReady[i] > 0 && pickupReady[i] <= tick) {
-                    pickupDisplays.get(i).setItemStack(new ItemStack(Material.GOLD_BLOCK));
-                    pickupReady[i] = 0;
-                }
         if (!isEventRun() && round.seats().keySet().stream().noneMatch(round::active)) endGame();
     }
 
@@ -765,8 +753,8 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
         p.getInventory().setItem(slot, FrostbiteItemPresentation.create(type, itemKey));
         if (type == FrostbiteItem.BOW)
             p.getInventory().setItem(8, new ItemStack(Material.ARROW, 3));
-        supplyHints.add(p.getUniqueId(), FrostbiteItemPresentation.pickupHint(type), tick);
-        p.sendActionBar(LegacyText.component(supplyHints.current(p.getUniqueId(), tick)));
+        supplyHints.announce(
+                p, LegacyText.component(FrostbiteItemPresentation.pickupHint(type)), tick);
         p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, .5F, 1.5F);
     }
 
@@ -1083,48 +1071,19 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
     }
 
     private void createPickups() {
-        List<Location> points = new ArrayList<>();
-        pickupArenaOffsets.clear();
-        for (int a : getSelectedArenaIndices(4)) {
-            pickupArenaOffsets.put(a, points.size());
-            for (String text : getGameConfig().getItemPoints())
-                points.add(getGameConfig().point(text, a));
-        }
-        pickups = List.copyOf(points);
-        pickupReady = new int[points.size()];
-        for (Location l : points)
-            pickupDisplays.add(
-                    l.getWorld()
-                            .spawn(
-                                    l.clone().add(0, .8, 0),
-                                    ItemDisplay.class,
-                                    d -> {
-                                        d.setItemStack(new ItemStack(Material.GOLD_BLOCK));
-                                        d.setPersistent(false);
-                                        d.setTransformation(
-                                                new Transformation(
-                                                        new Vector3f(),
-                                                        new AxisAngle4f(
-                                                                (float) Math.toRadians(45),
-                                                                0F,
-                                                                1F,
-                                                                0F),
-                                                        new Vector3f(.6F, .6F, .6F),
-                                                        new AxisAngle4f()));
-                                    }));
-    }
-
-    private void animatePickups() {
-        float angle = (float) Math.toRadians(45 + tick * 2.4);
-        for (int i = 0; i < pickupDisplays.size(); i++) {
-            ItemDisplay display = pickupDisplays.get(i);
-            if (!display.isValid() || pickupReady[i] > tick) continue;
-            display.setTransformation(
-                    new Transformation(
-                            new Vector3f(0, (float) (Math.sin(tick * .12) * .12), 0),
-                            new AxisAngle4f(angle, 0F, 1F, 0F),
-                            new Vector3f(.6F, .6F, .6F),
-                            new AxisAngle4f()));
+        ItemStack mask = new ItemStack(Material.GOLD_BLOCK);
+        for (int arena : getSelectedArenaIndices(4)) {
+            pickupArenaOffsets.put(arena, pickups.size());
+            for (String text : getGameConfig().getItemPoints()) {
+                Location point = getGameConfig().point(text, arena);
+                var display =
+                        new GamePickup(
+                                point.clone().add(0, .8, 0),
+                                mask,
+                                GamePickup.Motion.FLOAT_AND_SPIN,
+                                false);
+                pickups.add(new SupplyPoint(point, display));
+            }
         }
     }
 
@@ -1132,24 +1091,27 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
         int a = arena(p.getUniqueId()), count = getGameConfig().getItemPoints().size();
         Integer offset = pickupArenaOffsets.get(a);
         if (offset == null) return;
-        for (int i = offset; i < offset + count; i++)
-            if (pickupReady[i] <= tick && p.getLocation().distanceSquared(pickups.get(i)) <= 2.25) {
+        for (int i = offset; i < offset + count; i++) {
+            var point = pickups.get(i);
+            if (point.display().available()
+                    && p.getLocation().distanceSquared(point.location()) <= 2.25) {
                 if (itemCount(p) > 0) {
                     if (fullPickupHintAt.getOrDefault(p.getUniqueId(), -100) + 100 <= tick) {
                         fullPickupHintAt.put(p.getUniqueId(), tick);
-                        supplyHints.add(
-                                p.getUniqueId(),
-                                MessageConfig.codeText("frostbite-area.collect-1"),
+                        supplyHints.announce(
+                                p,
+                                LegacyText.component(
+                                        MessageConfig.codeText("frostbite-area.collect-1")),
                                 tick);
                     }
                     return;
                 }
-                pickupReady[i] = tick + getGameConfig().getItemRespawnSeconds() * 20;
+                point.display().hideUntil(tick + getGameConfig().getItemRespawnSeconds() * 20);
                 if (random.nextInt(15) == 0) give(p, FrostbiteItem.ICICLE);
                 else giveRandom(p, null);
-                pickupDisplays.get(i).setItemStack(new ItemStack(Material.AIR));
                 return;
             }
+        }
     }
 
     @Override
@@ -1230,11 +1192,9 @@ public final class FrostbiteArea extends BaseMultiTeamGameInstance {
         for (Zone zone : List.copyOf(zones)) removeZone(zone);
         for (AvalancheCloud cloud : avalancheClouds.values()) cloud.entity().remove();
         avalancheClouds.clear();
-        pickupDisplays.forEach(Entity::remove);
-        pickupDisplays.clear();
-        pickups = List.of();
+        pickups.forEach(point -> point.display().remove());
+        pickups.clear();
         pickupArenaOffsets.clear();
-        pickupReady = new int[0];
         freezeLocations.clear();
         meleeCooldown.clear();
         useCooldown.clear();

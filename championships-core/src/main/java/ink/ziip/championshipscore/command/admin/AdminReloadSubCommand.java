@@ -228,6 +228,8 @@ public class AdminReloadSubCommand extends BaseSubCommand {
             String databaseType,
             String databaseAddress,
             int databasePort,
+            boolean databaseTls,
+            int databasePoolSize,
             String databaseName,
             String databaseUsername,
             String databasePassword,
@@ -252,6 +254,8 @@ public class AdminReloadSubCommand extends BaseSubCommand {
                     ink.ziip.championshipscore.configuration.config.CCConfig.DATABASE_TYPE,
                     ink.ziip.championshipscore.configuration.config.CCConfig.DATABASE_ADDRESS,
                     ink.ziip.championshipscore.configuration.config.CCConfig.DATABASE_PORT,
+                    ink.ziip.championshipscore.configuration.config.CCConfig.DATABASE_TLS,
+                    ink.ziip.championshipscore.configuration.config.CCConfig.DATABASE_POOL_SIZE,
                     ink.ziip.championshipscore.configuration.config.CCConfig.DATABASE_NAME,
                     ink.ziip.championshipscore.configuration.config.CCConfig.DATABASE_USERNAME,
                     ink.ziip.championshipscore.configuration.config.CCConfig.DATABASE_PASSWORD,
@@ -273,10 +277,19 @@ public class AdminReloadSubCommand extends BaseSubCommand {
                     ink.ziip.championshipscore.configuration.config.CCConfig.BINGO_EXECUTION_MODE,
                     ink.ziip.championshipscore.configuration.config.CCConfig.BINGO_WORKER_ID,
                     ink.ziip.championshipscore.configuration.config.CCConfig.BINGO_PROXY_CHANNEL,
-                    ink.ziip.championshipscore.configuration.config.CCConfig
-                            .DAILY_ACERACE_CONCURRENT_INSTANCES,
-                    ink.ziip.championshipscore.configuration.config.CCConfig
-                            .DAILY_PARKOUR_WARRIOR_CONCURRENT_INSTANCES);
+                    ChampionshipsCore.getInstance()
+                            .getConfigurationManager()
+                            .getCCConfig()
+                            .dailyGame(
+                                    ink.ziip.championshipscore.api.game.model.GameTypeEnum.AceRace)
+                            .concurrentInstances(),
+                    ChampionshipsCore.getInstance()
+                            .getConfigurationManager()
+                            .getCCConfig()
+                            .dailyGame(
+                                    ink.ziip.championshipscore.api.game.model.GameTypeEnum
+                                            .ParkourWarrior)
+                            .concurrentInstances());
         }
 
         List<String> changedPaths() {
@@ -288,6 +301,11 @@ public class AdminReloadSubCommand extends BaseSubCommand {
                             databaseAddress,
                             ink.ziip.championshipscore.configuration.config.CCConfig
                                     .DATABASE_ADDRESS)
+                    || databaseTls
+                            != ink.ziip.championshipscore.configuration.config.CCConfig.DATABASE_TLS
+                    || databasePoolSize
+                            != ink.ziip.championshipscore.configuration.config.CCConfig
+                                    .DATABASE_POOL_SIZE
                     || databasePort
                             != ink.ziip.championshipscore.configuration.config.CCConfig
                                     .DATABASE_PORT
@@ -349,12 +367,21 @@ public class AdminReloadSubCommand extends BaseSubCommand {
                                     .BINGO_PROXY_CHANNEL))
                 changed.add("bingo.execution/worker/proxy");
             if (aceRaceCopies
-                    != ink.ziip.championshipscore.configuration.config.CCConfig
-                            .DAILY_ACERACE_CONCURRENT_INSTANCES)
+                    != ChampionshipsCore.getInstance()
+                            .getConfigurationManager()
+                            .getCCConfig()
+                            .dailyGame(
+                                    ink.ziip.championshipscore.api.game.model.GameTypeEnum.AceRace)
+                            .concurrentInstances())
                 changed.add("daily.AceRace.concurrent-instances");
             if (parkourWarriorCopies
-                    != ink.ziip.championshipscore.configuration.config.CCConfig
-                            .DAILY_PARKOUR_WARRIOR_CONCURRENT_INSTANCES)
+                    != ChampionshipsCore.getInstance()
+                            .getConfigurationManager()
+                            .getCCConfig()
+                            .dailyGame(
+                                    ink.ziip.championshipscore.api.game.model.GameTypeEnum
+                                            .ParkourWarrior)
+                            .concurrentInstances())
                 changed.add("daily.ParkourWarrior.concurrent-instances");
 
             return List.copyOf(changed);

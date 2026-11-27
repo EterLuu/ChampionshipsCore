@@ -32,10 +32,10 @@ function aggregateShards(settings, plans, reports, startedAt) {
     const expected = Array.from({ length: plan.count }, (_, n) =>
       `${settings.prefix}${String(plan.startIndex + n).padStart(2, '0')}`);
     const players = report?.players || [];
-    const actual = players.map(p => p.name);
-    const exactRoster = actual.length === expected.length
-      && new Set(actual).size === expected.length && expected.every(name => actual.includes(name));
+    const actual = new Set(players.map(p => p.name));
+    const exactRoster = players.length === expected.length && expected.every(name => actual.has(name));
     const passed = report?.exitCode === 0 && report.success === true
+      && report.validation?.passed !== false && !report.validation?.errors?.length
       && report.count === plan.count && exactRoster
       && players.every(p => p.loggedIn && p.activeAtFinish && p.worldReady && !p.deadAtFinish);
     if (!passed) total.fatalErrors.push({ shard: i, message: report?.workerError || 'worker failed or incomplete roster' });
@@ -94,14 +94,15 @@ function aggregateShards(settings, plans, reports, startedAt) {
   return total;
 }
 
-async function runShards(settings, filename) {
+async function runShards(settings, filename, signal) {
   const startedAt = new Date().toISOString();
   const plans = shardPlans(settings);
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'cc-test-workers-'));
   const children = new Set();
   const stop = signal => { for (const child of children) child.kill(signal); };
-  let interrupted = false;
+  let interrupted = signal?.aborted || false;
   const interrupt = () => { interrupted = true; stop('SIGTERM'); };
+  signal?.addEventListener('abort', interrupt, { once: true });
   process.once('SIGTERM', interrupt);
   process.once('SIGINT', interrupt);
   try {
@@ -129,6 +130,7 @@ async function runShards(settings, filename) {
     })));
     return { ...aggregateShards(settings, plans, reports, startedAt), workerReports: directory };
   } finally {
+    signal?.removeEventListener('abort', interrupt);
     process.removeListener('SIGTERM', interrupt);
     process.removeListener('SIGINT', interrupt);
     stop('SIGTERM');

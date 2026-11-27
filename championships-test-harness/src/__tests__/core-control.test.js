@@ -76,3 +76,16 @@ test('async Core commands accept an empty RCON acknowledgement', async () => {
   await control.run();
   assert.deepEqual(commands, ['cc game test lease web', 'cc game test run']);
 });
+
+test('cleanup polls through unknown and failed status until Core confirms no session', async () => {
+  const replies = ['', 'unexpected response', '状态=FAILED', '当前没有测试会话'];
+  const control = new CoreTestControl({}, { execute: async () => replies.shift() },
+    { setTimeout(resolve) { resolve(); } });
+  assert.equal((await control.stop()).state, 'NONE');
+  assert.equal(replies.length, 0);
+});
+
+test('a failed terminal state rejects the game window', async () => {
+  const control = new CoreTestControl({}, { execute: async () => '状态=FAILED' });
+  await assert.rejects(control.waitForTerminal({ timeoutMs: 100, intervalMs: 1 }), /session failed/);
+});

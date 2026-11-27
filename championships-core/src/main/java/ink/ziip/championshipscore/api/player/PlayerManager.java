@@ -38,10 +38,11 @@ public class PlayerManager extends BaseManager {
     private final Map<UUID, String> cachedPlayerName = new ConcurrentHashMap<>();
     private final Map<UUID, PlayerIdentityMigrationResult> pendingIdentityMigrations =
             new ConcurrentHashMap<>();
-    private final Map<String, Object> identityLocks = new ConcurrentHashMap<>();
+    private final Object[] identityLocks =
+            java.util.stream.Stream.generate(Object::new).limit(64).toArray();
     private final Set<UUID> ephemeralTestIdentities = ConcurrentHashMap.newKeySet();
     private final PlayerDao playerDao;
-    private final ProfileUuidResolver profileUuidResolver;
+    private volatile ProfileUuidResolver profileUuidResolver;
     private final PlayerUuidSource uuidSource;
 
     public PlayerManager(ChampionshipsCore championshipsCore) {
@@ -49,15 +50,17 @@ public class PlayerManager extends BaseManager {
         playerDao = new PlayerDaoImpl();
         uuidSource = PlayerUuidSource.parse(CCConfig.IDENTITY_MODE);
         uuidSource.validateConfiguration(CCConfig.IDENTITY_PROFILE_API_BASE_URL);
-        profileUuidResolver =
-                new ProfileUuidResolver(
-                        Duration.ofSeconds(Math.max(1L, CCConfig.IDENTITY_CONNECT_TIMEOUT_SECONDS)),
-                        Duration.ofSeconds(
-                                Math.max(1L, CCConfig.IDENTITY_REQUEST_TIMEOUT_SECONDS)));
     }
 
     @Override
     public void load() {
+        if (uuidSource == PlayerUuidSource.PROFILE_UUID)
+            profileUuidResolver =
+                    new ProfileUuidResolver(
+                            Duration.ofSeconds(
+                                    Math.max(1L, CCConfig.IDENTITY_CONNECT_TIMEOUT_SECONDS)),
+                            Duration.ofSeconds(
+                                    Math.max(1L, CCConfig.IDENTITY_REQUEST_TIMEOUT_SECONDS)));
         for (Player player : Bukkit.getOnlinePlayers()) {
             addPlayer(player);
             cacheIdentity(player.getName(), player.getUniqueId(), java.util.Set.of());
@@ -66,11 +69,13 @@ public class PlayerManager extends BaseManager {
 
     @Override
     public void unload() {
+        var resolver = profileUuidResolver;
+        profileUuidResolver = null;
+        if (resolver != null) resolver.close();
         cachedPlayers.clear();
         cachedPlayerUUID.clear();
         cachedPlayerName.clear();
         pendingIdentityMigrations.clear();
-        identityLocks.clear();
         ephemeralTestIdentities.clear();
     }
 
@@ -179,8 +184,8 @@ public class PlayerManager extends BaseManager {
     @NotNull
     public CompletionStage<PlayerIdentityMigrationResult> migrateApprovedName(
             @NotNull String oldName, @NotNull String newName, @Nullable UUID replacementUuid) {
-        return CompletableFuture.supplyAsync(
-                        () -> playerDao.migrateNameChange(oldName, newName, replacementUuid))
+        return plugin.getDatabaseManager()
+                .query(() -> playerDao.migrateNameChange(oldName, newName, replacementUuid))
                 .thenApply(
                         migration -> {
                             if (!migration.successful()) return migration;
@@ -208,7 +213,8 @@ public class PlayerManager extends BaseManager {
 
     /** Rewrites all durable Core identities in one database transaction. */
     public CompletionStage<Integer> migrateIdentities(@NotNull List<PlayerUuidMigration> players) {
-        return CompletableFuture.supplyAsync(() -> playerDao.migrateIdentities(players))
+        return plugin.getDatabaseManager()
+                .query(() -> playerDao.migrateIdentities(players))
                 .thenCompose(
                         changed -> {
                             invalidateDatabaseIdentityCache();
@@ -254,7 +260,8 @@ public class PlayerManager extends BaseManager {
      */
     public CompletionStage<PlayerUnknownRemovalResult> removeUnknown(
             @NotNull Set<UUID> allowedUuids) {
-        return CompletableFuture.supplyAsync(() -> playerDao.removeUnknown(allowedUuids))
+        return plugin.getDatabaseManager()
+                .query(() -> playerDao.removeUnknown(allowedUuids))
                 .thenCompose(
                         result -> {
                             invalidateDatabaseIdentityCache();
@@ -316,7 +323,7 @@ public class PlayerManager extends BaseManager {
         String normalizedName = normalizeName(username);
         PlayerIdentityMigrationResult result;
         Object identityLock =
-                identityLocks.computeIfAbsent(normalizedName, ignored -> new Object());
+                identityLocks[Math.floorMod(normalizedName.hashCode(), identityLocks.length)];
         synchronized (identityLock) {
             result = playerDao.synchronizeIdentity(username, currentUuid);
             pendingIdentityMigrations.put(currentUuid, result);
@@ -453,7 +460,12 @@ public class PlayerManager extends BaseManager {
                     "Invalid Minecraft username: " + name);
         }
         if (uuidSource == PlayerUuidSource.PROFILE_UUID) {
-            return profileUuidResolver.resolve(CCConfig.IDENTITY_PROFILE_API_BASE_URL, name);
+            var resolver = profileUuidResolver;
+            if (resolver == null)
+                throw new PlayerUuidLookupException(
+                        PlayerUuidLookupException.Reason.SERVICE_UNAVAILABLE,
+                        "Player profiles are unavailable");
+            return resolver.resolve(CCConfig.IDENTITY_PROFILE_API_BASE_URL, name);
         }
         return AuthIdentity.offlineUuid(name);
     }

@@ -10,11 +10,11 @@ import java.util.Map;
 public final class MatchStateMachine {
     private static final Map<MatchState, EnumSet<MatchState>> ALLOWED = allowedTransitions();
 
-    private MatchState state = MatchState.CREATED;
+    private volatile MatchState state = MatchState.CREATED;
     private MatchState suspendedFrom;
     private long revision;
 
-    public synchronized MatchState state() {
+    public MatchState state() {
         return state;
     }
 

@@ -193,7 +193,8 @@ public final class RiptideCourseGenerator {
         }
     }
 
-    static void build(
+    /** Place a prepared plan in an already cleared corridor, including guided lessons. */
+    public static void build(
             World world,
             RiptideCourseGeometry geometry,
             RiptideCoursePlan plan,

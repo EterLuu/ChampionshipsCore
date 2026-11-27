@@ -41,6 +41,11 @@ public abstract class BaseConfigurationFile {
     protected boolean loadingDefaults = false;
 
     private YamlConfiguration bundledDefaults;
+
+    protected final YamlConfiguration bundledDefaults() {
+        return bundledDefaults;
+    }
+
     private final Map<Field, Object> initialFieldValues = new LinkedHashMap<>();
 
     /** Annotated fields of this configuration, including inherited map options. */

@@ -1,0 +1,45 @@
+dont-edit-this:
+  version: 4
+name: area
+world-name:
+prepare:
+  published: false
+  dirty: true
+  revision: 0
+  published-at:
+  world-built: false
+countdown-block-disappearance:
+  pos1:
+  pos2:
+  mode: RANDOM
+area-pos1:
+area-pos2:
+spectator-spawn-point:
+copies: 0
+copy-size:
+copy-layout: {}
+copy-bounds: []
+spawn-points: []
+item-spawns: []
+safe-floor-offset:
+ceiling-offset:
+extended-items: false
+quicksand: []
+escape-rope:
+meteor-spawns: []
+elevator-base:
+copy-spawn:
+
+# ──规则介绍阶段（introduction）────────────────────────────
+#游戏正式开始前，玩家会先被传送到introduction-spawn-point，在45秒内于聊天框分段播报下面的
+#规则文案（rules，每个子列表为一段，支持&颜色码与&#RRGGBB十六进制颜色），期间可以自由参观
+#场地；结束后传送到正式准备点位，读秒后开始游戏。
+# introduction-spawn-point留空时使用观战出生点；把rules设为[]可跳过该阶段。
+introduction-spawn-point:
+rules:
+  - - "&#fff566头上怎么多了条鱼？那是鳕鱼给你的标记！倒数归零，它就来抓你。"
+    - "&#ededed每趟先跑 3 秒，再拍同区没被标记的人。鱼传给谁，鳕鱼就盯上谁！"
+  - - "&#fff566第一趟有 60 秒，后面越追越紧。两趟之间有 5 秒喘口气。"
+    - "&#ededed躲到本区只剩你一人，这轮就安全了！等其他区结束，全场一起算分。"
+  - - "&#ededed每趟开始时被随机点名得 10 分。每抓走一人，仍在场的人各得 15 分。有队伍全员出局，再各得 15 分。"
+    - "&#ededed躲得最久的前三档再拿 25、20、15 分，同时被抓的人并列。"

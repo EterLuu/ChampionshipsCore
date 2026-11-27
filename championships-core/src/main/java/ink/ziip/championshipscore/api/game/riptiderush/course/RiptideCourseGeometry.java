@@ -100,6 +100,14 @@ public final class RiptideCourseGeometry {
                 start.getPitch());
     }
 
+    /** Four separated deck positions, reused by each team's members. */
+    public @NotNull Location teamSpawn(int memberIndex) {
+        int slot = Math.floorMod(memberIndex, 4);
+        int forward = (slot < 2 ? -1 : 1) * Math.min(2, halfLength);
+        int lateral = (slot % 2 == 0 ? -1 : 1) * Math.min(2, halfWidth);
+        return centerAt(forward).add(crossX * lateral, 0D, crossZ * lateral);
+    }
+
     /** All stopped decks end one block before their gold entrance. */
     public int stoppedStep(int entranceStep) {
         return entranceStep - halfLength - 1;

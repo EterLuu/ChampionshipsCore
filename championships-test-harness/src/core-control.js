@@ -165,31 +165,34 @@ class CoreTestControl {
     const reply = await this.execute('cc game test stop --confirm');
     if (/测试会话操作失败|error|failed/i.test(stripFormatting(reply)))
       throw new Error(`Core did not stop the test session: ${stripFormatting(reply)}`);
-    return this.waitFor(status => !status.present, {
+    return this.waitFor(status => status.state === 'NONE', {
+      allowFailed: true,
       timeoutMs: this.settings.coreTimeoutMs || 180000,
       intervalMs: this.settings.coreStatusIntervalMs || 1000,
       description: 'Core test session cleanup',
     });
   }
 
-  async waitForReady({ timeoutMs, intervalMs, expectedSeats = 64, expectedTeams = 16 }) {
+  async waitForReady({ timeoutMs, intervalMs, expectedSeats = 64, expectedTeams = 16, signal }) {
     return this.waitFor(status => status.state === 'READY'
       && status.bound >= expectedSeats && status.transientTeams >= expectedTeams,
-    { timeoutMs, intervalMs, description: 'Core test session READY' });
+    { timeoutMs, intervalMs, signal, description: 'Core test session READY' });
   }
 
-  async waitForTerminal({ timeoutMs, intervalMs }) {
+  async waitForTerminal({ timeoutMs, intervalMs, signal }) {
     return this.waitFor(status => TERMINAL_STATES.has(status.state),
-      { timeoutMs, intervalMs, description: 'Core test session terminal state' });
+      { timeoutMs, intervalMs, signal, description: 'Core test session terminal state' });
   }
 
-  async waitFor(predicate, { timeoutMs, intervalMs, description }) {
+  async waitFor(predicate, { timeoutMs, intervalMs, description, allowFailed = false, signal }) {
     const started = Date.now();
     let last = null;
     while (Date.now() - started <= timeoutMs) {
+      signal?.throwIfAborted();
       last = await this.status();
+      signal?.throwIfAborted();
+      if (!allowFailed && last.state === 'FAILED') throw new Error(`Core test session failed: ${last.text}`);
       if (predicate(last)) return last;
-      if (last.state === 'FAILED') throw new Error(`Core test session failed: ${last.text}`);
       await delay(intervalMs, this.timers);
     }
     throw new Error(`${description} timed out after ${timeoutMs} ms; last status: ${last?.text || 'unavailable'}`);

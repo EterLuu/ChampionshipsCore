@@ -16,7 +16,6 @@ import re
 from collections import Counter, deque
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Iterable
 
 
 BLOCK_RE = re.compile(
@@ -684,8 +683,7 @@ def write_markdown(path: Path, audits: list[Audit], input_path: Path, manifest: 
         f"- Input: `{input_path}`",
         f"- Material manifest: `{manifest}`",
         f"- Blueprints: {len(audits)}",
-        f"- Star distribution: "
-        + ", ".join(f"{star}★={star_counts[star]}" for star in range(1, 6)),
+        "- Star distribution: " + ", ".join(f"{star}★={star_counts[star]}" for star in range(1, 6)),
         f"- Fully covered: {covered}/{len(audits)}",
         "- Difficulty score: 0-100; combines block count, material/region count, height, disconnected parts, "
         "directional and complex BlockData. Missing resources do not inflate difficulty.",

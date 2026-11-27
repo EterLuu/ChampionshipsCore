@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.game.laserbox.runtime;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.event.TeamGameEndEvent;
+import ink.ziip.championshipscore.api.game.arena.GamePickup;
 import ink.ziip.championshipscore.api.game.instance.paired.BasePairedGameInstance;
 import ink.ziip.championshipscore.api.game.laser.mechanics.LaserGunMechanics;
 import ink.ziip.championshipscore.api.game.laser.mechanics.LaserShotEngine;
@@ -69,7 +70,7 @@ public final class LaserBoxArea extends BasePairedGameInstance {
     private final Map<Block, BlockData> smokeOriginals = new HashMap<>();
     private final Map<Block, Set<UUID>> smokeOwners = new HashMap<>();
     private final List<Strike> strikes = new ArrayList<>();
-    private final Map<UUID, Item> drops = new HashMap<>();
+    private final Map<UUID, Drop> drops = new HashMap<>();
     private final Map<UUID, LaserGun> selectedGuns = new HashMap<>();
 
     /** Players currently receiving LaserBox's movement speed effect. */
@@ -80,7 +81,7 @@ public final class LaserBoxArea extends BasePairedGameInstance {
     private final Map<UUID, Integer> aimingUntil = new HashMap<>();
     private LaserZoom zoom;
 
-    private final Map<Integer, Item> supplies = new HashMap<>();
+    private final GamePickup.Hints pickupHints = new GamePickup.Hints();
     private final ArrayDeque<String> supplyPool = new ArrayDeque<>();
     private LaserBoxRound round;
     private LaserBoxIntroductionRun introductionRun;
@@ -104,6 +105,23 @@ public final class LaserBoxArea extends BasePairedGameInstance {
             int start,
             int expires,
             SmokeExpansion expansion) {}
+
+    private record Drop(Item item, GamePickup display, int supplySlot) {
+        void remove() {
+            item.remove();
+            display.remove();
+        }
+
+        boolean update(int tick) {
+            if (!item.isValid() || !display.isValid()) {
+                remove();
+                return false;
+            }
+            display.follow(item.getLocation().add(0, .35, 0));
+            display.tick(tick);
+            return true;
+        }
+    }
 
     private record Strike(Location location, UUID owner, boolean right, int expires) {}
 
@@ -996,10 +1014,10 @@ public final class LaserBoxArea extends BasePairedGameInstance {
                         && !kind.equals("laser")
                         && !kind.equals("ammo")
                         && stack.getType() != Material.SPECTRAL_ARROW
-                        && gun(stack) == null)
-                    trackDrop(victim.getWorld().dropItem(victim.getLocation(), stack.clone()));
+                        && gun(stack) == null) spawnDrop(victim.getLocation(), stack.clone(), -1);
             }
         }
+        pickupHints.clear(id);
         victim.getInventory().clear();
         endAiming(victim);
         victim.setLevel(0);
@@ -1163,27 +1181,65 @@ public final class LaserBoxArea extends BasePairedGameInstance {
                 || LaserKillFeedback.isKillFirework(entity, itemKey);
     }
 
-    private void trackDrop(Item item) {
-        item.setGlowing(true);
-        item.setInvulnerable(true);
-        item.setPickupDelay(0);
-        drops.put(item.getUniqueId(), item);
+    private void spawnDrop(Location location, ItemStack stack, int supplySlot) {
+        // Keep the native pickup volume, gravity and lifetime. Only the display is visible.
+        Item item =
+                location.getWorld()
+                        .dropItem(
+                                location,
+                                stack,
+                                drop -> {
+                                    drop.setPersistent(false);
+                                    drop.setVisibleByDefault(false);
+                                    drop.setInvulnerable(true);
+                                    drop.setPickupDelay(0);
+                                    if (supplySlot >= 0) {
+                                        drop.setVelocity(new Vector());
+                                        drop.setGravity(false);
+                                    }
+                                });
+        try {
+            GamePickup display =
+                    new GamePickup(
+                            item.getLocation().add(0, .35, 0),
+                            stack,
+                            GamePickup.Motion.FLOAT_AND_SPIN,
+                            true);
+            drops.put(item.getUniqueId(), new Drop(item, display, supplySlot));
+        } catch (RuntimeException failure) {
+            item.remove();
+            throw failure;
+        }
     }
 
-    void pickup(Player player, Item drop) {
-        if (!active(player) || !drops.containsKey(drop.getUniqueId())) return;
-        String type = type(drop.getItemStack());
-        if ("shield".equals(type)) {
+    void pickup(Player player, Item item, int remaining) {
+        Drop drop = drops.get(item.getUniqueId());
+        if (drop == null || !active(player) || !drop.display().isValid()) return;
+        ItemStack stack = item.getItemStack();
+        String kind = type(stack);
+        if ("shield".equals(kind)) {
             if (round.shield(player.getUniqueId()) > 0) return;
             round.shield(player.getUniqueId(), SHIELD_HITS);
             player.setLevel((int) Math.ceil(round.health(player.getUniqueId())));
-        } else if (!player.getInventory().addItem(drop.getItemStack().clone()).isEmpty()) return;
-        drops.remove(drop.getUniqueId());
-        supplies.values().removeIf(i -> i.getUniqueId().equals(drop.getUniqueId()));
-        drop.remove();
+        } else {
+            var leftover = player.getInventory().addItem(stack.clone()).get(0);
+            if (leftover != null) {
+                if (leftover.getAmount() == stack.getAmount()) return;
+                remaining += leftover.getAmount();
+            }
+        }
+        if (remaining > 0) item.setItemStack(stack.asQuantity(remaining));
+        else {
+            drops.remove(item.getUniqueId());
+            drop.remove();
+        }
         player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1, 1);
         syncChestplate(player);
-        player.sendActionBar(LaserCombatMessages.itemHint(type));
+        var name = stack.effectiveName();
+        pickupHints.announce(
+                player,
+                GUN_SELECTOR_TYPE.equals(kind) ? name : LaserCombatMessages.itemHint(kind, name),
+                round.tick());
     }
 
     private void syncChestplate(Player player) {
@@ -1234,7 +1290,9 @@ public final class LaserBoxArea extends BasePairedGameInstance {
                 startReload(player, reloadingGun);
             syncChestplate(player);
             syncMovementSpeed(player);
-            if (active(player) && round.tick() % 10 == 0)
+            if (active(player)
+                    && round.tick() % 10 == 0
+                    && !pickupHints.refresh(player, round.tick()))
                 LaserGunItems.showCombatStatus(
                         player,
                         gun,
@@ -1260,12 +1318,12 @@ public final class LaserBoxArea extends BasePairedGameInstance {
             if (!live()) return;
         }
         tickSmoke(round.tick());
-        drops.values().removeIf(item -> !item.isValid());
-        supplies.values().removeIf(item -> !item.isValid());
+        if (round.tick() % 2 == 0) drops.values().removeIf(drop -> !drop.update(round.tick()));
         if (round.tick() % 400 == 0) {
+            Set<Integer> occupied = new HashSet<>();
+            for (Drop drop : drops.values()) occupied.add(drop.supplySlot());
             List<Integer> free = new ArrayList<>();
-            for (int i = 0; i < supplyLocations.size(); i++)
-                if (!supplies.containsKey(i)) free.add(i);
+            for (int i = 0; i < supplyLocations.size(); i++) if (!occupied.contains(i)) free.add(i);
             if (!free.isEmpty()) {
                 var random = ThreadLocalRandom.current();
                 int slot = free.get(random.nextInt(free.size()));
@@ -1277,13 +1335,7 @@ public final class LaserBoxArea extends BasePairedGameInstance {
                 }
                 String kind = supplyPool.removeFirst();
                 Location location = supplyLocations.get(slot);
-                Item item =
-                        location.getWorld()
-                                .dropItem(location, LaserEquipmentItems.box(kind, itemKey));
-                item.setVelocity(new Vector());
-                item.setGravity(false);
-                trackDrop(item);
-                supplies.put(slot, item);
+                spawnDrop(location, LaserEquipmentItems.box(kind, itemKey), slot);
             }
         }
         if (round.tick() % 20 == 0) {
@@ -1407,9 +1459,9 @@ public final class LaserBoxArea extends BasePairedGameInstance {
         grenades.clear();
         clearSmoke();
         strikes.clear();
-        drops.values().forEach(Entity::remove);
+        drops.values().forEach(Drop::remove);
         drops.clear();
-        supplies.clear();
+        pickupHints.clear();
         supplyPool.clear();
         protection.clear();
         strikeCooldown = 0;
@@ -1467,6 +1519,7 @@ public final class LaserBoxArea extends BasePairedGameInstance {
         if (notAreaPlayer(event.getPlayer()) || round == null) return;
         clearMovementSpeed(event.getPlayer());
         UUID id = event.getPlayer().getUniqueId();
+        pickupHints.clear(id);
         if (nameTags != null) nameTags.remove(id);
         if (introductionRun != null) introductionRun.disconnected(id);
         endAiming(event.getPlayer());
@@ -1514,6 +1567,7 @@ public final class LaserBoxArea extends BasePairedGameInstance {
         event.setDroppedExp(0);
         event.deathMessage(null);
         Player player = event.getEntity();
+        pickupHints.clear(player.getUniqueId());
         if (live()) {
             round.disconnect(player.getUniqueId());
             LaserGunMenu.closeOpen(this, player);

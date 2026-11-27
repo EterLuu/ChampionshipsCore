@@ -201,7 +201,7 @@ public class BuildMartHandler extends BaseListener {
             return true;
         }
         if (config.isInHub(from)) {
-            Location target = base.getPortalPoint();
+            Location target = buildMartArea.playerBaseSpawn(player.getUniqueId());
             if (target == null) return false;
             if (moveEvent != null) moveEvent.setTo(target);
             triggerPortal(player, target);

@@ -24,13 +24,6 @@ public class PKWCheckpoint {
     private Location spawn;
     private PKWFinalCheckPointTypeEnum finalCheckPointType;
 
-    @Override
-    public boolean equals(Object o) {
-        if (o == this) return true;
-        if (!(o instanceof PKWCheckpoint)) return false;
-        return this.name.equals(((PKWCheckpoint) o).name);
-    }
-
     public double getPointMultiplier(ParkourWarriorConfig parkourWarriorConfig) {
         if (finalCheckPointType != null) {
             if (finalCheckPointType == PKWFinalCheckPointTypeEnum.easy)

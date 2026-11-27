@@ -11,6 +11,7 @@ public final class RiptideFallCheck {
     private Integer outsideSince;
     private Integer lastTick;
     private boolean confirmed;
+    private boolean finished;
 
     /** One sample per server tick, including a possible final settlement sample. */
     public boolean sample(
@@ -22,6 +23,9 @@ public final class RiptideFallCheck {
             boolean inLiquid,
             boolean deckPresent,
             int tick) {
+        // Arrival is personal: the front of the raft can reach the finish before its centre.
+        // Once through the finish, walking on the pier (or back off it) is no longer a raft fall.
+        if (finished) return false;
         if (lastTick != null && lastTick == tick) return confirmed;
         lastTick = tick;
         if (location == null
@@ -29,6 +33,12 @@ public final class RiptideFallCheck {
                 || !location.getWorld().equals(geometry.centerAt(completedSteps).getWorld())) {
             confirmed = true;
             return true;
+        }
+        if (!inLiquid && reachedFinish(geometry, location, completedSteps)) {
+            finished = true;
+            outsideSince = null;
+            confirmed = false;
+            return false;
         }
         return confirm(
                 outside(
@@ -40,6 +50,24 @@ public final class RiptideFallCheck {
                         inLiquid,
                         deckPresent),
                 tick);
+    }
+
+    private static boolean reachedFinish(
+            RiptideCourseGeometry geometry, Location feet, int raftStep) {
+        if (raftStep < geometry.totalSteps() - geometry.halfLength()) return false;
+        if (feet.getY() < geometry.floorY() + 1D - .05D || feet.getY() > geometry.floorY() + 2.5D)
+            return false;
+        // When the raft docks, everyone still on its deck has arrived, including its rear edge.
+        if (raftStep >= geometry.totalSteps()
+                && geometry.containsMovingRaftHorizontally(feet, geometry.totalSteps(), .3D))
+            return true;
+        double forward = geometry.forwardOffset(feet, geometry.totalSteps());
+        // Before docking, only the finish opening admits a player, not the banks or distant
+        // scenery.
+        return forward >= 0D
+                && forward <= geometry.halfLength() + 1D
+                && Math.abs(geometry.lateralOffset(feet, geometry.totalSteps()))
+                        <= geometry.halfWidth() + .5D;
     }
 
     private boolean confirm(boolean outside, int tick) {

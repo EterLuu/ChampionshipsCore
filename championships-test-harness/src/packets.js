@@ -65,9 +65,15 @@ function useItem(client, sequence, hand = 0, rotation = { x: 0, y: 0 }) {
   return write(client, 'use_item', { hand, sequence, rotation });
 }
 
+function releaseItem(client, sequence) {
+  return dig(client, { x: 0, y: 0, z: 0 }, sequence, 0, 6);
+}
+
 function attack(client, entityId) {
   if (!Number.isInteger(entityId)) return null;
-  return write(client, 'attack', { entityId });
+  const packet = write(client, 'attack', { entityId });
+  swing(client);
+  return packet;
 }
 
 function useEntity(client, entityId, location = { x: 0, y: 0, z: 0 }, hand = 0) {
@@ -132,6 +138,7 @@ module.exports = {
   sprint,
   swing,
   useItem,
+  releaseItem,
   attack,
   useEntity,
   selectHotbar,

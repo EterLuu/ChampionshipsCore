@@ -3,6 +3,8 @@ const assert = require('node:assert/strict');
 const { EventEmitter } = require('node:events');
 const { attachClient, successfulRun } = require('../client');
 
+const { loadGround } = require('./support/terrain');
+
 function fixture(action = 'idle', overrides = {}) {
   const client = new EventEmitter();
   client.state = 'play';
@@ -20,9 +22,11 @@ function fixture(action = 'idle', overrides = {}) {
   const result = { count: 1, loggedIn: 0, teleportConfirmations: 0,
     authDialogSubmissions: 0, actionPackets: 0, fatalErrors: [] };
   attachClient(client, { action, password: 'ephemeral', ...overrides }, 0, result, state, timers);
-  const position = overrides => client.emit('position', {
-    teleportId: 7, x: 10, y: 64, z: -5, yaw: 90, pitch: 0, flags: {}, ...overrides,
-  });
+  const position = (overrides, withTerrain = true) => {
+    const packet = { teleportId: 7, x: 10, y: 64, z: -5, yaw: 90, pitch: 0, flags: {}, ...overrides };
+    if (withTerrain) loadGround(client, packet.x, packet.z);
+    client.emit('position', packet);
+  };
   const settle = () => {
     const callback = delayed.values().next().value;
     if (callback) { delayed.delete(callback); callback(); }
@@ -37,12 +41,12 @@ test('server teleports are confirmed without echoing a movement packet', () => {
   f.position({ teleportId: 8, x: 2, y: 1, z: 4, yaw: 5, pitch: -3,
     flags: { x: true, y: true, z: true, yaw: true, pitch: true } });
   assert.deepEqual(f.writes.map(write => write.name), [
-    'teleport_confirm', 'tick_end', 'teleport_confirm', 'tick_end',
+    'teleport_confirm', 'tick_end', 'player_loaded', 'teleport_confirm', 'tick_end',
   ]);
-  assert.equal(f.writes[2].data.teleportId, 8);
-  assert.equal(f.writes[2].data.x, 12);
-  assert.equal(f.writes[2].data.y, 65);
-  assert.equal(f.writes[2].data.yaw, 95);
+  assert.equal(f.writes[3].data.teleportId, 8);
+  assert.equal(f.writes[3].data.x, 12);
+  assert.equal(f.writes[3].data.y, 65);
+  assert.equal(f.writes[3].data.yaw, 95);
   assert.equal(f.result.teleportConfirmations, 2);
   assert.equal(f.callbacks.size, 0);
   assert.equal(f.delayed.size, 1);
@@ -72,7 +76,7 @@ test('cross-server login/respawn stops old actions until a fresh teleport arrive
   f.settle();
   const tick = [...f.callbacks][0];
   tick();
-  assert.equal(f.writes.at(-2).data.x, 10.05);
+  assert.ok(f.writes.at(-2).data.x > 10 && f.writes.at(-2).data.x < 10.05);
   assert.equal(f.writes.at(-1).name, 'tick_end');
   f.position();
   f.settle();
@@ -86,7 +90,7 @@ test('cross-server login/respawn stops old actions until a fresh teleport arrive
   f.position({ x: 1000 });
   f.settle();
   [...f.callbacks][0]();
-  assert.equal(f.writes.at(-2).data.x, 1000.05);
+  assert.ok(f.writes.at(-2).data.x > 1000 && f.writes.at(-2).data.x < 1000.05);
   f.client.emit('end');
   assert.equal(f.callbacks.size, 0);
   assert.equal(f.state.active, false);
@@ -159,13 +163,23 @@ test('health and own combat death request one real protocol respawn and stop old
   assert.equal(f.result.respawnRequests, 2);
 });
 
-test('death and respawn packets remain visible in the phase history', () => {
-  const f = fixture('game', { game: 'tntrun' });
+test('death and dimension transfers preserve the observed match phase', () => {
+  const f = fixture('game', { game: 'bingo', disconnectPhase: 'PROGRESS' });
   f.client.emit('login', { entityId: 42 });
-  f.client.emit('death_combat_event', { playerId: 42 });
-  assert.equal(f.state.phase, 'PROGRESS');
+  f.client.emit('death_combat_event', { playerId: 25 });
   f.client.emit('respawn');
-  assert.ok(f.state.phaseTransitions.some(item => item.packet === 'death_combat_event'));
+  assert.equal(f.state.phase, 'WAITING');
+  f.client.emit('action_bar', { text: '比赛开始倒计时' });
+  f.client.emit('death_combat_event', { playerId: 42 });
+  f.client.emit('respawn');
+  assert.equal(f.state.phase, 'COUNTDOWN');
+  assert.equal(f.result.injectedDisconnects || 0, 0);
+  f.client.emit('set_title_subtitle', { text: { type: 'string', value: '卡片已发放' } });
+  assert.equal(f.state.phase, 'PROGRESS');
+  assert.equal(f.result.injectedDisconnects, 1);
+  f.client.emit('system_chat', { content: '本场结束' });
+  f.client.emit('respawn');
+  assert.equal(f.state.phase, 'END');
 });
 
 test('world switches and configuration are not completed death respawns or ready worlds', () => {
@@ -216,19 +230,28 @@ test('all profiles close each client tick, including idle and teleport echoes', 
       }
     }
     assert.equal(f.writes.at(-1).name, 'tick_end');
-    assert.equal(f.result.actionPackets, ['walk', 'bingo-walk'].includes(action) ? 100 : action === 'look' ? 10 : 0);
+    assert.equal(f.result.actionPackets, ({ walk: 100, 'bingo-walk': 20, look: 10, idle: 0 })[action]);
   }
 });
 
-test('bingo-walk reports grounded movement for statistic objectives', () => {
+test('airborne Bingo client waits for terrain, falls and lands on the received floor', () => {
   const f = fixture('bingo-walk');
   f.client.emit('login');
-  f.client.emit('position', {x: 10, y: 64, z: 10, yaw: 0, pitch: 0, teleportId: 1, flags: {}});
-  assert.equal(f.result.actionPackets, 0);
+  f.position({ y: 68 }, false);
+  loadGround(f.client, 128, 128);
+  assert.equal(f.state.worldReady, false);
+  assert.equal(f.writes.some(w => w.name === 'player_loaded'), false);
+  loadGround(f.client, 10, -5);
+  assert.equal(f.state.worldReady, true);
+  assert.equal(f.writes.filter(w => w.name === 'player_loaded').length, 1);
   f.settle();
-  [...f.callbacks][0]();
-  const movement = f.writes.find(write => write.name === 'position');
-  assert.equal(movement.data.flags.onGround, true);
+  const tick = [...f.callbacks][0];
+  for (let i = 0; i < 40; i++) tick();
+  const moves = f.writes.filter(w => w.name === 'position').map(w => w.data);
+  assert.ok(moves.some(p => p.y < 68 && p.y > 64 && !p.flags.onGround));
+  assert.ok(moves.every(p => p.y >= 64 && (!p.flags.onGround || p.y === 64)));
+  assert.equal(moves.at(-1).flags.onGround, true);
+  assert.equal(moves.at(-1).y, 64);
 });
 
 test('game resident profile follows server phase before emitting mechanism actions', () => {
@@ -258,7 +281,7 @@ test('scoreboard packets are captured with the phase for CI score assertions', (
 test('server observations expose legal targets and scoreboard/team evidence', () => {
   const f = fixture('game', { game: 'buildmart' });
   f.client.emit('login', { entityId: 42 });
-  f.client.emit('entity_spawn', { entityId: 99, type: 'display' });
+  f.client.emit('spawn_entity', { entityId: 99, type: 'display' });
   f.client.emit('block_change', { location: { x: 4, y: 64, z: -2 }, type: 1 });
   f.client.emit('scoreboard_objective', { name: 'points', mode: 0 });
   f.client.emit('teams', { name: 'red', mode: 0 });
@@ -291,4 +314,83 @@ test('reconnect keeps the last game phase until the server sends a new phase sig
   assert.equal(f.state.phase, 'PROGRESS');
   f.client.emit('end', 'network drop');
   assert.equal(f.state.phase, 'PROGRESS');
+});
+
+test('recognizes the live verification room title when entering the joint after game start', () => {
+  const f = fixture('game');
+  f.client.emit('login', { entityId: 42 });
+  f.client.emit('set_title_text', { text: '第三关 · 向右推动滑块到底，完全嵌合' });
+  assert.equal(f.state.detectedGame, 'iamnotarobot');
+  assert.equal(f.state.phase, 'PROGRESS');
+});
+
+test('resident auto detection switches games, phase gates attacks, and ignores chat naming a game', () => {
+  const f = fixture('game');
+  const tick = () => { for (const callback of f.callbacks) callback(); };
+  f.client.emit('login', { entityId: 42 });
+  f.position({});
+  f.settle();
+  f.client.emit('system_chat', { content: '烫手鳕鱼 • 开赛' });
+  tick();
+  assert.equal(f.state.detectedGame, null);
+  assert.deepEqual(f.state.actionTypes, {});
+  f.client.emit('set_title_text', { text: '烫手鳕鱼' });
+  f.client.emit('set_title_subtitle', { text: '烫手鳕鱼 • 即将开始' });
+  const data = require('minecraft-data')('26.3');
+  const slot = name => ({ itemId: data.itemsByName[name].id, itemCount: 1 });
+  f.client.emit('set_player_inventory', { slotId: 2, contents: slot('structure_void') });
+  f.client.emit('set_player_inventory', { slotId: 4, contents: slot('sugar') });
+  f.client.emit('spawn_entity', { entityId: 93, type: data.entitiesByName.player.id, x: 11, y: 64, z: -5 });
+  f.client.emit('entity_equipment', { entityId: 93, equipments: [{ slot: 5, item: slot('leather_helmet') }] });
+  for (let i = 0; i < 10; i++) tick();
+  assert.ok(!f.state.actionTypes.attack);
+  f.client.emit('action_bar', { text: '第 2 趟 • 鳕鱼抓人倒数 25' });
+  tick(); tick(); tick();
+  assert.equal(f.state.actionTypes.attack, 1);
+  const count = f.state.mechanismPackets['fish-pass'];
+  f.client.emit('set_slot', { windowId: 0, slot: 40, item: { itemCount: 0 } });
+  for (let i = 0; i < 24; i++) tick();
+  assert.equal(f.state.mechanismPackets['fish-pass'], count, 'eliminated player no longer acts');
+  f.client.emit('action_bar', { text: '斗战方框 • 开赛' });
+  tick(); tick(); tick(); tick();
+  assert.equal(f.state.detectedGame, 'battlebox');
+  assert.ok(f.state.mechanismPackets['weapon-combat']);
+  f.client.emit('action_bar', { text: '未知比赛 • 开赛' });
+  assert.equal(f.state.detectedGame, null);
+});
+
+test('entity aim tracks 26.3 spawn, deltas, path sync, relative teleport and despawn', () => {
+  const f = fixture('game', { game: 'hotycodydusky' });
+  f.client.emit('spawn_entity', { entityId: 3, type: 159, x: 10, y: 64, z: -4 });
+  const e = f.state.entities.get(3);
+  assert.equal(e.type, 'player');
+  f.client.emit('entity_move_look', { entityId: 3, delta: { dX: 0.5, dY: -1, dZ: 2 } });
+  assert.deepEqual([e.x, e.y, e.z], [10.5, 63, -2]);
+  f.client.emit('sync_entity_position', { entityId: 3, position: { path: { steps: [
+    { position: { x: 21, y: 70, z: 2 } }, { position: { x: 23, y: 69, z: 1 } },
+  ] } } });
+  f.client.emit('entity_teleport', { entityId: 3, flags: 1, x: -1, y: 80, z: 20 });
+  assert.deepEqual([e.x, e.y, e.z], [22, 80, 20]);
+  f.client.emit('entity_destroy', { entityIds: [3] });
+  assert.equal(f.state.entities.size, 0);
+});
+
+test('same-world corrections keep the action clock running while the terrain is loaded', () => {
+  const f = fixture('walk');
+  f.client.emit('login');
+  f.position();
+  f.settle();
+  const loop = [...f.callbacks][0];
+  for (let id = 8; id < 20; id++) {
+    f.position({ teleportId: id }, false);
+    assert.equal([...f.callbacks][0], loop);
+    assert.equal(f.delayed.size, 0);
+    loop();
+  }
+  f.position({ x: 200 }, false);
+  assert.equal(f.state.worldReady, false);
+  assert.equal(f.callbacks.size, 0);
+  loadGround(f.client, 200, -5);
+  f.settle();
+  assert.equal(f.callbacks.size, 1);
 });

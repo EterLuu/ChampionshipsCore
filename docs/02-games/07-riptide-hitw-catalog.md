@@ -1,6 +1,6 @@
 # HITW 建筑目录
 
-激流勇进从插件内的 `riptiderush/hitw-walls.json` 读取内置目录，默认地图的 `course.pool` 保存建筑快照。运行时不访问 Wiki，不自动迁移旧快照，也不覆盖管理员保存的建筑。关卡编排和地图调整见 [Riptide 指南](06-riptide-stage-mechanics.md)。
+激流勇进从插件内的 `riptiderush/hitw-walls.json` 读取内置墙体目录；默认地图模板 `riptiderush/area.yml` 不再重复嵌入建筑快照，新建地图时由 `RiptideRushConfig` 动态载入目录并写入各自独立的 `course.pool` 快照。运行时不访问 Wiki，不自动迁移旧快照，也不覆盖管理员保存的建筑。关卡编排和地图调整见 [Riptide 指南](06-riptide-stage-mechanics.md)。
 
 ## 来源与适配
 
@@ -8,7 +8,7 @@
 
 内置建筑快照宽 15 格、高 5 格，包含完整 BlockData 与通行元数据。管理员自建建筑按编辑器尺寸校验，不受该内置尺寸描述约束。保存尺寸、木筏内的可通行区域和实体碰撞空间分别处理，不能用建筑外框宽度代替可通行面积。
 
-生产资源位于 `championships-core/src/main/resources/riptiderush/`。管理员通过地图编辑器修改建筑并重新校验、发布；修改资源时同时核对目录与默认地图的对应建筑。
+生产资源位于 `championships-core/src/main/resources/riptiderush/`。管理员通过地图编辑器修改建筑并重新校验、发布；修改内置墙体时只需更新 `riptiderush/hitw-walls.json`。
 
 ## 通行与难度
 

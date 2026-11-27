@@ -127,9 +127,8 @@ public class ScheduleManager extends BaseManager {
                         .resolveTeams(arguments, true, GameRunMode.EVENT);
         String map = arguments.map();
         if (map != null) {
-            var manager = plugin.getGameManager().getAreaManager(game);
             map =
-                    manager.getAreaNameList().stream()
+                    FormalEventMapResolver.selectableMaps(plugin, game).stream()
                             .filter(name -> name.equalsIgnoreCase(arguments.map()))
                             .findFirst()
                             .orElseThrow(
@@ -955,6 +954,10 @@ public class ScheduleManager extends BaseManager {
     private record Finalists(@NotNull ChampionshipTeam right, @NotNull ChampionshipTeam left) {}
 
     public String getScheduleStrings(GameTypeEnum gameTypeEnum) {
+        if (gameTypeEnum == GameTypeEnum.CraftingFeast)
+            return CoreMessages.getMessage(ScheduleMessageConfig.CRAFTING_FEAST);
+        if (gameTypeEnum == GameTypeEnum.IAmNotARobot)
+            return CoreMessages.getMessage(ScheduleMessageConfig.ROBOT);
         if (gameTypeEnum == GameTypeEnum.TNTRun)
             return CoreMessages.getMessage(ScheduleMessageConfig.TNT_RUN);
         if (gameTypeEnum == GameTypeEnum.TGTTOS)
@@ -982,6 +985,10 @@ public class ScheduleManager extends BaseManager {
     }
 
     public String getSchedulePointsStrings(GameTypeEnum gameTypeEnum) {
+        if (gameTypeEnum == GameTypeEnum.CraftingFeast)
+            return CoreMessages.getMessage(ScheduleMessageConfig.CRAFTING_FEAST_POINTS);
+        if (gameTypeEnum == GameTypeEnum.IAmNotARobot)
+            return CoreMessages.getMessage(ScheduleMessageConfig.ROBOT_POINTS);
         if (gameTypeEnum == GameTypeEnum.TNTRun)
             return CoreMessages.getMessage(ScheduleMessageConfig.TNT_RUN_POINTS);
         if (gameTypeEnum == GameTypeEnum.TGTTOS)

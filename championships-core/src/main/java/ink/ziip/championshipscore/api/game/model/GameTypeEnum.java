@@ -24,7 +24,9 @@ public enum GameTypeEnum {
     RiptideRush,
     FrostbiteFrenzy,
     LaserBox,
-    SulfurSoccer;
+    SulfurSoccer,
+    CraftingFeast,
+    IAmNotARobot;
 
     /** Canonical command token shared by command parsing and tab completion. */
     public @NotNull String commandName() {
@@ -67,6 +69,8 @@ public enum GameTypeEnum {
             case ParkourWarrior -> GameMessages.PARKOUR_WARRIOR;
             case HotyCodyDusky -> GameMessages.GAME_HOTY_CODY_DUSKY;
             case BuildMart -> GameMessages.GAME_BUILD_MART;
+            case CraftingFeast -> GameMessages.GAME_CRAFTING_FEAST;
+            case IAmNotARobot -> GameMessages.GAME_ROBOT;
             case Dodgebolt -> GameMessages.GAME_DODGEBOLT;
             case AceRace -> GameMessages.GAME_ACE_RACE;
             case RiptideRush -> GameMessages.GAME_RIPTIDE_RUSH;

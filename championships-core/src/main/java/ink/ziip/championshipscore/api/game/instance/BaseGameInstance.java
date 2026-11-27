@@ -580,6 +580,25 @@ public abstract class BaseGameInstance {
         updateGameTimerBossBar(title, progress);
     }
 
+    protected void updateGameTimerBossBar(
+            String title, int remainingSeconds, int durationSeconds, BarColor color) {
+        double progress = durationSeconds <= 0 ? 0D : remainingSeconds / (double) durationSeconds;
+        updateGameTimerBossBar(title, progress, color);
+    }
+
+    protected void updateGameTimerBossBar(String title, double progress, BarColor color) {
+        BossBar bossBar =
+                bossBars.computeIfAbsent(
+                        GAME_TIMER_BOSS_BAR,
+                        ignored ->
+                                createBossBar(
+                                        title,
+                                        color == null ? BarColor.YELLOW : color,
+                                        BarStyle.SOLID));
+        if (color != null && bossBar.getColor() != color) bossBar.setColor(color);
+        updateGameTimerBossBar(title, progress);
+    }
+
     /**
      * Variant for non-countdown clocks, where the caller supplies the semantic progress directly.
      */
@@ -836,9 +855,9 @@ public abstract class BaseGameInstance {
      * section, every player is teleported to its introduction spawn, falling back to the spectator
      * spawn when no dedicated point is configured. Players remain in PREPARATION and use adventure
      * mode while the rule sections are broadcast one at a time in chat over {@link
-     * #INTRODUCTION_DURATION} seconds; afterwards {@code onComplete} (the normal preparation: spawn
-     * assignment + countdown) runs. Without rules the introduction is skipped and {@code
-     * onComplete} runs immediately.
+     * #getIntroductionDurationSeconds()} seconds; afterwards {@code onComplete} (the normal
+     * preparation: spawn assignment + countdown) runs. Without rules the introduction is skipped
+     * and {@code onComplete} runs immediately.
      */
     protected void startGameIntroduction(@NotNull Runnable onComplete) {
         preparation().startIntroduction(onComplete);
@@ -855,6 +874,11 @@ public abstract class BaseGameInstance {
      */
     protected List<List<String>> getIntroductionRules() {
         return gameConfig.getRules();
+    }
+
+    /** Duration is captured by the shared preparation request, including interactive lessons. */
+    protected int getIntroductionDurationSeconds() {
+        return INTRODUCTION_DURATION;
     }
 
     /** Interactive lessons own mechanic cues; lobby rules need not be repeated at the arena. */
@@ -1164,6 +1188,14 @@ public abstract class BaseGameInstance {
     /** Cancels a running rule-introduction phase (task + flag); safe to call at any time. */
     public void cancelIntroduction() {
         if (preparation != null) preparation.cancelIntroduction();
+    }
+
+    /**
+     * Whether an interactive introduction lets this participant use the world (break, interact,
+     * pick up and drop) under the game's own rules. Damage protection is never lifted.
+     */
+    public boolean allowsIntroductionWorldInteraction(@NotNull Player player) {
+        return false;
     }
 
     /** Optional game-owned activity; the shared introduction still owns timing and recovery. */

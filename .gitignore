@@ -123,6 +123,7 @@ fabric.properties
 *.nar
 *.ear
 *.zip
+!championships-core/src/main/resources/hotycodydusky/worlds/*.zip
 *.tar.gz
 *.rar
 

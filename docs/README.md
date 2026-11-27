@@ -33,6 +33,7 @@ docs/
 | 2.6 | [Riptide 编排](02-games/06-riptide-stage-mechanics.md) | 关卡池、木筏、淘汰和地图试玩 |
 | 2.7 | [HITW 目录](02-games/07-riptide-hitw-catalog.md) | 资源来源、建筑快照、通行几何与难度 |
 | 2.8 | [Riptide 规则体验场地](02-games/08-riptide-introduction.md) | 教学世界、试玩入口与交互机制 |
+| 2.9 | [合成盛宴新手教学](02-games/09-crafting-feast-tutorial.md) | 规则介绍阶段的队内餐厅教学流程与配置 |
 
 ## 3. 参考手册（03-reference）
 
@@ -72,7 +73,6 @@ docs/
 
 ## 相关入口
 
-- [仓库开发约定](../AGENTS.md) — 贡献与自动化修改约束
 - [维护脚本](../scripts/README.md) — Java 格式、源码布局与 BuildMart 只读审查
 - [LoadTest](../championships-bingo-loadtest/README.md) — 隔离 Folia 的区块与实体压力
 

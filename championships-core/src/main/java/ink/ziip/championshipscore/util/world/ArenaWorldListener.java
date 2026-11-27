@@ -5,6 +5,7 @@ import ink.ziip.championshipscore.api.BaseListener;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.logging.LogText;
 
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Ambient;
 import org.bukkit.entity.Animals;
@@ -14,6 +15,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.WaterMob;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.block.BlockFadeEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.world.EntitiesLoadEvent;
 
@@ -23,10 +25,11 @@ import java.util.List;
 import java.util.logging.Level;
 
 /**
- * Prevents environmental mobs from entering managed arenas through spawning or saved chunks.
- * Plugin-spawned mobs remain available after chunk reloads as well as on their initial spawn.
- * DragonEggCarnival's vanilla dragon is retained; its world explicitly enables other enemies
- * through the world's monster spawn flag when preparing the fight.
+ * Prevents environmental mobs from entering managed arenas through spawning or saved chunks, and
+ * keeps live coral from fading in arena worlds by default. Plugin-spawned mobs remain available
+ * after chunk reloads as well as on their initial spawn. DragonEggCarnival's vanilla dragon is
+ * retained; its world explicitly enables other enemies through the world's monster spawn flag when
+ * preparing the fight.
  */
 public final class ArenaWorldListener extends BaseListener {
     private final WorldManager worldManager;
@@ -68,6 +71,18 @@ public final class ArenaWorldListener extends BaseListener {
                                         "arena-world-listener.on-entities-load-2",
                                         world.getName(),
                                         leftovers.size())));
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onCoralFade(BlockFadeEvent event) {
+        if (!worldManager.isArenaWorld(event.getBlock().getWorld())) return;
+        if (isLiveCoral(event.getBlock().getType())) event.setCancelled(true);
+    }
+
+    static boolean isLiveCoral(Material material) {
+        if (material == null) return false;
+        String name = material.name();
+        return name.contains("CORAL") && !name.startsWith("DEAD_");
     }
 
     static boolean isUnwantedMob(

@@ -22,6 +22,10 @@ test:
 # These are map identities, not physical world names.
 # Keep this section synchronized through /cc map rename; do not add map IDs in ScheduleManager code.
 formal-events:
+  IAmNotARobot:
+    maps: []
+  CraftingFeast:
+    maps: []
   FrostbiteFrenzy:
     maps: []
   LaserBox:
@@ -45,6 +49,7 @@ formal-events:
   ParkourWarrior:
     maps: []
   HotyCodyDusky:
+    # Formal starts, including explicit map selections, use only the listed maps.
     maps: []
   BuildMart:
     maps: []
@@ -65,6 +70,12 @@ daily:
     - "DragonEggCarnival"
     - "ParkourWarrior"
   games:
+    CraftingFeast:
+      min-players: 2
+      max-players: 16
+      team-size: 4
+      teams: 4
+      countdown-seconds: 30
     LaserShowdown:
       min-players: 2
       max-players: 16
@@ -135,6 +146,8 @@ strict-spectator-rule: false
 #         RiptideRush（命令名 riptide，大小写不敏感）, LaserBox, SulfurSoccer
 # 改为 [] 则不启用任何游戏。
 enabled-games:
+  - "IAmNotARobot"
+  - "CraftingFeast"
   - "Bingo"
   - "ParkourTag"
   - "BattleBox"
@@ -160,6 +173,9 @@ chat:
   spectator: "%s &#696969» &#ededed%s"
 database:
   type: "MARIADB"
+  # Verify the database certificate and hostname when TLS is enabled.
+  tls: false
+  pool-size: 12
   address: "127.0.0.1"
   port: 3306
   name: "wcc"

@@ -148,6 +148,37 @@ class DailyTeamAllocationTest {
     }
 
     @Test
+    void craftingFeastUsesTheExistingMultiTeamRulesWithoutFullTeams() {
+        var rules = new DailyRules(2, 16, 4, 4, 30);
+        assertFalse(DailyManager.allowsSoloQueue(GameTypeEnum.CraftingFeast));
+        assertFalse(DailyManager.hasEnoughQueueGroups(GameTypeEnum.CraftingFeast, 1));
+        assertTrue(DailyManager.hasEnoughQueueGroups(GameTypeEnum.CraftingFeast, 2));
+        assertTrue(
+                DailyManager.allocate(
+                                List.of(group(sizedPlayers(4))), rules, GameTypeEnum.CraftingFeast)
+                        .isEmpty());
+        assertEquals(
+                List.of(1, 1),
+                sizes(DailyManager.allocate(solos(2), rules, GameTypeEnum.CraftingFeast)));
+        assertEquals(
+                List.of(1, 1, 1),
+                sizes(DailyManager.allocate(solos(3), rules, GameTypeEnum.CraftingFeast)));
+        assertEquals(
+                List.of(2, 2),
+                sizes(DailyManager.allocate(solos(4), rules, GameTypeEnum.CraftingFeast)));
+        var party = sizedPlayers(3);
+        var otherParty = sizedPlayers(2);
+        var teams =
+                DailyManager.allocate(
+                        List.of(group(party), group(otherParty)),
+                        rules,
+                        GameTypeEnum.CraftingFeast);
+        assertEquals(List.of(2, 3), sizes(teams));
+        assertTrue(teams.contains(party));
+        assertTrue(teams.contains(otherParty));
+    }
+
+    @Test
     void presentsDailyTeamsByMinecraftColorOnly() {
         assertEquals("青队", DailyManager.teamNameForColor("CYAN"));
         assertEquals("淡蓝队", DailyManager.teamNameForColor("LIGHT_BLUE"));

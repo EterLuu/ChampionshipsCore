@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const { GAME_PROFILES, actionProfile, runProfileTick, supportedGameProfiles } = require('../profiles');
 
 test('every matrix game has a data driven profile and mechanism contract', () => {
-  assert.equal(supportedGameProfiles().length, 17);
+  assert.equal(supportedGameProfiles().length, 19);
   for (const profile of Object.values(GAME_PROFILES)) {
     assert.ok(profile.cadenceMs > 0);
     assert.ok(profile.mechanism);
@@ -57,9 +57,19 @@ test('all game profiles emit protocol-valid progress actions', () => {
     const profile = actionProfile({ action: 'game', game });
     const context = {
       client, index: 0, step: 20, phase: 'PROGRESS', entityId: 1,
+      hotbar: [null, null, { name: 'structure_void' }, null, { name: 'barrier' }], entities: new Map(),
+      tick: 20, memory: {}, walkingHeading: angle => ({ angle }), fleeFrom: (_, angle) => ({ angle }), navigate(goal) { return { angle: Math.atan2(goal.z - this.position.z, goal.x - this.position.x) }; },
       position: { x: 0, y: 64, z: 0, yaw: 0, pitch: 0 }, origin: { x: 0, y: 64, z: 0 },
       nextSequence: () => 2, nearestEntity: () => 3, record: () => {},
     };
+    if (game === 'iamnotarobot') {
+      assert.equal(runProfileTick(profile, context), 0, 'world mutation is disabled');
+      continue; // The scenario test supplies the round board, terrain and issued tool.
+    }
+    if (game === 'parkourtag') context.hotbar[0] = { name: 'feather' };
+    if (game === 'dodgebolt') Object.assign(context, { hotbar: [{ name: 'bow' }],
+      heldSlot: 0, inventory: { 36: { name: 'arrow' } }, entityLocation: () => context.position });
+    context.heldSlot = 0;
     assert.ok(runProfileTick(profile, context) > 0, game);
     assert.ok(writes.length > 0, game);
   }
@@ -79,7 +89,8 @@ function harness(game, options = {}) {
   let sequence = 0;
   const ctx = {
     client: { write: (name, params) => writes.push({ name, params }) },
-    index: 0,
+    index: 0, memory: options.memory || {}, tick: options.tick ?? 20,
+    entities: options.entities || new Map(), inventory: options.inventory || {}, walkingHeading: angle => ({ angle }), fleeFrom: (_, angle) => ({ angle }), navigate(goal) { return { angle: Math.atan2(goal.z - this.position.z, goal.x - this.position.x) }; },
     step: options.step ?? 20,
     phase: options.phase || 'PROGRESS',
     position: { x: 0, y: 64, z: 0, yaw: 0, pitch: 0 },
@@ -136,8 +147,14 @@ test('battlebox still works when the server has not sent an inventory', () => {
 });
 
 test('dodgebolt draws the bow and never sends a melee attack', () => {
-  const result = harness('dodgebolt', { nearestEntity: () => 7, entityLocation: near });
-  assert.ok(result.names.includes('use_item'), 'charges/releases the bow');
+  const memory = {};
+  const options = { nearestEntity: () => 7, entityLocation: near, memory,
+    hotbar: [{ name: 'bow' }], inventory: { 37: { name: 'arrow' } } };
+  const result = harness('dodgebolt', options);
+  assert.ok(result.names.includes('use_item'), 'begins drawing');
+  assert.ok(!harness('dodgebolt', { ...options, tick: 30 }).names.includes('block_dig'));
+  const shot = harness('dodgebolt', { ...options, tick: 40 }).writes.find(p => p.name === 'block_dig');
+  assert.equal(shot.params.status, 6, 'releases the charged bow');
   assert.ok(result.names.includes('look'), 'aims before shooting');
   assert.ok(!result.names.includes('attack'), 'dodgebolt has no melee attack');
 });
@@ -211,15 +228,17 @@ test('bingo chooses entity interaction, block digging or roaming from server sta
 
 test('movement games run, sprint and jump on their configured cadence', () => {
   const result = harness('tntrun', { step: 12 });
-  assert.ok(result.names.includes('position'), 'moves');
+  assert.ok(result.names.includes('position_look'), 'moves');
   assert.ok(result.names.includes('entity_action'), 'sprints');
   assert.ok(result.names.includes('player_input'), 'jumps on cadence');
   assert.ok(result.mechanisms.includes('floor-break'));
 });
 
 test('parkourtag chases a distant runner and tags at close range', () => {
-  const chase = harness('parkourtag', { nearestEntity: () => 7, entityLocation: far });
+  const options = pos => ({ entities: new Map([[7, { entityId: 7, type: 'player', hand: 'ender_eye', ...pos() }]]),
+    hotbar: [{ name: 'feather' }], nearestEntity: () => 7, entityLocation: pos });
+  const chase = harness('parkourtag', options(far));
   assert.ok(chase.names.includes('position_look'), 'moves toward the target');
-  const tag = harness('parkourtag', { nearestEntity: () => 7, entityLocation: near });
-  assert.ok(tag.names.includes('use_item'), 'uses the chaser tool at close range');
+  const tag = harness('parkourtag', options(near));
+  assert.ok(tag.names.includes('attack'), 'tags the runner at close range');
 });

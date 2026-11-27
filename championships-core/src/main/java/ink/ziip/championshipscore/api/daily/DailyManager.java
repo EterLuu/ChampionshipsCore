@@ -115,6 +115,10 @@ public final class DailyManager extends BaseManager {
     @Override
     public void load() {
         serverMode = ServerMode.parse(CCConfig.MODE);
+        adapters.put(
+                GameTypeEnum.CraftingFeast,
+                new ink.ziip.championshipscore.api.daily.adapter.CraftingFeastDailyGameAdapter(
+                        plugin));
         adapters.put(GameTypeEnum.Bingo, new BingoDailyGameAdapter(plugin));
         adapters.put(GameTypeEnum.AceRace, new AceRaceDailyGameAdapter(plugin));
         adapters.put(GameTypeEnum.DragonEggCarnival, new DragonEggCarnivalDailyGameAdapter(plugin));
@@ -612,6 +616,8 @@ public final class DailyManager extends BaseManager {
             maps.addAll(plugin.getGameManager().getParkourWarriorManager().getAreaNameList());
         else if (game == GameTypeEnum.LaserShowdown)
             maps.addAll(plugin.getGameManager().getLaserShowdownManager().getAreaNameList());
+        if (game == GameTypeEnum.CraftingFeast)
+            maps.addAll(plugin.getGameManager().getCraftingFeastManager().getAreaNameList());
         maps.addAll(statsManager.recordMaps(game));
         return Set.copyOf(maps);
     }

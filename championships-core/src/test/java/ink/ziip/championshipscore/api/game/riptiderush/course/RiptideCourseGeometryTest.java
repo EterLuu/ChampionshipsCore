@@ -7,6 +7,7 @@ import org.bukkit.World;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Proxy;
+import java.util.HashSet;
 
 class RiptideCourseGeometryTest {
     private static final World WORLD = world("raft-test");
@@ -58,6 +59,35 @@ class RiptideCourseGeometryTest {
                                 new Location(WORLD, 1.5, 65, 20),
                                 6,
                                 9));
+    }
+
+    @Test
+    void teamSpawnsStaySeparatedOnDeckForEveryDirectionAndSupportedMinimumDimension() {
+        for (int[] direction : new int[][] {{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
+            for (int[] size : new int[][] {{7, 9}, {3, 3}, {3, 9}, {7, 3}}) {
+                var start = new Location(WORLD, 1.5, 65, 1.5, 70F, 12F);
+                var geometry =
+                        RiptideCourseGeometry.resolve(
+                                start,
+                                start.clone().add(direction[0] * 40, 0, direction[1] * 40),
+                                size[0],
+                                size[1]);
+                var positions = new HashSet<Location>();
+                for (int index = 0; index < 4; index++) {
+                    Location spawn = geometry.teamSpawn(index);
+                    assertTrue(positions.add(spawn), "Teammates must have distinct positions");
+                    assertEquals(65D, spawn.getY());
+                    assertEquals(70F, spawn.getYaw());
+                    assertEquals(12F, spawn.getPitch());
+                    assertTrue(geometry.containsMovingRaftHorizontally(spawn, 0, -0.3D));
+                    for (Location other : positions) {
+                        if (!spawn.equals(other)) assertTrue(spawn.distanceSquared(other) >= 4D);
+                    }
+                }
+                geometry.teamSpawn(0).add(100D, 100D, 100D);
+                assertEquals(start, geometry.centerAt(0), "Spawn locations must be independent");
+            }
+        }
     }
 
     private static World world(String name) {

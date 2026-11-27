@@ -29,7 +29,7 @@ public final class ConfigurationValueReader {
         return convert(configuration.get(path), field.getGenericType());
     }
 
-    private static Object convert(Object value, Type declared) {
+    static Object convert(Object value, Type declared) {
         if (value == null) return null;
         if (declared instanceof ParameterizedType listType && listType.getRawType() == List.class) {
             if (!(value instanceof List<?> list))

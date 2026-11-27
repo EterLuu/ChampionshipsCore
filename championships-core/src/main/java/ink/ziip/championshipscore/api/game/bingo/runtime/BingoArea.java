@@ -791,7 +791,7 @@ public class BingoArea extends BaseMultiTeamGameInstance {
                 teammate.playSound(teammate.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1F, 1.5F);
             }
         }
-        if (team != null && round.hasWon(team)) {
+        if (winningTeam == null && team != null && round.hasWon(team)) {
             winningTeam = team;
             BingoRound completedRound = round;
             long generation = captureGameGeneration();

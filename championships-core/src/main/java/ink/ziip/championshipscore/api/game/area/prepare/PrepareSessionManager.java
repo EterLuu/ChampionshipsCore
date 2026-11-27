@@ -7,6 +7,7 @@ import ink.ziip.championshipscore.api.game.area.prepare.gui.AreaListGui;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.ListStepGui;
 import ink.ziip.championshipscore.api.game.area.prepare.gui.StepMenuGui;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
+import ink.ziip.championshipscore.api.game.model.GameRunMode;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.configuration.config.message.MapEditorMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
@@ -105,6 +106,8 @@ public class PrepareSessionManager extends BaseManager {
                 GameTypeEnum.BuildMart,
                 new ink.ziip.championshipscore.api.game.area.prepare.buildmart
                         .BuildMartPrepareFlow());
+        flows.put(GameTypeEnum.CraftingFeast, new CraftingFeastPrepareFlow());
+        flows.put(GameTypeEnum.IAmNotARobot, new RobotPrepareFlow());
         flows.put(GameTypeEnum.SkyWars, new SkyWarsPrepareFlow());
         flows.put(GameTypeEnum.TGTTOS, new TGTTOSPrepareFlow());
         flows.put(GameTypeEnum.DragonEggCarnival, new DragonEggCarnivalPrepareFlow());
@@ -482,18 +485,32 @@ public class PrepareSessionManager extends BaseManager {
         return getStartFailureReason(gameType, mapName) == null;
     }
 
+    /**
+     * Test remote Bingo maps are validated by the Worker manifest instead of a Core world. Preserve
+     * the existing published-preparation requirement for every production start surface.
+     */
+    public boolean canStart(GameTypeEnum game, String map, GameRunMode mode) {
+        if ((mode == GameRunMode.TEST || mode == GameRunMode.TEST_EVENT)
+                && game == GameTypeEnum.Bingo
+                && plugin.getGameManager().getBingoManager() != null
+                && plugin.getGameManager().getBingoManager().remoteExecutionConfigured()) {
+            return true;
+        }
+        return canStart(game, map);
+    }
+
     /** Explains the actual map state instead of describing every rejected map as unpublished. */
     public @Nullable String getStartFailureReason(
             @NotNull GameTypeEnum gameType, @NotNull String mapName) {
         BaseGameInstanceManager<?> mgr = plugin.getGameManager().getAreaManager(gameType);
-        var target = mgr == null ? null : mgr.getSetupTarget(gameType, mapName);
-        if (target == null)
+        var config = mgr == null ? null : mgr.getMapConfig(mapName);
+        if (config == null)
             return MessageConfig.codeText("prepare-session-manager.get-start-failure-reason-1");
-        if (!target.config().isPreparePublished())
+        if (!config.isPreparePublished())
             return MessageConfig.codeText("prepare-session-manager.get-start-failure-reason-2");
-        if (target.config().isPrepareDirty())
+        if (config.isPrepareDirty())
             return MessageConfig.codeText("prepare-session-manager.get-start-failure-reason-3");
-        if (!target.config().isPrepareReady())
+        if (!config.isPrepareReady())
             return MessageConfig.codeText("prepare-session-manager.get-start-failure-reason-4");
         if (mapLocks.containsKey(lockKey(gameType, mapName)))
             return MessageConfig.codeText("prepare-session-manager.get-start-failure-reason-5");

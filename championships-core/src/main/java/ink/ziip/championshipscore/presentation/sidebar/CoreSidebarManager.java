@@ -11,6 +11,8 @@ import ink.ziip.championshipscore.api.game.bingo.game.BingoRound;
 import ink.ziip.championshipscore.api.game.bingo.runtime.BingoArea;
 import ink.ziip.championshipscore.api.game.config.BaseGameConfig;
 import ink.ziip.championshipscore.api.game.frostbite.runtime.FrostbiteArea;
+import ink.ziip.championshipscore.api.game.hotycodydusky.runtime.HotyCodyDuskyTeamArea;
+import ink.ziip.championshipscore.api.game.iamnotarobot.runtime.RobotArea;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.laserbox.runtime.LaserBoxArea;
 import ink.ziip.championshipscore.api.game.lasershowdown.runtime.LaserShowdownTeamArea;
@@ -53,6 +55,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.logging.Level;
 
 /** Owns selection, rendering and cleanup for every Core-side sidebar. */
@@ -279,6 +282,21 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
 
         List<String> lines = new ArrayList<>();
         for (String raw : template.lines()) {
+            if ("{hoty.holders}".equals(raw) && instance instanceof HotyCodyDuskyTeamArea hoty) {
+                UUID viewer = player.getUniqueId();
+                lines.addAll(
+                        holderRows(
+                                hoty.getCodyHolders(viewer),
+                                viewer,
+                                template.lines().size(),
+                                id -> {
+                                    var team = plugin.getTeamManager().getTeamByPlayer(id);
+                                    return "  "
+                                            + (team == null ? "&f" : team.getColorCode())
+                                            + plugin.getPlayerManager().getPlayerName(id);
+                                }));
+                continue;
+            }
             if ("{ranking}".equals(raw) && instance instanceof BingoArea bingo) {
                 lines.addAll(renderLocalBingoRanking(config, bingo, game, viewerTeam));
                 continue;
@@ -300,6 +318,25 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
         return renderRaw(player, template.title(), lines, values, config.papiFallback());
     }
 
+    static List<String> holderRows(
+            List<UUID> holders, UUID viewer, int templateSize, Function<UUID, String> displayName) {
+        if (holders.isEmpty()) return List.of(MessageConfig.codeText("hoty-items.holders-none"));
+        // The template already counts the one line which the names replace.
+        int slots = Math.max(1, Math.min(5, 16 - templateSize));
+        int visible = holders.size() <= slots ? holders.size() : slots - 1;
+        List<String> rows = new ArrayList<>(slots);
+        holders.stream()
+                .sorted(
+                        Comparator.comparing((UUID id) -> !id.equals(viewer))
+                                .thenComparing(Comparator.naturalOrder()))
+                .limit(visible)
+                .map(displayName)
+                .forEach(rows::add);
+        if (visible < holders.size())
+            rows.add(MessageConfig.codeText("hoty-items.more-holders", holders.size() - visible));
+        return rows;
+    }
+
     private static void putMatchup(
             SidebarConfiguration config,
             Map<String, String> values,
@@ -319,7 +356,10 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
             BaseGameInstance instance,
             UUID viewer,
             boolean spectator) {
-        if (instance instanceof RiptideRushArea area) {
+        if (instance instanceof RobotArea area) {
+            values.put("robot.room", spectator ? "—" : area.roomName(viewer));
+            values.put("robot.timer", Integer.toString(area.getTimer()));
+        } else if (instance instanceof RiptideRushArea area) {
             values.put("riptide.progress", area.getCourseProgressPercent() + "%");
             values.put("riptide.alive", Integer.toString(area.getSurvivedPlayerNums()));
             String key = area.getCurrentChallengeKey();
@@ -346,6 +386,18 @@ public final class CoreSidebarManager extends BaseManager implements Listener {
             values.put(
                     "sulfursoccer.target", Integer.toString(area.getGameConfig().getGoalsToWin()));
             values.put("sulfursoccer.state", area.getStateText());
+        } else if (instance instanceof HotyCodyDuskyTeamArea area) {
+            String phaseKey = area.getSidebarPhaseKey();
+            values.put(
+                    "hoty.phase",
+                    config.value("hoty.phase." + phaseKey, "-")
+                            .replace("{wave}", Integer.toString(area.getWaveNumber())));
+            String stateKey = area.getSidebarStateKey(viewer, spectator);
+            values.put("hoty.state", config.value("hoty.state." + stateKey, "-"));
+            values.put("hoty.skill", area.getSidebarSkillDisplay(viewer, spectator));
+            values.put("hoty.holder-count", Integer.toString(area.getCodyHolders(viewer).size()));
+            values.put("hoty.alive-players", Integer.toString(area.getSurvivedPlayerNums()));
+            values.put("hoty.alive-teams", Integer.toString(area.getSurvivedTeamNums()));
         } else if (instance instanceof LaserBoxArea area) {
             putMatchup(
                     config,

@@ -41,7 +41,9 @@ class VoteMenuTest {
                         .filter(game -> !FinaleGameRegistry.isRegistered(game))
                         .toList();
         var layout = VoteMenu.layout(54);
-        assertEquals(14, games.size());
+        assertEquals(16, games.size());
+        assertTrue(games.contains(GameTypeEnum.IAmNotARobot));
+        assertTrue(games.contains(GameTypeEnum.CraftingFeast));
         assertEquals(configured, layout.content());
         assertEquals(2, layout.pageCount(games.size()));
         var seen = new ArrayList<GameTypeEnum>();
@@ -49,7 +51,7 @@ class VoteMenuTest {
             for (int slot : layout.pageSlots(page, games.size()))
                 seen.add(games.get(layout.index(page, slot, games.size())));
         assertEquals(games, seen);
-        assertEquals(List.of(10, 11), layout.pageSlots(1, games.size()));
+        assertEquals(List.of(10, 11, 12, 13), layout.pageSlots(1, games.size()));
     }
 
     @Test

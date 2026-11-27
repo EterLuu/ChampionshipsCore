@@ -51,12 +51,11 @@ public class HotyCodyDuskyPlaceholder extends BaseGamePlaceholder<HotyCodyDuskyT
             if (hotyCodyDuskyTeamArea == null) {
                 return ScoreMessages.PLACEHOLDER_NONE;
             }
-            var holder =
-                    offlinePlayer == null
-                            ? null
-                            : hotyCodyDuskyTeamArea.getCodyHolder(offlinePlayer.getUniqueId());
-            if (holder != null) return CoreMessages.formatPlayerName(holder);
-            return hotyCodyDuskyTeamArea.getCodyHolders().stream()
+            var holders =
+                    hotyCodyDuskyTeamArea.getCodyHolders(
+                            offlinePlayer == null ? null : offlinePlayer.getUniqueId());
+            if (holders.isEmpty()) return ScoreMessages.PLACEHOLDER_NONE;
+            return holders.stream()
                     .map(CoreMessages::formatPlayerName)
                     .collect(java.util.stream.Collectors.joining("、"));
         }

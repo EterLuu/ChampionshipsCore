@@ -143,7 +143,9 @@ LaserBox 与 LaserShowdown 共用 `LaserGunMenu` 和 `LaserGunItems`。选枪窗
 
 武器名称、描述、弹匣/射速摘要、选择反馈及战斗 HUD 继续使用 `message.yml` 的既有 `laserbox` 译文，不在选枪 GUI 或 Java 中重建一份语言兜底。GUI 标题默认 `%title%`、枪名默认 `%name%`，引用这些既有译文以保留运行覆盖。真实枪械参数与装备材质仍由模型和机制拥有，菜单图标的材质覆盖不改变发给玩家的武器；物品持久标记、耐久和属性沿用共用工厂。参数使用 `MessageTemplate` 单次展开，枪名中含 `%ammo%` 等文本时不得再次求值。
 
-Frostbite 实际道具统一由 `frostbite/presentation/FrostbiteItemPresentation` 创建，运行场地负责何时发放和使用。名称/描述仍读取既有 `frostbite.item.<类型>` 覆盖；完整名称与拾取提示模板分别来自 `code-text.frostbite-item.display-name` / `pickup-hint`，完整多行 lore 来自 `frostbite.item-presentation.lore`，支持 `%title%`、`%description%` 和显式空列表。参数只插入一次，不强制追加颜色或说明；真实材质、不可破坏、道具类型 PDC 和每把弓的独立 UUID 属于玩法身份，整理展示时必须保持。
+烫手鳕鱼、霜冻决斗、激光方盒共用 `GamePickup`。创建时传入给玩家看的物品和静止或浮动旋转模式。三个游戏均使用浮动旋转，霜冻决斗展示金块，另两款展示具体道具。场地负责生成、领取资格、奖励、冷却和清理，动作栏提示随本局 HUD 刷新。快捷栏物品名通过 `code-text.game-pickup.held-name` 拼合带样式的名称和使用说明；持鱼者技能同样显示效果。激光方盒使用已配置的装备 lore 生成手持说明，`laserbox.item-*` 中的 `%item%` 引用完整名称。
+
+Frostbite 实际道具统一由 `frostbite/presentation/FrostbiteItemPresentation` 创建，运行场地负责何时发放和使用。名称/描述仍读取既有 `frostbite.item.<类型>` 覆盖；名称样式与拾取提示模板分别来自 `code-text.frostbite-item.display-name` / `pickup-hint`，完整多行 lore 来自 `frostbite.item-presentation.lore`，支持 `%title%`、`%description%` 和显式空列表。参数只插入一次，不强制追加颜色或说明；真实材质、不可破坏、道具类型 PDC 和每把弓的独立 UUID 属于玩法身份，整理展示时必须保持。
 
 BuildMart 材料标签的 `buildmart.material-display` 在 `message.yml` 中定义正整数 `columns`、整体 `style`、完整 `entry` 和列间 `separator`；默认仍是白色、每行两项及“材料 × 数量”。`MaterialDisplayFormat` 在发布配置前校验整份快照，非法列数/模板类型不能替换已接受配置，删除覆盖恢复内置默认，空条目和空分隔符保留。条目通过共享 `ComponentTemplates` 插入 `%material%` 的 Adventure 翻译节点和 `%count%`，不能将客户端材料译名提前转换为纯文本或再展开材料名里的参数。换行按同一快照的列数生成，方块材料计数、普通/黄金区域规则、实体所属场地和清理仍归原机制入口。
 

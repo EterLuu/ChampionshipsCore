@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.worker;
 
 import com.destroystokyo.paper.event.player.PlayerAdvancementCriterionGrantEvent;
 
+import ink.ziip.championshipscore.platform.bukkit.bingo.BingoEventSignals;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoNameTagObjective;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoRidingTravel;
 import ink.ziip.championshipscore.platform.bukkit.bingo.BingoStarterKitService;
@@ -25,14 +26,12 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.Tag;
 import org.bukkit.block.Block;
 import org.bukkit.block.Campfire;
-import org.bukkit.block.data.Levelled;
 import org.bukkit.entity.Ageable;
 import org.bukkit.entity.AreaEffectCloud;
 import org.bukkit.entity.Boat;
 import org.bukkit.entity.EnderCrystal;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
-import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.Firework;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Monster;
@@ -103,33 +102,10 @@ import org.bukkit.potion.PotionType;
 import org.bukkit.projectiles.ProjectileSource;
 
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 final class WorkerListener implements Listener {
-    private static final Set<Material> SOUPS =
-            Set.of(
-                    Material.BEETROOT_SOUP,
-                    Material.MUSHROOM_STEW,
-                    Material.RABBIT_STEW,
-                    Material.SUSPICIOUS_STEW);
-    private static final Set<String> TOOL_MATERIALS =
-            Set.of("WOODEN", "STONE", "IRON", "GOLDEN", "DIAMOND", "COPPER");
-    private static final Set<String> TOOL_TYPES =
-            Set.of("PICKAXE", "AXE", "SHOVEL", "HOE", "SWORD");
-    private static final Set<Material> MISC_TOOLS =
-            Set.of(
-                    Material.FISHING_ROD,
-                    Material.FLINT_AND_STEEL,
-                    Material.SHEARS,
-                    Material.BRUSH,
-                    Material.CARROT_ON_A_STICK,
-                    Material.WARPED_FUNGUS_ON_A_STICK);
-    private static final Set<String> ARMOR_MATERIALS =
-            Set.of("LEATHER", "COPPER", "GOLDEN", "CHAINMAIL", "IRON", "DIAMOND");
-    private static final Set<String> ARMOR_TYPES =
-            Set.of("HELMET", "CHESTPLATE", "LEGGINGS", "BOOTS");
 
     private final WorkerMatchRegistry registry;
     private final PlatformScheduler scheduler;
@@ -265,7 +241,7 @@ final class WorkerListener implements Listener {
         } else if (type.isEdible()) {
             registry.observeEventSignal(player, "eat", type.name());
             registry.recordEventDistinct(player, "eat_unique", type.name());
-            if (SOUPS.contains(type))
+            if (BingoEventSignals.isSoup(type))
                 registry.recordEventDistinct(player, "eat_all:SOUPS", type.name());
         }
     }
@@ -275,7 +251,7 @@ final class WorkerListener implements Listener {
         Player player = event.getPlayer();
         if (!registry.isRunningPlayer(player.getUniqueId())) return;
         Material type = event.getBrokenItem().getType();
-        String kind = isArmor(type) ? "ARMOR" : isTool(type) ? "TOOL" : null;
+        String kind = BingoEventSignals.brokenItemKind(type);
         if (kind != null) registry.observeEventSignal(player, "break_item", kind);
         registry.observeEventSignal(player, "break_item", type.name());
     }
@@ -287,7 +263,7 @@ final class WorkerListener implements Listener {
         registry.recoverRespawn(player, true);
         if (!registry.isRunningPlayer(player.getUniqueId())) return;
         if (registry.clearsInventoryOnDeath(player)) event.getDrops().clear();
-        String cause = resolveDeathCause(player);
+        String cause = BingoEventSignals.resolveDeathCause(player);
         if (cause != null) registry.observeEventSignal(player, "die", cause);
     }
 
@@ -329,12 +305,12 @@ final class WorkerListener implements Listener {
                 && item != null
                 && item.getType() == Material.BRUSH) {
             recentBrushUses.put(player.getUniqueId(), System.currentTimeMillis());
-        } else if (type == Material.COMPOSTER && isComposterFull(block)) {
+        } else if (type == Material.COMPOSTER && BingoEventSignals.isComposterFull(block)) {
             registry.observeEventSignal(player, "use", "COMPOSTER");
         } else if ((type == Material.CAMPFIRE || type == Material.SOUL_CAMPFIRE)
                 && item != null
                 && item.getType().isEdible()
-                && campfireHasFreeSlot(block)) {
+                && BingoEventSignals.campfireHasFreeSlot(block)) {
             scheduler.runEntityLater(player, () -> checkCampfireFilled(block, player), 1L);
         } else if (type == Material.CAKE && player.getFoodLevel() < 20) {
             registry.observeEventSignal(player, "eat", "CAKE");
@@ -437,7 +413,7 @@ final class WorkerListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEventExplode(EntityExplodeEvent event) {
         if (!(event.getEntity() instanceof EnderCrystal crystal)) return;
-        Player player = crystalDamager(crystal);
+        Player player = BingoEventSignals.crystalDamager(crystal);
         if (player == null) player = nearestRunningPlayer(crystal, 16);
         if (player != null) registry.observeEventSignal(player, "explode_end_crystal", "");
     }
@@ -679,11 +655,12 @@ final class WorkerListener implements Listener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onFinalCountdownMove(PlayerMoveEvent event) {
         Location to = event.getTo();
-        if (to == null
-                || event instanceof org.bukkit.event.player.PlayerTeleportEvent
-                || (!registry.isFinalCountdownPlayer(event.getPlayer().getUniqueId())
-                        && !registry.isEventWaitingPlayer(event.getPlayer().getUniqueId()))) return;
-        if (registry.isEventWaitingPlayer(event.getPlayer().getUniqueId())) {
+        if (to == null || event instanceof org.bukkit.event.player.PlayerTeleportEvent) return;
+        var session = registry.activeSession();
+        if (session == null) return;
+        var access = session.access(event.getPlayer().getUniqueId());
+        if (!access.countdownPlayer() && !access.waitingPlayer()) return;
+        if (access.waitingPlayer()) {
             Location held = event.getFrom().clone();
             held.setYaw(to.getYaw());
             held.setPitch(to.getPitch());
@@ -862,29 +839,6 @@ final class WorkerListener implements Listener {
         return player != null && registry.isRunningPlayer(player.getUniqueId()) ? player : null;
     }
 
-    private static Player crystalDamager(EnderCrystal crystal) {
-        EntityDamageEvent last = crystal.getLastDamageCause();
-        if (!(last instanceof EntityDamageByEntityEvent damage)) return null;
-        if (damage.getDamager() instanceof Player player) return player;
-        if (damage.getDamager() instanceof Projectile projectile
-                && projectile.getShooter() instanceof Player player) return player;
-        return null;
-    }
-
-    private static boolean isComposterFull(Block block) {
-        return block.getBlockData() instanceof Levelled levelled
-                && levelled.getLevel() >= levelled.getMaximumLevel();
-    }
-
-    private static boolean campfireHasFreeSlot(Block block) {
-        if (!(block.getState() instanceof Campfire campfire)) return false;
-        for (int slot = 0; slot < campfire.getSize(); slot++) {
-            ItemStack item = campfire.getItem(slot);
-            if (item == null || item.getType().isAir()) return true;
-        }
-        return false;
-    }
-
     private void checkCampfireFilled(Block block, Player player) {
         if (!registry.isRunningPlayer(player.getUniqueId())
                 || !(block.getState() instanceof Campfire campfire)) return;
@@ -893,76 +847,6 @@ final class WorkerListener implements Listener {
             if (item == null || item.getType().isAir()) return;
         }
         registry.observeEventSignal(player, "fill_campfire", "");
-    }
-
-    private static boolean isArmor(Material type) {
-        String[] parts = type.name().split("_", 2);
-        return parts.length == 2
-                && ARMOR_MATERIALS.contains(parts[0])
-                && ARMOR_TYPES.contains(parts[1]);
-    }
-
-    private static boolean isTool(Material type) {
-        if (MISC_TOOLS.contains(type)) return true;
-        String[] parts = type.name().split("_", 2);
-        return parts.length == 2
-                && TOOL_MATERIALS.contains(parts[0])
-                && TOOL_TYPES.contains(parts[1]);
-    }
-
-    private static String resolveDeathCause(Player player) {
-        EntityDamageEvent last = player.getLastDamageCause();
-        if (last == null) return null;
-        if (last instanceof EntityDamageByEntityEvent damage) {
-            Entity damager = damage.getDamager();
-            switch (damager.getType()) {
-                case IRON_GOLEM:
-                    return "IRON_GOLEM";
-                case POLAR_BEAR:
-                    return "POLAR_BEAR";
-                case WARDEN:
-                    return "WARDEN";
-                case BEE:
-                    return "BEE";
-                case FIREWORK_ROCKET:
-                    return "FIREWORK";
-                case TNT_MINECART:
-                    return "TNT_MINECART";
-                case TRIDENT:
-                    return "TRIDENT";
-                case FALLING_BLOCK:
-                    if (damager instanceof FallingBlock falling) {
-                        Material material = falling.getBlockData().getMaterial();
-                        if (material.name().contains("ANVIL")) return "ANVIL";
-                        if (material == Material.POINTED_DRIPSTONE) return "FALLING_STALACTITE";
-                    }
-                    break;
-                default:
-                    break;
-            }
-        }
-        return switch (last.getCause()) {
-            case DROWNING -> "DROWNING";
-            case VOID -> "VOID";
-            case FREEZE -> "FREEZE";
-            case MAGIC -> "MAGIC";
-            case CONTACT -> contactBlockParam(player);
-            default -> null;
-        };
-    }
-
-    private static String contactBlockParam(Player player) {
-        Location location = player.getLocation();
-        for (int dx = -1; dx <= 1; dx++) {
-            for (int dz = -1; dz <= 1; dz++) {
-                for (int dy = 0; dy <= 1; dy++) {
-                    Material material = location.clone().add(dx, dy, dz).getBlock().getType();
-                    if (material == Material.CACTUS) return "CACTUS";
-                    if (material == Material.SWEET_BERRY_BUSH) return "BERRY_BUSH";
-                }
-            }
-        }
-        return null;
     }
 
     private static UUID attackerId(Entity damager) {

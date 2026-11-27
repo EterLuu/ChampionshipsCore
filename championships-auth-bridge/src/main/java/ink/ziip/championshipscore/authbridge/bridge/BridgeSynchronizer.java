@@ -247,6 +247,7 @@ public final class BridgeSynchronizer implements Runnable {
         if (batch.nextCursor() == null || batch.nextCursor().isBlank()) {
             throw new IllegalStateException("Bridge API response is missing nextCursor");
         }
+        ink.ziip.championshipscore.auth.SignedRequests.cursor(batch.nextCursor());
     }
 
     private void apply(BridgeChange change) {
@@ -525,7 +526,8 @@ public final class BridgeSynchronizer implements Runnable {
         PlayerNameChangeEvent event =
                 new PlayerNameChangeEvent(oldUsername, newUsername, replacementUuid);
         Bukkit.getPluginManager().callEvent(event);
-        awaitCore(event.completion(), "name migration");
+        if (!Boolean.TRUE.equals(awaitCore(event.completion(), "name migration")))
+            throw new IllegalStateException("Core rejected name migration for " + oldUsername);
     }
 
     private int notifyCoreIdentityMigration(List<PlayerUuidMigration> players) {

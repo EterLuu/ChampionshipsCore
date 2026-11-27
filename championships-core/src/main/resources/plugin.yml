@@ -5,7 +5,6 @@ api-version: '26.3'
 authors: [ Eter Lu, LettuceIce ]
 depend:
   - packetevents
-  - ProtocolLib
   - PlaceholderAPI
   - FastAsyncWorldEdit
 commands:

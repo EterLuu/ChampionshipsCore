@@ -28,6 +28,8 @@ import org.bukkit.entity.TNTPrimed;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.CraftingInventory;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.IllegalPluginAccessException;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -46,6 +48,8 @@ import java.util.logging.Level;
 
 public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
     private static final int EVENT_WARNING_SECONDS = 10;
+    private static final int ELYTRA_REMOVAL_SECONDS = 90;
+    private static final int ELYTRA_WARNING_SECONDS = 30;
     private static final int TNT_RAIN_DURATION_SECONDS = 10;
     private static final int[] TNT_RAIN_START_TIMES = {120, 60, 20};
     @Getter private final Map<UUID, Location> playerSpawnLocations = new ConcurrentHashMap<>();
@@ -297,13 +301,16 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
     }
 
     private void beginGameProgress() {
+        long generation = captureGameGeneration();
+        int terrain = terrainGeneration;
+        int duration = getGameConfig().getTimer();
         startGameProgressTask =
                 startRemainingTimer(
-                        getGameConfig().getTimer(),
+                        duration,
                         seconds -> {
+                            if (!isCurrentProgress(generation, terrain)) return;
                             timer = seconds;
-                            updateGameTimerBossBar(
-                                    tntRunBossBarTitle(), timer, getGameConfig().getTimer());
+                            updateGameTimerBossBar(tntRunBossBarTitle(), timer, duration);
 
                             int tntRainWarning = tntRainWarningSeconds();
                             if (tntRainWarning > 0) {
@@ -317,12 +324,15 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
 
                                 startTntRain();
                             }
+
+                            if (duration >= ELYTRA_REMOVAL_SECONDS)
+                                updateElytraRemoval(duration - seconds);
                         },
-                        this::endGame);
+                        () -> {
+                            if (isCurrentProgress(generation, terrain)) endGame();
+                        });
 
         if (floorTracker != null) floorTracker.close();
-        long generation = captureGameGeneration();
-        int terrain = terrainGeneration;
         final List<UUID> participants = List.copyOf(gamePlayers);
         floorTracker =
                 new TNTRunFloorTracker(
@@ -335,12 +345,51 @@ public class TNTRunTeamArea extends BaseMultiTeamGameInstance {
                         player ->
                                 !deathPlayer.contains(player.getUniqueId())
                                         && isGameplayParticipant(player),
-                        () ->
-                                generation == captureGameGeneration()
-                                        && terrain == terrainGeneration
-                                        && !isDisposed()
-                                        && getGameStageEnum() == GameStageEnum.PROGRESS);
+                        () -> isCurrentProgress(generation, terrain));
         floorTracker.start();
+    }
+
+    private boolean isCurrentProgress(long generation, int terrain) {
+        return generation == captureGameGeneration()
+                && terrain == terrainGeneration
+                && !isDisposed()
+                && getGameStageEnum() == GameStageEnum.PROGRESS;
+    }
+
+    private void updateElytraRemoval(int elapsedSeconds) {
+        int remaining = ELYTRA_REMOVAL_SECONDS - elapsedSeconds;
+        if (remaining == ELYTRA_WARNING_SECONDS) {
+            String warning =
+                    TNTRunMessages.TNT_RUN_ELYTRA_REMOVAL_WARNING.replace(
+                            "%time%", String.valueOf(remaining));
+            sendMessageToAllGamePlayers(warning);
+        } else if (remaining > 0 && remaining <= EVENT_WARNING_SECONDS) {
+            sendActionBarToAllGamePlayers(
+                    TNTRunMessages.TNT_RUN_ELYTRA_REMOVAL_COUNT_DOWN.replace(
+                            "%time%", String.valueOf(remaining)));
+        } else if (remaining == 0) {
+            for (UUID uuid : gamePlayers) {
+                Player player = Bukkit.getPlayer(uuid);
+                if (player == null || deathPlayer.contains(uuid) || !isGameplayParticipant(player))
+                    continue;
+                removeElytra(player.getInventory());
+                Inventory crafting = player.getOpenInventory().getTopInventory();
+                if (crafting instanceof CraftingInventory) removeElytra(crafting);
+                if (player.getItemOnCursor().getType() == Material.ELYTRA) {
+                    player.setItemOnCursor(null);
+                }
+                if (player.isGliding()) player.setGliding(false);
+            }
+            sendMessageToAllGamePlayers(TNTRunMessages.TNT_RUN_ELYTRA_REMOVED);
+            sendActionBarToAllGamePlayers(TNTRunMessages.TNT_RUN_ELYTRA_REMOVED);
+        }
+    }
+
+    private static void removeElytra(Inventory inventory) {
+        for (int slot = 0; slot < inventory.getSize(); slot++) {
+            ItemStack item = inventory.getItem(slot);
+            if (item != null && item.getType() == Material.ELYTRA) inventory.setItem(slot, null);
+        }
     }
 
     private void startTntRain() {

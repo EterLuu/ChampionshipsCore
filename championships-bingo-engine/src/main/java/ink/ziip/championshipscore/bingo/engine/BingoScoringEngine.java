@@ -14,14 +14,13 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 
@@ -39,13 +38,15 @@ public final class BingoScoringEngine {
     private final BingoScoringRules rules;
     private final Map<Integer, TeamSnapshot> teams;
     private final Map<UUID, Integer> participants;
-    private final List<Set<Integer>> taskClaims;
+    private final int[] claimCounts;
+    private final Map<Integer, Integer> firstClaimsByTeam = new HashMap<>();
+    private int claimedCellCount;
+    private BingoResult cachedResult;
     private final Map<Integer, BitSet> completedByTeam = new HashMap<>();
-    private final Map<Integer, Integer> awardedLines = new HashMap<>();
+    private final Map<Integer, Integer> completedLineCounts = new HashMap<>();
     private final Map<Integer, Integer> teamScores = new HashMap<>();
     private final Map<Integer, Long> lastCompletionTicks = new HashMap<>();
-    private final Map<Long, CompletionObservation> observations = new LinkedHashMap<>();
-    private final Map<Long, ScoringDecision> decisions = new LinkedHashMap<>();
+    private final Map<Long, ScoringDecision> decisions = new HashMap<>();
     private long lastSeq;
 
     public BingoScoringEngine(MatchManifest manifest) {
@@ -69,7 +70,7 @@ public final class BingoScoringEngine {
         this.epoch = epoch;
         this.rules = Objects.requireNonNull(rules, "rules");
         this.cellCount = Math.multiplyExact(rules.cardWidth(), rules.cardWidth());
-        var byId = new HashMap<Integer, TeamSnapshot>();
+        var byId = new LinkedHashMap<Integer, TeamSnapshot>();
         var members = new HashMap<UUID, Integer>();
         for (TeamSnapshot team : teams) {
             if (byId.putIfAbsent(team.id(), team) != null)
@@ -79,7 +80,7 @@ public final class BingoScoringEngine {
                     throw new IllegalArgumentException(
                             "Member belongs to multiple scoring teams: " + member);
         }
-        this.teams = Map.copyOf(byId);
+        this.teams = Collections.unmodifiableMap(byId);
         this.participants = Map.copyOf(participants);
         this.participants.forEach(
                 (player, team) -> {
@@ -87,11 +88,10 @@ public final class BingoScoringEngine {
                         throw new IllegalArgumentException(
                                 "Scoring participant is not in the frozen team: " + player);
                 });
-        this.taskClaims = new ArrayList<>(cellCount);
-        for (int ignored = 0; ignored < cellCount; ignored++) taskClaims.add(new LinkedHashSet<>());
+        this.claimCounts = new int[cellCount];
         for (TeamSnapshot team : teams) {
             completedByTeam.put(team.id(), new BitSet(cellCount));
-            awardedLines.put(team.id(), 0);
+            completedLineCounts.put(team.id(), 0);
             teamScores.put(team.id(), 0);
             lastCompletionTicks.put(team.id(), Long.MAX_VALUE);
         }
@@ -107,12 +107,12 @@ public final class BingoScoringEngine {
     public synchronized ScoringDecision apply(CompletionObservation observation) {
         validateIdentity(observation);
         if (observation.seq() <= lastSeq) {
-            CompletionObservation previous = observations.get(observation.seq());
-            if (!observation.equals(previous)) {
+            ScoringDecision previous = decisions.get(observation.seq());
+            if (!observation.equals(previous.observation())) {
                 throw new IllegalStateException(
                         "Sequence " + observation.seq() + " was replayed with different data");
             }
-            return decisions.get(observation.seq());
+            return previous;
         }
         if (observation.seq() != lastSeq + 1) {
             throw new IllegalStateException(
@@ -124,7 +124,7 @@ public final class BingoScoringEngine {
 
         ScoringDecision decision = decide(observation);
         lastSeq = observation.seq();
-        observations.put(observation.seq(), observation);
+        cachedResult = null;
         decisions.put(observation.seq(), decision);
         return decision;
     }
@@ -132,8 +132,7 @@ public final class BingoScoringEngine {
     private ScoringDecision decide(CompletionObservation observation) {
         TeamSnapshot team = teams.get(observation.teamId());
         if (team == null) return rejected(observation, "unknown-team");
-        if (observation.cellIndex() >= taskClaims.size())
-            return rejected(observation, "unknown-cell");
+        if (observation.cellIndex() >= cellCount) return rejected(observation, "unknown-cell");
 
         if (!Integer.valueOf(team.id()).equals(participants.get(observation.playerId()))) {
             return rejected(observation, "player-not-in-team");
@@ -142,14 +141,21 @@ public final class BingoScoringEngine {
         String rejection = rejectionReason(team.id(), observation.cellIndex());
         if (rejection != null) return rejected(observation, rejection);
         BitSet completed = completedByTeam.get(team.id());
-        Set<Integer> claims = taskClaims.get(observation.cellIndex());
-        int claimRank = claims.size();
-        claims.add(team.id());
+        int claimRank = claimCounts[observation.cellIndex()]++;
+        if (claimRank == 0) {
+            claimedCellCount++;
+            firstClaimsByTeam.merge(team.id(), 1, Integer::sum);
+        }
         completed.set(observation.cellIndex());
+        int previousLines = completedLineCounts.get(team.id());
+        int completedLines =
+                previousLines + newlyCompletedLines(completed, observation.cellIndex());
+        completedLineCounts.put(team.id(), completedLines);
         if (rules.variant().remix() == BingoRemix.COOP) {
-            claims.addAll(teams.keySet());
+            claimCounts[observation.cellIndex()] = teams.size();
             for (Map.Entry<Integer, BitSet> entry : completedByTeam.entrySet()) {
                 entry.getValue().set(observation.cellIndex());
+                completedLineCounts.put(entry.getKey(), completedLines);
                 teamScores.put(entry.getKey(), entry.getValue().cardinality());
                 lastCompletionTicks.put(entry.getKey(), observation.observedGameTick());
             }
@@ -160,8 +166,6 @@ public final class BingoScoringEngine {
         // Non-points modes still emit one bookkeeping point per completed cell so Core's existing
         // DAILY result pipeline can rank transient teams without a second scoring transport.
         int cellPoints = pointsMode ? rules.pointsForClaimRank(claimRank) : 1;
-        int completedLines = countCompletedLines(completed);
-        int previousLines = awardedLines.get(team.id());
         int linePoints = 0;
         if (pointsMode) {
             for (int lineIndex = previousLines; lineIndex < completedLines; lineIndex++) {
@@ -171,8 +175,6 @@ public final class BingoScoringEngine {
                                 : rules.lineBonusMinor();
             }
         }
-        awardedLines.put(team.id(), completedLines);
-
         List<PlayerAward> awards = new ArrayList<>();
         if (cellPoints > 0) {
             if (rules.variant().remix() == BingoRemix.COOP) {
@@ -227,7 +229,7 @@ public final class BingoScoringEngine {
         if (completed == null) return "unknown-team";
         if (cellIndex < 0 || cellIndex >= cellCount) return "unknown-cell";
         if (completed.get(cellIndex)) return "already-completed-by-team";
-        if (rules.variant().mode().locksCells() && !taskClaims.get(cellIndex).isEmpty())
+        if (rules.variant().mode().locksCells() && claimCounts[cellIndex] > 0)
             return "cell-locked-by-other-team";
         if (rules.variant().remix() == BingoRemix.CHAIN
                 && !completed.isEmpty()
@@ -255,8 +257,7 @@ public final class BingoScoringEngine {
     }
 
     public synchronized int completedLines(int teamId) {
-        BitSet cells = completedByTeam.get(teamId);
-        return cells == null ? 0 : countCompletedLines(cells);
+        return completedLineCounts.getOrDefault(teamId, 0);
     }
 
     public synchronized long lastCompletionTick(int teamId) {
@@ -265,14 +266,11 @@ public final class BingoScoringEngine {
 
     /** Counts first accepted claims, including equal-time observations in sequence order. */
     public synchronized int firstClaimCount(int teamId) {
-        return (int)
-                taskClaims.stream()
-                        .filter(claims -> !claims.isEmpty() && claims.iterator().next() == teamId)
-                        .count();
+        return firstClaimsByTeam.getOrDefault(teamId, 0);
     }
 
     public synchronized boolean boardFullyClaimed() {
-        return taskClaims.stream().allMatch(claims -> !claims.isEmpty());
+        return claimedCellCount == cellCount;
     }
 
     private boolean adjacentToCompleted(BitSet completed, int cellIndex) {
@@ -290,7 +288,7 @@ public final class BingoScoringEngine {
         if (completed == null) return false;
         if (rules.variant().remix() == BingoRemix.COOP) return completed.cardinality() == cellCount;
         BingoMode mode = rules.variant().mode();
-        if (mode.linesWin()) return countCompletedLines(completed) >= rules.variant().winLines();
+        if (mode.linesWin()) return completedLines(teamId) >= rules.variant().winLines();
         return mode.fullCardWins() && completed.cardinality() == cellCount;
     }
 
@@ -303,7 +301,7 @@ public final class BingoScoringEngine {
                 -1,
                 0,
                 0,
-                awardedLines.getOrDefault(teamId, 0),
+                completedLineCounts.getOrDefault(teamId, 0),
                 teamScores.getOrDefault(teamId, 0),
                 List.of());
     }
@@ -316,43 +314,46 @@ public final class BingoScoringEngine {
         }
     }
 
-    private int countCompletedLines(BitSet completed) {
+    /** Only the row, column and diagonals through a newly claimed cell can gain a line. */
+    private int newlyCompletedLines(BitSet cells, int index) {
         int width = rules.cardWidth();
-        int lines = 0;
-        for (int y = 0; y < width; y++) {
-            boolean row = true;
-            boolean column = true;
-            for (int x = 0; x < width; x++) {
-                row &= completed.get(width * y + x);
-                column &= completed.get(width * x + y);
-            }
-            if (row) lines++;
-            if (column) lines++;
-        }
-        boolean mainDiagonal = true;
-        boolean antiDiagonal = true;
-        for (int i = 0; i < width; i++) {
-            mainDiagonal &= completed.get(i * (width + 1));
-            antiDiagonal &= completed.get((i + 1) * (width - 1));
-        }
-        if (mainDiagonal) lines++;
-        if (antiDiagonal) lines++;
+        int x = index % width;
+        int y = index / width;
+        int lines = cells.nextClearBit(y * width) >= (y + 1) * width ? 1 : 0;
+        if (lineComplete(cells, x, width)) lines++;
+        if (x == y && lineComplete(cells, 0, width + 1)) lines++;
+        if (x + y == width - 1 && lineComplete(cells, width - 1, width - 1)) lines++;
         return lines;
     }
 
+    private boolean lineComplete(BitSet cells, int start, int stride) {
+        for (int i = 0; i < rules.cardWidth(); i++) {
+            if (!cells.get(start + i * stride)) return false;
+        }
+        return true;
+    }
+
     public synchronized BingoResult result() {
+        if (cachedResult != null) return cachedResult;
         Map<Integer, Integer> completedCells = new TreeMap<>();
         completedByTeam.forEach((teamId, cells) -> completedCells.put(teamId, cells.cardinality()));
         Map<Integer, Integer> orderedScores = new TreeMap<>(teamScores);
         Map<Integer, Long> orderedTimes = new TreeMap<>(lastCompletionTicks);
         boolean fullyClaimed = boardFullyClaimed();
-        return new BingoResult(
-                lastSeq,
-                fullyClaimed,
-                orderedScores,
-                completedCells,
-                orderedTimes,
-                hashResult(lastSeq, fullyClaimed, orderedScores, completedCells, orderedTimes));
+        cachedResult =
+                new BingoResult(
+                        lastSeq,
+                        fullyClaimed,
+                        orderedScores,
+                        completedCells,
+                        orderedTimes,
+                        hashResult(
+                                lastSeq,
+                                fullyClaimed,
+                                orderedScores,
+                                completedCells,
+                                orderedTimes));
+        return cachedResult;
     }
 
     private String hashResult(

@@ -41,7 +41,7 @@ npm run connect
 
 `CC_TEST_HOST` 与 `CC_TEST_PORT` 指向代理提供给 Harness 的测试监听。应选择能接受普通客户端登录、并把真实来源地址传给后端的监听；如果某个监听要求 PROXY protocol，必须由可信代理补齐来源信息，不能用等价端口直接替代。
 
-管理员手动测试时可以让 resident Bot 按当前游戏发送动作基线：
+常驻 Bot 默认根据服务端给自己的比赛标题或开赛提示切换玩法。要固定测试某个游戏，可以指定其命令 token。
 
 ```text
 CC_TEST_MODE=resident \
@@ -53,7 +53,13 @@ npm run connect
 
 `CC_TEST_GAME` 使用 Core 的命令 token，例如 `bingo`、`tntrun`、`parkourtag`、`riptide` 或 `laserbox`。profile 先识别等待、投票、准备、倒计时、进行和结束，再选择动作；它只产生客户端输入，管理员仍通过 Core 的普通开赛和观战命令控制比赛。
 
+人机验证可用 `CC_TEST_GAME=iamnotarobot` 指定。在允许修改方块的测试窗口内，bot 领到工地刻刀后会按白块形状削除对应灰块。遇到从地面够不到的方块，会沿灰块叉车正面的楼梯上车顶挖掘。
+
 `CC_TEST_CLIENTS_PER_PROCESS` 默认为 8。64 个连接由 8 个 Node worker 承载，协调进程汇总精确名册、退出码、重连、传送确认、死亡/重生、keep-alive 和事件循环延迟。任何 worker 缺少报告、Bot 名称重复/遗漏、提前断线或结束时不在世界中，汇总报告都会返回非零退出码。
+
+烫手鳕鱼 Bot 用第五格判断自己是否持鱼。逃跑时参考 26.3 村民的 `SetWalkTargetAwayFrom` 和 `LandRandomPos`，在远离持鱼者的方向挑选多个落脚点，优先选能走到、也能拉开与最近持鱼者距离的地点。抵达后，只要客户端仍能追踪持鱼者，就继续选择下一段路线。逃跑途中可以顺路捡道具。持鱼后参考僵尸的 `MeleeAttackGoal`，持续追同一名选手，目标明显移动或路线受阻时再寻路。它也可能打中替身。
+
+地面寻路根据已加载方块的碰撞形状规划路线，区分平地、半砖、楼梯、需起跳的高差和有落脚点的一格缺口。两格道具装满时会跳过地上的道具。报告中的 `fish-pickup`、`fish-pass`、`fish-hit-decoy`、`fish-tool-*` 和 `fish-cast-*` 记录客户端已发送的操作。
 
 ## cc-web Bot 账号
 
@@ -97,7 +103,9 @@ npm run connect
 
 resident 使用无限等待窗口，直到外部创建 stop file。文件必须是本次运行唯一、启动时不存在的绝对路径。服务端 probe 确认比赛阶段和在线人数后创建它；所有 worker 先写报告，再正常断开。`windowEndReason=control-file` 表示 Harness 由该文件结束。
 
-resident 的 `idle` 不发送游戏动作；`game` 会按 `CC_TEST_GAME` 使用对应动作 profile，并根据服务端阶段自动暂停或恢复。Core 仍把 Bot 当作真实玩家处理队伍、传送、玩法、计分、死亡和重生。客户端处理服务端位置、`teleport_confirm`、客户端 `tick_end`、configuration 变更和 keep-alive；收到死亡后发送一次重生请求，等待新的世界位置再恢复连接状态。报告还包含阶段转换、机制动作、计分板快照和注入断线结果，并保留受限的实体、方块、窗口/物品和阶段消息样本，便于把客户端输入与服务端观察分开核对。
+resident 默认使用 `game`。省略 `CC_TEST_GAME` 时自动识别比赛，指定后锁定该玩法。显式设置 `CC_TEST_ACTION=idle` 可单测登录和连接。Core 仍把 Bot 当作真实玩家处理队伍、传送、玩法、计分、死亡和重生。客户端处理服务端位置、`teleport_confirm`、客户端 `tick_end`、configuration 变更和 keep-alive；收到死亡后发送一次重生请求，等待新的世界位置再恢复连接状态。报告还包含阶段转换、机制动作、计分板快照和注入断线结果，并保留受限的实体、方块、窗口/物品和阶段消息样本，便于把客户端输入与服务端观察分开核对。
+
+阶段以服务端的开赛、倒计时和结算消息为准。跨服传送、死亡和重生只更新客户端世界状态。收到传送坐标及目的地区块后才确认客户端就绪。同一世界内的位置校正会更新落脚点，已加载区块里的行动时钟继续运行。各玩法以 20 Hz 从按键、服务端移动速度、区块和碰撞计算步伐。方向键、冲刺和视角变化按客户端 tick 同步。烫手鳕鱼的实体点击在瞄准后的下一 tick 核对准星、距离、地形遮挡和当前道具。近战攻击会同时挥手。
 
 CI 可以使用 `CC_TEST_DISCONNECT_PHASE=PROGRESS` 注入一次掉线；需要覆盖多个阶段时使用逗号分隔的 `CC_TEST_DISCONNECT_PHASES=PREPARATION,PROGRESS,END`。`CC_TEST_EXPECT_PHASES`、`CC_TEST_EXPECT_MECHANISMS`、`CC_TEST_EXPECT_ACTIONS`、`CC_TEST_EXPECT_SCORE_OBJECTIVE` 和 `CC_TEST_EXPECT_RECONNECTS` 可以把报告证据变成失败条件。
 
@@ -152,6 +160,6 @@ accounts remain active by default. The Harness never supplies a UUID: cc-web
 provisions credentials and Core obtains the current UUID and signed leases with
 `lease web`.
 
-CI can run the complete no-network client profile contract with `npm run test:scenarios`; it tests all 17 profiles using synthetic voting, preparation, countdown, progress, reconnect, scoreboard and end-state packets. These fixtures verify client reactions, not actual server mechanics or wire compatibility; each profile is reported separately. `src/matrix.js` is the executable contract behind the game matrix: it declares each profile's legal action families per phase and its `signatureActions` (the mechanic-defining actions), disconnect points with reconnect preservation checks, server evidence and score signals. Game actions are state-driven: profiles target server-observed entities/blocks, check the 4.5-block reach before attacking, aim by real coordinates, select real hotbar slots, and only mutate the world when explicitly allowed. When `CC_TEST_EXPECT_PHASES` includes `PROGRESS`, the report validator automatically requires that profile's declared mechanism, signature action families and server evidence; when it includes `END`, it requires at least one server scoreboard observation. Set `CC_TEST_EXPECT_ACTIONS`, `CC_TEST_EXPECT_SERVER_EVIDENCE` or `CC_TEST_EXPECT_SCORE_PACKETS` explicitly to narrow or extend those requirements for a map. Set `CC_TEST_EXPECT_RECONNECT_PHASES=PREPARATION,PROGRESS,END` to require phase-specific reconnect records; each record must preserve the UUID and restore a ready world.
+CI can run the complete no-network client profile contract with `npm run test:scenarios`; it tests all 19 profiles using synthetic voting, preparation, countdown, progress, reconnect, scoreboard and end-state packets. These fixtures verify client reactions, not actual server mechanics or wire compatibility; each profile is reported separately. `src/matrix.js` is the executable contract behind the game matrix: it declares each profile's legal action families per phase and its `signatureActions` (the mechanic-defining actions), disconnect points with reconnect preservation checks, server evidence and score signals. Game actions are state-driven: profiles target server-observed entities/blocks, check the 4.5-block reach before attacking, aim by real coordinates, select real hotbar slots, and only mutate the world when explicitly allowed. When `CC_TEST_EXPECT_PHASES` includes `PROGRESS`, the report validator automatically requires that profile's declared mechanism, signature action families and server evidence; when it includes `END`, it requires at least one server scoreboard observation. Set `CC_TEST_EXPECT_ACTIONS`, `CC_TEST_EXPECT_SERVER_EVIDENCE` or `CC_TEST_EXPECT_SCORE_PACKETS` explicitly to narrow or extend those requirements for a map. Set `CC_TEST_EXPECT_RECONNECT_PHASES=PREPARATION,PROGRESS,END` to require phase-specific reconnect records; each record must preserve the UUID and restore a ready world.
 
 `CC_TEST_CORE_AUTO_SESSION=true` 会自动填充当前 profile 的 `WAITING,PROGRESS,END`、机制、动作和至少一个计分板包断言；显式设置对应环境变量仍可覆盖这些默认值。

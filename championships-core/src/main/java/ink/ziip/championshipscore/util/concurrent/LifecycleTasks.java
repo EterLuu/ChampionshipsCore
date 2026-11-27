@@ -35,9 +35,17 @@ public final class LifecycleTasks implements AutoCloseable {
     }
 
     public CompletableFuture<Void> submit(Runnable action) {
+        return supply(
+                () -> {
+                    action.run();
+                    return null;
+                });
+    }
+
+    public <T> CompletableFuture<T> supply(java.util.function.Supplier<T> action) {
         try {
             Token token = token();
-            return token.dispatch(token.executor, action);
+            return token.dispatchValue(token.executor, action);
         } catch (RuntimeException failure) {
             return CompletableFuture.failedFuture(failure);
         }
@@ -112,7 +120,17 @@ public final class LifecycleTasks implements AutoCloseable {
 
         /** Applies the same token to a server-thread continuation, including scheduling failure. */
         public CompletableFuture<Void> dispatch(Executor target, Runnable action) {
-            CompletableFuture<Void> completion = future();
+            return dispatchValue(
+                    target,
+                    () -> {
+                        action.run();
+                        return null;
+                    });
+        }
+
+        private <T> CompletableFuture<T> dispatchValue(
+                Executor target, java.util.function.Supplier<T> action) {
+            CompletableFuture<T> completion = future();
             if (completion.isDone()) return completion;
             try {
                 target.execute(
@@ -121,9 +139,9 @@ public final class LifecycleTasks implements AutoCloseable {
                             executing.set(this);
                             try {
                                 check();
-                                action.run();
+                                T result = action.get();
                                 check();
-                                completion.complete(null);
+                                completion.complete(result);
                             } catch (Throwable failure) {
                                 completion.completeExceptionally(failure);
                             } finally {

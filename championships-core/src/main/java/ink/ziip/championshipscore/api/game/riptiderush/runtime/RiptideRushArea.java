@@ -1388,15 +1388,19 @@ public final class RiptideRushArea extends BaseMultiTeamGameInstance {
     }
 
     private void assignAndTeleportSpawns() {
-        for (UUID uuid : gamePlayers) {
-            Location location = geometry.centerAt(0);
-            playerSpawnLocations.put(uuid, location);
-            Player player = Bukkit.getPlayer(uuid);
-            if (player != null) {
-                disableSpawnCollision(player);
-                player.setVelocity(new Vector());
-                player.setFallDistance(0F);
-                player.teleport(location);
+        for (ChampionshipTeam team : gameTeams) {
+            List<UUID> members = gamePlayers.stream().filter(team::isTeamMember).sorted().toList();
+            for (int index = 0; index < members.size(); index++) {
+                UUID uuid = members.get(index);
+                Location location = geometry.teamSpawn(index);
+                playerSpawnLocations.put(uuid, location);
+                Player player = Bukkit.getPlayer(uuid);
+                if (player != null) {
+                    disableSpawnCollision(player);
+                    player.setVelocity(new Vector());
+                    player.setFallDistance(0F);
+                    player.teleport(location);
+                }
             }
         }
     }

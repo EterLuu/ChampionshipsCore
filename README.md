@@ -14,7 +14,7 @@ ChampionshipsCore 是用于 Minecraft 团队锦标赛的 Paper 插件，统一�
 
 ## 主要功能
 
-- 17 个游戏项目，包含 Bingo、BuildMart、跑酷、团队对抗和最终决赛；完整列表见 [游戏指南](docs/02-games/01-games.md)。
+- 18 个游戏项目，包含 Bingo、BuildMart、Crafting Feast、跑酷、团队对抗和最终决赛；完整列表见 [游戏指南](docs/02-games/01-games.md)。
 - 统一的地图编辑、校验和发布流程，按玩法支持场地副本或单实例分区。
 - 队伍管理、投票、多轮赛程、数据库积分和排行榜。
 - 统一观战保护、玩家实体显隐、完整 Tab 列表和可配置侧栏。
@@ -29,10 +29,10 @@ ChampionshipsCore 是用于 Minecraft 团队锦标赛的 Paper 插件，统一�
 | Java | JDK 25（构建）；Java 25（运行） |
 | Core 服务端 | Paper 26.3，项目编译 API 为 `26.3.build.171-beta` |
 | 数据库 | MariaDB 或 MySQL；需预先创建数据库和可读写、建表的账号 |
-| 必需插件 | PacketEvents 2.14.0、支持 26.3 的 ProtocolLib 5.5.0 开发构建、PlaceholderAPI 2.12.3、FastAsyncWorldEdit 2.16.1 |
+| 必需插件 | PacketEvents 2.14.0、PlaceholderAPI 2.12.3、FastAsyncWorldEdit 2.16.1 |
 | 构建工具 | Maven；依赖版本与仓库地址由根目录和各模块的 `pom.xml` 定义 |
 
-ProtocolLib 编译接口仍为 5.4.0，运行时须安装修复 26.3 协议映射的 5.5.0 开发构建。FAWE 的 Bukkit 与 Core API 使用同一版本。Core 的插件描述未声明 Folia 支持；远程 Bingo 使用单独的 [Folia Worker](championships-bingo-worker/README.md)，使用 Folia 26.3。单服 `LOCAL` 模式无需 Redis、代理或身份平台。
+FAWE 的 Bukkit 与 Core API 使用同一版本。Core 的插件描述未声明 Folia 支持；远程 Bingo 使用单独的 [Folia Worker](championships-bingo-worker/README.md)，使用 Folia 26.3。单服 `LOCAL` 模式无需 Redis、代理或身份平台。
 
 ## 快速开始
 

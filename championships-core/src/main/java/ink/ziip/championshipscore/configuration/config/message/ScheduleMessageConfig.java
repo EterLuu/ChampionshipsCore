@@ -82,6 +82,18 @@ public class ScheduleMessageConfig extends BaseConfigurationFile {
     @ConfigOption(path = "ace-race-points")
     public static List<String> ACE_RACE_POINTS;
 
+    @ConfigOption(path = "crafting-feast")
+    public static List<String> CRAFTING_FEAST;
+
+    @ConfigOption(path = "crafting-feast-points")
+    public static List<String> CRAFTING_FEAST_POINTS;
+
+    @ConfigOption(path = "iamnotarobot")
+    public static List<String> ROBOT;
+
+    @ConfigOption(path = "iamnotarobot-points")
+    public static List<String> ROBOT_POINTS;
+
     @ConfigOption(path = "build-mart")
     public static List<String> BUILD_MART;
 

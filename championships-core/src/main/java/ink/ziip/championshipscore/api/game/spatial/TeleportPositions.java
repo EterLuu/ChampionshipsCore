@@ -1,9 +1,19 @@
 package ink.ziip.championshipscore.api.game.spatial;
 
 import org.bukkit.*;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Predicate;
 
 /** Position geometry used by lobby returns, map capture and batch teleports. */
 public final class TeleportPositions {
@@ -75,6 +85,95 @@ public final class TeleportPositions {
         }
         result.add(x * 1.25D, 0D, z * 1.25D);
         return result;
+    }
+
+    /**
+     * Allocates stable personal spawns on the actual floor of a team's workspace. Prefer a
+     * four-by-two-block rectangle, shifting it onto nearby clear floor when the anchor is beside a
+     * counter or portal. Offline members reserve their positions too. Call once per round and
+     * retain the returned assignments in the owning game state.
+     */
+    public static Map<UUID, Location> getTeamSpawnLocations(
+            @NotNull Location anchor,
+            @NotNull Collection<UUID> participants,
+            @NotNull Predicate<Location> insideWorkspace) {
+        List<UUID> members = participants.stream().distinct().sorted().toList();
+        if (members.isEmpty()) return Map.of();
+        Location center = centerOnBlock(anchor);
+        List<Location> cells = new ArrayList<>();
+        for (int z = -4; z <= 4; z++)
+            for (int x = -4; x <= 4; x++) cells.add(center.clone().add(x, 0, z));
+        cells.sort(Comparator.comparingDouble(center::distanceSquared));
+        List<Location> safe =
+                cells.stream()
+                        .filter(insideWorkspace)
+                        .filter(TeleportPositions::isSafeTeamSpawn)
+                        .toList();
+        int heading = Math.floorMod(Math.round(anchor.getYaw() / 90F), 4);
+        int forwardX = heading == 1 ? -1 : heading == 3 ? 1 : 0;
+        int forwardZ = heading == 0 ? 1 : heading == 2 ? -1 : 0;
+        List<Location> positions = new ArrayList<>();
+        for (Location candidate : cells) {
+            List<Location> rectangle = new ArrayList<>();
+            for (int forward : new int[] {1, -1})
+                for (int lateral : new int[] {-2, 2})
+                    rectangle.add(
+                            candidate
+                                    .clone()
+                                    .add(
+                                            forwardX * forward + forwardZ * lateral,
+                                            0,
+                                            forwardZ * forward - forwardX * lateral));
+            if (safe.containsAll(rectangle)) {
+                positions.addAll(rectangle);
+                break;
+            }
+        }
+        // Narrow/custom platforms and teams larger than four still use distinct supported cells.
+        for (Location candidate : safe) {
+            if (positions.size() >= members.size()) break;
+            if (!positions.contains(candidate)) positions.add(candidate);
+        }
+        if (positions.size() < members.size())
+            throw new IllegalStateException("Not enough safe team spawn positions near " + anchor);
+        Map<UUID, Location> result = new LinkedHashMap<>();
+        for (int index = 0; index < members.size(); index++)
+            result.put(members.get(index), positions.get(index));
+        return result;
+    }
+
+    private static boolean isSafeTeamSpawn(Location spot) {
+        if (spot.getWorld() == null) return false;
+        Block feet = spot.getBlock();
+        Block head = feet.getRelative(0, 1, 0);
+        Block floor = feet.getRelative(0, -1, 0);
+        if (!feet.isPassable()
+                || !head.isPassable()
+                || feet.isLiquid()
+                || head.isLiquid()
+                || !floor.isSolid()) return false;
+        for (Block block : List.of(floor, feet, head))
+            switch (block.getType()) {
+                case NETHER_PORTAL,
+                        END_PORTAL,
+                        END_GATEWAY,
+                        FIRE,
+                        SOUL_FIRE,
+                        CAMPFIRE,
+                        SOUL_CAMPFIRE,
+                        MAGMA_BLOCK,
+                        CACTUS,
+                        POWDER_SNOW -> {
+                    return false;
+                }
+                default -> {}
+            }
+        var support = floor.getBoundingBox();
+        return Math.abs(support.getMaxY() - spot.getY()) < 1e-6
+                && support.getMinX() <= spot.getX() - 0.3D
+                && support.getMaxX() >= spot.getX() + 0.3D
+                && support.getMinZ() <= spot.getZ() - 0.3D
+                && support.getMaxZ() >= spot.getZ() + 0.3D;
     }
 
     /**

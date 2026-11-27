@@ -9,9 +9,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 public class BattleBoxManager extends BaseGameInstanceManager<BattleBoxArea> {
@@ -70,12 +68,10 @@ public class BattleBoxManager extends BaseGameInstanceManager<BattleBoxArea> {
      * change.
      */
     private void createInstances(String mapName, BattleBoxConfig config) {
-        int count = Math.max(1, config.getCopyCount());
-        List<BattleBoxArea> instances = new ArrayList<>(count);
-        for (int copyIndex = 0; copyIndex < count; copyIndex++) {
-            instances.add(new BattleBoxArea(plugin, config, copyIndex, false));
-        }
-        registerMapInstances(mapName, instances);
+        createMapInstances(
+                mapName,
+                config.getCopyCount(),
+                index -> new BattleBoxArea(plugin, config, index, false));
     }
 
     @Override

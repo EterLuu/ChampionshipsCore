@@ -1,12 +1,9 @@
 package ink.ziip.championshipscore.redis;
 
-import io.lettuce.core.RedisClient;
 import io.lettuce.core.RedisURI;
 import io.lettuce.core.XAddArgs;
-import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.api.async.RedisAsyncCommands;
 
-import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -16,8 +13,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /** Generic long-lived Redis Stream publisher; application protocols own their field schema. */
 public final class RedisStreamPublisher implements AutoCloseable {
     private final RedisConnectionConfig config;
-    private final RedisClient client;
-    private final StatefulRedisConnection<String, String> connection;
+    private final RedisConnections connections;
     private final RedisAsyncCommands<String, String> commands;
     private final AtomicBoolean closed = new AtomicBoolean();
 
@@ -25,9 +21,8 @@ public final class RedisStreamPublisher implements AutoCloseable {
         this.config = Objects.requireNonNull(config, "config");
         RedisURI uri = RedisURI.create(config.uri());
         uri.setTimeout(config.commandTimeout());
-        client = RedisClient.create(uri);
-        connection = client.connect();
-        commands = connection.async();
+        connections = new RedisConnections(uri);
+        commands = connections.open();
     }
 
     public CompletionStage<String> ping() {
@@ -61,6 +56,6 @@ public final class RedisStreamPublisher implements AutoCloseable {
     @Override
     public void close() {
         if (!closed.compareAndSet(false, true)) return;
-        client.shutdown(Duration.ofMillis(100), Duration.ofSeconds(5));
+        connections.close();
     }
 }

@@ -318,6 +318,8 @@ final class VoteMenu implements Listener {
             case TGTTOS -> "tgttos";
             case ParkourWarrior -> "parkour-warrior";
             case HotyCodyDusky -> "hoty-cody-dusky";
+            case CraftingFeast -> "crafting-feast";
+            case IAmNotARobot -> "iamnotarobot";
             case BuildMart -> "build-mart";
             case AceRace -> "ace-race";
             case RiptideRush -> "riptide-rush";
@@ -338,6 +340,8 @@ final class VoteMenu implements Listener {
             case TGTTOS -> Material.FEATHER;
             case ParkourWarrior -> Material.IRON_BOOTS;
             case HotyCodyDusky -> Material.COD;
+            case CraftingFeast -> Material.SMOKER;
+            case IAmNotARobot -> Material.COMPARATOR;
             case BuildMart -> Material.CRAFTING_TABLE;
             case AceRace -> Material.ELYTRA;
             case RiptideRush -> Material.OAK_BOAT;

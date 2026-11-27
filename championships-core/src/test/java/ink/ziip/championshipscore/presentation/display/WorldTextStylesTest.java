@@ -22,7 +22,20 @@ class WorldTextStylesTest {
         var defaults = bundled();
         var document = new YamlConfiguration();
         var initial = WorldTextStyles.read(document, defaults);
-        assertEquals(4, initial.size());
+        assertEquals(Profile.values().length, initial.size());
+        assertEquals(240, initial.get(Profile.CRAFTING_FEAST_STATION).lineWidth());
+        assertEquals(
+                Display.Billboard.FIXED,
+                initial.get(Profile.CRAFTING_FEAST_BOARD).billboard(),
+                "The kitchen order board is wall-mounted, not a floating label");
+        assertEquals(
+                Display.Billboard.FIXED,
+                initial.get(Profile.CRAFTING_FEAST_SUPPLY).billboard(),
+                "Pantry signs stay fixed like the order board");
+        assertEquals(
+                Display.Billboard.FIXED,
+                initial.get(Profile.ROBOT_WAREHOUSE_BARREL).billboard(),
+                "Warehouse barrel labels stay fixed facing the central aisle");
         assertEquals(4096, initial.get(Profile.BUILD_MART_MATERIALS).lineWidth());
         assertEquals(250, initial.get(Profile.RIPTIDE_INSTRUCTION).lineWidth());
         assertNull(initial.get(Profile.RIPTIDE_COLOR_TARGET).background());

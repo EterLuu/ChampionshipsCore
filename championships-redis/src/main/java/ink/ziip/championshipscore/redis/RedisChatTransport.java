@@ -39,15 +39,25 @@ public final class RedisChatTransport implements AutoCloseable {
         this.config = Objects.requireNonNull(config, "config");
         this.handler = Objects.requireNonNull(handler, "handler");
         this.errorHandler = Objects.requireNonNull(errorHandler, "errorHandler");
+        Objects.requireNonNull(consumerConfig, "consumerConfig");
         this.publisher = new RedisStreamPublisher(config);
-        this.consumer =
-                new RedisStreamConsumer(
-                        config,
-                        Objects.requireNonNull(consumerConfig, "consumerConfig"),
-                        stream(config),
-                        "$",
-                        this::consume,
-                        this.errorHandler);
+        try {
+            this.consumer =
+                    new RedisStreamConsumer(
+                            config,
+                            consumerConfig,
+                            stream(config),
+                            "$",
+                            this::consume,
+                            errorHandler);
+        } catch (RuntimeException failure) {
+            try {
+                publisher.close();
+            } catch (RuntimeException cleanup) {
+                failure.addSuppressed(cleanup);
+            }
+            throw failure;
+        }
     }
 
     public CompletionStage<Void> start() {
@@ -95,7 +105,10 @@ public final class RedisChatTransport implements AutoCloseable {
 
     @Override
     public void close() {
-        consumer.close();
-        publisher.close();
+        try {
+            consumer.close();
+        } finally {
+            publisher.close();
+        }
     }
 }

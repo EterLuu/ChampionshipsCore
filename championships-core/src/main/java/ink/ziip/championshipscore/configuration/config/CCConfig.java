@@ -112,86 +112,19 @@ public class CCConfig extends BaseConfigurationFile {
     @ConfigOption(path = "daily.enabled-games")
     public static List<String> DAILY_ENABLED_GAMES;
 
-    @ConfigOption(path = "daily.games.Bingo.min-players")
-    public static int DAILY_BINGO_MIN_PLAYERS;
+    private volatile java.util.Map<GameTypeEnum, DailyGameSettings> dailyGames = java.util.Map.of();
 
-    @ConfigOption(path = "daily.games.Bingo.max-players")
-    public static int DAILY_BINGO_MAX_PLAYERS;
+    public DailyGameSettings dailyGame(GameTypeEnum game) {
+        return java.util.Objects.requireNonNull(
+                dailyGames.get(game), "Missing daily settings for " + game);
+    }
 
-    @ConfigOption(path = "daily.games.Bingo.team-size")
-    public static int DAILY_BINGO_TEAM_SIZE;
-
-    @ConfigOption(path = "daily.games.Bingo.teams")
-    public static int DAILY_BINGO_TEAMS;
-
-    @ConfigOption(path = "daily.games.Bingo.countdown-seconds")
-    public static int DAILY_BINGO_COUNTDOWN_SECONDS;
-
-    @ConfigOption(path = "daily.games.AceRace.min-players")
-    public static int DAILY_ACERACE_MIN_PLAYERS;
-
-    @ConfigOption(path = "daily.games.AceRace.max-players")
-    public static int DAILY_ACERACE_MAX_PLAYERS;
-
-    @ConfigOption(path = "daily.games.AceRace.team-size")
-    public static int DAILY_ACERACE_TEAM_SIZE;
-
-    @ConfigOption(path = "daily.games.AceRace.teams")
-    public static int DAILY_ACERACE_TEAMS;
-
-    @ConfigOption(path = "daily.games.AceRace.countdown-seconds")
-    public static int DAILY_ACERACE_COUNTDOWN_SECONDS;
-
-    @ConfigOption(path = "daily.games.AceRace.concurrent-instances")
-    public static int DAILY_ACERACE_CONCURRENT_INSTANCES;
-
-    @ConfigOption(path = "daily.games.DragonEggCarnival.min-players")
-    public static int DAILY_DRAGON_EGG_CARNIVAL_MIN_PLAYERS;
-
-    @ConfigOption(path = "daily.games.DragonEggCarnival.max-players")
-    public static int DAILY_DRAGON_EGG_CARNIVAL_MAX_PLAYERS;
-
-    @ConfigOption(path = "daily.games.DragonEggCarnival.team-size")
-    public static int DAILY_DRAGON_EGG_CARNIVAL_TEAM_SIZE;
-
-    @ConfigOption(path = "daily.games.DragonEggCarnival.teams")
-    public static int DAILY_DRAGON_EGG_CARNIVAL_TEAMS;
-
-    @ConfigOption(path = "daily.games.DragonEggCarnival.countdown-seconds")
-    public static int DAILY_DRAGON_EGG_CARNIVAL_COUNTDOWN_SECONDS;
-
-    @ConfigOption(path = "daily.games.ParkourWarrior.min-players")
-    public static int DAILY_PARKOUR_WARRIOR_MIN_PLAYERS;
-
-    @ConfigOption(path = "daily.games.ParkourWarrior.max-players")
-    public static int DAILY_PARKOUR_WARRIOR_MAX_PLAYERS;
-
-    @ConfigOption(path = "daily.games.ParkourWarrior.team-size")
-    public static int DAILY_PARKOUR_WARRIOR_TEAM_SIZE;
-
-    @ConfigOption(path = "daily.games.ParkourWarrior.teams")
-    public static int DAILY_PARKOUR_WARRIOR_TEAMS;
-
-    @ConfigOption(path = "daily.games.ParkourWarrior.countdown-seconds")
-    public static int DAILY_PARKOUR_WARRIOR_COUNTDOWN_SECONDS;
-
-    @ConfigOption(path = "daily.games.ParkourWarrior.concurrent-instances")
-    public static int DAILY_PARKOUR_WARRIOR_CONCURRENT_INSTANCES;
-
-    @ConfigOption(path = "daily.games.LaserShowdown.min-players")
-    public static int DAILY_LASER_SHOWDOWN_MIN_PLAYERS;
-
-    @ConfigOption(path = "daily.games.LaserShowdown.max-players")
-    public static int DAILY_LASER_SHOWDOWN_MAX_PLAYERS;
-
-    @ConfigOption(path = "daily.games.LaserShowdown.team-size")
-    public static int DAILY_LASER_SHOWDOWN_TEAM_SIZE;
-
-    @ConfigOption(path = "daily.games.LaserShowdown.teams")
-    public static int DAILY_LASER_SHOWDOWN_TEAMS;
-
-    @ConfigOption(path = "daily.games.LaserShowdown.countdown-seconds")
-    public static int DAILY_LASER_SHOWDOWN_COUNTDOWN_SECONDS;
+    @Override
+    public void loadFromConfiguration(@NotNull YamlConfiguration document) {
+        var settings = DailyGameSettings.read(document, bundledDefaults());
+        super.loadFromConfiguration(document);
+        dailyGames = settings;
+    }
 
     // Optional cc-web DAILY leaderboard cache publisher.
     @ConfigOption(path = "leaderboard-sync.enabled-games")
@@ -285,6 +218,12 @@ public class CCConfig extends BaseConfigurationFile {
 
     @ConfigOption(path = "database.password")
     public static String DATABASE_PASSWORD;
+
+    @ConfigOption(path = "database.tls")
+    public static boolean DATABASE_TLS;
+
+    @ConfigOption(path = "database.pool-size")
+    public static int DATABASE_POOL_SIZE = 12;
 
     // Shared Redis infrastructure. Remote Bingo and cross-server database invalidation use one
     // owner.

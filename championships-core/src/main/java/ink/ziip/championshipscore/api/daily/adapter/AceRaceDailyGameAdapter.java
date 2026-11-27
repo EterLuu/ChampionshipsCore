@@ -8,7 +8,6 @@ import ink.ziip.championshipscore.api.game.model.GameRunMode;
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
-import ink.ziip.championshipscore.configuration.config.CCConfig;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -32,12 +31,7 @@ public final class AceRaceDailyGameAdapter implements DailyGameAdapter {
 
     @Override
     public @NotNull DailyRules rules() {
-        return new DailyRules(
-                CCConfig.DAILY_ACERACE_MIN_PLAYERS,
-                CCConfig.DAILY_ACERACE_MAX_PLAYERS,
-                CCConfig.DAILY_ACERACE_TEAM_SIZE,
-                CCConfig.DAILY_ACERACE_TEAMS,
-                CCConfig.DAILY_ACERACE_COUNTDOWN_SECONDS);
+        return plugin.getConfigurationManager().getCCConfig().dailyGame(game()).rules();
     }
 
     @Override

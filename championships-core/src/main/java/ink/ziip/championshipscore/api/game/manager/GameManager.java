@@ -14,11 +14,14 @@ import ink.ziip.championshipscore.api.game.bingo.execution.LocalBingoExecutionGa
 import ink.ziip.championshipscore.api.game.bingo.execution.RemoteBingoInstance;
 import ink.ziip.championshipscore.api.game.bingo.runtime.BingoArea;
 import ink.ziip.championshipscore.api.game.buildmart.BuildMartManager;
+import ink.ziip.championshipscore.api.game.craftingfeast.CraftingFeastManager;
 import ink.ziip.championshipscore.api.game.decarnival.DragonEggCarnivalManager;
 import ink.ziip.championshipscore.api.game.dodgebolt.DodgeboltManager;
 import ink.ziip.championshipscore.api.game.dodgebolt.runtime.DodgeboltArea;
 import ink.ziip.championshipscore.api.game.frostbite.FrostbiteManager;
 import ink.ziip.championshipscore.api.game.hotycodydusky.HotyCodyDuskyManager;
+import ink.ziip.championshipscore.api.game.iamnotarobot.RobotManager;
+import ink.ziip.championshipscore.api.game.iamnotarobot.geometry.EntryTrack;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.game.instance.multiteam.BaseMultiTeamGameInstance;
 import ink.ziip.championshipscore.api.game.instance.paired.BasePairedGameInstance;
@@ -105,6 +108,7 @@ public class GameManager extends BaseManager {
     @Getter private final HotyCodyDuskyManager hotyCodyDuskyManager;
     @Getter private final BingoManager bingoManager;
     @Getter private final BingoExecutionRouter bingoExecutionRouter;
+    @Getter private final CraftingFeastManager craftingFeastManager;
     @Getter private final BuildMartManager buildMartManager;
     @Getter private final DodgeboltManager dodgeboltManager;
     @Getter private final AceRaceManager aceRaceManager;
@@ -149,6 +153,7 @@ public class GameManager extends BaseManager {
         parkourWarriorManager = new ParkourWarriorManager(plugin);
         hotyCodyDuskyManager = new HotyCodyDuskyManager(plugin);
         bingoManager = new BingoManager(plugin);
+        craftingFeastManager = new CraftingFeastManager(plugin);
         buildMartManager = new BuildMartManager(plugin);
         dodgeboltManager = new DodgeboltManager(plugin);
         aceRaceManager = new AceRaceManager(plugin);
@@ -158,6 +163,8 @@ public class GameManager extends BaseManager {
         sulfurSoccerManager = new SulfurSoccerManager(plugin);
 
         areaManagers.put(GameTypeEnum.Bingo, bingoManager);
+        areaManagers.put(GameTypeEnum.CraftingFeast, craftingFeastManager);
+        areaManagers.put(GameTypeEnum.IAmNotARobot, new RobotManager(plugin));
         areaManagers.put(GameTypeEnum.BuildMart, buildMartManager);
         areaManagers.put(GameTypeEnum.BattleBox, battleBoxManager);
         areaManagers.put(GameTypeEnum.ParkourTag, parkourTagManager);
@@ -554,36 +561,19 @@ public class GameManager extends BaseManager {
      * pre-start stages so a stuck preload/countdown can be reset without touching sibling copies.
      */
     public @NotNull List<BaseGameInstance> getStoppableInstances() {
-        List<BaseGameInstance> instances = new ArrayList<>();
-        for (Map.Entry<GameTypeEnum, BaseGameInstanceManager<? extends BaseGameInstance>> entry :
-                areaManagers.entrySet()) {
-            if (!loadedGameManagers.contains(entry.getKey())) continue;
-            entry.getValue().getRuntimeInstances().stream()
-                    .filter(instance -> isStoppableStage(instance.getGameStageEnum()))
-                    .forEach(instances::add);
-        }
-        remoteBingoInstances.values().stream()
-                .filter(instance -> isStoppableStage(instance.getGameStageEnum()))
-                .forEach(instances::add);
-        instances.sort(
-                Comparator.comparingInt(
-                                (BaseGameInstance instance) -> instance.getGameTypeEnum().ordinal())
-                        .thenComparing(this::canonicalMapName, String.CASE_INSENSITIVE_ORDER)
-                        .thenComparingInt(BaseGameInstance::getCopyIndex)
-                        .thenComparing(this::stableInstanceKey));
-        return List.copyOf(instances);
+        return GameInstanceCatalog.select(
+                areaManagers,
+                remoteBingoInstances.values(),
+                loadedGameManagers::contains,
+                game -> true,
+                instance -> isStoppableStage(instance.getGameStageEnum()),
+                GameInstanceCatalog::canonicalMapName);
     }
 
     /** Active copies matching one configured map, including one exact remote Bingo match. */
     public @NotNull List<BaseGameInstance> getStoppableMapInstances(
             @NotNull GameTypeEnum gameType, @NotNull String mapName) {
-        return getStoppableInstances().stream()
-                .filter(instance -> instance.getGameTypeEnum() == gameType)
-                .filter(instance -> mapMatches(instance, mapName))
-                .sorted(
-                        Comparator.comparingInt(BaseGameInstance::getCopyIndex)
-                                .thenComparing(this::stableInstanceKey))
-                .toList();
+        return GameInstanceCatalog.forMap(getStoppableInstances(), gameType, mapName);
     }
 
     /**
@@ -650,7 +640,7 @@ public class GameManager extends BaseManager {
                             Level.SEVERE,
                             LogText.formatGameLog(
                                     target.getGameTypeEnum(),
-                                    canonicalMapName(target),
+                                    GameInstanceCatalog.canonicalMapName(target),
                                     stage.name(),
                                     MessageConfig.codeText("game-manager.stop-game-instance-1"),
                                     MessageConfig.codeText("game-manager.stop-game-instance-2")),
@@ -678,13 +668,6 @@ public class GameManager extends BaseManager {
                 areaManagers.get(target.getGameTypeEnum());
         return manager != null
                 && manager.getRuntimeInstances().stream().anyMatch(instance -> instance == target);
-    }
-
-    private @NotNull String canonicalMapName(@NotNull BaseGameInstance instance) {
-        String configName = instance.getGameConfig().getConfigName();
-        if (configName != null && !configName.isBlank()) return configName;
-        String areaName = instance.getGameConfig().getAreaName();
-        return areaName == null ? "" : areaName;
     }
 
     public boolean joinTeamArea(
@@ -1412,6 +1395,9 @@ public class GameManager extends BaseManager {
             if (team.getMembers().isEmpty())
                 return MessageConfig.codeText(
                         "game-manager.validate-start-teams-2", team.getName());
+            if (game == GameTypeEnum.IAmNotARobot && team.getMembers().size() != EntryTrack.COUNT)
+                return MessageConfig.codeText(
+                        "robot.team-size", team.getName(), team.getMembers().size());
             if (teamStatus.containsKey(team))
                 return MessageConfig.codeText(
                         "game-manager.validate-start-teams-3", team.getName());
@@ -1723,44 +1709,16 @@ public class GameManager extends BaseManager {
 
     /** Instances this viewer may enter, including pre-game arenas for administrators. */
     public List<BaseGameInstance> getSpectatableInstances(@Nullable Player viewer) {
-        List<BaseGameInstance> instances =
-                new ArrayList<>(
-                        areaManagers.entrySet().stream()
-                                .filter(
-                                        entry ->
-                                                isGameEnabled(entry.getKey())
-                                                        && loadedGameManagers.contains(
-                                                                entry.getKey()))
-                                .flatMap(
-                                        entry ->
-                                                entry.getValue().getRuntimeInstances().stream()
-                                                        .map(
-                                                                instance ->
-                                                                        (BaseGameInstance)
-                                                                                instance))
-                                .filter(
-                                        instance ->
-                                                viewer == null
-                                                        ? isInstanceActivelyRunning(instance)
-                                                        : canJoinSpectatorArea(viewer, instance))
-                                .toList());
-        remoteBingoInstances.values().stream()
-                .filter(instance -> isGameEnabled(instance.getGameTypeEnum()))
-                .filter(
-                        instance ->
-                                viewer == null
-                                        ? isInstanceActivelyRunning(instance)
-                                        : canJoinSpectatorArea(viewer, instance))
-                .forEach(instances::add);
-        instances.sort(
-                Comparator.comparingInt(
-                                (BaseGameInstance instance) -> instance.getGameTypeEnum().ordinal())
-                        .thenComparing(
-                                instance -> instance.getGameConfig().getAreaName(),
-                                Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))
-                        .thenComparingInt(BaseGameInstance::getCopyIndex)
-                        .thenComparing(this::stableInstanceKey));
-        return List.copyOf(instances);
+        return GameInstanceCatalog.select(
+                areaManagers,
+                remoteBingoInstances.values(),
+                loadedGameManagers::contains,
+                this::isGameEnabled,
+                instance ->
+                        viewer == null
+                                ? isInstanceActivelyRunning(instance)
+                                : canJoinSpectatorArea(viewer, instance),
+                instance -> instance.getGameConfig().getAreaName());
     }
 
     /**
@@ -1779,25 +1737,13 @@ public class GameManager extends BaseManager {
      */
     public @NotNull List<BaseGameInstance> getSpectatableMapInstances(
             @NotNull GameTypeEnum gameType, @NotNull String mapName) {
-        return getSpectatableInstances().stream()
-                .filter(instance -> instance.getGameTypeEnum() == gameType)
-                .filter(instance -> mapMatches(instance, mapName))
-                .sorted(
-                        Comparator.comparingInt(BaseGameInstance::getCopyIndex)
-                                .thenComparing(this::stableInstanceKey))
-                .toList();
+        return GameInstanceCatalog.forMap(getSpectatableInstances(), gameType, mapName);
     }
 
     /** Copies for one map that the given viewer is currently allowed to enter. */
     public @NotNull List<BaseGameInstance> getSpectatableMapInstances(
             @NotNull Player viewer, @NotNull GameTypeEnum gameType, @NotNull String mapName) {
-        return getSpectatableInstances(viewer).stream()
-                .filter(instance -> instance.getGameTypeEnum() == gameType)
-                .filter(instance -> mapMatches(instance, mapName))
-                .sorted(
-                        Comparator.comparingInt(BaseGameInstance::getCopyIndex)
-                                .thenComparing(this::stableInstanceKey))
-                .toList();
+        return GameInstanceCatalog.forMap(getSpectatableInstances(viewer), gameType, mapName);
     }
 
     /** Human-readable identity shared by the GUI, direct command and status messages. */
@@ -1855,17 +1801,6 @@ public class GameManager extends BaseManager {
         }
         moveSpectatorTo(player, target, destination);
         return true;
-    }
-
-    private boolean mapMatches(@NotNull BaseGameInstance instance, @NotNull String mapName) {
-        String configName = instance.getGameConfig().getConfigName();
-        String areaName = instance.getGameConfig().getAreaName();
-        return configName != null && configName.equalsIgnoreCase(mapName)
-                || areaName != null && areaName.equalsIgnoreCase(mapName);
-    }
-
-    private @NotNull String stableInstanceKey(@NotNull BaseGameInstance instance) {
-        return instance instanceof RemoteBingoInstance remote ? remote.matchId().toString() : "";
     }
 
     /** Routes an unteamed player joining mid-game to the current spectator focus. */

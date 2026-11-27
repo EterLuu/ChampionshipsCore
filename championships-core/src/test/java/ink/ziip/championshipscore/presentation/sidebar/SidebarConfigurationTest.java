@@ -141,6 +141,21 @@ class SidebarConfigurationTest {
                                                 || line.contains("重生倒计时")
                                                 || line.contains("剩余时间")
                                                 || line.contains("timer")));
+
+        var hoty = configuration.game(GameTypeEnum.HotyCodyDusky).base().lines();
+        assertTrue(hoty.stream().anyMatch(line -> line.contains("{hoty.phase}")));
+        assertTrue(hoty.stream().anyMatch(line -> line.contains("{hoty.state}")));
+        assertTrue(hoty.stream().anyMatch(line -> line.contains("{hoty.skill}")));
+        assertTrue(hoty.stream().anyMatch(line -> line.contains("{hoty.alive-players}")));
+        assertTrue(hoty.stream().anyMatch(line -> line.contains("{hoty.alive-teams}")));
+        assertTrue(hoty.stream().anyMatch(line -> line.contains("{hoty.holder-count}")));
+        assertTrue(hoty.stream().anyMatch("{hoty.holders}"::equals));
+        assertFalse(
+                hoty.stream().anyMatch(line -> line.contains("剩余时间") || line.contains("timer")));
+        assertFalse(configuration.value("hoty.phase.scatter", "").isBlank());
+        assertFalse(configuration.value("hoty.phase.frenzy", "").isBlank());
+        assertFalse(configuration.value("hoty.state.holder", "").isBlank());
+        assertFalse(configuration.value("hoty.state.runner", "").isBlank());
     }
 
     private static java.net.URL requireResource() {

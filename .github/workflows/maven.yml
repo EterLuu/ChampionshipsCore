@@ -10,6 +10,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    services:
+      redis:
+        image: redis:8-alpine
+        ports:
+          - 6379:6379
+        options: --health-cmd "redis-cli ping" --health-interval 2s --health-timeout 2s --health-retries 15
+
     steps:
     - uses: actions/checkout@v4
 
@@ -37,7 +44,8 @@ jobs:
 
     - name: Check formatting, source ownership and documentation
       run: |
-        scripts/format-java.sh --check
+        bash scripts/format-java.sh --check
+        ruff check scripts
         ruff format --check scripts
         python3 scripts/check-docs.py
         python3 scripts/check-source-layout.py
@@ -50,10 +58,15 @@ jobs:
         npm test
 
     - name: Build with Maven
-      run: mvn -B clean package --file pom.xml
+      run: mvn -B -Dtest.redis.uri=redis://127.0.0.1:6379 clean package --file pom.xml
 
     - name: Upload JAR artifact
       uses: actions/upload-artifact@v4
       with:
         name: app-jar
-        path: target/*.jar
+        if-no-files-found: error
+        path: |
+          target/ChampionshipsCore-*.jar
+          championships-bingo-worker/target/championships-bingo-worker-*.jar
+          championships-auth-bridge/target/championships-auth-bridge-*.jar
+          championships-auth-proxy/target/championships-auth-proxy-*.jar

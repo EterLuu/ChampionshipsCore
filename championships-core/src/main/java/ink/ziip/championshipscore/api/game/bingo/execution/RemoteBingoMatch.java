@@ -10,6 +10,7 @@ import ink.ziip.championshipscore.bingo.engine.BingoScoringEngine;
 import ink.ziip.championshipscore.bingo.engine.PlayerAward;
 import ink.ziip.championshipscore.bingo.engine.ScoringDecision;
 import ink.ziip.championshipscore.platform.bukkit.scheduler.PlatformScheduler;
+import ink.ziip.championshipscore.protocol.BingoRemix;
 import ink.ziip.championshipscore.protocol.DeterministicIds;
 import ink.ziip.championshipscore.protocol.MatchCommand;
 import ink.ziip.championshipscore.protocol.MatchCommandType;
@@ -61,10 +62,6 @@ final class RemoteBingoMatch {
     private final Map<UUID, CompletableFuture<Boolean>> spectatorRemoveAcks =
             new ConcurrentHashMap<>();
 
-    /** Cells already claimed by any team, used to credit "first completion of the cell". */
-    private final Set<Integer> claimedCells = new HashSet<>();
-
-    private final Map<Integer, Integer> firstCompletionsByTeam = new ConcurrentHashMap<>();
     private final CompletableFuture<Void> terminal = new CompletableFuture<>();
     private final CompletableFuture<Void> resourcesReleased = new CompletableFuture<>();
     private boolean testAbortRequested;
@@ -73,6 +70,7 @@ final class RemoteBingoMatch {
     private boolean testAdmissionRejected;
     private boolean normalStopRequested;
     private long lastEventSeq;
+    private CompletableFuture<Boolean> applyingEvent;
     private long lastActivityMillis = System.currentTimeMillis();
 
     /** Latest worker heartbeat online count; -1 means no valid heartbeat has arrived yet. */
@@ -162,50 +160,61 @@ final class RemoteBingoMatch {
     }
 
     CompletionStage<Boolean> apply(MatchEvent event) {
+        CompletableFuture<Boolean> completion;
         synchronized (this) {
             if (event.seq() <= lastEventSeq) return CompletableFuture.completedFuture(true);
             if (event.seq() != lastEventSeq + 1) return CompletableFuture.completedFuture(false);
+            if (applyingEvent != null) return applyingEvent.minimalCompletionStage();
             if (event.type() == ink.ziip.championshipscore.protocol.MatchEventType.READY)
                 workerReadyObserved = true;
+            applyingEvent = completion = new CompletableFuture<>();
         }
 
-        CompletionStage<Boolean> result =
-                manifest.runMode().test()
-                                && state().terminal()
-                                && event.type()
-                                        != ink.ziip.championshipscore.protocol.MatchEventType
-                                                .RELEASED
-                                && event.type()
-                                        != ink.ziip.championshipscore.protocol.MatchEventType
-                                                .PREPARE_FAILED
-                        ? CompletableFuture.completedFuture(true)
-                        : switch (event.type()) {
-                            case READY -> onReady(event);
-                            case PLAYER_ARRIVED -> onPlayerArrived(event);
-                            case SPECTATOR_ADDED ->
-                                    completed(() -> acknowledgeSpectator(event, spectatorAddAcks));
-                            case SPECTATOR_REMOVED ->
-                                    completed(
-                                            () -> acknowledgeSpectator(event, spectatorRemoveAcks));
-                            case STARTED -> completed(this::markStarted);
-                            case TASK_COMPLETED -> completed(() -> applyCompletion(event));
-                            case FINISHED -> finish(event);
-                            case PREPARE_FAILED -> completed(() -> rejectPreparation(event));
-                            case FAILED, ABORTED -> completed(this::abort);
-                            case PLAYER_LEFT -> onPlayerLeft(event);
-                            case HEARTBEAT -> completed(() -> applyHeartbeat(event));
-                            case RELEASED -> completed(() -> acknowledgeRelease(event));
-                        };
-        return result.thenApply(
-                success -> {
-                    if (success) {
-                        synchronized (this) {
+        CompletionStage<Boolean> applied;
+        try {
+            applied = applyNext(event);
+        } catch (RuntimeException failure) {
+            applied = CompletableFuture.failedFuture(failure);
+        }
+        applied.whenComplete(
+                (success, failure) -> {
+                    synchronized (this) {
+                        if (failure == null && Boolean.TRUE.equals(success)) {
                             lastEventSeq = event.seq();
                             lastActivityMillis = System.currentTimeMillis();
                         }
+                        applyingEvent = null;
                     }
-                    return success;
+                    if (failure != null) completion.completeExceptionally(failure);
+                    else completion.complete(success);
                 });
+        return completion.minimalCompletionStage();
+    }
+
+    private CompletionStage<Boolean> applyNext(MatchEvent event) {
+        return manifest.runMode().test()
+                        && state().terminal()
+                        && event.type()
+                                != ink.ziip.championshipscore.protocol.MatchEventType.RELEASED
+                        && event.type()
+                                != ink.ziip.championshipscore.protocol.MatchEventType.PREPARE_FAILED
+                ? CompletableFuture.completedFuture(true)
+                : switch (event.type()) {
+                    case READY -> onReady(event);
+                    case PLAYER_ARRIVED -> onPlayerArrived(event);
+                    case SPECTATOR_ADDED ->
+                            completed(() -> acknowledgeSpectator(event, spectatorAddAcks));
+                    case SPECTATOR_REMOVED ->
+                            completed(() -> acknowledgeSpectator(event, spectatorRemoveAcks));
+                    case STARTED -> completed(this::markStarted);
+                    case TASK_COMPLETED -> completed(() -> applyCompletion(event));
+                    case FINISHED -> finish(event);
+                    case PREPARE_FAILED -> completed(() -> rejectPreparation(event));
+                    case FAILED, ABORTED -> completed(this::abort);
+                    case PLAYER_LEFT -> onPlayerLeft(event);
+                    case HEARTBEAT -> completed(() -> applyHeartbeat(event));
+                    case RELEASED -> completed(() -> acknowledgeRelease(event));
+                };
     }
 
     private synchronized boolean acknowledgeRelease(MatchEvent event) {
@@ -514,42 +523,25 @@ final class RemoteBingoMatch {
         }
         ScoringDecision decision = scoring.apply(MatchMessages.completionObservation(event));
         if (!decision.accepted()) return true;
-        synchronized (this) {
-            if (claimedCells.add(decision.observation().cellIndex())) {
-                firstCompletionsByTeam.merge(decision.observation().teamId(), 1, Integer::sum);
-            }
-        }
         for (PlayerAward award : decision.awards()) {
             instance.applyAward(award.playerId(), award.points());
             pendingAwards.add(new PendingAward(decision.observation().seq(), award));
         }
         if (instance.getRunMode() == GameRunMode.DAILY) {
-            List<Integer> progressedTeams =
-                    manifest.scoring().variant().remix()
-                                    == ink.ziip.championshipscore.protocol.BingoRemix.COOP
-                            ? manifest.teams().stream()
-                                    .map(ink.ziip.championshipscore.protocol.TeamSnapshot::id)
-                                    .toList()
-                            : List.of(decision.observation().teamId());
-            for (int progressedTeamId : progressedTeams) {
+            boolean cooperative = manifest.scoring().variant().remix() == BingoRemix.COOP;
+            for (var snapshot : manifest.teams()) {
+                int progressedTeamId = snapshot.id();
+                if (!cooperative && progressedTeamId != decision.observation().teamId()) continue;
+                Set<UUID> members = Set.copyOf(snapshot.members());
                 ChampionshipTeam team =
                         instance.getGameTeams().stream()
-                                .filter(
-                                        candidate ->
-                                                candidate
-                                                        .getMembers()
-                                                        .equals(
-                                                                Set.copyOf(
-                                                                        manifest.teamsById()
-                                                                                .get(
-                                                                                        progressedTeamId)
-                                                                                .members())))
+                                .filter(candidate -> candidate.getMembers().equals(members))
                                 .findFirst()
                                 .orElse(null);
                 if (team == null) continue;
                 long durationMillis = decision.observation().observedGameTick() * 50L;
-                int completed = scoring.result().completedCells().getOrDefault(progressedTeamId, 0);
-                int firsts = firstCompletionsByTeam.getOrDefault(progressedTeamId, 0);
+                int completed = scoring.completedCount(progressedTeamId);
+                int firsts = scoring.firstClaimCount(progressedTeamId);
                 plugin.getDailyManager()
                         .statsManager()
                         .recordBingoProgress(

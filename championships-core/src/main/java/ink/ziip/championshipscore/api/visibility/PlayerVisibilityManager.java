@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.api.visibility;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseManager;
+import ink.ziip.championshipscore.api.game.hotycodydusky.runtime.HotyCodyDuskyTeamArea;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.team.ChampionshipTeam;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
@@ -116,29 +117,35 @@ public final class PlayerVisibilityManager extends BaseManager implements Listen
             @NotNull String owner,
             @NotNull String reason) {
         if (viewerId.equals(targetId)) return;
-        states.compute(
-                viewerId,
-                (ignored, current) -> {
-                    if (current == null
-                            || current.mode() == PlayerVisibilityMode.ALL
-                            || !current.owner().equals(owner)) {
-                        if (visible) return current;
-                        Set<UUID> currentlyVisible = new HashSet<>();
-                        for (Player online : Bukkit.getOnlinePlayers()) {
-                            UUID onlineId = online.getUniqueId();
-                            if (!onlineId.equals(targetId) && isVisible(viewerId, onlineId))
-                                currentlyVisible.add(onlineId);
-                        }
-                        return PlayerVisibilityState.players(currentlyVisible, owner, reason);
-                    }
-                    if (current.mode() != PlayerVisibilityMode.PLAYERS
-                            && current.mode() != PlayerVisibilityMode.SELF) return current;
-                    Set<UUID> allowed = new HashSet<>(current.playerIds());
-                    if (visible) allowed.add(targetId);
-                    else allowed.remove(targetId);
-                    return PlayerVisibilityState.players(allowed, owner, reason);
+        runOnServerThread(
+                () -> {
+                    states.compute(
+                            viewerId,
+                            (ignored, current) -> {
+                                if (current == null
+                                        || current.mode() == PlayerVisibilityMode.ALL
+                                        || !current.owner().equals(owner)) {
+                                    if (visible) return current;
+                                    Set<UUID> currentlyVisible = new HashSet<>();
+                                    for (Player online : Bukkit.getOnlinePlayers()) {
+                                        UUID onlineId = online.getUniqueId();
+                                        if (!onlineId.equals(targetId)
+                                                && isVisible(viewerId, onlineId))
+                                            currentlyVisible.add(onlineId);
+                                    }
+                                    return PlayerVisibilityState.players(
+                                            currentlyVisible, owner, reason);
+                                }
+                                if (current.mode() != PlayerVisibilityMode.PLAYERS
+                                        && current.mode() != PlayerVisibilityMode.SELF)
+                                    return current;
+                                Set<UUID> allowed = new HashSet<>(current.playerIds());
+                                if (visible) allowed.add(targetId);
+                                else allowed.remove(targetId);
+                                return PlayerVisibilityState.players(allowed, owner, reason);
+                            });
+                    reconcilePairNow(viewerId, targetId, false);
                 });
-        reconcilePair(viewerId, targetId);
     }
 
     /** Clears a policy only if it is still owned by the releasing game/module. */
@@ -181,13 +188,45 @@ public final class PlayerVisibilityManager extends BaseManager implements Listen
         return session != null && session.equals(sessionByPlayer.get(second));
     }
 
+    private record LocatorField(HotyCodyDuskyTeamArea instance, int partition, UUID session) {}
+
+    /** Locator filtering is independent of Tab and never widens a game's entity policy. */
+    public Map<UUID, Set<UUID>> locatorAudiences() {
+        Map<UUID, ViewerPolicy> policies = new java.util.HashMap<>();
+        Map<LocatorField, List<UUID>> fields = new java.util.HashMap<>();
+        for (Player online : Bukkit.getOnlinePlayers()) {
+            UUID id = online.getUniqueId();
+            ViewerPolicy policy = viewerPolicy(id);
+            policies.put(id, policy);
+            BaseGameInstance area = plugin.getGameManager().getSpectatorManager().areaOf(id);
+            if (area == null) area = policy.area();
+            if (!(area instanceof HotyCodyDuskyTeamArea fish)) continue;
+            int partition = fish.locatorArenaOf(id);
+            if (partition < 0) continue;
+            var field = new LocatorField(fish, partition, sessionByPlayer.get(id));
+            fields.computeIfAbsent(field, ignored -> new ArrayList<>()).add(id);
+        }
+        Map<UUID, Set<UUID>> result = new java.util.HashMap<>();
+        for (List<UUID> members : fields.values()) {
+            for (UUID viewer : members) {
+                Set<UUID> allowed = new HashSet<>();
+                for (UUID target : members) {
+                    if (!viewer.equals(target)
+                            && (policies.get(viewer).spectator()
+                                    || !policies.get(target).spectator())
+                            && isVisible(policies.get(viewer), target)) allowed.add(target);
+                }
+                result.put(viewer, Set.copyOf(allowed));
+            }
+        }
+        return Map.copyOf(result);
+    }
+
     public void reconcileAll() {
         runOnServerThread(
                 () -> {
                     for (Player viewer : Bukkit.getOnlinePlayers())
-                        for (Player target : Bukkit.getOnlinePlayers())
-                            if (!viewer.equals(target))
-                                reconcilePairNow(viewer.getUniqueId(), target.getUniqueId(), false);
+                        reconcileViewerNow(viewer.getUniqueId());
                 });
     }
 
@@ -206,13 +245,15 @@ public final class PlayerVisibilityManager extends BaseManager implements Listen
     }
 
     public void reconcileViewer(@NotNull UUID viewerId) {
-        runOnServerThread(
-                () -> {
-                    for (Player target : Bukkit.getOnlinePlayers()) {
-                        if (!target.getUniqueId().equals(viewerId))
-                            reconcilePairNow(viewerId, target.getUniqueId(), false);
-                    }
-                });
+        runOnServerThread(() -> reconcileViewerNow(viewerId));
+    }
+
+    private void reconcileViewerNow(UUID viewerId) {
+        var viewer = viewerPolicy(viewerId);
+        for (Player target : Bukkit.getOnlinePlayers()) {
+            UUID id = target.getUniqueId();
+            if (!viewerId.equals(id)) apply(viewerId, id, isVisible(viewer, id), false);
+        }
     }
 
     public @NotNull List<String> describe(@NotNull UUID playerId) {
@@ -275,46 +316,43 @@ public final class PlayerVisibilityManager extends BaseManager implements Listen
         return states.getOrDefault(playerId, DEFAULT_STATE);
     }
 
-    private void reconcilePair(@NotNull UUID viewerId, @NotNull UUID targetId) {
-        runOnServerThread(() -> reconcilePairNow(viewerId, targetId, false));
-    }
-
     private void reconcilePairNow(UUID viewerId, UUID targetId, boolean force) {
         apply(viewerId, targetId, isVisible(viewerId, targetId), force);
     }
 
     private boolean isVisible(UUID viewerId, UUID targetId) {
-        Player viewer = Bukkit.getPlayer(viewerId);
-        Player target = Bukkit.getPlayer(targetId);
-        BaseGameInstance participant = plugin.getGameManager().getBasePlayerArea(viewerId);
-        boolean viewerAlwaysSeesAll =
-                plugin.getGameManager().getSpectatorManager().isSpectatorLike(viewerId)
-                        || plugin.getGameManager().getPlayerSpectatorStatus(viewerId) != null
-                        || participant == null
-                        || viewer != null && viewer.getGameMode() == GameMode.SPECTATOR;
-        ChampionshipTeam viewerTeam = plugin.getTeamManager().getTeamByPlayer(viewerId);
+        return isVisible(viewerPolicy(viewerId), targetId);
+    }
+
+    private record ViewerPolicy(
+            UUID id, boolean spectator, BaseGameInstance area, ChampionshipTeam team) {}
+
+    private ViewerPolicy viewerPolicy(UUID id) {
+        return new ViewerPolicy(
+                id,
+                plugin.getGameManager().getSpectatorManager().isSpectatorLike(id),
+                plugin.getGameManager().getBasePlayerArea(id),
+                plugin.getTeamManager().getTeamByPlayer(id));
+    }
+
+    private boolean isVisible(ViewerPolicy viewer, UUID targetId) {
+        UUID viewerId = viewer.id();
+        boolean viewerIsSpectator = viewer.spectator();
+        if (viewerIsSpectator) return true;
+        BaseGameInstance participant = viewer.area();
+        boolean viewerAlwaysSeesAll = participant == null;
+        ChampionshipTeam viewerTeam = viewer.team();
         ChampionshipTeam targetTeam = plugin.getTeamManager().getTeamByPlayer(targetId);
         BaseGameInstance targetSpectatorArea =
                 plugin.getGameManager().getPlayerSpectatorStatus(targetId);
         BaseGameInstance targetParticipantArea =
                 plugin.getGameManager().getBasePlayerArea(targetId);
-        boolean viewerIsSpectator =
-                plugin.getGameManager().getSpectatorManager().isSpectatorLike(viewerId)
-                        || plugin.getGameManager().getPlayerSpectatorStatus(viewerId) != null
-                        || viewer != null && viewer.getGameMode() == GameMode.SPECTATOR;
         boolean targetIsSpectator =
-                plugin.getGameManager().getSpectatorManager().isSpectatorLike(targetId)
-                        || targetSpectatorArea != null
-                        || target != null && target.getGameMode() == GameMode.SPECTATOR;
-        if (viewerIsSpectator) return true;
-        if (!viewerIsSpectator && targetIsSpectator && !viewerAlwaysSeesAll) return false;
+                plugin.getGameManager().getSpectatorManager().isSpectatorLike(targetId);
         boolean targetIsCorrespondingSpectator =
                 participant != null
                         && (targetSpectatorArea == participant
-                                || targetParticipantArea == participant
-                                        && plugin.getGameManager()
-                                                .getSpectatorManager()
-                                                .isSpectatorLike(targetId));
+                                || targetParticipantArea == participant && targetIsSpectator);
         boolean sameTeam = viewerTeam != null && viewerTeam.equals(targetTeam);
         Integer targetTeamId = targetTeam == null ? null : targetTeam.getId();
         return PlayerVisibilityPolicy.allows(

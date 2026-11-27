@@ -183,11 +183,18 @@ public class ParkourWarriorTeamArea extends BaseMultiTeamGameInstance {
                         PKWCheckPointTypeEnum.valueOf(checkpointSection.getString("type"));
 
                 PKWFinalCheckPointTypeEnum pkwFinalCheckPointType = null;
-                try {
-                    pkwFinalCheckPointType =
-                            PKWFinalCheckPointTypeEnum.valueOf(
-                                    checkpointSection.getString("final-check-point-type"));
-                } catch (NullPointerException ignored) {
+                String configuredType = checkpointSection.getString("final-check-point-type");
+                if (configuredType != null) {
+                    try {
+                        pkwFinalCheckPointType = PKWFinalCheckPointTypeEnum.valueOf(configuredType);
+                    } catch (IllegalArgumentException invalid) {
+                        throw new IllegalArgumentException(
+                                "Invalid "
+                                        + checkpointSection.getCurrentPath()
+                                        + ".final-check-point-type: "
+                                        + configuredType,
+                                invalid);
+                    }
                 }
 
                 String name = checkpointSection.getString("name");

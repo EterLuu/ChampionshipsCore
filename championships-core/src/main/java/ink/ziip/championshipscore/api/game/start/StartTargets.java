@@ -57,7 +57,10 @@ public final class StartTargets {
             ArenaSelection selection) {
         if (GameStartRules.internalArenas(game)) {
             var target = copies(pool, ArenaSelection.all(), 1);
-            selection.resolve(SubArenaSupport.count(target.getFirst()));
+            int available = selection.resolve(SubArenaSupport.count(target.getFirst())).size();
+            if (game == GameTypeEnum.IAmNotARobot && available < teams)
+                throw new IllegalArgumentException(
+                        MessageConfig.codeText("robot.capacity", teams, available));
             return target;
         }
         if (GameStartRules.topology(game) != GameStartRules.Topology.PAIRED_COPIES

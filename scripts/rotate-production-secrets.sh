@@ -357,7 +357,7 @@ def replace_section_key(text: str, sections: tuple[str, ...], key: str, value: s
         # AuthMe uses four-space children while the Bukkit configs generally
         # use two; accept any direct descendant indentation without rewriting
         # nested mappings.
-        if indent > section_indent and name == key:
+        if tuple(part for _, part in stack) == (*sections, key):
             prefix = line[: len(line) - len(line.lstrip())]
             ending = "\n" if line.endswith("\n") else ""
             lines[index] = f"{prefix}{key}: {value}{ending}"
@@ -394,14 +394,16 @@ def set_properties(text: str, updates: dict[str, str]) -> str:
     return "".join(lines)
 
 
-def atomic_write(path: Path, data: bytes, mode: int) -> None:
+def atomic_write(path: Path, data: bytes, mode: int, original: os.stat_result | None) -> None:
     fd, name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
     try:
         with os.fdopen(fd, "wb") as handle:
             handle.write(data)
             handle.flush()
+            if original is not None:
+                os.fchown(handle.fileno(), original.st_uid, original.st_gid)
+            os.fchmod(handle.fileno(), mode)
             os.fsync(handle.fileno())
-        os.chmod(name, mode)
         os.replace(name, path)
     finally:
         try:
@@ -525,7 +527,7 @@ for path in outputs:
         os.chmod(destination, stat.S_IRUSR | stat.S_IWUSR)
 
 originals = {path: path.read_bytes() for path in outputs if path.exists()}
-modes = {path: stat.S_IMODE(path.stat().st_mode) for path in outputs if path.exists()}
+metadata = {path: path.stat() for path in originals}
 secret_paths = {
     paths["ROTATE_WEB_ENV"],
     paths["ROTATE_SECRETS_FILE"],
@@ -534,11 +536,13 @@ secret_paths = {
 }
 try:
     for path, data in outputs.items():
-        mode = 0o600 if path in secret_paths else modes.get(path, 0o644)
-        atomic_write(path, data.encode("utf-8"), mode)
+        original = metadata.get(path)
+        mode = 0o600 if path in secret_paths else stat.S_IMODE(original.st_mode) if original else 0o644
+        atomic_write(path, data.encode("utf-8"), mode, original)
 except Exception:
     for path, data in originals.items():
-        atomic_write(path, data, modes[path])
+        original = metadata[path]
+        atomic_write(path, data, stat.S_IMODE(original.st_mode), original)
     raise
 
 print("rotated and wrote production credentials")

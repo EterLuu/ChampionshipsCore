@@ -14,6 +14,16 @@ public final class BridgeApiException extends IllegalStateException {
         this.code = code;
     }
 
+    private BridgeApiException(String message, String code) {
+        super(message);
+        this.status = 0;
+        this.code = code;
+    }
+
+    static BridgeApiException invalidLocalCursor() {
+        return new BridgeApiException("Stored bridge cursor is malformed", "INVALID_CURSOR");
+    }
+
     public int status() {
         return status;
     }
@@ -29,6 +39,6 @@ public final class BridgeApiException extends IllegalStateException {
      */
     public boolean rejectsCursor() {
         return (status == 409 && "CURSOR_AHEAD_OF_OUTBOX".equals(code))
-                || (status == 400 && "INVALID_CURSOR".equals(code));
+                || ((status == 400 || status == 0) && "INVALID_CURSOR".equals(code));
     }
 }

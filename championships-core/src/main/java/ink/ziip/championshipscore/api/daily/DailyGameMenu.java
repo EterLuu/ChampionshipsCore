@@ -214,23 +214,27 @@ public final class DailyGameMenu {
 
     private List<String> mapNames(GameTypeEnum game) {
         List<String> maps =
-                game == GameTypeEnum.Bingo
-                        ? plugin.getGameManager().getBingoManager().getAreaNameList()
-                        : game == GameTypeEnum.AceRace
-                                ? plugin.getGameManager().getAceRaceManager().getAreaNameList()
-                                : game == GameTypeEnum.DragonEggCarnival
+                game == GameTypeEnum.CraftingFeast
+                        ? plugin.getGameManager().getCraftingFeastManager().getAreaNameList()
+                        : game == GameTypeEnum.Bingo
+                                ? plugin.getGameManager().getBingoManager().getAreaNameList()
+                                : game == GameTypeEnum.AceRace
                                         ? plugin.getGameManager()
-                                                .getDragonEggCarnivalManager()
+                                                .getAceRaceManager()
                                                 .getAreaNameList()
-                                        : game == GameTypeEnum.ParkourWarrior
+                                        : game == GameTypeEnum.DragonEggCarnival
                                                 ? plugin.getGameManager()
-                                                        .getParkourWarriorManager()
+                                                        .getDragonEggCarnivalManager()
                                                         .getAreaNameList()
-                                                : game == GameTypeEnum.LaserShowdown
+                                                : game == GameTypeEnum.ParkourWarrior
                                                         ? plugin.getGameManager()
-                                                                .getLaserShowdownManager()
+                                                                .getParkourWarriorManager()
                                                                 .getAreaNameList()
-                                                        : List.of();
+                                                        : game == GameTypeEnum.LaserShowdown
+                                                                ? plugin.getGameManager()
+                                                                        .getLaserShowdownManager()
+                                                                        .getAreaNameList()
+                                                                : List.of();
         return maps.stream()
                 .sorted(String.CASE_INSENSITIVE_ORDER)
                 .limit(
@@ -243,6 +247,7 @@ public final class DailyGameMenu {
 
     private static String gameId(GameTypeEnum game) {
         return switch (game) {
+            case CraftingFeast -> "crafting-feast";
             case Bingo -> "bingo";
             case AceRace -> "ace-race";
             case DragonEggCarnival -> "dragon-egg";

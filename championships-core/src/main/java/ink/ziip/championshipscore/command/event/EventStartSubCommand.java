@@ -119,6 +119,6 @@ public final class EventStartSubCommand extends BaseSubCommand {
         if (args.length == 1)
             return filterStartsWith(EventCommandSupport.enabledFormalGames(), args[0]);
         return new ink.ziip.championshipscore.command.game.start.GameStartMainCommand()
-                .onTabComplete(sender, command, label, args);
+                .completeArguments(args, true);
     }
 }

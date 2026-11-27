@@ -54,3 +54,7 @@ TAB 使用 `%cc_tab_prefix%`、`%cc_tab_name_color%` 与 `%cc_tab_footer_status%
 大厅侧边栏使用 `scoreboards.yml` 的 `daily-lobby`。缺少该节点时使用内置回退模板；可按当前默认资源添加自定义侧栏。
 
 网页榜单同步由 `leaderboard-sync.enabled-games` 限制为网页端支持的游戏，默认 Bingo、AceRace、龙蛋狂欢和跑路战士。网页端目前未接入 LaserShowdown，新统计在游戏内查看；部署相应网页目录和指标后，才将该游戏加入网页同步列表，避免未知游戏导致整批榜单被拒绝。
+
+## 合成盛宴日常局
+
+`CraftingFeast` 沿用统一的多队匹配规则：至少两个排队组，组队成员保持同队，按人数均衡分队，不要求每队满四人。`daily.games.CraftingFeast` 的 `min-players`、`max-players`、`team-size`、`teams`、`countdown-seconds` 默认分别为2人、16人、每队4人、最多4队和30秒。只有一个排队组时，即使已有四人也继续等待其他排队组。需在 `enabled-games` 和 `daily.enabled-games` 中同时启用。玩法和 Manor 地图说明见 [合成盛宴](01-games.md#合成盛宴)。当局订单与队伍分通过游戏侧栏显示，个人分平均分配并保存到 `daily_match_results`，不计入正式赛事积分；尚无独立网页榜单，不应加入网页同步清单。

@@ -17,6 +17,16 @@ import java.time.Duration;
 import java.util.HexFormat;
 
 public final class ChampionshipsAuthBridgePlugin extends JavaPlugin {
+    private BridgeApiClient client;
+    private BridgeUuidResolver uuidResolver;
+
+    @Override
+    public void onDisable() {
+        getServer().getScheduler().cancelTasks(this);
+        if (client != null) client.close();
+        if (uuidResolver != null) uuidResolver.close();
+    }
+
     @Override
     public void onEnable() {
         saveDefaultConfig();
@@ -41,7 +51,7 @@ public final class ChampionshipsAuthBridgePlugin extends JavaPlugin {
                         getConfig().getString("access.admission-owner", "PROXY"),
                         AuthAdmissionOwner.PROXY);
         var state = new LocalAccessState(new File(getDataFolder(), "state.yml"));
-        var client =
+        client =
                 new BridgeApiClient(
                         getConfig().getString("api.base-url", "http://127.0.0.1:3000"),
                         getConfig().getString("api.key-id", "cc-core"),
@@ -50,6 +60,7 @@ public final class ChampionshipsAuthBridgePlugin extends JavaPlugin {
                         Duration.ofSeconds(getConfig().getLong("api.connect-timeout-seconds", 5)),
                         Duration.ofSeconds(getConfig().getLong("api.request-timeout-seconds", 10)));
         var banPresentation = BanPresentation.from(this::configuredText, "access.banned-message");
+        uuidResolver = new BridgeUuidResolver(Duration.ofSeconds(5), Duration.ofSeconds(10));
         var synchronizer =
                 new BridgeSynchronizer(
                         this,
@@ -58,7 +69,7 @@ public final class ChampionshipsAuthBridgePlugin extends JavaPlugin {
                         state,
                         configuredText("messages.username-updated"),
                         configuredText("messages.access-revoked"),
-                        new BridgeUuidResolver(Duration.ofSeconds(5), Duration.ofSeconds(10)),
+                        uuidResolver,
                         admissionOwner,
                         banPresentation);
         String maintenanceKey =

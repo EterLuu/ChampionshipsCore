@@ -38,9 +38,21 @@ public class GameInstanceHandler extends BaseListener {
     }
 
     private boolean isProtectedParticipant(Player player) {
+        return isProtectedParticipant(player, false);
+    }
+
+    /** World actions; an interactive introduction may hand them to the game's own handler. */
+    private boolean isActionProtectedParticipant(Player player) {
+        return isProtectedParticipant(
+                player,
+                isIntroductionParticipant(player)
+                        && baseArea.allowsIntroductionWorldInteraction(player));
+    }
+
+    private boolean isProtectedParticipant(Player player, boolean introductionActions) {
         return baseArea.isSpectator(player)
                 || (baseArea.isPostGamePending() && !baseArea.notAreaPlayer(player))
-                || isIntroductionParticipant(player)
+                || (isIntroductionParticipant(player) && !introductionActions)
                 || isCountdownParticipant(player)
                 || plugin.getGameManager().getNextRoundHoldArea(player.getUniqueId()) == baseArea;
     }
@@ -48,7 +60,7 @@ public class GameInstanceHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerDropItems(PlayerDropItemEvent event) {
         Player player = event.getPlayer();
-        if (isProtectedParticipant(player)) {
+        if (isActionProtectedParticipant(player)) {
             event.setCancelled(true);
         }
     }
@@ -56,7 +68,7 @@ public class GameInstanceHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerPlaceBlock(BlockPlaceEvent event) {
         Player player = event.getPlayer();
-        if (isProtectedParticipant(player)) {
+        if (isActionProtectedParticipant(player)) {
             event.setCancelled(true);
         }
     }
@@ -64,7 +76,7 @@ public class GameInstanceHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerBreakBlock(BlockBreakEvent event) {
         Player player = event.getPlayer();
-        if (isProtectedParticipant(player)) {
+        if (isActionProtectedParticipant(player)) {
             event.setCancelled(true);
         }
     }
@@ -72,7 +84,7 @@ public class GameInstanceHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
-        if (isProtectedParticipant(player)) {
+        if (isActionProtectedParticipant(player)) {
             event.setCancelled(true);
         }
     }
@@ -80,7 +92,7 @@ public class GameInstanceHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
         Player player = event.getPlayer();
-        if (isProtectedParticipant(player)) {
+        if (isActionProtectedParticipant(player)) {
             event.setCancelled(true);
         }
     }
@@ -159,7 +171,7 @@ public class GameInstanceHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerPickupItem(EntityPickupItemEvent event) {
         if (event.getEntity() instanceof Player player) {
-            if (isProtectedParticipant(player)) {
+            if (isActionProtectedParticipant(player)) {
                 event.setCancelled(true);
             }
         }
@@ -168,7 +180,7 @@ public class GameInstanceHandler extends BaseListener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerPickupArrow(PlayerPickupArrowEvent event) {
         Player player = event.getPlayer();
-        if (isProtectedParticipant(player)) {
+        if (isActionProtectedParticipant(player)) {
             event.setCancelled(true);
         }
     }

@@ -1,3 +1,5 @@
+const data = require('minecraft-data')('26.3');
+const { loadGround } = require('./terrain');
 const { EventEmitter } = require('node:events');
 const { attachClient } = require('../../client');
 const { actionProfile } = require('../../profiles');
@@ -47,16 +49,18 @@ const ENTITY_TYPES = {
   dodgebolt: 'player',
   skywars: 'player',
   frostbite: 'player',
+  hotycodydusky: 'player',
+  craftingfeast: 'villager',
 };
 
 function hotbarItems() {
   // Player inventory slots 36..44 are the hotbar.  Provide a weapon, a block
   // and a usable item so profiles can select real slots instead of guessing.
   const items = new Array(45).fill(null);
-  items[36] = { itemCount: 1, itemId: 1, name: 'diamond_sword' };
-  items[37] = { itemCount: 16, itemId: 2, name: 'stone' };
-  items[38] = { itemCount: 1, itemId: 3, name: 'bow' };
-  items[39] = { itemCount: 8, itemId: 4, name: 'snowball' };
+  items[36] = { itemCount: 1, itemId: data.itemsByName.diamond_sword.id };
+  items[37] = { itemCount: 16, itemId: data.itemsByName.stone.id };
+  items[38] = { itemCount: 1, itemId: data.itemsByName.bow.id };
+  items[39] = { itemCount: 8, itemId: data.itemsByName.snowball.id };
   return items;
 }
 
@@ -68,6 +72,7 @@ function runGameScenario(game) {
   let client = fakeClient();
   attachClient(client, settings, 0, result, state, timers);
   client.emit('login', { entityId: 1 });
+  for (const x of [-16, 0]) for (const z of [-16, 0]) loadGround(client, x, z);
   client.emit('position', { teleportId: 1, x: 0, y: 64, z: 0, yaw: 0, pitch: 0, flags: {} });
   timers.start();
 
@@ -77,11 +82,49 @@ function runGameScenario(game) {
   client.emit('system_chat', phasePacket('Preparation phase'));
   client.emit('action_bar', { text: 'Starting in 3' });
   client.emit('set_title_text', { text: 'GO!' });
-  client.emit('entity_spawn', { entityId: 99, type: ENTITY_TYPES[game] || 'objective', x: 1, y: 64, z: 1 });
+  client.emit('spawn_entity', { entityId: 99, type: data.entitiesByName[ENTITY_TYPES[game] || 'interaction'].id, x: 1, y: 64, z: 1 });
   client.emit('entity_destroy', { entityIds: [98] });
   client.emit('block_change', { location: { x: 1, y: 63, z: 1 }, type: 1 });
   client.emit('window_items', { windowId: 0, stateId: 4, items: hotbarItems() });
-  client.emit('set_slot', { windowId: 0, slot: 36, stateId: 5, item: { itemCount: 1, itemId: 1, name: 'diamond_sword' } });
+  client.emit('set_slot', { windowId: 0, slot: 36, stateId: 5, item: { itemCount: 1, itemId: data.itemsByName.diamond_sword.id } });
+  const stack = name => ({ itemCount: 1, itemId: data.itemsByName[name].id });
+  if (game === 'parkourtag') {
+    client.emit('set_player_inventory', { slotId: 0, contents: stack('feather') });
+    client.emit('entity_equipment', { entityId: 99, equipments: [{ slot: 0, item: stack('ender_eye') }] });
+  }
+  if (game === 'dodgebolt') {
+    client.emit('set_player_inventory', { slotId: 0, contents: stack('bow') });
+    client.emit('set_slot', { windowId: 0, slot: 10, item: stack('arrow') });
+  }
+  if (game === 'hotycodydusky') {
+    client.emit('entity_equipment', { entityId: 99, equipments: [{ slot: 5, item: stack('leather_helmet') }] });
+    client.emit('set_slot', { windowId: 0, slot: 36, item: { itemCount: 0 } });
+    client.emit('set_player_inventory', { slotId: 2, contents: stack('structure_void') });
+    client.emit('set_slot', { windowId: 0, slot: 40, item: stack('barrier') });
+    for (const [entityId, type, y] of [[100, 'item_display', 65.25], [101, 'interaction', 64.8]])
+      client.emit('spawn_entity', { entityId, type: data.entitiesByName[type].id, x: 1, y, z: 1 });
+    client.emit('entity_metadata', { entityId: 100, metadata: [{ key: 24, type: 'item_stack', value: stack('compass') }] });
+    timers.tick(3);
+    client.emit('entity_destroy', { entityIds: [100, 101] });
+    client.emit('set_player_inventory', { slotId: 4, contents: stack('sugar') });
+    client.emit('entity_teleport', { entityId: 99, x: 5, y: 64, z: 1 });
+    timers.tick(6);
+    client.emit('entity_teleport', { entityId: 99, x: 1, y: 64, z: 1 });
+  }
+  if (game === 'iamnotarobot') {
+    // Use a translated lane with its gray face and ready board near this fixture's spawn.
+    const pick = stack('iron_pickaxe');
+    pick.components = [{ type: 'custom_data', data: { value: { PublicBukkitValues: { value: {
+      'championshipscore:robot_prop': { type: 'string', value: 'JOINT_PICK/scenario' },
+    } } } } }];
+    client.emit('set_player_inventory', { slotId: 0, contents: pick });
+    client.emit('spawn_entity', { entityId: 101, type: data.entitiesByName.text_display.id, x: 5.5, y: 76.775, z: 12.95 });
+    client.emit('entity_metadata', { entityId: 101, metadata: [{ type: 'component', value: { text: '第 1/3 轮' } }] });
+    for (const [x, material] of [[0, 'gray_concrete'], [14, 'white_concrete']])
+      client.emit('block_change', { location: { x, y: 65, z: 3 }, type: data.blocksByName[material].defaultState });
+  }
+  if (game === 'craftingfeast')
+    client.emit('entity_metadata', { entityId: 99, metadata: [{ key: 2, value: { text: '村民 点餐 面包 5s' } }] });
   timers.tick(24);
   const actionsBeforeDisconnect = client.writes.length;
   const writesBeforeDisconnect = client.writes.slice();
@@ -91,6 +134,7 @@ function runGameScenario(game) {
   client = fakeClient();
   attachClient(client, settings, 0, result, state, timers);
   client.emit('login', { entityId: 2 });
+  for (const x of [-16, 0]) for (const z of [-16, 0]) loadGround(client, x, z);
   client.emit('position', { teleportId: 2, x: 4, y: 64, z: 0, yaw: 0, pitch: 0, flags: {} });
   timers.start();
   timers.tick(24);

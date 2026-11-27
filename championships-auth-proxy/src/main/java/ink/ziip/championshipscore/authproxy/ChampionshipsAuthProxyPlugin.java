@@ -116,6 +116,7 @@ public final class ChampionshipsAuthProxyPlugin extends Plugin implements Listen
     @Override
     public void onDisable() {
         if (banSynchronizerTask != null) getProxy().getScheduler().cancel(banSynchronizerTask);
+        if (identities != null) identities.close();
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

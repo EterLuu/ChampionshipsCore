@@ -3,6 +3,7 @@ package ink.ziip.championshipscore.authbridge.bridge;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import ink.ziip.championshipscore.auth.SignedRequests;
 import ink.ziip.championshipscore.authbridge.model.BridgeChangeBatch;
 import ink.ziip.championshipscore.authbridge.model.BridgeControlJobEnvelope;
 import ink.ziip.championshipscore.authbridge.model.BridgeSnapshot;
@@ -12,27 +13,20 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.time.Duration;
-import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.UUID;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-
-public final class BridgeApiClient {
+public final class BridgeApiClient implements AutoCloseable {
     private static final String CHANGE_PATH = "/api/internal/bridge/changes";
 
     /** Changes requested per page; a shorter page means the writer has caught up. */
     public static final int CHANGE_PAGE_SIZE = 100;
 
     private final URI baseUri;
-    private final String keyId;
-    private final byte[] secret;
     private final Duration requestTimeout;
     private final HttpClient client;
+    private final SignedRequests requests;
     private final ObjectMapper mapper =
             new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
@@ -43,44 +37,20 @@ public final class BridgeApiClient {
             boolean allowInsecurePrivateHttp,
             Duration connectTimeout,
             Duration requestTimeout) {
-        this.baseUri =
-                URI.create(
-                        baseUrl.endsWith("/")
-                                ? baseUrl.substring(0, baseUrl.length() - 1)
-                                : baseUrl);
-        String scheme = this.baseUri.getScheme();
-        if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
-            throw new IllegalArgumentException("Bridge API URL must use HTTP or HTTPS");
-        }
-        if ("http".equalsIgnoreCase(scheme)
-                && !isLoopback(this.baseUri.getHost())
-                && !allowInsecurePrivateHttp) {
-            throw new IllegalArgumentException(
-                    "Non-loopback HTTP requires api.allow-insecure-private-http=true");
-        }
-        this.keyId = keyId;
-        this.secret = secret.getBytes(StandardCharsets.UTF_8);
+        this.baseUri = SignedRequests.baseUri(baseUrl, allowInsecurePrivateHttp);
+        this.requests = new SignedRequests(keyId, secret);
         this.requestTimeout = requestTimeout;
         this.client = HttpClient.newBuilder().connectTimeout(connectTimeout).build();
-        if (this.secret.length < 32)
-            throw new IllegalArgumentException("Bridge HMAC secret must contain at least 32 bytes");
     }
 
     public BridgeChangeBatch changesAfter(String cursor) throws Exception {
-        String timestamp = Long.toString(System.currentTimeMillis());
-        String requestId = UUID.randomUUID().toString();
-        String signature = sign("GET", CHANGE_PATH, timestamp, requestId, "");
+        try {
+            SignedRequests.cursor(cursor);
+        } catch (IllegalArgumentException malformed) {
+            throw BridgeApiException.invalidLocalCursor();
+        }
         URI uri = baseUri.resolve(CHANGE_PATH + "?after=" + cursor + "&limit=" + CHANGE_PAGE_SIZE);
-        HttpRequest request =
-                HttpRequest.newBuilder(uri)
-                        .timeout(requestTimeout)
-                        .header("Accept", "application/json")
-                        .header("X-CC-Key-Id", keyId)
-                        .header("X-CC-Timestamp", timestamp)
-                        .header("X-CC-Request-Id", requestId)
-                        .header("X-CC-Signature", signature)
-                        .GET()
-                        .build();
+        HttpRequest request = requests.get(uri, requestTimeout);
         HttpResponse<String> response =
                 client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         if (!isSuccess(response.statusCode()))
@@ -91,18 +61,7 @@ public final class BridgeApiClient {
 
     public BridgeSnapshot snapshot() throws Exception {
         String path = "/api/internal/bridge/snapshot";
-        String timestamp = Long.toString(System.currentTimeMillis());
-        String requestId = UUID.randomUUID().toString();
-        HttpRequest request =
-                HttpRequest.newBuilder(baseUri.resolve(path))
-                        .timeout(requestTimeout)
-                        .header("Accept", "application/json")
-                        .header("X-CC-Key-Id", keyId)
-                        .header("X-CC-Timestamp", timestamp)
-                        .header("X-CC-Request-Id", requestId)
-                        .header("X-CC-Signature", sign("GET", path, timestamp, requestId, ""))
-                        .GET()
-                        .build();
+        HttpRequest request = requests.get(baseUri.resolve(path), requestTimeout);
         HttpResponse<String> response =
                 client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         if (!isSuccess(response.statusCode())) {
@@ -117,18 +76,7 @@ public final class BridgeApiClient {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("through", cursor);
         String body = mapper.writeValueAsString(payload);
-        String timestamp = Long.toString(System.currentTimeMillis());
-        String requestId = UUID.randomUUID().toString();
-        HttpRequest request =
-                HttpRequest.newBuilder(baseUri.resolve(path))
-                        .timeout(requestTimeout)
-                        .header("Content-Type", "application/json")
-                        .header("X-CC-Key-Id", keyId)
-                        .header("X-CC-Timestamp", timestamp)
-                        .header("X-CC-Request-Id", requestId)
-                        .header("X-CC-Signature", sign("POST", path, timestamp, requestId, body))
-                        .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
-                        .build();
+        HttpRequest request = requests.post(baseUri.resolve(path), requestTimeout, body);
         HttpResponse<String> response =
                 client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         if (!isSuccess(response.statusCode()))
@@ -138,18 +86,7 @@ public final class BridgeApiClient {
 
     public BridgeControlJobEnvelope controlJob() throws Exception {
         String path = "/api/internal/bridge/control-job";
-        String timestamp = Long.toString(System.currentTimeMillis());
-        String requestId = UUID.randomUUID().toString();
-        HttpRequest request =
-                HttpRequest.newBuilder(baseUri.resolve(path))
-                        .timeout(requestTimeout)
-                        .header("Accept", "application/json")
-                        .header("X-CC-Key-Id", keyId)
-                        .header("X-CC-Timestamp", timestamp)
-                        .header("X-CC-Request-Id", requestId)
-                        .header("X-CC-Signature", sign("GET", path, timestamp, requestId, ""))
-                        .GET()
-                        .build();
+        HttpRequest request = requests.get(baseUri.resolve(path), requestTimeout);
         HttpResponse<String> response =
                 client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         if (!isSuccess(response.statusCode())) {
@@ -162,6 +99,7 @@ public final class BridgeApiClient {
     public void completeControlJob(
             String jobId, boolean success, Map<String, Object> result, String error)
             throws Exception {
+        ink.ziip.championshipscore.auth.AuthIdentity.parseUuid(jobId, "control job id");
         String path = "/api/internal/bridge/control-jobs/" + jobId + "/complete";
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("success", success);
@@ -169,18 +107,7 @@ public final class BridgeApiClient {
         if (error != null && !error.isBlank())
             payload.put("error", error.length() > 1000 ? error.substring(0, 1000) : error);
         String body = mapper.writeValueAsString(payload);
-        String timestamp = Long.toString(System.currentTimeMillis());
-        String requestId = UUID.randomUUID().toString();
-        HttpRequest request =
-                HttpRequest.newBuilder(baseUri.resolve(path))
-                        .timeout(requestTimeout)
-                        .header("Content-Type", "application/json")
-                        .header("X-CC-Key-Id", keyId)
-                        .header("X-CC-Timestamp", timestamp)
-                        .header("X-CC-Request-Id", requestId)
-                        .header("X-CC-Signature", sign("POST", path, timestamp, requestId, body))
-                        .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
-                        .build();
+        HttpRequest request = requests.post(baseUri.resolve(path), requestTimeout, body);
         HttpResponse<Void> response = client.send(request, HttpResponse.BodyHandlers.discarding());
         if (!isSuccess(response.statusCode())) {
             throw new IllegalStateException(
@@ -204,27 +131,8 @@ public final class BridgeApiClient {
         return statusCode >= 200 && statusCode < 300;
     }
 
-    private String sign(String method, String path, String timestamp, String requestId, String body)
-            throws Exception {
-        String bodyHash =
-                HexFormat.of()
-                        .formatHex(
-                                MessageDigest.getInstance("SHA-256")
-                                        .digest(body.getBytes(StandardCharsets.UTF_8)));
-        Mac mac = Mac.getInstance("HmacSHA256");
-        mac.init(new SecretKeySpec(secret, "HmacSHA256"));
-        return HexFormat.of()
-                .formatHex(
-                        mac.doFinal(
-                                (method + "\n" + path + "\n" + timestamp + "\n" + requestId + "\n"
-                                                + bodyHash)
-                                        .getBytes(StandardCharsets.UTF_8)));
-    }
-
-    private static boolean isLoopback(String host) {
-        return "localhost".equalsIgnoreCase(host)
-                || "127.0.0.1".equals(host)
-                || "::1".equals(host)
-                || "[::1]".equals(host);
+    @Override
+    public void close() {
+        client.shutdownNow();
     }
 }

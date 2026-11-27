@@ -11,9 +11,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -73,12 +71,10 @@ public class ParkourTagManager extends BaseGameInstanceManager<ParkourTagArea> {
     }
 
     private void createInstances(String mapName, ParkourTagConfig config) {
-        int count = Math.max(1, config.getCopyCount());
-        List<ParkourTagArea> instances = new ArrayList<>(count);
-        for (int copyIndex = 0; copyIndex < count; copyIndex++) {
-            instances.add(new ParkourTagArea(plugin, config, copyIndex, false));
-        }
-        registerMapInstances(mapName, instances);
+        createMapInstances(
+                mapName,
+                config.getCopyCount(),
+                index -> new ParkourTagArea(plugin, config, index, false));
     }
 
     @Override

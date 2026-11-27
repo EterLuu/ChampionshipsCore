@@ -172,8 +172,15 @@ class RiptideFinalStageTest {
             }
         var c = RiptideTestFixtures.config();
         c.setTimer(yaml.getInt("timer"));
-        c.setTemplates(
-                yaml.getMapList("course.pool").stream().map(RiptideLevelTemplate::parse).toList());
+        if (yaml.isList("course.pool"))
+            c.setTemplates(
+                    yaml.getMapList("course.pool").stream()
+                            .map(RiptideLevelTemplate::parse)
+                            .toList());
+        else
+            c.setPool(
+                    ink.ziip.championshipscore.api.game.riptiderush.config.RiptideRushConfig
+                            .defaultPool());
         c.setPassCount(yaml.getInt("course.counts.pass"));
         c.setMathCount(yaml.getInt("course.counts.math"));
         c.setStoppedCount(yaml.getInt("course.counts.stopped"));

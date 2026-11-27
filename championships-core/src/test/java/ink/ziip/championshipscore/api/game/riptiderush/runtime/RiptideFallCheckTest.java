@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Proxy;
+import java.util.List;
 import java.util.UUID;
 
 class RiptideFallCheckTest {
@@ -106,6 +107,98 @@ class RiptideFallCheckTest {
                                     false,
                                     false,
                                     0));
+        }
+
+        @Test
+        void crossingTheFinishRemovesRaftBoundsForThatPlayerOnEveryAxis() {
+            for (int[] axis : new int[][] {{0, 1}, {0, -1}, {1, 0}, {-1, 0}}) {
+                var start = GEOMETRY.centerAt(0);
+                var g =
+                        RiptideCourseGeometry.resolve(
+                                start, start.clone().add(axis[0] * 100, 0, axis[1] * 100), 7, 9);
+                var check = new RiptideFallCheck();
+                // A pending fall before reaching the finish must not survive arrival.
+                assertFalse(
+                        check.sample(g, g.centerAt(95).add(8, 0, 8), 96, .65, 6, false, false, 0));
+                assertFalse(check.sample(g, g.centerAt(100), 96, .65, 6, false, true, 1));
+                for (int tick = 2; tick < 100; tick++)
+                    assertFalse(
+                            check.sample(
+                                    g,
+                                    g.centerAt(110).add(30, -3, 30),
+                                    100,
+                                    .65,
+                                    6,
+                                    true,
+                                    false,
+                                    tick),
+                            "arrival remains safe after leaving the pier");
+                var other = new RiptideFallCheck();
+                var outside = g.centerAt(90).add(30, 0, 30);
+                assertFalse(other.sample(g, outside, 100, .65, 6, false, false, 2));
+                assertTrue(
+                        other.sample(g, outside, 100, .65, 6, false, false, 22),
+                        "another player or a new round has no inherited arrival");
+            }
+        }
+
+        @Test
+        void dockingAlsoFinishesPlayersStillStandingAtTheRearEdge() {
+            var rear = GEOMETRY.centerAt(100).add(3.79, 0, -4.79);
+            var arrived = new RiptideFallCheck();
+            assertFalse(arrived.sample(GEOMETRY, rear, 100, .65, 6, false, true, 0));
+            var away = rear.clone().add(20, 0, 20);
+            assertFalse(arrived.sample(GEOMETRY, away, 100, .65, 6, false, false, 1));
+            assertFalse(arrived.sample(GEOMETRY, away, 100, .65, 6, false, false, 21));
+            var stillRacing = new RiptideFallCheck();
+            assertFalse(stillRacing.sample(GEOMETRY, rear, 99, .65, 6, false, true, 0));
+            stillRacing.sample(GEOMETRY, away, 99, .65, 6, false, false, 1);
+            assertTrue(stillRacing.sample(GEOMETRY, away, 99, .65, 6, false, false, 21));
+        }
+
+        @Test
+        void landingOnThePierIsSafeBeforeTheRaftCentreArrives() {
+            var check = new RiptideFallCheck();
+            var pier = GEOMETRY.centerAt(105);
+            assertFalse(check.sample(GEOMETRY, pier, 99, .65, 6, false, false, 0));
+            assertFalse(
+                    check.sample(
+                            GEOMETRY, pier.clone().add(12, 0, 10), 99, .65, 6, false, false, 21));
+        }
+
+        @Test
+        void finishCannotBeClaimedEarlyFromTheBankBelowTheDeckOrInAnotherWorld() {
+            var finish = GEOMETRY.centerAt(100);
+            var locations =
+                    List.of(
+                            finish,
+                            finish.clone().add(4, 0, 0),
+                            finish.clone().add(0, -1, 0),
+                            finish.clone().add(0, 4, 0),
+                            finish.clone().add(0, 0, 20),
+                            new Location(world("other"), 0, 80, 0));
+            for (int i = 0; i < locations.size(); i++) {
+                var check = new RiptideFallCheck();
+                int step = i == 0 ? 80 : 100;
+                var location = locations.get(i);
+                check.sample(GEOMETRY, location, step, .65, 6, false, false, 0);
+                check.sample(
+                        GEOMETRY, finish.clone().add(20, -3, 20), step, .65, 6, true, false, 1);
+                assertTrue(
+                        check.sample(
+                                GEOMETRY,
+                                finish.clone().add(20, -3, 20),
+                                step,
+                                .65,
+                                6,
+                                true,
+                                false,
+                                21),
+                        "case " + i);
+            }
+            var swimming = new RiptideFallCheck();
+            swimming.sample(GEOMETRY, finish, 100, .65, 6, true, false, 0);
+            assertTrue(swimming.sample(GEOMETRY, finish, 100, .65, 6, true, false, 20));
         }
 
         @Test

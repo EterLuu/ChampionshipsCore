@@ -2,13 +2,11 @@ package ink.ziip.championshipscore.api.game.parkourwarrior;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
+import ink.ziip.championshipscore.api.game.model.GameTypeEnum;
 import ink.ziip.championshipscore.api.game.parkourwarrior.config.ParkourWarriorConfig;
 import ink.ziip.championshipscore.api.game.parkourwarrior.runtime.ParkourWarriorTeamArea;
-import ink.ziip.championshipscore.configuration.config.CCConfig;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 
 public class ParkourWarriorManager extends BaseGameInstanceManager<ParkourWarriorTeamArea> {
 
@@ -45,12 +43,13 @@ public class ParkourWarriorManager extends BaseGameInstanceManager<ParkourWarrio
     }
 
     private void createInstances(String mapName, ParkourWarriorConfig config) {
-        int count = Math.max(1, CCConfig.DAILY_PARKOUR_WARRIOR_CONCURRENT_INSTANCES);
-        List<ParkourWarriorTeamArea> instances = new ArrayList<>(count);
-        for (int copyIndex = 0; copyIndex < count; copyIndex++) {
-            instances.add(new ParkourWarriorTeamArea(plugin, config, copyIndex, false));
-        }
-        registerMapInstances(mapName, instances);
+        createMapInstances(
+                mapName,
+                plugin.getConfigurationManager()
+                        .getCCConfig()
+                        .dailyGame(GameTypeEnum.ParkourWarrior)
+                        .concurrentInstances(),
+                index -> new ParkourWarriorTeamArea(plugin, config, index, false));
     }
 
     @Override

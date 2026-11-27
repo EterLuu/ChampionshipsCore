@@ -19,7 +19,7 @@ public final class WebLeaderboardManager extends BaseManager {
     private final DailyManager dailyManager;
     private final DailyStatsManager statsManager;
     private BukkitTask task;
-    private WebLeaderboardApiClient client;
+    private volatile WebLeaderboardApiClient client;
     private final AtomicBoolean sending = new AtomicBoolean();
     private int consecutiveFailures;
     private long lastUnavailableLogAt;
@@ -74,22 +74,24 @@ public final class WebLeaderboardManager extends BaseManager {
     public void unload() {
         if (task != null) task.cancel();
         task = null;
+        if (client != null) client.close();
         client = null;
-        sending.set(false);
         consecutiveFailures = 0;
     }
 
     private void publish() {
-        if (!plugin.isEnabled() || client == null) return;
+        WebLeaderboardApiClient current = client;
+        if (!plugin.isEnabled() || current == null) return;
         WebLeaderboardSnapshot snapshot = WebLeaderboardSnapshot.from(dailyManager, statsManager);
         if (snapshot.games().isEmpty()) return;
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> send(snapshot));
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> send(current, snapshot));
     }
 
-    private void send(@NotNull WebLeaderboardSnapshot snapshot) {
-        if (!plugin.isEnabled() || client == null || !sending.compareAndSet(false, true)) return;
+    private void send(WebLeaderboardApiClient current, @NotNull WebLeaderboardSnapshot snapshot) {
+        if (!plugin.isEnabled() || current != client || !sending.compareAndSet(false, true)) return;
         try {
-            client.submit(snapshot);
+            current.submit(snapshot);
+            if (current != client) return;
             if (consecutiveFailures != 0) {
                 plugin.getLogger()
                         .info(
@@ -100,7 +102,7 @@ public final class WebLeaderboardManager extends BaseManager {
             }
             consecutiveFailures = 0;
         } catch (Exception exception) {
-            logFailure(exception);
+            if (current == client) logFailure(exception);
         } finally {
             sending.set(false);
         }

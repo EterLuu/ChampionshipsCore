@@ -29,11 +29,12 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
+import java.util.function.IntFunction;
 import java.util.logging.Level;
 
 public abstract class BaseGameInstanceManager<T extends BaseGameInstance> extends BaseManager {
     protected final ConcurrentHashMap<String, T> areas = new ConcurrentHashMap<>();
-    protected final ConcurrentHashMap<String, List<T>> instancesByMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, List<T>> instancesByMap = new ConcurrentHashMap<>();
     private final Set<String> managedWorlds = new LinkedHashSet<>();
     private long mapLoadGeneration;
 
@@ -95,7 +96,7 @@ public abstract class BaseGameInstanceManager<T extends BaseGameInstance> extend
     }
 
     public List<String> getAreaNameList() {
-        return new java.util.ArrayList<>(areas.keySet());
+        return new ArrayList<>(areas.keySet());
     }
 
     /**
@@ -113,8 +114,12 @@ public abstract class BaseGameInstanceManager<T extends BaseGameInstance> extend
     }
 
     public synchronized @NotNull List<T> getMapInstances(@NotNull String name) {
+        return List.copyOf(ownedMapInstances(name));
+    }
+
+    private List<T> ownedMapInstances(String name) {
         List<T> instances = instancesByMap.get(name);
-        if (instances != null) return List.copyOf(instances);
+        if (instances != null) return instances;
         T area = areas.get(name);
         return area == null ? List.of() : List.of(area);
     }
@@ -125,6 +130,48 @@ public abstract class BaseGameInstanceManager<T extends BaseGameInstance> extend
             throw new IllegalArgumentException("A map needs a runtime instance");
         instancesByMap.put(name, new ArrayList<>(instances));
         areas.put(name, instances.getFirst());
+    }
+
+    /** Builds a pool before publishing it. A failed copy must not leave earlier listeners alive. */
+    protected final synchronized void createMapInstances(
+            String name, int count, IntFunction<T> factory) {
+        if (areas.containsKey(name))
+            throw new IllegalStateException("Map already registered: " + name);
+        List<T> copies = new ArrayList<>();
+        growCopies(copies, Math.max(1, count), factory);
+        registerMapInstances(name, copies);
+    }
+
+    /** Active copies above the new limit remain owned until they can be disposed safely. */
+    protected final synchronized List<T> resizeMapInstances(
+            String name, int count, IntFunction<T> factory) {
+        List<T> copies = instancesByMap.get(name);
+        if (copies == null) return List.of();
+        int limit = Math.max(1, count);
+        growCopies(copies, limit, factory);
+        while (copies.size() > limit
+                && copies.getLast().getGameStageEnum() == GameStageEnum.WAITING) {
+            copies.getLast().dispose();
+            copies.removeLast();
+        }
+        return List.copyOf(copies.subList(0, limit));
+    }
+
+    private void growCopies(List<T> copies, int limit, IntFunction<T> factory) {
+        int originalSize = copies.size();
+        try {
+            while (copies.size() < limit)
+                copies.add(Objects.requireNonNull(factory.apply(copies.size())));
+        } catch (RuntimeException failure) {
+            while (copies.size() > originalSize) {
+                try {
+                    copies.removeLast().dispose();
+                } catch (RuntimeException cleanup) {
+                    failure.addSuppressed(cleanup);
+                }
+            }
+            throw failure;
+        }
     }
 
     /**
@@ -191,11 +238,11 @@ public abstract class BaseGameInstanceManager<T extends BaseGameInstance> extend
         T representative = areas.get(name);
         if (representative == null || !canEditMap(name)) return false;
         try {
-            java.nio.file.Files.deleteIfExists(
+            Files.deleteIfExists(
                     plugin.getFolder().resolve(representative.getGameConfig().getFileName()));
             detachAreaRegistration(name, representative);
             return true;
-        } catch (java.io.IOException exception) {
+        } catch (IOException exception) {
             plugin.getLogger()
                     .warning(
                             MessageConfig.codeText(
@@ -218,16 +265,7 @@ public abstract class BaseGameInstanceManager<T extends BaseGameInstance> extend
      * run.
      */
     public synchronized boolean canRenameArea(@NotNull String name) {
-        T representative = areas.get(name);
-        if (representative == null) return false;
-        BaseGameConfig config = representative.getGameConfig();
-        return getRuntimeInstances().stream()
-                .filter(instance -> instance.getGameConfig() == config)
-                .allMatch(
-                        instance ->
-                                instance.getGameStageEnum()
-                                        == ink.ziip.championshipscore.api.game.model.GameStageEnum
-                                                .WAITING);
+        return canEditMap(name);
     }
 
     /** Unregisters and disposes one map without deleting its configuration or physical world. */
@@ -247,12 +285,7 @@ public abstract class BaseGameInstanceManager<T extends BaseGameInstance> extend
     }
 
     private void detachAreaRegistration(@NotNull String name, @NotNull T representative) {
-        BaseGameConfig config = representative.getGameConfig();
-        List<T> copies = new ArrayList<>();
-        for (T instance : getRuntimeInstances()) {
-            if (instance.getGameConfig() == config) copies.add(instance);
-        }
-        copies.forEach(BaseGameInstance::dispose);
+        List.copyOf(ownedMapInstances(name)).forEach(BaseGameInstance::dispose);
         onAreaDetached(name);
         areas.remove(name, representative);
     }
@@ -279,17 +312,11 @@ public abstract class BaseGameInstanceManager<T extends BaseGameInstance> extend
         return new MapSetupTarget(plugin, gameType, name, representative.getGameConfig(), this);
     }
 
-    public boolean canEditMap(String name) {
-        T representative = areas.get(name);
-        if (representative == null) return false;
-        BaseGameConfig config = representative.getGameConfig();
-        return getRuntimeInstances().stream()
-                .filter(instance -> instance.getGameConfig() == config)
-                .allMatch(
-                        instance ->
-                                instance.getGameStageEnum()
-                                        == ink.ziip.championshipscore.api.game.model.GameStageEnum
-                                                .WAITING);
+    public synchronized boolean canEditMap(String name) {
+        List<T> copies = ownedMapInstances(name);
+        return !copies.isEmpty()
+                && copies.stream()
+                        .allMatch(copy -> copy.getGameStageEnum() == GameStageEnum.WAITING);
     }
 
     public boolean bindMapWorld(String name, World world) {
@@ -338,7 +365,7 @@ public abstract class BaseGameInstanceManager<T extends BaseGameInstance> extend
         if (managedWorlds.remove(oldWorldName)) managedWorlds.add(newWorldName);
     }
 
-    public void clearAreas() {
+    public synchronized void clearAreas() {
         mapLoadGeneration++;
         getRuntimeInstances().forEach(BaseGameInstance::dispose);
         List.copyOf(areas.keySet()).forEach(this::onAreaDetached);

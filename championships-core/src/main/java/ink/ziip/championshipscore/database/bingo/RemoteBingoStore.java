@@ -69,7 +69,7 @@ public final class RemoteBingoStore {
         }
     }
 
-    public void recordProcessed(MatchEvent event, MatchState state) throws SQLException {
+    public boolean recordProcessed(MatchEvent event, MatchState state) throws SQLException {
         String inboxSql =
                 "INSERT IGNORE INTO remote_bingo_inbox (messageId, matchId, epoch, eventSeq,"
                         + " eventType, processedAt) VALUES (?, ?, ?, ?, ?, ?)";
@@ -87,7 +87,10 @@ public final class RemoteBingoStore {
                 inbox.setLong(4, event.seq());
                 inbox.setString(5, event.type().name());
                 inbox.setLong(6, now);
-                inbox.executeUpdate();
+                if (inbox.executeUpdate() == 0) {
+                    connection.rollback();
+                    return false;
+                }
 
                 match.setString(1, state.name());
                 match.setLong(2, now);
@@ -96,6 +99,7 @@ public final class RemoteBingoStore {
                 match.setString(5, ownerInstance());
                 match.executeUpdate();
                 connection.commit();
+                return true;
             } catch (SQLException failure) {
                 connection.rollback();
                 throw failure;

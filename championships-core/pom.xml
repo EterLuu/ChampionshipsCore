@@ -43,17 +43,6 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>org.spigotmc</groupId>
-            <artifactId>spigot-api</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>net.dmulloy2</groupId>
-            <artifactId>ProtocolLib</artifactId>
-            <version>5.4.0</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>me.clip</groupId>
             <artifactId>placeholderapi</artifactId>
             <scope>provided</scope>
@@ -129,6 +118,17 @@
             </resource>
         </resources>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <configuration>
+                    <nonFilteredFileExtensions>
+                        <nonFilteredFileExtension>schem</nonFilteredFileExtension>
+                        <nonFilteredFileExtension>nbt</nonFilteredFileExtension>
+                        <nonFilteredFileExtension>zip</nonFilteredFileExtension>
+                    </nonFilteredFileExtensions>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -231,18 +231,6 @@
                                 <exclude>META-INF/versions/*/module-info.class</exclude>
                                 <exclude>module-info.class</exclude>
                             </excludes>
-                        </filter>
-                        <filter>
-                            <artifact>com.zaxxer:*</artifact>
-                            <excludes><exclude>META-INF/MANIFEST.MF</exclude></excludes>
-                        </filter>
-                        <filter>
-                            <artifact>org.mariadb.jdbc:*</artifact>
-                            <excludes><exclude>META-INF/MANIFEST.MF</exclude></excludes>
-                        </filter>
-                        <filter>
-                            <artifact>com.mysql:mysql-connector-j</artifact>
-                            <excludes><exclude>META-INF/MANIFEST.MF</exclude></excludes>
                         </filter>
                     </filters>
                 </configuration>

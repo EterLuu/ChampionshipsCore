@@ -3,13 +3,17 @@ package ink.ziip.championshipscore.api.game.riptiderush.runtime;
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideCourseGeometry;
+import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideCourseReveal;
 import ink.ziip.championshipscore.api.game.riptiderush.course.RiptideDifficulty;
 import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptideColorFloorInventory;
 import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptideColorFloorPlatform;
 import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptideColorFloorRun;
 import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptideDodgeEntities;
 import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptideDodgeRun;
+import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptideMathRun;
+import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptideQuestionDisplay;
 import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptideRaftBlocks;
+import ink.ziip.championshipscore.api.game.riptiderush.mechanics.RiptideRhythmRun;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
 import ink.ziip.championshipscore.configuration.config.message.RiptideRushMessages;
 import ink.ziip.championshipscore.platform.bukkit.text.LegacyText;
@@ -62,6 +66,14 @@ final class RiptideIntroductionRun implements AutoCloseable {
     private TextDisplay targetDisplay;
     private RiptideDodgeRun dodge;
     private RiptideDodgeEntities mobs;
+    private RiptideCourseReveal reveal;
+    private RiptideRhythmRun rhythm;
+    private final Map<UUID, RiptideMathRun> mathRuns = new HashMap<>();
+    private final List<RiptideMathRun.Gate> mathGates;
+    private int speedStage;
+
+    /** The guide sign riding ahead of the raft; it always names the current stage and its tip. */
+    private TextDisplay coach;
 
     RiptideIntroductionRun(
             ChampionshipsCore plugin,
@@ -73,9 +85,29 @@ final class RiptideIntroductionRun implements AutoCloseable {
         this.arena = arena;
         this.geometry = geometry;
         shields.addAll(area.getParticipantUniqueIds());
+        mathGates =
+                RiptideMathRun.gates(geometry, RiptideIntroductionLesson.plan().levels(), 10, 20);
     }
 
     void start() {
+        reveal =
+                new RiptideCourseReveal(
+                        area.getGameConfig(), geometry, RiptideIntroductionLesson.plan().levels());
+        rhythm = new RiptideRhythmRun(geometry, RiptideIntroductionLesson.plan().levels());
+        coach =
+                world().spawn(
+                                coachLocation(),
+                                TextDisplay.class,
+                                display -> {
+                                    MessageConfig.worldTextStyle(
+                                                    ink.ziip.championshipscore.presentation.display
+                                                            .WorldTextStyles.Profile
+                                                            .RIPTIDE_INSTRUCTION)
+                                            .apply(display);
+                                    display.setTeleportDuration(3);
+                                    display.setPersistent(false);
+                                    display.addScoreboardTag(RiptideIntroductionArena.TAG);
+                                });
         task =
                 plugin.getServer()
                         .getScheduler()
@@ -125,6 +157,7 @@ final class RiptideIntroductionRun implements AutoCloseable {
             if (player == null || !admitted(player)) {
                 connections.remove(uuid);
                 falls.remove(uuid);
+                mathRuns.remove(uuid);
                 continue;
             }
             if (!Integer.valueOf(player.getEntityId()).equals(connections.get(uuid))) {
@@ -139,6 +172,11 @@ final class RiptideIntroductionRun implements AutoCloseable {
                     player.removePotionEffect(effect.getType());
                 area.prepareIntroductionParticipant(player);
                 teleport(player, respawn());
+                var run = new RiptideMathRun(geometry, mathGates, player.getLocation());
+                run.followCourse(player.getLocation());
+                mathRuns.put(uuid, run);
+                if (colors != null) showFloorItem(player);
+                if (speedStage == 4) grantSprint(player);
             }
             players.add(player);
         }
@@ -146,44 +184,50 @@ final class RiptideIntroductionRun implements AutoCloseable {
     }
 
     private void advance() {
+        departure.tick();
         int nextStep = RiptideIntroductionLesson.stepAt(tick);
         if (nextStep != step) {
             RiptideRaftBlocks.move(geometry, step, nextStep, Material.AIR);
             step = nextStep;
+            if (coach != null && coach.isValid()) coach.teleport(coachLocation());
         }
+        reveal.tick(step);
         var nextStage = RiptideIntroductionLesson.stageAt(tick);
         if (nextStage != stage) {
             stopColors();
             stopDodge();
             stage = nextStage;
-            area.sendMessageToAllGamePlayers(text(stage.name().toLowerCase(java.util.Locale.ROOT)));
+            String key = stage.name().toLowerCase(java.util.Locale.ROOT);
+            area.sendMessageToAllGamePlayers(text(key));
+            showCoach();
+            // Mechanic stages bring their own titles; the others get a stage card.
+            if (stage == RiptideIntroductionLesson.Stage.WELCOME
+                    || stage == RiptideIntroductionLesson.Stage.FOLLOW
+                    || stage == RiptideIntroductionLesson.Stage.PASS
+                    || stage == RiptideIntroductionLesson.Stage.FINISH)
+                area.sendTitleToAllGamePlayers(
+                        "&b" + text("stage." + key + ".name"),
+                        "&f" + text("stage." + key + ".tip"));
+            if (stage == RiptideIntroductionLesson.Stage.FOLLOW)
+                area.playSoundToAllGamePlayers(Sound.BLOCK_BELL_USE, 1F, 1.2F);
+            if (stage == RiptideIntroductionLesson.Stage.FINISH)
+                area.playSoundToAllGamePlayers(Sound.UI_TOAST_CHALLENGE_COMPLETE, 1F, 1F);
             if (stage == RiptideIntroductionLesson.Stage.COLOR) startColors();
             if (stage == RiptideIntroductionLesson.Stage.DODGE) {
                 dodge =
                         new RiptideDodgeRun(
                                 "ZOMBIE",
-                                20261006L,
+                                RiptideIntroductionLesson.SEED,
                                 geometry.raftWidth(),
                                 geometry.raftLength(),
-                                0);
+                                RiptideDifficulty.stage(step, geometry.totalSteps()));
                 mobs = new RiptideDodgeEntities(geometry, step);
                 area.sendTitleToAllGamePlayers(RiptidePresentation.dodgeTitle(dodge), "");
             }
-            if (stage == RiptideIntroductionLesson.Stage.SPEED) {
-                shields.clear();
-                speedShieldNoticeUntil = tick + 40;
-                area.sendTitleToAllGamePlayers(
-                        RiptideRushMessages.RIPTIDE_RUSH_SPEED_BOOST_TITLE,
-                        RiptideRushMessages.RIPTIDE_RUSH_SPEED_BOOST_SUBTITLE);
-                area.sendActionBarToAllGamePlayers(
-                        RiptideRushMessages.RIPTIDE_RUSH_SPEED_SHIELD_BREAK);
-                area.playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_PLING, 1F, 1.4F);
-            }
         }
         var players = participants();
-        if (stage == RiptideIntroductionLesson.Stage.SPEED && speedShieldNoticeUntil == tick + 40)
-            for (Player player : players)
-                player.playSound(player.getLocation(), Sound.ENTITY_ITEM_BREAK, 1F, 1F);
+        announceSpeed(players);
+        rhythm.tick(step, RiptideIntroductionLesson.speedAt(step), players);
         for (Player player : players) {
             UUID uuid = player.getUniqueId();
             Location feet = player.getLocation();
@@ -198,10 +242,15 @@ final class RiptideIntroductionRun implements AutoCloseable {
                             RiptideFallCheck.deckPresent(geometry, feet, step),
                             tick)) rescue(player, "fall");
         }
+        tickMath(players);
         tickColors(players);
         tickDodge(players);
         refreshPresentation(players);
-        if (departure.active()) departure.tick();
+        if (stage == RiptideIntroductionLesson.Stage.WELCOME && tick % 20 == 0) {
+            int seconds = RiptideIntroductionLesson.departureCountdown(tick);
+            area.sendActionBarToAllGamePlayers(text("departure", seconds));
+            if (seconds <= 3) area.playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_HAT, 1F, 1.2F);
+        }
         tick++;
     }
 
@@ -210,10 +259,11 @@ final class RiptideIntroductionRun implements AutoCloseable {
                 new RiptideColorFloorRun(
                         geometry.raftWidth(),
                         geometry.raftLength(),
-                        RiptideDifficulty.floorRoundTicks(
-                                geometry.totalSteps(), geometry.totalSteps()),
-                        new Random(20261006L),
-                        RiptideColorFloorRun.Theme.TERRACOTTA);
+                        RiptideIntroductionLesson.COLOR_ROUNDS,
+                        new Random(RiptideIntroductionLesson.SEED),
+                        RiptideColorFloorRun.Theme.TERRACOTTA,
+                        List.of(),
+                        RiptideDifficulty.floorMaterials(step, geometry.totalSteps()));
         platform = new RiptideColorFloorPlatform(geometry, step);
         platform.paint(colors.floor());
         targetDisplay =
@@ -234,13 +284,7 @@ final class RiptideIntroductionRun implements AutoCloseable {
     }
 
     private void showColor() {
-        for (Player player : participants()) {
-            floorInventories.computeIfAbsent(
-                    player.getUniqueId(),
-                    ignored -> RiptideColorFloorInventory.capture(player.getInventory()));
-            RiptideColorFloorInventory.show(
-                    player.getInventory(), new ItemStack(colors.target(), 64));
-        }
+        for (Player player : participants()) showFloorItem(player);
         targetDisplay.text(
                 LegacyText.component(text("color-prompt"))
                         .append(
@@ -254,6 +298,73 @@ final class RiptideIntroductionRun implements AutoCloseable {
                                                                 colors.target()
                                                                         .translationKey())))));
         area.playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_PLING, .8F, 1.4F);
+    }
+
+    private void showFloorItem(Player player) {
+        if (!admitted(player) || colors == null) return;
+        floorInventories.computeIfAbsent(
+                player.getUniqueId(),
+                ignored -> RiptideColorFloorInventory.capture(player.getInventory()));
+        RiptideColorFloorInventory.show(player.getInventory(), new ItemStack(colors.target(), 64));
+    }
+
+    private void tickMath(List<Player> players) {
+        for (Player player : players) {
+            if (!admitted(player)) continue;
+            var run = mathRuns.get(player.getUniqueId());
+            if (run == null) continue;
+            for (var answer : run.sample(player.getLocation())) {
+                if (answer.result() != RiptideMathRun.Result.CORRECT)
+                    rescue(player, "wrong-answer");
+                else player.sendMessage(LegacyText.component(text("correct-answer")));
+            }
+            var preview =
+                    run.preview(
+                            player.getLocation(),
+                            step,
+                            RiptideIntroductionLesson.speedAt(step),
+                            18,
+                            tick,
+                            colors != null || dodge != null || departure.active());
+            if (preview != null && tick % 5 == 0) {
+                var display = RiptideQuestionDisplay.of(preview.question(), preview.level());
+                player.sendTitle(display.title(), display.subtitle(), 0, 6, 0);
+            }
+        }
+    }
+
+    private void announceSpeed(List<Player> players) {
+        int next = RiptideDifficulty.stage(step, geometry.totalSteps());
+        if (next <= speedStage) return;
+        speedStage = next;
+        if (next == 2) {
+            shields.clear();
+            speedShieldNoticeUntil = tick + 40;
+            area.sendMessageToAllGamePlayers(text("shield-expired"));
+            for (Player player : players)
+                if (admitted(player))
+                    player.playSound(player.getLocation(), Sound.ENTITY_ITEM_BREAK, 1F, 1F);
+        } else {
+            area.sendActionBarToAllGamePlayers(
+                    RiptideRushMessages.RIPTIDE_RUSH_SPEED_BOOST_SUBTITLE);
+        }
+        if (next == 4) {
+            for (Player player : players) if (admitted(player)) grantSprint(player);
+            area.sendTitleToAllGamePlayers(
+                    RiptideRushMessages.RIPTIDE_RUSH_FINAL_SPRINT_TITLE,
+                    RiptideRushMessages.RIPTIDE_RUSH_FINAL_SPRINT_SUBTITLE);
+        }
+        area.playSoundToAllGamePlayers(Sound.BLOCK_NOTE_BLOCK_PLING, 1F, 1.4F);
+    }
+
+    private void grantSprint(Player player) {
+        player.addPotionEffect(
+                new org.bukkit.potion.PotionEffect(
+                        org.bukkit.potion.PotionEffectType.SPEED,
+                        Math.max(1, RiptideIntroductionLesson.DURATION_TICKS - tick),
+                        0,
+                        false,
+                        false));
     }
 
     private void tickColors(List<Player> players) {
@@ -308,6 +419,8 @@ final class RiptideIntroductionRun implements AutoCloseable {
                     LegacyText.component(RiptideRushMessages.RIPTIDE_RUSH_SHIELD_BROKEN));
         }
         teleport(player, respawn());
+        var math = mathRuns.get(uuid);
+        if (math != null) math.recoverAt(player.getLocation());
     }
 
     Location respawn() {
@@ -342,6 +455,7 @@ final class RiptideIntroductionRun implements AutoCloseable {
         if (player != null) restoreFloorInventory(player);
         connections.remove(uuid);
         falls.remove(uuid);
+        mathRuns.remove(uuid);
         rescueUntil.remove(uuid);
     }
 
@@ -413,29 +527,39 @@ final class RiptideIntroductionRun implements AutoCloseable {
                     RiptideRushMessages.RIPTIDE_RUSH_DEPARTURE_ACTIONBAR);
     }
 
+    private Location coachLocation() {
+        return geometry.centerAt(step + 6).add(0, 6.2, 0);
+    }
+
+    private void showCoach() {
+        if (coach == null || !coach.isValid()) return;
+        var stages = RiptideIntroductionLesson.Stage.values();
+        String key = stage.name().toLowerCase(java.util.Locale.ROOT);
+        coach.text(
+                LegacyText.component(
+                        text(
+                                "coach",
+                                text("stage." + key + ".name"),
+                                stage.ordinal() + 1,
+                                stages.length,
+                                text("stage." + key + ".tip"))));
+    }
+
+    private org.bukkit.World world() {
+        return geometry.centerAt(0).getWorld();
+    }
+
     private void stopDodge() {
         if (mobs != null) mobs.clear();
         mobs = null;
         dodge = null;
     }
 
-    static String text(String key) {
-        return switch (key) {
-            case "welcome" -> MessageConfig.codeText("riptide-introduction-run.welcome");
-            case "follow" -> MessageConfig.codeText("riptide-introduction-run.follow");
-            case "pass" -> MessageConfig.codeText("riptide-introduction-run.pass");
-            case "color" -> MessageConfig.codeText("riptide-introduction-run.color");
-            case "dodge" -> MessageConfig.codeText("riptide-introduction-run.dodge");
-            case "speed" -> MessageConfig.codeText("riptide-introduction-run.speed");
-            case "finish" -> MessageConfig.codeText("riptide-introduction-run.finish");
-            case "color-prompt" -> MessageConfig.codeText("riptide-introduction-run.color-prompt");
-            case "fall" -> MessageConfig.codeText("riptide-introduction-run.fall");
-            case "wrong-color" -> MessageConfig.codeText("riptide-introduction-run.wrong-color");
-            case "hit" -> MessageConfig.codeText("riptide-introduction-run.hit");
-            case "shield-used" -> MessageConfig.codeText("riptide-introduction-run.shield-used");
-            case "retry" -> MessageConfig.codeText("riptide-introduction-run.retry");
-            default -> throw new IllegalArgumentException("Unknown lesson message: " + key);
-        };
+    private static final String MESSAGE_PREFIX = "riptide-introduction-run.";
+
+    /** Lesson texts live under {@code code-text.riptide-introduction-run}. */
+    static String text(String key, Object... args) {
+        return MessageConfig.codeText(MESSAGE_PREFIX + key, args);
     }
 
     @Override
@@ -446,6 +570,13 @@ final class RiptideIntroductionRun implements AutoCloseable {
         task = null;
         stopColors();
         stopDodge();
+        if (rhythm != null) rhythm.close();
+        rhythm = null;
+        if (reveal != null) reveal.close();
+        reveal = null;
+        departure.clear();
+        if (coach != null && coach.isValid()) coach.remove();
+        coach = null;
         if (arena.ownedBy(area)) {
             RiptideRaftBlocks.move(geometry, step, 0, Material.AIR);
             arena.release(area);
@@ -453,12 +584,15 @@ final class RiptideIntroductionRun implements AutoCloseable {
         for (UUID uuid : connections.keySet()) {
             Player player = Bukkit.getPlayer(uuid);
             if (player != null
+                    && Integer.valueOf(player.getEntityId()).equals(connections.get(uuid))
                     && area.isGameplayParticipant(player)
                     && plugin.getGameManager().getBasePlayerArea(uuid) == area) {
+                player.removePotionEffect(org.bukkit.potion.PotionEffectType.SPEED);
                 player.resetTitle();
                 player.sendActionBar(Component.empty());
             }
         }
+        mathRuns.clear();
         connections.clear();
         falls.clear();
         rescueUntil.clear();

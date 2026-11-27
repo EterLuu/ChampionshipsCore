@@ -18,6 +18,7 @@ public class PlaceholderManager extends BaseManager {
     private ParkourWarriorPlaceholder parkourWarriorPlaceholder;
     private HotyCodyDuskyPlaceholder hotyCodyDuskyPlaceholder;
     private BingoPlaceholder bingoPlaceholder;
+    private CraftingFeastPlaceholder craftingFeastPlaceholder;
     private BuildMartPlaceholder buildMartPlaceholder;
     private DodgeboltPlaceholder dodgeboltPlaceholder;
     private AceRacePlaceholder aceRacePlaceholder;
@@ -42,6 +43,7 @@ public class PlaceholderManager extends BaseManager {
         parkourWarriorPlaceholder = new ParkourWarriorPlaceholder(plugin);
         hotyCodyDuskyPlaceholder = new HotyCodyDuskyPlaceholder(plugin);
         bingoPlaceholder = new BingoPlaceholder(plugin);
+        craftingFeastPlaceholder = new CraftingFeastPlaceholder(plugin);
         buildMartPlaceholder = new BuildMartPlaceholder(plugin);
         dodgeboltPlaceholder = new DodgeboltPlaceholder(plugin);
         aceRacePlaceholder = new AceRacePlaceholder(plugin);
@@ -60,6 +62,7 @@ public class PlaceholderManager extends BaseManager {
         parkourWarriorPlaceholder.register();
         hotyCodyDuskyPlaceholder.register();
         bingoPlaceholder.register();
+        craftingFeastPlaceholder.register();
         buildMartPlaceholder.register();
         dodgeboltPlaceholder.register();
         aceRacePlaceholder.register();
@@ -81,6 +84,7 @@ public class PlaceholderManager extends BaseManager {
         parkourWarriorPlaceholder.unregister();
         hotyCodyDuskyPlaceholder.unregister();
         bingoPlaceholder.unregister();
+        craftingFeastPlaceholder.unregister();
         buildMartPlaceholder.unregister();
         dodgeboltPlaceholder.unregister();
         aceRacePlaceholder.unregister();

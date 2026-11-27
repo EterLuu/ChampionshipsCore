@@ -9,13 +9,10 @@ import ink.ziip.championshipscore.protocol.transport.DeliveryReceipt;
 import ink.ziip.championshipscore.protocol.transport.MatchCommandPublisher;
 import ink.ziip.championshipscore.protocol.transport.MatchEventPublisher;
 
-import io.lettuce.core.RedisClient;
 import io.lettuce.core.RedisURI;
 import io.lettuce.core.XAddArgs;
-import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.api.async.RedisAsyncCommands;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.LinkedHashMap;
@@ -30,8 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public final class RedisMatchTransport implements MatchCommandPublisher, MatchEventPublisher {
     private final RedisTransportConfig config;
     private final BinaryProtocolCodec codec;
-    private final RedisClient client;
-    private final StatefulRedisConnection<String, String> connection;
+    private final RedisConnections connections;
     private final RedisAsyncCommands<String, String> commands;
     private final AtomicBoolean closed = new AtomicBoolean();
 
@@ -44,9 +40,8 @@ public final class RedisMatchTransport implements MatchCommandPublisher, MatchEv
         this.codec = Objects.requireNonNull(codec, "codec");
         RedisURI uri = RedisURI.create(config.uri());
         uri.setTimeout(config.commandTimeout());
-        this.client = RedisClient.create(uri);
-        this.connection = client.connect();
-        this.commands = connection.async();
+        this.connections = new RedisConnections(uri);
+        this.commands = connections.open();
     }
 
     public CompletionStage<String> ping() {
@@ -137,6 +132,6 @@ public final class RedisMatchTransport implements MatchCommandPublisher, MatchEv
         // Let Lettuce drain callbacks before tearing down its Netty/classloader resources.
         // Immediate
         // shutdown can race AsyncCommand completion and surface as "zip file closed" during reload.
-        client.shutdown(Duration.ofMillis(100), Duration.ofSeconds(5));
+        connections.close();
     }
 }

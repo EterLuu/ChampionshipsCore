@@ -596,7 +596,9 @@ class RiptideCoursePlannerTest {
                                 .count());
                 assertEquals(
                         8,
-                        plan.levels().stream().filter(RiptideCoursePlan.Level::stopsRaft).count());
+                        plan.levels().stream()
+                                .filter(l -> l.stopsRaft() && l.type() != RiptideLevelType.MATH)
+                                .count());
                 assertTrue(plan.totalSteps() >= 500 && plan.totalSteps() <= 650);
                 assertTrue(plan.estimatedTicks() < 6400);
                 assertTrue(RiptideCoursePlanner.minimumTransitionSeconds(c, plan) >= 1.5);

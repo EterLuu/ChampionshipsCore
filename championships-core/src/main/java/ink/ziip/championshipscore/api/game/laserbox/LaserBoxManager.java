@@ -5,7 +5,6 @@ import ink.ziip.championshipscore.api.game.laserbox.config.LaserBoxConfig;
 import ink.ziip.championshipscore.api.game.laserbox.runtime.LaserBoxArea;
 import ink.ziip.championshipscore.api.game.laserbox.runtime.LaserBoxIntroductionArena;
 import ink.ziip.championshipscore.api.game.manager.BaseGameInstanceManager;
-import ink.ziip.championshipscore.api.game.model.GameStageEnum;
 
 import lombok.Getter;
 
@@ -13,7 +12,6 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -88,27 +86,22 @@ public final class LaserBoxManager extends BaseGameInstanceManager<LaserBoxArea>
         return true;
     }
 
-    public synchronized List<LaserBoxArea> getMapInstances(String mapName) {
-        List<LaserBoxArea> instances = instancesByMap.get(mapName);
-        LaserBoxArea first = areas.get(mapName);
-        if (instances == null || first == null) return List.of();
-        int desired = Math.max(1, first.getGameConfig().getCopyCount());
-        while (instances.size() < desired)
-            instances.add(new LaserBoxArea(plugin, first.getGameConfig(), instances.size(), false));
-        while (instances.size() > desired) {
-            LaserBoxArea extra = instances.getLast();
-            if (extra.getGameStageEnum() != GameStageEnum.WAITING) break;
-            instances.removeLast().dispose();
-        }
-        return List.copyOf(instances.subList(0, Math.min(desired, instances.size())));
+    @Override
+    public synchronized List<LaserBoxArea> getMapInstances(@NotNull String mapName) {
+        LaserBoxArea first = getArea(mapName);
+        if (first == null) return List.of();
+        LaserBoxConfig config = first.getGameConfig();
+        return resizeMapInstances(
+                mapName,
+                config.getCopyCount(),
+                index -> new LaserBoxArea(plugin, config, index, false));
     }
 
     private void createInstances(String mapName, LaserBoxConfig config) {
-        int count = Math.max(1, config.getCopyCount());
-        List<LaserBoxArea> instances = new ArrayList<>(count);
-        for (int copyIndex = 0; copyIndex < count; copyIndex++)
-            instances.add(new LaserBoxArea(plugin, config, copyIndex, false));
-        registerMapInstances(mapName, instances);
+        createMapInstances(
+                mapName,
+                config.getCopyCount(),
+                index -> new LaserBoxArea(plugin, config, index, false));
     }
 
     @Override

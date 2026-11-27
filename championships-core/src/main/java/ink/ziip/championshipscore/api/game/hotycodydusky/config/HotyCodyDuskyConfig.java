@@ -23,7 +23,7 @@ import java.util.Map;
 @Getter
 @Setter
 public class HotyCodyDuskyConfig extends BaseGameConfig {
-    private final String resourceName = "hotycodydusky/area.yml";
+    private final String resourceName = "hotycodydusky/template.yml";
     private final String folderName = "hotycodydusky/";
 
     public HotyCodyDuskyConfig(ChampionshipsCore plugin, String name) {
@@ -37,9 +37,6 @@ public class HotyCodyDuskyConfig extends BaseGameConfig {
 
     @ConfigOption(path = "name")
     private String areaName;
-
-    @ConfigOption(path = "timer")
-    private int timer = 240;
 
     @ConfigOption(path = "area-pos1", nullable = true)
     private Vector areaPos1;
@@ -64,6 +61,30 @@ public class HotyCodyDuskyConfig extends BaseGameConfig {
 
     @ConfigOption(path = "spawn-points")
     private List<String> spawnPoints = new ArrayList<>();
+
+    @ConfigOption(path = "item-spawns")
+    private List<Vector> itemSpawns = new ArrayList<>();
+
+    @ConfigOption(path = "safe-floor-offset", nullable = true)
+    private Integer safeFloorOffset;
+
+    @ConfigOption(path = "extended-items")
+    private boolean extendedItems;
+
+    @ConfigOption(path = "quicksand")
+    private List<Vector> quicksand = new ArrayList<>();
+
+    @ConfigOption(path = "escape-rope", nullable = true)
+    private Vector escapeRope;
+
+    @ConfigOption(path = "meteor-spawns")
+    private List<Vector> meteorSpawns = new ArrayList<>();
+
+    @ConfigOption(path = "elevator-base", nullable = true)
+    private Vector elevatorBase;
+
+    @ConfigOption(path = "ceiling-offset", nullable = true)
+    private Integer ceilingOffset;
 
     @ConfigOption(path = "copy-bounds")
     private List<Map<String, Object>> copyBounds = new ArrayList<>();

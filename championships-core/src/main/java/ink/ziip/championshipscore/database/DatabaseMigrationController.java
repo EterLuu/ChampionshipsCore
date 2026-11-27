@@ -459,6 +459,14 @@ public final class DatabaseMigrationController {
         }
     }
 
+    // Migration 3 deliberately leaves a legacy index absent when historical duplicates exist.
+    static boolean hasIdentityConstraints(Connection connection) throws SQLException {
+        return hasIndex(connection, "players", "uq_players_uuid")
+                && hasIndex(connection, "players", "uq_players_username")
+                && hasIndex(connection, "team_members", "uq_team_members_uuid")
+                && hasIndex(connection, "team_members", "uq_team_members_username");
+    }
+
     private static boolean hasIndex(
             @NotNull Connection connection, @NotNull String table, @NotNull String indexName)
             throws SQLException {

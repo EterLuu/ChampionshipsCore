@@ -299,6 +299,37 @@ presentation:
       block-light: -1
       sky-light: -1
     profiles:
+      crafting-feast-station:
+        shadowed: true
+        line-width: 240
+        background: "#60000000"
+      crafting-feast-board:
+        billboard: FIXED
+        shadowed: true
+        line-width: 160
+        background: "#A0101010"
+      crafting-feast-supply:
+        billboard: FIXED
+        shadowed: true
+        line-width: 240
+        background: "#60000000"
+      crafting-feast-tutorial:
+        alignment: LEFT
+        shadowed: true
+        line-width: 260
+        background: "#B0101010"
+      robot-warehouse-barrel:
+        billboard: FIXED
+        shadowed: true
+        line-width: 180
+        background: "#60000000"
+      robot-slider-status:
+        billboard: FIXED
+        shadowed: true
+        line-width: 500
+        background: "#EE15232D"
+        block-light: 15
+        sky-light: 15
       ace-race-name:
         shadowed: true
         background: "#00000000"
@@ -338,6 +369,7 @@ spectator:
   join-area: "&#bababa[&#fff566观战&#bababa]&#ededed 正在观战&#fff566%game% &#bababa•&#ededed 场地%area%"
   cant-join-area: "&#bababa[&#ff6b26观战&#bababa]&#ededed 已在观战其他场地 &#696969•&#ededed /cc spectate leave"
 game:
+  iamnotarobot: 人机验证
   team-game-start-successful: "&#bababa[&#fff566场地&#bababa]&#fff566 %game% &#bababa•&#ededed %area% &#bababa• %team%&#ededed对阵%rival% &#bababa•&#ededed 已开始准备"
   team-game-start-failed: "&#bababa[&#ff6b26场地&#bababa]&#fff566 %game% &#bababa•&#ededed %area% &#bababa•&#ededed 无法开始%team%&#ededed对阵%rival%"
   single-game-start-successful: "&#bababa[&#fff566场地&#bababa]&#fff566 %game% &#bababa•&#ededed %area% &#bababa•&#ededed 已开始准备"
@@ -354,6 +386,7 @@ game:
   parkourwarrior: 跑路战士
   hotycodydusky: 烫手鳕鱼
   bingo: 宾果飞速
+  craftingfeast: 合成盛宴
   buildmart: 匹配赛建
   dodgebolt: 躲避箭
   riptiderush: 激流勇进
@@ -398,10 +431,10 @@ laserbox:
   draw: "&e本轮平局"
   end-title: "&e&l本轮结束"
   end-subtitle: "&f%right% : %left%"
-  item-shield: "&e护盾 · 抵挡一次攻击"
-  item-grenade: "&e烟幕弹 · 右键使用"
-  item-strike: "&e定点爆破 · 右键使用"
-  item-reveal: "&e追踪脉冲 · 右键使用"
+  item-shield: "&e%item%"
+  item-grenade: "&e%item%"
+  item-strike: "&e%item%"
+  item-reveal: "&e%item%"
   gun-selection-title: "&#fff566选择装备"
   gun-selection-subtitle: "&#ededed选择一件武器"
   gun-selection-chosen: "&#a8ff78已装备 %gun%"
@@ -676,6 +709,9 @@ tntrun:
   fall-into-void: "&#bababa[&#fff566TNT飞跃&#bababa]&#ededed %player%&#ff6b26出局"
   tnt-rain: "&#fff566TNT飞跃 &#bababa•&#ff6b26 TNT雨来袭"
   tnt-rain-count-down: "&#fff566TNT飞跃 &#bababa•&#ededed TNT雨将在&#ff6b26%time%秒&#ededed后来袭"
+  elytra-removal-warning: "&#fff566TNT飞跃 &#bababa•&#ededed 所有玩家的鞘翅将在&#ff6b26%time%秒&#ededed后被收回，请准备降落！"
+  elytra-removal-count-down: "&#fff566TNT飞跃 &#bababa•&#ededed 鞘翅收回倒计时：&#ff6b26%time%秒"
+  elytra-removed: "&#fff566TNT飞跃 &#bababa•&#ff6b26 所有玩家的鞘翅已收回！"
   boss-bar: "&#fff566TNT飞跃 &#bababa•&#ededed 剩余&#ff6b26%time%"
   boss-bar-tnt-rain: "&#fff566TNT飞跃 &#bababa•&#ededed 剩余&#ff6b26%time% &#bababa•&#ff6b26 TNT雨进行中&#ededed%rain-time%"
 dragoneggcarnival:
@@ -772,20 +808,23 @@ parkourwarrior:
   kits:
     back-tool: "&d右键返回支线选择点"
 hotycodydusky:
-  start-preparation: "&#bababa[&#fff566烫手鳕鱼&#bababa]&#ededed 保持移动，避免手握鳕鱼"
+  start-preparation: "&#fff566谁头顶有鱼，谁就被标记了！&#ededed拍一下同区没被标记的人，就能把鱼传走。"
   start-preparation-title: "&#fff566&l烫手鳕鱼"
-  start-preparation-subtitle: "&#ededed保持移动 &#bababa•&#ff6b26 避免持有鳕鱼"
+  start-preparation-subtitle: "&#fff566先认认路，等会儿好开溜！"
   game-start-soon-title: "&#fff566&l烫手鳕鱼"
   game-start-title: "&#ff6b26&l烫手鳕鱼"
-  game-start-subtitle: "&#fff566&l鳕鱼已出现"
+  game-start-subtitle: "&#31e061先自由散开 15 秒，再开始首轮点名！"
   game-end-title: "&#fff566&l烫手鳕鱼"
-  game-end-subtitle: "&#ededed本场结束 &#bababa•&#ff6b26 积分结算中"
-  action-bar-count-down: "&#fff566烫手鳕鱼 &#bababa•&#ededed 鳕鱼&#ff6b26%holder% &#bababa•&#ededed %time%"
-  give-cody-to-player: "&#fff566烫手鳕鱼 &#bababa•&#ededed %from%&#ff6b26 →&#ededed %to%"
-  player-death: "&#bababa[&#fff566烫手鳕鱼&#bababa]&#ededed %player%&#ff6b26出局"
-  player-received-cody: "&#fff566烫手鳕鱼 &#bababa•&#ff6b26 %player%持有鳕鱼"
-  player-leave: "&#bababa[&#fff566烫手鳕鱼&#bababa]&#ededed %player%&#696969离场"
-  whole-team-was-killed: "&#bababa[&#fff566烫手鳕鱼&#bababa] %team%&#ff6b26全队出局"
+  game-end-subtitle: "&#fff566鳕鱼收工！&#ededed正在结算积分"
+  action-bar-count-down: "&#fff566第 %wave% 趟 &#bababa• &#fff566鳕鱼抓人倒数 &#ff6b26%time%"
+  give-cody-to-player: "&#fff566%from% &#ededed把鱼塞给了 %to%&#ededed，鳕鱼换目标啦！"
+  player-death: "&#fff566扑通！%player% &#ededed被鳕鱼抓走啦！"
+  player-received-cody: "&#fff566鳕鱼点到你了！&#ededed快拍没被标记的人！"
+  player-leave: "&#bababa[&#fff566烫手鳕鱼&#bababa]&#ededed %player% &#696969离开了场地"
+  whole-team-was-killed: "&#bababa[&#fff566烫手鳕鱼&#bababa] %team% &#ff6b26全队出局，场边集合！"
+  intermission: "&#fff566鳕鱼歇口气 &#bababa• &#ededed距下趟点名 &#fff566%time%"
+  immunity: "&#fff566第 %wave% 趟 &#bababa• &#c084fc开局免疫 &#fff566%immunity% &#bababa• &#ededed抓人倒数 &#ff6b26%time%"
+  scatter: "&#31e061开局散开 &#bababa• &#ededed自由分散占点，首轮点名倒数 &#fff566%time%"
 placeholder:
   none: 无
   spectator: 观战
@@ -1257,6 +1296,273 @@ sulfursoccer:
 
 # Text extracted from Java; %argN% preserves each dynamic argument.
 code-text:
+  robot:
+    name: '&b&lI am not a ROBOT'
+    settings: '赛道数量须为 1–16，时限须为 1–900 秒。'
+    capacity: '本次有 %arg1% 支队伍，仅选中 %arg2% 条赛道。每队需要独立赛道。'
+    start: '&b请验证你是人类...开始！'
+    timer: '&b人机验证 &7· &f剩余 %arg1% 秒'
+    team-size: '%arg1% 有 %arg2% 名参赛队员，人机验证每队需要四人。'
+    entry: '第零关 · 请开始验证'
+    checkpoint: '&b继续前进！'
+    arrival: '&a✓ %arg1% 到达个人终点 &f（%arg2%/4）'
+    wait-entry: '&b已完成个人赛道，等待队友到齐开启第一关。'
+    wait-members: '&b等待队友进入：%arg1%'
+    wait-separator: '、'
+    approach-warehouse: '&e请前往下一关：向南穿过个人赛道终点门，进入仓库。'
+    approach-slider: '&e请前往下一关：向南穿过仓库出口，经转运廊中央门进入滑轨大厅。'
+    approach-joint: '&e请前往下一关：从滑轨大厅南墙中央的门进入工地。'
+    approach-sprint: '&e请前往下一关：从工地南侧中央的门进入冲刺直道。'
+    warehouse: '第一关 · 请输入验证码'
+    slider: '第二关 · 请对齐滑动图案'
+    slider-assigned: '&f你的滑轨：%arg1%%arg2% &f· %arg3%'
+    slider-partner: '&f你的滑轨：%arg1% · 搭档 %arg2% 在 %arg3% 轨。你们互相看对方的屏幕指挥。'
+    slider-no-partner: '&f你的滑轨：%arg1% · %arg2% 轨暂无搭档，请队友帮你看 %arg1% 屏。'
+    slider-guide: '&b前往 %arg1% 号滑轨：%arg2%（%arg3%色名牌）'
+    slider-place-a: '进门右手边'
+    slider-place-b: '进门左手边'
+    slider-place-c: '对面出口门右侧'
+    slider-place-d: '对面出口门左侧'
+    slider-line-a: '蓝'
+    slider-line-b: '橙'
+    slider-line-c: '绿'
+    slider-line-d: '紫'
+    slider-name: '%arg1%%arg2% · %arg3%'
+    slider-name-free: '%arg1%%arg2% · 空闲'
+    slider-name-done: '%arg1%%arg2% · %arg3% ✓'
+    slider-other: '&e这是 %arg1% 的 %arg2% 轨，你的滑轨是 %arg3%。'
+    slider-unassigned: '&e%arg1% 轨空闲，你的滑轨是 %arg2%。'
+    slider-loading: '&f验证码加载中'
+    slider-title: '&8&l请完成安全验证'
+    slider-idle: '&8拖动下方滑块开始验证'
+    slider-held: '&3%arg1% 正在验证 · 第 %arg2%/3 轮'
+    slider-pass: '&a&l✓ 验证通过'
+    slider-waiting: '&f&l等待另一侧...'
+    slider-check: '&a&l✓'
+    slider-fail: '&c✕ 验证失败，请重试'
+    slider-handle: '&b滑块手柄'
+    slider-occupied: '&e%arg1% 正在拖动这个滑块'
+    slider-locked: '&e复位中'
+    slider-self-done: '&a你已完成 3 次验证，请为队友指挥'
+    slider-ahead: '&b缺口在前方 %arg1% 格'
+    slider-behind: '&b缺口在后方 %arg1% 格'
+    slider-here: '&a就是这里'
+    slider-result: '&a✓ %arg1% 通过 %arg2% 第 %arg3%/3 轮（个人 %arg6%/3）· 用时 %arg4% 秒，%arg5%'
+    slider-first: '你是本场第一位通过的用户'
+    slider-percent: '超过 %arg1%% 的用户'
+    joint: '第三关 · 向右推动滑块到底，完全嵌合'
+    joint-title: '&8&l向右推动滑块到底，完全嵌合'
+    joint-idle: '&8等待开启验证'
+    joint-round: '&3第 %arg1%/3 轮'
+    joint-testing: '&3验证中…'
+    joint-pass: '&2✓ 验证通过'
+    joint-carving: '&3出题中…'
+    joint-locked: '&e复位中'
+    joint-eject: '&e活塞作业中，已移至安全区'
+    joint-blocked: '&c滑块向右推进 %arg1%/%arg2% 格后受阻'
+    joint-gap: '&c滑块已到底，还有 %arg1% 处缝隙未嵌合'
+    joint-result: '&a✓ %arg1% 完成第 %arg2%/3 轮 · 用时 %arg3% 秒，%arg4%'
+    joint-first: '你是本场第一位通过的用户'
+    joint-percent: '超过 %arg1%% 的用户'
+    joint-tool: '&b验证刻刀'
+    joint-tool-lore: '&7左键挖掘灰色混凝土，右键大按钮将白色滑块向右推到底。'
+    joint-block: '&7灰色补块'
+    joint-block-lore: '&7右键放入灰色混凝土区域补回挖错的格子，不会消耗。'
+    joint-button: '&f&l向右推动滑块'
+    joint-demo: '&3演示：活塞向右推动白色滑块'
+    joint-demo-done: '&e演示：滑块推进 %arg1%/%arg2% 格后受阻。请挖出与白块互补的凹槽，再按按钮。'
+    sprint: '终点冲刺'
+    material-console: '方块控制台 · 从左到右'
+    count-console: '数量控制台 · 从左到右'
+    pick: '&b仓库采集镐'
+    inventory-full: '&c背包已满，请先腾出空间。'
+    barrel: '验证码 · 第 %arg1% 桶'
+    barrel-label: "&b&l【 %arg1% 】\n&f验证码提交"
+    finish: '%arg1% &a全队验证通过 &7· &f全程 %arg2% 秒'
+    done: '验证通过'
+    result: '&b人机验证 &7· &f本队获得 %arg1% 分，按参赛人数平分。'
+    end: '&b验证结束'
+    end-hint: '&f已完成的关卡均参与排名'
+    joint-reset: '&e活塞已复位，请重新验证。'
+  game-pickup:
+    held-name: "%title% &8· &7%description%"
+  hoty-items:
+    compass-result: "&#ffd35d追踪 %arg1% &f· 显形 2 秒 &7· 剩余 %arg2% 次"
+    totem-already: "&#ffd35d已有一次护身保护，这枚图腾留在背包中。"
+    totem-armed: "&#ffd35d护身图腾已启用 &f· 下次被抓时自动脱身"
+    pickup: "%arg1% &8· %arg2%"
+    inventory-full: "&#ffb83e两格道具都装满啦！先用掉一件。"
+    more-holders: "&7  还有 %arg1% 人"
+    holders-none: "  &7暂无"
+    boundary-safe: "&#94ed90回到安全区啦！"
+    infection-boundary: "&#ffb83e快回安全区！再过 %arg1% 秒，鳕鱼就会标记你！"
+    frozen: "&#94e9ff谁按停了鳕鱼的表？倒数暂停 5 秒，照样能传鱼！"
+    bossbar-frozen: " &#bababa• &#94e9ff暂停 %arg1%"
+    bossbar-frenzy: " &#bababa• &#ff5555&l最后冲刺"
+    scatter-ended: "&#fff566散开结束！第一趟鳕鱼点名开始！"
+    immune: "&#c084fc开局免疫中！再等 %arg1% 秒才能传鱼"
+    immunity-ended: "&#c084fc开局免疫结束，现在可以传鱼啦！"
+    tagback-blocked: "&#ffb83e反传保护中（剩余 %arg1% 秒），快去追其他对手！"
+    tagback-blocked-duel: "&#ffb83e反传冷却中（剩余 %arg1% 秒），先稳住身位！"
+    frenzy-start: "&#ff5555最后 10 秒！持鱼者全速冲刺，猎物轮廓周期暴露！"
+    skill-ready: "&#ffd35d%arg1% &a[就绪]"
+    skill-cooldown: "&#ffd35d%arg1% &7[冷却]"
+    exposure: "&#76d6ff避开蓝色鱼汁！鳕鱼标记进度 %arg1%%"
+    clock: "&#ffd35d偷闲怀表"
+    clock-hint: "&#eeeeee右键按停倒数，多争取5秒传鱼"
+    totem: "&#ffd35d护身图腾"
+    totem-hint: "&#eeeeee右键护身，下次被抓或陷进流沙时救你一次"
+    ability: "&#ffd35d已选「%arg1%」 &7· &f持鱼时按 F 发动"
+    ability-controls: "&#ffd35d第5格 · %arg1% &f右键出招，潜行右键换招"
+    cooldown: "&7再过 %arg1% 秒就能出招"
+    skill-speed: "甩尾冲刺"
+    skill-invisible: "隐身开溜"
+    skill-darkness: "蒙眼恶作剧"
+    skill-corruption: "泼鱼汁"
+    skill-reach: "长臂传鱼"
+    skill-clone: "分身追人"
+    rope-grab: "&#ffcf68脚陷进沙里了！点击上方绳子抓稳脱身"
+    rope-right: "&#ffcf68脚陷进沙里了！右键抓绳 &f%arg1%/5"
+    rope-left: "&#ffcf68拉自己一把！左键拉绳 &f%arg1%/5"
+    escaped: "&#94ed90嘿咻！你拽着绳子爬出了流沙！"
+    lift-up: "&#94e9ff▲ 电梯上升中..."
+    lift-down: "&#ffd35d▼ 电梯下降中..."
+    boundary: "&#ffb83e跑过头啦！快回盆地，%arg1% 秒后会被送回出生点。"
+    mushroom: "&#ffd35d缩身菇"
+    mushroom-hint: "&#eeeeee按住右键吃菇，缩小身子跑得更快，持续10秒"
+    chorus: "&#ffd35d闪身果"
+    chorus-hint: "&#eeeeee右键咬一口，随机闪到附近"
+    pearl: "&#ffd35d传送珍珠"
+    pearl-hint: "&#eeeeee右键扔出珍珠，瞬移到它落下的地方"
+    horn: "&#ffd35d显形号角"
+    horn-hint: "&#eeeeee右键吹号，附近所有人一起发光10秒"
+    trident: "&#ffd35d传鱼三叉戟"
+    trident-hint: "&#eeeeee按住右键蓄力，松手投出。手里有鱼时，命中就能传鱼"
+    vest: "&#ffd35d防鱼背心"
+    vest-hint: "&#eeeeee右键穿上，占住这格。挡下一次传鱼或陨石后腾空"
+    vest-worn: "&#ffd35d防鱼背心 &a[已穿戴]"
+    vest-worn-hint: "&#eeeeee背心替你挡下一次传鱼或陨石后，这格就空出来"
+    key: "&#ffd35d鱼笼钥匙"
+    key-hint: "&#eeeeee对准身边的人右键，把对方关进鱼笼2.5秒"
+    compass: "&#ffd35d寻鱼指南针"
+    compass-hint: "&#eeeeee右键找持鱼人，鱼在你手上就找人传。只有你看得见轮廓，可用4次"
+    smoke: "&#ffd35d细雪烟雾弹"
+    smoke-hint: "&#eeeeee右键丢出一团细雪，钻进去就能隐身，5秒后雪散"
+    bait: "&#ffd35d脱身蜂蜜"
+    bait-hint: "&#eeeeee按住右键喝光蜂蜜，甩掉鳕鱼，也能解除缩身和发光"
+    wind: "&#ffd35d旋风弹"
+    wind-hint: "&#eeeeee右键扔出一阵风，吹飞落点附近的人。朝脚下扔能弹起自己"
+    decoy: "&#ffd35d替身人偶"
+    decoy-hint: "&#eeeeee右键留下15秒替身，持鱼人打中它会眼前一黑、脚步变慢"
+    slot-filled: "&8已占用"
+    slot-locked: "&c技能未解锁 · 你还没拿到鳕鱼"
+    slot-locked-hint: "&7被鳕鱼盯上时，第5格会变成你的招数"
+    slot-skill: "&#ffd35d持鱼招数 · %arg1%"
+    slot-controls: "&f右键出招，潜行右键换招"
+    slot-shortcuts: "&7也可按 F 出招，潜行按 F 换招。招数共用15秒冷却"
+    skill-speed-hint: "&f甩尾加速5秒，追上前面的人传鱼"
+    skill-invisible-hint: "&f隐身20秒，偷偷靠近下一个接鱼的人"
+    skill-darkness-hint: "&f让附近最多5人眼前一黑，持续10秒"
+    skill-corruption-hint: "&f向自己和附近两人前方泼鱼汁5秒，谁踩满就传给谁"
+    skill-reach-hint: "&f伸长手臂10秒，隔远一点也能拍人传鱼"
+    skill-clone-hint: "&f放出自己的分身，替你追人传鱼"
+  crafting-feast:
+    supply-label: "&f%arg1%"
+    full: '&c背包已满，请先腾出空间。'
+    dish: '%arg1%&7×%arg2%'
+    vip-dish: '&6★%arg1%&7×%arg2%'
+    special-dish: '&d✦%arg1%&7×%arg2%'
+    special-tag: '&d✦%arg1%'
+    vip-tag: '&6★%arg1%'
+    star-on: '&e★'
+    star-off: '&8☆'
+    board-header: '&6&l自取 &7等餐倒计时'
+    board-time: '&f#%arg1% %arg2%%arg3%s'
+    board-none: '&8暂无等餐订单'
+    board-more: '&7…另有 %arg1% 单'
+    delivery-header: '&b&l外卖'
+    delivery-eta: '&f骑手 &e%arg1%s &f后到达'
+    delivery-waiting: '&c骑手已到达 &f最多再等 &c%arg1%s'
+    delivery-ticket: '&bW%arg1% %arg2%'
+    delivery-ready: '&a✔'
+    delivery-none: '&8暂无外卖订单'
+    delivery-area-label: '&b&l外卖出餐 &7按单号放入'
+    delivery-slot-label: '&b&lW%arg1%'
+    delivery-slot-free: '&8空'
+    delivery-slot-title: '外卖 W%arg1% · %arg2%×%arg3%'
+    delivery-slot-empty: '&7这个外卖格暂无订单'
+    delivery-new: '&b外卖 W%arg1% &f%arg2%&7×%arg3% &7· 骑手 %arg4%s 后到达'
+    delivery-arrived: '&b外卖骑手已到达 &f%arg1% 单 &7· 最多等待 %arg2%s'
+    delivery-picked: '&a✔ 外卖 %arg1% 单全部送出 &e+%arg2%'
+    delivery-expired: '&c✘ 外卖骑手已离开 &7· %arg1% 单全部作废'
+    rider-coming: '&b外卖骑手 &7%arg1%s'
+    rider-waiting: '&b外卖骑手 &c等待 %arg1%s'
+    rider-happy: '&b外卖骑手 &a已取餐'
+    rider-angry: '&b外卖骑手 &c超时离开'
+    name-queued: '&7排队中'
+    name-ordering: '&e点餐 &f%arg1% &7%arg2%s'
+    name-seating: '&7#%arg1% 入座中'
+    name-waiting: '&f#%arg1% %arg2% %arg3%'
+    name-happy: '&a满意'
+    name-angry: '&c不满'
+    name-leaving: '&7离店'
+    order-taken: '&a已接单 &f#%arg1% %arg2%'
+    wrong-dish: '&e#%arg1% 要 %arg2%'
+    served: '&a✔ #%arg1% %arg2% &e+%arg3% &7连单%arg4%'
+    lost: '&c✘ #%arg1% &7顾客流失 · 口碑下降'
+    impatient: '&c⚠ #%arg1% &7快等不及了'
+    rush-title: '&c&l晚高峰'
+    rush-subtitle: '&f客流已达峰值'
+    flow-up: '&e客流上升 &f%arg1%%'
+    summary: '&6营业总结 &f完成 &a%arg1% &f流失 &c%arg2% &f外卖 &b%arg5%&7/&c%arg6% &f最高连单 &b%arg3% &f口碑 %arg4%'
+    preparing: '&6餐厅准备开门'
+    start: '&6开门营业！'
+    start-hint: '&f分工采集制作，及时交付订单'
+    timer: '&6合成盛宴 &f%arg1%s &7客流 %arg2%%'
+    timer-rush: '&c晚高峰 &f%arg1%s'
+    end: '&6营业结束'
+    end-hint: '&f正在结算队伍积分'
+    tutorial:
+      run-failed: '合成盛宴新手教学运行失败，正在中止并恢复本次场地。'
+      welcome-title: '&#fff566&l开张啦！'
+      welcome-subtitle: '&#ededed看订单、做物品、交给顾客'
+      board-header: '&#fff566&l合成盛宴 &#bababa• 练习 %arg1%/%arg2%'
+      board-task: '&#fff566%arg1%'
+      board-action: '&#ededed%arg1%'
+      board-note: '&#bababa%arg1%'
+      hint: '&#fff566▶ &#ededed%arg1%'
+      task:
+        serve: '接单与上菜'
+        cook: '接待 VIP'
+        failure: '别让顾客久等'
+        delivery: '外卖一起走'
+      next-guest: '下一位到店，留意点餐台！'
+      order-request: '来单啦！#%arg2% 要 %arg1%'
+      order-note: '点餐结束自动接单，无需确认'
+      order-seating: '#%arg2% 正在入座，备好 %arg1%'
+      seat-note: '顾客入座后，手持成品右键交付'
+      serve-now: '手持 %arg1%&#ededed，右键 #%arg2% 上菜！'
+      serve-note: '交付越快小费越多，连续交付还有奖励'
+      vip-note: '★ VIP 奖励更高，耐心更短'
+      failure-dish: '基岩'
+      iron-dish: '铁锭'
+      failure-wait: '#3 点了基岩，等他入座看看！'
+      failure-watch: '#3 快等不及了！还剩 %arg1% 秒'
+      failure-note: '这单不用做，留意耐心耗尽后的变化'
+      failure-result: '&#ff6b26顾客等不及走了！&#ededed本单无分、连单清零、口碑下降；已有积分保留。'
+      delivery-wait: '下一批外卖：%arg1% 秒后到单'
+      delivery-ready: '&#55ff55✔ W%arg1% %arg2%'
+      delivery-needed: '&#fff566□ W%arg1% %arg2%'
+      delivery-wrong: '&#ff6b26✘ W%arg1% %arg2%'
+      delivery-note: '两单齐才取餐；超时缺单，整批作废'
+      delivery-correct: 'W%arg1% 放错啦！清掉错物，换成 %arg2%'
+      delivery-place: '外卖来啦！把 %arg2% &#ededed放进 W%arg1%'
+      delivery-finish: '骑手等着呢！把 %arg2% &#ededed补进 W%arg1%'
+      delivery-on-way: '两单齐活！等骑手到窗口取餐'
+      delivery-pickup: '两单齐活！骑手取餐中'
+      finished-title: '&#55ff55&l上手啦！'
+      practice: '接下来随机来单，放手经营吧！'
+      practice-note: '练习不计分，开赛前统一重置'
   test-session:
     description: "受保护的无人测试会话控制"
     usage: "/cc game test single start <game> <map> [profile] [difficulty] [remix] | event start <event-profile> [difficulty] [remix] | lease <signed-token|web> | join <team> | leave | status | run | spectate [leave] | stop --confirm"
@@ -1301,19 +1607,66 @@ code-text:
     run-failed: 'Riptide 教学体验失败，正在中止并恢复本次场地。'
   riptide-introduction-run:
     color-target: "&e%block%"
-    welcome: '&b欢迎来到激流训练营！&f每人有一次护盾，可试着离筏；练习失误会被救回。'
-    follow: '&e跟上木筏！&f木筏会前进，请自己向前跑，别被落下。'
-    pass: '&e穿过洞口！&f提前观察下一面墙，移动到洞口的一侧。'
-    color: '&e踩色练习！&f在倒计时结束前，站到提示的方块上。'
-    dodge: '&e躲避冲刺！&f木筏暂停时，观察来向并避开生物。'
-    speed: '&6木筏加速，护盾破碎！&f加快脚步，继续跟上木筏。'
-    finish: '&a练习完成！&f正式赛失误会出局，坚持越久，积分越高。'
+    welcome: '&b激流勇进！&f跟随木筏前进，通过沿途挑战，抵达终点。'
+    follow: '&e跟上木筏！&f自己向前走，留在移动的木板上。'
+    pass: '&e穿过墙洞！&f找准洞口，按需要移动、跳跃或潜行通过。'
+    math: '&e选择正确答案！&f看清题目和选项，穿过对应门洞：左红、右蓝。'
+    color: '&e踩中目标方块！&f每次倒数结束前站到指定方块上，共七轮。'
+    transfer: '&e继续前进！&f木筏重新出发，准备下一个挑战。'
+    dodge: '&e躲开冲刺生物！&f观察来向，侧移避开，别离开木筏。'
+    speed: '&6木筏加速了！&f跟上脚步，注意前方障碍。'
+    rhythm: '&e跟着节拍过门！&f看绿灯、听音符，穿过开启的窗口。'
+    finish: '&a已抵达终点！&f等待本轮结束。'
+    shield-expired: '&6航程达到40%，剩余护盾破碎！'
     color-prompt: '&e请踩：'
-    fall: '&e你离开了木筏。&f正式赛会出局；练习中已将你救回。'
-    wrong-color: '&e你没有踩中目标方块。&f已救回，继续练习下一轮。'
-    hit: '&e你被冲刺生物撞到了。&f已救回，注意生物的来向。'
-    shield-used: '&b护盾抵挡了这次失误！'
-    retry: '&e再试一次！'
+    fall: '&e注意脚下，跟上木筏。'
+    wrong-color: '&e没有踩中目标方块，注意下一轮的提示。'
+    wrong-answer: '&e答案选错了，先读题，再选择对应门洞。'
+    correct-answer: '&a答案正确！'
+    hit: '&e被撞到了，注意来向并提前避开。'
+    shield-used: '&b护盾已消耗。'
+    retry: '&e回到木筏，继续前进！'
+    departure: '&e%arg1% &f秒后出发 · 站稳在木筏上'
+    coach: "&b&l%arg1% &7%arg2%/%arg3%\n&f%arg4%"
+    zone:
+      follow: '&b&l起航营地'
+      pass: '&e&l穿越建筑'
+      math: '&c&l左红 &f· &b&l右蓝'
+      color: '&a&l停泊挑战 · 踩色'
+      dodge: '&a&l停泊挑战 · 躲避'
+      rhythm: '&f&l节奏门'
+      finish: '&a&l救援港'
+    stage:
+      welcome:
+        name: '激流勇进'
+        tip: '跟上木筏，通过挑战，抵达终点'
+      follow:
+        name: '跟随木筏'
+        tip: '自己向前走，留在移动的木板上'
+      pass:
+        name: '穿越建筑'
+        tip: '看清洞口，提前换位'
+      math:
+        name: '红蓝答题门'
+        tip: '看题选答案，左红右蓝，木筏不停'
+      color:
+        name: '停泊 · 踩色'
+        tip: '看目标方块，倒数结束前站上去'
+      transfer:
+        name: '继续航行'
+        tip: '挑战结束等两秒，再跟上木筏'
+      dodge:
+        name: '停泊 · 躲避'
+        tip: '看清来向，侧移避开冲刺生物'
+      speed:
+        name: '后段航行'
+        tip: '船速逐档提高，准备通过节奏门'
+      rhythm:
+        name: '节奏门'
+        tip: '看绿灯听节拍，穿过开启的窗口'
+      finish:
+        name: '抵达救援港'
+        tip: '等待本轮结束'
   championships-core:
     on-enable-1: "依赖"
     on-enable-2: "缺少必要插件=%arg1%，ChampionshipsCore 已关闭"

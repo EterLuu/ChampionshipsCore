@@ -2,6 +2,7 @@ package ink.ziip.championshipscore.listener;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
 import ink.ziip.championshipscore.api.BaseListener;
+import ink.ziip.championshipscore.api.game.craftingfeast.runtime.CraftingFeastArea;
 import ink.ziip.championshipscore.api.game.instance.BaseGameInstance;
 import ink.ziip.championshipscore.api.player.PlayerManager;
 import ink.ziip.championshipscore.api.player.entry.PlayerIdentityMigrationResult;
@@ -279,7 +280,10 @@ public class PlayerListener extends BaseListener {
                             40L);
         }
 
-        player.discoverRecipes(recipeKeys);
+        // A reconnecting cook gets a temporary recipe book from the current match.
+        if (!(plugin.getGameManager().getBasePlayerArea(player.getUniqueId())
+                        instanceof CraftingFeastArea feast)
+                || !feast.managesRecipeBook(player)) player.discoverRecipes(recipeKeys);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

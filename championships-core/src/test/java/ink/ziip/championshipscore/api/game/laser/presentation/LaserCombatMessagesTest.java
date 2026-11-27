@@ -74,8 +74,10 @@ class LaserCombatMessagesTest {
         var config = config();
         var overrides = new YamlConfiguration();
         String defaultHit = LaserCombatMessages.elimination(LaserGun.HitRegion.BODY, "A", "B", "G");
-        Component defaultHint = LaserCombatMessages.itemHint("strike");
+        Component defaultHint =
+                LaserCombatMessages.itemHint("strike", Component.text("定点爆破 · 右键打击敌人"));
         assertFalse(defaultHit.isBlank());
+        assertEquals("定点爆破 · 右键打击敌人", LegacyText.plainText(LegacyText.serialize(defaultHint)));
         assertEquals(NamedTextColor.YELLOW, defaultHint.color());
         overrides.set("laserbox.hit", "");
         overrides.set("laserbox.headshot", "");
@@ -83,15 +85,20 @@ class LaserCombatMessagesTest {
         config.loadFromConfiguration(overrides);
         for (LaserGun.HitRegion region : List.of(LaserGun.HitRegion.BODY, LaserGun.HitRegion.HEAD))
             assertEquals("", LaserCombatMessages.elimination(region, "A", "B", "G"));
-        assertEquals("", LegacyText.serialize(LaserCombatMessages.itemHint("strike")));
+        assertEquals(
+                "",
+                LegacyText.serialize(
+                        LaserCombatMessages.itemHint("strike", Component.text("定点爆破 · 右键打击敌人"))));
         config.loadFromConfiguration(new YamlConfiguration());
         assertEquals(
                 defaultHit,
                 LaserCombatMessages.elimination(LaserGun.HitRegion.BODY, "A", "B", "G"));
-        assertEquals(defaultHint, LaserCombatMessages.itemHint("strike"));
+        assertEquals(
+                defaultHint,
+                LaserCombatMessages.itemHint("strike", Component.text("定点爆破 · 右键打击敌人")));
         overrides.set("laserbox.item-strike", "Uncoloured");
         config.loadFromConfiguration(overrides);
-        assertNull(LaserCombatMessages.itemHint("strike").color());
+        assertNull(LaserCombatMessages.itemHint("strike", Component.text("定点爆破 · 右键打击敌人")).color());
     }
 
     @Test

@@ -47,4 +47,13 @@ public final class HotyCodyDuskyMessages {
 
     @ConfigOption(path = "hotycodydusky.whole-team-was-killed")
     public static String HOTY_CODY_DUSKY_WHOLE_TEAM_WAS_KILLED;
+
+    @ConfigOption(path = "hotycodydusky.intermission")
+    public static String INTERMISSION;
+
+    @ConfigOption(path = "hotycodydusky.immunity")
+    public static String IMMUNITY;
+
+    @ConfigOption(path = "hotycodydusky.scatter")
+    public static String SCATTER;
 }

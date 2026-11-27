@@ -14,7 +14,7 @@ test('resident mode requires idle or a game action and a new absolute stop file'
   assert.throws(() => validateSettings(settings({ mode: 'resident', stopFile: '/tmp/stop', action: 'walk' }), () => false), /requires CC_TEST_ACTION=idle/);
   assert.doesNotThrow(() => validateSettings(settings({ mode: 'resident', stopFile: '/tmp/stop' }), () => false));
   assert.doesNotThrow(() => validateSettings(settings({ mode: 'resident', stopFile: '/tmp/stop', action: 'game', game: 'tntrun' }), () => false));
-  assert.throws(() => validateSettings(settings({ mode: 'resident', stopFile: '/tmp/stop', action: 'game' }), () => false), /requires CC_TEST_GAME/);
+  assert.doesNotThrow(() => validateSettings(settings({ mode: 'resident', stopFile: '/tmp/stop', action: 'game' }), () => false));
 });
 
 test('window mode retains the existing action profiles and stop-file checks', () => {
@@ -69,4 +69,18 @@ test('Core automatic sessions inherit matrix evidence expectations', () => {
   assert.match(settingsValue.expectedActions, /block-dig/);
   assert.equal(settingsValue.expectedScorePackets, 1);
   assert.equal(settingsValue.expectedServerEvidence, 'block-change,item,scoreboard');
+});
+
+test('lease failure releases the Core session and Web identities even when stop fails', async () => {
+  const { runWithCoreSession } = require('../cli');
+  const calls = [];
+  const control = {
+    async start() { calls.push('start'); },
+    async leaseWeb() { throw Error('lease failed'); },
+    async stop() { calls.push('stop'); throw Error('stop failed'); },
+  };
+  await assert.rejects(runWithCoreSession({ coreAutoStop: true, webDisableOnFinish: true }, control,
+    () => assert.fail('clients must wait for leases'), async () => calls.push('disable')),
+  error => error instanceof AggregateError && error.errors.map(e => e.message).join(',') === 'lease failed,stop failed');
+  assert.deepEqual(calls, ['start', 'stop', 'disable']);
 });

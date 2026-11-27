@@ -2,6 +2,34 @@ dont-edit-this:
   version: 63
 map-editor:
   games:
+    craftingfeast:
+      menus:
+        prepare:
+          items:
+            template:
+              title: '保存餐厅模板'
+              lore: ['选取第一间完整餐厅；坐标须与 copy-origin 和所有操作点一致']
+            spawn:
+              title: '工作区出生点'
+              lore: ['站在第一间餐厅工作区的安全位置点击']
+            entrance:
+              title: '顾客入口'
+              lore: ['站在第一间餐厅大门外的地面点击']
+            aisle:
+              title: '前厅通道'
+              lore: ['站在入口通向所有桌位的公共通道点击；每桌须可直达通道']
+            order-counter:
+              title: '点餐停留点'
+              lore: ['站在柜台前顾客停留的位置，面向柜台点击；点餐固定停留 8 秒']
+            queue:
+              title: '点餐排队点'
+              lore: ['由近到远添加柜台后的排队位置，点数即排队容量（最多 32 处）；间隔至少 1.5 格']
+            spectator:
+              title: '观战出生点'
+              lore: ['站在安全的观战位置点击']
+            seats:
+              title: '顾客座位'
+              lore: ['添加第一间餐厅各桌座位，按添加顺序编号；保持入座路线畅通']
     four-arena:
       menus:
         prepare:
@@ -2787,6 +2815,9 @@ spectator:
     separator: " • "
   styles:
     games:
+      craftingfeast:
+        material: SMOKER
+        color: '&#ffaa00'
       bingo:
         material: FILLED_MAP
         color: "&#ff55ff"
@@ -4670,6 +4701,23 @@ daily:
           title: "&#ff5555关闭"
           lore: []
         games:
+          crafting-feast:
+            material: SMOKER
+            title: '&#ffaa00&l合成盛宴'
+            lore:
+              - '&#a0a0a0队内合作经营中式餐厅，完成顾客订单'
+              - '&#a0a0a0地图：&#55ffff%maps%'
+              - '&#a0a0a0排队：%queued%/%min%人 • 倒计时：%countdown%秒'
+              - '&#a0a0a0空闲场地：%slots% • 进行中：%active_sessions%'
+              - '&#a0a0a0满足匹配人数后开局；资源墙采集、木桶取材、原版制作与交付'
+            states:
+              available:
+                title: '&#55ff55&l合成盛宴 · 点击匹配'
+              waiting:
+                title: '&#ffaa00&l合成盛宴 · 等待场地'
+              selected:
+                title: '&#55ffff&l合成盛宴 · 已选择'
+                glint: true
           bingo:
             material: FILLED_MAP
             title: "&#ededed&l宾果飞速"
@@ -6306,6 +6354,28 @@ voting:
           title: "下一页"
           lore: []
         games:
+          iamnotarobot:
+            material: COMPARATOR
+            title: '&b&l人机验证'
+            lore:
+              - '&7同步站位 • 滑块验证 • 立体拼合'
+              - '%bar%'
+              - '&f%votes%票 • %percentage%%'
+              - '&a点击投票'
+          crafting-feast:
+            material: SMOKER
+            title: '&#ffaa00&l合成盛宴'
+            lore:
+              - '&#a0a0a0队内合作 • 餐厅经营 • 限时订单'
+              - '%bar%'
+              - '&#ededed%votes%票 • %percentage%%'
+              - '&#55ff55点击投票'
+            states:
+              selected:
+                title: '&#55ffff&l✓ 合成盛宴'
+                glint: true
+              leading:
+                title: '&#ffaa00&l★ 合成盛宴'
           bingo:
             material: FILLED_MAP
             title: "&#ededed&l宾果飞速"
@@ -6600,8 +6670,8 @@ voting:
             states:
               available:
                 lore:
-                  - "&#696969传递 • 生存赛"
-                  - "&#a0a0a0把烫手鳕鱼传给对手并坚持到最后"
+                  - "&#696969传鱼 • 整蛊追逐"
+                  - "&#a0a0a0被标记就拍人传鱼，倒数一到，鳕鱼来抓人！"
                   - ""
                   - "%bar%"
                   - "&#ededed%votes%票 &#696969• %percentage%%"
@@ -6611,8 +6681,8 @@ voting:
                 title: "&#55ffff&l✓ 烫手鳕鱼"
                 glint: true
                 lore:
-                  - "&#696969传递 • 生存赛"
-                  - "&#a0a0a0把烫手鳕鱼传给对手并坚持到最后"
+                  - "&#696969传鱼 • 整蛊追逐"
+                  - "&#a0a0a0被标记就拍人传鱼，倒数一到，鳕鱼来抓人！"
                   - ""
                   - "%bar%"
                   - "&#ededed%votes%票 &#696969• %percentage%%"
@@ -6622,8 +6692,8 @@ voting:
               leading:
                 title: "&#ffaa00&l★ 烫手鳕鱼"
                 lore:
-                  - "&#696969传递 • 生存赛"
-                  - "&#a0a0a0把烫手鳕鱼传给对手并坚持到最后"
+                  - "&#696969传鱼 • 整蛊追逐"
+                  - "&#a0a0a0被标记就拍人传鱼，倒数一到，鳕鱼来抓人！"
                   - ""
                   - "%bar%"
                   - "&#ededed%votes%票 &#696969• %percentage%%"

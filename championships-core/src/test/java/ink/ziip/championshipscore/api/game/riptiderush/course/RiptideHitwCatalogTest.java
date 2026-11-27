@@ -284,7 +284,7 @@ class RiptideHitwCatalogTest {
     }
 
     @Test
-    void bundledDefaultPoolMatchesTheCurrentCatalogAndFormat() throws Exception {
+    void bundledTemplateOmitsDuplicatedPoolAndLoadsCurrentCatalogDynamically() throws Exception {
         var defaults = new YamlConfiguration();
         try (var reader =
                 new InputStreamReader(
@@ -298,13 +298,19 @@ class RiptideHitwCatalogTest {
                 defaults.getInt("dont-edit-this.version"));
         // Operator marker documented in docs/02-games/07-riptide-hitw-catalog.md.
         assertEquals(5, defaults.getInt("course.hitw-catalog-version"));
-        var rows =
-                defaults.getMapList("course.pool").stream()
-                        .map(RiptideLevelTemplate::parse)
-                        .toList();
+        assertFalse(defaults.isSet("course.pool"));
+        var config =
+                new RiptideRushConfig(
+                        ink.ziip.championshipscore.support.TestObjects.allocate(
+                                ink.ziip.championshipscore.ChampionshipsCore.class),
+                        "template-check");
+        config.loadFromConfiguration(defaults);
         assertEquals(
                 new HashSet<>(RiptideRushConfig.defaultPool()),
-                new HashSet<>(rows.stream().map(RiptideLevelTemplate::serialize).toList()));
+                new HashSet<>(
+                        config.resolvePool().stream()
+                                .map(RiptideLevelTemplate::serialize)
+                                .toList()));
     }
 
     @Test

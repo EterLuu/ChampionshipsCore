@@ -1,6 +1,7 @@
-const { actionProfile } = require('./profiles');
-const { PhaseTracker } = require('./phase');
-const { runProfileTick } = require('./profiles');
+const { ClientMovement } = require('./movement');
+const { VerificationPickaxe } = require('./profiles/verification-pickaxe');
+const { actionProfile, announcedGame, runProfileTick } = require('./profiles');
+const { packetText, PhaseTracker } = require('./phase');
 
 function dialogNbt(values) {
   const value = {};
@@ -22,15 +23,24 @@ function compactPacketValue(value, depth = 0) {
 
 // The protocol library handles configuration; the application owns teleport acknowledgements.
 function attachClient(client, settings, index, result, state, timers = globalThis) {
+  const version = settings.version || '26.3';
+  const data = require('minecraft-data')(version);
+  const movement = new ClientMovement(client, version);
+  const automatic = settings.action === 'game' && !settings.game;
+  let profile = actionProfile(settings);
+  let memory = {};
+  let tick = 0;
+  const itemName = item => item && item.itemCount !== 0
+    ? data.items[item.itemId]?.name || item.name : null;
   let actionTimer = null;
   let actionStartTimer = null;
   let position = null;
   let origin = null;
+  let loadingAcknowledged = false;
   let step = 0;
   let sequence = 0;
   const initialPhase = state.phase || 'WAITING';
-  const phaseTracker = new PhaseTracker(settings.action === 'game'
-    ? (actionProfile(settings).markers || {}) : {}, initialPhase);
+  let phaseTracker = new PhaseTracker(profile.markers, initialPhase);
   state.phase = phaseTracker.phase;
   state.phaseTransitions = state.phaseTransitions || [];
   state.mechanismPackets = state.mechanismPackets || {};
@@ -92,7 +102,7 @@ function attachClient(client, settings, index, result, state, timers = globalThi
     const phase = state.phase || 'WAITING';
     phases[phase] = (phases[phase] || 0) + 1;
   };
-  const nextSequence = () => sequence++;
+  const nextSequence = () => ++sequence;
   const entityLocation = entityId => {
     const entity = state.entities.get(entityId);
     if (!entity || ![entity.x, entity.y, entity.z].every(Number.isFinite)) return { x: 0, y: 0, z: 0 };
@@ -119,10 +129,12 @@ function attachClient(client, settings, index, result, state, timers = globalThi
   };
   const selectHeldSlot = slot => {
     if (!Number.isInteger(slot) || slot < 0 || slot > 8) return false;
+    if (slot === state.heldSlot) return true;
     client.write('held_item_slot', { slotId: slot });
     state.heldSlot = slot;
     return true;
   };
+  const pickaxe = new VerificationPickaxe(movement, state, selectHeldSlot, nextSequence);
   const rememberBlock = location => {
     if (!location) return;
     state.recentBlocks.push({ x: location.x, y: location.y, z: location.z });
@@ -134,16 +146,29 @@ function attachClient(client, settings, index, result, state, timers = globalThi
     actionTimer = null;
     actionStartTimer = null;
   };
-  const resetWorld = (preservePhase = false) => {
+  const resetWorld = (preservePhase = false, disconnecting = false) => {
     stopActions();
     position = null;
     origin = null;
+    loadingAcknowledged = false;
     step = 0;
     state.worldReady = false;
     state.voteSent = false;
     state.targetBlock = null;
     state.recentBlocks = [];
     state.entities.clear();
+    state.hotbar = new Array(9).fill(null);
+    state.inventorySlots = {};
+    memory = {};
+    if (automatic && !disconnecting && (!preservePhase || movement.worldName !== state.gameWorld)) {
+      state.gameWorld = movement.worldName;
+      state.detectedGame = null;
+      profile = actionProfile(settings);
+      phaseTracker = new PhaseTracker();
+    } else if (automatic && state.detectedGame) {
+      profile = actionProfile({ ...settings, game: state.detectedGame });
+      phaseTracker = new PhaseTracker(profile.markers, phaseTracker.phase);
+    }
     if (!preservePhase) phaseTracker.reset();
     state.phase = phaseTracker.phase;
   };
@@ -153,6 +178,7 @@ function attachClient(client, settings, index, result, state, timers = globalThi
       increment('deaths');
       state.lastDeathAt = new Date().toISOString();
     }
+    pickaxe.cancel();
     state.dead = true;
     state.worldReady = false;
     stopActions();
@@ -167,64 +193,88 @@ function attachClient(client, settings, index, result, state, timers = globalThi
   };
   const startActions = () => {
     stopActions();
-    const profile = actionProfile(settings);
+    let cadenceLeft = 50;
     // Folia can deliver the world position before the destination region has finished its
     // first ticks. Let the server settle the cross-world teleport before sending movement.
     actionStartTimer = timers.setTimeout(() => {
       actionStartTimer = null;
       actionTimer = timers.setInterval(() => {
         if (client.state !== 'play' || position == null || state.dead || state.stopRequested) return;
-        step += 1;
-        if (settings.action === 'game') {
-          const actionContext = {
-            client,
-            index,
-            step,
-            phase: state.phase,
-            position,
-            origin,
-            entityId: state.entityId,
-            window: state.window,
-            voteSent: state.voteSent,
-            voteSlot: settings.voteSlot,
-            submitSlot: settings.submitSlot,
-            menuSlot: settings.menuSlot,
-            menuSent: state.menuSent,
-            targetBlock: state.targetBlock,
-            recentBlocks: state.recentBlocks,
-            hotbar: state.hotbar,
-            inventory: state.inventorySlots,
-            heldSlot: state.heldSlot,
-            selectHeldSlot,
-            allowWorldMutation: settings.allowWorldMutation === true,
-            nextSequence,
-            nearestEntity,
-            entityLocation,
-            record,
-          };
-          const emitted = runProfileTick(profile, actionContext);
-          if (actionContext.voteSent !== undefined) state.voteSent = actionContext.voteSent;
-          if (actionContext.menuSent !== undefined) state.menuSent = actionContext.menuSent;
-          result.actionPackets += emitted;
-        } else if (profile.kind === 'walk' || profile.kind === 'bingo-walk') {
-          // Movement profiles are deliberately bounded client input. bingo-walk keeps the
-          // same bounded path but reports an on-ground movement suitable for WALK_ONE_CM tasks.
-          const extent = profile.kind === 'bingo-walk' ? 8 : 40;
-          const phase = step % (extent * 2);
-          const stride = profile.stride || 0.05;
-          position.x = origin.x + (phase < extent ? phase : extent * 2 - phase) * stride;
-          client.write('position', { x: position.x, y: position.y, z: position.z,
-            flags: { onGround: profile.kind === 'bingo-walk', hasHorizontalCollision: false } });
-        } else if (profile.kind === 'look' && step % 10 === 0) {
-          client.write('look', { yaw: position.yaw + (index % 2 === 0 ? 1 : -1) * (step % 8) * (profile.yawStep || 3),
-            pitch: position.pitch, flags: { onGround: false, hasHorizontalCollision: false } });
+        const pending = movement.pendingAction;
+        movement.pendingAction = null;
+        pending?.();
+        tick++;
+        cadenceLeft -= 50;
+        if (cadenceLeft <= 0) {
+          cadenceLeft += profile.cadenceMs || 50;
+          movement.beginDecision();
+          step += 1;
+          if (settings.action === 'game') {
+            const actionContext = {
+              client: movement,
+              index,
+              step,
+              phase: state.phase,
+              position: { ...position },
+              origin,
+              entityId: state.entityId,
+              window: state.window,
+              voteSent: state.voteSent,
+              voteSlot: settings.voteSlot,
+              submitSlot: settings.submitSlot,
+              menuSlot: settings.menuSlot,
+              menuSent: state.menuSent,
+              targetBlock: state.targetBlock,
+              recentBlocks: state.recentBlocks,
+              entities: state.entities,
+              memory, tick,
+              pickaxe,
+              walkingHeading: (angle, side) => movement.walkingHeading(angle, side),
+              fleeFrom: (threats, bearing) => movement.navigator.escapeHeading(movement.player, threats, bearing, tick),
+              navigate: (goal, mode) => movement.navigator.heading(movement.player, goal, mode, tick),
+              afterMove: (fn, target) => {
+                const decision = memory, slot = state.heldSlot, item = state.hotbar[slot], role = state.hotbar[4];
+                movement.intent.afterMove = () => {
+                  if (decision !== memory || role !== state.hotbar[4] || slot !== state.heldSlot
+                    || state.hotbar[slot] !== item) return;
+                  const hit = target && movement.crosshairIntersection(target, state.entities);
+                  if (!target || hit) fn(hit);
+                };
+              },
+              hotbar: state.hotbar,
+              inventory: state.inventorySlots,
+              heldSlot: state.heldSlot,
+              selectHeldSlot,
+              allowWorldMutation: settings.allowWorldMutation === true,
+              nextSequence,
+              nearestEntity,
+              entityLocation,
+              record,
+            };
+            const emitted = runProfileTick(profile, actionContext);
+            if (actionContext.voteSent !== undefined) state.voteSent = actionContext.voteSent;
+            if (actionContext.menuSent !== undefined) state.menuSent = actionContext.menuSent;
+            result.actionPackets += emitted;
+          } else if (profile.kind === 'walk' || profile.kind === 'bingo-walk') {
+            // Both walk profiles use a bounded horizontal path.
+            const extent = profile.kind === 'bingo-walk' ? 8 : 40;
+            const phase = step % (extent * 2);
+            const stride = profile.stride || 0.05;
+            const x = origin.x + (phase < extent ? phase : extent * 2 - phase) * stride;
+            movement.write('position', { x, y: position.y, z: position.z,
+              flags: { onGround: profile.kind === 'bingo-walk', hasHorizontalCollision: false } });
+          } else if (profile.kind === 'look' && step % 10 === 0) {
+            movement.write('look', { yaw: position.yaw + (index % 2 === 0 ? 1 : -1) * (step % 8) * (profile.yawStep || 3),
+              pitch: position.pitch, flags: { onGround: false, hasHorizontalCollision: false } });
+          }
+          if (settings.action !== 'game' && (profile.kind === 'walk' || profile.kind === 'bingo-walk'
+            || (profile.kind === 'look' && step % 10 === 0))
+          ) result.actionPackets += 1;
         }
-        if (settings.action !== 'game' && (profile.kind === 'walk' || profile.kind === 'bingo-walk'
-          || (profile.kind === 'look' && step % 10 === 0))
-        ) result.actionPackets += 1;
+        movement.tick(position, state.hotbar[state.heldSlot], state.inventorySlots[45]);
         // Since 26.3 the server rejects a second position before a client tick-end boundary.
         client.write('tick_end', {});
-      }, profile.cadenceMs || profile.intervalMs || 50);
+      }, 50);
     }, 1000);
   };
   client.on('success', packet => {
@@ -236,20 +286,36 @@ function attachClient(client, settings, index, result, state, timers = globalThi
         || !packet.uuid || state.currentReconnect.uuidBefore === packet.uuid;
     }
   });
-  client.on('entity_spawn', packet => {
-    if (Number.isInteger(packet.entityId)) {
-      state.entities.set(packet.entityId, packet);
-      serverEvidence('entity-spawn');
-      state.observations.entitySpawns += 1;
-      evidence('entities', { event: 'spawn', entityId: packet.entityId, type: packet.type ?? packet.entityType });
+  function spawnEntity(packet, type) {
+    if (!Number.isInteger(packet.entityId)) return;
+    state.entities.set(packet.entityId, { ...packet, type });
+    serverEvidence('entity-spawn');
+    state.observations.entitySpawns += 1;
+    evidence('entities', { event: 'spawn', entityId: packet.entityId, type });
+  }
+  client.on('spawn_entity', p => spawnEntity(p, data.entities[p.type]?.name || p.type));
+  client.on('named_entity_spawn', p => spawnEntity(p, 'player'));
+  client.on('entity_equipment', p => {
+    if (p.entityId === movement.entityId) {
+      const boots = p.equipments.find(e => e.slot === 2);
+      if (boots) movement.leatherBoots = itemName(boots.item) === 'leather_boots';
+    }
+    const entity = state.entities.get(p.entityId);
+    if (entity?.type !== 'player' && entity?.type !== 'mannequin') return;
+    for (const { slot, item } of p.equipments) {
+      if (slot === 5) entity.helmet = itemName(item);
+      if (slot === 0) entity.hand = itemName(item);
     }
   });
-  client.on('named_entity_spawn', packet => {
-    if (Number.isInteger(packet.entityId)) {
-      state.entities.set(packet.entityId, packet);
-      serverEvidence('entity-spawn');
-      state.observations.entitySpawns += 1;
-      evidence('entities', { event: 'named-spawn', entityId: packet.entityId, name: packet.name });
+  client.on('entity_metadata', p => {
+    const entity = state.entities.get(p.entityId);
+    if (!entity) return;
+    for (const entry of p.metadata) {
+      if ((automatic || profile.game === 'craftingfeast') && entry.key === 2) entity.customName = packetText(entry.value);
+      if (entity.type === 'text_display' && entry.type === 'component') entity.text = packetText(entry.value);
+      if (entry.key === 0) entity.flags = entry.value;
+      if ((entity.type === 'item_display' || entity.type === 'item') && entry.type === 'item_stack')
+        entity.displayItem = itemName(entry.value);
     }
   });
   client.on('entity_destroy', packet => {
@@ -265,14 +331,13 @@ function attachClient(client, settings, index, result, state, timers = globalThi
     if (!Number.isInteger(packet.entityId)) return;
     const entity = state.entities.get(packet.entityId);
     if (!entity) return;
-    if (absolute) {
-      if (Number.isFinite(packet.x)) entity.x = packet.x;
-      if (Number.isFinite(packet.y)) entity.y = packet.y;
-      if (Number.isFinite(packet.z)) entity.z = packet.z;
-    } else {
-      if (Number.isFinite(packet.dX)) entity.x = (entity.x || 0) + packet.dX;
-      if (Number.isFinite(packet.dY)) entity.y = (entity.y || 0) + packet.dY;
-      if (Number.isFinite(packet.dZ)) entity.z = (entity.z || 0) + packet.dZ;
+    const delta = packet.delta || packet;
+    for (const [i, key] of ['x', 'y', 'z'].entries()) {
+      if (absolute && Number.isFinite(packet[key])) {
+        entity[key] = packet[key] + ((packet.flags & (1 << i)) ? entity[key] : 0);
+      } else if (!absolute && Number.isFinite(delta['d' + key.toUpperCase()])) {
+        entity[key] += delta['d' + key.toUpperCase()];
+      }
     }
     if (Number.isFinite(packet.yaw)) entity.yaw = packet.yaw;
     if (Number.isFinite(packet.pitch)) entity.pitch = packet.pitch;
@@ -280,6 +345,11 @@ function attachClient(client, settings, index, result, state, timers = globalThi
   client.on('rel_entity_move', packet => moveEntity(packet, false));
   client.on('entity_move_look', packet => moveEntity(packet, false));
   client.on('entity_teleport', packet => moveEntity(packet, true));
+  client.on('sync_entity_position', packet => {
+    const path = packet.position.path;
+    const end = path.endPosition || path.steps?.at(-1)?.position;
+    if (end) moveEntity({ ...end, entityId: packet.entityId }, true);
+  });
   client.on('block_change', packet => {
     const location = packet.location || packet.position;
     if (!location || !Number.isInteger(location.x) || !Number.isInteger(location.y) || !Number.isInteger(location.z)) return;
@@ -305,9 +375,19 @@ function attachClient(client, settings, index, result, state, timers = globalThi
   client.on('close_window', () => { state.window = null; });
   const updateInventory = (slot, item) => {
     if (!Number.isInteger(slot)) return;
-    state.inventorySlots[slot] = item || null;
-    if (slot >= 36 && slot <= 44) state.hotbar[slot - 36] = item || null;
+    const stack = item && item.itemCount !== 0 ? { ...item, name: itemName(item) } : null;
+    state.inventorySlots[slot] = stack;
+    if (slot === 8) movement.leatherBoots = stack?.name === 'leather_boots';
+    if (slot >= 36 && slot <= 44) state.hotbar[slot - 36] = stack;
   };
+  client.on('set_player_inventory', ({ slotId, contents }) => {
+    if (slotId === 36) updateInventory(8, contents);
+    if (slotId >= 0 && slotId < 36) {
+      serverEvidence('item');
+      updateInventory(slotId < 9 ? 36 + slotId : slotId, contents);
+    }
+  });
+  client.on('held_item_slot', ({ slot }) => { state.heldSlot = slot; });
   client.on('set_slot', packet => {
     serverEvidence('item');
     if (state.window && packet.windowId === state.window.windowId && Number.isInteger(packet.stateId))
@@ -404,11 +484,9 @@ function attachClient(client, settings, index, result, state, timers = globalThi
   });
   client.on('update_health', packet => { if (packet.health <= 0) died(); });
   client.on('death_combat_event', packet => {
-    observe('death_combat_event', packet);
     if (state.entityId != null && packet.playerId === state.entityId) died();
   });
   client.on('respawn', () => {
-    observe('respawn', {});
     if (state.dead) increment('deathRespawns');
     increment('respawnPackets');
     state.dead = false;
@@ -416,6 +494,20 @@ function attachClient(client, settings, index, result, state, timers = globalThi
     resetWorld(true);
   });
   client.on('start_configuration', () => resetWorld(false));
+  const readyWhenTerrainArrives = () => {
+    if (state.worldReady || state.dead || !position || !movement.column(position.x, position.z)) return;
+    if (!loadingAcknowledged) {
+      client.write('player_loaded', {});
+      loadingAcknowledged = true;
+    }
+    state.worldReady = true;
+    if (state.currentReconnect) state.currentReconnect.worldReadyAfter = true;
+    if (actionTimer == null && actionStartTimer == null) startActions();
+  };
+  client.on('map_chunk', readyWhenTerrainArrives);
+  client.on('player_rotation', packet => {
+    if (position && movement.player) movement.rotate(position, packet);
+  });
   client.on('position', packet => {
     const previous = position || { x: 0, y: 0, z: 0, yaw: 0, pitch: 0 };
     const next = {};
@@ -424,18 +516,19 @@ function attachClient(client, settings, index, result, state, timers = globalThi
     }
     if (!Object.values(next).every(Number.isFinite)) throw new Error('invalid server position');
     position = next;
-    origin = { ...next };
-    step = 0;
+    movement.teleport(next, packet);
+    if (profile.game !== 'hotycodydusky' || !origin || Math.hypot(previous.x - next.x, previous.z - next.z) > 8) {
+      origin = { ...next };
+      step = 0;
+    }
     // Protocol 777 includes the resolved position/rotation in the confirmation itself.
     client.write('teleport_confirm', { teleportId: packet.teleportId, ...next });
     client.write('tick_end', {});
     result.teleportConfirmations += 1;
     state.teleportConfirmations = (state.teleportConfirmations || 0) + 1;
-    if (!state.dead) {
-      state.worldReady = true;
-      if (state.currentReconnect) state.currentReconnect.worldReadyAfter = true;
-      startActions();
-    }
+    state.worldReady = false;
+    if (!movement.column(next.x, next.z)) stopActions();
+    readyWhenTerrainArrives();
   });
   client.on('show_dialog', packet => {
     const text = JSON.stringify(packet.dialog || packet);
@@ -450,6 +543,7 @@ function attachClient(client, settings, index, result, state, timers = globalThi
     result.authDialogSubmissions += 1;
     state.authDialogSubmissions = (state.authDialogSubmissions || 0) + 1;
   });
+  client.on('ping', ({ id }) => { if (client.state === 'play') client.write('pong', { id }); });
   client.on('keep_alive', () => {
     state.keepAliveRequests = (state.keepAliveRequests || 0) + 1;
     state.lastKeepAliveAt = new Date().toISOString();
@@ -470,12 +564,25 @@ function attachClient(client, settings, index, result, state, timers = globalThi
     // Keep the last observed game phase for a reconnect. The server may not repeat its
     // title/actionbar immediately after login, and resuming the wrong lobby actions is worse
     // than waiting for a fresh phase signal.
-    resetWorld(true);
+    resetWorld(true, true);
   });
   function observe(packetName, packet) {
+    if (automatic && ['action_bar', 'set_title_text', 'set_title_subtitle'].includes(packetName)) {
+      const game = announcedGame(packetName, packetText(packet));
+      if (game !== undefined && game !== state.detectedGame) {
+        profile = actionProfile({ ...settings, game });
+        state.detectedGame = game;
+        state.gameWorld = movement.worldName;
+        phaseTracker = new PhaseTracker(profile.markers);
+        memory = {};
+      }
+    }
     const transition = phaseTracker.observe(packetName, packet);
     state.phase = phaseTracker.phase;
     if (transition) {
+      pickaxe.cancel();
+      movement.navigator.reset();
+      memory = {};
       state.phaseTransitions.push(transition);
       if (transition.to === 'VOTING') state.voteSent = false;
       if (transition.to === 'PREPARATION') state.menuSent = false;

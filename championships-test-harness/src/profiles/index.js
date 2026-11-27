@@ -1,7 +1,12 @@
 const packets = require('../packets');
+const { playHotyCodyDusky } = require('./hotycodydusky');
 const { gameContract, supportedMatrixGames } = require('../matrix');
 
+const verificationPlayTitle = /^(?:请验证你是人类\.{3}开始！|第三关\s*·\s*向右推动滑块到底，完全嵌合)$/;
+
 const PROFILE_DEFINITIONS = {
+  iamnotarobot: { kind: 'walk', cadenceMs: 50, interaction: 'block-dig',
+    markers: { activePlay: verificationPlayTitle } },
   bingo: { kind: 'bingo-walk', cadenceMs: 250, stride: 0.25, grounded: true, interaction: 'swing', mechanism: 'task-progress' },
   tntrun: { kind: 'walk', cadenceMs: 80, stride: 0.1, sprint: true, jumpEvery: 12, interaction: 'swing', mechanism: 'floor-break' },
   parkourtag: { kind: 'walk', cadenceMs: 80, stride: 0.1, sprint: true, jumpEvery: 8, interaction: 'look', mechanism: 'tag-chase' },
@@ -11,13 +16,15 @@ const PROFILE_DEFINITIONS = {
   tgttos: { kind: 'walk', cadenceMs: 70, stride: 0.12, sprint: true, jumpEvery: 5, interaction: 'look', mechanism: 'parkour-finish' },
   dragoneggcarnival: { kind: 'walk', cadenceMs: 100, stride: 0.08, sprint: true, jumpEvery: 14, interaction: 'entity', mechanism: 'egg-objective' },
   parkourwarrior: { kind: 'walk', cadenceMs: 70, stride: 0.1, sprint: true, jumpEvery: 4, interaction: 'look', mechanism: 'checkpoint' },
-  hotycodydusky: { kind: 'walk', cadenceMs: 100, stride: 0.08, sprint: true, jumpEvery: 10, interaction: 'look', mechanism: 'zone-objective' },
+  hotycodydusky: { kind: 'walk', cadenceMs: 100, interaction: 'entity',
+    markers: { activePlay: /鳕鱼点名啦|鳕鱼抓人倒数/ } },
   buildmart: { kind: 'walk', cadenceMs: 120, stride: 0.06, interaction: 'build', mechanism: 'collect-place-submit' },
   dodgebolt: { kind: 'look', cadenceMs: 180, yawStep: 8, interaction: 'combat', mechanism: 'arrow-round' },
   acerace: { kind: 'walk', cadenceMs: 70, stride: 0.12, sprint: true, jumpEvery: 6, interaction: 'look', mechanism: 'checkpoint-race' },
   riptide: { kind: 'walk', cadenceMs: 70, stride: 0.12, sprint: true, jumpEvery: 8, interaction: 'use-item', mechanism: 'raft-stage' },
   frostbite: { kind: 'look', cadenceMs: 180, yawStep: 6, interaction: 'use-item', mechanism: 'freeze-cycle' },
   laserbox: { kind: 'look', cadenceMs: 180, yawStep: 8, interaction: 'swing', mechanism: 'two-target-laser' },
+  craftingfeast: { kind: 'walk', cadenceMs: 150, stride: 0.12, interaction: 'entity', mechanism: 'take-order' },
   sulfursoccer: { kind: 'walk', cadenceMs: 100, stride: 0.08, sprint: true, jumpEvery: 10, targetEntityTypes: ['sulfur_cube'], interaction: 'combat', mechanism: 'kick-pearl-score' },
 };
 
@@ -40,13 +47,30 @@ const GAME_PROFILES = Object.freeze(Object.fromEntries(
 if (Object.keys(GAME_PROFILES).some(game => !supportedMatrixGames().includes(game)))
   throw new Error('game action profile is missing from the executable test matrix');
 
+const GAME_TITLES = new Map(Object.entries({
+  '人机验证': 'iamnotarobot', 'I am not a ROBOT': 'iamnotarobot',
+  '宾果飞速': 'bingo', '跑酷追击': 'parkourtag', '斗战方框': 'battlebox', 'TNT飞跃': 'tntrun',
+  '激光乱斗': 'lasershowdown', '空岛乱斗': 'skywars', '去到另一边': 'tgttos',
+  '龙蛋狂欢': 'dragoneggcarnival', '跑路战士': 'parkourwarrior', '烫手鳕鱼': 'hotycodydusky',
+  '匹配赛建': 'buildmart', '躲避箭': 'dodgebolt', '王牌竞速': 'acerace', '激流勇进': 'riptide',
+  '霜冻决斗': 'frostbite', '激光方盒': 'laserbox', '硫方足球': 'sulfursoccer', '合成盛宴': 'craftingfeast',
+}));
+
+function announcedGame(packetName, text) {
+  if (packetName === 'set_title_text')
+    return verificationPlayTitle.test(text) ? 'iamnotarobot' : GAME_TITLES.get(text);
+  const header = text.match(/^([^•]+?)\s*•\s*(?:开赛|即将开始)$/);
+  if (header) return GAME_TITLES.get(header[1].trim()) ?? null;
+  if (/^(鳕鱼点名啦|第\s*\d+\s*趟\s*•\s*鳕鱼抓人倒数)/.test(text)) return 'hotycodydusky';
+}
+
 function actionProfile(settings) {
   if (settings.action !== 'game') {
     if (settings.action === 'bingo-walk') return GAME_PROFILES.bingo;
     return { kind: settings.action, cadenceMs: 50, stride: 0.05, yawStep: 3 };
   }
   return GAME_PROFILES[String(settings.game || '').toLowerCase()] || {
-    kind: 'walk', cadenceMs: 100, stride: 0.08, yawStep: 3,
+    kind: 'observe', cadenceMs: 100,
   };
 }
 
@@ -159,7 +183,7 @@ function doJump(ctx) {
 }
 
 function doUse(ctx, mechanism) {
-  packets.useItem(ctx.client, ctx.nextSequence());
+  packets.useItem(ctx.client, ctx.nextSequence(), 0, { x: ctx.position.yaw, y: ctx.position.pitch });
   ctx.record('actionTypes', 'use-item');
   recordMechanism(ctx, mechanism);
 }
@@ -171,7 +195,7 @@ function doSwing(ctx, mechanism) {
 }
 
 function doInteract(ctx, entityId, mechanism) {
-  packets.useEntity(ctx.client, entityId, locationOf(ctx, entityId) || { x: 0, y: 0, z: 0 });
+  packets.useEntity(ctx.client, entityId, { x: 0, y: 0.5, z: 0 });
   ctx.record('actionTypes', 'entity-interact');
   recordMechanism(ctx, mechanism);
 }
@@ -234,18 +258,33 @@ function stepToward(ctx, location, profile, speed = 0.2) {
 // ---------------------------------------------------------------------------
 
 function runner(ctx, profile) {
-  walkPattern(ctx, profile);
-  if (profile.actions.includes('sprint')) doSprint(ctx);
-  if (profile.actions.includes('jump') && (!profile.jumpEvery || (ctx.step || 0) % profile.jumpEvery === 0))
+  // Start along the course's spawn facing. A local detour can carry the runner
+  // around a wall, then the next decision tries the original heading again.
+  const pos = ctx.position;
+  const heading = ((ctx.origin?.yaw ?? pos.yaw) + 90) * Math.PI / 180;
+  const way = ctx.walkingHeading(heading, ctx.index % 2 ? -1 : 1);
+  if (way) {
+    const stride = 0.27;
+    pos.yaw = way.angle * 180 / Math.PI - 90;
+    packets.positionLook(ctx.client, { ...pos, x: pos.x + Math.cos(way.angle) * stride,
+      z: pos.z + Math.sin(way.angle) * stride }, true);
+    ctx.record('actionTypes', 'move');
+    recordMechanism(ctx, profile.mechanism);
+  }
+  if (profile.actions.includes('sprint') && !ctx.memory.sprinting) {
+    doSprint(ctx);
+    ctx.memory.sprinting = true;
+  }
+  if (profile.actions.includes('jump') && (way?.jump || !profile.jumpEvery || (ctx.step || 0) % profile.jumpEvery === 0))
     doJump(ctx);
-  if (profile.actions.includes('look') && (ctx.step || 0) % 4 === 0) lookAround(ctx, profile, null);
+  if (way && profile.actions.includes('look')) ctx.record('actionTypes', 'look');
   if (profile.actions.includes('swing')
     && (ctx.step || 0) % (profile.jumpEvery ? profile.jumpEvery * 2 : 20) === 0) doSwing(ctx, profile.mechanism);
   return 1;
 }
 
 function laserFighter(ctx, profile) {
-  const target = ctx.nearestEntity(20);
+  const target = ctx.nearestEntity(20, ['player']);
   const location = locationOf(ctx, target);
   if (location) aimAt(ctx, location);
   doSwing(ctx, profile.mechanism);
@@ -254,6 +293,14 @@ function laserFighter(ctx, profile) {
 }
 
 const GAME_BEHAVIORS = {
+  iamnotarobot(ctx, profile) {
+    if (!ctx.allowWorldMutation) return 0;
+    const action = ctx.pickaxe.workJoint(ctx.position, ctx.index, ctx.tick);
+    if (!action) return 0;
+    ctx.record('actionTypes', action);
+    if (action === 'block-dig') recordMechanism(ctx, profile.mechanism);
+    return 1;
+  },
   bingo(ctx, profile) {
     const mob = ctx.nearestEntity(6);
     const block = nearestObservedBlock(ctx) || blockTarget(ctx);
@@ -273,25 +320,38 @@ const GAME_BEHAVIORS = {
   tntrun(ctx, profile) { return runner(ctx, profile); },
   tgttos(ctx, profile) { return runner(ctx, profile); },
   parkourwarrior(ctx, profile) { return runner(ctx, profile); },
-  hotycodydusky(ctx, profile) { return runner(ctx, profile); },
+  hotycodydusky: playHotyCodyDusky,
   acerace(ctx, profile) { return runner(ctx, profile); },
   riptide(ctx, profile) { return runner(ctx, profile); },
 
   parkourtag(ctx, profile) {
-    const target = ctx.nearestEntity(24);
-    const location = locationOf(ctx, target);
-    if (target != null && location) {
-      aimAt(ctx, location);
-      if (distanceTo(ctx, location) > 3.5) stepToward(ctx, location, profile, 0.3);
-      else doUse(ctx, 'tag-chase');
-    } else {
-      runner(ctx, profile);
+    const kit = ctx.hotbar[0]?.name;
+    if (kit !== 'feather' && kit !== 'ender_eye') return 0;
+    const chaser = kit === 'feather';
+    let opponent = null, closest = 48;
+    for (const e of ctx.entities.values()) {
+      if (e.type !== 'player' || e.hand !== (chaser ? 'ender_eye' : 'feather')) continue;
+      const d = distanceTo(ctx, e);
+      if (d < closest) { closest = d; opponent = e; }
+    }
+    if (opponent && chaser && closest <= 2.9 && ctx.tick >= (ctx.memory.tagReady ?? 0)) {
+      doAttack(ctx, opponent.entityId, 'tag-chase');
+      ctx.memory.tagReady = ctx.tick + 8;
+    } else if (opponent) {
+      const destination = chaser ? opponent : { x: 2 * ctx.position.x - opponent.x,
+        z: 2 * ctx.position.z - opponent.z };
+      stepToward(ctx, destination, profile, chaser ? 0.33 : 0.25);
+    } else runner(ctx, profile);
+    if (ctx.tick >= (ctx.memory.toolReady ?? 0)) {
+      if (ctx.heldSlot !== 0) ctx.selectHeldSlot(0);
+      doUse(ctx, profile.mechanism);
+      ctx.memory.toolReady = ctx.tick + 200;
     }
     return 1;
   },
 
   battlebox(ctx, profile) {
-    const target = ctx.nearestEntity(6);
+    const target = ctx.nearestEntity(24, ['player']);
     const location = locationOf(ctx, target);
     if (target != null && location && distanceTo(ctx, location) <= 4.5) {
       selectWeapon(ctx);
@@ -299,11 +359,11 @@ const GAME_BEHAVIORS = {
       if ((ctx.step || 0) % 3 === 0) doUse(ctx, 'weapon-combat');
       return 1;
     }
-    // Nothing in melee range: equip the kit, keep the target in view and close in.
+    // Keep the kit equipped while closing the distance.
     selectWeapon(ctx);
     if (location) {
       aimAt(ctx, location);
-      recordMechanism(ctx, 'weapon-combat');
+      stepToward(ctx, location, profile, 0.28);
     } else {
       lookAround(ctx, profile, 'weapon-combat');
     }
@@ -317,7 +377,7 @@ const GAME_BEHAVIORS = {
   laserbox(ctx, profile) { return laserFighter(ctx, profile); },
 
   skywars(ctx, profile) {
-    const target = ctx.nearestEntity(16);
+    const target = ctx.nearestEntity(16, ['player']);
     const location = locationOf(ctx, target);
     if (target != null && location && distanceTo(ctx, location) <= 4.5) {
       selectWeapon(ctx);
@@ -365,20 +425,56 @@ const GAME_BEHAVIORS = {
   },
 
   dodgebolt(ctx, profile) {
-    const target = ctx.nearestEntity(20);
-    const location = locationOf(ctx, target);
-    if (location) aimAt(ctx, location);
-    // Bow semantics: right-click to draw, right-click again to release.
-    doUse(ctx, 'arrow-round');
+    const bow = ctx.hotbar.findIndex(stack => stack?.name === 'bow');
+    if (bow < 0) return 0;
+    if (!Object.values(ctx.inventory).some(stack => stack?.name === 'arrow')) {
+      ctx.memory.drawnAt = null;
+      let arrow = null, closest = 32;
+      for (const e of ctx.entities.values()) {
+        if (e.type !== 'item' || e.displayItem !== 'arrow') continue;
+        const d = distanceTo(ctx, e);
+        if (d < closest) { closest = d; arrow = e; }
+      }
+      if (arrow) stepToward(ctx, arrow, profile);
+      return arrow ? 1 : 0;
+    }
+    const location = locationOf(ctx, ctx.nearestEntity(64, ['player']));
+    if (!location) return 0;
+    aimAt(ctx, location);
+    if (ctx.heldSlot !== bow) ctx.selectHeldSlot(bow);
+    if (ctx.memory.drawnAt == null) {
+      doUse(ctx, profile.mechanism);
+      ctx.memory.drawnAt = ctx.tick;
+    } else if (ctx.tick - ctx.memory.drawnAt >= 20) {
+      packets.releaseItem(ctx.client, ctx.nextSequence());
+      ctx.memory.drawnAt = null;
+    }
     return 1;
   },
 
   frostbite(ctx, profile) {
-    const target = ctx.nearestEntity(16);
+    const target = ctx.nearestEntity(16, ['player']);
     const location = locationOf(ctx, target);
     if (location) aimAt(ctx, location);
     else lookAround(ctx, profile, null);
     doUse(ctx, 'freeze-cycle');
+    return 1;
+  },
+
+  craftingfeast(ctx, profile) {
+    let guest = null, distance = 32;
+    for (const entity of ctx.entities.values()) {
+      if (entity.type === 'player' || !/点餐.+\d+\s*s$/.test(entity.customName || '')) continue;
+      const d = distanceTo(ctx, entity);
+      if (d < distance) { guest = entity; distance = d; }
+    }
+    if (!guest) walkPattern(ctx, profile);
+    else if (distance > 3) stepToward(ctx, guest, profile);
+    else if (ctx.tick >= (ctx.memory.orderReady ?? 0)) {
+      aimAt(ctx, guest);
+      doInteract(ctx, guest.entityId, profile.mechanism);
+      ctx.memory.orderReady = ctx.tick + 10;
+    }
     return 1;
   },
 
@@ -528,6 +624,7 @@ function runProfileTick(profile, ctx) {
   }
   // PROGRESS: defer to the game-specific strategy.  A profile without one keeps
   // the legacy data-driven loop so external scripts remain compatible.
+  if (profile.kind === 'observe') return 0;
   const behavior = GAME_BEHAVIORS[profile.game];
   if (behavior) return behavior(ctx, profile);
   let count = 0;
@@ -565,4 +662,4 @@ function runProfileTick(profile, ctx) {
   return count;
 }
 
-module.exports = { GAME_PROFILES, actionProfile, supportedGameProfiles, runProfileTick };
+module.exports = { GAME_PROFILES, announcedGame, actionProfile, supportedGameProfiles, runProfileTick };

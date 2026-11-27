@@ -2,7 +2,8 @@ dont-edit-this:
   version: 1
 enabled: true
 # One fixed teaching world for all Riptide maps. The route runs toward positive Z.
-# The prototype is built once; remove prototype-built only when intentionally rebuilding it.
+# The prototype is built once per blueprint version. A lower prototype-version clears the whole
+# teaching footprint and rebuilds it; set it to 0 only when intentionally rebuilding.
 spawn:
   world: riptide_introduction
   x: 0.5
@@ -10,4 +11,4 @@ spawn:
   z: 0.5
   yaw: 0.0
   pitch: 0.0
-prototype-built: false
+prototype-version: 0

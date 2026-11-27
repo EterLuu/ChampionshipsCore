@@ -27,16 +27,18 @@ const SERVER_EVIDENCE_TYPES = deepFreeze([
 // proves the game-specific behavior ran (jumps/aims are legal everywhere but do
 // not by themselves demonstrate a mechanic).
 const SIGNATURE_ACTIONS = {
+  iamnotarobot: ['block-dig'],
+  craftingfeast: ['entity-interact'],
   bingo: ['move-ground', 'use-item', 'entity-interact'],
   tntrun: ['move', 'sprint', 'jump', 'swing'],
-  parkourtag: ['move', 'look', 'use-item'],
+  parkourtag: ['move', 'attack', 'use-item'],
   battlebox: ['attack', 'use-item'],
   lasershowdown: ['look', 'swing', 'use-item'],
   skywars: ['move', 'use-item', 'attack'],
   tgttos: ['move', 'sprint', 'jump', 'look'],
   dragoneggcarnival: ['entity-interact'],
   parkourwarrior: ['move', 'sprint', 'jump', 'look'],
-  hotycodydusky: ['move', 'sprint', 'jump'],
+  hotycodydusky: ['move', 'entity-interact', 'use-item', 'attack'],
   buildmart: ['block-dig', 'block-place'],
   dodgebolt: ['look', 'use-item'],
   acerace: ['move', 'sprint', 'jump', 'look'],
@@ -47,11 +49,13 @@ const SIGNATURE_ACTIONS = {
 };
 
 const SERVER_EVIDENCE = {
+  iamnotarobot: ['item', 'block-change'],
+  craftingfeast: ['entity-spawn', 'scoreboard'],
   bingo: ['item', 'scoreboard'], tntrun: ['block-change', 'scoreboard'],
   parkourtag: ['entity-destroy', 'scoreboard'], battlebox: ['entity-destroy', 'scoreboard'],
   lasershowdown: ['entity-destroy', 'scoreboard'], skywars: ['item', 'entity-destroy', 'scoreboard'],
   tgttos: ['scoreboard'], dragoneggcarnival: ['entity-spawn', 'scoreboard'],
-  parkourwarrior: ['scoreboard'], hotycodydusky: ['entity-destroy', 'scoreboard'],
+  parkourwarrior: ['scoreboard'], hotycodydusky: ['entity-spawn', 'entity-destroy', 'item', 'scoreboard'],
   buildmart: ['block-change', 'item', 'scoreboard'], dodgebolt: ['entity-destroy', 'scoreboard'],
   acerace: ['scoreboard'], riptide: ['entity-destroy', 'scoreboard'],
   frostbite: ['item', 'scoreboard'], laserbox: ['entity-destroy', 'scoreboard'],
@@ -59,6 +63,18 @@ const SERVER_EVIDENCE = {
 };
 
 const MATRIX_DEFINITIONS = {
+  iamnotarobot: {
+    token: 'iamnotarobot', topology: 'partitioned', mechanism: 'joint-excavation',
+    actions: ['move', 'look', 'jump', 'swing', 'block-dig'],
+    disconnect: ['PROGRESS'], score: ['points'],
+    checks: ['matching-gray-blocks', 'forklift-stair-access'],
+  },
+  craftingfeast: {
+    token: 'craftingfeast', topology: 'partitioned', mechanism: 'take-order',
+    actions: ['move', 'look', 'entity-interact'],
+    disconnect: ['PREPARATION', 'PROGRESS', 'END'], score: ['points', 'orders'],
+    checks: ['order-taking', 'guest-state', 'round-state'],
+  },
   bingo: {
     token: 'bingo', topology: 'remote-worker', mechanism: 'task-progress',
     actions: ['move-ground', 'use-item', 'entity-interact', 'block-dig'],
@@ -73,13 +89,13 @@ const MATRIX_DEFINITIONS = {
   },
   parkourtag: {
     token: 'parkourtag', topology: 'paired', mechanism: 'tag-chase',
-    actions: ['move', 'sprint', 'jump', 'look', 'use-item', 'block-interact'],
+    actions: ['move', 'sprint', 'jump', 'look', 'attack', 'use-item', 'block-interact'],
     disconnect: ['PREPARATION', 'PROGRESS', 'END'], score: ['points', 'survival-time'],
     checks: ['chaser-assignment', 'tag-hit', 'round-reset'],
   },
   battlebox: {
     token: 'battlebox', topology: 'paired', mechanism: 'weapon-combat',
-    actions: ['look', 'sprint', 'jump', 'attack', 'use-item', 'block-interact'],
+    actions: ['move', 'look', 'sprint', 'jump', 'attack', 'use-item', 'block-interact'],
     disconnect: ['COUNTDOWN', 'PROGRESS', 'END'], score: ['points', 'round-wins'],
     checks: ['weapon-use', 'damage', 'round-end', 'equipment-clear'],
   },
@@ -114,10 +130,10 @@ const MATRIX_DEFINITIONS = {
     checks: ['room-assignment', 'checkpoint', 'completion-order', 'room-cleanup'],
   },
   hotycodydusky: {
-    token: 'hotycodydusky', topology: 'multi-team', mechanism: 'zone-objective',
-    actions: ['move', 'sprint', 'jump', 'look'],
-    disconnect: ['PREPARATION', 'PROGRESS', 'END'], score: ['points', 'zone'],
-    checks: ['zone-completion', 'elimination', 'round-state'],
+    token: 'hotycodydusky', topology: 'partitioned', mechanism: 'fish-pass',
+    actions: ['move', 'sprint', 'jump', 'look', 'attack', 'use-item', 'entity-interact'],
+    disconnect: ['PREPARATION', 'PROGRESS', 'END'], score: ['points', 'survival'],
+    checks: ['holder-transfer', 'loot-pickup', 'skill-use', 'decoy-hit', 'elimination', 'round-state'],
   },
   buildmart: {
     token: 'buildmart', topology: 'multi-team', mechanism: 'collect-place-submit',
@@ -127,7 +143,7 @@ const MATRIX_DEFINITIONS = {
   },
   dodgebolt: {
     token: 'dodgebolt', topology: 'finale-paired', mechanism: 'arrow-round',
-    actions: ['look', 'use-item', 'menu-select'],
+    actions: ['move', 'look', 'use-item', 'menu-select'],
     disconnect: ['PREPARATION', 'PROGRESS', 'END'], score: ['points', 'round-wins'],
     checks: ['qualified-teams', 'arrow-pickup', 'shoot', 'round-reset'],
   },

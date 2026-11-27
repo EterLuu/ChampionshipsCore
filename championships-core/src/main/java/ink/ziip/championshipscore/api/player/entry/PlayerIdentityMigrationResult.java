@@ -12,7 +12,7 @@ import java.util.UUID;
  */
 public record PlayerIdentityMigrationResult(
         @NotNull String username,
-        @NotNull UUID currentUuid,
+        @Nullable UUID currentUuid,
         @NotNull Set<UUID> previousUuids,
         @Nullable Integer resolvedTeamId,
         @NotNull Set<Integer> conflictingTeamIds,
@@ -30,7 +30,7 @@ public record PlayerIdentityMigrationResult(
     }
 
     public static PlayerIdentityMigrationResult failed(
-            @NotNull String username, @NotNull UUID currentUuid, @NotNull String reason) {
+            @NotNull String username, @Nullable UUID currentUuid, @NotNull String reason) {
         return new PlayerIdentityMigrationResult(
                 username, currentUuid, Set.of(), null, Set.of(), 0, false, false, reason);
     }

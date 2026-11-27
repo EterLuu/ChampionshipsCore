@@ -7,7 +7,7 @@ import static ink.ziip.championshipscore.support.TestObjects.set;
 import static org.junit.jupiter.api.Assertions.*;
 
 import ink.ziip.championshipscore.ChampionshipsCore;
-import ink.ziip.championshipscore.api.game.frostbite.mechanics.FrostbiteSupplyHints;
+import ink.ziip.championshipscore.api.game.arena.GamePickup;
 import ink.ziip.championshipscore.api.game.manager.GameManager;
 import ink.ziip.championshipscore.api.game.model.GameRunMode;
 import ink.ziip.championshipscore.api.game.model.GameStageEnum;
@@ -27,7 +27,6 @@ class FrostbiteRecoveryTest {
     void interRoundResetClearsRuntimeWithoutUnloadingTheOccupiedWorld() throws Exception {
         try (var f = new Fixture()) {
             set(f.area, "gamePlayers", new ArrayList<>());
-            set(f.area, "pickupDisplays", new ArrayList<>());
             set(f.area, "pickupArenaOffsets", new HashMap<>());
             set(f.area, "roundTransitionPending", true);
             set(f.area, "timer", 45);
@@ -204,7 +203,8 @@ class FrostbiteRecoveryTest {
             set(area, "props", new ArrayList<>());
             set(area, "shots", new HashMap<>());
             set(area, "zones", new ArrayList<>());
-            set(area, "supplyHints", new FrostbiteSupplyHints());
+            set(area, "pickups", new ArrayList<>());
+            set(area, "supplyHints", new GamePickup.Hints());
         }
 
         @Override

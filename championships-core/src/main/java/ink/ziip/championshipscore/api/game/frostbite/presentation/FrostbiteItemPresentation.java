@@ -1,5 +1,6 @@
 package ink.ziip.championshipscore.api.game.frostbite.presentation;
 
+import ink.ziip.championshipscore.api.game.arena.GamePickup;
 import ink.ziip.championshipscore.api.game.frostbite.model.FrostbiteItem;
 import ink.ziip.championshipscore.configuration.config.message.FrostbiteMessages;
 import ink.ziip.championshipscore.configuration.config.message.MessageConfig;
@@ -19,12 +20,16 @@ public final class FrostbiteItemPresentation {
 
     public static ItemStack create(FrostbiteItem type, NamespacedKey itemKey) {
         ItemStack stack = new ItemStack(type.material);
+        String title = itemTitle(type);
+        String description = itemDescription(type);
         stack.editMeta(
                 meta -> {
                     meta.displayName(
-                            LegacyText.component(
-                                    MessageConfig.codeText(
-                                            "frostbite-item.display-name", itemTitle(type))));
+                            GamePickup.heldName(
+                                    LegacyText.component(
+                                            MessageConfig.codeText(
+                                                    "frostbite-item.display-name", title)),
+                                    LegacyText.component(description)));
                     meta.lore(
                             FrostbiteMessages.FROSTBITE_ITEM_LORE.stream()
                                     .map(
@@ -34,10 +39,9 @@ public final class FrostbiteItemPresentation {
                                                                     line,
                                                                     Map.of(
                                                                             "%title%",
-                                                                            itemTitle(type),
+                                                                            title,
                                                                             "%description%",
-                                                                            itemDescription(
-                                                                                    type)))))
+                                                                            description))))
                                     .toList());
                     meta.setUnbreakable(true);
                     meta.getPersistentDataContainer()
